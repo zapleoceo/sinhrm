@@ -5,21 +5,30 @@ declare(strict_types=1);
 namespace App\Modules\Core\Support;
 
 /**
- * Neon routes connections by SNI. The libpq bundled with the vercel-php runtime has no SNI support,
+ * Neon routes connections by SNI. The libpq bundled with the vercel-php runtime is too old for SNI,
  * so Neon rejects it with "Endpoint ID is not specified". Neon's documented workaround: pass the
  * endpoint id inside the password as "endpoint=<id>;<password>" (https://neon.tech/sni).
  *
- * Input: a pgsql connection config with a postgres:// URL. Output: the same config with explicit
- * host/port/database/username/password and the endpoint id injected. Non-Neon URLs are returned unchanged.
+ * The workaround is applied ONLY when libpq lacks SNI (< 14): a modern client (CI, developer machine)
+ * sends SNI and Neon then treats the whole prefixed string as the password, failing authentication.
+ * Non-Neon URLs are returned unchanged.
  */
 final class NeonConnectionConfig
 {
+    private const SNI_MIN_LIBPQ = '14';
+
     /**
      * @param  array<string, mixed>  $connection
+     * @param  string|null  $libpqVersion  injected in tests; defaults to the runtime PGSQL_LIBPQ_VERSION
      * @return array<string, mixed>
      */
-    public static function apply(array $connection): array
+    public static function apply(array $connection, ?string $libpqVersion = null): array
     {
+        $libpqVersion ??= defined('PGSQL_LIBPQ_VERSION') ? (string) constant('PGSQL_LIBPQ_VERSION') : null;
+        if ($libpqVersion === null || version_compare($libpqVersion, self::SNI_MIN_LIBPQ, '>=')) {
+            return $connection;
+        }
+
         $url = $connection['url'] ?? null;
         if (! is_string($url) || $url === '') {
             return $connection;
