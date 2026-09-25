@@ -17,6 +17,11 @@ return [
     |
     */
 
+    /*
+    | The only account that may sign in without an invitation (first login bootstraps the superadmin role).
+    */
+    'superadmin_email' => env('SUPERADMIN_EMAIL'),
+
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),

@@ -1,0 +1,123 @@
+<header class="head">
+  <h1>{{ 'users.title' | transloco }}</h1>
+  <button mat-flat-button type="button" (click)="invite()">
+    <mat-icon>person_add</mat-icon>
+    {{ 'users.invite' | transloco }}
+  </button>
+</header>
+
+<div class="filters">
+  <mat-form-field class="search" subscriptSizing="dynamic">
+    <mat-label>{{ 'users.search' | transloco }}</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput type="search" #search (input)="onSearch(search.value)" />
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>{{ 'users.role' | transloco }}</mat-label>
+    <mat-select [value]="query().role" (valueChange)="onRoleFilter($event)">
+      <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+      @for (role of roles; track role) {
+        <mat-option [value]="role">{{ 'roles.' + role | transloco }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>{{ 'users.status' | transloco }}</mat-label>
+    <mat-select [value]="query().status" (valueChange)="onStatusFilter($event)">
+      <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+      @for (status of statuses; track status) {
+        <mat-option [value]="status">{{ 'statuses.' + status | transloco }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<section class="panel" aria-live="polite">
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (failed()) {
+    <div class="state">
+      <p>{{ 'users.loadError' | transloco }}</p>
+      <button mat-stroked-button type="button" (click)="load()">{{ 'common.retry' | transloco }}</button>
+    </div>
+  } @else if (!loading() && users().length === 0) {
+    <p class="state muted">{{ 'users.empty' | transloco }}</p>
+  } @else {
+    <table mat-table [dataSource]="users()">
+      <ng-container matColumnDef="user">
+        <th mat-header-cell *matHeaderCellDef>{{ 'users.columns.user' | transloco }}</th>
+        <td mat-cell *matCellDef="let u">
+          <div class="who">
+            <strong>{{ u.name }}</strong>
+            @if (u.id === meId()) {
+              <span class="muted">({{ 'users.you' | transloco }})</span>
+            }
+            <span class="muted">{{ u.email }}</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef>{{ 'users.columns.role' | transloco }}</th>
+        <td mat-cell *matCellDef="let u">
+          <mat-form-field class="role" subscriptSizing="dynamic">
+            <mat-select
+              [value]="u.roles[0]"
+              [disabled]="u.id === meId() || pending().has(u.id)"
+              (valueChange)="changeRole(u, $event)"
+              [attr.aria-label]="'users.columns.role' | transloco"
+            >
+              @for (role of roles; track role) {
+                <mat-option [value]="role">{{ 'roles.' + role | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>{{ 'users.columns.status' | transloco }}</th>
+        <td mat-cell *matCellDef="let u">
+          <mat-chip-set>
+            <mat-chip [class.blocked]="u.status === 'blocked'" [disableRipple]="true">{{ 'statuses.' + u.status | transloco }}</mat-chip>
+          </mat-chip-set>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="lastLogin">
+        <th mat-header-cell *matHeaderCellDef>{{ 'users.columns.lastLogin' | transloco }}</th>
+        <td mat-cell *matCellDef="let u" class="muted">
+          @if (u.last_login_at) {
+            {{ u.last_login_at | date: 'short' }}
+          } @else {
+            {{ 'users.never' | transloco }}
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="visually-hidden">{{ 'users.columns.actions' | transloco }}</th>
+        <td mat-cell *matCellDef="let u" class="actions">
+          @if (u.id !== meId()) {
+            <button mat-button type="button" [disabled]="pending().has(u.id)" (click)="toggleBlock(u)">
+              {{ (u.status === 'active' ? 'users.block' : 'users.unblock') | transloco }}
+            </button>
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="total()"
+    [pageIndex]="(query().page ?? 1) - 1"
+    [pageSize]="query().perPage"
+    [pageSizeOptions]="[10, 20, 50, 100]"
+    (page)="onPage($event)"
+  />
+</section>

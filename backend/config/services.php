@@ -37,4 +37,11 @@ return [
         ],
     ],
 
+    // Google OAuth (Socialite). Only the client id/secret come from env; the secret lives in Vercel env.
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', 'https://sinhrm.vercel.app/api/auth/google/callback'),
+    ],
+
 ];

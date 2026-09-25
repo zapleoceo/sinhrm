@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\User;
+use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Auth\Enums\UserStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -43,5 +45,16 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    public function blocked(): static
+    {
+        return $this->state(fn (array $attributes) => ['status' => UserStatus::Blocked]);
+    }
+
+    /** Assigns a Spatie role after creation (roles are created by the Auth module migration). */
+    public function withRole(UserRole $role): static
+    {
+        return $this->afterCreating(fn (User $user) => $user->assignRole($role->value));
     }
 }

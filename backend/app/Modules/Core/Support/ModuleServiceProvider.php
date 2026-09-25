@@ -11,8 +11,13 @@ use ReflectionClass;
 /**
  * Base provider for every domain module (app/Modules/<Name>).
  *
- * A module keeps its own routes (routes.php) and migrations (Database/Migrations),
+ * A module keeps its own routes and migrations (Database/Migrations),
  * so adding a module never requires touching global files except bootstrap/providers.php.
+ *
+ * Routes, both under /api/<prefix>:
+ *  - routes.php      → 'api' middleware group (JSON API; Sanctum makes SPA requests stateful);
+ *  - routes.web.php  → 'web' middleware group (always has a session + cookies), for browser
+ *                      redirects that arrive from third parties, e.g. the OAuth callback.
  */
 abstract class ModuleServiceProvider extends ServiceProvider
 {
@@ -27,10 +32,16 @@ abstract class ModuleServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom($dir.'/Database/Migrations');
         }
 
-        if (is_file($dir.'/routes.php') && ! $this->app->routesAreCached()) {
-            Route::middleware('api')
-                ->prefix(trim('api/'.$this->prefix, '/'))
-                ->group($dir.'/routes.php');
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
+        foreach (['routes.php' => 'api', 'routes.web.php' => 'web'] as $file => $group) {
+            if (is_file($dir.'/'.$file)) {
+                Route::middleware($group)
+                    ->prefix(trim('api/'.$this->prefix, '/'))
+                    ->group($dir.'/'.$file);
+            }
         }
     }
 
