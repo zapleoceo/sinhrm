@@ -26,4 +26,5 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 
 ## Точка входа Vercel
 `backend/api/index.php` подменяет `SCRIPT_NAME` на `/index.php`: иначе Laravel считает `/api` базовым путём и
-`/api/health` превращается в `/health` (404). Приложение API-only: веб-маршрутов нет, `/` → 404 JSON.
+`/api/health` превращается в `/health` (404). API-only: веб-маршрутов нет; на `sinhrm-api.vercel.app/` — 404. Публичный `sinhrm.vercel.app/` — это фронтенд.
+Контракт проверки здоровья — `/api/health` (зависимости); `/up` — встроенная проверка Laravel «процесс жив», без БД.

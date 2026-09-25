@@ -14,5 +14,7 @@
 Секреты GitHub Actions: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_API`, `VERCEL_PROJECT_ID_WEB`, `CRON_SECRET`.
 Переменные окружения приложений (`DB_URL`, `APP_KEY`, `SUPERADMIN_EMAIL`) — в настройках проектов Vercel.
 
+Деплой запускается только для веток этого репозитория: PR из форков не получают секреты и не деплоятся.
+
 ## Как проверить
 `curl https://sinhrm.vercel.app/api/health` → `{"ok":true,...}`.
