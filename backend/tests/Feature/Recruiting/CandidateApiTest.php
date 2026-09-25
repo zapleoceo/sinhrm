@@ -9,6 +9,7 @@ use App\Modules\Directory\Models\Branch;
 use App\Modules\Recruiting\DTO\MoveData;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Services\ApplicationService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
@@ -57,7 +58,9 @@ final class CandidateApiTest extends TestCase
     public function test_dedupe_returns_409_with_existing_id_by_phone_email_or_telegram(): void
     {
         $recruiter = $this->userWith(UserRole::Recruiter, [$this->north]);
-        $existing = Candidate::factory()->create(['phone' => '+380671112233', 'email' => 'dup@example.test', 'telegram_username' => 'dup_user']);
+        $existing = Candidate::factory()->create([
+            'phone' => '+380671112233', 'email' => 'dup@example.test', 'telegram_username' => 'dup_user', 'owner_id' => $recruiter->id,
+        ]);
 
         foreach ([
             ['phone' => '0671112233', 'matched' => 'phone'],
@@ -73,9 +76,46 @@ final class CandidateApiTest extends TestCase
                 ->assertJsonPath('matched_by', $matched);
         }
 
+        // No "create anyway" any more: the flag is ignored and the duplicate is still refused.
         $this->actingAs($recruiter)->postJson('/api/candidates', ['full_name' => 'Twin', 'phone' => '0671112233', 'force_new' => true])
-            ->assertCreated();
-        $this->assertSame(2, Candidate::query()->where('phone', '+380671112233')->count());
+            ->assertStatus(409);
+        $this->assertSame(1, Candidate::query()->where('phone', '+380671112233')->count());
+    }
+
+    public function test_duplicate_outside_scope_is_not_disclosed(): void
+    {
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->north]);
+        $south = $this->applied($this->vacancyIn($this->south), ['phone' => '+380675550000', 'email' => 'south@example.test']);
+
+        $response = $this->actingAs($recruiter)->postJson('/api/candidates', ['full_name' => 'Probe', 'phone' => '067 555 00 00'])
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'duplicate_candidate')
+            ->assertJsonPath('restricted', true);
+        $this->assertArrayNotHasKey('existing_id', $response->json());
+        $this->assertArrayNotHasKey('matched_by', $response->json());
+
+        // Same on edit of an own candidate.
+        $own = Candidate::factory()->create(['owner_id' => $recruiter->id]);
+        $edit = $this->actingAs($recruiter)->patchJson("/api/candidates/$own->id", ['email' => 'south@example.test'])->assertStatus(409);
+        $this->assertArrayNotHasKey('existing_id', $edit->json());
+
+        // Admin sees everything → gets the id.
+        $this->actingAs($this->userWith(UserRole::Admin))->postJson('/api/candidates', ['full_name' => 'Probe', 'phone' => '0675550000'])
+            ->assertStatus(409)->assertJsonPath('existing_id', $south->candidate_id);
+    }
+
+    public function test_db_rejects_duplicate_contacts_even_without_the_pre_check(): void
+    {
+        Candidate::factory()->create(['phone' => '+380671119999']);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+        Candidate::factory()->create(['phone' => '+380671119999']);
+    }
+
+    public function test_candidates_without_contacts_are_allowed_many_times(): void
+    {
+        Candidate::factory()->count(2)->create(['phone' => null, 'email' => null, 'telegram_username' => null]);
+        $this->assertSame(2, Candidate::query()->whereNull('phone')->count());
     }
 
     public function test_invalid_contacts_and_roles(): void
@@ -133,7 +173,7 @@ final class CandidateApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.full_name', 'Renamed')->assertJsonPath('data.tags.0', 'a');
         $other = Candidate::factory()->create(['email' => 'taken@example.test']);
         $this->actingAs($recruiter)->patchJson("/api/candidates/$application->candidate_id", ['email' => 'taken@example.test'])
-            ->assertStatus(409)->assertJsonPath('existing_id', $other->id);
+            ->assertStatus(409)->assertJsonPath('restricted', true); // $other is outside the recruiter's scope
 
         $stranger = $this->userWith(UserRole::Recruiter, [$this->south]);
         $this->actingAs($stranger)->getJson("/api/candidates/$application->candidate_id")->assertForbidden();

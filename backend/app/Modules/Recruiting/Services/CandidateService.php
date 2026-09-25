@@ -15,10 +15,12 @@ use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Candidate;
+use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Support\ContactNormalizer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Psr\Log\LoggerInterface;
 
 /** Candidates: listing in scope, creation with dedupe by contacts, editing. */
@@ -54,17 +56,16 @@ final readonly class CandidateService
 
     /**
      * Creates a candidate (and, with vacancyId, their application on the first stage).
-     * A match by normalized phone OR e-mail OR Telegram → 409 duplicate_candidate with the existing id,
-     * unless $forceNew.
+     * A match by normalized phone OR e-mail OR Telegram (global, all branches) → 409 duplicate_candidate; the
+     * existing id is disclosed only when the actor may see that candidate. There is no "create anyway": contacts are
+     * unique in the DB (partial unique indexes), so a concurrent insert also ends as the same 409.
      *
      * @throws RecruitingException
      */
-    public function create(User $actor, CandidateData $data, bool $forceNew = false): Candidate
+    public function create(User $actor, CandidateData $data): Candidate
     {
         $keys = $this->keys($data);
-        if (! $forceNew && ($match = $this->candidates->findByContacts($keys)) !== null) {
-            throw RecruitingException::duplicateCandidate($match[0]->id, $match[1]);
-        }
+        $this->assertNoDuplicate($actor, $keys, null);
         $vacancy = null;
         if ($data->vacancyId !== null) {
             $vacancy = $this->vacancies->find($data->vacancyId);
@@ -73,6 +74,17 @@ final readonly class CandidateService
             }
         }
 
+        try {
+            return $this->insert($actor, $data, $keys, $vacancy);
+        } catch (UniqueConstraintViolationException) {
+            // Lost a race with a concurrent create: report it like the regular pre-check does.
+            $this->assertNoDuplicate($actor, $keys, null);
+            throw RecruitingException::duplicateCandidateRestricted();
+        }
+    }
+
+    private function insert(User $actor, CandidateData $data, ContactKeys $keys, ?Vacancy $vacancy): Candidate
+    {
         return $this->applications->transaction(function () use ($actor, $data, $keys, $vacancy): Candidate {
             $candidate = $this->candidates->create([
                 'full_name' => (string) $data->fullName,
@@ -117,19 +129,38 @@ final readonly class CandidateService
             'telegram_username' => $keys->telegram,
         ], static fn (mixed $v): bool => $v !== null);
         if ($contactAttrs !== []) {
-            $match = $this->candidates->findByContacts($keys, $candidate->id);
-            if ($match !== null) {
-                throw RecruitingException::duplicateCandidate($match[0]->id, $match[1]);
-            }
+            $this->assertNoDuplicate($actor, $keys, $candidate->id);
         }
         $attributes += $contactAttrs;
         if ($attributes === []) {
             return $candidate;
         }
-        $this->candidates->update($candidate, $attributes);
+        try {
+            $this->candidates->update($candidate, $attributes);
+        } catch (UniqueConstraintViolationException) {
+            $this->assertNoDuplicate($actor, $keys, $candidate->id);
+            throw RecruitingException::duplicateCandidateRestricted();
+        }
         $this->log->info('recruiting.candidate_updated', ['id' => $candidate->id, 'by' => $actor->id, 'fields' => array_keys($attributes)]);
 
         return $candidate;
+    }
+
+    /**
+     * Global dedupe; a match outside the actor's scope is reported without id/field (no cross-branch enumeration).
+     *
+     * @throws RecruitingException
+     */
+    private function assertNoDuplicate(User $actor, ContactKeys $keys, ?int $exceptId): void
+    {
+        $match = $this->candidates->findByContacts($keys, $exceptId);
+        if ($match === null) {
+            return;
+        }
+        [$existing, $field] = $match;
+        throw $this->scope->canSeeCandidate($actor, $existing)
+            ? RecruitingException::duplicateCandidate($existing->id, $field)
+            : RecruitingException::duplicateCandidateRestricted();
     }
 
     private function keys(CandidateData $data): ContactKeys

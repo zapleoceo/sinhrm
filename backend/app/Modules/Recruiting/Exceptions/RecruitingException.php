@@ -22,6 +22,12 @@ final class RecruitingException extends RuntimeException
         return new self('duplicate_candidate', 409, ['existing_id' => $existingId, 'matched_by' => $matchedBy]);
     }
 
+    /** The same person exists but the caller may not see them (another branch): no id, no matched field. */
+    public static function duplicateCandidateRestricted(): self
+    {
+        return new self('duplicate_candidate', 409, ['restricted' => true]);
+    }
+
     public static function alreadyApplied(int $applicationId): self
     {
         return new self('already_applied', 409, ['application_id' => $applicationId]);

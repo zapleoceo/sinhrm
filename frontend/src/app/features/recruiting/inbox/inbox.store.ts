@@ -33,7 +33,7 @@ export class InboxStore {
     return this.api.linkInbox(message.id, candidateId).pipe(tap(() => this.remove(message.id)));
   }
 
-  createCandidate(message: Touchpoint, body: { full_name: string; vacancy_id?: number; force_new?: boolean }): Observable<Candidate> {
+  createCandidate(message: Touchpoint, body: { full_name: string; vacancy_id?: number }): Observable<Candidate> {
     return this.api.createFromInbox(message.id, body).pipe(tap(() => this.remove(message.id)));
   }
 

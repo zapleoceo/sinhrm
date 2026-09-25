@@ -16,7 +16,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * POST /candidates (full_name required; optional vacancy_id applies right away; force_new skips the dedupe 409)
+ * POST /candidates (full_name required; optional vacancy_id applies right away; a contact match → 409)
  * and PATCH /candidates/{candidate} (partial). Contacts must be normalizable.
  */
 final class SaveCandidateRequest extends FormRequest
@@ -54,14 +54,13 @@ final class SaveCandidateRequest extends FormRequest
             'tags.*' => ['string', 'min:1', 'max:40'],
             'owner_id' => ['sometimes', 'nullable', 'integer', Rule::exists(User::class, 'id')],
             'vacancy_id' => $creating ? ['sometimes', 'nullable', 'integer', Rule::exists(Vacancy::class, 'id')] : ['prohibited'],
-            'force_new' => $creating ? ['sometimes', 'boolean'] : ['prohibited'],
         ];
     }
 
     public function candidateData(): CandidateData
     {
         /** @var array<string, mixed> $row */
-        $row = $this->safe()->except(['force_new']);
+        $row = $this->safe()->all();
         $data = CandidateData::fromArray($row);
 
         // fromArray() defaults an unknown source to "import"; for the API a missing source means "manual" on create
@@ -78,10 +77,5 @@ final class SaveCandidateRequest extends FormRequest
             ownerId: $data->ownerId,
             vacancyId: $data->vacancyId,
         );
-    }
-
-    public function forceNew(): bool
-    {
-        return $this->boolean('force_new');
     }
 }

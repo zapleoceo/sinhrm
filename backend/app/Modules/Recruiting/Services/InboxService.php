@@ -60,11 +60,11 @@ final readonly class InboxService
 
     /**
      * New candidate from an unmatched message: the sender's contact becomes the candidate's phone / e-mail /
-     * Telegram (dedupe still applies unless forced), source = "inbox", optionally applied to a vacancy.
+     * Telegram (dedupe applies), source = "inbox", optionally applied to a vacancy.
      *
      * @throws RecruitingException
      */
-    public function createCandidate(User $actor, Touchpoint $touchpoint, string $fullName, ?int $vacancyId, bool $forceNew): Candidate
+    public function createCandidate(User $actor, Touchpoint $touchpoint, string $fullName, ?int $vacancyId): Candidate
     {
         if ($touchpoint->candidate_id !== null) {
             throw RecruitingException::alreadyLinked();
@@ -81,7 +81,7 @@ final readonly class InboxService
             telegram: $keys->telegram,
             source: CandidateSource::Inbox,
             vacancyId: $vacancyId,
-        ), $forceNew);
+        ));
         $this->link($touchpoint, $candidate);
 
         return $candidate;

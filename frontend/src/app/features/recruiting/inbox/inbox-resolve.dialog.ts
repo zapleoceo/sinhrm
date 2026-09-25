@@ -53,7 +53,7 @@ export interface InboxResolveData {
           </div>
         </mat-tab>
         <mat-tab [label]="'recruiting.inbox.create' | transloco">
-          <form [formGroup]="form" (ngSubmit)="create(false)" class="create">
+          <form [formGroup]="form" (ngSubmit)="create()" class="create">
             <mat-form-field>
               <mat-label>{{ 'recruiting.candidates.fields.fullName' | transloco }}</mat-label>
               <input matInput formControlName="full_name" required maxlength="255" />
@@ -72,7 +72,6 @@ export interface InboxResolveData {
               <p class="warn" role="alert">{{ 'recruiting.inbox.duplicate' | transloco }}</p>
               <div class="actions">
                 <button mat-stroked-button type="button" (click)="picked.set(dupId); link()">{{ 'recruiting.inbox.linkExisting' | transloco }}</button>
-                <button mat-button type="button" (click)="create(true)">{{ 'recruiting.candidates.createAnyway' | transloco }}</button>
               </div>
             }
             <div class="actions">
@@ -136,7 +135,7 @@ export class InboxResolveDialog implements OnInit {
     this.run(this.data.store.link(this.data.message, id));
   }
 
-  protected create(forceNew: boolean): void {
+  protected create(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -146,7 +145,6 @@ export class InboxResolveDialog implements OnInit {
       this.data.store.createCandidate(this.data.message, {
         full_name: v.full_name.trim(),
         vacancy_id: v.vacancy_id ?? undefined,
-        force_new: forceNew || undefined,
       }),
     );
   }

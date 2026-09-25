@@ -231,7 +231,7 @@ final class RecruitingDemoData
             utm: $source === CandidateSource::MetaAds ? ['utm_source' => 'facebook', 'utm_medium' => 'paid', 'utm_campaign' => 'demo-autumn'] : null,
             tags: $i % 4 === 0 ? ['демо', 'вечірня зміна'] : ['демо'],
             ownerId: $recruiter->id,
-        ), true);
+        ));
         $this->backdate($candidate, $start);
         $application = $this->applications->apply($recruiter, $candidate, $vacancy, $start);
         $this->backdate($application, $start);

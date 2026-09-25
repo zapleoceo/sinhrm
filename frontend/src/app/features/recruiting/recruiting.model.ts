@@ -172,7 +172,6 @@ export interface SaveCandidate {
   source?: CandidateSource;
   tags?: string[];
   vacancy_id?: number | null;
-  force_new?: boolean;
 }
 
 export interface Touchpoint {

@@ -42,7 +42,6 @@ final class InboxController
             $touchpoint,
             $request->fullName(),
             $request->vacancyId(),
-            $request->forceNew(),
         );
 
         return (new CandidateResource($candidates->find($candidate->id)))->response()->setStatusCode(201);

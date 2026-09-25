@@ -26,8 +26,8 @@
   **Маршрут** по каждой вакансии (этапы с датой входа и длительностью, текущий подсвечен) и кнопка «Перемістити»; поле записи касания
   (канал, направление, текст, минуты для звонка/встречи; Ctrl/⌘+Enter — сохранить); **Касання** — лента новых сверху, фильтр-чипы
   по каналам и «Етапи».
-  При создании кандидата с уже известным телефоном/e-mail/Telegram система предложит открыть существующую карточку или всё-таки
-  создать нового.
+  При создании кандидата с уже известным телефоном/e-mail/Telegram система предложит открыть существующую карточку (если он в
+  ваших филиалах) или сообщит, что он есть в другом филиале. Второго кандидата с тем же контактом создать нельзя.
 - **Вхідні** — сообщения и звонки, пришедшие снаружи, которые не удалось сопоставить с кандидатом. «Розібрати» → привязать к
   найденному кандидату или создать нового (контакт из сообщения становится его телефоном/e-mail/Telegram).
 - **Звіти** — период (по умолчанию последние 30 дней): касания рекрутеров по каналам (из SinHRM / извне), источники (сколько
@@ -59,10 +59,18 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
   Переход разрешён в любой этап **воронки этой вакансии**, кроме текущего (`same_stage`, `stage_not_in_pipeline` — 422).
 - **Каждый шаг маршрута** = строка `stage_changes` + «системное» касание (`channel=system`, `stage_change_id`). В ленте карточки
   показывается сам шаг, системное касание не дублируется.
-- **Дедупликация кандидата** (`Services/CandidateService::create`): телефон нормализуется в E.164 (`067 123-45-67` → `+380671234567`),
-  e-mail — в нижний регистр, Telegram — без `@`/`t.me/`. Совпадение по телефону **или** e-mail **или** Telegram → 409
-  `{code: "duplicate_candidate", existing_id, matched_by}`. `force_new: true` — создать всё равно. При правке контакт, занятый другим
-  кандидатом, → тот же 409 (без force). Нормализация — `Support/ContactNormalizer`.
+- **Дедупликация кандидата** (`Services/CandidateService`): телефон нормализуется в E.164 (`067 123-45-67` → `+380671234567`),
+  e-mail — в нижний регистр, Telegram — без `@`/`t.me/` (`Support/ContactNormalizer`). Проверка **глобальная** (по всем филиалам):
+  совпадение по телефону **или** e-mail **или** Telegram → 409 `duplicate_candidate`, и при создании, и при правке.
+  - кандидат **виден** вызывающему (`CandidatePolicy::view`) → `{code, existing_id, matched_by}` — интерфейс предлагает открыть карточку;
+  - кандидат **в чужом филиале** → `{code: "duplicate_candidate", restricted: true}` **без id и поля** — чтобы нельзя было перебором
+    контактов узнавать о кандидатах других филиалов; интерфейс пишет «є в іншій філії, зверніться до адміністратора».
+  - «Создать всё равно» (`force_new`) **убрано**: контакты уникальны на уровне БД (частичные уникальные индексы
+    `candidates_{phone,email,telegram_username}_unique … WHERE … IS NOT NULL`, миграция `…100003_add_unique_candidate_contacts`).
+    Кандидатов без контактов может быть сколько угодно. Дубль не создают — существующего кандидата добавляют на вакансию
+    (`POST /api/vacancies/{id}/applications`) или к нему привязывают сообщение из «Вхідних».
+  - Гонка двух одновременных созданий: второй `INSERT` падает на индексе (`UniqueConstraintViolationException`), сервис отвечает
+    тем же 409 (с тем же правилом раскрытия).
 - **Импорт-готовый DTO:** `DTO/CandidateData::fromArray(array)` принимает «грязную» строку (таблица, выгрузка job-сайта):
   обрезает пробелы, чистит UTM/теги, неизвестный источник → `import`.
 - **Зависшие:** `applications.last_touch_at` обновляет слушатель `Listeners/UpdateLastTouch` на событие `Events/TouchpointRecorded`
@@ -95,16 +103,16 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 | `GET /api/vacancies/{id}/board` | — | `{vacancy, applications[]}` (с кандидатом, `is_stale`) |
 | `POST /api/vacancies/{id}/applications` | `{candidate_id}` | 201; повтор → 409 `already_applied` |
 | `GET /api/candidates` | `q` (имя/e-mail/@telegram/цифры телефона), `vacancy_id, stage_id, status, source, owner_id, perPage, page` | с краткими заявками |
-| `POST /api/candidates` | `{full_name, phone?, email?, telegram_username?, city_id?, source?, utm?, tags?, owner_id?, vacancy_id?, force_new?}` | 201 / 409 дубль |
+| `POST /api/candidates` | `{full_name, phone?, email?, telegram_username?, city_id?, source?, utm?, tags?, owner_id?, vacancy_id?}` | 201 / 409 дубль (см. «Правила») |
 | `GET /api/candidates/{id}` | — | карточка + `applications[]` с `route[]` (`stage_name, entered_at, left_at, duration_sec, by, reason`) и `stages` |
-| `PATCH /api/candidates/{id}` | частично; `vacancy_id`, `force_new` запрещены | 200 / 409 |
+| `PATCH /api/candidates/{id}` | частично; `vacancy_id` запрещён; занятый контакт → 409 | 200 / 409 |
 | `GET /api/candidates/{id}/timeline` | `channel=call,telegram,stage` (или массив; `stage` = шаги), `perPage, page` | новые сверху: `{type: touchpoint\|stage_change, at, touchpoint\|stage_change}` |
 | `POST /api/candidates/{id}/touchpoints` | `{channel (note\|call\|meeting\|telegram\|whatsapp\|viber\|email), direction?, body (обязателен для note), occurred_at?, duration_sec?, application_id?}` | 201, `via_product=true` |
 | `POST /api/applications/{id}/move` | `{stage_id, reason?, reject_reason_id?}` | заявка; ошибки см. «Правила» |
 | `GET /api/recruiting/stale` | `days` 1..365 (строка `"3"` ок; по умолч. 3) | до 200 заявок, самые старые сверху; `meta.days` |
 | `GET /api/inbox` | `perPage, page` | касания без кандидата в пределах доступа |
 | `POST /api/inbox/{touchpoint}/link` | `{candidate_id}` | касание; уже привязано → 409 `already_linked` |
-| `POST /api/inbox/{touchpoint}/create-candidate` | `{full_name, vacancy_id?, force_new?}` | 201 кандидат (source `inbox`), дедуп как при создании |
+| `POST /api/inbox/{touchpoint}/create-candidate` | `{full_name, vacancy_id?}` | 201 кандидат (source `inbox`); дубль → 409 как при создании (тогда — «Привʼязати») |
 | `GET /api/reports/touches` | `from, to` (`YYYY-MM-DD`, по умолч. 30 дней, не больше года) | строки `author × channel × via_product`, `totals {total, via_product, captured}` |
 | `GET /api/reports/funnel` | `from, to, vacancy_id?` | заявки, созданные в периоде, по вакансии × текущему этапу |
 | `GET /api/reports/sources` | `from, to` | кандидаты периода по источнику + сколько из них `hired` |
@@ -164,11 +172,11 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,
-дубль 409 по трём ключам, `force_new`, поиск, карточка с маршрутом и длительностями, права), перемещения (stage_change + системное
+дубль 409 по трём ключам, скрытие id для чужого филиала, уникальные индексы в БД, поиск, карточка с маршрутом и длительностями, права), перемещения (stage_change + системное
 касание, причина отказа, hired, чужая воронка, роли), лента (порядок, фильтр, пагинация, ручное касание и `last_touch_at`),
 «Вхідні» (область видимости, привязка, создание, 409), зависшие (`days` строкой, валидация, филиалы), отчёты (суммы, период),
 воронки и причины, демо (данные, повтор, отказ в production, `DatabaseSeeder` без зарегистрированных консольных команд, время `generate()`). `tests/Unit/Recruiting/*` — нормализатор контактов,
-ingestor (сопоставление, дедуп, «Вхідні»), `CandidateService` (моки), `ApplicationService`.
+ingestor (сопоставление, дедуп, «Вхідні»), `CandidateService` (моки: раскрытие дубля, гонка → 409), `ApplicationService`.
 Фронт: `recruiting.service.spec.ts`, `recruiting.format.spec.ts`, `recruiting.stores.spec.ts`.
 
 Вручную на preview (нужна сессия; демо-данные уже в БД):

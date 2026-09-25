@@ -15,8 +15,8 @@ export interface CandidateDialogData {
 }
 
 /**
- * New candidate. If the contacts match someone (409), the dialog offers to open the existing card or to create
- * a separate candidate anyway (force_new).
+ * New candidate. If the contacts match a visible candidate (409), the dialog offers to open the existing card; a match
+ * in another branch only shows a message (the API does not disclose it). Duplicates are never created.
  */
 @Component({
   selector: 'app-candidate-dialog',
@@ -24,7 +24,7 @@ export interface CandidateDialogData {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ 'recruiting.candidates.new' | transloco }}</h2>
-    <form [formGroup]="form" (ngSubmit)="submit(false)">
+    <form [formGroup]="form" (ngSubmit)="submit()">
       <mat-dialog-content>
         <mat-form-field>
           <mat-label>{{ 'recruiting.candidates.fields.fullName' | transloco }}</mat-label>
@@ -59,7 +59,6 @@ export interface CandidateDialogData {
           <div class="dup" role="alert">
             <p>{{ 'recruiting.candidates.duplicate' | transloco: { by: ('recruiting.matchedBy.' + dup.matched_by | transloco) } }}</p>
             <button mat-stroked-button type="button" (click)="openExisting(dup.existing_id)">{{ 'recruiting.candidates.openExisting' | transloco }}</button>
-            <button mat-button type="button" (click)="submit(true)">{{ 'recruiting.candidates.createAnyway' | transloco }}</button>
           </div>
         }
         @if (error(); as key) {
@@ -99,7 +98,7 @@ export class CandidateDialog {
     source: ['manual' as CandidateSource],
   });
 
-  protected submit(forceNew: boolean): void {
+  protected submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -112,7 +111,6 @@ export class CandidateDialog {
       telegram_username: v.telegram_username.trim() || null,
       source: v.source,
       vacancy_id: this.data?.vacancyId ?? null,
-      force_new: forceNew || undefined,
     };
     this.saving.set(true);
     this.error.set(null);

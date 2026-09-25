@@ -34,10 +34,10 @@ final class CandidateController
         return CandidateResource::collection($this->service->list($this->actor($request), $request->filter()));
     }
 
-    /** 409 {code: duplicate_candidate, existing_id, matched_by} when the contacts match someone (unless force_new). */
+    /** 409 {code: duplicate_candidate, existing_id, matched_by} (or {restricted: true} when that candidate is outside the caller's scope). */
     public function store(SaveCandidateRequest $request): JsonResponse
     {
-        $candidate = $this->service->create($this->actor($request), $request->candidateData(), $request->forceNew());
+        $candidate = $this->service->create($this->actor($request), $request->candidateData());
 
         return (new CandidateResource($this->service->find($candidate->id)))->response()->setStatusCode(201);
     }

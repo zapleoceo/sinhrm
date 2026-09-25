@@ -84,6 +84,7 @@ describe('recruiting error helpers', () => {
   it('maps codes, 403 and 422, falls back to generic', () => {
     expect(recruitingErrorKey(err(422, { code: 'reject_reason_required' }))).toBe('recruiting.errors.reject_reason_required');
     expect(recruitingErrorKey(err(403, { message: 'This action is unauthorized.' }))).toBe('recruiting.errors.forbidden');
+    expect(recruitingErrorKey(err(409, { code: 'duplicate_candidate', restricted: true }))).toBe('recruiting.errors.duplicate_restricted');
     expect(recruitingErrorKey(err(422, { errors: {} }))).toBe('recruiting.errors.validation');
     expect(recruitingErrorKey(new Error('x'))).toBe('recruiting.errors.generic');
   });

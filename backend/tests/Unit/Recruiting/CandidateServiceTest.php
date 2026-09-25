@@ -20,6 +20,7 @@ use App\Modules\Recruiting\Services\ApplicationService;
 use App\Modules\Recruiting\Services\CandidateService;
 use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Recruiting\Support\ContactNormalizer;
+use Illuminate\Database\UniqueConstraintViolationException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -52,6 +53,7 @@ final class CandidateServiceTest extends TestCase
     public function test_duplicate_contact_throws_409_with_existing_id(): void
     {
         $existing = (new Candidate)->forceFill(['id' => 42]);
+        $this->candidates->method('isVisible')->willReturn(true);
         $this->candidates->expects($this->once())->method('findByContacts')
             ->with(new ContactKeys('+380671234567', 'a@example.test', null))
             ->willReturn([$existing, 'phone']);
@@ -67,9 +69,23 @@ final class CandidateServiceTest extends TestCase
         }
     }
 
-    public function test_force_new_skips_dedupe_and_stores_normalized_contacts(): void
+    public function test_out_of_scope_duplicate_hides_id_and_field(): void
     {
-        $this->candidates->expects($this->never())->method('findByContacts');
+        $this->candidates->method('findByContacts')->willReturn([(new Candidate)->forceFill(['id' => 42]), 'email']);
+        $this->candidates->method('isVisible')->willReturn(false);
+
+        try {
+            $this->service->create($this->actor(), new CandidateData(fullName: 'X Y', email: 'a@example.test'));
+            $this->fail('expected a duplicate');
+        } catch (RecruitingException $e) {
+            $this->assertSame('duplicate_candidate', $e->errorCode);
+            $this->assertSame(['restricted' => true], $e->extra);
+        }
+    }
+
+    public function test_creates_with_normalized_contacts_when_no_match(): void
+    {
+        $this->candidates->method('findByContacts')->willReturn(null);
         $this->candidates->expects($this->once())->method('create')
             ->with($this->callback(fn (array $a): bool => $a['phone'] === '+380671234567'
                 && $a['telegram_username'] === 'handle_x'
@@ -78,7 +94,25 @@ final class CandidateServiceTest extends TestCase
                 && $a['created_by'] === 5))
             ->willReturn((new Candidate)->forceFill(['id' => 1]));
 
-        $this->service->create($this->actor(), new CandidateData(fullName: 'X Y', phone: '067 123 45 67', telegram: '@Handle_X'), true);
+        $this->service->create($this->actor(), new CandidateData(fullName: 'X Y', phone: '067 123 45 67', telegram: '@Handle_X'));
+    }
+
+    public function test_concurrent_insert_is_mapped_to_the_same_409(): void
+    {
+        $existing = (new Candidate)->forceFill(['id' => 42]);
+        $this->candidates->method('findByContacts')->willReturnOnConsecutiveCalls(null, [$existing, 'phone']);
+        $this->candidates->method('isVisible')->willReturn(true);
+        $this->candidates->method('create')->willThrowException(
+            new UniqueConstraintViolationException('pgsql', 'insert into candidates', [], new \PDOException('23505')),
+        );
+
+        try {
+            $this->service->create($this->actor(), new CandidateData(fullName: 'X Y', phone: '0671234567'));
+            $this->fail('expected a duplicate');
+        } catch (RecruitingException $e) {
+            $this->assertSame(409, $e->status);
+            $this->assertSame(['existing_id' => 42, 'matched_by' => 'phone'], $e->extra);
+        }
     }
 
     public function test_from_array_is_import_ready(): void

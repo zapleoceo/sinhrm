@@ -118,7 +118,7 @@ export class RecruitingService {
       .pipe(map((r) => r.data));
   }
 
-  createFromInbox(touchpointId: number, body: { full_name: string; vacancy_id?: number; force_new?: boolean }): Observable<Candidate> {
+  createFromInbox(touchpointId: number, body: { full_name: string; vacancy_id?: number }): Observable<Candidate> {
     return this.http.post<{ data: Candidate }>(`/api/inbox/${touchpointId}/create-candidate`, body).pipe(map((r) => r.data));
   }
 
@@ -146,7 +146,11 @@ export class RecruitingService {
 /** i18n key for a failed Recruiting API call. */
 export function recruitingErrorKey(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
+    const body = error.error as { code?: unknown; restricted?: unknown } | null;
+    const code: unknown = body?.code;
+    if (code === 'duplicate_candidate' && body?.restricted === true) {
+      return 'recruiting.errors.duplicate_restricted';
+    }
     if (typeof code === 'string' && (RECRUITING_ERROR_CODES as readonly string[]).includes(code)) {
       return `recruiting.errors.${code}`;
     }

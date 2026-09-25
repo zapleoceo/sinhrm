@@ -86,13 +86,12 @@ final class InboxApiTest extends TestCase
         $this->assertSame($candidate->id, $message->fresh()?->candidate_id);
         $this->assertSame(1, $candidate->applications()->count());
 
-        // Same contact again → dedupe 409 unless forced.
+        // Same contact again → dedupe 409 (no "create anyway"; link the existing candidate instead).
         $again = $this->ingest(Channel::Telegram, '@someone_else', ['branch_id' => $this->north->id]);
         Candidate::factory()->create(['telegram_username' => 'someone_else', 'owner_id' => $recruiter->id]);
         $this->actingAs($recruiter)->postJson("/api/inbox/$again->id/create-candidate", ['full_name' => 'Someone'])
-            ->assertStatus(409)->assertJsonPath('code', 'duplicate_candidate');
-        $this->actingAs($recruiter)->postJson("/api/inbox/$again->id/create-candidate", ['full_name' => 'Someone', 'force_new' => true])
-            ->assertCreated();
+            ->assertStatus(409)->assertJsonPath('code', 'duplicate_candidate')->assertJsonPath('matched_by', 'telegram');
+        $this->assertNull($again->fresh()?->candidate_id);
         $this->actingAs($recruiter)->postJson("/api/inbox/$again->id/create-candidate", ['full_name' => 'X'])->assertUnprocessable();
     }
 }

@@ -336,7 +336,6 @@
       "pick": "Pick a candidate on the left. j/k or ↑/↓ — next/previous, / — search.",
       "duplicate": "This candidate already exists (match: {{by}}).",
       "openExisting": "Open card",
-      "createAnyway": "Create a new one anyway",
       "fields": {
         "fullName": "Full name",
         "phone": "Phone",
@@ -436,6 +435,7 @@
       "empty": "No data for the period"
     },
     "errors": {
+      "duplicate_restricted": "A candidate with this contact exists in another branch. Ask an administrator.",
       "duplicate_candidate": "This candidate already exists",
       "already_applied": "The candidate is already on this vacancy",
       "stage_not_in_pipeline": "The stage is not in this vacancy's pipeline",

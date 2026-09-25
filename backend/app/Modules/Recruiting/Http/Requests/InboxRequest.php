@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 /**
  * Inbox actions on /inbox/{touchpoint}/…:
  *  - link:              {candidate_id} — the candidate must be visible to the user;
- *  - create-candidate:  {full_name, vacancy_id?, force_new?} — the vacancy must be editable by the user.
+ *  - create-candidate:  {full_name, vacancy_id?} — the vacancy must be editable by the user.
  */
 final class InboxRequest extends FormRequest
 {
@@ -43,7 +43,6 @@ final class InboxRequest extends FormRequest
         return [
             'full_name' => ['required', 'string', 'min:2', 'max:255'],
             'vacancy_id' => ['nullable', 'integer', Rule::exists(Vacancy::class, 'id')],
-            'force_new' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -62,11 +61,6 @@ final class InboxRequest extends FormRequest
     public function vacancyId(): ?int
     {
         return $this->filled('vacancy_id') ? $this->integer('vacancy_id') : null;
-    }
-
-    public function forceNew(): bool
-    {
-        return $this->boolean('force_new');
     }
 
     private function isLink(): bool
