@@ -26,10 +26,8 @@ enum GoogleService: string
     public function scopes(): array
     {
         return match ($this) {
-            self::Gmail => [
-                'https://www.googleapis.com/auth/gmail.readonly',
-                'https://www.googleapis.com/auth/gmail.send',
-            ],
+            // Read-only on purpose: the mail agent never sends mail (scope minimisation).
+            self::Gmail => ['https://www.googleapis.com/auth/gmail.readonly'],
             self::Calendar => ['https://www.googleapis.com/auth/calendar.events'],
             self::Sheets => ['https://www.googleapis.com/auth/spreadsheets.readonly'],
         };

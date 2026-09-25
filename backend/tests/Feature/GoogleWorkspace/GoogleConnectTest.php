@@ -60,7 +60,7 @@ final class GoogleConnectTest extends TestCase
         $this->assertSame('https://sinhrm.example.test/api/google/connect/callback', $query['redirect_uri']);
         $scopes = explode(' ', (string) $query['scope']);
         $this->assertContains('https://www.googleapis.com/auth/gmail.readonly', $scopes);
-        $this->assertContains('https://www.googleapis.com/auth/gmail.send', $scopes);
+        $this->assertNotContains('https://www.googleapis.com/auth/gmail.send', $scopes);
         $this->assertContains('https://www.googleapis.com/auth/calendar.events', $scopes);
         $this->assertContains('openid', $scopes);
         $this->assertContains('email', $scopes);
@@ -109,7 +109,6 @@ final class GoogleConnectTest extends TestCase
     {
         Http::fake(['oauth2.googleapis.com/token' => Http::response($this->tokenAnswer([
             'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/gmail.send',
             'https://www.googleapis.com/auth/calendar.events',
             'https://www.googleapis.com/auth/spreadsheets.readonly',
         ]))]);
@@ -153,7 +152,6 @@ final class GoogleConnectTest extends TestCase
     {
         Http::fake(['oauth2.googleapis.com/token' => Http::response($this->tokenAnswer([
             'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/gmail.send',
         ]))]);
 
         $this->actingAs($this->superadmin)

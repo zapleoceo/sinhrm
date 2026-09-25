@@ -39,7 +39,7 @@ SinHRM умеет работать с **одним Google-аккаунтом к�
    `GOOGLE_CLIENT_ID`) → Authorized redirect URIs: `https://sinhrm.vercel.app/api/google/connect/callback`.
    Без этого Google покажет `redirect_uri_mismatch`. Адрес также виден на странице интеграций (подсказка под кнопкой).
 2. **Включить API** в том же проекте Google Cloud: Gmail API, Google Calendar API, Google Sheets API.
-3. **OAuth consent screen**: добавить scopes `gmail.readonly`, `gmail.send`, `calendar.events`, `spreadsheets.readonly`
+3. **OAuth consent screen**: добавить scopes `gmail.readonly` (только чтение — агент почту не отправляет), `calendar.events`, `spreadsheets.readonly`
    (они «sensitive/restricted»). Пока приложение в режиме **Testing**, аккаунт ящика должен быть в списке test users, а
    **refresh token живёт 7 дней** — раз в неделю нужно «Перепідключити» (система предупредит на главной). Чтобы снять
    ограничение — перевести приложение в Production (для Gmail-scopes Google требует верификацию).
