@@ -125,13 +125,22 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 демо-данными; вебхуки Binotel/Ringostat/Telegram/WhatsApp/Viber/Gmail будут вызывать его же (модуль Integrations).
 
 ### Демо-данные
-`php artisan recruiting:demo` — только не в production (там — ошибка и код 1); повторный запуск ничего не делает (маркер —
-пользователь `demo-recruiter-1@example.test`). Создаёт, если в БД нет хотя бы двух активных филиалов, 3 демо-филиала/2 города/
-3 должности; 3 демо-пользователя (admin + 2 recruiter, привязаны к филиалам) и viewer; 5 вакансий; **40 кандидатов** на разных этапах
-(часть отклонена с причиной, часть принята) с касаниями **по всем каналам** — и «из SinHRM», и «извне»; ~8 зависших; 6 сообщений в
-«Вхідних». Имена — сочетания общих имён/фамилий из списка в коде (Faker — dev-зависимость, на деплое его нет), e-mail на
-зарезервированном домене `example.test`, телефоны выдуманные. Всё создаётся через настоящие сервисы.
-Preview: `POST /api/ops/migrate?fresh=1` → `migrate:fresh --seed` → `DatabaseSeeder` вызывает `recruiting:demo`, если `APP_ENV != production`.
+Логика — сервис `Services/RecruitingDemoData::generate(): DTO/DemoReport` (`skipped`, `counts`, `seconds`). В production бросает
+`RuntimeException`; повторный вызов ничего не делает (`skipped = true`, маркер — пользователь `demo-recruiter-1@example.test`);
+длительность и счётчики пишутся в лог `recruiting.demo_generated`. На SQLite `generate()` занимает ~0.4 с (тест
+`DemoCommandTest` требует < 40 с: сид идёт внутри HTTP-запроса с лимитом функции 60 с).
+
+Вызывают его:
+- **seeder** `Database/Seeders/RecruitingDemoSeeder` — из `DatabaseSeeder`, если `APP_ENV != production`. Именно сидер, а не
+  `Artisan::call('recruiting:demo')`: preview пересоздаёт БД через `POST /api/ops/migrate?fresh=1` (`migrate:fresh --seed` внутри
+  HTTP-запроса), а там консольные команды не зарегистрированы (была ошибка `The command "recruiting:demo" does not exist`);
+- **команда** `php artisan recruiting:demo` — тонкая обёртка для локального запуска (в production — ошибка и код 1).
+
+Создаёт, если в БД нет хотя бы двух активных филиалов, 3 демо-филиала/2 города/3 должности; 3 демо-пользователя (admin +
+2 recruiter, привязаны к филиалам) и viewer; 5 вакансий; **40 кандидатов** на разных этапах (часть отклонена с причиной, часть
+принята) с касаниями **по всем каналам** — и «из SinHRM», и «извне»; ~8 зависших; 6 сообщений в «Вхідних». Имена — сочетания общих
+имён/фамилий из списка в коде (Faker — dev-зависимость, на деплое его нет), e-mail на зарезервированном домене `example.test`,
+телефоны выдуманные. Всё создаётся через настоящие сервисы.
 
 ### Слои
 `Http/Controllers/*` (оркестрация) → `Http/Requests/*` (валидация + `authorize()`) → `Services/*` → `Contracts/*Repository`
@@ -158,7 +167,7 @@ Preview: `POST /api/ops/migrate?fresh=1` → `migrate:fresh --seed` → `Databas
 дубль 409 по трём ключам, `force_new`, поиск, карточка с маршрутом и длительностями, права), перемещения (stage_change + системное
 касание, причина отказа, hired, чужая воронка, роли), лента (порядок, фильтр, пагинация, ручное касание и `last_touch_at`),
 «Вхідні» (область видимости, привязка, создание, 409), зависшие (`days` строкой, валидация, филиалы), отчёты (суммы, период),
-воронки и причины, демо-команда (данные, повтор, отказ в production). `tests/Unit/Recruiting/*` — нормализатор контактов,
+воронки и причины, демо (данные, повтор, отказ в production, `DatabaseSeeder` без зарегистрированных консольных команд, время `generate()`). `tests/Unit/Recruiting/*` — нормализатор контактов,
 ingestor (сопоставление, дедуп, «Вхідні»), `CandidateService` (моки), `ApplicationService`.
 Фронт: `recruiting.service.spec.ts`, `recruiting.format.spec.ts`, `recruiting.stores.spec.ts`.
 

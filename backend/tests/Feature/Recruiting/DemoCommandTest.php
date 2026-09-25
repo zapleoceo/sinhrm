@@ -7,8 +7,11 @@ namespace Tests\Feature\Recruiting;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Touchpoint;
+use App\Modules\Recruiting\Services\RecruitingDemoData;
 use App\Modules\Recruiting\Services\StalenessService;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use RuntimeException;
 use Tests\TestCase;
 
 final class DemoCommandTest extends TestCase
@@ -38,5 +41,30 @@ final class DemoCommandTest extends TestCase
 
         $this->artisan('recruiting:demo')->assertFailed();
         $this->assertSame(0, Candidate::query()->count());
+    }
+
+    /** The preview seed runs inside an HTTP request: it must not depend on artisan commands being registered. */
+    public function test_database_seeder_works_without_console_commands(): void
+    {
+        (new DatabaseSeeder)->setContainer($this->app)->__invoke();
+
+        $this->assertSame(40, Candidate::query()->count());
+        $this->assertSame(6, Touchpoint::query()->whereNull('candidate_id')->count());
+    }
+
+    public function test_service_reports_duration_and_refuses_in_production(): void
+    {
+        $report = $this->app->make(RecruitingDemoData::class)->generate();
+        $this->assertFalse($report->skipped);
+        $this->assertSame(40, $report->counts['candidates']);
+        $this->assertLessThan(40.0, $report->seconds);
+        fwrite(STDERR, sprintf('
+[recruiting demo] generate() on sqlite: %.2fs
+', $report->seconds));
+        $this->assertTrue($this->app->make(RecruitingDemoData::class)->generate()->skipped);
+
+        $this->app->detectEnvironment(fn (): string => 'production');
+        $this->expectException(RuntimeException::class);
+        $this->app->make(RecruitingDemoData::class)->generate();
     }
 }

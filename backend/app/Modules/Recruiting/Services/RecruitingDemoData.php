@@ -13,6 +13,7 @@ use App\Modules\Directory\Models\Position;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
 use App\Modules\Recruiting\Contracts\TouchpointIngestor;
 use App\Modules\Recruiting\DTO\CandidateData;
+use App\Modules\Recruiting\DTO\DemoReport;
 use App\Modules\Recruiting\DTO\IncomingMessage;
 use App\Modules\Recruiting\DTO\MoveData;
 use App\Modules\Recruiting\DTO\TouchpointData;
@@ -24,8 +25,11 @@ use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\PipelineStage;
 use App\Modules\Recruiting\Models\Vacancy;
+use Illuminate\Contracts\Foundation\Application as Laravel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Synthetic demo data for preview environments: branches, recruiters, vacancies and ~40 candidates spread over the
@@ -34,7 +38,7 @@ use Illuminate\Support\Facades\DB;
  * Names are combined from generic first/last name lists (no real people; Faker is a dev dependency and is absent on
  * deploys); e-mails use the reserved example.test domain, phones are made-up numbers.
  */
-final class DemoDataGenerator
+final class RecruitingDemoData
 {
     public const string MARKER_EMAIL = 'demo-recruiter-1@example.test';
 
@@ -68,6 +72,8 @@ final class DemoDataGenerator
         private readonly TouchpointService $touchpoints,
         private readonly TouchpointIngestor $ingestor,
         private readonly PipelineRepository $pipelines,
+        private readonly Laravel $app,
+        private readonly LoggerInterface $log,
     ) {}
 
     public function alreadyGenerated(): bool
@@ -75,8 +81,30 @@ final class DemoDataGenerator
         return User::query()->where('email', self::MARKER_EMAIL)->exists();
     }
 
+    /**
+     * Creates the demo set once per DB. Works without console commands (runs inside the HTTP ops/migrate request
+     * through RecruitingDemoSeeder).
+     *
+     * @throws RuntimeException in production
+     */
+    public function generate(): DemoReport
+    {
+        if ($this->app->isProduction()) {
+            throw new RuntimeException('Recruiting demo data is not allowed in production.');
+        }
+        if ($this->alreadyGenerated()) {
+            return new DemoReport(true, [], 0.0);
+        }
+        $started = hrtime(true);
+        $counts = $this->create();
+        $seconds = round((hrtime(true) - $started) / 1e9, 2);
+        $this->log->info('recruiting.demo_generated', ['seconds' => $seconds] + $counts);
+
+        return new DemoReport(false, $counts, $seconds);
+    }
+
     /** @return array<string, int> counts of created records */
-    public function generate(): array
+    private function create(): array
     {
         return DB::transaction(function (): array {
             $branches = $this->branches();

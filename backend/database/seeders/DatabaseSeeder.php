@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Modules\Recruiting\Database\Seeders\RecruitingDemoSeeder;
 use Faker\Factory;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Artisan;
 
 /**
  * Synthetic seed for preview/local DBs (POST /api/ops/migrate?fresh=1 runs migrate:fresh --seed; refused in production).
@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
 
         // Recruiting demo: vacancies, ~40 candidates, touches on every channel, stale and unmatched items.
         if (! app()->isProduction()) {
-            Artisan::call('recruiting:demo');
+            $this->call(RecruitingDemoSeeder::class);
         }
     }
 }
