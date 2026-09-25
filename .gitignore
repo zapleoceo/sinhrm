@@ -1,0 +1,10 @@
+node_modules/
+vendor/
+.env
+.env.*
+!.env.example
+.vercel/
+.idea/
+.vscode/
+*.log
+.DS_Store
