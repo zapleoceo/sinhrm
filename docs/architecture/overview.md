@@ -9,7 +9,7 @@
 Браузер ──► sinhrm.vercel.app (Angular SPA, Vercel)
               │  /api/*  (Vercel rewrite, тот же домен → cookie-сессия работает)
               ▼
-           sinhrm-api.vercel.app (Laravel 13, runtime vercel-php, PHP 8.5, serverless)
+           sinhrm-api.vercel.app (Laravel 13, runtime vercel-php, PHP 8.5, serverless, регион fra1 — рядом с БД)
               │
               ▼
            Neon Postgres (Frankfurt) — данные, сессии, очередь задач, зашифрованные секреты

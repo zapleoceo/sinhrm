@@ -1,4 +1,1 @@
-/node_modules
-/tests
-/storage/logs/*
 .env

@@ -8,7 +8,7 @@
 | Workflow | Когда | Что делает |
 |---|---|---|
 | `ci.yml` | каждый PR и push в `main` | бэкенд: Pint, PHPStan, PHPUnit на Postgres (сервис в CI); фронт: lint, test, build; gitleaks; docs-check |
-| `deploy.yml` | push в `main` / PR | `vercel pull` → `vercel build` → `vercel deploy --prebuilt` для `sinhrm-api` и `sinhrm`; миграции prod |
+| `deploy.yml` | после зелёного CI (push в `main` / PR) | `vercel pull` → `vercel build` → `vercel deploy --prebuilt` для `sinhrm-api` и `sinhrm`; prod — `migrate`, preview — `migrate:fresh --seed` (только синтетика) |
 | `cron.yml` | каждые 30 мин | `POST /api/jobs/run` с секретом — обработка фоновых задач |
 
 Секреты GitHub Actions: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_API`, `VERCEL_PROJECT_ID_WEB`, `CRON_SECRET`.

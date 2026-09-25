@@ -21,7 +21,8 @@
 ## Подключение к Neon из Vercel
 Библиотека libpq в рантайме vercel-php не поддерживает SNI, и Neon отвечает «Endpoint ID is not specified».
 `Support\NeonConnectionConfig` (применяется в `CoreServiceProvider::register`) разбирает `DATABASE_URL` и передаёт
-id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`) — документированный обход Neon. Для не-Neon URL ничего не меняется.
+id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`) — документированный обход Neon. Применяется только если libpq < 14
+(`PGSQL_LIBPQ_VERSION`): современный клиент (CI) шлёт SNI, и тогда префикс ломает пароль. Для не-Neon URL ничего не меняется.
 Проверено: до исправления `/api/health` → 503 с этой ошибкой, после → 200.
 
 ## Точка входа Vercel
