@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24 }
       - uses: shivammathur/setup-php@v2
-        with: { php-version: "8.4", extensions: "pdo_pgsql, pgsql, intl, sodium" }
+        with: { php-version: "8.4", extensions: "intl, sodium" }
       - run: npm i -g vercel@latest
 
       - name: API — build & deploy
@@ -43,13 +43,15 @@ jobs:
           url=$(vercel deploy --prebuilt $PROD --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
-      - name: API — migrations (${{ env.TARGET }} database)
+      - name: API — migrations via /api/ops/migrate (DB credentials stay in Vercel)
         working-directory: backend
+        env: { OPS_SECRET: "${{ secrets.OPS_SECRET }}" }
         run: |
-          set -a; . .vercel/.env.$TARGET.local; set +a
-          composer install --no-interaction --prefer-dist --quiet
-          # Preview DB holds synthetic data only → rebuild it from scratch on every deploy.
-          if [ "$TARGET" = preview ]; then php artisan migrate:fresh --seed --force; else php artisan migrate --force; fi
+          # Preview DB holds synthetic data only → rebuild it on every deploy; production → apply pending.
+          Q=$([ "$TARGET" = preview ] && echo '?fresh=1' || true)
+          out=$(vercel curl "/api/ops/migrate$Q" --deployment "${{ steps.api.outputs.url }}" --yes                 --token=${{ secrets.VERCEL_TOKEN }} -- -sS -X POST -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json")
+          # Log only the verdict: raw migration output stays out of public Actions logs.
+          echo "$out" | grep -q '"ok":true' && echo "migrations: ok" || { echo "migrations: FAILED"; exit 1; }
 
       - name: Web — build & deploy
         id: web
@@ -64,8 +66,9 @@ jobs:
 
       - name: Smoke — /api/health
         id: smoke
+        working-directory: backend
         run: |
-          out=$(vercel curl "${{ steps.api.outputs.url }}/api/health" --token=${{ secrets.VERCEL_TOKEN }} 2>&1 || true)
+          out=$(vercel curl /api/health --deployment "${{ steps.api.outputs.url }}" --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 || true)
           echo "$out"
           { echo 'body<<EOF'; echo "$out"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
           echo "$out" | grep -q '"ok":true'

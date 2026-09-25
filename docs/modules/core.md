@@ -29,3 +29,18 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 `backend/api/index.php` подменяет `SCRIPT_NAME` на `/index.php`: иначе Laravel считает `/api` базовым путём и
 `/api/health` превращается в `/health` (404). API-only: веб-маршрутов нет; на `sinhrm-api.vercel.app/` — 404. Публичный `sinhrm.vercel.app/` — это фронтенд.
 Контракт проверки здоровья — `/api/health` (зависимости); `/up` — встроенная проверка Laravel «процесс жив», без БД.
+
+## Служебные эндпоинты `/api/ops/*`
+**Зачем.** Vercel не отдаёт защищённый `DATABASE_URL` наружу (`vercel pull` получает маску), поэтому миграции
+запускает сам API — доступ к БД не покидает Vercel.
+
+| Эндпоинт | Что делает |
+|---|---|
+| `POST /api/ops/migrate` | применяет новые миграции |
+| `POST /api/ops/migrate?fresh=1` | пересоздаёт БД и заполняет синтетикой; **в production запрещено (403)** |
+
+Защита: заголовок `X-Ops-Secret` = `OPS_SECRET` (Vercel env + GitHub secret), сравнение `hash_equals`;
+секрет не задан → 404 (эндпоинта «нет»), неверный → 401; лимит 10 запросов в минуту (`throttle:10,1`).
+В публичный лог Actions пишется только «migrations: ok/FAILED». Время выполнения ограничено `maxDuration` 60 с. Код: `Http/Middleware/RequireOpsSecret`,
+`Http/Controllers/OpsMigrateController`, `Contracts/MigrationRunner` → `Services/ArtisanMigrationRunner`.
+Тест: `tests/Feature/Core/OpsMigrateTest.php`. `APP_ENV` задаётся переменной Vercel: `production` / `preview`.
