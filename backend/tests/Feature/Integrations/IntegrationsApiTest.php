@@ -6,13 +6,17 @@ namespace Tests\Feature\Integrations;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Integrations\Contracts\HostResolver;
 use App\Modules\Integrations\Models\IntegrationLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Support\FakeHostResolver;
 use Tests\TestCase;
 
 final class IntegrationsApiTest extends TestCase
@@ -30,6 +34,7 @@ final class IntegrationsApiTest extends TestCase
     {
         parent::setUp();
         Http::preventStrayRequests();
+        $this->app->instance(HostResolver::class, new FakeHostResolver(['internal.example.test' => ['169.254.169.254']]));
         $this->superadmin = User::factory()->withRole(UserRole::Superadmin)->create();
     }
 
@@ -288,6 +293,86 @@ final class IntegrationsApiTest extends TestCase
         $log = IntegrationLog::query()->latest('id')->firstOrFail();
         $this->assertSame('ai_enabled', $log->message);
         $this->assertSame($this->superadmin->id, $log->context['user_id'] ?? null);
+    }
+
+    public function test_malformed_token_is_rejected_before_any_request_and_never_logged(): void
+    {
+        $log = Log::spy();
+        Http::fake();
+        $bad = "123456:FAKE bad token\n";
+        $this->actingAs($this->superadmin)
+            ->putJson('/api/integrations/telegram_business', ['secrets' => ['bot_token' => $bad]])->assertOk();
+
+        $response = $this->actingAs($this->superadmin)->postJson('/api/integrations/telegram_business/check')
+            ->assertOk()->assertJsonPath('data.status', 'error')->assertJsonPath('data.last_error', 'invalid_token');
+
+        Http::assertNothingSent();
+        $this->assertStringNotContainsString('FAKE bad', (string) $response->getContent());
+        $log->shouldNotHaveReceived('error');
+        $log->shouldNotHaveReceived('warning');
+    }
+
+    public function test_any_throwable_from_the_http_call_becomes_a_code_without_url(): void
+    {
+        $log = Log::spy();
+        $this->putTelegramToken();
+        Http::fake(fn () => throw new RuntimeException('Unable to parse URI: https://api.telegram.org/bot'.self::BOT_TOKEN.'/getMe'));
+
+        $response = $this->actingAs($this->superadmin)->postJson('/api/integrations/telegram_business/check')
+            ->assertOk()->assertJsonPath('data.last_error', 'connection_failed');
+
+        $this->assertSecretAbsent($response);
+        $log->shouldNotHaveReceived('error');
+    }
+
+    public function test_url_fields_are_https_only(): void
+    {
+        $this->actingAs($this->superadmin)
+            ->putJson('/api/integrations/ai_broker', ['settings' => ['base_url' => 'http://broker.example.test']])
+            ->assertUnprocessable()->assertJsonValidationErrors('settings.base_url');
+    }
+
+    public function test_ssrf_guard_blocks_internal_hosts_before_any_request(): void
+    {
+        Http::fake();
+        foreach (['https://internal.example.test' => 'blocked_host', 'https://127.0.0.1' => 'blocked_host',
+            'https://broker.example.test:8443' => 'blocked_port'] as $url => $code) {
+            $this->actingAs($this->superadmin)
+                ->putJson('/api/integrations/ai_broker', ['settings' => ['base_url' => $url], 'secrets' => ['project_key' => self::PROJECT_KEY]])->assertOk();
+            $this->actingAs($this->superadmin)->postJson('/api/integrations/ai_broker/check')
+                ->assertOk()->assertJsonPath('data.status', 'error')->assertJsonPath('data.last_error', $code);
+        }
+        Http::assertNothingSent();
+    }
+
+    public function test_config_change_resets_checked_status_to_demo(): void
+    {
+        $this->putTelegramToken();
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+        $this->actingAs($this->superadmin)->postJson('/api/integrations/telegram_business/check')
+            ->assertJsonPath('data.status', 'connected');
+
+        $this->actingAs($this->superadmin)
+            ->putJson('/api/integrations/telegram_business', ['secrets' => ['bot_token' => '654321:FAKE-rotated-token']])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'demo')
+            ->assertJsonPath('data.last_error', null)
+            ->assertJsonPath('data.last_checked_at', null);
+        $this->actingAs($this->superadmin)->getJson('/api/integrations/telegram_business/logs')
+            ->assertJsonPath('data.0.message', 'recheck_required')
+            ->assertJsonPath('data.0.context.from', 'connected');
+    }
+
+    public function test_config_change_keeps_off_and_unchanged_save_keeps_status(): void
+    {
+        $this->putTelegramToken();
+        $this->actingAs($this->superadmin)->getJson('/api/integrations')->assertOk();
+        $this->assertSame('off', $this->byKey($this->actingAs($this->superadmin)->getJson('/api/integrations'))['telegram_business']['status']);
+
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => false], 401)]);
+        $this->actingAs($this->superadmin)->postJson('/api/integrations/telegram_business/check')->assertJsonPath('data.status', 'error');
+        $this->actingAs($this->superadmin)->putJson('/api/integrations/telegram_business', ['secrets' => ['bot_token' => '']])
+            ->assertJsonPath('data.status', 'error');
     }
 
     private function putTelegramToken(): void

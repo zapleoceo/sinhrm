@@ -8,19 +8,29 @@ use App\Modules\Integrations\Contracts\SecretVault;
 use App\Modules\Integrations\DTO\SecretMeta;
 use App\Modules\Integrations\Models\Integration;
 use App\Modules\Integrations\Models\IntegrationSecret;
+use App\Modules\Integrations\Support\SecretScrubber;
 use Illuminate\Database\Eloquent\Builder;
 use SensitiveParameter;
 
 /** Secrets in integration_secrets, encrypted with APP_KEY by the model's "encrypted" cast. */
 final class EloquentSecretVault implements SecretVault
 {
+    public function __construct(private readonly SecretScrubber $scrubber) {}
+
     public function get(string $integrationKey, string $name): ?string
     {
-        return $this->query($integrationKey)->where('name', $name)->first()?->value;
+        $value = $this->query($integrationKey)->where('name', $name)->first()?->value;
+        if ($value !== null) {
+            // Every decrypted value is known to the log scrubber for the rest of the request.
+            $this->scrubber->remember($value);
+        }
+
+        return $value;
     }
 
     public function put(string $integrationKey, string $name, #[SensitiveParameter] string $value, ?int $updatedBy = null): void
     {
+        $this->scrubber->remember($value);
         $integration = Integration::query()->firstOrCreate(['key' => $integrationKey]);
 
         IntegrationSecret::query()->updateOrCreate(

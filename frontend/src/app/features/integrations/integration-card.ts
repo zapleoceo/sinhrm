@@ -14,7 +14,7 @@ import { Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualS
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
 import { IntegrationsStore } from './integrations.store';
 
-const URL_PATTERN = /^https?:\/\/\S+$/i;
+const URL_PATTERN = /^https:\/\/\S+$/i;
 
 /** One integration: header with status, expandable config form generated from the FieldSpec, recent log. */
 @Component({

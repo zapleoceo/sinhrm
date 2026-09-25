@@ -9,8 +9,9 @@ use App\Modules\Integrations\DTO\CheckResult;
 use App\Modules\Integrations\DTO\FieldSpec;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Integrations\Enums\IntegrationGroup;
-use Illuminate\Http\Client\ConnectionException;
+use App\Modules\Integrations\Support\OutboundUrlGuard;
 use Illuminate\Http\Client\Factory as Http;
+use Throwable;
 
 /**
  * AI Broker (own gateway to LLM providers).
@@ -23,7 +24,7 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
 
     private const int TIMEOUT_SECONDS = 10;
 
-    public function __construct(private readonly Http $http) {}
+    public function __construct(private readonly Http $http, private readonly OutboundUrlGuard $guard) {}
 
     public function key(): string
     {
@@ -46,11 +47,16 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
 
     public function check(IntegrationConfig $config): CheckResult
     {
-        $base = rtrim($config->setting('base_url') ?? self::DEFAULT_BASE_URL, '/');
+        $url = rtrim($config->setting('base_url') ?? self::DEFAULT_BASE_URL, '/').'/v1/health';
+        $blocked = $this->guard->check($url);
+        if ($blocked !== null) {
+            return CheckResult::error($blocked);
+        }
 
         try {
-            $response = $this->http->timeout(self::TIMEOUT_SECONDS)->acceptJson()->get($base.'/v1/health');
-        } catch (ConnectionException) {
+            $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)->acceptJson()->get($url);
+        } catch (Throwable) {
+            // Never the exception text: it may contain the request URL.
             return CheckResult::error('connection_failed');
         }
 

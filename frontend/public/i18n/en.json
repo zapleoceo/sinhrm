@@ -66,7 +66,7 @@
     "save": "Save",
     "saved": "Saved",
     "required": "Required",
-    "invalidUrl": "Invalid address (https://…)",
+    "invalidUrl": "Invalid address (https:// only)",
     "noFields": "Nothing to configure here: Google consent comes later.",
     "checkOk": "Connection works",
     "checkFailed": "Check failed",
@@ -97,7 +97,11 @@
       "missing_secret": "A required key is not set",
       "not_verified": "Settings look valid, but the connection was not verified",
       "invalid_url": "Invalid service address",
-      "http": "Service returned an error"
+      "http": "Service returned an error",
+      "invalid_token": "Token has an invalid format",
+      "blocked_host": "Address points to an internal network, request refused",
+      "blocked_port": "Only port 443 is allowed",
+      "unresolved_host": "Service address not found (DNS)"
     },
     "errors": {
       "check_not_supported": "This integration has no connection check",
@@ -114,7 +118,8 @@
         "check_error": "Check: error",
         "check_demo": "Check: not verified",
         "ai_enabled": "AI enabled",
-        "ai_disabled": "AI disabled"
+        "ai_disabled": "AI disabled",
+        "recheck_required": "Config changed: re-check required"
       }
     },
     "ai": {

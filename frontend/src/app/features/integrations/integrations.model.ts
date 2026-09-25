@@ -75,4 +75,8 @@ export const CHECK_RESULT_CODES = [
   'not_verified',
   'invalid_url',
   'http',
+  'invalid_token',
+  'blocked_host',
+  'blocked_port',
+  'unresolved_host',
 ] as const;

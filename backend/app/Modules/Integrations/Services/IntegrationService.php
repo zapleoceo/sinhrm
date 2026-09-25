@@ -85,18 +85,30 @@ final class IntegrationService
             }
         }
 
-        if ($changedSettings !== []) {
-            $integration->settings = $next;
-            $this->integrations->save($integration);
+        if ($changedSettings === [] && $set === [] && $cleared === []) {
+            return $this->view($definition, $integration);
         }
-        if ($changedSettings !== [] || $set !== [] || $cleared !== []) {
-            $this->integrations->log($integration, LogLevel::Info, 'settings_updated', [
+
+        $integration->settings = $next;
+        $this->integrations->log($integration, LogLevel::Info, 'settings_updated', [
+            'user_id' => $actor->id,
+            'settings' => $changedSettings,
+            'secrets_set' => $set,
+            'secrets_cleared' => $cleared,
+        ]);
+        // A result obtained with the old config says nothing about the new one: back to "not verified".
+        if (in_array($integration->status, [IntegrationStatus::Connected, IntegrationStatus::Error], true)) {
+            $previous = $integration->status;
+            $integration->status = IntegrationStatus::Demo;
+            $integration->last_error = null;
+            $integration->last_checked_at = null;
+            $this->integrations->log($integration, LogLevel::Warning, 'recheck_required', [
                 'user_id' => $actor->id,
-                'settings' => $changedSettings,
-                'secrets_set' => $set,
-                'secrets_cleared' => $cleared,
+                'from' => $previous->value,
+                'to' => IntegrationStatus::Demo->value,
             ]);
         }
+        $this->integrations->save($integration);
 
         return $this->view($definition, $integration);
     }

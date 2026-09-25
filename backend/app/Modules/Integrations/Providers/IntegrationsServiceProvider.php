@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Integrations\Contracts\AiPolicy;
+use App\Modules\Integrations\Contracts\HostResolver;
 use App\Modules\Integrations\Contracts\IntegrationRepository;
 use App\Modules\Integrations\Contracts\SecretVault;
 use App\Modules\Integrations\Definitions\AiBrokerDefinition;
@@ -31,7 +32,9 @@ use App\Modules\Integrations\Definitions\WorkUaDefinition;
 use App\Modules\Integrations\Repositories\EloquentIntegrationRepository;
 use App\Modules\Integrations\Repositories\EloquentSecretVault;
 use App\Modules\Integrations\Services\AiPolicyService;
+use App\Modules\Integrations\Support\DnsHostResolver;
 use App\Modules\Integrations\Support\IntegrationRegistry;
+use App\Modules\Integrations\Support\SecretScrubber;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -76,6 +79,9 @@ final class IntegrationsServiceProvider extends ModuleServiceProvider
         $this->app->bind(IntegrationRepository::class, EloquentIntegrationRepository::class);
         $this->app->bind(SecretVault::class, EloquentSecretVault::class);
         $this->app->bind(AiPolicy::class, AiPolicyService::class);
+        $this->app->bind(HostResolver::class, DnsHostResolver::class);
+        // One per request/app lifetime: it accumulates the secret values seen, for log redaction.
+        $this->app->scoped(SecretScrubber::class);
     }
 
     public function boot(): void

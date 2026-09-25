@@ -9,8 +9,9 @@ use App\Modules\Integrations\DTO\CheckResult;
 use App\Modules\Integrations\DTO\FieldSpec;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Integrations\Enums\IntegrationGroup;
-use Illuminate\Http\Client\ConnectionException;
+use App\Modules\Integrations\Support\OutboundUrlGuard;
 use Illuminate\Http\Client\Factory as Http;
+use Throwable;
 
 /**
  * Telegram bot (business account). Check: read-only getMe.
@@ -22,7 +23,9 @@ final class TelegramBusinessDefinition extends AbstractDefinition implements Con
 
     private const int TIMEOUT_SECONDS = 10;
 
-    public function __construct(private readonly Http $http) {}
+    private const string TOKEN_PATTERN = '/^\d+:[A-Za-z0-9_-]+$/';
+
+    public function __construct(private readonly Http $http, private readonly OutboundUrlGuard $guard) {}
 
     public function key(): string
     {
@@ -45,10 +48,21 @@ final class TelegramBusinessDefinition extends AbstractDefinition implements Con
         if ($token === null) {
             return CheckResult::error('missing_secret:bot_token');
         }
+        // Validate before the token is put into a URL: a stray space/newline would make the HTTP library
+        // throw an exception whose message contains the whole URL (and so the token).
+        if (preg_match(self::TOKEN_PATTERN, $token) !== 1) {
+            return CheckResult::error('invalid_token');
+        }
+        $url = self::API.'/bot'.$token.'/getMe';
+        $blocked = $this->guard->check($url);
+        if ($blocked !== null) {
+            return CheckResult::error($blocked);
+        }
 
         try {
-            $response = $this->http->timeout(self::TIMEOUT_SECONDS)->acceptJson()->get(self::API.'/bot'.$token.'/getMe');
-        } catch (ConnectionException) {
+            $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)->acceptJson()->get($url);
+        } catch (Throwable) {
+            // Never the exception text: it may contain the request URL.
             return CheckResult::error('connection_failed');
         }
 

@@ -21,7 +21,7 @@ final class AiPolicyService implements AiPolicy
 
     public function enabled(): bool
     {
-        return ($this->integrations->find(self::KEY)->settings['enabled'] ?? false) === true;
+        return ($this->integrations->find(self::KEY)?->settings['enabled'] ?? false) === true;
     }
 
     public function set(User $actor, bool $enabled): bool

@@ -86,7 +86,7 @@ final class UpdateIntegrationRequest extends FormRequest
         $rules = $field->required ? ['required_with:settings'] : ['nullable'];
 
         return [...$rules, ...match ($field->type) {
-            FieldType::Url => ['string', 'url:https,http', 'max:'.self::MAX_TEXT],
+            FieldType::Url => ['string', 'url:https', 'max:'.self::MAX_TEXT],
             FieldType::Select => ['string', Rule::in($field->options)],
             default => ['string', 'max:'.self::MAX_TEXT],
         }];
