@@ -1,0 +1,31 @@
+name: Cron
+
+# Background jobs (follow-up tasks, …) run inside the API: POST /api/ops/jobs/run with X-Ops-Secret.
+# GitHub has no DB access; Vercel Hobby cron runs only once a day, so the schedule lives here.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cron-jobs
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      OPS_SECRET: "${{ secrets.OPS_SECRET }}"
+      API_URL: https://sinhrm-api.vercel.app
+    steps:
+      - name: POST /api/ops/jobs/run
+        run: |
+          # Secrets reach the shell only through env (never spliced into the script text).
+          out=$(curl -sS -m 90 -X POST "$API_URL/api/ops/jobs/run" -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json" || true)
+          # Public Actions logs: only the verdict and the counters (no personal data in the answer).
+          echo "$out" | grep -o '"jobs":{.*}' | head -c 2000 || true
+          echo "$out" | grep -q '"ok":true' && echo "jobs: ok" || { echo "jobs: FAILED"; exit 1; }

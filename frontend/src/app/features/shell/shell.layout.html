@@ -2,7 +2,7 @@
   <nav class="sidebar" [attr.aria-label]="'shell.nav.label' | transloco">
     <a class="brand" routerLink="/">{{ 'app.name' | transloco }}</a>
     <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <mat-icon>monitor_heart</mat-icon>
+      <mat-icon>dashboard</mat-icon>
       <span>{{ 'shell.nav.overview' | transloco }}</span>
     </a>
     <p class="nav-section">{{ 'shell.nav.recruiting' | transloco }}</p>
@@ -36,9 +36,17 @@
       </a>
     }
     @if (isAdmin()) {
+      <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active">
+        <mat-icon>record_voice_over</mat-icon>
+        <span>{{ 'shell.nav.scripts' | transloco }}</span>
+      </a>
       <a class="nav-link" routerLink="/admin/directory" routerLinkActive="active">
         <mat-icon>menu_book</mat-icon>
         <span>{{ 'shell.nav.directory' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/status" routerLinkActive="active">
+        <mat-icon>monitor_heart</mat-icon>
+        <span>{{ 'shell.nav.status' | transloco }}</span>
       </a>
     }
   </nav>

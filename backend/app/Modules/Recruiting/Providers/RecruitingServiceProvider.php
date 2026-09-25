@@ -11,6 +11,7 @@ use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
 use App\Modules\Recruiting\Contracts\ReportRepository;
+use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
 use App\Modules\Recruiting\Contracts\TouchpointIngestor;
 use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
@@ -32,6 +33,7 @@ use App\Modules\Recruiting\Repositories\EloquentVacancyRepository;
 use App\Modules\Recruiting\Repositories\QueryReportRepository;
 use App\Modules\Recruiting\Services\MatchingTouchpointIngestor;
 use App\Modules\Recruiting\Services\RecruitingScope;
+use App\Modules\Recruiting\Support\NullTouchpointEvaluations;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 
@@ -53,6 +55,8 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         $this->app->bind(TouchpointRepository::class, EloquentTouchpointRepository::class);
         $this->app->bind(ReportRepository::class, QueryReportRepository::class);
         $this->app->bind(TouchpointIngestor::class, MatchingTouchpointIngestor::class);
+        // Replaced by the Scripts module (script evaluations on timeline items).
+        $this->app->bindIf(TouchpointEvaluations::class, NullTouchpointEvaluations::class);
     }
 
     public function boot(): void

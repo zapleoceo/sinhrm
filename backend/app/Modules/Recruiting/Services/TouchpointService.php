@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
 use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\DTO\TimelineEntry;
 use App\Modules\Recruiting\DTO\TouchpointData;
@@ -16,6 +17,7 @@ use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Touchpoint;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 /** Touches logged in the product and the merged candidate timeline. */
 final readonly class TouchpointService
@@ -24,6 +26,7 @@ final readonly class TouchpointService
         private TouchpointRepository $touchpoints,
         private ApplicationRepository $applications,
         private Dispatcher $events,
+        private TouchpointEvaluations $evaluations,
     ) {}
 
     /**
@@ -66,6 +69,26 @@ final readonly class TouchpointService
      */
     public function timeline(Candidate $candidate, ?array $channels, bool $withStages, int $perPage): LengthAwarePaginator
     {
-        return $this->touchpoints->timeline($candidate->id, $channels, $withStages, $perPage);
+        $page = $this->touchpoints->timeline($candidate->id, $channels, $withStages, $perPage);
+        $ids = [];
+        foreach ($page->items() as $entry) {
+            if ($entry->item instanceof Touchpoint) {
+                $ids[] = $entry->item->id;
+            }
+        }
+        $summaries = $ids === [] ? [] : $this->evaluations->summaries($ids);
+        if ($summaries === []) {
+            return $page;
+        }
+        $entries = array_map(
+            static fn (TimelineEntry $e): TimelineEntry => $e->item instanceof Touchpoint && isset($summaries[$e->item->id])
+                ? $e->withEvaluation($summaries[$e->item->id])
+                : $e,
+            $page->items(),
+        );
+
+        return new Paginator($entries, $page->total(), $page->perPage(), $page->currentPage(), [
+            'path' => Paginator::resolveCurrentPath(),
+        ]);
     }
 }

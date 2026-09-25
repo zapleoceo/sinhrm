@@ -186,6 +186,17 @@ export interface Touchpoint {
   meta: { duration_sec?: number; recording_url?: string; contact?: string };
   via_product: boolean;
   integration_key: string | null;
+  /** Script evaluation (timeline only; filled by the Scripts module), null = not evaluated. */
+  evaluation?: EvaluationSummary | null;
+}
+
+/** Short script evaluation on a timeline touchpoint (backend Scripts ScriptEvaluation::summary). */
+export interface EvaluationSummary {
+  id: number;
+  score: number;
+  engine: 'rules' | 'ai';
+  next_step_fixed: boolean;
+  script_version_id: number;
 }
 
 export interface StageChangeItem {

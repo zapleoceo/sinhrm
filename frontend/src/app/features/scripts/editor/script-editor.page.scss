@@ -1,0 +1,45 @@
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.unsaved { color: var(--app-warning); font-weight: 500; }
+.hint { margin: 1rem 0 0.75rem; font-size: 0.85rem; }
+.small { font-size: 0.8rem; }
+
+.list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 0.75rem; }
+.item {
+  display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem;
+  border: 1px solid var(--app-border); border-radius: var(--app-radius); background: var(--mat-sys-surface);
+  margin-bottom: 0.75rem;
+}
+.list .item { margin-bottom: 0; }
+.item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+article.item.item-head { flex-direction: row; }
+.grow { flex: 1 1 14rem; }
+.weight { width: 7rem; }
+.key { width: 10rem; }
+.num { font-variant-numeric: tabular-nums; color: var(--app-muted); min-width: 1.5rem; }
+.handle { cursor: grab; color: var(--app-muted); }
+.cdk-drag-preview { box-shadow: var(--mat-sys-level3); }
+.cdk-drag-placeholder { opacity: 0.3; }
+.cdk-drop-list-dragging .item:not(.cdk-drag-placeholder) { transition: transform 200ms ease; }
+
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
+.two mat-form-field { width: 100%; }
+.test-input { display: flex; flex-direction: column; gap: 0.5rem; }
+.preview {
+  padding: 0.75rem; border-radius: var(--app-radius); background: var(--mat-sys-surface-container-low);
+  p { white-space: pre-line; overflow-wrap: anywhere; margin: 0.25rem 0 0; }
+}
+.error { color: var(--app-danger); font-size: 0.8rem; margin: 0.25rem 0 0; }
+
+.patterns { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.patterns h3 { font: var(--mat-sys-title-small); margin: 0; }
+
+.versions { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+.versions th, .versions td { text-align: left; padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--app-border); font-weight: normal; }
+.versions thead th { color: var(--app-muted); font-size: 0.8rem; }
+.versions tr.active { background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container); }
+
+mat-tab-group { margin-top: 0.5rem; }
+
+@media (max-width: 900px) {
+  .two { grid-template-columns: 1fr; }
+}

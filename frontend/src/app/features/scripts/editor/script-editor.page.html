@@ -1,0 +1,294 @@
+@if (store.loading() && !store.script()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (store.failed()) {
+  <div class="state">
+    <p>{{ 'scripts.errors.generic' | transloco }}</p>
+    <button mat-stroked-button type="button" (click)="store.load(id())">{{ 'common.retry' | transloco }}</button>
+  </div>
+}
+
+@if (store.script(); as s) {
+  <header class="page-head">
+    <div>
+      <a mat-button routerLink="/admin/scripts"><mat-icon>arrow_back</mat-icon>{{ 'scripts.title' | transloco }}</a>
+      <h1>{{ s.name }}</h1>
+      <p class="muted">
+        {{ 'scripts.channel.' + s.channel | transloco }} ·
+        @if (s.active_version; as v) {
+          {{ 'scripts.editor.activeIs' | transloco: { version: v.version } }}
+        } @else {
+          {{ 'scripts.notPublished' | transloco }}
+        }
+        @if (s.draft; as d) {
+          · {{ 'scripts.editor.draftIs' | transloco: { version: d.version } }}
+        }
+        @if (store.dirty()) {
+          · <strong class="unsaved">{{ 'scripts.editor.unsaved' | transloco }}</strong>
+        }
+        @if (s.archived) {
+          · {{ 'scripts.archived' | transloco }}
+        }
+      </p>
+    </div>
+    <div class="actions">
+      @if (canEdit()) {
+        <button mat-stroked-button type="button" (click)="save()" [disabled]="store.saving() || !store.dirty()">
+          <mat-icon>save</mat-icon>{{ 'scripts.editor.saveDraft' | transloco }}
+        </button>
+        <button mat-flat-button type="button" (click)="publish()" [disabled]="store.saving() || (!store.dirty() && !store.hasDraft())">
+          <mat-icon>publish</mat-icon>{{ 'scripts.editor.publish' | transloco }}
+        </button>
+      }
+      <button mat-button type="button" (click)="archive(!s.archived)">
+        <mat-icon>{{ s.archived ? 'unarchive' : 'archive' }}</mat-icon>{{ (s.archived ? 'scripts.editor.restore' : 'scripts.editor.archive') | transloco }}
+      </button>
+    </div>
+  </header>
+
+  @let c = store.content();
+  <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms">
+    <!-- Steps -->
+    <mat-tab [label]="('scripts.tabs.steps' | transloco) + ' (' + c.steps.length + ')'">
+      <p class="muted hint">{{ 'scripts.steps.hint' | transloco: { total: totalWeight(c.steps) } }}</p>
+      <div class="list" cdkDropList [cdkDropListData]="c.steps" [cdkDropListDisabled]="!canEdit()" (cdkDropListDropped)="dropStep($event)">
+        @for (step of c.steps; track step.id; let i = $index) {
+          <article class="item" cdkDrag>
+            <div class="item-head">
+              <mat-icon cdkDragHandle class="handle" [attr.aria-label]="'scripts.steps.drag' | transloco">drag_indicator</mat-icon>
+              <span class="num">{{ i + 1 }}</span>
+              <mat-form-field class="grow" subscriptSizing="dynamic">
+                <mat-label>{{ 'scripts.steps.title' | transloco }}</mat-label>
+                <input matInput [value]="step.title" (input)="store.updateStep(i, { title: val($event) })" [readonly]="!canEdit()" maxlength="200" />
+              </mat-form-field>
+              <mat-form-field class="weight" subscriptSizing="dynamic">
+                <mat-label>{{ 'scripts.steps.weight' | transloco }}</mat-label>
+                <input matInput type="number" min="0" max="100" [value]="step.weight" (input)="store.updateStep(i, { weight: num($event) })" [readonly]="!canEdit()" />
+              </mat-form-field>
+              <mat-checkbox [checked]="step.required" (change)="store.updateStep(i, { required: $event.checked })" [disabled]="!canEdit()">
+                {{ 'scripts.steps.required' | transloco }}
+              </mat-checkbox>
+              @if (canEdit()) {
+                <button mat-icon-button type="button" (click)="store.remove('steps', i)" [attr.aria-label]="'scripts.remove' | transloco"><mat-icon>delete</mat-icon></button>
+              }
+            </div>
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>{{ 'scripts.steps.goal' | transloco }}</mat-label>
+              <input matInput [value]="step.goal" (input)="store.updateStep(i, { goal: val($event) })" [readonly]="!canEdit()" maxlength="1000" />
+            </mat-form-field>
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>{{ 'scripts.steps.sample' | transloco }}</mat-label>
+              <textarea matInput rows="2" [value]="step.sample" (input)="store.updateStep(i, { sample: val($event) })" [readonly]="!canEdit()" maxlength="5000"></textarea>
+            </mat-form-field>
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>{{ 'scripts.steps.keywords' | transloco }}</mat-label>
+              <input matInput [value]="join(step.keywords)" (change)="store.updateStep(i, { keywords: list($event) })" [readonly]="!canEdit()" />
+              <mat-hint>{{ 'scripts.steps.keywordsHint' | transloco }}</mat-hint>
+            </mat-form-field>
+          </article>
+        } @empty {
+          <p class="muted">{{ 'scripts.steps.empty' | transloco }}</p>
+        }
+      </div>
+      @if (canEdit()) {
+        <button mat-stroked-button type="button" (click)="store.addStep()"><mat-icon>add</mat-icon>{{ 'scripts.steps.add' | transloco }}</button>
+      }
+
+      <section class="patterns">
+        <h3>{{ 'scripts.patterns.title' | transloco }}</h3>
+        <p class="muted hint">{{ 'scripts.patterns.hint' | transloco }}</p>
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>{{ 'scripts.patterns.positive' | transloco }}</mat-label>
+          <input matInput [value]="join(c.next_step_patterns.positive)" (change)="setPatterns('positive', $event)" [readonly]="!canEdit()" />
+        </mat-form-field>
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>{{ 'scripts.patterns.negative' | transloco }}</mat-label>
+          <input matInput [value]="join(c.next_step_patterns.negative)" (change)="setPatterns('negative', $event)" [readonly]="!canEdit()" />
+        </mat-form-field>
+      </section>
+    </mat-tab>
+
+    <!-- Objections -->
+    <mat-tab [label]="('scripts.tabs.objections' | transloco) + ' (' + c.objections.length + ')'">
+      @for (o of c.objections; track o.id; let i = $index) {
+        <article class="item">
+          <div class="item-head">
+            <mat-form-field class="grow" subscriptSizing="dynamic">
+              <mat-label>{{ 'scripts.objections.trigger' | transloco }}</mat-label>
+              <input matInput [value]="o.trigger" (input)="store.updateObjection(i, { trigger: val($event) })" [readonly]="!canEdit()" maxlength="300" />
+            </mat-form-field>
+            @if (canEdit()) {
+              <button mat-icon-button type="button" (click)="store.remove('objections', i)" [attr.aria-label]="'scripts.remove' | transloco"><mat-icon>delete</mat-icon></button>
+            }
+          </div>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'scripts.objections.answer' | transloco }}</mat-label>
+            <textarea matInput rows="3" [value]="o.answer" (input)="store.updateObjection(i, { answer: val($event) })" [readonly]="!canEdit()" maxlength="5000"></textarea>
+          </mat-form-field>
+        </article>
+      } @empty {
+        <p class="muted">{{ 'scripts.objections.empty' | transloco }}</p>
+      }
+      @if (canEdit()) {
+        <button mat-stroked-button type="button" (click)="store.addObjection()"><mat-icon>add</mat-icon>{{ 'scripts.objections.add' | transloco }}</button>
+      }
+    </mat-tab>
+
+    <!-- Templates -->
+    <mat-tab [label]="('scripts.tabs.templates' | transloco) + ' (' + c.templates.length + ')'">
+      @for (t of c.templates; track t.id; let i = $index) {
+        <article class="item">
+          <div class="item-head">
+            <mat-form-field class="grow" subscriptSizing="dynamic">
+              <mat-label>{{ 'scripts.templates.title' | transloco }}</mat-label>
+              <input matInput [value]="t.title" (input)="store.updateTemplate(i, { title: val($event) })" [readonly]="!canEdit()" maxlength="200" />
+            </mat-form-field>
+            <mat-form-field class="key" subscriptSizing="dynamic">
+              <mat-label>{{ 'scripts.templates.key' | transloco }}</mat-label>
+              <input matInput [value]="t.key" (input)="store.updateTemplate(i, { key: val($event) })" [readonly]="!canEdit()" maxlength="64" pattern="[a-z0-9_-]+" />
+            </mat-form-field>
+            @if (canEdit()) {
+              <button mat-icon-button type="button" (click)="store.remove('templates', i)" [attr.aria-label]="'scripts.remove' | transloco"><mat-icon>delete</mat-icon></button>
+            }
+          </div>
+          <div class="two">
+            <div>
+              <mat-form-field subscriptSizing="dynamic">
+                <mat-label>{{ 'scripts.templates.text' | transloco }}</mat-label>
+                <textarea #area matInput rows="5" [value]="t.text" (input)="store.updateTemplate(i, { text: val($event) })" [readonly]="!canEdit()" maxlength="5000"></textarea>
+              </mat-form-field>
+              @if (canEdit()) {
+                <mat-chip-set [attr.aria-label]="'scripts.templates.variables' | transloco">
+                  @for (v of variables; track v) {
+                    <mat-chip (click)="insertVariable(i, area, v)">{{ '{' + v + '}' }}</mat-chip>
+                  }
+                </mat-chip-set>
+              }
+              @if (unknown(t.text); as bad) {
+                <p class="error">{{ 'scripts.templates.unknown' | transloco: { tokens: bad } }}</p>
+              }
+            </div>
+            <div class="preview" [attr.aria-label]="'scripts.templates.preview' | transloco">
+              <span class="muted small">{{ 'scripts.templates.preview' | transloco }}</span>
+              <p>{{ preview(t.text) }}</p>
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <p class="muted">{{ 'scripts.templates.emptyList' | transloco }}</p>
+      }
+      @if (canEdit()) {
+        <button mat-stroked-button type="button" (click)="store.addTemplate()"><mat-icon>add</mat-icon>{{ 'scripts.templates.add' | transloco }}</button>
+      }
+    </mat-tab>
+
+    <!-- Follow-ups -->
+    <mat-tab [label]="('scripts.tabs.followups' | transloco) + ' (' + c.followups.length + ')'">
+      <p class="muted hint">{{ 'scripts.followups.hint' | transloco }}</p>
+      @for (f of c.followups; track f.id; let i = $index) {
+        <article class="item item-head">
+          <mat-form-field class="grow" subscriptSizing="dynamic">
+            <mat-label>{{ 'scripts.followups.condition' | transloco }}</mat-label>
+            <mat-select [value]="f.condition" (valueChange)="store.updateFollowup(i, { condition: $event })" [disabled]="!canEdit()">
+              @for (cond of conditions; track cond) {
+                <mat-option [value]="cond">{{ 'scripts.followups.conditions.' + cond | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field class="weight" subscriptSizing="dynamic">
+            <mat-label>{{ 'scripts.followups.delay' | transloco }}</mat-label>
+            <input matInput type="number" min="0" max="60" [value]="f.delay_days" (input)="store.updateFollowup(i, { delay_days: num($event) })" [readonly]="!canEdit()" />
+          </mat-form-field>
+          <mat-form-field class="grow" subscriptSizing="dynamic">
+            <mat-label>{{ 'scripts.followups.template' | transloco }}</mat-label>
+            <mat-select [value]="f.template_key" (valueChange)="store.updateFollowup(i, { template_key: $event })" [disabled]="!canEdit()">
+              <mat-option [value]="null">—</mat-option>
+              @for (k of store.templateKeys(); track k) {
+                <mat-option [value]="k">{{ k }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (canEdit()) {
+            <button mat-icon-button type="button" (click)="store.remove('followups', i)" [attr.aria-label]="'scripts.remove' | transloco"><mat-icon>delete</mat-icon></button>
+          }
+        </article>
+      } @empty {
+        <p class="muted">{{ 'scripts.followups.empty' | transloco }}</p>
+      }
+      @if (canEdit()) {
+        <button mat-stroked-button type="button" (click)="store.addFollowup()"><mat-icon>add</mat-icon>{{ 'scripts.followups.add' | transloco }}</button>
+      }
+    </mat-tab>
+
+    <!-- Test on text -->
+    <mat-tab [label]="'scripts.tabs.test' | transloco">
+      <p class="muted hint">{{ 'scripts.test.hint' | transloco }}</p>
+      <div class="two">
+        <div class="test-input">
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'scripts.test.text' | transloco }}</mat-label>
+            <textarea matInput rows="12" [value]="testText()" (input)="testText.set(val($event))" maxlength="50000"></textarea>
+          </mat-form-field>
+          <div class="item-head">
+            <mat-button-toggle-group [value]="testVersion()" (change)="testVersion.set($event.value)" hideSingleSelectionIndicator>
+              <mat-button-toggle value="draft">{{ 'scripts.test.draft' | transloco }}</mat-button-toggle>
+              <mat-button-toggle value="active">{{ 'scripts.test.active' | transloco }}</mat-button-toggle>
+            </mat-button-toggle-group>
+            <button mat-flat-button type="button" (click)="runTest()" [disabled]="store.testing() || !testText().trim()">
+              <mat-icon>fact_check</mat-icon>{{ 'scripts.test.run' | transloco }}
+            </button>
+          </div>
+          @if (store.dirty()) {
+            <p class="muted small">{{ 'scripts.test.saveFirst' | transloco }}</p>
+          }
+        </div>
+        <div>
+          @if (store.testing()) {
+            <mat-progress-bar mode="indeterminate" />
+          }
+          @if (store.testResult(); as r) {
+            <app-evaluation-view [evaluation]="r" />
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Versions -->
+    <mat-tab [label]="'scripts.tabs.versions' | transloco">
+      <table class="versions">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'scripts.versions.version' | transloco }}</th>
+            <th scope="col">{{ 'scripts.versions.published' | transloco }}</th>
+            <th scope="col">{{ 'scripts.versions.author' | transloco }}</th>
+            <th scope="col">{{ 'scripts.versions.steps' | transloco }}</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (v of store.versions(); track v.id) {
+            <tr [class.active]="v.id === store.activeVersionId()">
+              <th scope="row">v{{ v.version }}</th>
+              <td>
+                @if (v.is_draft) {
+                  <span class="muted">{{ 'scripts.draft' | transloco }}</span>
+                } @else {
+                  {{ v.published_at | date: 'dd.MM.yyyy HH:mm' }}
+                }
+              </td>
+              <td>{{ v.author?.name ?? '—' }}</td>
+              <td>{{ v.content.steps.length }}</td>
+              <td>
+                @if (v.id === store.activeVersionId()) {
+                  <strong>{{ 'scripts.versions.active' | transloco }}</strong>
+                } @else if (!v.is_draft && canEdit()) {
+                  <button mat-stroked-button type="button" (click)="activate(v.version)">{{ 'scripts.versions.activate' | transloco }}</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </mat-tab>
+  </mat-tab-group>
+}

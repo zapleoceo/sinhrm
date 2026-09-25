@@ -1,0 +1,92 @@
+<header class="page-head">
+  <div>
+    <h1>{{ 'overview.greeting' | transloco: { name: firstName() } }}</h1>
+    <p class="muted">{{ 'overview.subtitle' | transloco }}</p>
+  </div>
+  <button mat-button type="button" (click)="store.load()" [disabled]="store.loading()">
+    <mat-icon>refresh</mat-icon>{{ 'overview.refresh' | transloco }}
+  </button>
+</header>
+
+@if (store.loading() && !store.data()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (store.failed()) {
+  <div class="state">
+    <p>{{ 'overview.loadError' | transloco }}</p>
+    <button mat-stroked-button type="button" (click)="store.load()">{{ 'common.retry' | transloco }}</button>
+  </div>
+}
+
+@if (store.data(); as d) {
+  <section class="tiles" [attr.aria-label]="'overview.countersLabel' | transloco">
+    @for (t of store.tiles(); track t.key) {
+      <a class="tile" [routerLink]="t.link" [attr.data-tone]="t.tone">
+        <mat-icon>{{ t.icon }}</mat-icon>
+        <span class="value">{{ t.value }}</span>
+        <span class="label">{{ 'overview.counts.' + t.key | transloco: { days: d.stale_days } }}</span>
+      </a>
+    }
+  </section>
+
+  <div class="grid">
+    <section class="panel card">
+      <h2>
+        {{ 'overview.myTasks' | transloco }}
+        @if (d.my_tasks.overdue) {
+          <span class="warn">· {{ 'overview.overdue' | transloco: { n: d.my_tasks.overdue } }}</span>
+        }
+      </h2>
+      <app-tasks-widget [query]="myTasks" />
+    </section>
+
+    <section class="panel card">
+      <h2>{{ 'overview.stale' | transloco: { days: d.stale_days } }}</h2>
+      <ul class="rows">
+        @for (s of d.stale; track s.application_id) {
+          <li>
+            <a [routerLink]="['/candidates', s.candidate.id]">{{ s.candidate.name }}</a>
+            <span class="muted">{{ s.vacancy.title }} · {{ s.stage }}</span>
+            <span class="days"><mat-icon inline>schedule</mat-icon>{{ 'overview.days' | transloco: { n: s.days } }}</span>
+          </li>
+        } @empty {
+          <li class="muted">{{ 'overview.noStale' | transloco }}</li>
+        }
+      </ul>
+    </section>
+
+    <section class="panel card">
+      <h2>{{ 'overview.funnel' | transloco }}</h2>
+      <table>
+        <tbody>
+          @for (r of store.funnel(); track r.position + r.stage_name) {
+            <tr>
+              <th scope="row">{{ r.stage_name }}</th>
+              <td class="barcell"><span class="bar" [attr.data-kind]="r.stage_kind" [style.width.%]="r.width"></span><span class="num">{{ r.count }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td class="muted" colspan="2">{{ 'overview.empty' | transloco }}</td></tr>
+          }
+        </tbody>
+      </table>
+      <a mat-button routerLink="/vacancies">{{ 'overview.toBoards' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+    </section>
+
+    <section class="panel card">
+      <h2>{{ 'overview.touches' | transloco: { days: d.touches.days, n: store.touchesTotal() } }}</h2>
+      <table>
+        <tbody>
+          @for (r of store.touches(); track r.channel) {
+            <tr>
+              <th scope="row"><mat-icon inline>{{ icons[r.channel] }}</mat-icon> {{ 'recruiting.channel.' + r.channel | transloco }}</th>
+              <td class="barcell"><span class="bar" [style.width.%]="r.width"></span><span class="num">{{ r.count }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td class="muted" colspan="2">{{ 'overview.empty' | transloco }}</td></tr>
+          }
+        </tbody>
+      </table>
+      <a mat-button routerLink="/reports">{{ 'overview.toReports' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+    </section>
+  </div>
+}

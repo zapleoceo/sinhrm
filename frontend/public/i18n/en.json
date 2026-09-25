@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries" },
+    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status" },
     "menu": { "open": "User menu", "language": "Language", "logout": "Sign out" },
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
@@ -449,5 +449,78 @@
       "validation": "Check the fields",
       "generic": "Action failed"
     }
+  },
+  "titles": { "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations" },
+  "overview": {
+    "greeting": "Hello, {{name}}!",
+    "subtitle": "What needs attention today",
+    "refresh": "Refresh",
+    "loadError": "Could not load the overview",
+    "countersLabel": "Counters",
+    "counts": { "active": "active candidates", "stale": "no contact for {{days}}+ days", "unmatched_inbox": "unresolved in Inbox", "new_today": "new today" },
+    "myTasks": "My tasks for today",
+    "overdue": "overdue: {{n}}",
+    "stale": "No contact for {{days}}+ days",
+    "days": "{{n}} d",
+    "noStale": "No stale candidates",
+    "funnel": "Funnel of active candidates",
+    "touches": "Touches in {{days}} days: {{n}}",
+    "empty": "Nothing yet",
+    "toBoards": "To vacancies",
+    "toReports": "To reports"
+  },
+  "scripts": {
+    "title": "Scripts",
+    "subtitle": "Call and chat scripts: steps, objections, templates, reminders. Every publish is a new version.",
+    "showArchived": "Show archived",
+    "newName": "New script name",
+    "channelLabel": "Channel",
+    "create": "Create",
+    "name": "Name",
+    "activeVersion": "Active version",
+    "draft": "Draft",
+    "archived": "archived",
+    "notPublished": "not published yet",
+    "empty": "No scripts yet",
+    "remove": "Remove",
+    "channel": { "call": "Call", "chat": "Chat" },
+    "tabs": { "steps": "Steps", "objections": "Objections", "templates": "Templates", "followups": "Reminders", "test": "Test on text", "versions": "Versions" },
+    "editor": { "activeIs": "active v{{version}}", "draftIs": "draft v{{version}}", "unsaved": "unsaved changes", "saveDraft": "Save draft", "publish": "Publish", "archive": "Archive", "restore": "Restore", "saved": "Draft saved", "published": "New version published" },
+    "steps": { "hint": "Step order = conversation order (drag by the handle). Total weight: {{total}}. A step counts when the text contains at least one keyword.", "drag": "Drag the step", "title": "Step", "weight": "Weight, 0–100", "required": "Required", "goal": "Goal of the step", "sample": "Sample phrase", "keywords": "Keywords", "keywordsHint": "Comma-separated; case-insensitive, part of a word is enough (\"interview\")", "empty": "No steps yet", "add": "Add step" },
+    "patterns": { "title": "Is the next step fixed", "hint": "Phrases (regular expressions), comma-separated. The next step is fixed when a \"yes\" phrase comes after the last \"no\" phrase.", "positive": "Yes: agreed", "negative": "No: left open" },
+    "objections": { "trigger": "Candidate objection", "answer": "Recruiter answer", "empty": "No objections yet", "add": "Add objection" },
+    "templates": { "button": "Template", "missing": "fill in {{n}}", "empty": "No templates in active scripts", "title": "Title", "key": "Key", "text": "Text", "variables": "Variables", "unknown": "Unknown variables: {{tokens}}", "preview": "Preview", "emptyList": "No templates yet", "add": "Add template" },
+    "followups": {
+      "hint": "When to create a reminder task for the recruiter. A rule fires once per candidate and vacancy; checked every 30 minutes.",
+      "condition": "Condition",
+      "delay": "After, days",
+      "template": "Template",
+      "empty": "No reminders yet",
+      "add": "Add reminder",
+      "conditions": { "no_reply": "The candidate did not answer our message", "link_not_completed": "After our message the candidate did not move to the next stage", "gone_silent": "No contact at all" }
+    },
+    "test": { "hint": "Paste a call transcript or a chat to see the score. Nothing is stored.", "text": "Conversation text", "draft": "Draft", "active": "Active version", "run": "Check", "saveFirst": "The saved draft is checked: save your changes first." },
+    "versions": { "version": "Version", "published": "Published", "author": "Author", "steps": "Steps", "active": "Active", "activate": "Make active", "activated": "Active version changed" },
+    "evaluation": {
+      "badge": "Script {{score}}",
+      "score": "Score {{score}}/100",
+      "engine": { "rules": "rules", "ai": "AI" },
+      "nextFixed": "Next step fixed",
+      "nextNotFixed": "Next step not fixed",
+      "done": "done",
+      "missed": "missed",
+      "required": "required",
+      "noSteps": "The script has no steps",
+      "objections": "Objections",
+      "rec": { "missed_step": "Required step \"{{title}}\" was missed", "next_step_not_fixed": "Agree on a concrete next step: date, time, format", "negative_phrase": "The conversation ended without an agreement: \"{{quote}}\"" }
+    },
+    "tasks": {
+      "title": "Tasks",
+      "loadError": "Could not load tasks",
+      "overdue": "overdue",
+      "empty": "No tasks",
+      "type": { "followup": "reminder", "manual": "task" }
+    },
+    "errors": { "no_draft": "No draft to publish", "version_not_published": "This version is not published yet", "nothing_to_evaluate": "The script has neither a draft nor an active version yet", "script_archived": "The script is archived: restore it first", "not_evaluated": "This touch was not evaluated", "forbidden": "Not enough permissions", "validation": "Check the fields: there are errors", "generic": "Something went wrong" }
   }
 }

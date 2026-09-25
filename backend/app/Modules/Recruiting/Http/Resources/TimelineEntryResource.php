@@ -35,6 +35,7 @@ final class TimelineEntryResource extends JsonResource
             ];
         } else {
             $data['touchpoint'] = (new TouchpointResource($item))->toArray($request);
+            $data['touchpoint']['evaluation'] = $entry->evaluation;
         }
 
         return $data;
