@@ -49,7 +49,7 @@ jobs:
         run: |
           # Preview DB holds synthetic data only → rebuild it on every deploy; production → apply pending.
           Q=$([ "$TARGET" = preview ] && echo '?fresh=1' || true)
-          out=$(vercel curl "/api/ops/migrate$Q" --deployment "${{ steps.api.outputs.url }}" --yes                 --token=${{ secrets.VERCEL_TOKEN }} -- -sS -X POST -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json")
+          out=$(curl -sS -m 90 -X POST "${{ steps.api.outputs.url }}/api/ops/migrate$Q"                 -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json" || true)
           # Log only the verdict: raw migration output stays out of public Actions logs.
           echo "$out" | grep -q '"ok":true' && echo "migrations: ok" || { echo "migrations: FAILED"; exit 1; }
 
@@ -68,7 +68,7 @@ jobs:
         id: smoke
         working-directory: backend
         run: |
-          out=$(vercel curl /api/health --deployment "${{ steps.api.outputs.url }}" --yes --token=${{ secrets.VERCEL_TOKEN }} 2>&1 || true)
+          out=$(curl -sS -m 60 "${{ steps.api.outputs.url }}/api/health" 2>&1 || true)
           echo "$out"
           { echo 'body<<EOF'; echo "$out"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
           echo "$out" | grep -q '"ok":true'
