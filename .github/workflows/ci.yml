@@ -35,7 +35,9 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with: { php-version: "8.4", extensions: "pdo_pgsql, pgsql, intl, sodium", coverage: pcov }
       - uses: actions/cache@v4
-        with: { path: backend/vendor, key: composer-${{ hashFiles('backend/composer.lock') }} }
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
       - run: composer install --no-interaction --no-progress --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
       - name: Pint (code style)
