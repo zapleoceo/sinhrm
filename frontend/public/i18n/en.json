@@ -1,0 +1,58 @@
+{
+  "app": { "name": "SinHRM", "tagline": "Recruiting without the noise" },
+  "common": { "cancel": "Cancel", "retry": "Try again", "loading": "Loading…", "error": "Something went wrong", "all": "All", "close": "Close" },
+  "roles": { "superadmin": "Superadmin", "admin": "Admin", "recruiter": "Recruiter", "viewer": "Viewer" },
+  "statuses": { "active": "Active", "blocked": "Blocked" },
+  "langs": { "uk": "Українська", "ru": "Русский", "en": "English" },
+  "login": {
+    "title": "Sign in",
+    "subtitle": "Use your work Google account",
+    "google": "Continue with Google",
+    "hint": "Access is by administrator invitation only.",
+    "errors": {
+      "not_invited": "This account has not been invited yet. Please contact your administrator.",
+      "blocked": "Access for this account is blocked.",
+      "email_unverified": "Google has not verified this email address.",
+      "oauth_failed": "Google sign-in failed. Please try again.",
+      "unknown": "Sign-in failed. Please try again."
+    }
+  },
+  "shell": {
+    "nav": { "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users" },
+    "menu": { "open": "User menu", "language": "Language", "logout": "Sign out" },
+    "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
+  },
+  "status": { "title": "System status", "apiOk": "API is up", "apiDown": "API is unreachable", "checking": "Checking…", "version": "Version" },
+  "users": {
+    "title": "Users",
+    "search": "Search by name or email",
+    "role": "Role",
+    "status": "Status",
+    "invite": "Invite",
+    "columns": { "user": "User", "role": "Role", "status": "Status", "lastLogin": "Last sign-in", "actions": "Actions" },
+    "never": "Never",
+    "block": "Block",
+    "unblock": "Unblock",
+    "you": "you",
+    "empty": "No users found",
+    "loadError": "Could not load users",
+    "saved": "Saved",
+    "invited": "Invitation created",
+    "errors": {
+      "email_taken": "A user with this email already exists",
+      "self_change_forbidden": "You cannot change your own role or status",
+      "last_superadmin": "The last active superadmin cannot lose access",
+      "generic": "Could not save changes"
+    },
+    "inviteDialog": {
+      "title": "Invite user",
+      "hint": "They will sign in with Google using this email.",
+      "email": "Email",
+      "name": "Name",
+      "role": "Role",
+      "submit": "Invite",
+      "required": "Required",
+      "invalidEmail": "Invalid email"
+    }
+  }
+}

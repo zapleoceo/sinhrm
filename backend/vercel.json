@@ -23,6 +23,8 @@
     "LOG_CHANNEL": "stderr",
     "CACHE_STORE": "database",
     "SESSION_DRIVER": "database",
+    "SESSION_SECURE_COOKIE": "true",
+    "SESSION_SAME_SITE": "lax",
     "QUEUE_CONNECTION": "database",
     "DB_CONNECTION": "pgsql",
     "LOG_STDERR_FORMATTER": "Monolog\\Formatter\\JsonFormatter",

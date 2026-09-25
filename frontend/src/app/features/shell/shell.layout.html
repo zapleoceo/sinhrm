@@ -1,0 +1,53 @@
+<div class="shell">
+  <nav class="sidebar" [attr.aria-label]="'shell.nav.label' | transloco">
+    <a class="brand" routerLink="/">{{ 'app.name' | transloco }}</a>
+    <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <mat-icon>monitor_heart</mat-icon>
+      <span>{{ 'shell.nav.overview' | transloco }}</span>
+    </a>
+    @if (isSuperadmin()) {
+      <p class="nav-section">{{ 'shell.nav.admin' | transloco }}</p>
+      <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">
+        <mat-icon>group</mat-icon>
+        <span>{{ 'shell.nav.users' | transloco }}</span>
+      </a>
+    }
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <button mat-icon-button type="button" (click)="theme.toggle()" [matTooltip]="themeLabel() | transloco" [attr.aria-label]="themeLabel() | transloco">
+        <mat-icon>{{ themeIcon() }}</mat-icon>
+      </button>
+      @if (user(); as u) {
+        <button mat-button type="button" class="user" [matMenuTriggerFor]="menu" [attr.aria-label]="'shell.menu.open' | transloco">
+          @if (u.avatar_url) {
+            <img class="avatar" [src]="u.avatar_url" alt="" referrerpolicy="no-referrer" width="28" height="28" />
+          } @else {
+            <span class="avatar fallback" aria-hidden="true">{{ initial() }}</span>
+          }
+          <span class="name">{{ u.name }}</span>
+        </button>
+        <mat-menu #menu="matMenu" xPosition="before">
+          <div class="menu-head" role="presentation">
+            <strong>{{ u.name }}</strong>
+            <span class="muted">{{ u.email }}</span>
+          </div>
+          <mat-divider />
+          <div class="menu-lang" role="presentation" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+            <span class="muted">{{ 'shell.menu.language' | transloco }}</span>
+            <app-language-switcher />
+          </div>
+          <mat-divider />
+          <button mat-menu-item type="button" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+            <span>{{ 'shell.menu.logout' | transloco }}</span>
+          </button>
+        </mat-menu>
+      }
+    </header>
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

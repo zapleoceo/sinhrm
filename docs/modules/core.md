@@ -4,18 +4,35 @@
 Общий фундамент: проверка, что система жива и видит базу данных, и базовый механизм подключения модулей.
 
 ## Как пользоваться
-Откройте `https://sinhrm.vercel.app` — стартовая страница показывает состояние API и его зависимостей.
+Войдите в `https://sinhrm.vercel.app` — стартовая страница «Обзор» показывает состояние API и его зависимостей.
+Сама проверка `GET /api/health` открыта без входа.
 
 ## Как устроено
 - `GET /api/health` → `{"version": "...", "ok": true, "checks": {"database": {"ok": true}}}`; код 200 или 503.
 - Каждая зависимость — класс, реализующий `Contracts\HealthCheck`; модули добавляют свои проверки через
   `$app->tag([...], HealthCheck::class)`. Ошибка проверки не раскрывает детали подключения — только класс исключения.
-- `Support\ModuleServiceProvider` — базовый провайдер модуля: подключает `routes.php` под `/api/<prefix>` и миграции из
-  `Database/Migrations`.
-- Фронт: `core/api/health.service.ts` (ошибка сети → отчёт «unreachable»), экран `features/core/status.page.ts`.
+- `Support\ModuleServiceProvider` — базовый провайдер модуля: подключает миграции из `Database/Migrations` и маршруты под
+  `/api/<prefix>`: `routes.php` — группа `api` (JSON; Sanctum делает запросы SPA сессионными), `routes.web.php` — группа
+  `web` (сессия есть всегда) для браузерных редиректов от внешних сервисов, например OAuth-callback Google.
+- Фронт: `core/api/health.service.ts` (ошибка сети → отчёт «unreachable»), экран `features/core/status.page.ts`
+  (дочерний маршрут оболочки, доступен после входа).
+
+### Фронтенд: общие сервисы `frontend/src/app/core`
+| Файл | Что делает |
+|---|---|
+| `auth/auth.service.ts` | состояние сессии (signals `user`, `loading`); `GET /api/auth/me` один раз при старте, 401 → гость; `logout()` |
+| `auth/auth.guards.ts` | `authGuard` (гость → `/login`), `roleGuard(role)` (нет роли → `/`), `guestGuard` (для `/login`) |
+| `auth/auth.model.ts` | типы и списки ролей/статусов/языков — зеркало enum бэкенда |
+| `http/csrf.interceptor.ts` | перед первым POST/PATCH/DELETE берёт `GET /sanctum/csrf-cookie`, ставит `X-XSRF-TOKEN`; на 419 — повтор один раз |
+| `i18n/*` | Transloco: `public/i18n/{uk,ru,en}.json`, язык пользователя (сервер) или гостя (localStorage) |
+| `theme/theme.service.ts` | светлая/тёмная тема: по умолчанию как в ОС, выбор хранится в localStorage (`<html data-theme>`) |
+| `storage/safe-storage.ts` | localStorage без исключений (приватный режим, запрет cookies) |
+
+Все строки интерфейса — через Transloco (`'ключ' | transloco`); новый текст добавляется во все три файла `public/i18n`.
 
 ## Как проверить
-Тесты: `tests/Feature/Core/HealthTest.php`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`.
+Тесты: `tests/Feature/Core/HealthTest.php`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
+`auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`.
 Вручную: `curl -i https://sinhrm.vercel.app/api/health`.
 
 ## Подключение к Neon из Vercel
@@ -27,7 +44,7 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 
 ## Точка входа Vercel
 `backend/api/index.php` подменяет `SCRIPT_NAME` на `/index.php`: иначе Laravel считает `/api` базовым путём и
-`/api/health` превращается в `/health` (404). API-only: веб-маршрутов нет; на `sinhrm-api.vercel.app/` — 404. Публичный `sinhrm.vercel.app/` — это фронтенд.
+`/api/health` превращается в `/health` (404). API-only: страниц нет; единственные маршруты группы `web` — `/api/auth/google/*` (модуль Auth); на `sinhrm-api.vercel.app/` — 404. Публичный `sinhrm.vercel.app/` — это фронтенд.
 Контракт проверки здоровья — `/api/health` (зависимости); `/up` — встроенная проверка Laravel «процесс жив», без БД.
 
 ## Служебные эндпоинты `/api/ops/*`

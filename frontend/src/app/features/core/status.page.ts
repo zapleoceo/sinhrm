@@ -1,31 +1,36 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { KeyValuePipe } from '@angular/common';
+import { MatIconModule } from '@angular/material/icon';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { HealthService } from '../../core/api/health.service';
 
 @Component({
   selector: 'app-status-page',
-  imports: [KeyValuePipe],
+  imports: [KeyValuePipe, MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="status">
-      <h1>SinHRM</h1>
-      @if (report(); as r) {
-        <p [class.ok]="r.ok" [class.fail]="!r.ok">API: {{ r.ok ? 'OK' : 'недоступний' }} · v{{ r.version }}</p>
-        <ul>
-          @for (c of r.checks | keyvalue; track c.key) {
-            <li>{{ c.key }}: {{ c.value.ok ? '✓' : '✗' }}</li>
-          }
-        </ul>
-      } @else {
-        <p>Перевірка…</p>
-      }
-    </main>
+    <h1>{{ 'status.title' | transloco }}</h1>
+    @if (report(); as r) {
+      <p class="state" [class.ok]="r.ok" [class.fail]="!r.ok">
+        <mat-icon>{{ r.ok ? 'check_circle' : 'error' }}</mat-icon>
+        {{ (r.ok ? 'status.apiOk' : 'status.apiDown') | transloco }}
+      </p>
+      <p class="muted">{{ 'status.version' | transloco }}: {{ r.version }}</p>
+      <ul>
+        @for (c of r.checks | keyvalue; track c.key) {
+          <li [class.ok]="c.value.ok" [class.fail]="!c.value.ok">{{ c.key }}</li>
+        }
+      </ul>
+    } @else {
+      <p class="muted">{{ 'status.checking' | transloco }}</p>
+    }
   `,
   styles: `
-    .status { max-width: 40rem; margin: 4rem auto; padding: 0 1rem; font-family: var(--mat-sys-body-large-font, sans-serif); }
-    .ok { color: #15803d; }
-    .fail { color: #b91c1c; }
+    h1 { font: var(--mat-sys-headline-small); margin: 0 0 1.5rem; }
+    .state { display: flex; align-items: center; gap: 0.5rem; font: var(--mat-sys-title-medium); }
+    .ok { color: var(--app-success); }
+    .fail { color: var(--app-danger); }
   `,
 })
 export class StatusPage {

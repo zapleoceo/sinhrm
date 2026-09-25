@@ -33,6 +33,9 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Модуль | Статус | Документация |
 |---|---|---|
 | Core (health, общие механизмы) | ✅ | [modules/core.md](../modules/core.md) |
+| Auth (вход через Google, роли) | ✅ | [modules/auth.md](../modules/auth.md) |
+| Users (админка пользователей) | ✅ | [modules/users.md](../modules/users.md) |
+| Shell (оболочка фронтенда) | ✅ | [modules/shell.md](../modules/shell.md) |
 
 ## Фронтенд
 `frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.
