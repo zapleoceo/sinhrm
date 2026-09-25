@@ -1,0 +1,159 @@
+<header class="head">
+  <div>
+    <h1>{{ 'directory.title' | transloco }}</h1>
+    <p class="muted">{{ 'directory.subtitle' | transloco }}</p>
+  </div>
+  @if (canImport()) {
+    <button mat-flat-button type="button" [disabled]="store.importing()" (click)="runImport()">
+      <mat-icon>cloud_download</mat-icon>
+      {{ (store.importing() ? 'directory.import.running' : 'directory.import.button') | transloco }}
+    </button>
+  }
+</header>
+
+@if (store.importReport(); as report) {
+  <section class="notice ok" role="status">
+    <strong>{{ 'directory.import.done' | transloco }}</strong>
+    <ul>
+      @for (type of types; track type) {
+        <li>
+          {{ 'directory.tabs.' + type | transloco }}:
+          {{ 'directory.import.counts' | transloco: report[type] }}
+        </li>
+      }
+    </ul>
+  </section>
+}
+@if (store.importError(); as key) {
+  <section class="notice error" role="alert">
+    <span>{{ key | transloco }}</span>
+    @if (key === 'directory.errors.integration_not_configured') {
+      <a mat-button routerLink="/admin/integrations">{{ 'directory.import.openIntegrations' | transloco }}</a>
+    }
+  </section>
+}
+
+<mat-tab-group [selectedIndex]="types.indexOf(store.type())" (selectedIndexChange)="onTab($event)" mat-stretch-tabs="false">
+  @for (type of types; track type) {
+    <mat-tab [label]="'directory.tabs.' + type | transloco" />
+  }
+</mat-tab-group>
+
+<div class="filters">
+  <mat-form-field class="search" subscriptSizing="dynamic">
+    <mat-label>{{ 'directory.search' | transloco }}</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput type="search" #search (input)="onSearch(search.value)" />
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>{{ 'directory.status' | transloco }}</mat-label>
+    <mat-select [value]="store.query().status" (valueChange)="onStatusFilter($event)">
+      <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+      @for (status of statuses; track status) {
+        <mat-option [value]="status">{{ 'directory.statuses.' + status | transloco }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <form class="add" (submit)="$event.preventDefault(); add()">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>{{ 'directory.newItem' | transloco }}</mat-label>
+      <input matInput #newItem [value]="newName()" (input)="newName.set(newItem.value)" maxlength="255" autocomplete="off" />
+    </mat-form-field>
+    <button mat-stroked-button type="submit" [disabled]="creating() || newName().trim() === ''">
+      <mat-icon>add</mat-icon>
+      {{ 'directory.add' | transloco }}
+    </button>
+  </form>
+</div>
+
+<section class="panel" aria-live="polite">
+  @if (store.loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (store.failed()) {
+    <div class="state">
+      <p>{{ 'directory.loadError' | transloco }}</p>
+      <button mat-stroked-button type="button" (click)="store.load()">{{ 'common.retry' | transloco }}</button>
+    </div>
+  } @else if (!store.loading() && store.items().length === 0) {
+    <p class="state muted">{{ 'directory.empty' | transloco }}</p>
+  } @else {
+    <table mat-table [dataSource]="store.items()">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>{{ 'directory.columns.name' | transloco }}</th>
+        <td mat-cell *matCellDef="let item">
+          @if (editingId() === item.id) {
+            <mat-form-field class="rename" subscriptSizing="dynamic">
+              <input
+                matInput
+                #rename
+                [value]="item.name"
+                maxlength="255"
+                [attr.aria-label]="'directory.rename' | transloco"
+                (keydown.enter)="saveEdit(item, rename.value)"
+                (keydown.escape)="cancelEdit()"
+              />
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="saveEdit(item, rename.value)" [attr.aria-label]="'directory.save' | transloco">
+              <mat-icon>check</mat-icon>
+            </button>
+            <button mat-icon-button type="button" (click)="cancelEdit()" [attr.aria-label]="'common.cancel' | transloco">
+              <mat-icon>close</mat-icon>
+            </button>
+          } @else {
+            <span class="name">{{ item.name }}</span>
+            @if (item.external_id) {
+              <span class="muted tag" [matTooltip]="'directory.fromSintegrum' | transloco">S</span>
+            }
+            <button
+              mat-icon-button
+              type="button"
+              [disabled]="store.pending().has(item.id)"
+              (click)="startEdit(item)"
+              [attr.aria-label]="'directory.rename' | transloco"
+            >
+              <mat-icon>edit</mat-icon>
+            </button>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="city">
+        <th mat-header-cell *matHeaderCellDef>{{ 'directory.columns.city' | transloco }}</th>
+        <td mat-cell *matCellDef="let item" class="muted">{{ item.city?.name ?? '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>{{ 'directory.columns.status' | transloco }}</th>
+        <td mat-cell *matCellDef="let item">
+          <mat-chip-set>
+            <mat-chip [class.disabled]="item.status === 'disabled'" [disableRipple]="true">
+              {{ 'directory.statuses.' + item.status | transloco }}
+            </mat-chip>
+          </mat-chip-set>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="visually-hidden">{{ 'directory.columns.actions' | transloco }}</th>
+        <td mat-cell *matCellDef="let item" class="actions">
+          <button mat-button type="button" [disabled]="store.pending().has(item.id)" (click)="toggle(item)">
+            {{ (item.status === 'active' ? 'directory.disable' : 'directory.enable') | transloco }}
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns()"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="store.total()"
+    [pageIndex]="(store.query().page ?? 1) - 1"
+    [pageSize]="store.query().perPage"
+    [pageSizeOptions]="[20, 50, 100, 200]"
+    (page)="onPage($event)"
+  />
+</section>

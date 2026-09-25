@@ -11,7 +11,9 @@
 - **Роль** — выпадающий список в строке. **Заблокувати / Розблокувати** — кнопка в строке.
   Изменения применяются сразу; если сервер отказал — строка возвращается как была и показывается причина.
 - Поиск по имени/e-mail, фильтры по роли и статусу, постраничный вывод.
-- Свою роль и статус менять нельзя; последнего активного суперадмина нельзя понизить или заблокировать.
+- **Філії** — мультивыбор в строке (только для рекрутера и наблюдателя; у суперадмина и админа — «Усі філії»,
+  они филиалами не ограничены). Сохраняется при закрытии списка; предлагаются только активные филиалы.
+- Свою роль, статус и филиалы менять нельзя; последнего активного суперадмина нельзя понизить или заблокировать.
 
 ## Как устроено
 ### Доступ
@@ -24,10 +26,17 @@ Gate `manage-users` (`Providers\UsersServiceProvider::MANAGE_USERS`): актив
 |---|---|---|
 | `GET /` | `q`, `status` (`active\|blocked`), `role`, `perPage` 1..100 (строка `"20"` тоже принимается), `page` | `{data: [...], links, meta}` |
 | `POST /` | `{email, name, role: admin\|recruiter\|viewer}` | 201 `{data: user}`; e-mail занят → 409 `{code: "email_taken"}`; ошибки полей → 422 |
-| `PATCH /{id}` | `{role?, status?}` | 200 `{data: user}`; себя → 422 `self_change_forbidden`; последний активный суперадмин → 422 `last_superadmin`; нет id → 404 |
+| `PATCH /{id}` | `{role?, status?, branch_ids?}` | 200 `{data: user}`; себя → 422 `self_change_forbidden`; последний активный суперадмин → 422 `last_superadmin`; нет id → 404 |
 
-Пользователь в ответе (`Http/Resources/UserResource`): `id, name, email, avatar_url, roles[], status, locale,
+Пользователь в ответе (`Http/Resources/UserResource`): `id, name, email, avatar_url, roles[], status, branches[{id, name, status}], locale,
 invited_by, last_login_at, created_at`. `DELETE` не реализован намеренно.
+
+### Филиалы пользователя
+`branch_ids` — **полная замена** филиалов (`[]` — снять все; поле не передано — без изменений). Каждый id — целое
+(строка `"3"` тоже принимается), без повторов, существующий **активный** филиал (иначе 422), не больше 200.
+Хранятся в `branch_user` (модуль [Directory](directory.md)); запись — `UserAdminRepository::syncBranches`.
+Выключенный филиал остаётся в `branches[]` пользователя со статусом `disabled`, но доступа не даёт и при следующем
+сохранении из интерфейса снимается. Как филиалы ограничивают данные — `AccessibleBranches` в [directory.md](directory.md).
 
 ### Правила (`Services\UserAdminService`)
 - Приглашение: e-mail приводится к нижнему регистру, проверка занятости без учёта регистра, `invited_by` = кто пригласил.
@@ -44,13 +53,14 @@ invited_by, last_login_at, created_at`. `DELETE` не реализован на�
 
 ### Фронтенд (`features/users`)
 `users.page.ts` — таблица (Angular Material), состояния «загрузка / пусто / ошибка с повтором», оптимистичные
-изменения с откатом; `invite-user.dialog.ts` — форма приглашения; `users.service.ts` — HTTP и перевод кодов ошибок
+изменения с откатом; `invite-user.dialog.ts` — форма приглашения; колонка «Філії» берёт список активных филиалов через
+`features/directory/directory.service.ts` (`active('branches')`); `users.service.ts` — HTTP и перевод кодов ошибок
 в i18n-ключи. Маршрут `/admin/users` защищён `roleGuard('superadmin')`.
 
 ## Как проверить
 Тесты: `tests/Feature/Users/UsersAdminTest.php` (401/403, пагинация и `perPage` строкой, фильтры, приглашение,
-422/409, смена роли/статуса, запрет менять себя, 404), `tests/Unit/Users/UserAdminServiceTest.php`
-(правило последнего суперадмина), `frontend/.../users.service.spec.ts`.
+422/409, смена роли/статуса, запрет менять себя, 404, назначение/замена/снятие филиалов, валидация `branch_ids`), `tests/Unit/Users/UserAdminServiceTest.php`
+(правило последнего суперадмина, филиалы только когда переданы), `frontend/.../users.service.spec.ts`.
 
 Вручную (нужна сессия суперадмина в браузере): DevTools → Network, или
 ```bash

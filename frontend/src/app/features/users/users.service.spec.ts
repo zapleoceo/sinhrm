@@ -11,6 +11,7 @@ const USER: AdminUser = {
   avatar_url: null,
   roles: ['recruiter'],
   status: 'active',
+  branches: [],
   locale: 'uk',
   invited_by: 1,
   last_login_at: null,
@@ -51,6 +52,13 @@ describe('UsersService', () => {
     const req = http.expectOne({ method: 'PATCH', url: '/api/users/2' });
     expect(req.request.body).toEqual({ status: 'blocked' });
     req.flush({ data: { ...USER, status: 'blocked' } });
+  });
+
+  it('sends branch ids as a full replacement', () => {
+    service.update(2, { branch_ids: [3, 5] }).subscribe();
+    const req = http.expectOne({ method: 'PATCH', url: '/api/users/2' });
+    expect(req.request.body).toEqual({ branch_ids: [3, 5] });
+    req.flush({ data: { ...USER, branches: [{ id: 3, name: 'B3', status: 'active' }] } });
   });
 });
 

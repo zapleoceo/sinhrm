@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Users\Http\Resources;
 
 use App\Models\User;
+use App\Modules\Directory\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,6 +22,12 @@ final class UserResource extends JsonResource
             'avatar_url' => $this->avatar_url,
             'roles' => $this->getRoleNames()->values()->all(),
             'status' => $this->status->value,
+            // Branch scope (Directory module); superadmin/admin are not limited by it.
+            'branches' => $this->branches
+                ->sortBy('name')
+                ->map(static fn (Branch $b): array => ['id' => $b->id, 'name' => $b->name, 'status' => $b->status->value])
+                ->values()
+                ->all(),
             'locale' => $this->locale,
             'invited_by' => $this->invited_by,
             'last_login_at' => $this->last_login_at?->toIso8601String(),

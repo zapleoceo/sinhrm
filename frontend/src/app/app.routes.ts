@@ -19,6 +19,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/users/users.page').then((m) => m.UsersPage),
       },
       {
+        path: 'admin/directory',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/directory/directory.page').then((m) => m.DirectoryPage),
+      },
+      {
         path: 'admin/integrations',
         canActivate: [roleGuard('superadmin')],
         loadComponent: () => import('./features/integrations/integrations.page').then((m) => m.IntegrationsPage),

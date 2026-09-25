@@ -40,9 +40,10 @@ final class UserAdminService
         return $user;
     }
 
-    public function update(User $actor, User $target, ?UserRole $role, ?UserStatus $status): User
+    /** @param  list<int>|null  $branchIds  null = unchanged; a list replaces the user's branches */
+    public function update(User $actor, User $target, ?UserRole $role, ?UserStatus $status, ?array $branchIds = null): User
     {
-        if ($role === null && $status === null) {
+        if ($role === null && $status === null && $branchIds === null) {
             return $target;
         }
         if ($actor->id === $target->id) {
@@ -52,7 +53,7 @@ final class UserAdminService
         $losesSuperadmin = ($role !== null && $role !== UserRole::Superadmin)
             || $status === UserStatus::Blocked;
 
-        return $this->users->transaction(function () use ($actor, $target, $role, $status, $losesSuperadmin): User {
+        return $this->users->transaction(function () use ($actor, $target, $role, $status, $branchIds, $losesSuperadmin): User {
             if ($losesSuperadmin
                 && $target->isActive()
                 && $this->users->roleOf($target) === UserRole::Superadmin
@@ -66,11 +67,15 @@ final class UserAdminService
             if ($status !== null) {
                 $this->users->setStatus($target, $status);
             }
+            if ($branchIds !== null) {
+                $this->users->syncBranches($target, $branchIds);
+            }
             $this->log->info('users.updated', [
                 'user_id' => $target->id,
                 'by' => $actor->id,
                 'role' => $role?->value,
                 'status' => $status?->value,
+                'branch_ids' => $branchIds,
             ]);
 
             return $target;

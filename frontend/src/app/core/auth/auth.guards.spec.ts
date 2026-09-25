@@ -41,6 +41,12 @@ describe('auth guards', () => {
     expect(await run(roleGuard('superadmin'), ['recruiter'])).toBe('/');
   });
 
+  it('roleGuard accepts any of several roles', async () => {
+    expect(await run(roleGuard('superadmin', 'admin'), ['admin'])).toBe(true);
+    TestBed.resetTestingModule();
+    expect(await run(roleGuard('superadmin', 'admin'), ['viewer'])).toBe('/');
+  });
+
   it('roleGuard sends a guest to /login', async () => {
     expect(await run(roleGuard('superadmin'), null)).toBe('/login');
   });

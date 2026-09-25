@@ -8,10 +8,19 @@ export interface AdminUser {
   avatar_url: string | null;
   roles: UserRole[];
   status: UserStatus;
+  /** Branch scope (Directory module); superadmin/admin are not limited by it. */
+  branches: UserBranch[];
   locale: AppLang;
   invited_by: number | null;
   last_login_at: string | null;
   created_at: string | null;
+}
+
+/** Branch of a user, as returned inside AdminUser. */
+export interface UserBranch {
+  id: number;
+  name: string;
+  status: 'active' | 'disabled';
 }
 
 export interface UsersQuery {
@@ -36,6 +45,8 @@ export interface InviteUser {
 export interface UpdateUser {
   role?: UserRole;
   status?: UserStatus;
+  /** Full replacement of the user's branches (active branch ids only). */
+  branch_ids?: number[];
 }
 
 /** Business error codes returned by the users API ({code}); anything else → "generic". */

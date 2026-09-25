@@ -19,6 +19,14 @@
 а эндпоинты закрыты авторизацией или `X-Ops-Secret`. Поэтому CI обращается к ним обычным `curl`
 (`vercel curl` ломает передачу аргументов после `--`: «URL rejected: Malformed input»).
 
+### Preview ходит в preview-API
+В `frontend/vercel.json` адрес API — прод (`sinhrm-api.vercel.app`). Для `TARGET=preview` шаг «Web — build & deploy»
+перед `vercel build` переписывает в рабочей копии CI два правила (`/api/:path*` и `/sanctum/:path*`) на URL
+preview-API этого же PR (`steps.api.outputs.url`) — node-однострочник; URL должен быть `https://*.vercel.app`, и
+правил должно быть ровно два, иначе шаг падает. Закоммиченный файл и prod-деплой не меняются. Проверка: в логе шага
+выводится число вхождений preview-URL в `vercel.json` (`2`); на preview `curl <web-preview>/api/health` отвечает
+preview-API. Вход Google на preview по-прежнему не работает (см. [development.md](development.md)).
+
 Деплой запускается только для веток этого репозитория: PR из форков не получают секреты и не деплоятся.
 
 ## Как проверить

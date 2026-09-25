@@ -6,6 +6,7 @@ namespace Tests\Feature\Users;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Directory\Models\Branch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -141,6 +142,48 @@ final class UsersAdminTest extends TestCase
         $this->actingAs($this->superadmin)->patchJson("/api/users/{$other->id}", ['role' => 'viewer'])
             ->assertOk()
             ->assertJsonPath('data.roles', ['viewer']);
+    }
+
+    public function test_branches_are_assigned_replaced_and_cleared(): void
+    {
+        $recruiter = User::factory()->withRole(UserRole::Recruiter)->create();
+        $b = Branch::factory()->create(['name' => 'Branch B']);
+        $a = Branch::factory()->create(['name' => 'Branch A']);
+
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$recruiter->id}", ['branch_ids' => [$b->id, $a->id]])
+            ->assertOk()
+            ->assertJsonPath('data.branches', [
+                ['id' => $a->id, 'name' => 'Branch A', 'status' => 'active'],
+                ['id' => $b->id, 'name' => 'Branch B', 'status' => 'active'],
+            ])
+            ->assertJsonPath('data.roles', ['recruiter']);
+
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$recruiter->id}", ['branch_ids' => [(string) $b->id]])
+            ->assertOk()->assertJsonCount(1, 'data.branches');
+        $this->actingAs($this->superadmin)->getJson('/api/users?q='.urlencode($recruiter->email))
+            ->assertOk()->assertJsonPath('data.0.branches.0.id', $b->id);
+
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$recruiter->id}", ['branch_ids' => []])
+            ->assertOk()->assertJsonPath('data.branches', []);
+        $this->assertDatabaseCount('branch_user', 0);
+
+        // Not sent = unchanged.
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$recruiter->id}", ['branch_ids' => [$a->id]])->assertOk();
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$recruiter->id}", ['role' => 'viewer'])
+            ->assertOk()->assertJsonPath('data.branches.0.id', $a->id);
+    }
+
+    public function test_branch_ids_are_validated(): void
+    {
+        $recruiter = User::factory()->withRole(UserRole::Recruiter)->create();
+        $active = Branch::factory()->create();
+        $disabled = Branch::factory()->disabled()->create();
+
+        foreach ([[999999], [$disabled->id], ['abc'], [$active->id, $active->id], 'nope', null] as $ids) {
+            $this->actingAs($this->superadmin)->patchJson("/api/users/{$recruiter->id}", ['branch_ids' => $ids])
+                ->assertUnprocessable();
+        }
+        $this->assertDatabaseCount('branch_user', 0);
     }
 
     public function test_unknown_user_is_404(): void

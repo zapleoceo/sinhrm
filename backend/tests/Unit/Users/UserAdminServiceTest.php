@@ -110,6 +110,25 @@ final class UserAdminServiceTest extends TestCase
         $this->assertSame($target, $this->service->update($this->user(1), $target, UserRole::Admin, UserStatus::Active));
     }
 
+    public function test_branches_are_synced_only_when_sent(): void
+    {
+        $target = $this->user(2);
+        $this->repo->method('roleOf')->willReturn(UserRole::Recruiter);
+        $this->repo->expects($this->once())->method('syncBranches')->with($target, [3, 5]);
+        $this->repo->expects($this->never())->method('setRole');
+
+        $this->assertSame($target, $this->service->update($this->user(1), $target, null, null, [3, 5]));
+        $this->service->update($this->user(1), $target, null, null, null);
+    }
+
+    public function test_own_branches_cannot_be_changed(): void
+    {
+        $me = $this->user(1);
+        $this->repo->expects($this->never())->method('syncBranches');
+
+        $this->assertSame('self_change_forbidden', $this->catch(fn () => $this->service->update($me, $me, null, null, []))->errorCode);
+    }
+
     public function test_exception_renders_json_with_status(): void
     {
         $response = UserAdminException::emailTaken()->render();

@@ -37,6 +37,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Users (админка пользователей) | ✅ | [modules/users.md](../modules/users.md) |
 | Shell (оболочка фронтенда) | ✅ | [modules/shell.md](../modules/shell.md) |
 | Integrations (секреты и внешние сервисы) | ✅ | [modules/integrations.md](../modules/integrations.md) |
+| Directory (справочники, филиалы пользователей, импорт из Sintegrum) | ✅ | [modules/directory.md](../modules/directory.md) |
 
 ## Фронтенд
 `frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.

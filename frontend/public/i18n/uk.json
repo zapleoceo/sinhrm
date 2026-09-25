@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "label": "Головне меню", "overview": "Огляд", "admin": "Адміністрування", "users": "Користувачі", "integrations": "Інтеграції" },
+    "nav": { "label": "Головне меню", "overview": "Огляд", "admin": "Адміністрування", "users": "Користувачі", "integrations": "Інтеграції", "directory": "Довідники" },
     "menu": { "open": "Меню користувача", "language": "Мова", "logout": "Вийти" },
     "theme": { "toDark": "Темна тема", "toLight": "Світла тема" }
   },
@@ -29,7 +29,9 @@
     "role": "Роль",
     "status": "Статус",
     "invite": "Запросити",
-    "columns": { "user": "Користувач", "role": "Роль", "status": "Статус", "lastLogin": "Останній вхід", "actions": "Дії" },
+    "columns": { "user": "Користувач", "role": "Роль", "status": "Статус", "branches": "Філії", "lastLogin": "Останній вхід", "actions": "Дії" },
+    "noBranches": "Без філій",
+    "allBranches": "Усі філії",
     "never": "Ще не входив",
     "block": "Заблокувати",
     "unblock": "Розблокувати",
@@ -53,6 +55,58 @@
       "submit": "Запросити",
       "required": "Обов'язкове поле",
       "invalidEmail": "Невірний email"
+    }
+  },
+  "directory": {
+    "title": "Довідники",
+    "subtitle": "Філії, міста, відділи й посади компанії. Записи не видаляються — їх вимикають.",
+    "tabs": {
+      "branches": "Філії",
+      "cities": "Міста",
+      "departments": "Відділи",
+      "positions": "Посади"
+    },
+    "search": "Пошук за назвою",
+    "status": "Статус",
+    "statuses": {
+      "active": "Активний",
+      "disabled": "Вимкнено"
+    },
+    "columns": {
+      "name": "Назва",
+      "city": "Місто",
+      "status": "Статус",
+      "actions": "Дії"
+    },
+    "newItem": "Новий запис",
+    "add": "Додати",
+    "created": "Запис додано",
+    "rename": "Перейменувати",
+    "save": "Зберегти",
+    "disable": "Вимкнути",
+    "enable": "Увімкнути",
+    "fromSintegrum": "Імпортовано із Sintegrum",
+    "empty": "Записів немає",
+    "loadError": "Не вдалося завантажити довідник",
+    "import": {
+      "button": "Імпорт із Sintegrum",
+      "running": "Імпортуємо…",
+      "done": "Імпорт завершено",
+      "counts": "нових {{created}}, оновлено {{updated}}, без змін {{skipped}}",
+      "openIntegrations": "Відкрити інтеграції"
+    },
+    "errors": {
+      "integration_not_configured": "Інтеграцію Sintegrum API не налаштовано: задайте адресу й токен в «Інтеграціях».",
+      "sintegrum_unauthorized": "Sintegrum відхилив токен (401/403). Перевірте токен в «Інтеграціях».",
+      "sintegrum_unreachable": "Sintegrum недоступний. Спробуйте пізніше.",
+      "sintegrum_bad_response": "Sintegrum повернув дані в невідомому форматі. Нічого не змінено.",
+      "sintegrum_timeout": "Імпорт перевищив ліміт часу. Нічого не змінено.",
+      "sintegrum_invalid_url": "Невірна адреса Sintegrum API (лише https://…).",
+      "sintegrum_blocked_host": "Адреса Sintegrum API веде у внутрішню мережу — заборонено.",
+      "sintegrum_blocked_port": "Порт в адресі Sintegrum API заборонено (лише 443).",
+      "sintegrum_unresolved_host": "Хост Sintegrum API не знайдено.",
+      "validation": "Перевірте введені дані",
+      "generic": "Не вдалося виконати дію"
     }
   },
   "integrations": {

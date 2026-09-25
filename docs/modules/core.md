@@ -21,7 +21,7 @@
 | Файл | Что делает |
 |---|---|
 | `auth/auth.service.ts` | состояние сессии (signals `user`, `loading`); `GET /api/auth/me` один раз при старте, 401 → гость; `logout()` |
-| `auth/auth.guards.ts` | `authGuard` (гость → `/login`), `roleGuard(role)` (нет роли → `/`), `guestGuard` (для `/login`) |
+| `auth/auth.guards.ts` | `authGuard` (гость → `/login`), `roleGuard(...roles)` (нет ни одной из ролей → `/`; например `roleGuard('superadmin', 'admin')`), `guestGuard` (для `/login`) |
 | `auth/auth.model.ts` | типы и списки ролей/статусов/языков — зеркало enum бэкенда |
 | `http/csrf.interceptor.ts` | перед первым POST/PATCH/DELETE берёт `GET /sanctum/csrf-cookie`, ставит `X-XSRF-TOKEN`; на 419 — повтор один раз |
 | `i18n/*` | Transloco: `public/i18n/{uk,ru,en}.json`, язык пользователя (сервер) или гостя (localStorage) |

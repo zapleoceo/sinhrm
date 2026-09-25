@@ -1,0 +1,61 @@
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: var(--app-gap);
+
+  h1 { font: var(--mat-sys-headline-small); margin: 0; }
+  p { margin: 0.25rem 0 0; }
+}
+
+.notice {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+
+  ul { margin: 0; padding-left: 1.25rem; flex-basis: 100%; }
+  &.error { color: var(--app-danger); }
+}
+
+mat-tab-group { margin-bottom: 1rem; }
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  .search { flex: 1 1 16rem; }
+}
+
+.add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.panel {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  overflow-x: auto;
+}
+
+table { width: 100%; }
+
+.rename { width: min(20rem, 60vw); }
+
+.tag { font-size: 0.75rem; margin-left: 0.25rem; }
+
+.disabled { --mat-chip-label-text-color: var(--app-danger); }
+
+.actions { text-align: right; }
+
+.state { padding: 2.5rem 1rem; text-align: center; }
