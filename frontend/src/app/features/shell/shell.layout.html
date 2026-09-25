@@ -5,6 +5,23 @@
       <mat-icon>monitor_heart</mat-icon>
       <span>{{ 'shell.nav.overview' | transloco }}</span>
     </a>
+    <p class="nav-section">{{ 'shell.nav.recruiting' | transloco }}</p>
+    <a class="nav-link" routerLink="/candidates" routerLinkActive="active">
+      <mat-icon>person_search</mat-icon>
+      <span>{{ 'shell.nav.candidates' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/vacancies" routerLinkActive="active">
+      <mat-icon>work</mat-icon>
+      <span>{{ 'shell.nav.vacancies' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/inbox" routerLinkActive="active">
+      <mat-icon>inbox</mat-icon>
+      <span>{{ 'shell.nav.inbox' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/reports" routerLinkActive="active">
+      <mat-icon>bar_chart</mat-icon>
+      <span>{{ 'shell.nav.reports' | transloco }}</span>
+    </a>
     @if (isAdmin()) {
       <p class="nav-section">{{ 'shell.nav.admin' | transloco }}</p>
     }
@@ -28,6 +45,12 @@
 
   <div class="main">
     <header class="topbar">
+      <button mat-stroked-button type="button" class="palette" (click)="palette.toggle()" [attr.aria-label]="'palette.title' | transloco">
+        <mat-icon>search</mat-icon>
+        <span class="palette-label">{{ 'palette.open' | transloco }}</span>
+        <kbd>{{ paletteKey }}</kbd>
+      </button>
+      <span class="spacer"></span>
       <button mat-icon-button type="button" (click)="theme.toggle()" [matTooltip]="themeLabel() | transloco" [attr.aria-label]="themeLabel() | transloco">
         <mat-icon>{{ themeIcon() }}</mat-icon>
       </button>

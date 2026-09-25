@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи", "integrations": "Интеграции", "directory": "Справочники" },
+    "nav": { "recruiting": "Рекрутинг", "candidates": "Кандидаты", "vacancies": "Вакансии", "inbox": "Входящие", "reports": "Отчёты", "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи", "integrations": "Интеграции", "directory": "Справочники" },
     "menu": { "open": "Меню пользователя", "language": "Язык", "logout": "Выйти" },
     "theme": { "toDark": "Тёмная тема", "toLight": "Светлая тема" }
   },
@@ -278,6 +278,176 @@
         "name": "Meta Lead Ads",
         "description": "Заявки из форм Facebook и Instagram"
       }
+    }
+  },
+  "palette": {
+    "title": "Быстрый переход",
+    "open": "Поиск",
+    "placeholder": "Кандидат, вакансия, раздел…",
+    "nothing": "Ничего не найдено",
+    "keys": "↑↓ — выбор · Enter — открыть · Esc — закрыть"
+  },
+  "recruiting": {
+    "search": "Поиск",
+    "save": "Сохранить",
+    "required": "Обязательное поле",
+    "loadError": "Не удалось загрузить данные",
+    "vacancies": {
+      "title": "Вакансии",
+      "subtitle": "Вакансии ваших филиалов. Откройте вакансию, чтобы увидеть доску кандидатов.",
+      "new": "Новая вакансия",
+      "edit": "Редактировать вакансию",
+      "empty": "Вакансий нет",
+      "activeCount": "Активные / все кандидаты",
+      "fields": {
+        "title": "Название",
+        "branch": "Филиал",
+        "position": "Должность",
+        "status": "Статус",
+        "description": "Описание"
+      }
+    },
+    "vacancyStatus": {
+      "open": "Открыта",
+      "paused": "На паузе",
+      "closed": "Закрыта"
+    },
+    "appStatus": {
+      "active": "В работе",
+      "hired": "Принят",
+      "rejected": "Отказ"
+    },
+    "board": {
+      "add": "Добавить кандидата",
+      "stale": "{{days}} дн. без контакта",
+      "staleCount": "без контакта 3+ дня: {{n}}"
+    },
+    "reject": {
+      "title": "Отказ: {{name}}",
+      "reason": "Причина",
+      "note": "Комментарий (необязательно)",
+      "submit": "Отказать"
+    },
+    "candidates": {
+      "title": "Кандидаты",
+      "new": "Новый кандидат",
+      "search": "Имя, телефон, e-mail, @telegram",
+      "empty": "Кандидаты не найдены",
+      "pick": "Выберите кандидата слева. j/k или ↑/↓ — следующий/предыдущий, / — поиск.",
+      "duplicate": "Такой кандидат уже есть (совпадение: {{by}}).",
+      "openExisting": "Открыть карточку",
+      "fields": {
+        "fullName": "ФИО",
+        "phone": "Телефон",
+        "email": "E-mail",
+        "telegram": "Telegram",
+        "source": "Источник",
+        "status": "Статус"
+      }
+    },
+    "matchedBy": {
+      "phone": "телефон",
+      "email": "e-mail",
+      "telegram": "Telegram"
+    },
+    "card": {
+      "source": "Источник",
+      "route": "Маршрут",
+      "move": "Переместить",
+      "stale": "Без контакта 3+ дня",
+      "rejectedFor": "Причина отказа",
+      "noApplications": "Кандидат ещё не добавлен ни в одну вакансию",
+      "timeline": "Касания",
+      "filter": "Фильтр каналов",
+      "stages": "Этапы",
+      "clear": "Сбросить",
+      "viaProduct": "из SinHRM",
+      "captured": "извне",
+      "viaProductHint": "Сделано из продукта",
+      "capturedHint": "Перехвачено из внешнего канала (интеграция)",
+      "created": "Создано",
+      "noTouches": "Касаний пока нет",
+      "more": "Показать ещё",
+      "keys": "Ctrl/⌘+K — быстрый переход · j/k — следующий кандидат"
+    },
+    "composer": {
+      "channel": "Канал",
+      "direction": "Направление",
+      "minutes": "Минут",
+      "body": "Текст / итог",
+      "hint": "Ctrl/⌘+Enter — сохранить",
+      "submit": "Записать",
+      "saved": "Касание сохранено"
+    },
+    "direction": {
+      "in": "входящее",
+      "out": "исходящее"
+    },
+    "channel": {
+      "call": "Звонок",
+      "telegram": "Telegram",
+      "whatsapp": "WhatsApp",
+      "viber": "Viber",
+      "email": "E-mail",
+      "note": "Заметка",
+      "meeting": "Встреча",
+      "system": "Система"
+    },
+    "source": {
+      "manual": "Вручную",
+      "work_ua": "Work.ua",
+      "robota_ua": "Robota.ua",
+      "djinni": "Djinni",
+      "meta_ads": "Реклама Meta",
+      "site": "Сайт",
+      "referral": "Рекомендация",
+      "telegram": "Telegram",
+      "inbox": "Входящие",
+      "other": "Другое",
+      "import": "Импорт"
+    },
+    "inbox": {
+      "title": "Входящие",
+      "subtitle": "Сообщения и звонки, которые не удалось привязать к кандидату.",
+      "empty": "Всё разобрано",
+      "resolve": "Разобрать",
+      "link": "Привязать",
+      "create": "Создать кандидата",
+      "vacancy": "Вакансия (необязательно)",
+      "duplicate": "Кандидат с этим контактом уже существует.",
+      "linkExisting": "Привязать к нему"
+    },
+    "reports": {
+      "title": "Отчёты",
+      "subtitle": "Касания, воронка, источники, причины отказов за период.",
+      "from": "С",
+      "to": "По",
+      "apply": "Показать",
+      "touches": "Касания рекрутеров",
+      "touchesTotals": "Всего {{total}}: из SinHRM {{via}}, извне {{captured}}",
+      "recruiter": "Рекрутер",
+      "total": "Всего",
+      "sources": "Источники",
+      "candidates": "Кандидаты",
+      "hired": "Принято",
+      "rejectReasons": "Причины отказов",
+      "funnel": "Воронка (текущие этапы)",
+      "empty": "Нет данных за период"
+    },
+    "errors": {
+      "duplicate_restricted": "Кандидат с таким контактом уже есть в другом филиале. Обратитесь к администратору.",
+      "duplicate_candidate": "Такой кандидат уже есть",
+      "already_applied": "Кандидат уже на этой вакансии",
+      "stage_not_in_pipeline": "Этап не из воронки этой вакансии",
+      "same_stage": "Кандидат уже на этом этапе",
+      "reject_reason_required": "Укажите причину отказа",
+      "application_mismatch": "Заявка принадлежит другому кандидату",
+      "no_default_pipeline": "Нет воронки по умолчанию",
+      "vacancy_out_of_scope": "Вакансия не из ваших филиалов",
+      "already_linked": "Сообщение уже привязано",
+      "forbidden": "Недостаточно прав",
+      "validation": "Проверьте поля",
+      "generic": "Не удалось выполнить действие"
     }
   }
 }

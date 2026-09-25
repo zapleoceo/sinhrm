@@ -1,0 +1,125 @@
+<header class="page-head">
+  <div>
+    <h1>{{ 'recruiting.reports.title' | transloco }}</h1>
+    <p class="muted">{{ 'recruiting.reports.subtitle' | transloco }}</p>
+  </div>
+  <form class="range" (submit)="$event.preventDefault(); apply(from.value, to.value)">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>{{ 'recruiting.reports.from' | transloco }}</mat-label>
+      <input matInput type="date" #from [value]="store.range().from" />
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>{{ 'recruiting.reports.to' | transloco }}</mat-label>
+      <input matInput type="date" #to [value]="store.range().to" />
+    </mat-form-field>
+    <button mat-stroked-button type="submit">{{ 'recruiting.reports.apply' | transloco }}</button>
+  </form>
+</header>
+
+@if (store.loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (store.failed()) {
+  <div class="state">
+    <p>{{ 'recruiting.loadError' | transloco }}</p>
+    <button mat-stroked-button type="button" (click)="store.load()">{{ 'common.retry' | transloco }}</button>
+  </div>
+}
+
+<div class="grid">
+  <section class="panel card wide">
+    <h2>{{ 'recruiting.reports.touches' | transloco }}</h2>
+    @if (store.touches(); as t) {
+      <p class="muted">
+        {{ 'recruiting.reports.touchesTotals' | transloco: { total: t.totals.total, via: t.totals.via_product, captured: t.totals.captured } }}
+      </p>
+    }
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{{ 'recruiting.reports.recruiter' | transloco }}</th>
+          @for (c of channels; track c) {
+            <th scope="col" class="num">{{ 'recruiting.channel.' + c | transloco }}</th>
+          }
+          <th scope="col" class="num">{{ 'recruiting.card.viaProduct' | transloco }}</th>
+          <th scope="col" class="num">{{ 'recruiting.card.captured' | transloco }}</th>
+          <th scope="col">{{ 'recruiting.reports.total' | transloco }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of store.recruiters(); track r.name) {
+          <tr>
+            <th scope="row">{{ r.name }}</th>
+            @for (c of channels; track c) {
+              <td class="num">{{ r.byChannel[c] ?? '' }}</td>
+            }
+            <td class="num">{{ r.viaProduct }}</td>
+            <td class="num">{{ r.captured }}</td>
+            <td class="barcell"><span class="bar" [style.width.%]="bar(r.total, maxRecruiter())"></span><span class="num">{{ r.total }}</span></td>
+          </tr>
+        } @empty {
+          <tr><td class="muted" [attr.colspan]="channels.length + 4">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel card">
+    <h2>{{ 'recruiting.reports.sources' | transloco }}</h2>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">{{ 'recruiting.candidates.fields.source' | transloco }}</th>
+          <th scope="col">{{ 'recruiting.reports.candidates' | transloco }}</th>
+          <th scope="col" class="num">{{ 'recruiting.reports.hired' | transloco }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of store.sources()?.rows ?? []; track r.source) {
+          <tr>
+            <th scope="row">{{ 'recruiting.source.' + r.source | transloco }}</th>
+            <td class="barcell"><span class="bar" [style.width.%]="bar(r.candidates, maxSource())"></span><span class="num">{{ r.candidates }}</span></td>
+            <td class="num">{{ r.hired }}</td>
+          </tr>
+        } @empty {
+          <tr><td class="muted" colspan="3">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel card">
+    <h2>{{ 'recruiting.reports.rejectReasons' | transloco }}</h2>
+    <table>
+      <tbody>
+        @for (r of store.rejectReasons()?.rows ?? []; track r.reject_reason_id) {
+          <tr>
+            <th scope="row">{{ r.name ?? '—' }}</th>
+            <td class="barcell"><span class="bar danger" [style.width.%]="bar(r.count, maxReason())"></span><span class="num">{{ r.count }}</span></td>
+          </tr>
+        } @empty {
+          <tr><td class="muted" colspan="2">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel card wide">
+    <h2>{{ 'recruiting.reports.funnel' | transloco }}</h2>
+    @for (g of store.funnelByVacancy(); track g.title) {
+      <h3>{{ g.title }}</h3>
+      <table>
+        <tbody>
+          @for (r of g.rows; track r.stage_id) {
+            <tr>
+              <th scope="row">{{ r.stage_name }}</th>
+              <td class="barcell"><span class="bar" [attr.data-kind]="r.stage_kind" [style.width.%]="bar(r.count, maxOf(g.rows))"></span><span class="num">{{ r.count }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @empty {
+      <p class="muted">{{ 'recruiting.reports.empty' | transloco }}</p>
+    }
+  </section>
+</div>

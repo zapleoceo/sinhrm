@@ -24,6 +24,7 @@ html {
   --app-muted: var(--mat-sys-on-surface-variant);
   --app-success: light-dark(#15803d, #4ade80);
   --app-danger: light-dark(#b91c1c, #f87171);
+  --app-warning: light-dark(#b45309, #fbbf24);
 }
 
 // Explicit user choice (ThemeService) overrides the OS preference.
@@ -55,3 +56,34 @@ body {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+// Shared page layout (feature pages): header, filters row, bordered panel, empty/error state.
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: var(--app-gap);
+
+  h1 { font: var(--mat-sys-headline-small); margin: 0; }
+  p { margin: 0.25rem 0 0; }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  .grow { flex: 1 1 16rem; }
+}
+
+.panel {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  overflow-x: auto;
+}
+
+.state { padding: 2.5rem 1rem; text-align: center; }
