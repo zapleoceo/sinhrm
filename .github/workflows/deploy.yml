@@ -45,21 +45,47 @@ jobs:
 
       - name: API — migrations via /api/ops/migrate (DB credentials stay in Vercel)
         working-directory: backend
-        env: { OPS_SECRET: "${{ secrets.OPS_SECRET }}" }
+        env:
+          OPS_SECRET: "${{ secrets.OPS_SECRET }}"
+          API_URL: "${{ steps.api.outputs.url }}"
         run: |
+          # Step outputs reach the shell only through env (never spliced into the script text).
+          [[ "$API_URL" =~ ^https://[a-z0-9-]+\.vercel\.app$ ]] || { echo "bad API url"; exit 1; }
           # Preview DB holds synthetic data only → rebuild it on every deploy; production → apply pending.
           Q=$([ "$TARGET" = preview ] && echo '?fresh=1' || true)
-          out=$(curl -sS -m 90 -X POST "${{ steps.api.outputs.url }}/api/ops/migrate$Q"                 -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json" || true)
+          out=$(curl -sS -m 90 -X POST "$API_URL/api/ops/migrate$Q" -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json" || true)
           # Log only the verdict: raw migration output stays out of public Actions logs.
           echo "$out" | grep -q '"ok":true' && echo "migrations: ok" || { echo "migrations: FAILED"; exit 1; }
 
       - name: Web — build & deploy
         id: web
         working-directory: frontend
-        env: { VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_WEB }}" }
+        env:
+          VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_WEB }}"
+          API_URL: "${{ steps.api.outputs.url }}"
         run: |
           PROD=$([ "$TARGET" = production ] && echo --prod || true)
           vercel pull --yes --environment=$TARGET --token=${{ secrets.VERCEL_TOKEN }}
+          # Preview web must talk to the preview API of the same PR, not to prod: rewrite the /api and /sanctum
+          # destinations in vercel.json (only in this CI checkout; the committed file keeps the prod URL).
+          [[ "$API_URL" =~ ^https://[a-z0-9-]+\.vercel\.app$ ]] || { echo "bad API url"; exit 1; }
+          if [ "$TARGET" = preview ]; then
+            node -e '
+              const fs = require("fs");
+              const api = (process.argv[1] || "").replace(/\/+$/, "");
+              if (!/^https:\/\/[a-z0-9.-]+\.vercel\.app$/i.test(api)) { console.error("bad preview API url"); process.exit(1); }
+              const cfg = JSON.parse(fs.readFileSync("vercel.json", "utf8"));
+              let n = 0;
+              for (const r of cfg.rewrites) {
+                for (const p of ["/api/", "/sanctum/"]) {
+                  if (r.source === p + ":path*") { r.destination = api + p + ":path*"; n++; }
+                }
+              }
+              if (n !== 2) { console.error("expected 2 rewrites, got " + n); process.exit(1); }
+              fs.writeFileSync("vercel.json", JSON.stringify(cfg, null, 2) + "\n");
+            ' "$API_URL"
+            grep -c "$API_URL" vercel.json
+          fi
           vercel build $PROD --token=${{ secrets.VERCEL_TOKEN }}
           url=$(vercel deploy --prebuilt $PROD --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
@@ -67,8 +93,11 @@ jobs:
       - name: Smoke — /api/health
         id: smoke
         working-directory: backend
+        env:
+          API_URL: "${{ steps.api.outputs.url }}"
         run: |
-          out=$(curl -sS -m 60 "${{ steps.api.outputs.url }}/api/health" 2>&1 || true)
+          [[ "$API_URL" =~ ^https://[a-z0-9-]+\.vercel\.app$ ]] || { echo "bad API url"; exit 1; }
+          out=$(curl -sS -m 60 "$API_URL/api/health" 2>&1 || true)
           echo "$out"
           { echo 'body<<EOF'; echo "$out"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
           echo "$out" | grep -q '"ok":true'

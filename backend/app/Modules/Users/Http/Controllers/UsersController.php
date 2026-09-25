@@ -33,7 +33,13 @@ final class UsersController
 
     public function update(UpdateUserRequest $request, User $user): UserResource
     {
-        return new UserResource($this->service->update($this->actor($request), $user, $request->role(), $request->status()));
+        return new UserResource($this->service->update(
+            $this->actor($request),
+            $user,
+            $request->role(),
+            $request->status(),
+            $request->branchIds(),
+        ));
     }
 
     private function actor(Request $request): User

@@ -11,8 +11,8 @@ export const authGuard: CanActivateFn = async () => {
   return auth.isLoggedIn() ? true : router.createUrlTree(['/login']);
 };
 
-/** Users with the given role only; others go to the start page (guests to /login). */
-export function roleGuard(role: UserRole): CanActivateFn {
+/** Users with any of the given roles only; others go to the start page (guests to /login). */
+export function roleGuard(...roles: UserRole[]): CanActivateFn {
   return async () => {
     const auth = inject(AuthService);
     const router = inject(Router);
@@ -20,7 +20,7 @@ export function roleGuard(role: UserRole): CanActivateFn {
     if (!auth.isLoggedIn()) {
       return router.createUrlTree(['/login']);
     }
-    return auth.hasRole(role) ? true : router.createUrlTree(['/']);
+    return roles.some((role) => auth.hasRole(role)) ? true : router.createUrlTree(['/']);
   };
 }
 

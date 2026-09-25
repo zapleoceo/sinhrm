@@ -18,7 +18,7 @@ final class EloquentUserAdminRepository implements UserAdminRepository
     public function paginate(UserFilter $filter): LengthAwarePaginator
     {
         return User::query()
-            ->with('roles')
+            ->with(['roles', 'branches'])
             ->when($filter->q, function (Builder $query, string $q): void {
                 $like = '%'.addcslashes(mb_strtolower($q), '%_\\').'%';
                 $query->where(fn (Builder $w) => $w
@@ -66,6 +66,12 @@ final class EloquentUserAdminRepository implements UserAdminRepository
     public function setStatus(User $user, UserStatus $status): void
     {
         $user->forceFill(['status' => $status])->save();
+    }
+
+    public function syncBranches(User $user, array $branchIds): void
+    {
+        $user->branches()->sync($branchIds);
+        $user->unsetRelation('branches');
     }
 
     public function countActiveSuperadmins(): int

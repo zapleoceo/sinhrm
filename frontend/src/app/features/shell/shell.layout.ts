@@ -36,6 +36,8 @@ export class ShellLayout {
 
   protected readonly user = this.auth.user;
   protected readonly isSuperadmin = computed(() => this.user()?.roles.includes('superadmin') ?? false);
+  /** Dictionaries are managed by superadmin and admin. */
+  protected readonly isAdmin = computed(() => this.isSuperadmin() || (this.user()?.roles.includes('admin') ?? false));
   protected readonly initial = computed(() => (this.user()?.name ?? '?').charAt(0).toUpperCase());
   protected readonly themeLabel = computed(() => (this.theme.theme() === 'dark' ? 'shell.theme.toLight' : 'shell.theme.toDark'));
   protected readonly themeIcon = computed(() => (this.theme.theme() === 'dark' ? 'light_mode' : 'dark_mode'));

@@ -63,7 +63,7 @@
 |---|---|---|
 | `ai_broker` | `GET {base_url}/v1/health` (публичный, **без ключа**), таймаут 10 с | да. Эндпоинты chat/jobs не вызываются: AI-вызовы запрещены до решения владельца |
 | `telegram_business` | `GET https://api.telegram.org/bot<token>/getMe` (только чтение), таймаут 10 с | да. URL содержит токен. До запроса токен проверяется по формату `^\d+:[A-Za-z0-9_-]+$` (иначе `invalid_token`, без запроса), вокруг вызова ловится **любой** `Throwable`: в ответ и лог попадают только коды `unauthorized`, `http_<код>`, `connection_failed` |
-| `sintegrum_api` | проверка URL через `OutboundUrlGuard` и наличия токена → статус `demo`, `last_error = not_verified` | только DNS-резолв хоста, HTTP-запроса **нет**. TODO: схема авторизации Sintegrum API не подтверждена |
+| `sintegrum_api` | проверка URL через `OutboundUrlGuard` и наличия токена → статус `demo`, `last_error = not_verified` | только DNS-резолв хоста, HTTP-запроса **нет**. TODO: схема авторизации Sintegrum API не подтверждена. Реальные запросы к Sintegrum делает импорт справочников (ниже) |
 | остальные (`openrouter`, `deepgram`, `google_*`, `whatsapp_cloud`, `viber`, `wazzup`, `phonet`, `ringostat`, `binotel`, `work_ua`, `robota_ua`, `djinni`, `meta_lead_ads`) | нет (`supports_check: false`) | нет. OpenRouter и Deepgram — AI/платные вызовы; Google — появится OAuth-подключение |
 
 Защита в глубину: перед записью `last_error` и лога `IntegrationService` заменяет любые значения секретов в тексте
@@ -81,6 +81,11 @@
 - HTTP-клиент чекеров работает с `allow_redirects: false`, чтобы публичный хост не перенаправил запрос внутрь.
 Ограничение: DNS-rebinding между проверкой и запросом не исключён (резолв делается до запроса).
 В тестах `HostResolver` подменяется `tests/Support/FakeHostResolver`.
+
+### Кто использует интеграции
+| Интеграция | Потребитель | Что берёт |
+|---|---|---|
+| `sintegrum_api` | импорт справочников — `Directory\Services\SintegrumDirectoryImporter` ([directory.md](directory.md)) | `base_url` (настройка), `token` (через `SecretVault`); запросы `GET {base_url}/{cities,branches,departments,jobs}/list` с `Authorization: Bearer`, через `OutboundUrlGuard`; журнал `directory_imported` / `directory_import_failed` в `integration_logs` (только счётчики/код ошибки) |
 
 ### Вычистка секретов из логов (`Support/SecretScrubber`)
 В `bootstrap/app.php` зарегистрирован репортер исключений: если текст исключения (или любого `previous`)

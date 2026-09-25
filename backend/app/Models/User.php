@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Modules\Auth\Enums\UserStatus;
+use App\Modules\Directory\Models\Branch;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -24,6 +27,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $locale
  * @property Carbon|null $last_login_at
  * @property int|null $invited_by
+ * @property-read Collection<int, Branch> $branches
  */
 #[Fillable(['name', 'email', 'password', 'google_id', 'avatar_url', 'status', 'locale', 'last_login_at', 'invited_by'])]
 #[Hidden(['password', 'remember_token', 'google_id'])]
@@ -44,6 +48,16 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === UserStatus::Active;
+    }
+
+    /**
+     * Branches the user works in (Directory module). Scoping rules: Directory\Contracts\AccessibleBranches.
+     *
+     * @return BelongsToMany<Branch, $this>
+     */
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'branch_user')->withTimestamps();
     }
 
     /**

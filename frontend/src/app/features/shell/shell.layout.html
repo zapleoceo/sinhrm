@@ -5,8 +5,10 @@
       <mat-icon>monitor_heart</mat-icon>
       <span>{{ 'shell.nav.overview' | transloco }}</span>
     </a>
-    @if (isSuperadmin()) {
+    @if (isAdmin()) {
       <p class="nav-section">{{ 'shell.nav.admin' | transloco }}</p>
+    }
+    @if (isSuperadmin()) {
       <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">
         <mat-icon>group</mat-icon>
         <span>{{ 'shell.nav.users' | transloco }}</span>
@@ -14,6 +16,12 @@
       <a class="nav-link" routerLink="/admin/integrations" routerLinkActive="active">
         <mat-icon>hub</mat-icon>
         <span>{{ 'shell.nav.integrations' | transloco }}</span>
+      </a>
+    }
+    @if (isAdmin()) {
+      <a class="nav-link" routerLink="/admin/directory" routerLinkActive="active">
+        <mat-icon>menu_book</mat-icon>
+        <span>{{ 'shell.nav.directory' | transloco }}</span>
       </a>
     }
   </nav>

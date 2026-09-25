@@ -26,6 +26,9 @@ interface UserAdminRepository
 
     public function setStatus(User $user, UserStatus $status): void;
 
+    /** @param  list<int>  $branchIds  replaces the user's branches (Directory module, table branch_user) */
+    public function syncBranches(User $user, array $branchIds): void;
+
     public function countActiveSuperadmins(): int;
 
     /**

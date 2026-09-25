@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи", "integrations": "Интеграции" },
+    "nav": { "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи", "integrations": "Интеграции", "directory": "Справочники" },
     "menu": { "open": "Меню пользователя", "language": "Язык", "logout": "Выйти" },
     "theme": { "toDark": "Тёмная тема", "toLight": "Светлая тема" }
   },
@@ -29,7 +29,9 @@
     "role": "Роль",
     "status": "Статус",
     "invite": "Пригласить",
-    "columns": { "user": "Пользователь", "role": "Роль", "status": "Статус", "lastLogin": "Последний вход", "actions": "Действия" },
+    "columns": { "user": "Пользователь", "role": "Роль", "status": "Статус", "branches": "Филиалы", "lastLogin": "Последний вход", "actions": "Действия" },
+    "noBranches": "Без филиалов",
+    "allBranches": "Все филиалы",
     "never": "Ещё не входил",
     "block": "Заблокировать",
     "unblock": "Разблокировать",
@@ -53,6 +55,58 @@
       "submit": "Пригласить",
       "required": "Обязательное поле",
       "invalidEmail": "Неверный email"
+    }
+  },
+  "directory": {
+    "title": "Справочники",
+    "subtitle": "Филиалы, города, отделы и должности компании. Записи не удаляются — их отключают.",
+    "tabs": {
+      "branches": "Филиалы",
+      "cities": "Города",
+      "departments": "Отделы",
+      "positions": "Должности"
+    },
+    "search": "Поиск по названию",
+    "status": "Статус",
+    "statuses": {
+      "active": "Активен",
+      "disabled": "Отключён"
+    },
+    "columns": {
+      "name": "Название",
+      "city": "Город",
+      "status": "Статус",
+      "actions": "Действия"
+    },
+    "newItem": "Новая запись",
+    "add": "Добавить",
+    "created": "Запись добавлена",
+    "rename": "Переименовать",
+    "save": "Сохранить",
+    "disable": "Отключить",
+    "enable": "Включить",
+    "fromSintegrum": "Импортировано из Sintegrum",
+    "empty": "Записей нет",
+    "loadError": "Не удалось загрузить справочник",
+    "import": {
+      "button": "Импорт из Sintegrum",
+      "running": "Импортируем…",
+      "done": "Импорт завершён",
+      "counts": "новых {{created}}, обновлено {{updated}}, без изменений {{skipped}}",
+      "openIntegrations": "Открыть интеграции"
+    },
+    "errors": {
+      "integration_not_configured": "Интеграция Sintegrum API не настроена: задайте адрес и токен в «Интеграциях».",
+      "sintegrum_unauthorized": "Sintegrum отклонил токен (401/403). Проверьте токен в «Интеграциях».",
+      "sintegrum_unreachable": "Sintegrum недоступен. Попробуйте позже.",
+      "sintegrum_bad_response": "Sintegrum вернул данные в неизвестном формате. Ничего не изменено.",
+      "sintegrum_timeout": "Импорт превысил лимит времени. Ничего не изменено.",
+      "sintegrum_invalid_url": "Неверный адрес Sintegrum API (только https://…).",
+      "sintegrum_blocked_host": "Адрес Sintegrum API ведёт во внутреннюю сеть — запрещено.",
+      "sintegrum_blocked_port": "Порт в адресе Sintegrum API запрещён (только 443).",
+      "sintegrum_unresolved_host": "Хост Sintegrum API не найден.",
+      "validation": "Проверьте введённые данные",
+      "generic": "Не удалось выполнить действие"
     }
   },
   "integrations": {

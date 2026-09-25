@@ -16,6 +16,8 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
+import { DictionaryItem } from '../directory/directory.model';
+import { DirectoryService } from '../directory/directory.service';
 import { InviteUserDialog } from './invite-user.dialog';
 import { AdminUser, UpdateUser, UsersQuery } from './users.model';
 import { UsersService, userErrorKey } from './users.service';
@@ -54,8 +56,11 @@ export class UsersPage implements OnInit {
   /** Superadmin is bootstrap-only (SUPERADMIN_EMAIL) and cannot be assigned from the UI. */
   protected readonly assignableRoles = INVITABLE_ROLES;
   protected readonly statuses = USER_STATUSES;
-  protected readonly columns = ['user', 'role', 'status', 'lastLogin', 'actions'];
+  protected readonly columns = ['user', 'role', 'branches', 'status', 'lastLogin', 'actions'];
   private readonly auth = inject(AuthService);
+  private readonly directory = inject(DirectoryService);
+  /** Active branches offered in the per-user multi-select. */
+  protected readonly branchOptions = signal<DictionaryItem[]>([]);
   protected readonly meId = computed(() => this.auth.user()?.id ?? null);
 
   protected readonly query = signal<UsersQuery>({ page: 1, perPage: 20 });
@@ -64,12 +69,28 @@ export class UsersPage implements OnInit {
   protected readonly loading = signal(false);
   protected readonly failed = signal(false);
   protected readonly pending = signal<ReadonlySet<number>>(new Set());
+  /**
+   * Selected branch ids per branch-scoped user (recruiter/viewer; superadmin/admin see every branch).
+   * A stable array per row: a fresh one on every check would reset an open multi-select.
+   */
+  protected readonly scopedBranchIds = computed(
+    () =>
+      new Map(
+        this.users()
+          .filter((u) => !u.roles.includes('superadmin') && !u.roles.includes('admin'))
+          .map((u) => [u.id, u.branches.map((b) => b.id)] as const),
+      ),
+  );
 
   ngOnInit(): void {
     this.search$
       .pipe(debounceTime(SEARCH_DEBOUNCE_MS), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe((q) => this.patchQuery({ q: q.trim() || undefined }));
     this.load();
+    this.directory.active('branches').subscribe({
+      next: (list) => this.branchOptions.set(list),
+      error: () => this.branchOptions.set([]),
+    });
   }
 
   protected load(): void {
@@ -107,6 +128,18 @@ export class UsersPage implements OnInit {
 
   protected changeRole(user: AdminUser, role: UserRole): void {
     this.optimistic(user, { roles: [role] }, { role });
+  }
+
+  /** Saves the selection when the picker closes; only active branches are sent (disabled ones are dropped). */
+  protected commitBranches(user: AdminUser, selected: number[]): void {
+    const options = this.branchOptions();
+    const ids = selected.filter((id) => options.some((o) => o.id === id)).sort((a, b) => a - b);
+    const current = user.branches.map((b) => b.id).sort((a, b) => a - b);
+    if (ids.length === current.length && ids.every((id, i) => id === current[i])) {
+      return;
+    }
+    const branches = options.filter((o) => ids.includes(o.id)).map((o) => ({ id: o.id, name: o.name, status: o.status }));
+    this.optimistic(user, { branches }, { branch_ids: ids });
   }
 
   protected toggleBlock(user: AdminUser): void {
