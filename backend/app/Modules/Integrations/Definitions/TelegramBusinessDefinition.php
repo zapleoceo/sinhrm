@@ -1,0 +1,75 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Integrations\Definitions;
+
+use App\Modules\Integrations\Contracts\ConnectionChecker;
+use App\Modules\Integrations\DTO\CheckResult;
+use App\Modules\Integrations\DTO\FieldSpec;
+use App\Modules\Integrations\DTO\IntegrationConfig;
+use App\Modules\Integrations\Enums\IntegrationGroup;
+use App\Modules\Integrations\Support\OutboundUrlGuard;
+use Illuminate\Http\Client\Factory as Http;
+use Throwable;
+
+/**
+ * Telegram bot (business account). Check: read-only getMe.
+ * The request URL contains the token, so neither the URL nor exception texts are ever logged or returned.
+ */
+final class TelegramBusinessDefinition extends AbstractDefinition implements ConnectionChecker
+{
+    private const string API = 'https://api.telegram.org';
+
+    private const int TIMEOUT_SECONDS = 10;
+
+    private const string TOKEN_PATTERN = '/^\d+:[A-Za-z0-9_-]+$/';
+
+    public function __construct(private readonly Http $http, private readonly OutboundUrlGuard $guard) {}
+
+    public function key(): string
+    {
+        return 'telegram_business';
+    }
+
+    public function group(): IntegrationGroup
+    {
+        return IntegrationGroup::Messengers;
+    }
+
+    public function fields(): array
+    {
+        return [FieldSpec::secret('bot_token')];
+    }
+
+    public function check(IntegrationConfig $config): CheckResult
+    {
+        $token = $config->secret('bot_token');
+        if ($token === null) {
+            return CheckResult::error('missing_secret:bot_token');
+        }
+        // Validate before the token is put into a URL: a stray space/newline would make the HTTP library
+        // throw an exception whose message contains the whole URL (and so the token).
+        if (preg_match(self::TOKEN_PATTERN, $token) !== 1) {
+            return CheckResult::error('invalid_token');
+        }
+        $url = self::API.'/bot'.$token.'/getMe';
+        $blocked = $this->guard->check($url);
+        if ($blocked !== null) {
+            return CheckResult::error($blocked);
+        }
+
+        try {
+            $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)->acceptJson()->get($url);
+        } catch (Throwable) {
+            // Never the exception text: it may contain the request URL.
+            return CheckResult::error('connection_failed');
+        }
+
+        if ($response->successful() && $response->json('ok') === true) {
+            return CheckResult::connected();
+        }
+
+        return CheckResult::error($response->status() === 401 ? 'unauthorized' : 'http_'.$response->status());
+    }
+}

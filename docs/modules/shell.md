@@ -6,7 +6,7 @@
 просторные отступы ([design-direction.md](../architecture/design-direction.md)).
 
 ## Как пользоваться
-- Меню слева: «Огляд» (состояние системы); раздел «Адміністрування → Користувачі» виден только суперадмину.
+- Меню слева: «Огляд» (состояние системы); раздел «Адміністрування → Користувачі, Інтеграції» виден только суперадмину.
 - Справа вверху: кнопка светлой/тёмной темы; меню пользователя (аватар, имя, e-mail, язык UK/RU/EN, «Вийти»).
 - Тема по умолчанию как в системе (светлая/тёмная), ручной выбор запоминается в этом браузере.
 - На узком экране меню слева становится строкой сверху.
@@ -15,7 +15,7 @@
 - `features/shell/shell.layout.ts|html|scss` — layout (CSS grid), маршруты-дети рендерятся в `<router-outlet>`.
 - `features/shell/language-switcher.ts` — переключатель языка (также на странице входа).
 - Маршруты (`app.routes.ts`): `/login` (гости, `guestGuard`), `/` → оболочка (`authGuard`) с детьми
-  `''` — статус, `admin/users` — `roleGuard('superadmin')`. Экраны загружаются лениво.
+  `''` — статус, `admin/users` и `admin/integrations` — `roleGuard('superadmin')`. Экраны загружаются лениво.
 - Тема: `core/theme/theme.service.ts` ставит `<html data-theme="light|dark">`; `styles.scss` задаёт `color-scheme`,
   тема Material собрана с `theme-type: color-scheme`, поэтому все токены `--mat-sys-*` переключаются сами.
   Токены приложения (`--app-gap`, `--app-radius`, `--app-border`, `--app-success`, `--app-danger`) — там же.

@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "label": "Головне меню", "overview": "Огляд", "admin": "Адміністрування", "users": "Користувачі" },
+    "nav": { "label": "Головне меню", "overview": "Огляд", "admin": "Адміністрування", "users": "Користувачі", "integrations": "Інтеграції" },
     "menu": { "open": "Меню користувача", "language": "Мова", "logout": "Вийти" },
     "theme": { "toDark": "Темна тема", "toLight": "Світла тема" }
   },
@@ -53,6 +53,177 @@
       "submit": "Запросити",
       "required": "Обов'язкове поле",
       "invalidEmail": "Невірний email"
+    }
+  },
+  "integrations": {
+    "title": "Інтеграції",
+    "subtitle": "Ключі та налаштування зовнішніх сервісів. Секрети зберігаються зашифрованими і не показуються повторно.",
+    "loadError": "Не вдалося завантажити інтеграції",
+    "empty": "Інтеграцій немає",
+    "mode": "Режим",
+    "configure": "Налаштувати",
+    "collapse": "Згорнути",
+    "save": "Зберегти",
+    "saved": "Збережено",
+    "required": "Обов'язкове поле",
+    "invalidUrl": "Невірна адреса (лише https://…)",
+    "noFields": "Налаштувань тут немає: підключення через Google буде пізніше.",
+    "checkOk": "З'єднання працює",
+    "checkFailed": "Перевірка не пройшла",
+    "status": {
+      "off": "Вимкнено",
+      "demo": "Демо",
+      "connected": "Підключено",
+      "error": "Помилка"
+    },
+    "groups": {
+      "ai": "AI",
+      "google": "Google",
+      "messengers": "Месенджери",
+      "telephony": "Телефонія",
+      "sources": "Джерела кандидатів"
+    },
+    "secret": {
+      "notSet": "не задано",
+      "keepHint": "Залиште порожнім, щоб не змінювати",
+      "clear": "Очистити",
+      "undo": "Скасувати очищення",
+      "willClear": "буде видалено при збереженні"
+    },
+    "check": {
+      "run": "Перевірити з'єднання",
+      "connection_failed": "Сервіс недоступний",
+      "unauthorized": "Ключ не підходить (401)",
+      "missing_secret": "Не задано обов'язковий ключ",
+      "not_verified": "Налаштування виглядають правильно, але з'єднання не перевірялось",
+      "invalid_url": "Невірна адреса сервісу",
+      "http": "Сервіс відповів помилкою",
+      "invalid_token": "Токен має неправильний формат",
+      "blocked_host": "Адреса веде у внутрішню мережу, запит заборонено",
+      "blocked_port": "Дозволено лише порт 443",
+      "unresolved_host": "Адресу сервісу не знайдено (DNS)"
+    },
+    "errors": {
+      "check_not_supported": "Для цієї інтеграції перевірки немає",
+      "generic": "Не вдалося виконати дію"
+    },
+    "logs": {
+      "title": "Останні події",
+      "empty": "Подій ще немає",
+      "error": "Не вдалося завантажити події",
+      "messages": {
+        "settings_updated": "Змінено налаштування",
+        "status_changed": "Змінено режим",
+        "check_connected": "Перевірка: підключено",
+        "check_error": "Перевірка: помилка",
+        "check_demo": "Перевірка: не підтверджено",
+        "ai_enabled": "AI увімкнено",
+        "ai_disabled": "AI вимкнено",
+        "recheck_required": "Змінено налаштування: потрібна повторна перевірка"
+      }
+    },
+    "ai": {
+      "off": "AI вимкнено до погодження власником",
+      "on": "AI увімкнено",
+      "explain": "Поки вимкнено, система не звертається до AI-провайдерів (AI Broker, OpenRouter, Deepgram).",
+      "toggle": "Дозволити AI",
+      "confirmOnTitle": "Увімкнути AI?",
+      "confirmOnText": "Робіть це лише після того, як власник погодив моделі та промпти. Дія записується в журнал.",
+      "confirmOffTitle": "Вимкнути AI?",
+      "confirmOffText": "Усі звернення до AI-провайдерів буде зупинено. Дія записується в журнал.",
+      "confirm": "Підтвердити"
+    },
+    "fields": {
+      "base_url": "Адреса API",
+      "project_key": "Ключ проєкту",
+      "daily_cap_usd": "Денний ліміт, $",
+      "api_key": "API-ключ",
+      "mailbox": "Поштова скринька",
+      "sheet_url": "Посилання на таблицю",
+      "bot_token": "Токен бота",
+      "phone_number_id": "Phone number ID",
+      "waba_id": "WABA ID",
+      "access_token": "Access token",
+      "token": "Токен",
+      "domain": "Домен",
+      "project_id": "ID проєкту",
+      "inbox": "Скринька для відгуків",
+      "api_token": "API-токен",
+      "page_id": "ID сторінки"
+    },
+    "items": {
+      "ai_broker": {
+        "name": "AI Broker",
+        "description": "Власний шлюз до AI-моделей з лімітом витрат"
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "description": "Доступ до різних AI-моделей через один ключ"
+      },
+      "deepgram": {
+        "name": "Deepgram",
+        "description": "Розпізнавання мовлення для записів дзвінків"
+      },
+      "google_gmail": {
+        "name": "Gmail",
+        "description": "Листи кандидатам і розбір вхідної пошти"
+      },
+      "google_calendar": {
+        "name": "Google Календар",
+        "description": "Співбесіди та нагадування"
+      },
+      "google_sheets": {
+        "name": "Google Таблиці",
+        "description": "Імпорт і звіти через таблиці"
+      },
+      "telegram_business": {
+        "name": "Telegram",
+        "description": "Листування з кандидатами через бота"
+      },
+      "whatsapp_cloud": {
+        "name": "WhatsApp",
+        "description": "Повідомлення через WhatsApp Cloud API"
+      },
+      "viber": {
+        "name": "Viber",
+        "description": "Повідомлення через Viber-бота"
+      },
+      "wazzup": {
+        "name": "Wazzup",
+        "description": "Агрегатор месенджерів"
+      },
+      "phonet": {
+        "name": "Phonet",
+        "description": "Телефонія: дзвінки та записи"
+      },
+      "ringostat": {
+        "name": "Ringostat",
+        "description": "Коллтрекінг і записи дзвінків"
+      },
+      "binotel": {
+        "name": "Binotel",
+        "description": "Телефонія: дзвінки та записи"
+      },
+      "sintegrum_api": {
+        "name": "Sintegrum API",
+        "description": "Філії та вакансії з Sintegrum"
+      },
+      "work_ua": {
+        "name": "Work.ua",
+        "description": "Відгуки з Work.ua"
+      },
+      "robota_ua": {
+        "name": "Robota.ua",
+        "description": "Відгуки з Robota.ua"
+      },
+      "djinni": {
+        "name": "Djinni",
+        "description": "Відгуки з Djinni"
+      },
+      "meta_lead_ads": {
+        "name": "Meta Lead Ads",
+        "description": "Заявки з форм Facebook та Instagram"
+      }
     }
   }
 }

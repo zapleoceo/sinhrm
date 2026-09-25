@@ -1,0 +1,35 @@
+.head {
+  margin-bottom: var(--app-gap);
+
+  h1 { font: var(--mat-sys-headline-small); margin: 0; }
+  p { margin: 0.25rem 0 0; }
+}
+
+.ai-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: var(--app-gap);
+  border: 1px solid var(--app-danger);
+  border-radius: var(--app-radius);
+
+  &.on { border-color: var(--app-success); }
+
+  .ai-text { display: flex; flex-direction: column; flex: 1 1 16rem; }
+}
+
+.group {
+  margin-bottom: var(--app-gap);
+
+  h2 { font: var(--mat-sys-title-large); margin: 0 0 0.75rem; }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+
+.state { padding: 2.5rem 1rem; text-align: center; }

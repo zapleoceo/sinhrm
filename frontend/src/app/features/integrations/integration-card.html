@@ -1,0 +1,135 @@
+@let it = item();
+<article class="card" [class.open]="expanded()">
+  <header class="head">
+    <div class="title">
+      <h3>{{ 'integrations.items.' + it.key + '.name' | transloco }}</h3>
+      <p class="muted">{{ 'integrations.items.' + it.key + '.description' | transloco }}</p>
+    </div>
+    <mat-chip-set>
+      <mat-chip [class]="'status-' + it.status" [disableRipple]="true">{{ 'integrations.status.' + it.status | transloco }}</mat-chip>
+    </mat-chip-set>
+  </header>
+
+  @if (it.last_error) {
+    <p class="result" [class.error]="it.status === 'error'">
+      @if (checkKey(); as key) {
+        {{ key | transloco }}
+      } @else {
+        {{ it.last_error }}
+      }
+      @if (it.last_checked_at) {
+        <span class="muted">· {{ it.last_checked_at | date: 'short' }}</span>
+      }
+    </p>
+  }
+
+  <div class="actions">
+    <mat-form-field class="status" subscriptSizing="dynamic">
+      <mat-label>{{ 'integrations.mode' | transloco }}</mat-label>
+      <mat-select [value]="manualStatus()" [disabled]="busy()" (valueChange)="setStatus($event)">
+        @for (s of manualStatuses; track s) {
+          <mat-option [value]="s">{{ 'integrations.status.' + s | transloco }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    @if (it.supports_check) {
+      <button mat-stroked-button type="button" [disabled]="busy()" (click)="check()">
+        <mat-icon>network_check</mat-icon>
+        {{ 'integrations.check.run' | transloco }}
+      </button>
+    }
+    <button mat-button type="button" (click)="toggle()" [attr.aria-expanded]="expanded()">
+      <mat-icon>{{ expanded() ? 'expand_less' : 'tune' }}</mat-icon>
+      {{ (expanded() ? 'integrations.collapse' : 'integrations.configure') | transloco }}
+    </button>
+  </div>
+
+  @if (busy()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (expanded()) {
+    <form class="form" [formGroup]="form()" (ngSubmit)="save()">
+      @for (field of it.fields; track field.name) {
+        @if (field.type === 'secret') {
+          <div class="secret">
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>{{ 'integrations.fields.' + field.name | transloco }}</mat-label>
+              <input
+                matInput
+                type="password"
+                autocomplete="new-password"
+                [formControlName]="field.name"
+                [readonly]="cleared().has(field.name)"
+                [placeholder]="
+                  cleared().has(field.name)
+                    ? ('integrations.secret.willClear' | transloco)
+                    : field.secret?.is_set
+                      ? (field.secret?.masked ?? '')
+                      : ('integrations.secret.notSet' | transloco)
+                "
+              />
+              <mat-hint>{{ (field.secret?.is_set ? 'integrations.secret.keepHint' : 'integrations.secret.notSet') | transloco }}</mat-hint>
+            </mat-form-field>
+            @if (cleared().has(field.name)) {
+              <button mat-button type="button" (click)="undoClear(field)">{{ 'integrations.secret.undo' | transloco }}</button>
+            } @else if (field.secret?.is_set) {
+              <button mat-button type="button" class="danger" (click)="clearSecret(field)">{{ 'integrations.secret.clear' | transloco }}</button>
+            }
+          </div>
+        } @else if (field.type === 'select') {
+          <mat-form-field>
+            <mat-label>{{ 'integrations.fields.' + field.name | transloco }}</mat-label>
+            <mat-select [formControlName]="field.name">
+              @for (opt of field.options; track opt) {
+                <mat-option [value]="opt">{{ opt }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        } @else {
+          <mat-form-field>
+            <mat-label>{{ 'integrations.fields.' + field.name | transloco }}</mat-label>
+            <input matInput [type]="field.type === 'url' ? 'url' : 'text'" autocomplete="off" [formControlName]="field.name" [required]="isRequired(field)" />
+            @if (form().controls[field.name]?.hasError('pattern')) {
+              <mat-error>{{ 'integrations.invalidUrl' | transloco }}</mat-error>
+            } @else {
+              <mat-error>{{ 'integrations.required' | transloco }}</mat-error>
+            }
+          </mat-form-field>
+        }
+      }
+      @if (it.fields.length === 0) {
+        <p class="muted">{{ 'integrations.noFields' | transloco }}</p>
+      } @else {
+        <div class="form-actions">
+          <button mat-flat-button type="submit" [disabled]="busy()">{{ 'integrations.save' | transloco }}</button>
+        </div>
+      }
+    </form>
+
+    <section class="logs" aria-live="polite">
+      <h4>{{ 'integrations.logs.title' | transloco }}</h4>
+      @if (logsFailed()) {
+        <p class="muted">
+          {{ 'integrations.logs.error' | transloco }}
+          <button mat-button type="button" (click)="loadLogs()">{{ 'common.retry' | transloco }}</button>
+        </p>
+      } @else if (logs(); as list) {
+        @if (list.length === 0) {
+          <p class="muted">{{ 'integrations.logs.empty' | transloco }}</p>
+        } @else {
+          <ul>
+            @for (log of list; track log.id) {
+              <li [class.error]="log.level === 'error'">
+                <span class="muted">{{ log.created_at | date: 'short' }}</span>
+                {{ 'integrations.logs.messages.' + log.message | transloco }}
+              </li>
+            }
+          </ul>
+        }
+      } @else {
+        <p class="muted">{{ 'common.loading' | transloco }}</p>
+      }
+    </section>
+  }
+</article>

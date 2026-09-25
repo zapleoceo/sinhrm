@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users" },
+    "nav": { "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations" },
     "menu": { "open": "User menu", "language": "Language", "logout": "Sign out" },
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
@@ -53,6 +53,177 @@
       "submit": "Invite",
       "required": "Required",
       "invalidEmail": "Invalid email"
+    }
+  },
+  "integrations": {
+    "title": "Integrations",
+    "subtitle": "Keys and settings of external services. Secrets are stored encrypted and never shown again.",
+    "loadError": "Could not load integrations",
+    "empty": "No integrations",
+    "mode": "Mode",
+    "configure": "Configure",
+    "collapse": "Collapse",
+    "save": "Save",
+    "saved": "Saved",
+    "required": "Required",
+    "invalidUrl": "Invalid address (https:// only)",
+    "noFields": "Nothing to configure here: Google consent comes later.",
+    "checkOk": "Connection works",
+    "checkFailed": "Check failed",
+    "status": {
+      "off": "Off",
+      "demo": "Demo",
+      "connected": "Connected",
+      "error": "Error"
+    },
+    "groups": {
+      "ai": "AI",
+      "google": "Google",
+      "messengers": "Messengers",
+      "telephony": "Telephony",
+      "sources": "Candidate sources"
+    },
+    "secret": {
+      "notSet": "not set",
+      "keepHint": "Leave empty to keep the current value",
+      "clear": "Clear",
+      "undo": "Undo clear",
+      "willClear": "will be removed on save"
+    },
+    "check": {
+      "run": "Check connection",
+      "connection_failed": "Service unreachable",
+      "unauthorized": "Key rejected (401)",
+      "missing_secret": "A required key is not set",
+      "not_verified": "Settings look valid, but the connection was not verified",
+      "invalid_url": "Invalid service address",
+      "http": "Service returned an error",
+      "invalid_token": "Token has an invalid format",
+      "blocked_host": "Address points to an internal network, request refused",
+      "blocked_port": "Only port 443 is allowed",
+      "unresolved_host": "Service address not found (DNS)"
+    },
+    "errors": {
+      "check_not_supported": "This integration has no connection check",
+      "generic": "Action failed"
+    },
+    "logs": {
+      "title": "Recent events",
+      "empty": "No events yet",
+      "error": "Could not load events",
+      "messages": {
+        "settings_updated": "Settings changed",
+        "status_changed": "Mode changed",
+        "check_connected": "Check: connected",
+        "check_error": "Check: error",
+        "check_demo": "Check: not verified",
+        "ai_enabled": "AI enabled",
+        "ai_disabled": "AI disabled",
+        "recheck_required": "Config changed: re-check required"
+      }
+    },
+    "ai": {
+      "off": "AI is off until the owner approves",
+      "on": "AI is on",
+      "explain": "While off, the system never calls AI providers (AI Broker, OpenRouter, Deepgram).",
+      "toggle": "Allow AI",
+      "confirmOnTitle": "Enable AI?",
+      "confirmOnText": "Do this only after the owner has approved models and prompts. The action is logged.",
+      "confirmOffTitle": "Disable AI?",
+      "confirmOffText": "All calls to AI providers will stop. The action is logged.",
+      "confirm": "Confirm"
+    },
+    "fields": {
+      "base_url": "API address",
+      "project_key": "Project key",
+      "daily_cap_usd": "Daily cap, $",
+      "api_key": "API key",
+      "mailbox": "Mailbox",
+      "sheet_url": "Sheet link",
+      "bot_token": "Bot token",
+      "phone_number_id": "Phone number ID",
+      "waba_id": "WABA ID",
+      "access_token": "Access token",
+      "token": "Token",
+      "domain": "Domain",
+      "project_id": "Project ID",
+      "inbox": "Responses inbox",
+      "api_token": "API token",
+      "page_id": "Page ID"
+    },
+    "items": {
+      "ai_broker": {
+        "name": "AI Broker",
+        "description": "Own gateway to AI models with a spending cap"
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "description": "Many AI models behind one key"
+      },
+      "deepgram": {
+        "name": "Deepgram",
+        "description": "Speech-to-text for call recordings"
+      },
+      "google_gmail": {
+        "name": "Gmail",
+        "description": "Mail to candidates and inbox triage"
+      },
+      "google_calendar": {
+        "name": "Google Calendar",
+        "description": "Interviews and reminders"
+      },
+      "google_sheets": {
+        "name": "Google Sheets",
+        "description": "Imports and reports via sheets"
+      },
+      "telegram_business": {
+        "name": "Telegram",
+        "description": "Chat with candidates through a bot"
+      },
+      "whatsapp_cloud": {
+        "name": "WhatsApp",
+        "description": "Messages via WhatsApp Cloud API"
+      },
+      "viber": {
+        "name": "Viber",
+        "description": "Messages via a Viber bot"
+      },
+      "wazzup": {
+        "name": "Wazzup",
+        "description": "Messenger aggregator"
+      },
+      "phonet": {
+        "name": "Phonet",
+        "description": "Telephony: calls and recordings"
+      },
+      "ringostat": {
+        "name": "Ringostat",
+        "description": "Call tracking and recordings"
+      },
+      "binotel": {
+        "name": "Binotel",
+        "description": "Telephony: calls and recordings"
+      },
+      "sintegrum_api": {
+        "name": "Sintegrum API",
+        "description": "Branches and vacancies from Sintegrum"
+      },
+      "work_ua": {
+        "name": "Work.ua",
+        "description": "Responses from Work.ua"
+      },
+      "robota_ua": {
+        "name": "Robota.ua",
+        "description": "Responses from Robota.ua"
+      },
+      "djinni": {
+        "name": "Djinni",
+        "description": "Responses from Djinni"
+      },
+      "meta_lead_ads": {
+        "name": "Meta Lead Ads",
+        "description": "Leads from Facebook and Instagram forms"
+      }
     }
   }
 }
