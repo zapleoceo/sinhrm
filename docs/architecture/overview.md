@@ -1,0 +1,44 @@
+# Архитектура
+
+## Простыми словами
+Система из трёх частей: **экран** (то, что видит пользователь в браузере), **сервер** (правила и проверки)
+и **база данных** (где всё хранится). Экран никогда не ходит в базу напрямую — только через сервер.
+
+## Техническая схема
+```
+Браузер ──► sinhrm.vercel.app (Angular SPA, Vercel)
+              │  /api/*  (Vercel rewrite, тот же домен → cookie-сессия работает)
+              ▼
+           sinhrm-api.vercel.app (Laravel 13, runtime vercel-php, PHP 8.5, serverless)
+              │
+              ▼
+           Neon Postgres (Frankfurt) — данные, сессии, очередь задач, зашифрованные секреты
+GitHub Actions ──► тесты на каждый PR ─► деплой на Vercel ─► cron: POST /api/jobs/run
+```
+
+| Решение | Почему |
+|---|---|
+| Один домен для фронта и API (rewrite) | `vercel.app` — публичный суффикс, cookie между двумя `*.vercel.app` не работают |
+| Сессии, кэш, очередь — в Postgres | у serverless нет постоянного диска и процессов |
+| Фоновые задачи через cron GitHub Actions | у vercel-php нет воркеров; Vercel Hobby cron — 1 раз в сутки |
+| Деплой из GitHub Actions (Vercel CLI) | деплой только после зелёных тестов; аккаунт Vercel не привязан к GitHub |
+
+## Бэкенд: модули
+Код разбит по доменам в `backend/app/Modules/<Имя>`. Модуль содержит всё своё:
+`Providers/` (регистрация), `routes.php` (маршруты под `/api`), `Http/Controllers` (только оркестрация),
+`Http/Requests` (валидация), `Services` (логика), `Repositories` (запросы к БД), `Database/Migrations`, `Contracts` (интерфейсы).
+Базовый класс `ModuleServiceProvider` сам подключает маршруты и миграции модуля — новый модуль добавляется одной строкой
+в `bootstrap/providers.php`.
+
+| Модуль | Статус | Документация |
+|---|---|---|
+| Core (health, общие механизмы) | ✅ | [modules/core.md](../modules/core.md) |
+
+## Фронтенд
+`frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.
+Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн — [design-direction.md](design-direction.md).
+
+## Ограничения (осознанные)
+- Холодный старт API ~0.3–1 с после простоя.
+- Фоновые задачи выполняются с задержкой до ~30 мин (частота cron).
+- Постоянные соединения (Telegram userbot, WebSocket) невозможны — только вебхуки.

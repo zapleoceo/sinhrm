@@ -1,0 +1,85 @@
+name: Deploy
+
+# Deploys only after CI is green: preview for pull requests, production for main.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      TARGET: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && 'production' || 'preview' }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.event.workflow_run.head_sha }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.4", extensions: "pdo_pgsql, pgsql, intl, sodium" }
+      - run: npm i -g vercel@latest
+
+      - name: API — build & deploy
+        id: api
+        working-directory: backend
+        env: { VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_API }}" }
+        run: |
+          PROD=$([ "$TARGET" = production ] && echo --prod || true)
+          vercel pull --yes --environment=$TARGET --token=${{ secrets.VERCEL_TOKEN }}
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+          vercel build $PROD --token=${{ secrets.VERCEL_TOKEN }}
+          url=$(vercel deploy --prebuilt $PROD --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: API — migrations (${{ env.TARGET }} database)
+        working-directory: backend
+        run: |
+          set -a; . .vercel/.env.$TARGET.local; set +a
+          composer install --no-interaction --prefer-dist --quiet
+          php artisan migrate --force
+          if [ "$TARGET" = preview ]; then php artisan db:seed --force; fi
+
+      - name: Web — build & deploy
+        id: web
+        working-directory: frontend
+        env: { VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_WEB }}" }
+        run: |
+          PROD=$([ "$TARGET" = production ] && echo --prod || true)
+          vercel pull --yes --environment=$TARGET --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build $PROD --token=${{ secrets.VERCEL_TOKEN }}
+          url=$(vercel deploy --prebuilt $PROD --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke — /api/health
+        id: smoke
+        run: |
+          out=$(vercel curl "${{ steps.api.outputs.url }}/api/health" --token=${{ secrets.VERCEL_TOKEN }} 2>&1 || true)
+          echo "$out"
+          { echo 'body<<EOF'; echo "$out"; echo 'EOF'; } >> "$GITHUB_OUTPUT"
+          echo "$out" | grep -q '"ok":true'
+
+      - name: Comment preview links on PR
+        if: env.TARGET == 'preview' && always()
+        uses: actions/github-script@v7
+        env:
+          WEB_URL: ${{ steps.web.outputs.url }}
+          API_URL: ${{ steps.api.outputs.url }}
+          SMOKE: ${{ steps.smoke.outputs.body }}
+        with:
+          script: |
+            const prs = context.payload.workflow_run.pull_requests;
+            if (!prs.length) return;
+            const { WEB_URL, API_URL, SMOKE } = process.env;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: prs[0].number,
+              body: ['### Preview', `- Web: ${WEB_URL}`, `- API: ${API_URL}`, '', '**Smoke `/api/health`:**', '```', SMOKE, '```'].join('\n'),
+            });
