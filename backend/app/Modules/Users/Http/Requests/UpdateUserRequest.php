@@ -15,7 +15,8 @@ final class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'role' => ['sometimes', 'required', Rule::enum(UserRole::class)],
+            // Superadmin is never assigned through the API: it comes only from SUPERADMIN_EMAIL (bootstrap).
+            'role' => ['sometimes', 'required', Rule::in(UserRole::invitableValues())],
             'status' => ['sometimes', 'required', Rule::enum(UserStatus::class)],
         ];
     }

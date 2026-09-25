@@ -114,6 +114,17 @@ final class UsersAdminTest extends TestCase
             ->assertJsonValidationErrors(['role', 'status']);
     }
 
+    public function test_superadmin_role_cannot_be_assigned_through_the_api(): void
+    {
+        $user = User::factory()->withRole(UserRole::Admin)->create();
+
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['role' => 'superadmin'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['role']);
+
+        $this->assertFalse($user->fresh()->hasRole(UserRole::Superadmin->value));
+    }
+
     public function test_cannot_change_own_role_or_status(): void
     {
         $this->actingAs($this->superadmin)->patchJson("/api/users/{$this->superadmin->id}", ['status' => 'blocked'])

@@ -14,7 +14,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { USER_ROLES, USER_STATUSES, UserRole, UserStatus } from '../../core/auth/auth.model';
+import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { InviteUserDialog } from './invite-user.dialog';
 import { AdminUser, UpdateUser, UsersQuery } from './users.model';
@@ -51,6 +51,8 @@ export class UsersPage implements OnInit {
   private readonly search$ = new Subject<string>();
 
   protected readonly roles = USER_ROLES;
+  /** Superadmin is bootstrap-only (SUPERADMIN_EMAIL) and cannot be assigned from the UI. */
+  protected readonly assignableRoles = INVITABLE_ROLES;
   protected readonly statuses = USER_STATUSES;
   protected readonly columns = ['user', 'role', 'status', 'lastLogin', 'actions'];
   private readonly auth = inject(AuthService);

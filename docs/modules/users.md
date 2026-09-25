@@ -56,3 +56,8 @@ invited_by, last_login_at, created_at`. `DELETE` не реализован на�
 ```bash
 curl -i "https://sinhrm.vercel.app/api/users?perPage=20"   # без сессии → 401
 ```
+
+## Роль суперадмина
+Суперадмин **не назначается** ни через API, ни из интерфейса: `PATCH /api/users/{id}` принимает только `admin`,
+`recruiter`, `viewer` (иначе 422). Суперадмином становится только владелец адреса из `SUPERADMIN_EMAIL` при первом входе.
+В таблице у суперадмина вместо выбора роли — неизменяемая метка.

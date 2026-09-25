@@ -62,18 +62,22 @@
       <ng-container matColumnDef="role">
         <th mat-header-cell *matHeaderCellDef>{{ 'users.columns.role' | transloco }}</th>
         <td mat-cell *matCellDef="let u">
-          <mat-form-field class="role" subscriptSizing="dynamic">
-            <mat-select
-              [value]="u.roles[0]"
-              [disabled]="u.id === meId() || pending().has(u.id)"
-              (valueChange)="changeRole(u, $event)"
-              [attr.aria-label]="'users.columns.role' | transloco"
-            >
-              @for (role of roles; track role) {
-                <mat-option [value]="role">{{ 'roles.' + role | transloco }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+          @if (u.roles[0] === 'superadmin') {
+            <mat-chip-set><mat-chip disabled>{{ 'roles.superadmin' | transloco }}</mat-chip></mat-chip-set>
+          } @else {
+            <mat-form-field class="role" subscriptSizing="dynamic">
+              <mat-select
+                [value]="u.roles[0]"
+                [disabled]="u.id === meId() || pending().has(u.id)"
+                (valueChange)="changeRole(u, $event)"
+                [attr.aria-label]="'users.columns.role' | transloco"
+              >
+                @for (role of assignableRoles; track role) {
+                  <mat-option [value]="role">{{ 'roles.' + role | transloco }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
         </td>
       </ng-container>
 
