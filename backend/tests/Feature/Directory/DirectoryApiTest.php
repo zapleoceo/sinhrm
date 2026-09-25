@@ -112,6 +112,12 @@ final class DirectoryApiTest extends TestCase
             ->assertJsonValidationErrors('status');
         $this->actingAs($this->superadmin)->postJson('/api/directory/branches', ['name' => 'B', 'city_id' => 999])
             ->assertJsonValidationErrors('city_id');
+        $disabledCity = City::factory()->disabled()->create();
+        $this->actingAs($this->superadmin)->postJson('/api/directory/branches', ['name' => 'B', 'city_id' => $disabledCity->id])
+            ->assertJsonValidationErrors('city_id');
+        $branch = Branch::factory()->create();
+        $this->actingAs($this->superadmin)->patchJson("/api/directory/branches/{$branch->id}", ['city_id' => $disabledCity->id])
+            ->assertJsonValidationErrors('city_id');
     }
 
     public function test_recruiter_and_viewer_cannot_write(): void

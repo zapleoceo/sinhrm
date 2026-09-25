@@ -26,7 +26,7 @@ final class SaveDictionaryItemRequest extends FormRequest
             'name' => [$creating ? 'required' : 'sometimes', 'required', 'string', 'min:1', 'max:255'],
             'status' => ['sometimes', 'required', Rule::enum(DirectoryStatus::class)],
             'city_id' => $this->dictionary() === DictionaryType::Branches
-                ? ['sometimes', 'nullable', 'integer', Rule::exists(City::class, 'id')]
+                ? ['sometimes', 'nullable', 'integer', Rule::exists(City::class, 'id')->where('status', DirectoryStatus::Active->value)]
                 : ['prohibited'],
         ];
     }

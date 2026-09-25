@@ -27,14 +27,15 @@ use Throwable;
  * - Requests: GET {base_url}/{cities|branches|departments|jobs}/list with "Authorization: Bearer <token>"
  *   (paths and header come from the Sintegrum apidoc; NOT verified against the live API).
  * - Everything is fetched first, then written in one transaction: a failed request changes nothing.
- * - Upsert by external_id, never deletes. Whole run is limited to TOTAL_SECONDS.
+ * - Upsert by external_id, never deletes. All requests together are limited to TOTAL_SECONDS (45s < maxDuration 60s).
  * - Audit: integration_logs of sintegrum_api, with counts or an error code only (no URLs, tokens, bodies).
  */
 final class SintegrumDirectoryImporter implements DirectoryImporter
 {
     public const string INTEGRATION_KEY = 'sintegrum_api';
 
-    public const int TOTAL_SECONDS = 60;
+    /** Budget for all requests; the Vercel function lives 60s (maxDuration), the rest is headroom for boot/DB/response. */
+    public const int TOTAL_SECONDS = 45;
 
     private const int REQUEST_TIMEOUT_SECONDS = 15;
 
