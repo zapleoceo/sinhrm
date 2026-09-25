@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "label": "Головне меню", "overview": "Огляд", "admin": "Адміністрування", "users": "Користувачі", "integrations": "Інтеграції", "directory": "Довідники" },
+    "nav": { "recruiting": "Рекрутинг", "candidates": "Кандидати", "vacancies": "Вакансії", "inbox": "Вхідні", "reports": "Звіти", "label": "Головне меню", "overview": "Огляд", "admin": "Адміністрування", "users": "Користувачі", "integrations": "Інтеграції", "directory": "Довідники" },
     "menu": { "open": "Меню користувача", "language": "Мова", "logout": "Вийти" },
     "theme": { "toDark": "Темна тема", "toLight": "Світла тема" }
   },
@@ -278,6 +278,176 @@
         "name": "Meta Lead Ads",
         "description": "Заявки з форм Facebook та Instagram"
       }
+    }
+  },
+  "palette": {
+    "title": "Швидкий перехід",
+    "open": "Пошук",
+    "placeholder": "Кандидат, вакансія, розділ…",
+    "nothing": "Нічого не знайдено",
+    "keys": "↑↓ — вибір · Enter — відкрити · Esc — закрити"
+  },
+  "recruiting": {
+    "search": "Пошук",
+    "save": "Зберегти",
+    "required": "Обовʼязкове поле",
+    "loadError": "Не вдалося завантажити дані",
+    "vacancies": {
+      "title": "Вакансії",
+      "subtitle": "Вакансії ваших філій. Відкрийте вакансію, щоб побачити дошку кандидатів.",
+      "new": "Нова вакансія",
+      "edit": "Редагувати вакансію",
+      "empty": "Вакансій немає",
+      "activeCount": "Активні / усі кандидати",
+      "fields": {
+        "title": "Назва",
+        "branch": "Філія",
+        "position": "Посада",
+        "status": "Статус",
+        "description": "Опис"
+      }
+    },
+    "vacancyStatus": {
+      "open": "Відкрита",
+      "paused": "На паузі",
+      "closed": "Закрита"
+    },
+    "appStatus": {
+      "active": "В роботі",
+      "hired": "Прийнятий",
+      "rejected": "Відмова"
+    },
+    "board": {
+      "add": "Додати кандидата",
+      "stale": "{{days}} дн. без контакту",
+      "staleCount": "без контакту 3+ дні: {{n}}"
+    },
+    "reject": {
+      "title": "Відмова: {{name}}",
+      "reason": "Причина",
+      "note": "Коментар (необовʼязково)",
+      "submit": "Відмовити"
+    },
+    "candidates": {
+      "title": "Кандидати",
+      "new": "Новий кандидат",
+      "search": "Імʼя, телефон, e-mail, @telegram",
+      "empty": "Кандидатів не знайдено",
+      "pick": "Оберіть кандидата зліва. j/k або ↑/↓ — наступний/попередній, / — пошук.",
+      "duplicate": "Такий кандидат уже є (збіг: {{by}}).",
+      "openExisting": "Відкрити картку",
+      "createAnyway": "Все одно створити нового",
+      "fields": {
+        "fullName": "ПІБ",
+        "phone": "Телефон",
+        "email": "E-mail",
+        "telegram": "Telegram",
+        "source": "Джерело",
+        "status": "Статус"
+      }
+    },
+    "matchedBy": {
+      "phone": "телефон",
+      "email": "e-mail",
+      "telegram": "Telegram"
+    },
+    "card": {
+      "source": "Джерело",
+      "route": "Маршрут",
+      "move": "Перемістити",
+      "stale": "Без контакту 3+ дні",
+      "rejectedFor": "Причина відмови",
+      "noApplications": "Кандидат ще не доданий до жодної вакансії",
+      "timeline": "Касання",
+      "filter": "Фільтр каналів",
+      "stages": "Етапи",
+      "clear": "Скинути",
+      "viaProduct": "з SinHRM",
+      "captured": "зовні",
+      "viaProductHint": "Зроблено з продукту",
+      "capturedHint": "Перехоплено з зовнішнього каналу (інтеграція)",
+      "created": "Створено",
+      "noTouches": "Касань ще немає",
+      "more": "Показати ще",
+      "keys": "Ctrl/⌘+K — швидкий перехід · j/k — наступний кандидат"
+    },
+    "composer": {
+      "channel": "Канал",
+      "direction": "Напрям",
+      "minutes": "Хвилин",
+      "body": "Текст / підсумок",
+      "hint": "Ctrl/⌘+Enter — зберегти",
+      "submit": "Записати",
+      "saved": "Касання збережено"
+    },
+    "direction": {
+      "in": "вхідне",
+      "out": "вихідне"
+    },
+    "channel": {
+      "call": "Дзвінок",
+      "telegram": "Telegram",
+      "whatsapp": "WhatsApp",
+      "viber": "Viber",
+      "email": "E-mail",
+      "note": "Нотатка",
+      "meeting": "Зустріч",
+      "system": "Система"
+    },
+    "source": {
+      "manual": "Вручну",
+      "work_ua": "Work.ua",
+      "robota_ua": "Robota.ua",
+      "djinni": "Djinni",
+      "meta_ads": "Реклама Meta",
+      "site": "Сайт",
+      "referral": "Рекомендація",
+      "telegram": "Telegram",
+      "inbox": "Вхідні",
+      "other": "Інше",
+      "import": "Імпорт"
+    },
+    "inbox": {
+      "title": "Вхідні",
+      "subtitle": "Повідомлення й дзвінки, які не вдалося привʼязати до кандидата.",
+      "empty": "Усе розібрано",
+      "resolve": "Розібрати",
+      "link": "Привʼязати",
+      "create": "Створити кандидата",
+      "vacancy": "Вакансія (необовʼязково)",
+      "duplicate": "Кандидат з цим контактом уже існує.",
+      "linkExisting": "Привʼязати до нього"
+    },
+    "reports": {
+      "title": "Звіти",
+      "subtitle": "Касання, воронка, джерела, причини відмов за період.",
+      "from": "З",
+      "to": "По",
+      "apply": "Показати",
+      "touches": "Касання рекрутерів",
+      "touchesTotals": "Усього {{total}}: з SinHRM {{via}}, зовні {{captured}}",
+      "recruiter": "Рекрутер",
+      "total": "Усього",
+      "sources": "Джерела",
+      "candidates": "Кандидати",
+      "hired": "Прийнято",
+      "rejectReasons": "Причини відмов",
+      "funnel": "Воронка (поточні етапи)",
+      "empty": "Даних за період немає"
+    },
+    "errors": {
+      "duplicate_candidate": "Такий кандидат уже є",
+      "already_applied": "Кандидат уже на цій вакансії",
+      "stage_not_in_pipeline": "Етап не з воронки цієї вакансії",
+      "same_stage": "Кандидат уже на цьому етапі",
+      "reject_reason_required": "Вкажіть причину відмови",
+      "application_mismatch": "Заявка належить іншому кандидату",
+      "no_default_pipeline": "Немає воронки за замовчуванням",
+      "vacancy_out_of_scope": "Вакансія не з ваших філій",
+      "already_linked": "Повідомлення вже привʼязане",
+      "forbidden": "Недостатньо прав",
+      "validation": "Перевірте поля",
+      "generic": "Не вдалося виконати дію"
     }
   }
 }

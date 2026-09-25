@@ -6,6 +6,7 @@ use App\Modules\Auth\Providers\AuthServiceProvider;
 use App\Modules\Core\Providers\CoreServiceProvider;
 use App\Modules\Directory\Providers\DirectoryServiceProvider;
 use App\Modules\Integrations\Providers\IntegrationsServiceProvider;
+use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
 use App\Modules\Users\Providers\UsersServiceProvider;
 use App\Providers\AppServiceProvider;
 
@@ -17,4 +18,5 @@ return [
     UsersServiceProvider::class,
     IntegrationsServiceProvider::class,
     DirectoryServiceProvider::class,
+    RecruitingServiceProvider::class,
 ];

@@ -1,0 +1,163 @@
+@if (store.loading() && !store.candidate()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (store.failed()) {
+  <div class="state">
+    <p>{{ 'recruiting.loadError' | transloco }}</p>
+    <button mat-stroked-button type="button" (click)="store.open(candidateId())">{{ 'common.retry' | transloco }}</button>
+  </div>
+}
+
+@if (store.candidate(); as c) {
+  <header class="head">
+    <h2>{{ c.full_name }}</h2>
+    <div class="contacts">
+      @if (c.phone) {
+        <a [href]="'tel:' + c.phone"><mat-icon inline>call</mat-icon>{{ c.phone }}</a>
+      }
+      @if (c.email) {
+        <a [href]="'mailto:' + c.email"><mat-icon inline>mail</mat-icon>{{ c.email }}</a>
+      }
+      @if (c.telegram_username) {
+        <a [href]="'https://t.me/' + c.telegram_username" target="_blank" rel="noopener noreferrer">
+          <mat-icon inline>send</mat-icon>&#64;{{ c.telegram_username }}
+        </a>
+      }
+    </div>
+    <mat-chip-set [attr.aria-label]="'recruiting.card.source' | transloco">
+      <mat-chip [disableRipple]="true"><mat-icon matChipAvatar>input</mat-icon>{{ 'recruiting.source.' + c.source | transloco }}</mat-chip>
+      @for (u of utm(); track u[0]) {
+        <mat-chip [disableRipple]="true" class="utm">{{ u[0] }}={{ u[1] }}</mat-chip>
+      }
+      @for (t of c.tags; track t) {
+        <mat-chip [disableRipple]="true" class="tag">#{{ t }}</mat-chip>
+      }
+    </mat-chip-set>
+  </header>
+
+  <section class="route" [attr.aria-label]="'recruiting.card.route' | transloco">
+    <h3>{{ 'recruiting.card.route' | transloco }}</h3>
+    @for (app of c.applications; track app.id) {
+      <div class="app">
+        <div class="app-head">
+          <strong>{{ app.vacancy?.title }}</strong>
+          <span class="status" [attr.data-status]="app.status">{{ 'recruiting.appStatus.' + app.status | transloco }}</span>
+          @if (app.is_stale) {
+            <span class="stale"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.card.stale' | transloco }}</span>
+          }
+          <span class="spacer"></span>
+          @if (canWrite()) {
+            <button mat-stroked-button type="button" [matMenuTriggerFor]="moveMenu">
+              {{ 'recruiting.card.move' | transloco }}<mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+            </button>
+            <mat-menu #moveMenu="matMenu">
+              @for (s of otherStages(app); track s.id) {
+                <button mat-menu-item type="button" (click)="moveTo(app, s)">
+                  <mat-icon>{{ s.is_reject ? 'block' : s.is_hire ? 'how_to_reg' : 'arrow_forward' }}</mat-icon>{{ s.name }}
+                </button>
+              }
+            </mat-menu>
+          }
+        </div>
+        <ol class="steps">
+          @for (step of app.route ?? []; track step.stage_change_id; let last = $last) {
+            <li [class.current]="last" [attr.data-kind]="step.kind">
+              <span class="step-name">{{ step.stage_name }}</span>
+              <span class="muted">{{ step.entered_at | date: 'dd.MM HH:mm' }} · {{ duration(step.duration_sec) }}</span>
+              @if (step.reason) {
+                <span class="muted reason">«{{ step.reason }}»</span>
+              }
+            </li>
+          }
+        </ol>
+        @if (app.reject_reason) {
+          <p class="muted">{{ 'recruiting.card.rejectedFor' | transloco }}: {{ app.reject_reason }}</p>
+        }
+      </div>
+    } @empty {
+      <p class="muted">{{ 'recruiting.card.noApplications' | transloco }}</p>
+    }
+  </section>
+
+  @if (canWrite()) {
+    <section class="compose">
+      <app-touch-composer (logged)="log($event)" />
+    </section>
+  }
+
+  <section class="timeline" [attr.aria-label]="'recruiting.card.timeline' | transloco">
+    <div class="timeline-head">
+      <h3>{{ 'recruiting.card.timeline' | transloco }}</h3>
+      <mat-chip-listbox multiple [attr.aria-label]="'recruiting.card.filter' | transloco">
+        @for (f of filterChips; track f) {
+          <mat-chip-option [selected]="isOn(f)" (click)="store.toggleFilter(f)">
+            {{ (f === 'stage' ? 'recruiting.card.stages' : 'recruiting.channel.' + f) | transloco }}
+          </mat-chip-option>
+        }
+      </mat-chip-listbox>
+      @if (store.filters().length) {
+        <button mat-button type="button" (click)="store.clearFilters()">{{ 'recruiting.card.clear' | transloco }}</button>
+      }
+    </div>
+    @if (store.timelineLoading() && store.timeline().length === 0) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+    <ol class="items">
+      @for (item of store.timeline(); track item.type + item.at + $index) {
+        @if (item.type === 'touchpoint') {
+          <li class="item" [attr.data-channel]="item.touchpoint.channel">
+            <mat-icon class="icon">{{ icons[item.touchpoint.channel] }}</mat-icon>
+            <div class="body">
+              <div class="line">
+                <strong>{{ 'recruiting.channel.' + item.touchpoint.channel | transloco }}</strong>
+                <span class="muted">{{ 'recruiting.direction.' + item.touchpoint.direction | transloco }}</span>
+                <span class="marker" [class.captured]="!item.touchpoint.via_product"
+                  [matTooltip]="(item.touchpoint.via_product ? 'recruiting.card.viaProductHint' : 'recruiting.card.capturedHint') | transloco">
+                  {{ (item.touchpoint.via_product ? 'recruiting.card.viaProduct' : 'recruiting.card.captured') | transloco }}
+                </span>
+                @if (item.touchpoint.meta.duration_sec) {
+                  <span class="muted">{{ duration(item.touchpoint.meta.duration_sec) }}</span>
+                }
+                <span class="spacer"></span>
+                <time class="muted" [attr.datetime]="item.at">{{ item.at | date: 'dd.MM.yyyy HH:mm' }}</time>
+              </div>
+              @if (item.touchpoint.body) {
+                <p class="text">{{ item.touchpoint.body }}</p>
+              }
+              @if (item.touchpoint.author) {
+                <span class="muted small">{{ item.touchpoint.author.name }}</span>
+              }
+            </div>
+          </li>
+        } @else {
+          <li class="item stage">
+            <mat-icon class="icon">swap_horiz</mat-icon>
+            <div class="body">
+              <div class="line">
+                <strong>{{ item.stage_change.from_stage?.name ?? ('recruiting.card.created' | transloco) }} → {{ item.stage_change.to_stage.name }}</strong>
+                <span class="muted">{{ item.stage_change.vacancy.title }}</span>
+                <span class="spacer"></span>
+                <time class="muted" [attr.datetime]="item.at">{{ item.at | date: 'dd.MM.yyyy HH:mm' }}</time>
+              </div>
+              @if (item.stage_change.reason) {
+                <p class="text">{{ item.stage_change.reason }}</p>
+              }
+              @if (item.stage_change.by) {
+                <span class="muted small">{{ item.stage_change.by.name }}</span>
+              }
+            </div>
+          </li>
+        }
+      } @empty {
+        @if (!store.timelineLoading()) {
+          <li class="muted">{{ 'recruiting.card.noTouches' | transloco }}</li>
+        }
+      }
+    </ol>
+    @if (store.timeline().length < store.timelineTotal()) {
+      <button mat-button type="button" (click)="store.loadMore()" [disabled]="store.timelineLoading()">{{ 'recruiting.card.more' | transloco }}</button>
+    }
+  </section>
+
+  <p class="palette-hint muted">{{ 'recruiting.card.keys' | transloco }}</p>
+}

@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries" },
+    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries" },
     "menu": { "open": "User menu", "language": "Language", "logout": "Sign out" },
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
@@ -278,6 +278,176 @@
         "name": "Meta Lead Ads",
         "description": "Leads from Facebook and Instagram forms"
       }
+    }
+  },
+  "palette": {
+    "title": "Quick jump",
+    "open": "Search",
+    "placeholder": "Candidate, vacancy, section…",
+    "nothing": "Nothing found",
+    "keys": "↑↓ select · Enter open · Esc close"
+  },
+  "recruiting": {
+    "search": "Search",
+    "save": "Save",
+    "required": "Required",
+    "loadError": "Could not load data",
+    "vacancies": {
+      "title": "Vacancies",
+      "subtitle": "Vacancies of your branches. Open one to see its candidate board.",
+      "new": "New vacancy",
+      "edit": "Edit vacancy",
+      "empty": "No vacancies",
+      "activeCount": "Active / all candidates",
+      "fields": {
+        "title": "Title",
+        "branch": "Branch",
+        "position": "Position",
+        "status": "Status",
+        "description": "Description"
+      }
+    },
+    "vacancyStatus": {
+      "open": "Open",
+      "paused": "Paused",
+      "closed": "Closed"
+    },
+    "appStatus": {
+      "active": "In progress",
+      "hired": "Hired",
+      "rejected": "Rejected"
+    },
+    "board": {
+      "add": "Add candidate",
+      "stale": "{{days}}d without contact",
+      "staleCount": "no contact for 3+ days: {{n}}"
+    },
+    "reject": {
+      "title": "Reject: {{name}}",
+      "reason": "Reason",
+      "note": "Comment (optional)",
+      "submit": "Reject"
+    },
+    "candidates": {
+      "title": "Candidates",
+      "new": "New candidate",
+      "search": "Name, phone, e-mail, @telegram",
+      "empty": "No candidates found",
+      "pick": "Pick a candidate on the left. j/k or ↑/↓ — next/previous, / — search.",
+      "duplicate": "This candidate already exists (match: {{by}}).",
+      "openExisting": "Open card",
+      "createAnyway": "Create a new one anyway",
+      "fields": {
+        "fullName": "Full name",
+        "phone": "Phone",
+        "email": "E-mail",
+        "telegram": "Telegram",
+        "source": "Source",
+        "status": "Status"
+      }
+    },
+    "matchedBy": {
+      "phone": "phone",
+      "email": "e-mail",
+      "telegram": "Telegram"
+    },
+    "card": {
+      "source": "Source",
+      "route": "Route",
+      "move": "Move",
+      "stale": "No contact for 3+ days",
+      "rejectedFor": "Rejection reason",
+      "noApplications": "Not added to any vacancy yet",
+      "timeline": "Touches",
+      "filter": "Channel filter",
+      "stages": "Stages",
+      "clear": "Clear",
+      "viaProduct": "via SinHRM",
+      "captured": "captured",
+      "viaProductHint": "Made from the product",
+      "capturedHint": "Captured from an external channel (integration)",
+      "created": "Created",
+      "noTouches": "No touches yet",
+      "more": "Show more",
+      "keys": "Ctrl/⌘+K — quick jump · j/k — next candidate"
+    },
+    "composer": {
+      "channel": "Channel",
+      "direction": "Direction",
+      "minutes": "Minutes",
+      "body": "Text / summary",
+      "hint": "Ctrl/⌘+Enter to save",
+      "submit": "Log",
+      "saved": "Touch saved"
+    },
+    "direction": {
+      "in": "inbound",
+      "out": "outbound"
+    },
+    "channel": {
+      "call": "Call",
+      "telegram": "Telegram",
+      "whatsapp": "WhatsApp",
+      "viber": "Viber",
+      "email": "E-mail",
+      "note": "Note",
+      "meeting": "Meeting",
+      "system": "System"
+    },
+    "source": {
+      "manual": "Manual",
+      "work_ua": "Work.ua",
+      "robota_ua": "Robota.ua",
+      "djinni": "Djinni",
+      "meta_ads": "Meta ads",
+      "site": "Website",
+      "referral": "Referral",
+      "telegram": "Telegram",
+      "inbox": "Inbox",
+      "other": "Other",
+      "import": "Import"
+    },
+    "inbox": {
+      "title": "Inbox",
+      "subtitle": "Messages and calls that could not be matched to a candidate.",
+      "empty": "All caught up",
+      "resolve": "Resolve",
+      "link": "Link",
+      "create": "Create candidate",
+      "vacancy": "Vacancy (optional)",
+      "duplicate": "A candidate with this contact already exists.",
+      "linkExisting": "Link to them"
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Touches, funnel, sources and rejection reasons for a period.",
+      "from": "From",
+      "to": "To",
+      "apply": "Show",
+      "touches": "Recruiter touches",
+      "touchesTotals": "Total {{total}}: via SinHRM {{via}}, captured {{captured}}",
+      "recruiter": "Recruiter",
+      "total": "Total",
+      "sources": "Sources",
+      "candidates": "Candidates",
+      "hired": "Hired",
+      "rejectReasons": "Rejection reasons",
+      "funnel": "Funnel (current stages)",
+      "empty": "No data for the period"
+    },
+    "errors": {
+      "duplicate_candidate": "This candidate already exists",
+      "already_applied": "The candidate is already on this vacancy",
+      "stage_not_in_pipeline": "The stage is not in this vacancy's pipeline",
+      "same_stage": "The candidate is already on this stage",
+      "reject_reason_required": "Choose a rejection reason",
+      "application_mismatch": "The application belongs to another candidate",
+      "no_default_pipeline": "No default pipeline",
+      "vacancy_out_of_scope": "The vacancy is outside your branches",
+      "already_linked": "The message is already linked",
+      "forbidden": "Not allowed",
+      "validation": "Check the fields",
+      "generic": "Action failed"
     }
   }
 }

@@ -38,6 +38,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Shell (оболочка фронтенда) | ✅ | [modules/shell.md](../modules/shell.md) |
 | Integrations (секреты и внешние сервисы) | ✅ | [modules/integrations.md](../modules/integrations.md) |
 | Directory (справочники, филиалы пользователей, импорт из Sintegrum) | ✅ | [modules/directory.md](../modules/directory.md) |
+| Recruiting (вакансии, воронки, кандидаты, касания, «Вхідні», отчёты) | ✅ | [modules/recruiting.md](../modules/recruiting.md) |
 
 ## Фронтенд
 `frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.
