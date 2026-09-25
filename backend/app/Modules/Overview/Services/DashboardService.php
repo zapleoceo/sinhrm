@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Overview\Services;
 
 use App\Models\User;
+use App\Modules\Overview\Contracts\DashboardNotices;
 use App\Modules\Overview\Contracts\DashboardRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Models\Application;
@@ -33,6 +34,8 @@ final readonly class DashboardService
         private ApplicationRepository $applications,
         private RecruitingScope $scope,
         private TaskService $tasks,
+        /** @var iterable<DashboardNotices> */
+        private iterable $notices = [],
     ) {}
 
     /** @return array<string, mixed> */
@@ -67,11 +70,23 @@ final readonly class DashboardService
                 'last_activity_at' => $a->lastActivityAt()?->toIso8601String(),
                 'days' => (int) floor(($a->lastActivityAt() ?? $now)->diffInDays($now)),
             ])->values()->all(),
+            'warnings' => $this->warnings($actor),
             'funnel' => $this->dashboard->funnel($scope),
             'touches' => [
                 'days' => self::TOUCH_DAYS,
                 'by_channel' => $this->dashboard->touchesByChannel($scope, $now->copy()->subDays(self::TOUCH_DAYS)),
             ],
         ];
+    }
+
+    /** @return list<array<string, mixed>> notices of other modules (DashboardNotices tag) */
+    private function warnings(User $actor): array
+    {
+        $all = [];
+        foreach ($this->notices as $source) {
+            $all = [...$all, ...$source->for($actor)];
+        }
+
+        return $all;
     }
 }

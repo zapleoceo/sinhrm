@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "recruiting": "Рекрутинг", "candidates": "Кандидаты", "vacancies": "Вакансии", "inbox": "Входящие", "reports": "Отчёты", "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи", "integrations": "Интеграции", "directory": "Справочники", "scripts": "Скрипты", "status": "Состояние системы" },
+    "nav": { "recruiting": "Рекрутинг", "candidates": "Кандидаты", "vacancies": "Вакансии", "inbox": "Входящие", "reports": "Отчёты", "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи", "integrations": "Интеграции", "directory": "Справочники", "scripts": "Скрипты", "status": "Состояние системы", "mail": "Почта", "sheetsImport": "Импорт из Google Sheets" },
     "menu": { "open": "Меню пользователя", "language": "Язык", "logout": "Выйти" },
     "theme": { "toDark": "Тёмная тема", "toLight": "Светлая тема" }
   },
@@ -450,8 +450,9 @@
       "generic": "Не удалось выполнить действие"
     }
   },
-  "titles": { "login": "Вход", "overview": "Обзор", "vacancies": "Вакансии", "board": "Доска вакансии", "candidates": "Кандидаты", "inbox": "Входящие", "reports": "Отчёты", "status": "Состояние системы", "scripts": "Скрипты", "scriptEditor": "Редактор скрипта", "users": "Пользователи", "directory": "Справочники", "integrations": "Интеграции" },
+  "titles": { "login": "Вход", "overview": "Обзор", "vacancies": "Вакансии", "board": "Доска вакансии", "candidates": "Кандидаты", "inbox": "Входящие", "reports": "Отчёты", "status": "Состояние системы", "scripts": "Скрипты", "scriptEditor": "Редактор скрипта", "users": "Пользователи", "directory": "Справочники", "integrations": "Интеграции", "mail": "Почта", "sheetsImport": "Импорт из Google Sheets" },
   "overview": {
+    "warnings": { "google_reconnect_required": "Google ({{service}}) нужно переподключить: доступ истёк или отозван.", "open": "Открыть интеграции" },
     "greeting": "Здравствуйте, {{name}}!",
     "subtitle": "Что требует внимания сегодня",
     "refresh": "Обновить",
@@ -519,8 +520,36 @@
       "loadError": "Не удалось загрузить задачи",
       "overdue": "просрочено",
       "empty": "Задач нет",
-      "type": { "followup": "напоминание", "manual": "задача" }
+      "newApplicantTitle": "Позвонить новому кандидату (в течение часа)",
+      "type": { "followup": "напоминание", "manual": "задача", "new_applicant": "новый отклик" }
     },
     "errors": { "no_draft": "Нет черновика для публикации", "version_not_published": "Эта версия ещё не опубликована", "nothing_to_evaluate": "В скрипте ещё нет ни черновика, ни активной версии", "script_archived": "Скрипт в архиве: сначала верните его", "not_evaluated": "Это касание не оценивалось", "forbidden": "Недостаточно прав", "validation": "Проверьте поля: есть ошибки", "generic": "Что-то пошло не так" }
+  },
+  "google": {
+    "services": { "gmail": "Gmail", "calendar": "Календарь", "sheets": "Таблицы" },
+    "openIntegrations": "Открыть интеграции",
+    "connect": { "title": "Google-аккаунт для почты, календаря и таблиц", "explain": "Отдельно от входа. Даёт SinHRM читать и отправлять почту, создавать события в календаре и читать таблицы. Токены хранятся только в базе, зашифрованно.", "button": "Подключить Google", "reconnect": "Переподключить", "state": { "connected": "Подключено", "off": "Не подключено", "error": "Нужно переподключить" }, "connected": "Google подключён", "missing": "Не выдан доступ к: {{services}}. Подключите ещё раз и отметьте все разрешения.", "redirectHint": "Адрес возврата, который владелец добавляет в Google Cloud:", "testingHint": "Пока приложение Google в режиме «Testing», доступ действует 7 дней — затем нажмите «Переподключить»." },
+    "meeting": { "button": "Запланировать встречу", "disabledHint": "Календарь Google не подключён (Администрирование → Интеграции)", "title": "Встреча с кандидатом", "eventTitle": "Собеседование: {{name}}", "fields": { "title": "Название", "date": "Дата", "time": "Время", "duration": "Длительность, мин", "type": "Формат", "location": "Место", "notes": "Заметки", "invite": "Добавить кандидата в участники (Google письмо не отправляет)" }, "types": { "branch": "В филиале", "online": "Онлайн (Google Meet)" }, "submit": "Создать событие", "created": "Событие создано в Google Календаре", "copy": "Копировать ссылку", "copied": "Ссылка скопирована", "open": "Открыть в Календаре", "meet": "Google Meet", "noEmail": "У кандидата нет e-mail — добавить его в участники нельзя" },
+    "sheets": { "title": "Импорт из Google Sheets", "subtitle": "Вставьте ссылку на таблицу, сопоставьте колонки и импортируйте. Дубликаты (тот же телефон, e-mail или Telegram) не создаются.", "url": "Ссылка на таблицу", "sheet": "Лист (пусто — первый)", "inspect": "Прочитать заголовки", "mapping": "Соответствие колонок", "none": "— не импортировать —", "column": "Колонка {{n}}", "preview": "Первые 10 строк", "noRows": "В таблице нет строк под заголовком", "autoSync": "Догружать новые строки каждые 30 минут", "import": "Импортировать", "needContact": "Сопоставьте хотя бы одну колонку контакта: телефон, e-mail или Telegram.", "fields": { "full_name": "ФИО", "phone": "Телефон", "email": "E-mail", "telegram": "Telegram", "source": "Источник", "utm_source": "utm_source", "utm_medium": "utm_medium", "utm_campaign": "utm_campaign", "utm_content": "utm_content", "utm_term": "utm_term", "vacancy": "Вакансия", "created_at": "Дата заявки" }, "report": { "title": "Результат импорта", "created": "Создано", "matched": "Уже были", "skipped": "Пропущено", "applied": "Добавлено в вакансии", "vacancy_unmatched": "Вакансия не найдена", "errors": "Ошибки", "row": "Строка {{row}}" }, "rowErrors": { "full_name_required": "нет ФИО для нового кандидата", "row_failed": "строка не обработана" }, "saved": "Сохранённые импорты", "lastRow": "Последняя строка: {{row}}", "auto": "Каждые 30 мин", "run": "Догрузить новые", "empty": "Импортов ещё нет" },
+    "errors": { "google_gmail_not_connected": "Gmail не подключён", "google_calendar_not_connected": "Google Календарь не подключён", "google_sheets_not_connected": "Google Таблицы не подключены", "reconnect_required": "Google нужно переподключить", "google_oauth_not_configured": "OAuth-клиент Google не настроен на сервере", "google_unauthorized": "Google отклонил доступ", "google_forbidden": "Нет доступа (проверьте разрешения или доступ к таблице)", "google_not_found": "Не найдено (проверьте ссылку и доступ)", "google_unreachable": "Google недоступен, попробуйте позже", "invalid_sheet_url": "Нужна ссылка вида https://docs.google.com/spreadsheets/d/…", "consent_denied": "Доступ не выдан", "invalid_state": "Сессия подключения устарела — попробуйте ещё раз", "invalid_services": "Неизвестные сервисы Google", "validation": "Проверьте поля", "generic": "Не удалось выполнить действие с Google" }
+  },
+  "mail": {
+    "title": "Почта",
+    "subtitle": "Агент читает подключённый ящик Gmail каждые 30 минут: отклики с сайтов вакансий становятся кандидатами и задачами, письма кандидатов — касаниями в карточке.",
+    "syncNow": "Синхронизировать сейчас",
+    "syncing": "Синхронизация…",
+    "synced": "Готово: обработано {{processed}}",
+    "loadError": "Не удалось загрузить данные почты",
+    "cv": "Резюме",
+    "parsersNote": "Разбор откликов ещё не сверен с реальными письмами сайтов — проверьте первые результаты в журнале.",
+    "status": { "connection": "Ящик", "notConnected": "Gmail не подключён", "reconnect": "Нужно переподключить", "connectHint": "Подключить в «Интеграциях»", "lastSync": "Последняя синхронизация", "never": "ещё не было", "processed": "Обработано за 24 ч", "unknown": "Неизвестных отправителей" },
+    "tabs": { "unknown": "Неизвестные отправители", "rules": "Правила", "log": "Журнал" },
+    "kinds": { "job_board": "Сайт вакансий", "candidate": "Кандидат", "colleague": "Коллега", "newsletter": "Рассылка", "ignore": "Игнорировать" },
+    "parsers": { "work_ua": "Work.ua", "robota_ua": "Robota.ua", "djinni": "Djinni", "generic": "Общий" },
+    "rules": { "pattern": "Адрес или @домен", "hint": "hr@site.ua — один адрес, @site.ua — весь домен", "kind": "Тип", "parser": "Разбор", "hits": "Срабатываний: {{n}}", "add": "Добавить", "delete": "Удалить правило", "empty": "Правил ещё нет", "created": "Правило добавлено" },
+    "unknown": { "count": "писем: {{n}}", "domain": "Для всего домена", "assign": "Применить", "dismiss": "Убрать из очереди", "empty": "Очередь пуста", "assigned": "Правило создано" },
+    "log": { "received": "Получено", "sender": "Отправитель", "subject": "Тема", "outcome": "Результат", "empty": "Ещё ничего не обработано" },
+    "outcomes": { "application": "Отклик → кандидат", "touchpoint": "Письмо кандидата", "inbox": "Во «Входящие»", "skipped": "Пропущено", "unknown": "Неизвестный", "parse_failed": "Не распознано" },
+    "errors": { "duplicate_rule": "Такое правило уже есть", "google_gmail_not_connected": "Gmail не подключён", "reconnect_required": "Google нужно переподключить", "google_unreachable": "Gmail недоступен, попробуйте позже", "google_unauthorized": "Google отклонил доступ", "validation": "Проверьте поля", "generic": "Не удалось выполнить действие" }
   }
 }

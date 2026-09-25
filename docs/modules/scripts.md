@@ -100,6 +100,13 @@ AI отказывается, при включённом — сообщает «
 раз** (`tasks.unique(application_id, rule_key)`, `rule_key = "<script_id>:<id правила>"`), поэтому повторный запуск
 ничего не дублирует. Логика условий — чистая функция `Support/FollowupRules::dueAt()`.
 
+**Задачи из почты.** Для новой заявки из письма сайта вакансий почтовый агент ([mail-agent.md](mail-agent.md)) вызывает
+`TaskService::scheduleNewApplicantCall(assigneeId, candidateId, applicationId, receivedAt)`: задача типа `new_applicant`
+(«Зателефонувати новому кандидату»), исполнитель — рекрутер вакансии, `due_at = получение письма + 60 минут`,
+`rule_key = "mail:new_applicant"` — один раз на заявку. В ответе API у неё `is_overdue` считается **по минутам**
+(`due_at < now`), у остальных типов — по дням, как раньше. Интерфейс показывает переведённое название по типу.
+Приоритет в списке: открытые, затем по `due_at` — просроченные (самые ранние сроки) всегда сверху.
+
 Запуск: `Services/FollowupJob` зарегистрирован как `Core\Contracts\ScheduledJob` → `POST /api/ops/jobs/run`
 (секрет `X-Ops-Secret`), который каждые 30 минут вызывает `.github/workflows/cron.yml` ([core.md](core.md), [deploy](../guides/deploy.md)).
 
@@ -109,7 +116,7 @@ AI отказывается, при включённом — сообщает «
 | `scripts` | `name, channel (call\|chat), active_version_id?, archived` |
 | `script_versions` | `script_id, version, published_at? (null = черновик), author_id, steps, objections, templates, followups, next_step_patterns` (jsonb); `unique(script_id, version)`. Опубликованная версия неизменяема: сервис правит только черновик, а модель бросает `LogicException` при попытке изменить опубликованную |
 | `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (jsonb: steps, next_step, objections, recommendations), created_at` |
-| `tasks` | `assignee_id, candidate_id?, application_id?, type (followup\|manual), title, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)` |
+| `tasks` | `assignee_id, candidate_id?, application_id?, type (followup\|manual\|new_applicant), title, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)` |
 
 Форма контента (валидация `Http/Requests/ValidatesScriptContent` + value-объекты `DTO/ScriptContent`, `DTO/ScriptStep`):
 `steps[{id, title, goal, sample, required, weight 0..100, keywords[]}]` (до 30), `objections[{id, trigger, answer}]`,
@@ -160,7 +167,8 @@ AI отказывается, при включённом — сообщает «
 | `templates/template-menu.ts` | кнопка «Шаблон» в `TouchComposer` карточки |
 | `tasks/tasks-widget.ts`, `tasks/tasks.store.ts` | задачи с галочкой (оптимистично, с откатом) — на главной и в карточке |
 
-Строки — `scripts.*` в `public/i18n/{uk,ru,en}.json`.
+Строки — `scripts.*` в `public/i18n/{uk,ru,en}.json` (для задачи из почты — `scripts.tasks.newApplicantTitle` и
+`scripts.tasks.type.new_applicant`).
 
 ## Как проверить
 Бэкенд: `tests/Feature/Scripts/ScriptsApiTest` (права: recruiter/viewer только читают; версии: черновик → публикация →

@@ -1,5 +1,6 @@
+import { Clipboard } from '@angular/cdk/clipboard';
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,6 +11,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
+import { GoogleService } from '../../google-workspace/google.service';
+import { MeetingDialog, MeetingDialogData } from '../../google-workspace/meeting.dialog';
 import { EvaluationBadge } from '../../scripts/evaluation/evaluation-badge';
 import { TasksWidget } from '../../scripts/tasks/tasks-widget';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from '../board/reject.dialog';
@@ -54,15 +57,42 @@ export class CandidateCard {
   private readonly i18n = inject(TranslocoService);
   private readonly auth = inject(AuthService);
   private readonly composer = viewChild(TouchComposer);
+  private readonly google = inject(GoogleService);
+  private readonly clipboard = inject(Clipboard);
 
   protected readonly icons = CHANNEL_ICONS;
   protected readonly filterChips: readonly TimelineFilter[] = [...CHANNELS.filter((c) => c !== 'system'), STAGE_FILTER];
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
   protected readonly utm = computed(() => Object.entries(this.store.candidate()?.utm ?? {}));
   protected readonly duration = formatDuration;
+  /** "Schedule a meeting" works only with a connected Google Calendar. */
+  protected readonly calendarConnected = signal(false);
 
   constructor() {
     effect(() => this.store.open(this.candidateId()));
+    this.google.calendarConnected().subscribe({ next: (on) => this.calendarConnected.set(on), error: () => this.calendarConnected.set(false) });
+  }
+
+  protected scheduleMeeting(): void {
+    const c = this.store.candidate();
+    if (!c) {
+      return;
+    }
+    this.dialog
+      .open<MeetingDialog, MeetingDialogData, boolean>(MeetingDialog, {
+        data: { candidateId: c.id, candidateName: c.full_name, candidateEmail: c.email },
+      })
+      .afterClosed()
+      .subscribe((created) => {
+        if (created) {
+          this.store.refresh();
+        }
+      });
+  }
+
+  protected copy(link: string): void {
+    this.clipboard.copy(link);
+    this.toast('google.meeting.copied');
   }
 
   protected isOn(filter: TimelineFilter): boolean {

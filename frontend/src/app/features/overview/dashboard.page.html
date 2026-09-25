@@ -19,6 +19,15 @@
 }
 
 @if (store.data(); as d) {
+  @for (w of d.warnings ?? []; track w.code + (w.params?.['service'] ?? '')) {
+    <p class="warning-banner" role="alert" [attr.data-level]="w.level">
+      <mat-icon inline>warning</mat-icon>
+      {{ 'overview.warnings.' + w.code | transloco: w.params ?? {} }}
+      @if (w.link) {
+        <a [routerLink]="w.link">{{ 'overview.warnings.open' | transloco }}</a>
+      }
+    </p>
+  }
   <section class="tiles" [attr.aria-label]="'overview.countersLabel' | transloco">
     @for (t of store.tiles(); track t.key) {
       <a class="tile" [routerLink]="t.link" [attr.data-tone]="t.tone">

@@ -75,6 +75,20 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
     тем же 409 (с тем же правилом раскрытия).
 - **Импорт-готовый DTO:** `DTO/CandidateData::fromArray(array)` принимает «грязную» строку (таблица, выгрузка job-сайта):
   обрезает пробелы, чистит UTM/теги, неизвестный источник → `import`.
+- **Создать или найти (для машинных источников)** — `CandidateService::createOrMatch(?User $actor, CandidateData, ?Vacancy,
+  ?Carbon $at): DTO/CandidateMatch {candidate, created, application?, applicationCreated}`. Используют импорт из Google Sheets и
+  почтовый агент ([google-workspace.md](google-workspace.md), [mail-agent.md](mail-agent.md)). Вместо 409 при совпадении
+  контакта (глобально) возвращает существующего кандидата; иначе создаёт (источник по умолчанию `import`, `owner_id`/
+  `created_by` = actor, может быть `null` у фоновой задачи). Нет ни одного контакта → `RecruitingException` `no_contacts`;
+  новый кандидат без ФИО → `full_name_required`. С вакансией — заявка на первом этапе (с датой `$at`), если её ещё нет.
+  Гонка на уникальном индексе → повторный поиск и возврат найденного.
+- **Вакансия по названию** — `VacancyRepository::findOpenByTitle($title)`: открытая вакансия с тем же названием без учёта
+  регистра; ни одной или несколько → `null` (сравнение в PHP: `lower()` в SQLite не понимает кириллицу).
+- **Встречи** (канал `meeting`) создаёт модуль GoogleWorkspace из карточки: событие Google Calendar + касание через
+  `TouchpointService::log()` ([google-workspace.md](google-workspace.md)). Публичные ключи `meta` касаний
+  (`Http/Resources/TouchpointResource::PUBLIC_META`): `duration_sec, recording_url, contact, from_stage_id, to_stage_id`,
+  для почты — `subject, from, parser, full_name, vacancy_title, cv_url`, для встреч — `event_id, meet_link, html_link, start,
+  end, meeting_type, title`; остальное, что кладёт интеграция, наружу не отдаётся.
 - **Зависшие:** `applications.last_touch_at` обновляет слушатель `Listeners/UpdateLastTouch` на событие `Events/TouchpointRecorded`
   (ручная запись, приём от интеграции, привязка из «Вхідних»). `system` не считается; время только двигается вперёд. Касание без
   заявки обновляет все активные заявки кандидата. «Завис» = активная заявка, у которой `coalesce(last_touch_at, created_at)` старше N
@@ -171,7 +185,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `vacancies/` | список + `VacancyDialog` (`/vacancies`) |
 | `board/` | доска CDK drag&drop (`/vacancies/:id`), оптимистичный перенос с откатом, `RejectDialog` |
 | `candidates/` | split view (`/candidates`, `/candidates/:id`), клавиши j/k/↑/↓//, `CandidateDialog` с обработкой дубля |
-| `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`) |
+| `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме |
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |
 | `reports/` | `/reports`, таблицы с CSS-полосками, `pivotTouches` |
 | `palette/` | `CommandPalette` в CDK overlay (`CommandPaletteService`), Ctrl/⌘+K — в оболочке ([shell.md](shell.md)) |
@@ -186,6 +200,8 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 «Вхідні» (область видимости, привязка, создание, 409), зависшие (`days` строкой, валидация, филиалы), отчёты (суммы, период),
 воронки и причины, демо (данные, повтор, отказ в production, `DatabaseSeeder` без зарегистрированных консольных команд, время `generate()`). `tests/Unit/Recruiting/*` — нормализатор контактов,
 ingestor (сопоставление, дедуп, «Вхідні»), `CandidateService` (моки: раскрытие дубля, гонка → 409), `ApplicationService`.
+`createOrMatch`, `findOpenByTitle` и встречи проверяются тестами модулей-потребителей: `tests/Feature/GoogleWorkspace/{SheetsImportTest,MeetingTest}`,
+`tests/Feature/MailAgent/MailSyncTest`.
 Фронт: `recruiting.service.spec.ts`, `recruiting.format.spec.ts`, `recruiting.stores.spec.ts`.
 
 Вручную на preview (нужна сессия; демо-данные уже в БД):

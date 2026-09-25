@@ -31,15 +31,19 @@ Scripts; своих таблиц нет.
 | `stale[≤10]` | `{application_id, candidate, vacancy, stage, last_activity_at, days}` | `Recruiting\Contracts\ApplicationRepository::stale` |
 | `funnel` | активные заявки по этапу (`stage_name, stage_kind, position, count`) | этапы разных воронок с одинаковым названием и позицией суммируются |
 | `touches` | `{days: 7, by_channel[{channel, count}]}` | касания кроме `system`, видимость как у отчёта «касания» |
+| `warnings` | `[{code, level, params?, link?}]` — предупреждения других модулей, баннер над счётчиками | контракт `Contracts/DashboardNotices` (тег): модуль регистрирует `$this->app->tag([...], DashboardNotices::class)`. Сейчас — `GoogleWorkspace\Services\GoogleDashboardNotices`: суперадмину `google_reconnect_required {service}`, если Google отозвал доступ ([google-workspace.md](google-workspace.md)) |
 
 Ограничение по филиалам — `Recruiting\Services\RecruitingScope` (superadmin/admin видят всё, остальные — вакансии своих
 филиалов; пользователь без филиалов видит нули).
 
-Фронтенд — `frontend/src/app/features/overview`: `dashboard.page.*` (маршрут `''`), `overview.store.ts` (плитки, ширины
+Фронтенд — `frontend/src/app/features/overview`: `dashboard.page.*` (маршрут `''`; баннеры `warnings` со ссылкой — строки
+`overview.warnings.<code>`), `overview.store.ts` (плитки, ширины
 полосок), `overview.service.ts`, `overview.model.ts` (`statTiles` — куда ведёт каждый счётчик). Виджет задач —
 `features/scripts/tasks/tasks-widget.ts`. Строки — `overview.*` в `public/i18n/{uk,ru,en}.json`.
 
 ## Как проверить
 `tests/Feature/Overview/DashboardApiTest` — гость 401; рекрутер видит только свой филиал (счётчики, зависшие, «Вхідні»,
-задачи, воронка, касания по каналам); админ — всё; viewer без филиалов — нули. Фронт: `overview.spec.ts`.
+задачи, воронка, касания по каналам); админ — всё; viewer без филиалов — нули. Предупреждения —
+`tests/Feature/GoogleWorkspace/GoogleTokenTest` (суперадмин видит `google_reconnect_required`, рекрутер — пустой список).
+Фронт: `overview.spec.ts`.
 Вручную: войти → «Огляд» → счётчики совпадают с «Кандидати»/«Вхідні», клик по зависшему открывает карточку.

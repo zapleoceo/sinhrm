@@ -51,3 +51,7 @@ h3 { font: var(--mat-sys-title-small); margin: 0 0 0.5rem; }
 .marker.captured { border-style: dashed; border-color: var(--app-muted); color: var(--app-muted); }
 
 .palette-hint { align-self: flex-start; font-size: 0.8rem; }
+
+.meeting-btn { margin: 0.25rem 0 0.5rem; }
+.meeting { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin: 0.25rem 0; }
+.small { font-size: 0.85rem; }

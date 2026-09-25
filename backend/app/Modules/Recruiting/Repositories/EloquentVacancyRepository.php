@@ -38,6 +38,21 @@ final class EloquentVacancyRepository implements VacancyRepository
         return $this->withCounts(Vacancy::query()->with(self::RELATIONS))->find($id);
     }
 
+    public function findOpenByTitle(string $title): ?Vacancy
+    {
+        $title = mb_strtolower(trim($title));
+        if ($title === '') {
+            return null;
+        }
+        // Compared in PHP: SQL lower() is ASCII-only on some engines (Cyrillic titles). Open vacancies are few.
+        $matches = Vacancy::query()
+            ->where('status', VacancyStatus::Open->value)
+            ->get()
+            ->filter(static fn (Vacancy $v): bool => mb_strtolower(trim($v->title)) === $title);
+
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
+
     public function create(array $attributes): Vacancy
     {
         return Vacancy::query()->create($attributes);

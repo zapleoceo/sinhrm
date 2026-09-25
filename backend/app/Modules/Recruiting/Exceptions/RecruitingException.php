@@ -64,6 +64,17 @@ final class RecruitingException extends RuntimeException
         return new self('vacancy_out_of_scope', 403);
     }
 
+    /** An import row / e-mail without phone, e-mail or Telegram: nothing to dedupe by. */
+    public static function noContacts(): self
+    {
+        return new self('no_contacts', 422);
+    }
+
+    public static function fullNameRequired(): self
+    {
+        return new self('full_name_required', 422);
+    }
+
     public static function alreadyLinked(): self
     {
         return new self('already_linked', 409);

@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Modules\Auth\Providers\AuthServiceProvider;
 use App\Modules\Core\Providers\CoreServiceProvider;
 use App\Modules\Directory\Providers\DirectoryServiceProvider;
+use App\Modules\GoogleWorkspace\Providers\GoogleWorkspaceServiceProvider;
 use App\Modules\Integrations\Providers\IntegrationsServiceProvider;
+use App\Modules\MailAgent\Providers\MailAgentServiceProvider;
 use App\Modules\Overview\Providers\OverviewServiceProvider;
 use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
 use App\Modules\Scripts\Providers\ScriptsServiceProvider;
@@ -22,5 +24,7 @@ return [
     DirectoryServiceProvider::class,
     RecruitingServiceProvider::class,
     ScriptsServiceProvider::class,
+    GoogleWorkspaceServiceProvider::class,
+    MailAgentServiceProvider::class,
     OverviewServiceProvider::class,
 ];

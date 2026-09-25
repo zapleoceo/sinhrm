@@ -19,6 +19,16 @@ export interface Dashboard {
   }[];
   funnel: { stage_name: string; stage_kind: StageKind; position: number; count: number }[];
   touches: { days: number; by_channel: { channel: Channel; count: number }[] };
+  /** Notices of other modules (e.g. Google needs reconnecting); may be absent on older API versions. */
+  warnings?: DashboardWarning[];
+}
+
+/** backend Overview DashboardNotices item. */
+export interface DashboardWarning {
+  code: string;
+  level: 'warning' | 'error';
+  params?: Record<string, string>;
+  link?: string;
 }
 
 /** A counter tile: i18n key, value and where a click leads. */

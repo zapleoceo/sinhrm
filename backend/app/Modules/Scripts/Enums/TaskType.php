@@ -8,4 +8,6 @@ enum TaskType: string
 {
     case Followup = 'followup';
     case Manual = 'manual';
+    /** "Call the new applicant within an hour" — created by the mail agent for a job-board application. */
+    case NewApplicant = 'new_applicant';
 }

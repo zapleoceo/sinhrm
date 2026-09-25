@@ -10,6 +10,8 @@ use App\Modules\Auth\Enums\AppLocale;
 
 interface UserRepository
 {
+    public function find(int $id): ?User;
+
     public function findByGoogleId(string $googleId): ?User;
 
     /** Case-insensitive lookup. */

@@ -24,6 +24,13 @@
         </a>
       }
     </div>
+    @if (canWrite()) {
+      <span [matTooltip]="calendarConnected() ? '' : ('google.meeting.disabledHint' | transloco)">
+        <button mat-stroked-button type="button" class="meeting-btn" [disabled]="!calendarConnected()" (click)="scheduleMeeting()">
+          <mat-icon>event</mat-icon>{{ 'google.meeting.button' | transloco }}
+        </button>
+      </span>
+    }
     <mat-chip-set [attr.aria-label]="'recruiting.card.source' | transloco">
       <mat-chip [disableRipple]="true"><mat-icon matChipAvatar>input</mat-icon>{{ 'recruiting.source.' + c.source | transloco }}</mat-chip>
       @for (u of utm(); track u[0]) {
@@ -126,6 +133,27 @@
                 <span class="spacer"></span>
                 <time class="muted" [attr.datetime]="item.at">{{ item.at | date: 'dd.MM.yyyy HH:mm' }}</time>
               </div>
+              @if (item.touchpoint.meta.start) {
+                <p class="meeting">
+                  <mat-icon inline>event</mat-icon>
+                  {{ item.touchpoint.meta.title }} · {{ item.touchpoint.meta.start | date: 'dd.MM.yyyy HH:mm' }}
+                  @if (item.touchpoint.meta.meeting_type) {
+                    · {{ 'google.meeting.types.' + item.touchpoint.meta.meeting_type | transloco }}
+                  }
+                  @if (item.touchpoint.meta.meet_link; as link) {
+                    <a [href]="link" target="_blank" rel="noopener noreferrer">{{ 'google.meeting.meet' | transloco }}</a>
+                    <button mat-icon-button type="button" (click)="copy(link)" [attr.aria-label]="'google.meeting.copy' | transloco">
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                  }
+                  @if (item.touchpoint.meta.html_link; as cal) {
+                    <a [href]="cal" target="_blank" rel="noopener noreferrer">{{ 'google.meeting.open' | transloco }}</a>
+                  }
+                </p>
+              }
+              @if (item.touchpoint.meta.cv_url; as cv) {
+                <a class="small" [href]="cv" target="_blank" rel="noopener noreferrer"><mat-icon inline>description</mat-icon>{{ 'mail.cv' | transloco }}</a>
+              }
               @if (item.touchpoint.body) {
                 <p class="text">{{ item.touchpoint.body }}</p>
               }

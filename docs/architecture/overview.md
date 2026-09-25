@@ -41,6 +41,8 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Recruiting (вакансии, воронки, кандидаты, касания, «Вхідні», отчёты) | ✅ | [modules/recruiting.md](../modules/recruiting.md) |
 | Scripts (версии скриптов, оценка касаний, шаблоны, задачи-напоминания) | ✅ | [modules/scripts.md](../modules/scripts.md) |
 | Overview (главная страница — дашборд) | ✅ | [modules/overview.md](../modules/overview.md) |
+| GoogleWorkspace (OAuth-подключение Gmail/Calendar/Sheets, встречи, импорт из таблиц) | ✅ | [modules/google-workspace.md](../modules/google-workspace.md) |
+| MailAgent (разбор Gmail: отклики → кандидаты и задачи, письма кандидатов → касания) | ✅ | [modules/mail-agent.md](../modules/mail-agent.md) |
 
 ## Фронтенд
 `frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.
@@ -52,3 +54,6 @@ Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн �
   cron вызывает `POST /api/ops/jobs/run` ([core.md](../modules/core.md)).
 - Работа «после ответа» (оценка разговора по скрипту) — `dispatchAfterResponse()` в том же запросе, без очереди.
 - Постоянные соединения (Telegram userbot, WebSocket) невозможны — только вебхуки.
+- Google (Gmail, Calendar v3, Sheets v4, OAuth token endpoint) вызывается REST-запросами Laravel HTTP-клиента, без
+  `google/apiclient` (слишком тяжёл для serverless-бандла). Почта читается опросом раз в 30 мин (cron `mail.sync`), без
+  push-уведомлений Gmail (Pub/Sub) — [mail-agent.md](../modules/mail-agent.md).
