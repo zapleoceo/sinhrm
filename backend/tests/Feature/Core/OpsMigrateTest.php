@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Core;
 
 use App\Modules\Core\Contracts\MigrationRunner;
+use Illuminate\Cache\RateLimiter;
+use RuntimeException;
 use Tests\TestCase;
 
 final class OpsMigrateTest extends TestCase
@@ -62,12 +64,44 @@ final class OpsMigrateTest extends TestCase
         $this->postJson('/api/ops/migrate', [], ['X-Ops-Secret' => 'guess-11'])->assertTooManyRequests();
     }
 
+    public function test_valid_secret_never_touches_the_rate_limiter(): void
+    {
+        // Simulates an empty database: any cache access explodes.
+        $this->app->instance(RateLimiter::class, new BrokenRateLimiter);
+
+        $this->postJson('/api/ops/migrate', [], ['X-Ops-Secret' => 'test-secret'])->assertOk();
+        $this->assertSame(['migrate'], $this->runner->calls);
+    }
+
+    public function test_wrong_secret_still_rejected_when_limiter_is_unavailable(): void
+    {
+        $this->app->instance(RateLimiter::class, new BrokenRateLimiter);
+
+        $this->postJson('/api/ops/migrate', [], ['X-Ops-Secret' => 'wrong'])->assertUnauthorized();
+        $this->assertSame([], $this->runner->calls);
+    }
+
     public function test_fresh_refused_in_production(): void
     {
         $this->app['env'] = 'production';
 
         $this->postJson('/api/ops/migrate?fresh=1', [], ['X-Ops-Secret' => 'test-secret'])->assertForbidden();
         $this->assertSame([], $this->runner->calls);
+    }
+}
+
+final class BrokenRateLimiter extends RateLimiter
+{
+    public function __construct() {}
+
+    public function tooManyAttempts($key, $maxAttempts)
+    {
+        throw new RuntimeException('cache table missing');
+    }
+
+    public function hit($key, $decaySeconds = 60)
+    {
+        throw new RuntimeException('cache table missing');
     }
 }
 

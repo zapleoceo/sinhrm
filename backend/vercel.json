@@ -24,7 +24,9 @@
     "CACHE_STORE": "database",
     "SESSION_DRIVER": "database",
     "QUEUE_CONNECTION": "database",
-    "DB_CONNECTION": "pgsql"
+    "DB_CONNECTION": "pgsql",
+    "LOG_STDERR_FORMATTER": "Monolog\\Formatter\\JsonFormatter",
+    "LOG_LEVEL": "warning"
   },
   "regions": [
     "fra1"
