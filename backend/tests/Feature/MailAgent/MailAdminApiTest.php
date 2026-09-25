@@ -60,8 +60,10 @@ final class MailAdminApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.parser', null);
 
         $this->actingAs($this->superadmin)->postJson('/api/mail/rules', ['pattern' => 'hr@partner.example.test', 'kind' => 'colleague'])->assertCreated();
-        $this->actingAs($this->superadmin)->getJson('/api/mail/rules')->assertOk()->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.pattern', '@jobs.example.test');
+        // Order depends on DB collation (Postgres ignores '@' when sorting, SQLite does not) — assert membership only.
+        $patterns = $this->actingAs($this->superadmin)->getJson('/api/mail/rules')->assertOk()->assertJsonCount(2, 'data')
+            ->json('data.*.pattern');
+        $this->assertEqualsCanonicalizing(['@jobs.example.test', 'hr@partner.example.test'], $patterns);
 
         $this->actingAs($this->superadmin)->deleteJson('/api/mail/rules/'.$id)->assertNoContent();
         $this->assertNull(SenderRule::query()->find($id));
