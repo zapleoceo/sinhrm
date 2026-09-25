@@ -18,6 +18,13 @@ final class MeTest extends TestCase
         $this->getJson('/api/auth/me')->assertUnauthorized();
     }
 
+    public function test_guest_without_accept_json_header_gets_401_not_500(): void
+    {
+        // Regression: a plain browser/curl request (no Accept: application/json) used to hit
+        // "Route [login] not defined" → 500.
+        $this->get('/api/auth/me')->assertUnauthorized();
+    }
+
     public function test_me_returns_profile_and_roles(): void
     {
         $user = User::factory()->withRole(UserRole::Viewer)->create(['locale' => 'en']);

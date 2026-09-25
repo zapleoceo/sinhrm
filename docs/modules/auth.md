@@ -82,3 +82,8 @@ curl -i https://sinhrm.vercel.app/api/auth/google/redirect     # 302 на accoun
 curl -i "https://sinhrm.vercel.app/api/auth/google/callback?error=access_denied"  # 302 /login?error=oauth_failed
 ```
 Полный вход — в браузере аккаунтом из списка тестовых пользователей Google.
+
+## Гость без авторизации
+Любой защищённый эндпоинт отвечает гостю `401 {"message":"Unauthenticated."}` — и для запроса без
+`Accept: application/json` тоже (`redirectGuestsTo(null)` в `bootstrap/app.php`; веб-маршрута `login` в API нет).
+Проверено на проде: до исправления `curl https://sinhrm.vercel.app/api/auth/me` → 500 «Route [login] not defined».
