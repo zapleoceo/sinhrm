@@ -48,8 +48,8 @@ jobs:
         run: |
           set -a; . .vercel/.env.$TARGET.local; set +a
           composer install --no-interaction --prefer-dist --quiet
-          php artisan migrate --force
-          if [ "$TARGET" = preview ]; then php artisan db:seed --force; fi
+          # Preview DB holds synthetic data only → rebuild it from scratch on every deploy.
+          if [ "$TARGET" = preview ]; then php artisan migrate:fresh --seed --force; else php artisan migrate --force; fi
 
       - name: Web — build & deploy
         id: web
