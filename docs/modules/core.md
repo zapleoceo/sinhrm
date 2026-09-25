@@ -12,7 +12,7 @@
   `$app->tag([...], HealthCheck::class)`. Ошибка проверки не раскрывает детали подключения — только класс исключения.
 - `Support\ModuleServiceProvider` — базовый провайдер модуля: подключает `routes.php` под `/api/<prefix>` и миграции из
   `Database/Migrations`.
-- Фронт: `core/api/health.service.ts` (ошибка сети → отчёт «unreachable»), экран `features/status`.
+- Фронт: `core/api/health.service.ts` (ошибка сети → отчёт «unreachable»), экран `features/core/status.page.ts`.
 
 ## Как проверить
 Тесты: `tests/Feature/Core/HealthTest.php`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`.
