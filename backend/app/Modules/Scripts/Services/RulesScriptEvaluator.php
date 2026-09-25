@@ -8,6 +8,7 @@ use App\Modules\Scripts\Contracts\ScriptEvaluator;
 use App\Modules\Scripts\DTO\EvaluationResult;
 use App\Modules\Scripts\DTO\ScriptContent;
 use App\Modules\Scripts\Enums\EvaluationEngine;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Deterministic evaluation without AI:
@@ -110,10 +111,29 @@ final class RulesScriptEvaluator implements ScriptEvaluator
         return array_values(array_filter(array_map('trim', $parts), static fn (string $s): bool => $s !== ''));
     }
 
-    /** True when the pattern is a valid regex fragment (checked when a draft is saved). */
+    /** Longest accepted next-step pattern. */
+    public const int PATTERN_MAX = 200;
+
+    /** PCRE backtracking budget per pattern × sentence while evaluating (ReDoS guard). */
+    public const int BACKTRACK_LIMIT = 10000;
+
+    /**
+     * True when the pattern is a valid, bounded regex fragment (checked when a draft is saved): at most PATTERN_MAX
+     * characters and no nested quantifiers such as (a+)+, (a*)*, (.*)+ — the classic catastrophic backtracking shapes.
+     */
     public static function isValidPattern(string $pattern): bool
     {
+        if (mb_strlen($pattern) > self::PATTERN_MAX || self::hasNestedQuantifier($pattern)) {
+            return false;
+        }
+
         return @preg_match(self::regex($pattern), '') !== false;
+    }
+
+    /** A group that contains a quantifier (+, *, {n,}) and is itself quantified. */
+    public static function hasNestedQuantifier(string $pattern): bool
+    {
+        return preg_match('/\((?:[^()\\\\]|\\\\.)*(?:[+*]|\{\d*,\d*\})(?:[^()\\\\]|\\\\.)*\)\s*(?:[+*]|\{\d*,?\d*\})/u', $pattern) === 1;
     }
 
     /**
@@ -146,13 +166,35 @@ final class RulesScriptEvaluator implements ScriptEvaluator
     {
         for ($i = count($sentences) - 1; $i >= 0; $i--) {
             foreach ($patterns as $pattern) {
-                if (@preg_match(self::regex($pattern), $sentences[$i]) === 1) {
+                if (self::safeMatch($pattern, $sentences[$i])) {
                     return $i;
                 }
             }
         }
 
         return null;
+    }
+
+    /**
+     * preg_match with a lowered backtrack limit (restored afterwards). A failure (limit hit, bad pattern stored before
+     * the checks existed) counts as "no match" and is logged with a code only — never the text.
+     */
+    private static function safeMatch(string $pattern, string $subject): bool
+    {
+        $previous = ini_get('pcre.backtrack_limit');
+        ini_set('pcre.backtrack_limit', (string) self::BACKTRACK_LIMIT);
+        try {
+            $result = @preg_match(self::regex($pattern), $subject);
+            if ($result === false) {
+                Log::warning('scripts.pattern_limit', ['code' => 'pattern_limit', 'pcre_error' => preg_last_error()]);
+
+                return false;
+            }
+
+            return $result === 1;
+        } finally {
+            ini_set('pcre.backtrack_limit', $previous === false ? '1000000' : $previous);
+        }
     }
 
     private static function regex(string $pattern): string

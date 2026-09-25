@@ -22,6 +22,9 @@ use App\Modules\Scripts\Models\ScriptEvaluation;
  */
 final readonly class EvaluationService
 {
+    /** Missing evaluations computed synchronously per timeline request (lazy fallback). */
+    public const int LAZY_LIMIT = 5;
+
     public function __construct(
         private AiPolicy $policy,
         private AiScriptEvaluator $ai,
@@ -77,9 +80,15 @@ final readonly class EvaluationService
         ]);
     }
 
+    /** Stored evaluation, or evaluated now if the after-response run did not happen (lazy fallback). */
     public function forTouchpoint(Touchpoint $touchpoint): ScriptEvaluation
     {
-        return $this->evaluations->findByTouchpoint($touchpoint->id) ?? throw ScriptException::notEvaluated();
+        $evaluation = $this->evaluations->findByTouchpoint($touchpoint->id) ?? $this->evaluateTouchpoint($touchpoint->id);
+        if ($evaluation === null) {
+            throw ScriptException::notEvaluated();
+        }
+
+        return $evaluation->loadMissing('version.script');
     }
 
     /**
@@ -88,9 +97,28 @@ final readonly class EvaluationService
      */
     public function summaries(array $touchpointIds): array
     {
-        return array_map(
-            static fn (ScriptEvaluation $e): array => $e->summary(),
-            $this->evaluations->forTouchpoints($touchpointIds),
-        );
+        $found = $this->evaluations->forTouchpoints($touchpointIds);
+        // Lazy fallback for the after-response fast path (it may not run on serverless): evaluate missing eligible
+        // touches now, at most LAZY_LIMIT per request so a timeline page stays fast.
+        $budget = self::LAZY_LIMIT;
+        foreach ($touchpointIds as $id) {
+            if ($budget === 0) {
+                break;
+            }
+            if (isset($found[$id])) {
+                continue;
+            }
+            $touch = $this->touchpoints->find($id);
+            if ($touch === null || $touch->candidate_id === null || ScriptChannel::forTouch($touch->channel, $touch->direction, $touch->body) === null) {
+                continue;
+            }
+            $budget--;
+            $evaluation = $this->evaluateTouchpoint($id);
+            if ($evaluation !== null) {
+                $found[$id] = $evaluation;
+            }
+        }
+
+        return array_map(static fn (ScriptEvaluation $e): array => $e->summary(), $found);
     }
 }

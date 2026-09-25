@@ -33,8 +33,8 @@ final class CandidateScriptController
         return new JsonResponse(['data' => $this->templates->forCandidate($actor, $candidate)]);
     }
 
-    /** GET /api/touchpoints/{touchpoint}/evaluation — visible with the candidate (or the inbox item); 404 not_evaluated. */
-    public function evaluation(Request $request, Touchpoint $touchpoint): EvaluationResource
+    /** GET /api/touchpoints/{touchpoint}/evaluation — visible with the candidate (or the inbox item); missing but eligible → evaluated now; otherwise 404 not_evaluated. */
+    public function evaluation(Request $request, Touchpoint $touchpoint): JsonResponse
     {
         $actor = $this->actor($request);
         $candidate = $touchpoint->candidate;
@@ -43,7 +43,8 @@ final class CandidateScriptController
             : $this->scope->canSeeInboxItem($actor, $touchpoint);
         abort_unless($visible, 403);
 
-        return new EvaluationResource($this->evaluations->forTouchpoint($touchpoint));
+        // Always 200, also when the evaluation was just computed by the lazy fallback.
+        return (new EvaluationResource($this->evaluations->forTouchpoint($touchpoint)))->response()->setStatusCode(200);
     }
 
     private function actor(Request $request): User

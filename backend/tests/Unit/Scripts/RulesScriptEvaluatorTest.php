@@ -9,8 +9,10 @@ use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Scripts\DTO\ScriptContent;
 use App\Modules\Scripts\Enums\ScriptChannel;
 use App\Modules\Scripts\Services\RulesScriptEvaluator;
+use Illuminate\Support\Facades\Log;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\AbstractLogger;
 
 final class RulesScriptEvaluatorTest extends TestCase
 {
@@ -99,7 +101,41 @@ final class RulesScriptEvaluatorTest extends TestCase
         $this->assertTrue(RulesScriptEvaluator::isValidPattern('записал'));
         $this->assertTrue(RulesScriptEvaluator::isValidPattern('a~b'));
         $this->assertFalse(RulesScriptEvaluator::isValidPattern('(open'));
+        foreach (['(a+)+', '(a*)*', '(.*)+', '(\w+\s?)*$', '(x{2,})+', '(?:ab+){3,}'] as $evil) {
+            $this->assertFalse(RulesScriptEvaluator::isValidPattern($evil), $evil);
+        }
+        $this->assertTrue(RulesScriptEvaluator::isValidPattern('о \d{1,2}:\d{2}'));
+        $this->assertTrue(RulesScriptEvaluator::isValidPattern('(завтра|сьогодні)'));
+        $this->assertTrue(RulesScriptEvaluator::isValidPattern(str_repeat('a', 200)));
+        $this->assertFalse(RulesScriptEvaluator::isValidPattern(str_repeat('a', 201)));
         $this->assertSame(['One.', 'Two!', 'Three', 'Four?'], RulesScriptEvaluator::sentences("One. Two!\n\nThree\r\nFour?  "));
+    }
+
+    public function test_catastrophic_pattern_is_no_match_and_limit_is_restored(): void
+    {
+        $log = new class extends AbstractLogger
+        {
+            /** @var list<array<string, mixed>> */
+            public array $records = [];
+
+            public function log($level, string|\Stringable $message, array $context = []): void
+            {
+                $this->records[] = ['level' => $level, 'message' => (string) $message, 'context' => $context];
+            }
+        };
+        Log::swap($log);
+        $before = ini_get('pcre.backtrack_limit');
+        // Stored before validation existed: evaluation must survive it.
+        $script = ScriptContent::fromArray(['next_step_patterns' => ['positive' => ['(a+)+$'], 'negative' => []]]);
+
+        $result = $this->evaluator->evaluate($script, str_repeat('a', 5000).'!');
+
+        $this->assertFalse($result->nextStep['fixed']);
+        $this->assertSame($before, ini_get('pcre.backtrack_limit'));
+        $this->assertSame('scripts.pattern_limit', $log->records[0]['message']);
+        $this->assertSame('pattern_limit', $log->records[0]['context']['code']);
+        $this->assertStringNotContainsString('aaaa', json_encode($log->records) ?: '');
+        Log::clearResolvedInstances();
     }
 
     public function test_default_next_step_patterns_are_applied(): void

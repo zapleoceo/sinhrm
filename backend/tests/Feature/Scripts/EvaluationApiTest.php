@@ -11,9 +11,11 @@ use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Scripts\Enums\ScriptChannel;
+use App\Modules\Scripts\Jobs\EvaluateTouchpoint;
 use App\Modules\Scripts\Models\ScriptEvaluation;
 use App\Modules\Scripts\Services\EvaluationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Tests\Support\RecruitingFixtures;
@@ -99,6 +101,41 @@ final class EvaluationApiTest extends TestCase
 
         $this->assertNotNull($first);
         $this->assertSame($first->id, $second?->id);
+        $this->assertSame(1, ScriptEvaluation::query()->count());
+    }
+
+    public function test_lazy_fallback_evaluates_missing_touches_bounded_per_timeline_request(): void
+    {
+        Bus::fake([EvaluateTouchpoint::class]);
+        $this->publishedScript(ScriptChannel::Call);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        // Captured outside HTTP: the after-response job never ran (as when the serverless runtime drops it).
+        $ids = [];
+        foreach (range(1, 7) as $i) {
+            $ids[] = $this->ingest(Channel::Call, '+380670000001', ['body' => $this->goodTranscript(), 'direction' => Direction::Out])->id;
+        }
+        $this->ingest(Channel::Note, '+380670000001', ['body' => 'Not evaluated']);
+        $this->assertSame(0, ScriptEvaluation::query()->count());
+        $url = "/api/candidates/{$this->application->candidate_id}/timeline?channel=call,note";
+
+        $first = $this->actingAs($recruiter)->getJson($url)->assertOk()->json('data');
+        $this->assertSame(5, ScriptEvaluation::query()->count());
+        $this->assertSame(5, count(array_filter($first, static fn (array $i): bool => $i['touchpoint']['evaluation'] !== null)));
+
+        $this->actingAs($recruiter)->getJson($url)->assertOk();
+        $this->assertSame(7, ScriptEvaluation::query()->count());
+        $second = $this->actingAs($recruiter)->getJson($url)->assertOk()->json('data');
+        $this->assertSame(7, count(array_filter($second, static fn (array $i): bool => $i['touchpoint']['evaluation'] !== null)));
+    }
+
+    public function test_get_evaluation_computes_a_missing_one_on_demand(): void
+    {
+        Bus::fake([EvaluateTouchpoint::class]);
+        $this->publishedScript(ScriptChannel::Call);
+        $touch = $this->ingest(Channel::Call, '+380670000001', ['body' => $this->goodTranscript(), 'direction' => Direction::Out]);
+
+        $this->actingAs($this->userWith(UserRole::Viewer, [$this->branch]))->getJson("/api/touchpoints/{$touch->id}/evaluation")
+            ->assertOk()->assertJsonPath('data.score', 80)->assertJsonPath('data.script.version', 1);
         $this->assertSame(1, ScriptEvaluation::query()->count());
     }
 
