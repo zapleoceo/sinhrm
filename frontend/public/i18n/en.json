@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status" },
+    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status", "mail": "Mail", "sheetsImport": "Google Sheets import" },
     "menu": { "open": "User menu", "language": "Language", "logout": "Sign out" },
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
@@ -450,8 +450,9 @@
       "generic": "Action failed"
     }
   },
-  "titles": { "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations" },
+  "titles": { "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import" },
   "overview": {
+    "warnings": { "google_reconnect_required": "Google ({{service}}) must be reconnected: access expired or was revoked.", "open": "Open integrations" },
     "greeting": "Hello, {{name}}!",
     "subtitle": "What needs attention today",
     "refresh": "Refresh",
@@ -519,8 +520,36 @@
       "loadError": "Could not load tasks",
       "overdue": "overdue",
       "empty": "No tasks",
-      "type": { "followup": "reminder", "manual": "task" }
+      "newApplicantTitle": "Call the new applicant (within an hour)",
+      "type": { "followup": "reminder", "manual": "task", "new_applicant": "new application" }
     },
     "errors": { "no_draft": "No draft to publish", "version_not_published": "This version is not published yet", "nothing_to_evaluate": "The script has neither a draft nor an active version yet", "script_archived": "The script is archived: restore it first", "not_evaluated": "This touch was not evaluated", "forbidden": "Not enough permissions", "validation": "Check the fields: there are errors", "generic": "Something went wrong" }
+  },
+  "google": {
+    "services": { "gmail": "Gmail", "calendar": "Calendar", "sheets": "Sheets" },
+    "openIntegrations": "Open integrations",
+    "connect": { "title": "Google account for mail, calendar and sheets", "explain": "Separate from sign-in. Lets SinHRM read and send mail, create calendar events and read spreadsheets. Tokens are stored only in the database, encrypted.", "button": "Connect Google", "reconnect": "Reconnect", "state": { "connected": "Connected", "off": "Not connected", "error": "Reconnect required" }, "connected": "Google connected", "missing": "No access granted to: {{services}}. Connect again and tick every permission.", "redirectHint": "Redirect URI the owner adds in Google Cloud:", "testingHint": "While the Google app is in \"Testing\" mode, access lasts 7 days — then press \"Reconnect\"." },
+    "meeting": { "button": "Schedule a meeting", "disabledHint": "Google Calendar is not connected (Administration → Integrations)", "title": "Meeting with the candidate", "eventTitle": "Interview: {{name}}", "fields": { "title": "Title", "date": "Date", "time": "Time", "duration": "Duration, min", "type": "Format", "location": "Place", "notes": "Notes", "invite": "Add the candidate as an attendee (Google sends no e-mail)" }, "types": { "branch": "At the branch", "online": "Online (Google Meet)" }, "submit": "Create event", "created": "Event created in Google Calendar", "copy": "Copy link", "copied": "Link copied", "open": "Open in Calendar", "meet": "Google Meet", "noEmail": "The candidate has no e-mail — cannot be added as an attendee" },
+    "sheets": { "title": "Google Sheets import", "subtitle": "Paste the sheet link, map the columns and import. Duplicates (same phone, e-mail or Telegram) are not created.", "url": "Sheet link", "sheet": "Tab (empty = first)", "inspect": "Read headers", "mapping": "Column mapping", "none": "— do not import —", "column": "Column {{n}}", "preview": "First 10 rows", "noRows": "No rows under the header", "autoSync": "Load new rows every 30 minutes", "import": "Import", "needContact": "Map at least one contact column: phone, e-mail or Telegram.", "fields": { "full_name": "Full name", "phone": "Phone", "email": "E-mail", "telegram": "Telegram", "source": "Source", "utm_source": "utm_source", "utm_medium": "utm_medium", "utm_campaign": "utm_campaign", "utm_content": "utm_content", "utm_term": "utm_term", "vacancy": "Vacancy", "created_at": "Application date" }, "report": { "title": "Import result", "created": "Created", "matched": "Already existed", "skipped": "Skipped", "applied": "Added to vacancies", "vacancy_unmatched": "Vacancy not found", "errors": "Errors", "row": "Row {{row}}" }, "rowErrors": { "full_name_required": "no full name for a new candidate", "row_failed": "row not processed" }, "saved": "Saved imports", "lastRow": "Last row: {{row}}", "auto": "Every 30 min", "run": "Load new rows", "empty": "No imports yet" },
+    "errors": { "google_gmail_not_connected": "Gmail is not connected", "google_calendar_not_connected": "Google Calendar is not connected", "google_sheets_not_connected": "Google Sheets is not connected", "reconnect_required": "Google must be reconnected", "google_oauth_not_configured": "The Google OAuth client is not configured on the server", "google_unauthorized": "Google refused access", "google_forbidden": "No access (check permissions or sheet sharing)", "google_not_found": "Not found (check the link and access)", "google_unreachable": "Google is unreachable, try later", "invalid_sheet_url": "A link like https://docs.google.com/spreadsheets/d/… is required", "consent_denied": "Access was not granted", "invalid_state": "The connection session expired — try again", "invalid_services": "Unknown Google services", "validation": "Check the fields", "generic": "The Google action failed" }
+  },
+  "mail": {
+    "title": "Mail",
+    "subtitle": "The agent reads the connected Gmail box every 30 minutes: job-board applications become candidates and tasks, candidate e-mails become touches on the card.",
+    "syncNow": "Sync now",
+    "syncing": "Syncing…",
+    "synced": "Done: {{processed}} processed",
+    "loadError": "Could not load mail data",
+    "cv": "CV",
+    "parsersNote": "Application parsing is not yet checked against real job-board mail — review the first results in the log.",
+    "status": { "connection": "Mailbox", "notConnected": "Gmail is not connected", "reconnect": "Reconnect required", "connectHint": "Connect in Integrations", "lastSync": "Last sync", "never": "never", "processed": "Processed in 24 h", "unknown": "Unknown senders" },
+    "tabs": { "unknown": "Unknown senders", "rules": "Rules", "log": "Log" },
+    "kinds": { "job_board": "Job board", "candidate": "Candidate", "colleague": "Colleague", "newsletter": "Newsletter", "ignore": "Ignore" },
+    "parsers": { "work_ua": "Work.ua", "robota_ua": "Robota.ua", "djinni": "Djinni", "generic": "Generic" },
+    "rules": { "pattern": "Address or @domain", "hint": "hr@site.com — one address, @site.com — the whole domain", "kind": "Kind", "parser": "Parser", "hits": "Hits: {{n}}", "add": "Add", "delete": "Delete rule", "empty": "No rules yet", "created": "Rule added" },
+    "unknown": { "count": "e-mails: {{n}}", "domain": "Whole domain", "assign": "Apply", "dismiss": "Remove from queue", "empty": "The queue is empty", "assigned": "Rule created" },
+    "log": { "received": "Received", "sender": "Sender", "subject": "Subject", "outcome": "Outcome", "empty": "Nothing processed yet" },
+    "outcomes": { "application": "Application → candidate", "touchpoint": "Candidate e-mail", "inbox": "To Inbox", "skipped": "Skipped", "unknown": "Unknown", "parse_failed": "Not recognized" },
+    "errors": { "duplicate_rule": "This rule already exists", "google_gmail_not_connected": "Gmail is not connected", "reconnect_required": "Google must be reconnected", "google_unreachable": "Gmail is unreachable, try later", "google_unauthorized": "Google refused access", "validation": "Check the fields", "generic": "The action failed" }
   }
 }

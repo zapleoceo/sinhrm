@@ -12,7 +12,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
 final class TouchpointResource extends JsonResource
 {
     /** Meta keys exposed to the UI (anything else an integration stores stays internal). */
-    private const array PUBLIC_META = ['duration_sec', 'recording_url', 'contact', 'from_stage_id', 'to_stage_id'];
+    private const array PUBLIC_META = [
+        'duration_sec', 'recording_url', 'contact', 'from_stage_id', 'to_stage_id',
+        // e-mail (mail agent) and meetings (Google Calendar)
+        'subject', 'from', 'parser', 'full_name', 'vacancy_title', 'cv_url',
+        'event_id', 'meet_link', 'html_link', 'start', 'end', 'meeting_type', 'title',
+    ];
 
     /** @return array<string, mixed> */
     public function toArray(Request $request): array

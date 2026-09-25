@@ -1,0 +1,216 @@
+<header class="head">
+  <div>
+    <h1>{{ 'mail.title' | transloco }}</h1>
+    <p class="muted">{{ 'mail.subtitle' | transloco }}</p>
+  </div>
+  <button mat-flat-button type="button" [disabled]="store.syncing() || !store.status()?.connection?.connected" (click)="sync()">
+    <mat-icon>sync</mat-icon>
+    {{ (store.syncing() ? 'mail.syncing' : 'mail.syncNow') | transloco }}
+  </button>
+</header>
+
+@if (store.loading() && !store.status()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (store.failed()) {
+  <div class="state">
+    <p>{{ 'mail.loadError' | transloco }}</p>
+    <button mat-stroked-button type="button" (click)="store.load()">{{ 'common.retry' | transloco }}</button>
+  </div>
+}
+
+@if (store.status(); as s) {
+  <section class="status" aria-live="polite">
+    <div class="tile">
+      <span class="muted">{{ 'mail.status.connection' | transloco }}</span>
+      @if (s.connection.connected) {
+        <strong class="ok"><mat-icon inline>check_circle</mat-icon> {{ s.connection.account_email }}</strong>
+      } @else {
+        <strong class="warn">
+          <mat-icon inline>warning</mat-icon>
+          {{ (s.connection.error === 'reconnect_required' ? 'mail.status.reconnect' : 'mail.status.notConnected') | transloco }}
+        </strong>
+        <a routerLink="/admin/integrations">{{ 'mail.status.connectHint' | transloco }}</a>
+      }
+    </div>
+    <div class="tile">
+      <span class="muted">{{ 'mail.status.lastSync' | transloco }}</span>
+      @if (s.last_sync; as run) {
+        <strong>{{ run.started_at | date: 'dd.MM.yyyy HH:mm' }}</strong>
+        @if (run.error) {
+          <span class="warn">{{ 'mail.errors.' + run.error | transloco }}</span>
+        } @else {
+          <span class="muted">
+            {{ 'mail.outcomes.application' | transloco }}: {{ run.counts['application'] ?? 0 }} ·
+            {{ 'mail.outcomes.unknown' | transloco }}: {{ run.counts['unknown'] ?? 0 }}
+          </span>
+        }
+      } @else {
+        <strong>{{ 'mail.status.never' | transloco }}</strong>
+      }
+    </div>
+    <div class="tile">
+      <span class="muted">{{ 'mail.status.processed' | transloco }}</span>
+      <strong>{{ s.counts.processed_24h }}</strong>
+    </div>
+    <div class="tile">
+      <span class="muted">{{ 'mail.status.unknown' | transloco }}</span>
+      <strong>{{ s.counts.unknown }}</strong>
+    </div>
+  </section>
+}
+
+@if (store.lastSync(); as c) {
+  <p class="notice" role="status">
+    {{ 'mail.synced' | transloco: { processed: c.processed ?? 0 } }}
+    @for (o of syncSummary(); track o.outcome) {
+      · {{ 'mail.outcomes.' + o.outcome | transloco }}: {{ o.n }}
+    }
+  </p>
+}
+
+<p class="muted small"><mat-icon inline>info</mat-icon> {{ 'mail.parsersNote' | transloco }}</p>
+
+<mat-tab-group mat-stretch-tabs="false">
+  <mat-tab [label]="'mail.tabs.unknown' | transloco">
+    <section class="panel">
+      @for (u of store.unknown(); track u.id) {
+        <div class="row">
+          <div class="who">
+            <strong>{{ u.email }}</strong>
+            <span class="muted">{{ u.sample_subject }} · {{ 'mail.unknown.count' | transloco: { n: u.count } }}</span>
+          </div>
+          <mat-form-field subscriptSizing="dynamic" class="narrow">
+            <mat-label>{{ 'mail.rules.kind' | transloco }}</mat-label>
+            <mat-select [value]="draft(u).kind" (valueChange)="patchDraft(u, { kind: $event })">
+              @for (k of kinds; track k) {
+                <mat-option [value]="k">{{ 'mail.kinds.' + k | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (draft(u).kind === 'job_board') {
+            <mat-form-field subscriptSizing="dynamic" class="narrow">
+              <mat-label>{{ 'mail.rules.parser' | transloco }}</mat-label>
+              <mat-select [value]="draft(u).parser ?? 'generic'" (valueChange)="patchDraft(u, { parser: $event })">
+                @for (p of parsers; track p) {
+                  <mat-option [value]="p">{{ 'mail.parsers.' + p | transloco }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          <mat-checkbox [checked]="draft(u).domain" (change)="patchDraft(u, { domain: $event.checked })">
+            {{ 'mail.unknown.domain' | transloco }}
+          </mat-checkbox>
+          <button mat-flat-button type="button" (click)="assign(u)">{{ 'mail.unknown.assign' | transloco }}</button>
+          <button mat-icon-button type="button" (click)="dismiss(u)" [attr.aria-label]="'mail.unknown.dismiss' | transloco">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      } @empty {
+        <p class="muted">{{ 'mail.unknown.empty' | transloco }}</p>
+      }
+    </section>
+  </mat-tab>
+
+  <mat-tab [label]="'mail.tabs.rules' | transloco">
+    <section class="panel">
+      <form class="row add" (submit)="$event.preventDefault(); addRule()">
+        <mat-form-field subscriptSizing="dynamic" class="wide">
+          <mat-label>{{ 'mail.rules.pattern' | transloco }}</mat-label>
+          <input matInput [ngModel]="newPattern()" (ngModelChange)="newPattern.set($event)" name="pattern" maxlength="255" autocomplete="off" />
+          <mat-hint>{{ 'mail.rules.hint' | transloco }}</mat-hint>
+        </mat-form-field>
+        <mat-form-field subscriptSizing="dynamic" class="narrow">
+          <mat-label>{{ 'mail.rules.kind' | transloco }}</mat-label>
+          <mat-select [value]="newKind()" (valueChange)="newKind.set($event)">
+            @for (k of kinds; track k) {
+              <mat-option [value]="k">{{ 'mail.kinds.' + k | transloco }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (newKind() === 'job_board') {
+          <mat-form-field subscriptSizing="dynamic" class="narrow">
+            <mat-label>{{ 'mail.rules.parser' | transloco }}</mat-label>
+            <mat-select [value]="newParser()" (valueChange)="newParser.set($event)">
+              @for (p of parsers; track p) {
+                <mat-option [value]="p">{{ 'mail.parsers.' + p | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+        <button mat-stroked-button type="submit" [disabled]="!isPattern(newPattern())">
+          <mat-icon>add</mat-icon>{{ 'mail.rules.add' | transloco }}
+        </button>
+      </form>
+
+      @for (r of store.rules(); track r.id) {
+        <div class="row">
+          <code class="pattern">{{ r.pattern }}</code>
+          <mat-form-field subscriptSizing="dynamic" class="narrow">
+            <mat-select [value]="r.kind" (valueChange)="changeKind(r, $event)" [attr.aria-label]="'mail.rules.kind' | transloco">
+              @for (k of kinds; track k) {
+                <mat-option [value]="k">{{ 'mail.kinds.' + k | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (r.kind === 'job_board') {
+            <mat-form-field subscriptSizing="dynamic" class="narrow">
+              <mat-select [value]="r.parser ?? 'generic'" (valueChange)="changeParser(r, $event)" [attr.aria-label]="'mail.rules.parser' | transloco">
+                @for (p of parsers; track p) {
+                  <mat-option [value]="p">{{ 'mail.parsers.' + p | transloco }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+          <span class="muted">
+            {{ 'mail.rules.hits' | transloco: { n: r.hits } }}
+            @if (r.last_seen_at) {
+              · {{ r.last_seen_at | date: 'dd.MM HH:mm' }}
+            }
+          </span>
+          <span class="spacer"></span>
+          <button mat-icon-button type="button" (click)="remove(r)" [attr.aria-label]="'mail.rules.delete' | transloco">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      } @empty {
+        <p class="muted">{{ 'mail.rules.empty' | transloco }}</p>
+      }
+    </section>
+  </mat-tab>
+
+  <mat-tab [label]="'mail.tabs.log' | transloco">
+    <section class="panel">
+      <table class="log">
+        <thead>
+          <tr>
+            <th>{{ 'mail.log.received' | transloco }}</th>
+            <th>{{ 'mail.log.sender' | transloco }}</th>
+            <th>{{ 'mail.log.subject' | transloco }}</th>
+            <th>{{ 'mail.log.outcome' | transloco }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of store.messages(); track m.id) {
+            <tr>
+              <td class="muted">{{ m.received_at | date: 'dd.MM HH:mm' }}</td>
+              <td>{{ m.sender ?? '—' }}</td>
+              <td>{{ m.subject ?? '' }}</td>
+              <td [attr.data-outcome]="m.outcome">
+                @if (m.candidate_id) {
+                  <a [routerLink]="['/candidates', m.candidate_id]">{{ 'mail.outcomes.' + m.outcome | transloco }}</a>
+                } @else if (m.outcome === 'inbox') {
+                  <a routerLink="/inbox">{{ 'mail.outcomes.inbox' | transloco }}</a>
+                } @else {
+                  {{ 'mail.outcomes.' + m.outcome | transloco }}
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="muted">{{ 'mail.log.empty' | transloco }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  </mat-tab>
+</mat-tab-group>

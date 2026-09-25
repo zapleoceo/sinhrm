@@ -59,6 +59,9 @@ API отвечает через домен фронта.
 `Http/Controllers` (`GoogleAuthController`, `MeController`) → `Http/Requests/UpdateLocaleRequest` →
 `Services/AuthService` → `Contracts/UserRepository` (`Repositories/EloquentUserRepository`).
 Google спрятан за `Contracts/GoogleIdentityProvider` (`Services/SocialiteGoogleIdentityProvider`), в тестах — фейк.
+`UserRepository::find(id)` нужен другим модулям, чтобы найти пользователя фоновой задачи (почтовый агент, авто-импорт из
+Google Sheets действуют от имени суперадмина, подключившего Google). Подключение Gmail/Calendar/Sheets — **отдельный** OAuth-поток
+того же клиента с другим redirect URI, он не входит в систему и не меняет сессию: [google-workspace.md](google-workspace.md).
 
 ### Настройки
 `config/services.php` → `google`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (Vercel env, в репозитории пусто),

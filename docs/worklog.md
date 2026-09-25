@@ -3,11 +3,13 @@
 ## Блокеры (нужен владелец)
 - [x] `GOOGLE_CLIENT_SECRET` в Vercel env — внесён (тестовый; перед продом перевыпустить: секрет прошёл через чат)
 - [x] Постоянный `VERCEL_TOKEN` (`sinhrm-github-actions`, без срока) в GitHub secrets — перед продом перевыпустить (прошёл через чат)
+- [ ] Google-интеграции (#goog): добавить redirect URI `https://sinhrm.vercel.app/api/google/connect/callback` в OAuth-клиент, включить Gmail/Calendar/Sheets API, добавить scopes на consent screen; в режиме Testing — «Перепідключити» раз в 7 дней; откалибровать парсеры писем на реальных (обезличенных) письмах — [google-workspace.md](modules/google-workspace.md), [mail-agent.md](modules/mail-agent.md)
 
 Короткие записи: что сделано, где искать. Подробности — в PR.
 
 | Дата | Что | PR |
 |---|---|---|
+| 2026-09-29 | Google (#goog): подключение Gmail/Calendar/Sheets OAuth-согласием отдельно от входа (токены в `SecretVault`, refresh по требованию, `invalid_grant` → `reconnect_required` + предупреждение на главной), почтовый агент (правила отправителей без AI, отклики → кандидат + заявка + задача «позвонить за час», письма кандидатов → касания, очередь незнакомых, идемпотентно по id Gmail; парсеры work.ua/robota.ua/Djinni/общий — не откалиброваны на реальных письмах), встречи из карточки (Calendar v3 + Meet), импорт из Google Sheets (сопоставление колонок, дедуп, инкрементально, `sheets.sync`); `CandidateService::createOrMatch`; docs-check в kebab-case | — |
 | 2026-09-28 | Scripts (#scr): версионируемые скрипты (черновик → публикация → откат), оценка звонков/переписки по правилам (шаги с цитатами, «следующий шаг зафиксирован», рекомендации; AI-заглушка за `AiPolicy`, провайдеров не вызывает), шаблоны в карточке, задачи-напоминания через `POST /api/ops/jobs/run` + `cron.yml`, отчёт `/api/reports/scripts`; Overview: дашборд вместо страницы статуса (`/status` — админам); заголовки вкладок «SinHRM · …» | #18 |
 | 2026-09-27 | Recruiting (фаза 1, ядро): воронки (по умолчанию 8 этапов), вакансии + доска drag&drop, кандидаты с дедупом по телефону/e-mail/Telegram, маршрут и лента касаний, «Вхідні», зависшие (`last_touch_at`), отчёты, `TouchpointIngestor`, `recruiting:demo` в preview-сиде, Ctrl/⌘+K | #17 |
 | 2026-09-26 | Справочники (филиалы, города, отделы, должности), филиалы пользователей + `AccessibleBranches`, импорт из Sintegrum API (не проверен на живом API), трассировки без аргументов, preview-web → preview-API | #16 |

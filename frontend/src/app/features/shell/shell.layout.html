@@ -34,6 +34,14 @@
         <mat-icon>hub</mat-icon>
         <span>{{ 'shell.nav.integrations' | transloco }}</span>
       </a>
+      <a class="nav-link" routerLink="/admin/mail" routerLinkActive="active">
+        <mat-icon>mark_email_unread</mat-icon>
+        <span>{{ 'shell.nav.mail' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/admin/sheets-import" routerLinkActive="active">
+        <mat-icon>table_chart</mat-icon>
+        <span>{{ 'shell.nav.sheetsImport' | transloco }}</span>
+      </a>
     }
     @if (isAdmin()) {
       <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active">

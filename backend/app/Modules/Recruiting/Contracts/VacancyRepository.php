@@ -25,6 +25,9 @@ interface VacancyRepository
     /** @param  array<string, mixed>  $attributes */
     public function update(Vacancy $vacancy, array $attributes): Vacancy;
 
+    /** The single open vacancy whose title equals $title case-insensitively; none or several → null. */
+    public function findOpenByTitle(string $title): ?Vacancy;
+
     /** @return Collection<int, Application> every application of the vacancy with its candidate */
     public function boardApplications(Vacancy $vacancy): Collection;
 }

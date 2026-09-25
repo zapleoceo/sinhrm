@@ -10,6 +10,7 @@ use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\DTO\CandidateData;
 use App\Modules\Recruiting\DTO\CandidateFilter;
+use App\Modules\Recruiting\DTO\CandidateMatch;
 use App\Modules\Recruiting\DTO\ContactKeys;
 use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
@@ -21,6 +22,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 
 /** Candidates: listing in scope, creation with dedupe by contacts, editing. */
@@ -81,6 +83,56 @@ final readonly class CandidateService
             $this->assertNoDuplicate($actor, $keys, null);
             throw RecruitingException::duplicateCandidateRestricted();
         }
+    }
+
+    /**
+     * For machine sources (Google Sheets import, job-board e-mails): no 409 — a candidate sharing a normalized contact
+     * (global, all branches) is reused, otherwise a new one is created. With a vacancy the candidate is applied to it
+     * (first stage, at $at) unless already applied. The actor may be null (background job); it becomes owner/creator.
+     *
+     * @throws RecruitingException no_contacts (nothing to dedupe by), full_name_required (new candidate without name)
+     */
+    public function createOrMatch(?User $actor, CandidateData $data, ?Vacancy $vacancy = null, ?Carbon $at = null): CandidateMatch
+    {
+        $keys = $this->keys($data);
+        if ($keys->isEmpty()) {
+            throw RecruitingException::noContacts();
+        }
+        $candidate = $this->candidates->findByContacts($keys)[0] ?? null;
+        $created = false;
+        if ($candidate === null) {
+            if ($data->fullName === null) {
+                throw RecruitingException::fullNameRequired();
+            }
+            try {
+                $candidate = $this->candidates->create([
+                    'full_name' => $data->fullName,
+                    'phone' => $keys->phone,
+                    'email' => $keys->email,
+                    'telegram_username' => $keys->telegram,
+                    'city_id' => $data->cityId,
+                    'source' => ($data->source ?? CandidateSource::Import)->value,
+                    'utm' => $data->utm,
+                    'tags' => $data->tags,
+                    'owner_id' => $data->ownerId ?? $actor?->id,
+                    'created_by' => $actor?->id,
+                ]);
+                $created = true;
+                $this->log->info('recruiting.candidate_created', ['id' => $candidate->id, 'by' => $actor?->id, 'via' => 'match']);
+            } catch (UniqueConstraintViolationException) {
+                // A concurrent import created the same person: reuse it.
+                $candidate = $this->candidates->findByContacts($keys)[0] ?? throw RecruitingException::noContacts();
+            }
+        }
+        if ($vacancy === null) {
+            return new CandidateMatch($candidate, $created);
+        }
+        $existing = $this->applications->findFor($candidate->id, $vacancy->id);
+        if ($existing !== null) {
+            return new CandidateMatch($candidate, $created, $existing);
+        }
+
+        return new CandidateMatch($candidate, $created, $this->applicationService->apply($actor, $candidate, $vacancy, $at), true);
     }
 
     private function insert(User $actor, CandidateData $data, ContactKeys $keys, ?Vacancy $vacancy): Candidate

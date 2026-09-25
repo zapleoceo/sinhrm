@@ -29,6 +29,9 @@
   @for (g of store.groups(); track g.group) {
     <section class="group">
       <h2>{{ 'integrations.groups.' + g.group | transloco }}</h2>
+      @if (g.group === 'google') {
+        <app-google-connect-panel />
+      }
       <div class="grid">
         @for (item of g.items; track item.key) {
           <app-integration-card [item]="item" />

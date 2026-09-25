@@ -42,6 +42,8 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI', 'https://sinhrm.vercel.app/api/auth/google/callback'),
+        // OAuth consent of Gmail/Calendar/Sheets (GoogleWorkspace): same client, its own redirect URI (register it in Google Cloud).
+        'connect_redirect' => env('GOOGLE_CONNECT_REDIRECT_URI', 'https://sinhrm.vercel.app/api/google/connect/callback'),
     ],
 
 ];

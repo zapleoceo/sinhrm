@@ -6,7 +6,7 @@ namespace App\Modules\Integrations\Definitions;
 
 use App\Modules\Integrations\Enums\IntegrationGroup;
 
-/** Google Calendar. Tokens come later from the OAuth consent flow. */
+/** Google Calendar. Connected by the OAuth consent flow (GoogleWorkspace module); used for meetings from the candidate card. */
 final class GoogleCalendarDefinition extends AbstractDefinition
 {
     public function key(): string

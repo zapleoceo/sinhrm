@@ -183,11 +183,33 @@ export interface Touchpoint {
   author: Ref | null;
   occurred_at: string;
   body: string | null;
-  meta: { duration_sec?: number; recording_url?: string; contact?: string };
+  meta: TouchpointMeta;
   via_product: boolean;
   integration_key: string | null;
   /** Script evaluation (timeline only; filled by the Scripts module), null = not evaluated. */
   evaluation?: EvaluationSummary | null;
+}
+
+/** Public meta of a touchpoint (backend TouchpointResource::PUBLIC_META). */
+export interface TouchpointMeta {
+  duration_sec?: number;
+  recording_url?: string;
+  contact?: string;
+  /** e-mail captured by the mail agent */
+  subject?: string;
+  from?: string;
+  parser?: string;
+  full_name?: string;
+  vacancy_title?: string;
+  cv_url?: string;
+  /** meeting scheduled in Google Calendar */
+  event_id?: string;
+  meet_link?: string;
+  html_link?: string;
+  start?: string;
+  end?: string;
+  meeting_type?: 'branch' | 'online';
+  title?: string;
 }
 
 /** Short script evaluation on a timeline touchpoint (backend Scripts ScriptEvaluation::summary). */

@@ -37,7 +37,7 @@ import { TasksStore } from './tasks.store';
             [attr.aria-label]="t.title"
           />
           <div class="body">
-            <span class="title">{{ t.title }}</span>
+            <span class="title">{{ t.type === 'new_applicant' ? ('scripts.tasks.newApplicantTitle' | transloco) : t.title }}</span>
             <span class="meta muted">
               @if (showCandidate() && t.candidate) {
                 <a [routerLink]="['/candidates', t.candidate.id]">{{ t.candidate.name }}</a> ·

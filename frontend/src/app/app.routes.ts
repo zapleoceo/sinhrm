@@ -53,6 +53,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/directory/directory.page').then((m) => m.DirectoryPage),
       },
       {
+        path: 'admin/mail',
+        title: 'titles.mail',
+        canActivate: [roleGuard('superadmin')],
+        loadComponent: () => import('./features/mail-agent/mail.page').then((m) => m.MailPage),
+      },
+      {
+        path: 'admin/sheets-import',
+        title: 'titles.sheetsImport',
+        canActivate: [roleGuard('superadmin')],
+        loadComponent: () => import('./features/google-workspace/sheets-import.page').then((m) => m.SheetsImportPage),
+      },
+      {
         path: 'admin/integrations',
         title: 'titles.integrations',
         canActivate: [roleGuard('superadmin')],
