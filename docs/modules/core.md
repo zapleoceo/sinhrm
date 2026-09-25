@@ -40,7 +40,12 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 | `POST /api/ops/migrate?fresh=1` | пересоздаёт БД и заполняет синтетикой; **в production запрещено (403)** |
 
 Защита: заголовок `X-Ops-Secret` = `OPS_SECRET` (Vercel env + GitHub secret), сравнение `hash_equals`;
-секрет не задан → 404 (эндпоинта «нет»), неверный → 401; лимит 10 запросов в минуту (`throttle:10,1`).
+секрет не задан → 404 (эндпоинта «нет»), неверный → 401; после 10 неверных попыток в минуту с одного IP → 429. Считаются **только неудачные** попытки:
+запрос с верным секретом не трогает кэш, поэтому миграции работают и на пустой БД (таблицы `cache` ещё нет).
 В публичный лог Actions пишется только «migrations: ok/FAILED». Время выполнения ограничено `maxDuration` 60 с. Код: `Http/Middleware/RequireOpsSecret`,
 `Http/Controllers/OpsMigrateController`, `Contracts/MigrationRunner` → `Services/ArtisanMigrationRunner`.
 Тест: `tests/Feature/Core/OpsMigrateTest.php`. `APP_ENV` задаётся переменной Vercel: `production` / `preview`.
+
+## Логи
+На Vercel логи пишутся в stderr в формате JSON без стектрейса (`LOG_STDERR_FORMATTER=JsonFormatter`, уровень `warning`):
+Vercel обрезает длинные сообщения, и текст ошибки иначе терялся за трассировкой.
