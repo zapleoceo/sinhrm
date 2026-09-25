@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Sanctum SPA cookie auth: the SPA is same-origin with the API (Vercel rewrite).
         $middleware->statefulApi();
+        // API-only app: there is no "login" route to redirect guests to — answer 401 JSON instead of a 500.
+        $middleware->redirectGuestsTo(fn (Request $request): ?string => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
