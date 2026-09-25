@@ -17,3 +17,13 @@
 ## Как проверить
 Тесты: `tests/Feature/Core/HealthTest.php`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`.
 Вручную: `curl -i https://sinhrm.vercel.app/api/health`.
+
+## Подключение к Neon из Vercel
+Библиотека libpq в рантайме vercel-php не поддерживает SNI, и Neon отвечает «Endpoint ID is not specified».
+`Support\NeonConnectionConfig` (применяется в `CoreServiceProvider::register`) разбирает `DATABASE_URL` и передаёт
+id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`) — документированный обход Neon. Для не-Neon URL ничего не меняется.
+Проверено: до исправления `/api/health` → 503 с этой ошибкой, после → 200.
+
+## Точка входа Vercel
+`backend/api/index.php` подменяет `SCRIPT_NAME` на `/index.php`: иначе Laravel считает `/api` базовым путём и
+`/api/health` превращается в `/health` (404). Приложение API-only: веб-маршрутов нет, `/` → 404 JSON.
