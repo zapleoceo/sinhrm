@@ -13,7 +13,7 @@
               │
               ▼
            Neon Postgres (Frankfurt) — данные, сессии, очередь задач, зашифрованные секреты
-GitHub Actions ──► тесты на каждый PR ─► деплой на Vercel ─► cron: POST /api/jobs/run
+GitHub Actions ──► тесты на каждый PR ─► деплой на Vercel ─► cron (30 мин): POST /api/ops/jobs/run
 ```
 
 | Решение | Почему |
@@ -39,6 +39,8 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Integrations (секреты и внешние сервисы) | ✅ | [modules/integrations.md](../modules/integrations.md) |
 | Directory (справочники, филиалы пользователей, импорт из Sintegrum) | ✅ | [modules/directory.md](../modules/directory.md) |
 | Recruiting (вакансии, воронки, кандидаты, касания, «Вхідні», отчёты) | ✅ | [modules/recruiting.md](../modules/recruiting.md) |
+| Scripts (версии скриптов, оценка касаний, шаблоны, задачи-напоминания) | ✅ | [modules/scripts.md](../modules/scripts.md) |
+| Overview (главная страница — дашборд) | ✅ | [modules/overview.md](../modules/overview.md) |
 
 ## Фронтенд
 `frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.
@@ -46,5 +48,7 @@ Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн �
 
 ## Ограничения (осознанные)
 - Холодный старт API ~0.3–1 с после простоя.
-- Фоновые задачи выполняются с задержкой до ~30 мин (частота cron).
+- Фоновые задачи выполняются с задержкой до ~30 мин (частота cron): модули регистрируют `Core\Contracts\ScheduledJob`,
+  cron вызывает `POST /api/ops/jobs/run` ([core.md](../modules/core.md)).
+- Работа «после ответа» (оценка разговора по скрипту) — `dispatchAfterResponse()` в том же запросе, без очереди.
 - Постоянные соединения (Telegram userbot, WebSocket) невозможны — только вебхуки.

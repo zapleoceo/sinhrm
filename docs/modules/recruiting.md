@@ -24,8 +24,10 @@
 - **Кандидати** — слева список (поиск по имени/телефону/e-mail/@telegram, фильтры статуса и источника), справа карточка.
   Клавиши: `j`/`k` или `↓`/`↑` — следующий/предыдущий кандидат, `/` — поиск. Карточка: контакты (кликабельные), источник, UTM и теги;
   **Маршрут** по каждой вакансии (этапы с датой входа и длительностью, текущий подсвечен) и кнопка «Перемістити»; поле записи касания
-  (канал, направление, текст, минуты для звонка/встречи; Ctrl/⌘+Enter — сохранить); **Касання** — лента новых сверху, фильтр-чипы
-  по каналам и «Етапи».
+  (канал, направление, текст, минуты для звонка/встречи; Ctrl/⌘+Enter — сохранить; кнопка **«Шаблон»** вставляет сообщение из
+  активного скрипта с подставленными именем, рекрутером и вакансией); **Задачі** по кандидату (напоминания, галочка — выполнено);
+  **Касання** — лента новых сверху, фильтр-чипы по каналам и «Етапи». У оценённого звонка/сообщения — значок «Скрипт N · правила»,
+  клик раскрывает шаги с цитатами и рекомендации ([scripts.md](scripts.md)).
   При создании кандидата с уже известным телефоном/e-mail/Telegram система предложит открыть существующую карточку (если он в
   ваших филиалах) или сообщит, что он есть в другом филиале. Второго кандидата с тем же контактом создать нельзя.
 - **Вхідні** — сообщения и звонки, пришедшие снаружи, которые не удалось сопоставить с кандидатом. «Розібрати» → привязать к
@@ -106,7 +108,7 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 | `POST /api/candidates` | `{full_name, phone?, email?, telegram_username?, city_id?, source?, utm?, tags?, owner_id?, vacancy_id?}` | 201 / 409 дубль (см. «Правила») |
 | `GET /api/candidates/{id}` | — | карточка + `applications[]` с `route[]` (`stage_name, entered_at, left_at, duration_sec, by, reason`) и `stages` |
 | `PATCH /api/candidates/{id}` | частично; `vacancy_id` запрещён; занятый контакт → 409 | 200 / 409 |
-| `GET /api/candidates/{id}/timeline` | `channel=call,telegram,stage` (или массив; `stage` = шаги), `perPage, page` | новые сверху: `{type: touchpoint\|stage_change, at, touchpoint\|stage_change}` |
+| `GET /api/candidates/{id}/timeline` | `channel=call,telegram,stage` (или массив; `stage` = шаги), `perPage, page` | новые сверху: `{type: touchpoint\|stage_change, at, touchpoint\|stage_change}`; у касания `touchpoint.evaluation` — `{id, score, engine, next_step_fixed, script_version_id}` или `null` (оценка по скрипту, см. ниже) |
 | `POST /api/candidates/{id}/touchpoints` | `{channel (note\|call\|meeting\|telegram\|whatsapp\|viber\|email), direction?, body (обязателен для note), occurred_at?, duration_sec?, application_id?}` | 201, `via_product=true` |
 | `POST /api/applications/{id}/move` | `{stage_id, reason?, reject_reason_id?}` | заявка; ошибки см. «Правила» |
 | `GET /api/recruiting/stale` | `days` 1..365 (строка `"3"` ок; по умолч. 3) | до 200 заявок, самые старые сверху; `meta.days` |
@@ -119,6 +121,13 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 | `GET /api/reports/reject-reasons` | `from, to` | отказы (по `closed_at`) по причинам |
 
 Ошибки бизнес-правил — `Exceptions/RecruitingException` → `{message, code, …}`.
+
+### Оценка касаний по скрипту в ленте (`Contracts/TouchpointEvaluations`)
+Recruiting не знает, как оцениваются разговоры: `TouchpointService::timeline()` после выборки страницы запрашивает у
+контракта `TouchpointEvaluations::summaries(ids)` краткие оценки касаний этой страницы (один запрос) и кладёт их в
+`TimelineEntry::$evaluation`. По умолчанию привязан `Support/NullTouchpointEvaluations` (оценок нет); модуль Scripts
+подменяет его своей реализацией ([scripts.md](scripts.md)). Сама оценка запускается модулем Scripts по событию
+`TouchpointRecorded`.
 
 ### Контракт для интеграций (приём касаний)
 ```php
@@ -162,7 +171,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `vacancies/` | список + `VacancyDialog` (`/vacancies`) |
 | `board/` | доска CDK drag&drop (`/vacancies/:id`), оптимистичный перенос с откатом, `RejectDialog` |
 | `candidates/` | split view (`/candidates`, `/candidates/:id`), клавиши j/k/↑/↓//, `CandidateDialog` с обработкой дубля |
-| `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` |
+| `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`) |
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |
 | `reports/` | `/reports`, таблицы с CSS-полосками, `pivotTouches` |
 | `palette/` | `CommandPalette` в CDK overlay (`CommandPaletteService`), Ctrl/⌘+K — в оболочке ([shell.md](shell.md)) |

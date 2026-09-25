@@ -81,9 +81,14 @@
 
   @if (canWrite()) {
     <section class="compose">
-      <app-touch-composer (logged)="log($event)" />
+      <app-touch-composer [candidateId]="c.id" (logged)="log($event)" />
     </section>
   }
+
+  <section class="tasks" [attr.aria-label]="'scripts.tasks.title' | transloco">
+    <h3>{{ 'scripts.tasks.title' | transloco }}</h3>
+    <app-tasks-widget [query]="{ candidate_id: c.id }" />
+  </section>
 
   <section class="timeline" [attr.aria-label]="'recruiting.card.timeline' | transloco">
     <div class="timeline-head">
@@ -126,6 +131,9 @@
               }
               @if (item.touchpoint.author) {
                 <span class="muted small">{{ item.touchpoint.author.name }}</span>
+              }
+              @if (item.touchpoint.evaluation; as ev) {
+                <app-evaluation-badge [touchpointId]="item.touchpoint.id" [summary]="ev" />
               }
             </div>
           </li>

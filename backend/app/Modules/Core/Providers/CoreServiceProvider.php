@@ -6,6 +6,8 @@ namespace App\Modules\Core\Providers;
 
 use App\Modules\Core\Contracts\HealthCheck;
 use App\Modules\Core\Contracts\MigrationRunner;
+use App\Modules\Core\Contracts\ScheduledJob;
+use App\Modules\Core\Http\Controllers\OpsJobsController;
 use App\Modules\Core\Services\ArtisanMigrationRunner;
 use App\Modules\Core\Services\DatabaseHealthCheck;
 use App\Modules\Core\Services\HealthService;
@@ -25,5 +27,8 @@ final class CoreServiceProvider extends ModuleServiceProvider
         $this->app->bind(MigrationRunner::class, ArtisanMigrationRunner::class);
 
         $this->app->bind(HealthService::class, fn ($app) => new HealthService($app->tagged(HealthCheck::class)));
+
+        // Background jobs for the cron workflow: modules add theirs with $this->app->tag([...], ScheduledJob::class).
+        $this->app->bind(OpsJobsController::class, fn ($app) => new OpsJobsController($app->tagged(ScheduledJob::class)));
     }
 }

@@ -1,6 +1,6 @@
 import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors, withXsrfConfiguration } from '@angular/common/http';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
 import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
 import { provideTransloco } from '@jsverse/transloco';
 import { routes } from './app.routes';
@@ -9,6 +9,7 @@ import { AuthService } from './core/auth/auth.service';
 import { csrfInterceptor, XSRF_HEADER } from './core/http/csrf.interceptor';
 import { LanguageService } from './core/i18n/language.service';
 import { TranslocoHttpLoader } from './core/i18n/transloco-loader';
+import { TranslatedTitleStrategy } from './core/i18n/translated-title.strategy';
 import { ThemeService } from './core/theme/theme.service';
 
 export const appConfig: ApplicationConfig = {
@@ -21,6 +22,8 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([csrfInterceptor]),
     ),
     provideRouter(routes, withComponentInputBinding()),
+    // Route `title` = i18n key → "SinHRM · <page>" in the browser tab, re-translated on language change.
+    { provide: TitleStrategy, useClass: TranslatedTitleStrategy },
     provideTransloco({
       config: {
         availableLangs: [...APP_LANGS],

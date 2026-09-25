@@ -10,6 +10,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
+import { EvaluationBadge } from '../../scripts/evaluation/evaluation-badge';
+import { TasksWidget } from '../../scripts/tasks/tasks-widget';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from '../board/reject.dialog';
 import { canWriteRecruiting } from '../recruiting.access';
 import { formatDuration } from '../recruiting.format';
@@ -21,6 +23,7 @@ import { TouchComposer } from './touch-composer';
 /**
  * The candidate card: contacts and source/UTM chips, the ROUTE per vacancy (stages with time spent), a stage
  * control, and the merged timeline of every touch (made in SinHRM or captured outside) with channel filters.
+ * Evaluated calls/chat messages carry a script score badge; the candidate's open tasks are listed above the timeline.
  */
 @Component({
   selector: 'app-candidate-card',
@@ -34,6 +37,8 @@ import { TouchComposer } from './touch-composer';
     MatTooltipModule,
     TranslocoPipe,
     TouchComposer,
+    EvaluationBadge,
+    TasksWidget,
   ],
   providers: [CandidateCardStore],
   changeDetection: ChangeDetectionStrategy.OnPush,

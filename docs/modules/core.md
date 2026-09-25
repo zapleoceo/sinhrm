@@ -4,8 +4,9 @@
 Общий фундамент: проверка, что система жива и видит базу данных, и базовый механизм подключения модулей.
 
 ## Как пользоваться
-Войдите в `https://sinhrm.vercel.app` — стартовая страница «Обзор» показывает состояние API и его зависимостей.
-Сама проверка `GET /api/health` открыта без входа.
+Суперадмин и админ: меню → «Стан системи» (`/status`) показывает состояние API и его зависимостей (раньше это была
+стартовая страница; теперь стартовая — дашборд, [overview.md](overview.md)). Сама проверка `GET /api/health` открыта без входа.
+Вкладка браузера подписана «SinHRM · <раздел>» на языке интерфейса.
 
 ## Как устроено
 - `GET /api/health` → `{"version": "...", "ok": true, "checks": {"database": {"ok": true}}}`; код 200 или 503.
@@ -15,7 +16,7 @@
   `/api/<prefix>`: `routes.php` — группа `api` (JSON; Sanctum делает запросы SPA сессионными), `routes.web.php` — группа
   `web` (сессия есть всегда) для браузерных редиректов от внешних сервисов, например OAuth-callback Google.
 - Фронт: `core/api/health.service.ts` (ошибка сети → отчёт «unreachable»), экран `features/core/status.page.ts`
-  (дочерний маршрут оболочки, доступен после входа).
+  (маршрут `/status` оболочки, `roleGuard('superadmin', 'admin')`).
 
 ### Фронтенд: общие сервисы `frontend/src/app/core`
 | Файл | Что делает |
@@ -25,14 +26,15 @@
 | `auth/auth.model.ts` | типы и списки ролей/статусов/языков — зеркало enum бэкенда |
 | `http/csrf.interceptor.ts` | перед первым POST/PATCH/DELETE берёт `GET /sanctum/csrf-cookie`, ставит `X-XSRF-TOKEN`; на 419 — повтор один раз |
 | `i18n/*` | Transloco: `public/i18n/{uk,ru,en}.json`, язык пользователя (сервер) или гостя (localStorage) |
+| `i18n/translated-title.strategy.ts` | `TitleStrategy`: `title` маршрута — ключ i18n (`titles.*`), во вкладке «SinHRM · Кандидати»; при смене языка заголовок переводится заново (`selectTranslate`). Без `title` — просто «SinHRM» (он же в `index.html`) |
 | `theme/theme.service.ts` | светлая/тёмная тема: по умолчанию как в ОС, выбор хранится в localStorage (`<html data-theme>`) |
 | `storage/safe-storage.ts` | localStorage без исключений (приватный режим, запрет cookies) |
 
 Все строки интерфейса — через Transloco (`'ключ' | transloco`); новый текст добавляется во все три файла `public/i18n`.
 
 ## Как проверить
-Тесты: `tests/Feature/Core/HealthTest.php`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
-`auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`.
+Тесты: `tests/Feature/Core/HealthTest.php`, `tests/Feature/Core/OpsJobsTest.php`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
+`auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.
 Вручную: `curl -i https://sinhrm.vercel.app/api/health`.
 
 ## Подключение к Neon из Vercel
@@ -55,6 +57,7 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 |---|---|
 | `POST /api/ops/migrate` | применяет новые миграции |
 | `POST /api/ops/migrate?fresh=1` | пересоздаёт БД и заполняет синтетикой; **в production запрещено (403)** |
+| `POST /api/ops/jobs/run` | один проход всех фоновых задач (cron каждые 30 мин, `.github/workflows/cron.yml`) → `{ok, jobs: {<name>: {ok, …счётчики}}}` |
 
 Защита: заголовок `X-Ops-Secret` = `OPS_SECRET` (Vercel env + GitHub secret), сравнение `hash_equals`;
 секрет не задан → 404 (эндпоинта «нет»), неверный → 401; после 10 неверных попыток в минуту с одного IP → 429. Считаются **только неудачные** попытки:
@@ -62,6 +65,15 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 В публичный лог Actions пишется только «migrations: ok/FAILED». Время выполнения ограничено `maxDuration` 60 с. Код: `Http/Middleware/RequireOpsSecret`,
 `Http/Controllers/OpsMigrateController`, `Contracts/MigrationRunner` → `Services/ArtisanMigrationRunner`.
 Тест: `tests/Feature/Core/OpsMigrateTest.php`. `APP_ENV` задаётся переменной Vercel: `production` / `preview`.
+
+### Фоновые задачи (`Contracts/ScheduledJob`)
+У vercel-php нет воркеров и постоянных процессов, а cron Vercel Hobby — раз в сутки. Поэтому GitHub Actions
+(`cron.yml`) каждые 30 минут дёргает `POST /api/ops/jobs/run`. Модуль регистрирует задачу так:
+`$this->app->tag([MyJob::class], ScheduledJob::class)`; интерфейс — `name()` и `run(Carbon $now): array` (счётчики, без
+персональных данных). Задача **обязана быть идемпотентной** (повтор или наложение запусков ничего не дублируют).
+`Http/Controllers/OpsJobsController` запускает все задачи по очереди; упавшая не останавливает остальные, ответ тогда
+`ok: false` (шаг cron краснеет), исключение уходит в `report()`. Сейчас зарегистрирована `followups` (модуль Scripts —
+задачи-напоминания, [scripts.md](scripts.md)).
 
 ## Логи
 На Vercel логи пишутся в stderr в формате JSON без стектрейса (`LOG_STDERR_FORMATTER=JsonFormatter`, уровень `warning`):

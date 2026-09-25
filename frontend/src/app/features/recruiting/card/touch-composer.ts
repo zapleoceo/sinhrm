@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -7,15 +7,27 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { TemplateMenu } from '../../scripts/templates/template-menu';
 import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '../recruiting.model';
 
 /**
  * Logs a touch by hand: note (text required), call (minutes), meeting, or a messenger/e-mail contact made outside.
  * Ctrl/Cmd+Enter submits. Emits the body; the parent sends it and calls reset() on success.
+ * "Шаблон" inserts a filled message template of the active scripts (Scripts module) into the text.
  */
 @Component({
   selector: 'app-touch-composer',
-  imports: [ReactiveFormsModule, MatButtonModule, MatButtonToggleModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, TranslocoPipe],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+    TranslocoPipe,
+    TemplateMenu,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="composer" [formGroup]="form" (ngSubmit)="submit()" (keydown.control.enter)="submit()" (keydown.meta.enter)="submit()">
@@ -47,7 +59,8 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
         <textarea matInput formControlName="body" rows="2" maxlength="10000"></textarea>
       </mat-form-field>
       <div class="actions">
-        <span class="muted hint">{{ 'recruiting.composer.hint' | transloco }}</span>
+        <app-template-menu [candidateId]="candidateId()" (picked)="insertTemplate($event)" />
+        <span class="muted hint grow">{{ 'recruiting.composer.hint' | transloco }}</span>
         <button mat-flat-button type="submit" [disabled]="busy() || !valid()">{{ 'recruiting.composer.submit' | transloco }}</button>
       </div>
     </form>
@@ -59,9 +72,11 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
     .min { width: 7rem; }
     .actions { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
     .hint { font-size: 0.8rem; }
+    .grow { flex: 1; }
   `,
 })
 export class TouchComposer {
+  readonly candidateId = input.required<number>();
   readonly logged = output<LogTouch>();
 
   protected readonly channels = MANUAL_CHANNELS;
@@ -87,6 +102,14 @@ export class TouchComposer {
   reset(): void {
     this.form.patchValue({ body: '', minutes: null });
     this.busy.set(false);
+  }
+
+  /** Appends the template to the text (a blank line between it and what was typed before). */
+  protected insertTemplate(text: string): void {
+    const body = this.form.controls.body.value.trimEnd();
+    this.form.controls.body.setValue(body ? `${body}
+
+${text}` : text);
   }
 
   protected submit(): void {

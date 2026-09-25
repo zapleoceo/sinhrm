@@ -9,7 +9,7 @@
 |---|---|---|
 | `ci.yml` | каждый PR и push в `main` | бэкенд: Pint, PHPStan, PHPUnit на Postgres (сервис в CI); фронт: lint, test, build; gitleaks; docs-check |
 | `deploy.yml` | после зелёного CI (push в `main` / PR) | `vercel pull` → `vercel build` → `vercel deploy --prebuilt` для `sinhrm-api` и `sinhrm`; миграции через `POST /api/ops/migrate` (prod) / `?fresh=1` (preview, синтетика) |
-| `cron.yml` | каждые 30 мин | `POST /api/jobs/run` с секретом — обработка фоновых задач |
+| `cron.yml` | каждые 30 мин (и вручную: Run workflow) | обычный `curl -X POST https://sinhrm-api.vercel.app/api/ops/jobs/run` с `X-Ops-Secret` (секрет только через `env`, не в тексте скрипта) — все `ScheduledJob` (сейчас: напоминания Scripts); в лог — только счётчики и вердикт `jobs: ok/FAILED` |
 
 Секреты GitHub Actions: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_API`, `VERCEL_PROJECT_ID_WEB`, `OPS_SECRET`.
 В GitHub нет доступа к БД: миграции выполняет API по защищённому эндпоинту.
