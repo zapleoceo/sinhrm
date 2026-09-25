@@ -18,6 +18,11 @@ export const routes: Routes = [
         canActivate: [roleGuard('superadmin')],
         loadComponent: () => import('./features/users/users.page').then((m) => m.UsersPage),
       },
+      {
+        path: 'admin/integrations',
+        canActivate: [roleGuard('superadmin')],
+        loadComponent: () => import('./features/integrations/integrations.page').then((m) => m.IntegrationsPage),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи" },
+    "nav": { "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи", "integrations": "Интеграции" },
     "menu": { "open": "Меню пользователя", "language": "Язык", "logout": "Выйти" },
     "theme": { "toDark": "Тёмная тема", "toLight": "Светлая тема" }
   },
@@ -53,6 +53,172 @@
       "submit": "Пригласить",
       "required": "Обязательное поле",
       "invalidEmail": "Неверный email"
+    }
+  },
+  "integrations": {
+    "title": "Интеграции",
+    "subtitle": "Ключи и настройки внешних сервисов. Секреты хранятся зашифрованными и повторно не показываются.",
+    "loadError": "Не удалось загрузить интеграции",
+    "empty": "Интеграций нет",
+    "mode": "Режим",
+    "configure": "Настроить",
+    "collapse": "Свернуть",
+    "save": "Сохранить",
+    "saved": "Сохранено",
+    "required": "Обязательное поле",
+    "invalidUrl": "Неверный адрес (https://…)",
+    "noFields": "Настроек здесь нет: подключение через Google будет позже.",
+    "checkOk": "Соединение работает",
+    "checkFailed": "Проверка не прошла",
+    "status": {
+      "off": "Выключено",
+      "demo": "Демо",
+      "connected": "Подключено",
+      "error": "Ошибка"
+    },
+    "groups": {
+      "ai": "AI",
+      "google": "Google",
+      "messengers": "Мессенджеры",
+      "telephony": "Телефония",
+      "sources": "Источники кандидатов"
+    },
+    "secret": {
+      "notSet": "не задано",
+      "keepHint": "Оставьте пустым, чтобы не менять",
+      "clear": "Очистить",
+      "undo": "Отменить очистку",
+      "willClear": "будет удалено при сохранении"
+    },
+    "check": {
+      "run": "Проверить соединение",
+      "connection_failed": "Сервис недоступен",
+      "unauthorized": "Ключ не подходит (401)",
+      "missing_secret": "Не задан обязательный ключ",
+      "not_verified": "Настройки выглядят правильно, но соединение не проверялось",
+      "invalid_url": "Неверный адрес сервиса",
+      "http": "Сервис ответил ошибкой"
+    },
+    "errors": {
+      "check_not_supported": "Для этой интеграции проверки нет",
+      "generic": "Не удалось выполнить действие"
+    },
+    "logs": {
+      "title": "Последние события",
+      "empty": "Событий пока нет",
+      "error": "Не удалось загрузить события",
+      "messages": {
+        "settings_updated": "Изменены настройки",
+        "status_changed": "Изменён режим",
+        "check_connected": "Проверка: подключено",
+        "check_error": "Проверка: ошибка",
+        "check_demo": "Проверка: не подтверждено",
+        "ai_enabled": "AI включён",
+        "ai_disabled": "AI выключен"
+      }
+    },
+    "ai": {
+      "off": "AI выключен до согласования владельцем",
+      "on": "AI включён",
+      "explain": "Пока выключено, система не обращается к AI-провайдерам (AI Broker, OpenRouter, Deepgram).",
+      "toggle": "Разрешить AI",
+      "confirmOnTitle": "Включить AI?",
+      "confirmOnText": "Делайте это только после того, как владелец согласовал модели и промпты. Действие записывается в журнал.",
+      "confirmOffTitle": "Выключить AI?",
+      "confirmOffText": "Все обращения к AI-провайдерам будут остановлены. Действие записывается в журнал.",
+      "confirm": "Подтвердить"
+    },
+    "fields": {
+      "base_url": "Адрес API",
+      "project_key": "Ключ проекта",
+      "daily_cap_usd": "Дневной лимит, $",
+      "api_key": "API-ключ",
+      "mailbox": "Почтовый ящик",
+      "sheet_url": "Ссылка на таблицу",
+      "bot_token": "Токен бота",
+      "phone_number_id": "Phone number ID",
+      "waba_id": "WABA ID",
+      "access_token": "Access token",
+      "token": "Токен",
+      "domain": "Домен",
+      "project_id": "ID проекта",
+      "inbox": "Ящик для откликов",
+      "api_token": "API-токен",
+      "page_id": "ID страницы"
+    },
+    "items": {
+      "ai_broker": {
+        "name": "AI Broker",
+        "description": "Собственный шлюз к AI-моделям с лимитом расходов"
+      },
+      "openrouter": {
+        "name": "OpenRouter",
+        "description": "Доступ к разным AI-моделям через один ключ"
+      },
+      "deepgram": {
+        "name": "Deepgram",
+        "description": "Распознавание речи для записей звонков"
+      },
+      "google_gmail": {
+        "name": "Gmail",
+        "description": "Письма кандидатам и разбор входящей почты"
+      },
+      "google_calendar": {
+        "name": "Google Календарь",
+        "description": "Собеседования и напоминания"
+      },
+      "google_sheets": {
+        "name": "Google Таблицы",
+        "description": "Импорт и отчёты через таблицы"
+      },
+      "telegram_business": {
+        "name": "Telegram",
+        "description": "Переписка с кандидатами через бота"
+      },
+      "whatsapp_cloud": {
+        "name": "WhatsApp",
+        "description": "Сообщения через WhatsApp Cloud API"
+      },
+      "viber": {
+        "name": "Viber",
+        "description": "Сообщения через Viber-бота"
+      },
+      "wazzup": {
+        "name": "Wazzup",
+        "description": "Агрегатор мессенджеров"
+      },
+      "phonet": {
+        "name": "Phonet",
+        "description": "Телефония: звонки и записи"
+      },
+      "ringostat": {
+        "name": "Ringostat",
+        "description": "Коллтрекинг и записи звонков"
+      },
+      "binotel": {
+        "name": "Binotel",
+        "description": "Телефония: звонки и записи"
+      },
+      "sintegrum_api": {
+        "name": "Sintegrum API",
+        "description": "Филиалы и вакансии из Sintegrum"
+      },
+      "work_ua": {
+        "name": "Work.ua",
+        "description": "Отклики с Work.ua"
+      },
+      "robota_ua": {
+        "name": "Robota.ua",
+        "description": "Отклики с Robota.ua"
+      },
+      "djinni": {
+        "name": "Djinni",
+        "description": "Отклики с Djinni"
+      },
+      "meta_lead_ads": {
+        "name": "Meta Lead Ads",
+        "description": "Заявки из форм Facebook и Instagram"
+      }
     }
   }
 }

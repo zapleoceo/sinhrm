@@ -1,0 +1,39 @@
+<header class="head">
+  <h1>{{ 'integrations.title' | transloco }}</h1>
+  <p class="muted">{{ 'integrations.subtitle' | transloco }}</p>
+</header>
+
+<section class="ai-banner" [class.on]="store.aiEnabled()" aria-live="polite">
+  <mat-icon aria-hidden="true">{{ store.aiEnabled() ? 'smart_toy' : 'block' }}</mat-icon>
+  <div class="ai-text">
+    <strong>{{ (store.aiEnabled() ? 'integrations.ai.on' : 'integrations.ai.off') | transloco }}</strong>
+    <span class="muted">{{ 'integrations.ai.explain' | transloco }}</span>
+  </div>
+  <mat-slide-toggle [checked]="store.aiEnabled()" [disabled]="store.loading()" (change)="toggleAi($event)">
+    {{ 'integrations.ai.toggle' | transloco }}
+  </mat-slide-toggle>
+</section>
+
+@if (store.loading()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+@if (store.failed()) {
+  <div class="state">
+    <p>{{ 'integrations.loadError' | transloco }}</p>
+    <button mat-stroked-button type="button" (click)="store.load()">{{ 'common.retry' | transloco }}</button>
+  </div>
+} @else if (!store.loading() && store.groups().length === 0) {
+  <p class="state muted">{{ 'integrations.empty' | transloco }}</p>
+} @else {
+  @for (g of store.groups(); track g.group) {
+    <section class="group">
+      <h2>{{ 'integrations.groups.' + g.group | transloco }}</h2>
+      <div class="grid">
+        @for (item of g.items; track item.key) {
+          <app-integration-card [item]="item" />
+        }
+      </div>
+    </section>
+  }
+}
