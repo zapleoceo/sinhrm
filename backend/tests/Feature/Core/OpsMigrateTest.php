@@ -53,6 +53,15 @@ final class OpsMigrateTest extends TestCase
         $this->assertSame(['rebuild'], $this->runner->calls);
     }
 
+    public function test_guessing_the_secret_is_rate_limited(): void
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $this->postJson('/api/ops/migrate', [], ['X-Ops-Secret' => "guess-{$i}"])->assertUnauthorized();
+        }
+
+        $this->postJson('/api/ops/migrate', [], ['X-Ops-Secret' => 'guess-11'])->assertTooManyRequests();
+    }
+
     public function test_fresh_refused_in_production(): void
     {
         $this->app['env'] = 'production';

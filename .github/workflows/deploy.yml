@@ -50,8 +50,8 @@ jobs:
           # Preview DB holds synthetic data only → rebuild it on every deploy; production → apply pending.
           Q=$([ "$TARGET" = preview ] && echo '?fresh=1' || true)
           out=$(vercel curl "/api/ops/migrate$Q" --deployment "${{ steps.api.outputs.url }}" --yes                 --token=${{ secrets.VERCEL_TOKEN }} -- -sS -X POST -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json")
-          echo "$out"
-          echo "$out" | grep -q '"ok":true'
+          # Log only the verdict: raw migration output stays out of public Actions logs.
+          echo "$out" | grep -q '"ok":true' && echo "migrations: ok" || { echo "migrations: FAILED"; exit 1; }
 
       - name: Web — build & deploy
         id: web
