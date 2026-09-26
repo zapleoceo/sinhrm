@@ -75,7 +75,7 @@ Google Sheets действуют от имени суперадмина, под�
 ## Как проверить
 Тесты: `tests/Feature/Auth/GoogleCallbackTest.php` (суперадмин, приглашённый, not_invited, blocked,
 email_unverified, oauth_failed), `tests/Feature/Auth/MeTest.php` (me, 401, 403 blocked, locale, logout),
-`tests/Unit/Auth/AuthServiceTest.php`, `tests/Unit/Auth/SocialiteGoogleIdentityProviderTest.php`,
+`tests/Unit/Auth/AuthServiceTest.php`, токены — `tests/Feature/Recruiting/ExtensionApiTest.php`, `tests/Unit/Auth/SocialiteGoogleIdentityProviderTest.php`,
 `frontend/.../login-error.spec.ts`.
 
 Вручную (preview/prod):
@@ -85,6 +85,21 @@ curl -i https://sinhrm.vercel.app/api/auth/google/redirect     # 302 на accoun
 curl -i "https://sinhrm.vercel.app/api/auth/google/callback?error=access_denied"  # 302 /login?error=oauth_failed
 ```
 Полный вход — в браузере аккаунтом из списка тестовых пользователей Google.
+
+## Токены браузерного расширения
+Кроме cookie-сессии API принимает **персональные токены Sanctum** — сейчас только для расширения «SinHRM Clipper»
+([extension.md](extension.md)). Пользователь создаёт токен в SPA (`POST /api/me/extension-token`, нужна сессия): имя
+`extension`, ability `clipper`, срок 90 дней, один активный (новый удаляет старый), открытый текст — только в ответе на
+создание (в БД — SHA-256). `last_used_at` обновляет Sanctum.
+
+**Токен работает только на `/api/clipper/*`.** Стандартный guard Sanctum принял бы любой действующий токен на любом
+маршруте `auth:sanctum`, поэтому в `RecruitingServiceProvider::bootExtensionTokens()` задан
+`Sanctum::authenticateAccessTokensUsing`: токен аутентифицирует запрос к `/api/clipper/*` только с ability `clipper`,
+а к любому другому маршруту — только с ability `full` (такие токены не выдаются). Итог: токен расширения на
+`/api/candidates`, `/api/users`, `/api/auth/me`, `/api/me/extension-token` → 401; маршруты clipper дополнительно
+проверяют `CheckAbilities:clipper`. Сессия (cookie SPA) не затронута. У `User` подключён `HasApiTokens`.
+CORS (`config/cors.php`) открыт только для `api/clipper/*`, только для origin `chrome-extension://<id>`, без credentials.
+Тест: `tests/Feature/Recruiting/ExtensionApiTest.php` (без этого колбэка токен получал 200 на `/api/candidates` — проверено).
 
 ## Гость без авторизации
 Любой защищённый эндпоинт отвечает гостю `401 {"message":"Unauthenticated."}` — и для запроса без

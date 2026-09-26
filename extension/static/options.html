@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- SinHRM Clipper options. Logic: src/options.ts (bundled to options.js). Stored in chrome.storage.local. -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SinHRM Clipper</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="options">
+    <h1 data-i18n="optionsTitle">SinHRM Clipper</h1>
+    <form id="options-form">
+      <label><span data-i18n="baseUrl"></span><input id="base-url" type="url" placeholder="https://sinhrm.vercel.app" /></label>
+      <label><span data-i18n="token"></span><input id="token" type="password" autocomplete="off" /></label>
+      <label>
+        <span data-i18n="language"></span>
+        <select id="lang">
+          <option value="uk">Українська</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <div class="row">
+        <button type="submit" class="primary" data-i18n="save">Save</button>
+        <button type="button" id="check" data-i18n="checkConnection">Check connection</button>
+      </div>
+      <div id="status" class="status" hidden></div>
+    </form>
+    <script src="options.js"></script>
+  </body>
+</html>

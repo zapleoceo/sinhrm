@@ -11,6 +11,8 @@ enum CandidateSource: string
     case WorkUa = 'work_ua';
     case RobotaUa = 'robota_ua';
     case Djinni = 'djinni';
+    case Linkedin = 'linkedin';
+    case Dou = 'dou';
     case MetaAds = 'meta_ads';
     case Site = 'site';
     case Referral = 'referral';

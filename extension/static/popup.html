@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- SinHRM Clipper popup. Logic: src/popup.ts (bundled to popup.js). -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SinHRM Clipper</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="popup">
+    <h1 data-i18n="title">SinHRM Clipper</h1>
+    <p id="loading" data-i18n="loading">...</p>
+    <div id="message" hidden>
+      <p id="message-text"></p>
+      <button type="button" id="open-options" data-i18n="openOptions" hidden>Settings</button>
+    </div>
+    <form id="form" hidden>
+      <label><span data-i18n="fullName"></span><input id="f-full_name" required maxlength="255" /></label>
+      <label><span data-i18n="headline"></span><input id="f-headline" maxlength="255" /></label>
+      <label><span data-i18n="location"></span><input id="f-location" maxlength="255" /></label>
+      <div class="row">
+        <label><span data-i18n="phone"></span><input id="f-phone" type="tel" /></label>
+        <label><span data-i18n="email"></span><input id="f-email" type="email" /></label>
+      </div>
+      <label><span data-i18n="telegram"></span><input id="f-telegram" /></label>
+      <label><span data-i18n="profileUrl"></span><input id="f-profile_url" readonly /></label>
+      <label><span data-i18n="summary"></span><textarea id="f-summary" rows="5" maxlength="2000"></textarea></label>
+      <label>
+        <span data-i18n="vacancy"></span>
+        <select id="f-vacancy"><option value="" data-i18n="noVacancy"></option></select>
+      </label>
+      <button type="submit" id="submit" class="primary" data-i18n="add">Add to SinHRM</button>
+      <div id="status" class="status" hidden></div>
+      <button type="button" id="open-options-inline" data-i18n="openOptions" hidden>Settings</button>
+    </form>
+    <script src="popup.js"></script>
+  </body>
+</html>

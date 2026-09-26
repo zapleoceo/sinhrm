@@ -90,6 +90,10 @@
             <app-language-switcher />
           </div>
           <mat-divider />
+          <a mat-menu-item routerLink="/settings/extension">
+            <mat-icon>extension</mat-icon>
+            <span>{{ 'shell.menu.extension' | transloco }}</span>
+          </a>
           <button mat-menu-item type="button" (click)="logout()">
             <mat-icon>logout</mat-icon>
             <span>{{ 'shell.menu.logout' | transloco }}</span>

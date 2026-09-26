@@ -14,6 +14,8 @@ export type CandidateSource =
   | 'work_ua'
   | 'robota_ua'
   | 'djinni'
+  | 'linkedin'
+  | 'dou'
   | 'meta_ads'
   | 'site'
   | 'referral'
@@ -26,6 +28,8 @@ export const CANDIDATE_SOURCES: readonly CandidateSource[] = [
   'work_ua',
   'robota_ua',
   'djinni',
+  'linkedin',
+  'dou',
   'meta_ads',
   'site',
   'referral',
