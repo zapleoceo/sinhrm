@@ -61,7 +61,8 @@ jobs:
       - run: npm ci
       - run: npx ng lint
       - run: npx ng test --watch=false
-      - run: npx ng build
+      - run: npm run test:docs
+      - run: npm run build
 
   extension:
     runs-on: ubuntu-latest

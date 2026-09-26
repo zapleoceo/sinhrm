@@ -13,7 +13,7 @@
 | Руководитель / рекрутер | [Обзор модулей](modules/README.md) |
 | Разработчик | [Архитектура](architecture/overview.md) → [Правила разработки](guides/development.md) → [Деплой](guides/deploy.md) |
 | Про безопасность | [Секреты и персональные данные](architecture/secrets.md) |
-| Решения и почему | [ADR](adr/) |
+| Решения и почему | [ADR](adr/): [0001 стек и хостинг](adr/0001-hosting-and-stack.md) · [0002 AI через AI Broker](adr/0002-ai-via-ai-broker.md) · [0003 каналы: один путь приёма](adr/0003-channels-single-ingestor.md) · [0004 воркфлоу на cron](adr/0004-workflows-on-cron.md) · [0005 секреты в БД](adr/0005-secrets-in-db-secretvault.md) · [0006 cron в GitHub Actions](adr/0006-cron-via-github-actions.md) · [0007 анонимность](adr/0007-anonymity-pulse-safe-speak.md) · [0008 бюджет деплоев](adr/0008-vercel-hobby-deploy-budget.md) |
 | Что сделано | [Журнал работ](worklog.md) |
 
 ## Как устроено одним абзацем
