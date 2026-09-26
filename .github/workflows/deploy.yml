@@ -1,6 +1,6 @@
 name: Deploy
 
-# Deploys only after CI is green: preview for pull requests, production for main.
+# Deploys only after CI is green: production for main, preview for pull requests labelled "preview".
 on:
   workflow_run:
     workflows: [CI]
@@ -13,12 +13,38 @@ permissions:
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
 
+# One deploy per branch at a time; a newer green CI run replaces the pending one (Vercel Hobby: 100 deploys / 24 h).
+concurrency:
+  group: deploy-${{ github.event.workflow_run.head_branch }}
+  # main is never cancelled mid-deploy (migrations); PR previews are.
+  cancel-in-progress: ${{ github.event.workflow_run.head_branch != 'main' }}
+
 jobs:
-  deploy:
+  gate:
     # Public repo: never run PR code with secrets unless the branch lives in this repository (no forks).
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.check.outputs.go }}
+    steps:
+      # main → production always; a pull request → preview only with the "preview" label (deploy budget).
+      - id: check
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            if (run.event === 'push' && run.head_branch === 'main') { core.setOutput('go', 'true'); return; }
+            for (const pr of run.pull_requests ?? []) {
+              const { data } = await github.rest.issues.listLabelsOnIssue({ ...context.repo, issue_number: pr.number });
+              if (data.some((l) => l.name === 'preview')) { core.setOutput('go', 'true'); return; }
+            }
+            core.setOutput('go', 'false');
+
+  deploy:
+    needs: gate
+    if: needs.gate.outputs.go == 'true'
     runs-on: ubuntu-latest
     env:
       TARGET: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && 'production' || 'preview' }}
