@@ -156,8 +156,8 @@ final class TimeApiTest extends TestCase
         $this->assertSame(4, $this->reminders()['time_reminders'], 'head, lead, worker, other — not the submitted peer, not the employee without login');
         Carbon::setTestNow('2026-10-10 11:00:00');
         $this->reminders();
-        $this->assertSame(4, Task::query()->where('type', 'timesheet_reminder')->count(), 'one task per employee and week');
-        $task = Task::query()->where('employee_id', $org['worker']->id)->where('type', 'timesheet_reminder')->firstOrFail();
+        $this->assertSame(4, Task::query()->where('type', 'time_reminder')->count(), 'one task per employee and week');
+        $task = Task::query()->where('employee_id', $org['worker']->id)->where('type', 'time_reminder')->firstOrFail();
         $this->assertSame('/time?week='.self::WEEK, $task->link);
 
         // Submitting closes the reminder.
@@ -166,7 +166,7 @@ final class TimeApiTest extends TestCase
         // The next week gets its own reminder.
         Carbon::setTestNow('2026-10-16 09:00:00');
         $this->reminders();
-        $this->assertSame(2, Task::query()->where('employee_id', $org['worker']->id)->where('type', 'timesheet_reminder')->count());
+        $this->assertSame(2, Task::query()->where('employee_id', $org['worker']->id)->where('type', 'time_reminder')->count());
     }
 
     public function test_reports_follow_the_people_scope(): void

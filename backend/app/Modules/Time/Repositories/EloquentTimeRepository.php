@@ -11,7 +11,6 @@ use App\Modules\Time\Models\Timesheet;
 use App\Modules\Time\Models\WorkSchedule;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -34,11 +33,13 @@ final class EloquentTimeRepository implements TimeRepository
         if ($existing !== null) {
             return $existing;
         }
-        try {
-            Timesheet::query()->create(['employee_id' => $employeeId, 'week_start' => $weekStart->toDateString()]);
-        } catch (UniqueConstraintViolationException) {
-            // Created concurrently: re-read below.
-        }
+        // ON CONFLICT DO NOTHING (Postgres) / INSERT OR IGNORE (SQLite): a concurrent create never raises, so an
+        // enclosing transaction is not aborted (catching a unique violation would poison it on Postgres).
+        $now = Carbon::now();
+        Timesheet::query()->insertOrIgnore([[
+            'employee_id' => $employeeId, 'week_start' => $weekStart->toDateString(), 'status' => 'draft',
+            'expected_hours' => 0, 'worked_hours' => 0, 'overtime_hours' => 0, 'created_at' => $now, 'updated_at' => $now,
+        ]]);
         $row = $this->findWeek($employeeId, $weekStart);
         assert($row instanceof Timesheet);
 

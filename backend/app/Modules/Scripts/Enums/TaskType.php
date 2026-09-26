@@ -22,7 +22,7 @@ enum TaskType: string
     /** "Approve the hiring request" for the approver of the current route step / SLA escalation to HR (HiringRequests). */
     case HiringApproval = 'hiring_approval';
     /** "Fill in / submit your timesheet for the week" for the employee (Time, job time.reminders). */
-    case TimesheetReminder = 'timesheet_reminder';
+    case TimesheetReminder = 'time_reminder';
 
     /** Source group of the "Мої задачі" filter. */
     public function source(): TaskSource
