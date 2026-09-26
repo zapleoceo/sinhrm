@@ -3,35 +3,7 @@
     <h1>{{ 'directory.title' | transloco }}</h1>
     <p class="muted">{{ 'directory.subtitle' | transloco }}</p>
   </div>
-  @if (canImport()) {
-    <button mat-flat-button type="button" [disabled]="store.importing()" (click)="runImport()">
-      <mat-icon>cloud_download</mat-icon>
-      {{ (store.importing() ? 'directory.import.running' : 'directory.import.button') | transloco }}
-    </button>
-  }
 </header>
-
-@if (store.importReport(); as report) {
-  <section class="notice ok" role="status">
-    <strong>{{ 'directory.import.done' | transloco }}</strong>
-    <ul>
-      @for (type of types; track type) {
-        <li>
-          {{ 'directory.tabs.' + type | transloco }}:
-          {{ 'directory.import.counts' | transloco: report[type] }}
-        </li>
-      }
-    </ul>
-  </section>
-}
-@if (store.importError(); as key) {
-  <section class="notice error" role="alert">
-    <span>{{ key | transloco }}</span>
-    @if (key === 'directory.errors.integration_not_configured') {
-      <a mat-button routerLink="/admin/integrations">{{ 'directory.import.openIntegrations' | transloco }}</a>
-    }
-  </section>
-}
 
 <mat-tab-group [selectedIndex]="types.indexOf(store.type())" (selectedIndexChange)="onTab($event)" mat-stretch-tabs="false">
   @for (type of types; track type) {
@@ -103,9 +75,6 @@
             </button>
           } @else {
             <span class="name">{{ item.name }}</span>
-            @if (item.external_id) {
-              <span class="muted tag" [matTooltip]="'directory.fromSintegrum' | transloco">S</span>
-            }
             <button
               mat-icon-button
               type="button"

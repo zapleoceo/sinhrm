@@ -88,26 +88,9 @@
     "save": "Save",
     "disable": "Disable",
     "enable": "Enable",
-    "fromSintegrum": "Imported from Sintegrum",
     "empty": "No items",
     "loadError": "Could not load the dictionary",
-    "import": {
-      "button": "Import from Sintegrum",
-      "running": "Importing…",
-      "done": "Import finished",
-      "counts": "{{created}} new, {{updated}} updated, {{skipped}} unchanged",
-      "openIntegrations": "Open integrations"
-    },
     "errors": {
-      "integration_not_configured": "The Sintegrum API integration is not configured: set the URL and token in Integrations.",
-      "sintegrum_unauthorized": "Sintegrum rejected the token (401/403). Check the token in Integrations.",
-      "sintegrum_unreachable": "Sintegrum is unreachable. Try again later.",
-      "sintegrum_bad_response": "Sintegrum returned data in an unknown format. Nothing was changed.",
-      "sintegrum_timeout": "The import took too long. Nothing was changed.",
-      "sintegrum_invalid_url": "Invalid Sintegrum API URL (https:// only).",
-      "sintegrum_blocked_host": "The Sintegrum API URL points into an internal network — blocked.",
-      "sintegrum_blocked_port": "The port of the Sintegrum API URL is not allowed (443 only).",
-      "sintegrum_unresolved_host": "The Sintegrum API host was not found.",
       "validation": "Check the entered data",
       "generic": "The action failed"
     }
@@ -280,10 +263,6 @@
       "binotel": {
         "name": "Binotel",
         "description": "Telephony: calls and recordings"
-      },
-      "sintegrum_api": {
-        "name": "Sintegrum API",
-        "description": "Branches and vacancies from Sintegrum"
       },
       "work_ua": {
         "name": "Work.ua",

@@ -12,10 +12,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { AuthService } from '../../core/auth/auth.service';
 import { DICTIONARY_TYPES, DIRECTORY_STATUSES, DictionaryItem, DirectoryStatus } from './directory.model';
 import { directoryErrorKey } from './directory.service';
 import { DirectoryStore } from './directory.store';
@@ -24,7 +22,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * Admin → Dictionaries (superadmin/admin): a tab per dictionary with search, status filter, inline rename,
- * disable/enable and adding an item. Superadmin also runs the Sintegrum import.
+ * disable/enable and adding an item.
  */
 @Component({
   selector: 'app-directory-page',
@@ -40,7 +38,6 @@ const SEARCH_DEBOUNCE_MS = 300;
     MatTableModule,
     MatTabsModule,
     MatTooltipModule,
-    RouterLink,
     TranslocoPipe,
   ],
   providers: [DirectoryStore],
@@ -50,7 +47,6 @@ const SEARCH_DEBOUNCE_MS = 300;
 })
 export class DirectoryPage implements OnInit {
   protected readonly store = inject(DirectoryStore);
-  private readonly auth = inject(AuthService);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
@@ -58,7 +54,6 @@ export class DirectoryPage implements OnInit {
 
   protected readonly types = DICTIONARY_TYPES;
   protected readonly statuses = DIRECTORY_STATUSES;
-  protected readonly canImport = computed(() => this.auth.user()?.roles.includes('superadmin') ?? false);
   protected readonly columns = computed(() =>
     this.store.type() === 'branches' ? ['name', 'city', 'status', 'actions'] : ['name', 'status', 'actions'],
   );
@@ -124,10 +119,6 @@ export class DirectoryPage implements OnInit {
         this.toast(directoryErrorKey(e));
       },
     });
-  }
-
-  protected runImport(): void {
-    this.store.runImport();
   }
 
   private toast(key: string): void {

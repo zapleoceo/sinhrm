@@ -6,11 +6,8 @@ namespace App\Modules\Directory\Repositories;
 
 use App\Modules\Directory\Contracts\DictionaryRepository;
 use App\Modules\Directory\DTO\DictionaryFilter;
-use App\Modules\Directory\DTO\ImportedItem;
 use App\Modules\Directory\Enums\DictionaryType;
 use App\Modules\Directory\Enums\DirectoryStatus;
-use App\Modules\Directory\Enums\UpsertOutcome;
-use App\Modules\Directory\Models\City;
 use App\Modules\Directory\Models\DictionaryItem;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,32 +44,6 @@ final class EloquentDictionaryRepository implements DictionaryRepository
         $item->fill($attributes)->save();
 
         return $item;
-    }
-
-    public function upsert(DictionaryType $type, ImportedItem $item): UpsertOutcome
-    {
-        $attributes = ['name' => $item->name, 'status' => $item->status];
-        if ($type === DictionaryType::Branches && $item->cityExternalId !== null) {
-            $cityId = City::query()->where('external_id', $item->cityExternalId)->value('id');
-            if ($cityId !== null) {
-                $attributes['city_id'] = $cityId;
-            }
-        }
-
-        $existing = $this->query($type)->where('external_id', $item->externalId)->first();
-        if ($existing === null) {
-            $this->query($type)->create($attributes + ['external_id' => $item->externalId]);
-
-            return UpsertOutcome::Created;
-        }
-
-        $existing->fill($attributes);
-        if (! $existing->isDirty()) {
-            return UpsertOutcome::Unchanged;
-        }
-        $existing->save();
-
-        return UpsertOutcome::Updated;
     }
 
     public function activeBranchIdsOfUser(int $userId): array

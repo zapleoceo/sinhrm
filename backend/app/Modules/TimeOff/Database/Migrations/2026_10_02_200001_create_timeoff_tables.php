@@ -25,7 +25,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // branch_id null = the company default; a branch policy overrides it (Sintegrum: leave settings per branch).
+        // branch_id null = the company default; a branch policy overrides it.
         Schema::create('leave_policies', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('leave_type_id')->constrained('leave_types')->cascadeOnDelete();

@@ -1,13 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subject, of, throwError } from 'rxjs';
-import { DictionaryItem, DictionaryPage, DictionaryQuery, DictionaryType, ImportReport } from './directory.model';
+import { DictionaryItem, DictionaryPage, DictionaryQuery, DictionaryType } from './directory.model';
 import { DirectoryService } from './directory.service';
 import { DirectoryStore } from './directory.store';
 
 const item = (id: number, name: string, status: DictionaryItem['status'] = 'active'): DictionaryItem => ({
   id,
-  external_id: null,
   name,
   status,
   created_at: null,
@@ -23,14 +22,12 @@ class FakeApi {
   calls: { type: DictionaryType; query: DictionaryQuery }[] = [];
   list$: Observable<DictionaryPage> = of(page([]));
   update$ = new Subject<DictionaryItem>();
-  import$: Observable<ImportReport> = of({} as ImportReport);
   list = (type: DictionaryType, query: DictionaryQuery) => {
     this.calls.push({ type, query });
     return this.list$;
   };
   update = () => this.update$;
   create = (_type: DictionaryType, body: { name?: string }) => of(item(99, body.name ?? ''));
-  import = () => this.import$;
 }
 
 describe('DirectoryStore', () => {
@@ -106,20 +103,4 @@ describe('DirectoryStore', () => {
     expect(api.calls.length).toBe(before + 1);
   });
 
-  it('import stores the report and reloads', () => {
-    const counts = { created: 2, updated: 0, skipped: 1 };
-    api.import$ = of({ branches: counts, cities: counts, departments: counts, positions: counts, total: counts });
-    store.runImport();
-    expect(store.importReport()?.total.created).toBe(2);
-    expect(store.importing()).toBe(false);
-    expect(api.calls.length).toBe(1);
-  });
-
-  it('import failure keeps a readable error key', () => {
-    api.import$ = throwError(() => new HttpErrorResponse({ status: 422, error: { code: 'integration_not_configured' } }));
-    store.runImport();
-    expect(store.importError()).toBe('directory.errors.integration_not_configured');
-    expect(store.importReport()).toBeNull();
-    expect(store.importing()).toBe(false);
-  });
 });

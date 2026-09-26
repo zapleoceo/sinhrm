@@ -12,10 +12,6 @@ use Illuminate\Support\Facades\Route;
 $dictionaries = array_map(static fn (DictionaryType $t): string => $t->value, DictionaryType::cases());
 
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function () use ($dictionaries): void {
-    Route::post('import', [DirectoryController::class, 'import'])
-        ->middleware('can:'.DirectoryServiceProvider::IMPORT_DIRECTORY)
-        ->name('directory.import');
-
     // Reading: any active user (dictionaries feed filters and forms everywhere).
     Route::get('{dictionary}', [DirectoryController::class, 'index'])
         ->whereIn('dictionary', $dictionaries)

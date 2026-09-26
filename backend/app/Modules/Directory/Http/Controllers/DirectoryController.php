@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Directory\Http\Controllers;
 
 use App\Models\User;
-use App\Modules\Directory\Contracts\DirectoryImporter;
 use App\Modules\Directory\Enums\DictionaryType;
 use App\Modules\Directory\Http\Requests\ListDictionaryRequest;
 use App\Modules\Directory\Http\Requests\SaveDictionaryItemRequest;
@@ -15,7 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-/** Company dictionaries. Access: routes.php (read — any active user; write — manage-directory; import — superadmin). */
+/** Company dictionaries. Access: routes.php (read — any active user; write — manage-directory). */
 final class DirectoryController
 {
     public function __construct(private readonly DirectoryService $service) {}
@@ -37,11 +36,6 @@ final class DirectoryController
         $item = $this->service->find($dictionary, $id);
 
         return new DictionaryItemResource($this->service->update($this->actor($request), $dictionary, $item, $request->itemData()));
-    }
-
-    public function import(Request $request, DirectoryImporter $importer): JsonResponse
-    {
-        return new JsonResponse(['data' => $importer->import($this->actor($request))->toArray()]);
     }
 
     private function actor(Request $request): User

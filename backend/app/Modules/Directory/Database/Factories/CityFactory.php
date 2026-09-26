@@ -21,7 +21,6 @@ final class CityFactory extends Factory
     public function definition(): array
     {
         return [
-            'external_id' => null,
             'name' => 'City '.fake()->unique()->bothify('??-###'),
             'status' => DirectoryStatus::Active,
         ];

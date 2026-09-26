@@ -24,7 +24,6 @@ use App\Modules\Integrations\Definitions\OpenRouterDefinition;
 use App\Modules\Integrations\Definitions\PhonetDefinition;
 use App\Modules\Integrations\Definitions\RingostatDefinition;
 use App\Modules\Integrations\Definitions\RobotaUaDefinition;
-use App\Modules\Integrations\Definitions\SintegrumApiDefinition;
 use App\Modules\Integrations\Definitions\TelegramBusinessDefinition;
 use App\Modules\Integrations\Definitions\ViberDefinition;
 use App\Modules\Integrations\Definitions\WazzupDefinition;
@@ -67,7 +66,6 @@ final class IntegrationsServiceProvider extends ModuleServiceProvider
             PhonetDefinition::class,
             RingostatDefinition::class,
             BinotelDefinition::class,
-            SintegrumApiDefinition::class,
             WorkUaDefinition::class,
             RobotaUaDefinition::class,
             DjinniDefinition::class,

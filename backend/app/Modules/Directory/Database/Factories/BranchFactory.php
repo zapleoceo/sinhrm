@@ -21,7 +21,6 @@ final class BranchFactory extends Factory
     public function definition(): array
     {
         return [
-            'external_id' => null,
             'name' => 'Branch '.fake()->unique()->bothify('??-###'),
             'status' => DirectoryStatus::Active,
         ];

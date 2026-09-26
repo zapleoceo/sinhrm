@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * Create (POST: name required) and edit (PATCH: every field optional) of a dictionary item.
- * city_id is accepted for branches only. external_id is set by the importer, never through the API.
+ * city_id is accepted for branches only.
  */
 final class SaveDictionaryItemRequest extends FormRequest
 {

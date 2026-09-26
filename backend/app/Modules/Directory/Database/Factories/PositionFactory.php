@@ -21,7 +21,6 @@ final class PositionFactory extends Factory
     public function definition(): array
     {
         return [
-            'external_id' => null,
             'name' => 'Position '.fake()->unique()->bothify('??-###'),
             'status' => DirectoryStatus::Active,
         ];

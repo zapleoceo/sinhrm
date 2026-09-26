@@ -12,7 +12,6 @@ use Illuminate\Support\Carbon;
  * Common shape of every company dictionary (branches, cities, departments, positions).
  *
  * @property int $id
- * @property string|null $external_id id of the same item in Sintegrum (import key)
  * @property string $name
  * @property DirectoryStatus $status
  * @property Carbon|null $created_at
@@ -20,7 +19,7 @@ use Illuminate\Support\Carbon;
  */
 abstract class DictionaryItem extends Model
 {
-    protected $fillable = ['external_id', 'name', 'status'];
+    protected $fillable = ['name', 'status'];
 
     /** @var array<string, mixed> */
     protected $attributes = ['status' => 'active'];
