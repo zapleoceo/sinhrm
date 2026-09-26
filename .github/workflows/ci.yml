@@ -51,7 +51,7 @@ jobs:
           php artisan migrate --force --quiet
           php -d memory_limit=1G artisan scramble:export --path=openapi.json
           php -r '$s=json_decode(file_get_contents("openapi.json"),true); $n=0; foreach($s["paths"] as $p){foreach($p as $o){if(is_array($o)&&isset($o["operationId"])){$n++;}}} echo "paths: ".count($s["paths"]).", operations: $n\n"; exit($n>0?0:1);'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: openapi, path: backend/openapi.json, retention-days: 30 }
       - name: Production bundle size (< 200 MB)
         run: |
@@ -83,7 +83,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run package
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: sinhrm-clipper, path: extension/dist/sinhrm-clipper.zip, retention-days: 30 }
 
   security:
