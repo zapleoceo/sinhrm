@@ -109,7 +109,8 @@ AI отказывается, при включённом — сообщает «
 
 ### Общий список задач («Мої задачі»)
 Таблица `tasks` — **единая** для всех модулей: кроме задач рекрутинга в ней задачи воркфлоу (тип `workflow`,
-[workflows.md](workflows.md)) и «ознайомитися з документом» (тип `document`, [documents.md](documents.md)). Для них
+[workflows.md](workflows.md)), «ознайомитися з документом» (тип `document`, [documents.md](documents.md)) и «настрій
+команди знизився» для руководителя (тип `mood_alert`, источник `pulse`, ключ `mood:<ISO-неделя>`, [pulse.md](pulse.md)). Для них
 заполнены `employee_id` (о ком задача) и `link` (относительный путь в интерфейсе, у `request_form` — https-адрес
 внешней формы), идемпотентность — `unique(employee_id, rule_key)` с ключами `wf:<id шага запуска>` и `doc:<id документа>`.
 Другие модули создают задачи через `TaskService::schedule(DTO/NewTask)` (повтор возвращает существующую) и закрывают
@@ -117,7 +118,7 @@ AI отказывается, при включённом — сообщает «
 `Events/TaskCompleted` — Workflows закрывает связанный шаг. Отметить задачу может **её исполнитель** (даже с ролью
 viewer — например, новый сотрудник) и, как раньше, superadmin/admin/recruiter, которые её видят. Задачу `document`
 интерфейс не закрывает галочкой — ознакомление подтверждается кнопкой «Ознайомлений» в «Мої документи».
-Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents`), сроку и
+Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse`), сроку и
 закрытым. Миграция `Database/Migrations/2026_10_03_100001_generalize_tasks_table.php`.
 
 Запуск: `Services/FollowupJob` зарегистрирован как `Core\Contracts\ScheduledJob` → `POST /api/ops/jobs/run`
@@ -129,7 +130,7 @@ viewer — например, новый сотрудник) и, как рань�
 | `scripts` | `name, channel (call\|chat), active_version_id?, archived` |
 | `script_versions` | `script_id, version, published_at? (null = черновик), author_id, steps, objections, templates, followups, next_step_patterns` (jsonb); `unique(script_id, version)`. Опубликованная версия неизменяема: сервис правит только черновик, а модель бросает `LogicException` при попытке изменить опубликованную |
 | `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (jsonb: steps, next_step, objections, recommendations), created_at` |
-| `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (followup\|manual\|new_applicant\|workflow\|document), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
+| `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (followup\|manual\|new_applicant\|workflow\|document\|mood_alert), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
 
 Форма контента (валидация `Http/Requests/ValidatesScriptContent` + value-объекты `DTO/ScriptContent`, `DTO/ScriptStep`):
 `steps[{id, title, goal, sample, required, weight 0..100, keywords[]}]` (до 30), `objections[{id, trigger, answer}]`,
@@ -157,7 +158,7 @@ viewer — например, новый сотрудник) и, как рань�
 | `GET /api/candidates/{id}/templates` | кто видит карточку | заполненные шаблоны `{script_id, script_name, channel, key, title, text, missing[]}` |
 | `GET /api/touchpoints/{id}/evaluation` | кто видит кандидата (или сообщение во «Вхідних») | полная оценка; не оценено → 404 `not_evaluated` |
 | `GET /api/reports/scripts` | все, в пределах филиалов | `from, to` (как у отчётов Recruiting) → `recruiters[{avg_score, next_step_fixed_pct, evaluations}]`, `steps[{title, total, missed, miss_rate_pct}]` (шаги группируются по названию), `totals` |
-| `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents`, `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
+| `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents\|pulse`, `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
 | `PATCH /api/tasks/{id}` | исполнитель задачи (любая роль); superadmin, admin, recruiter (видящие задачу) | `{done: bool}`; чужая задача у viewer / чужой филиал → 403 |
 
 Доступ к задачам: без ограничений — superadmin/admin; остальные видят задачи, назначенные им, и задачи по заявкам вакансий

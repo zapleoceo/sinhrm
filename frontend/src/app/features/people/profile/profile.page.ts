@@ -16,6 +16,7 @@ import { initials } from '../org-tree';
 import { CHANGEABLE_FIELDS, ChangeRequest, Employee, fieldLabelKey } from '../people.model';
 import { EmployeeDocumentsTab } from '../../documents/profile/employee-documents.tab';
 import { EmployeeRunsTab } from '../../workflows/runs/employee-runs.tab';
+import { PerformanceTab } from '../../perform/profile/performance.tab';
 import { ChangeRequestDialog } from './change-request.dialog';
 import { EmployeeDialog, EmployeeDialogData } from './employee.dialog';
 import { ProfileStore, ProfileTab } from './profile.store';
@@ -24,7 +25,8 @@ import { TerminateDialog } from './terminate.dialog';
 /**
  * Employee profile (/people/:id) and "My profile" (/me). Tabs follow the API's access flags: Overview for everyone,
  * Job and Time off for admins, the employee and managers above, Change requests for admins, the employee and deciders,
- * Documents for admins, the employee and managers, Workflows for admins and managers.
+ * Documents for admins, the employee and managers, Workflows for admins and managers, Performance for admins,
+ * the employee and managers.
  */
 @Component({
   selector: 'app-profile-page',
@@ -41,6 +43,7 @@ import { TerminateDialog } from './terminate.dialog';
     RequestsList,
     EmployeeDocumentsTab,
     EmployeeRunsTab,
+    PerformanceTab,
   ],
   providers: [ProfileStore, LeaveRequestsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -191,6 +194,14 @@ import { TerminateDialog } from './terminate.dialog';
           <mat-tab [label]="'people.tabs.workflows' | transloco">
             <ng-template matTabContent>
               <app-employee-runs-tab [employeeId]="e.id" [canStart]="!!e.access?.manage" />
+            </ng-template>
+          </mat-tab>
+        }
+
+        @if (store.tabs().includes('performance')) {
+          <mat-tab [label]="'people.tabs.performance' | transloco">
+            <ng-template matTabContent>
+              <app-performance-tab [employeeId]="e.id" [canManage]="!!e.access?.decide" />
             </ng-template>
           </mat-tab>
         }

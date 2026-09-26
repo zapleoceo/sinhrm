@@ -104,8 +104,16 @@ describe('People helpers', () => {
       'changes',
       'documents',
       'workflows',
+      'performance',
     ]);
-    expect(profileTabs(employee({ job: true, pii: true, decide: false, manage: false, self: true }))).toEqual(['overview', 'job', 'timeoff', 'changes', 'documents']);
+    expect(profileTabs(employee({ job: true, pii: true, decide: false, manage: false, self: true }))).toEqual([
+      'overview',
+      'job',
+      'timeoff',
+      'changes',
+      'documents',
+      'performance',
+    ]);
     expect(profileTabs(employee({ job: true, pii: true, decide: true, manage: true, self: true }))).toContain('workflows');
   });
 

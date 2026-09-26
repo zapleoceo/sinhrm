@@ -12,6 +12,8 @@ use App\Modules\Integrations\Providers\IntegrationsServiceProvider;
 use App\Modules\MailAgent\Providers\MailAgentServiceProvider;
 use App\Modules\Overview\Providers\OverviewServiceProvider;
 use App\Modules\People\Providers\PeopleServiceProvider;
+use App\Modules\Perform\Providers\PerformServiceProvider;
+use App\Modules\Pulse\Providers\PulseServiceProvider;
 use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
 use App\Modules\Scripts\Providers\ScriptsServiceProvider;
 use App\Modules\TimeOff\Providers\TimeOffServiceProvider;
@@ -36,5 +38,7 @@ return [
     TimeOffServiceProvider::class,
     DocumentsServiceProvider::class,
     WorkflowsServiceProvider::class,
+    PerformServiceProvider::class,
+    PulseServiceProvider::class,
     OverviewServiceProvider::class,
 ];
