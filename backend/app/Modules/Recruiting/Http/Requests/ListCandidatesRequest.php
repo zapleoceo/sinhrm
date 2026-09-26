@@ -22,6 +22,7 @@ final class ListCandidatesRequest extends FormRequest
             'status' => ['nullable', Rule::enum(ApplicationStatus::class)],
             'source' => ['nullable', Rule::enum(CandidateSource::class)],
             'owner_id' => ['nullable', 'integer', 'min:1'],
+            'channel_id' => ['nullable', 'integer', 'min:1'],
             'perPage' => ['nullable', 'integer', 'between:1,200'],
         ];
     }
@@ -37,6 +38,7 @@ final class ListCandidatesRequest extends FormRequest
             status: $this->enum('status', ApplicationStatus::class),
             source: $this->enum('source', CandidateSource::class),
             ownerId: $int('owner_id'),
+            channelId: $int('channel_id'),
             perPage: $this->integer('perPage', 50),
         );
     }

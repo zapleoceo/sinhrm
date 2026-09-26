@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, input } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -16,6 +16,7 @@ import { CandidateCard } from '../card/candidate-card';
 import { canWriteRecruiting } from '../recruiting.access';
 import { APPLICATION_STATUSES, CANDIDATE_SOURCES, Candidate } from '../recruiting.model';
 import { CandidateDialog } from './candidate.dialog';
+import { RecruitingService } from '../recruiting.service';
 import { CandidatesStore } from './candidates.store';
 
 /** Keys that must not hijack typing in inputs. */
@@ -77,6 +78,15 @@ function isTyping(target: EventTarget | null): boolean {
               <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
               @for (s of sources; track s) {
                 <mat-option [value]="s">{{ 'recruiting.source.' + s | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'recruiting.channels.channel' | transloco }}</mat-label>
+            <mat-select [value]="store.query().channel_id" (valueChange)="store.patchQuery({ channel_id: $event })">
+              <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+              @for (ch of channels(); track ch.id) {
+                <mat-option [value]="ch.id">{{ ch.name }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -161,6 +171,7 @@ export class CandidatesPage implements OnInit {
   protected readonly search$ = new Subject<string>();
   protected readonly statuses = APPLICATION_STATUSES;
   protected readonly sources = CANDIDATE_SOURCES;
+  protected readonly channels = toSignal(inject(RecruitingService).channels(), { initialValue: [] });
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
 
   constructor() {

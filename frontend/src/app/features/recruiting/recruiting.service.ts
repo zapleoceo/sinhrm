@@ -2,6 +2,8 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
+  AcquisitionChannel,
+  VacancySourceRow,
   Application,
   Board,
   Candidate,
@@ -67,6 +69,18 @@ export class RecruitingService {
 
   board(vacancyId: number): Observable<Board> {
     return this.http.get<{ data: Board }>(`/api/vacancies/${vacancyId}/board`).pipe(map((r) => r.data));
+  }
+
+  /** Tz3 vacancy block: applications by channel × how added. */
+  vacancySources(vacancyId: number): Observable<VacancySourceRow[]> {
+    return this.http.get<{ data: VacancySourceRow[] }>(`/api/vacancies/${vacancyId}/sources`).pipe(map((r) => r.data));
+  }
+
+  /** Active acquisition channels (candidate form, filters); managers get rules and costs with all=true. */
+  channels(all = false): Observable<AcquisitionChannel[]> {
+    return this.http
+      .get<{ data: AcquisitionChannel[] }>('/api/acquisition-channels', { params: toParams({ all: all ? 1 : undefined }) })
+      .pipe(map((r) => r.data));
   }
 
   apply(vacancyId: number, candidateId: number): Observable<Application> {

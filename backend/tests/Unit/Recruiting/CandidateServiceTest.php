@@ -6,6 +6,7 @@ namespace Tests\Unit\Recruiting;
 
 use App\Models\User;
 use App\Modules\Directory\Contracts\AccessibleBranches;
+use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
@@ -16,6 +17,7 @@ use App\Modules\Recruiting\DTO\ContactKeys;
 use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Candidate;
+use App\Modules\Recruiting\Services\AcquisitionChannelService;
 use App\Modules\Recruiting\Services\ApplicationService;
 use App\Modules\Recruiting\Services\CandidateService;
 use App\Modules\Recruiting\Services\RecruitingScope;
@@ -47,6 +49,7 @@ final class CandidateServiceTest extends TestCase
             new RecruitingScope($this->createMock(AccessibleBranches::class), $this->candidates, $touchpoints),
             new ContactNormalizer,
             new NullLogger,
+            new AcquisitionChannelService($this->createMock(AcquisitionChannelRepository::class)),
         );
     }
 

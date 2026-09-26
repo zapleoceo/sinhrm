@@ -83,6 +83,55 @@
       }
     }
 
+    @if (d.hiring; as h) {
+      @if (h.my_approvals.count > 0) {
+        <section class="panel card">
+          <h2>{{ 'overview.hiringApprovals' | transloco: { n: h.my_approvals.count } }}</h2>
+          <ul class="rows">
+            @for (r of h.my_approvals.items; track r.id) {
+              <li>
+                <a [routerLink]="['/hiring-requests', r.id]">{{ r.title }}</a>
+                <span class="muted">{{ r.branch }} · ×{{ r.headcount }} · {{ r.step }}</span>
+                @if (r.overdue) {
+                  <span class="days"><mat-icon inline>alarm</mat-icon>{{ 'overview.overdueStep' | transloco }}</span>
+                }
+              </li>
+            }
+          </ul>
+          <a mat-button routerLink="/hiring-requests/inbox">{{ 'overview.toHiringInbox' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+        </section>
+      }
+    }
+
+    @if (d.time; as t) {
+      @if (t.my_week; as w) {
+        <section class="panel card">
+          <h2>{{ 'overview.myWeek' | transloco }}</h2>
+          <p>
+            {{ 'overview.weekHours' | transloco: { worked: w.worked, expected: w.expected } }} · {{ 'time.status.' + w.status | transloco }}
+            @if (w.missing > 0 && w.status !== 'submitted' && w.status !== 'approved') {
+              <br /><span class="warn">{{ 'overview.weekMissing' | transloco: { n: w.missing } }}</span>
+            }
+          </p>
+          <a mat-button routerLink="/time">{{ 'overview.toTime' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+        </section>
+      }
+      @if (t.my_approvals.count > 0) {
+        <section class="panel card">
+          <h2>{{ 'overview.timesheetApprovals' | transloco: { n: t.my_approvals.count } }}</h2>
+          <ul class="rows">
+            @for (r of t.my_approvals.items; track r.id) {
+              <li>
+                <a routerLink="/time" [queryParams]="{ week: r.week_start, employee_id: r.employee.id }">{{ r.employee.full_name }}</a>
+                <span class="muted">{{ r.week_start | date: 'dd.MM' }} · {{ 'overview.weekWorked' | transloco: { n: r.worked, o: r.overtime } }}</span>
+              </li>
+            }
+          </ul>
+          <a mat-button routerLink="/time/approvals">{{ 'overview.toTimeApprovals' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+        </section>
+      }
+    }
+
     <section class="panel card">
       <h2>{{ 'overview.stale' | transloco: { days: d.stale_days } }}</h2>
       <ul class="rows">

@@ -4,9 +4,9 @@ export const SCRIPT_CHANNELS: readonly ScriptChannel[] = ['call', 'chat'];
 export type FollowupCondition = 'no_reply' | 'link_not_completed' | 'gone_silent';
 export const FOLLOWUP_CONDITIONS: readonly FollowupCondition[] = ['no_reply', 'link_not_completed', 'gone_silent'];
 export type EvaluationEngine = 'rules' | 'ai';
-export type TaskType = 'followup' | 'manual' | 'new_applicant' | 'workflow' | 'document' | 'mood_alert' | 'desk_sla';
-export type TaskSource = 'recruiting' | 'workflows' | 'documents' | 'pulse' | 'desk';
-export const TASK_SOURCES: readonly TaskSource[] = ['recruiting', 'workflows', 'documents', 'pulse', 'desk'];
+export type TaskType = 'followup' | 'manual' | 'new_applicant' | 'workflow' | 'document' | 'mood_alert' | 'desk_sla' | 'hiring_approval' | 'time_reminder';
+export type TaskSource = 'recruiting' | 'workflows' | 'documents' | 'pulse' | 'desk' | 'hiring' | 'time';
+export const TASK_SOURCES: readonly TaskSource[] = ['recruiting', 'workflows', 'documents', 'pulse', 'desk', 'hiring', 'time'];
 export type TaskDue = 'today' | 'overdue';
 
 /** Template variables (backend TemplateVariable); written as {Name} in template texts. */

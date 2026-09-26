@@ -11,7 +11,9 @@
 Меню → «Огляд» (или логотип). Первая карточка — **«Як ваш настрій сьогодні?»** (пять смайликов и комментарий;
 только если пользователь связан с сотрудником и сегодня день опроса; после ответа — сегодняшний смайлик) — компонент
 `MoodCheckinWidget` модуля Pulse ([pulse.md](pulse.md)), данные — `GET /api/pulse/mood/today`, не `/api/dashboard`. Карточки **«Відсутні сьогодні»** (всегда) и **«Чекають мого погодження»** (если есть что решать) —
-из модуля отсутствий ([timeoff.md](timeoff.md)), ссылки ведут в календарь команды и в «Погодження». Сверху четыре счётчика — клик ведёт в раздел:
+из модуля отсутствий ([timeoff.md](timeoff.md)), ссылки ведут в календарь команды и в «Погодження». Карточки
+**«Заявки на підбір чекають мого рішення»** ([hiring-requests.md](hiring-requests.md)), **«Мій тиждень»** и **«Табелі
+чекають мого погодження»** ([time.md](time.md)) — если есть что показать. Сверху четыре счётчика — клик ведёт в раздел:
 «активних кандидатів» → Кандидати, «без контакту 3+ дні» → Кандидати, «нерозібраних у Вхідних» → Вхідні,
 «нових сьогодні» → Вакансії. Ненулевые «зависшие» и «Вхідні» подсвечены.
 Ниже: **Мої задачі на сьогодні** (включая просроченные; галочка закрывает задачу — [scripts.md](scripts.md)),
@@ -35,6 +37,8 @@ Scripts; своих таблиц нет. Блоки других модулей 
 | `funnel` | активные заявки по этапу (`stage_name, stage_kind, position, count`) | этапы разных воронок с одинаковым названием и позицией суммируются |
 | `touches` | `{days: 7, by_channel[{channel, count}]}` | касания кроме `system`, видимость как у отчёта «касания» |
 | `timeoff` | `{out_today[{employee, leave_type, starts_on, ends_on, half_day}], my_approvals: {count, items[≤5]}}` — кто отсутствует сегодня и запросы, ждущие моего решения (в пределах видимости People/TimeOff) | контракт `Contracts/DashboardSection` (тег `DashboardSection`, ключ секции = ключ в `data`): модуль регистрирует `$this->app->tag([...], DashboardSection::class)`. Сейчас — `TimeOff\Services\TimeOffDashboardSection` ([timeoff.md](timeoff.md)) |
+| `hiring` | `{my_approvals: {count, items[≤5]{id, title, branch, headcount, step, overdue}}}` — заявки на подбор, ждущие моего решения | `HiringRequests\Services\HiringDashboardSection` ([hiring-requests.md](hiring-requests.md)); карточка на главной — только если есть что решать |
+| `time` | `{my_week: {week_start, status, expected, worked, missing}\|null, my_approvals: {count, items[≤5]}}` — моя текущая неделя и табели на моё согласование | `Time\Services\TimeDashboardSection` ([time.md](time.md)) |
 | `warnings` | `[{code, level, params?, link?}]` — предупреждения других модулей, баннер над счётчиками | контракт `Contracts/DashboardNotices` (тег): модуль регистрирует `$this->app->tag([...], DashboardNotices::class)`. Сейчас — `GoogleWorkspace\Services\GoogleDashboardNotices`: суперадмину `google_reconnect_required {service}`, если Google отозвал доступ ([google-workspace.md](google-workspace.md)) |
 
 Ограничение по филиалам — `Recruiting\Services\RecruitingScope` (superadmin/admin видят всё, остальные — вакансии своих

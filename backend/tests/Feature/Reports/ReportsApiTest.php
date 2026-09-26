@@ -50,7 +50,7 @@ final class ReportsApiTest extends TestCase
         $admin = $this->login(UserRole::Admin);
 
         $all = $this->keys($this->actingAs($admin)->getJson('/api/reports/catalog')->assertOk());
-        $this->assertCount(20, $all);
+        $this->assertCount(25, $all);
         $this->assertNotContains('gender_pay_gap', $all, 'no salary data → no pay gap report');
 
         $manager = $this->keys($this->actingAs($this->userOf($org['lead']))->getJson('/api/reports/catalog'));

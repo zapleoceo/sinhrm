@@ -93,6 +93,12 @@ final readonly class TaskService
         }
     }
 
+    /** Closes every open task whose rule key starts with the prefix (e.g. all approver tasks of one route step). */
+    public function closeByRulePrefix(string $prefix, ?Carbon $at = null): int
+    {
+        return $this->tasks->closeByRulePrefix($prefix, $at ?? Carbon::now());
+    }
+
     /** A user ticks the task: marks it and tells the owning module (TaskCompleted) when it became done. */
     public function complete(User $actor, Task $task, bool $done): Task
     {

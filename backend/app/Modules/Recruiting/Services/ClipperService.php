@@ -13,6 +13,7 @@ use App\Modules\Recruiting\DTO\ClipResult;
 use App\Modules\Recruiting\DTO\ContactKeys;
 use App\Modules\Recruiting\DTO\TouchpointData;
 use App\Modules\Recruiting\DTO\VacancyFilter;
+use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Enums\VacancyStatus;
@@ -43,6 +44,7 @@ final readonly class ClipperService
         private RecruitingScope $scope,
         private ContactNormalizer $normalizer,
         private LoggerInterface $log,
+        private AcquisitionChannelService $channels,
     ) {}
 
     /** @return list<Vacancy> open vacancies of the user's scope (the popup's optional "apply to" list) */
@@ -63,14 +65,18 @@ final readonly class ClipperService
             return $this->reuse($actor, $existing, $data, $vacancy);
         }
 
+        $source = $data->site->candidateSource();
+        $channelId = $this->channels->resolve(null, $source, null);
         try {
-            $candidate = $this->applications->transaction(function () use ($actor, $data, $keys, $vacancy): Candidate {
+            $candidate = $this->applications->transaction(function () use ($actor, $data, $keys, $vacancy, $source, $channelId): Candidate {
                 $candidate = $this->candidates->create([
                     'full_name' => $data->fullName,
                     'phone' => $keys->phone,
                     'email' => $keys->email,
                     'telegram_username' => $keys->telegram,
-                    'source' => $data->site->candidateSource()->value,
+                    'source' => $source->value,
+                    'channel_id' => $channelId,
+                    'added_via' => AddedVia::Extension->value,
                     'owner_id' => $actor->id,
                     'created_by' => $actor->id,
                 ]);

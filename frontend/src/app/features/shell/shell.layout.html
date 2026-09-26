@@ -22,6 +22,10 @@
       <mat-icon>inbox</mat-icon>
       <span>{{ 'shell.nav.inbox' | transloco }}</span>
     </a>
+    <a class="nav-link" routerLink="/hiring-requests" routerLinkActive="active">
+      <mat-icon>assignment_add</mat-icon>
+      <span>{{ 'shell.nav.hiringRequests' | transloco }}</span>
+    </a>
     <a class="nav-link" routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>bar_chart</mat-icon>
       <span>{{ 'shell.nav.reports' | transloco }}</span>
@@ -46,6 +50,18 @@
     <a class="nav-link" routerLink="/timeoff/approvals" routerLinkActive="active">
       <mat-icon>fact_check</mat-icon>
       <span>{{ 'shell.nav.approvals' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/time" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <mat-icon>schedule</mat-icon>
+      <span>{{ 'shell.nav.time' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/time/approvals" routerLinkActive="active">
+      <mat-icon>pending_actions</mat-icon>
+      <span>{{ 'shell.nav.timeApprovals' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/time/team" routerLinkActive="active">
+      <mat-icon>groups_2</mat-icon>
+      <span>{{ 'shell.nav.timeTeam' | transloco }}</span>
     </a>
     <a class="nav-link" routerLink="/me/documents" routerLinkActive="active">
       <mat-icon>description</mat-icon>
@@ -110,6 +126,18 @@
       <a class="nav-link" routerLink="/safe-speak/inbox" routerLinkActive="active">
         <mat-icon>policy</mat-icon>
         <span>{{ 'shell.nav.safeSpeakInbox' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/admin/hiring-requests" routerLinkActive="active">
+        <mat-icon>rule</mat-icon>
+        <span>{{ 'shell.nav.hiringSettings' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/admin/acquisition-channels" routerLinkActive="active">
+        <mat-icon>campaign</mat-icon>
+        <span>{{ 'shell.nav.acquisitionChannels' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/admin/time" routerLinkActive="active">
+        <mat-icon>calendar_view_week</mat-icon>
+        <span>{{ 'shell.nav.timeSchedules' | transloco }}</span>
       </a>
       <a class="nav-link" routerLink="/admin/assets" routerLinkActive="active">
         <mat-icon>devices</mat-icon>

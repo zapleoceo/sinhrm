@@ -10,6 +10,7 @@ use App\Modules\Desk\Providers\DeskServiceProvider;
 use App\Modules\Directory\Providers\DirectoryServiceProvider;
 use App\Modules\Documents\Providers\DocumentsServiceProvider;
 use App\Modules\GoogleWorkspace\Providers\GoogleWorkspaceServiceProvider;
+use App\Modules\HiringRequests\Providers\HiringRequestsServiceProvider;
 use App\Modules\Integrations\Providers\IntegrationsServiceProvider;
 use App\Modules\Knowledge\Providers\KnowledgeServiceProvider;
 use App\Modules\MailAgent\Providers\MailAgentServiceProvider;
@@ -21,6 +22,7 @@ use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
 use App\Modules\Reports\Providers\ReportsServiceProvider;
 use App\Modules\SafeSpeak\Providers\SafeSpeakServiceProvider;
 use App\Modules\Scripts\Providers\ScriptsServiceProvider;
+use App\Modules\Time\Providers\TimeServiceProvider;
 use App\Modules\TimeOff\Providers\TimeOffServiceProvider;
 use App\Modules\Users\Providers\UsersServiceProvider;
 use App\Modules\Workflows\Providers\WorkflowsServiceProvider;
@@ -49,6 +51,8 @@ return [
     DeskServiceProvider::class,
     SafeSpeakServiceProvider::class,
     AssetsServiceProvider::class,
+    HiringRequestsServiceProvider::class,
+    TimeServiceProvider::class,
     ReportsServiceProvider::class,
     OverviewServiceProvider::class,
 ];

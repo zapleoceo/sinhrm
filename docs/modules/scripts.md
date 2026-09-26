@@ -112,15 +112,19 @@ AI отказывается, при включённом — сообщает «
 [workflows.md](workflows.md)), «ознайомитися з документом» (тип `document`, [documents.md](documents.md)) и «настрій
 команди знизився» для руководителя (тип `mood_alert`, источник `pulse`, ключ `mood:<ISO-неделя>`, [pulse.md](pulse.md)) и
 «SLA порушено» по обращению в HR (тип `desk_sla`, источник `desk`, ключ `desk:<id обращения>:first_response|resolve`,
-[desk.md](desk.md)). Для них
+[desk.md](desk.md)), «Погодити заявку на підбір» и эскалация просрочки (тип `hiring_approval`, источник `hiring`, ключи
+`hrq:<шаг>:<пользователь>` / `hrq-sla:…`, [hiring-requests.md](hiring-requests.md)) и «Заповніть табель» (тип
+`time_reminder`, источник `time`, ключ `time:reminder:<понедельник>`, [time.md](time.md)). Для них
 заполнены `employee_id` (о ком задача) и `link` (относительный путь в интерфейсе, у `request_form` — https-адрес
 внешней формы), идемпотентность — `unique(employee_id, rule_key)` с ключами `wf:<id шага запуска>` и `doc:<id документа>`.
 Другие модули создают задачи через `TaskService::schedule(DTO/NewTask)` (повтор возвращает существующую) и закрывают
-через `closeByRule()`. Когда **пользователь** отмечает задачу выполненной, `TaskService::complete()` шлёт событие
+через `closeByRule()`; `closeByRulePrefix(prefix)` закрывает все открытые задачи с ключом, начинающимся с префикса,
+у любого сотрудника (задачи шага маршрута заявки на подбор). `NewTask::$employeeId` может быть `null` (у заявки на подбор
+нет «сотрудника-предмета», если у автора нет карточки): тогда «один раз» обеспечивает сам модуль. Когда **пользователь** отмечает задачу выполненной, `TaskService::complete()` шлёт событие
 `Events/TaskCompleted` — Workflows закрывает связанный шаг. Отметить задачу может **её исполнитель** (даже с ролью
 viewer — например, новый сотрудник) и, как раньше, superadmin/admin/recruiter, которые её видят. Задачу `document`
 интерфейс не закрывает галочкой — ознакомление подтверждается кнопкой «Ознайомлений» в «Мої документи».
-Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse|desk`), сроку и
+Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse|desk|hiring|time`), сроку и
 закрытым. Миграция `Database/Migrations/2026_10_03_100001_generalize_tasks_table.php`.
 
 Запуск: `Services/FollowupJob` зарегистрирован как `Core\Contracts\ScheduledJob` → `POST /api/ops/jobs/run`

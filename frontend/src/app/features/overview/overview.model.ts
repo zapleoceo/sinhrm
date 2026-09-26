@@ -23,6 +23,25 @@ export interface Dashboard {
   warnings?: DashboardWarning[];
   /** TimeOff block (DashboardSection "timeoff"): who is out today and my pending approvals, in the user's scope. */
   timeoff?: TimeOffDashboard;
+  /** HiringRequests block (DashboardSection "hiring"): requests waiting for my decision. */
+  hiring?: HiringDashboard;
+  /** Time block (DashboardSection "time"): my current week and timesheets waiting for my approval. */
+  time?: TimeDashboard;
+}
+
+export interface HiringDashboard {
+  my_approvals: {
+    count: number;
+    items: { id: number; title: string; branch: string; headcount: number; step: string | null; overdue: boolean }[];
+  };
+}
+
+export interface TimeDashboard {
+  my_week: { week_start: string; status: 'draft' | 'submitted' | 'approved' | 'rejected'; expected: number; worked: number; missing: number } | null;
+  my_approvals: {
+    count: number;
+    items: { id: number; employee: { id: number; full_name: string }; week_start: string; worked: number; overtime: number }[];
+  };
 }
 
 export interface TimeOffDashboard {

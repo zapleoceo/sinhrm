@@ -23,7 +23,7 @@ final class EloquentCandidateRepository implements CandidateRepository
         $appFilter = $filter->vacancyId !== null || $filter->stageId !== null || $filter->status !== null;
 
         return $this->scoped(Candidate::query(), $scope)
-            ->with(['applications' => fn ($q) => $q->with(['vacancy', 'stage'])->orderByDesc('updated_at')])
+            ->with(['channel', 'applications' => fn ($q) => $q->with(['vacancy', 'stage'])->orderByDesc('updated_at')])
             ->when($filter->q, function (Builder $q, string $term): void {
                 $like = '%'.addcslashes(mb_strtolower($term), '%_\\').'%';
                 $telegram = '%'.addcslashes(ltrim(mb_strtolower($term), '@'), '%_\\').'%';
@@ -44,6 +44,7 @@ final class EloquentCandidateRepository implements CandidateRepository
             }))
             ->when($filter->source, fn (Builder $q, CandidateSource $s) => $q->where('source', $s->value))
             ->when($filter->ownerId, fn (Builder $q, int $id) => $q->where('owner_id', $id))
+            ->when($filter->channelId, fn (Builder $q, int $id) => $q->where('channel_id', $id))
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->paginate($filter->perPage);
@@ -51,7 +52,7 @@ final class EloquentCandidateRepository implements CandidateRepository
 
     public function find(int $id): ?Candidate
     {
-        return Candidate::query()->with(['city', 'owner'])->find($id);
+        return Candidate::query()->with(['city', 'owner', 'channel'])->find($id);
     }
 
     public function findByContacts(ContactKeys $keys, ?int $exceptId = null): ?array

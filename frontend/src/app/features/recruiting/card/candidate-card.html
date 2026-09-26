@@ -32,7 +32,18 @@
       </span>
     }
     <mat-chip-set [attr.aria-label]="'recruiting.card.source' | transloco">
-      <mat-chip [disableRipple]="true"><mat-icon matChipAvatar>input</mat-icon>{{ 'recruiting.source.' + c.source | transloco }}</mat-chip>
+      @if (c.channel; as ch) {
+        <mat-chip [disableRipple]="true" class="channel" [matTooltip]="'recruiting.channels.channel' | transloco"
+          ><mat-icon matChipAvatar>campaign</mat-icon>{{ ch.name }}</mat-chip
+        >
+      } @else {
+        <mat-chip [disableRipple]="true"><mat-icon matChipAvatar>input</mat-icon>{{ 'recruiting.source.' + c.source | transloco }}</mat-chip>
+      }
+      @if (c.added_via; as via) {
+        <mat-chip [disableRipple]="true" class="via" [matTooltip]="'recruiting.channels.addedVia' | transloco"
+          ><mat-icon matChipAvatar>login</mat-icon>{{ 'recruiting.addedVia.' + via | transloco }}</mat-chip
+        >
+      }
       @for (u of utm(); track u[0]) {
         <mat-chip [disableRipple]="true" class="utm">{{ u[0] }}={{ u[1] }}</mat-chip>
       }

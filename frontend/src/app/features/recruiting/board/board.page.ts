@@ -16,6 +16,7 @@ import { daysSince } from '../recruiting.format';
 import { Application, Stage } from '../recruiting.model';
 import { BoardStore } from './board.store';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject.dialog';
+import { VacancySources } from './vacancy-sources';
 
 /**
  * Kanban of one vacancy: a column per pipeline stage, drag & drop between columns (CDK). Moving to the reject
@@ -23,7 +24,7 @@ import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject.dia
  */
 @Component({
   selector: 'app-board-page',
-  imports: [CdkDropListGroup, CdkDropList, CdkDrag, MatButtonModule, MatIconModule, MatProgressBarModule, MatTooltipModule, RouterLink, TranslocoPipe],
+  imports: [CdkDropListGroup, CdkDropList, CdkDrag, MatButtonModule, MatIconModule, MatProgressBarModule, MatTooltipModule, RouterLink, TranslocoPipe, VacancySources],
   providers: [BoardStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -43,6 +44,7 @@ import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject.dia
           <button mat-flat-button type="button" (click)="addCandidate()"><mat-icon>person_add</mat-icon>{{ 'recruiting.board.add' | transloco }}</button>
         }
       </header>
+      <app-vacancy-sources [vacancyId]="board.vacancy.id" />
     }
     @if (store.loading()) {
       <mat-progress-bar mode="indeterminate" />

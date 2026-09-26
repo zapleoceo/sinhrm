@@ -57,6 +57,25 @@ final readonly class VacancyService
         return $this->find($vacancy->id);
     }
 
+    /**
+     * Opens a vacancy on behalf of the system (an approved hiring request): no actor scope check, the default
+     * pipeline, status open. The caller decides who may trigger it.
+     *
+     * @throws RecruitingException no_default_pipeline
+     */
+    public function openOnBehalf(VacancyData $data, int $recruiterId): Vacancy
+    {
+        $attributes = $data->attributes;
+        $attributes['pipeline_id'] = $this->pipelines->defaultPipeline()->id ?? throw RecruitingException::noDefaultPipeline();
+        $attributes['recruiter_id'] = $recruiterId;
+        $attributes['status'] = VacancyStatus::Open->value;
+        $attributes += $this->statusDates(VacancyStatus::Open->value, null);
+        $vacancy = $this->vacancies->create($attributes);
+        $this->log->info('recruiting.vacancy_created', ['id' => $vacancy->id, 'by' => null, 'via' => 'hiring_request']);
+
+        return $this->find($vacancy->id);
+    }
+
     /** @throws RecruitingException */
     public function update(User $actor, Vacancy $vacancy, VacancyData $data): Vacancy
     {
