@@ -12,10 +12,18 @@
   (2026-09-26). Искать — полями поиска на страницах (кандидаты, пользователи, справочники…). Серверный поиск API не менялся.
 - Справа вверху: кнопка светлой/тёмной темы; меню пользователя (аватар, имя, e-mail, язык UK/RU/EN, «Мій профіль» → `/me` ([people.md](people.md)), «Розширення браузера» → `/settings/extension` ([extension.md](extension.md)), «Вийти»).
 - Тема по умолчанию как в системе (светлая/тёмная), ручной выбор запоминается в этом браузере.
-- На узком экране меню слева становится строкой сверху.
+- Разделы меню («Рекрутинг», «Люди», «Продуктивність», «Сервіси», «Адміністрування») сворачиваются: клик по заголовку
+  раздела открывает/закрывает его, стрелка показывает состояние. «Огляд» и «Мої задачі» всегда видны сверху, вне разделов.
+  По умолчанию разделы закрыты; раздел текущей страницы открывается сам при переходе. Какие разделы открыты — запоминается
+  для каждого пользователя в этом браузере (если браузер не даёт хранить — просто всё закрыто после перезагрузки).
+  Анимация короткая (0,15 с) и отключается при системной настройке «уменьшить движение». Заголовки — кнопки,
+  работают с клавиатуры (Tab, Enter/Пробел), у них `aria-expanded` и `aria-controls`.
+- На узком экране меню слева становится строкой сверху; там разделы не сворачиваются — все пункты показаны сразу
+  (заголовков в этом режиме и раньше не было). Отдельного режима «только иконки» в оболочке нет.
 
 ## Как устроено
 - `features/shell/shell.layout.ts|html|scss` — layout (CSS grid), маршруты-дети рендерятся в `<router-outlet>`.
+- `features/shell/nav-groups.ts` — какому разделу принадлежит адрес (самый длинный префикс: `/reports` → «Рекрутинг», `/reports/catalog` → «Сервіси») и хранение открытых разделов (`localStorage`, ключ `sinhrm.nav.expanded.<id пользователя>`, все обращения в try/catch).
 - `features/shell/language-switcher.ts` — переключатель языка (также на странице входа).
 - Маршруты (`app.routes.ts`): `/login` (гости, `guestGuard`), `/` → оболочка (`authGuard`) с детьми
   `''` — дашборд (Overview), `vacancies`, `vacancies/:id`, `candidates`, `candidates/:id`, `inbox`, `reports` (модуль Recruiting, все роли), `people`, `people/org-chart`, `people/:id`, `me`, `timeoff`, `timeoff/calendar`, `timeoff/approvals` (People/TimeOff, все роли), `tasks` («Мої задачі», все роли), `me/documents` («Мої документи»), `workflows/runs` (доска воркфлоу; данные режет API), `perform/one-on-ones`, `perform/objectives`, `perform/feedback`, `perform/reviews`, `pulse`, `pulse/mood`, `pulse/waves/:id`, `pulse/waves/:id/results` (Perform/Pulse, все роли; данные режет API), `admin/perform/reviews`, `admin/pulse` — `roleGuard('superadmin', 'admin')`, `admin/workflows`, `admin/workflows/:id`, `admin/documents/templates` — `roleGuard('superadmin', 'admin')`, `settings/extension` (токен расширения, все роли), `desk`, `desk/cases/:id`, `safe-speak`, `knowledge`, `knowledge/:id`, `reports/catalog`, `reports/catalog/:key`, `reports/builder` (Desk/Safe Speak/Knowledge/Reports, все роли; данные режет API), `desk/queue`, `safe-speak/inbox`, `admin/knowledge/:id`, `admin/assets` — `roleGuard('superadmin', 'admin')` (для входящих Safe Speak API ещё требует флаг обработчика), `hiring-requests`, `hiring-requests/inbox`, `hiring-requests/new`, `hiring-requests/:id`, `hiring-requests/:id/edit` (заявки на подбор, все роли; права — API), `time`, `time/approvals`, `time/team` (табели, все роли; данные режет API), `admin/hiring-requests`, `admin/acquisition-channels`, `admin/time` — `roleGuard('superadmin', 'admin')`, `admin/users` и `admin/integrations` — `roleGuard('superadmin')`, `admin/directory`, `admin/scripts`, `admin/scripts/:id`, `admin/timeoff`, `status` — `roleGuard('superadmin', 'admin')`. Экраны загружаются лениво. У каждого маршрута `title` — ключ `titles.*`.
@@ -34,9 +42,10 @@
   значки каналов/источников/интеграций — `app-channel-icon` (Font Awesome Free), остальные действия — Material Symbols.
 
 ## Как проверить
-`npx ng test --watch=false` (guards, AuthService, язык), `npx ng build`.
+`npx ng test --watch=false` (guards, AuthService, язык, сворачивание меню — `nav-groups.spec.ts`, `shell.layout.spec.ts`), `npx ng build`.
 Вручную: войти → переключить тему и язык → обновить страницу (выбор сохранился) → «Вийти» ведёт на `/login`.
 Открыть любой календарь (например, «Мої відсутності») → неделя с понедельника, месяцы на языке интерфейса; Ctrl/⌘+K ничего не делает.
 HR-страницы (`admin/workflows*`, `admin/perform/reviews`, `admin/pulse`, `admin/documents/templates`, `admin/hiring-requests`, `admin/time`, `desk/queue`, `safe-speak/inbox`, `admin/knowledge/:id`, `admin/assets`, `admin/timeoff`) охраняет `roleGuard(...HR_STAFF_ROLES)` — открыты и `hr_manager`; в меню их показывает `isHr()`. `admin/acquisition-channels`, `admin/scripts`, `admin/directory`, `status` остаются за `superadmin`/`admin` (`isAdmin()`).
 
+Свернуть/развернуть раздел меню, обновить страницу — состояние сохранилось; открыть `/perform/objectives` — «Продуктивність» раскрылась сама.
 Пользователь не суперадмин не видит пункт «Користувачі», а прямой переход на `/admin/users` возвращает на `/`.

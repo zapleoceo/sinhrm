@@ -65,6 +65,24 @@ final class GoogleException extends RuntimeException
         return new self('google_bad_response', 502);
     }
 
+    /** Gmail is connected read-only (no gmail.send scope): reconnect Google to send mail. */
+    public static function sendScopeMissing(): self
+    {
+        return new self('gmail_send_scope_missing', 409);
+    }
+
+    /** Too many mails sent from the connected mailbox in the last hour. */
+    public static function sendRateLimited(): self
+    {
+        return new self('gmail_send_rate_limited', 429);
+    }
+
+    /** Recipient address, subject or body is not acceptable for a mail. */
+    public static function invalidMail(): self
+    {
+        return new self('invalid_mail', 422);
+    }
+
     public static function invalidSheetUrl(): self
     {
         return new self('invalid_sheet_url', 422);

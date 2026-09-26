@@ -2,7 +2,13 @@
 
 ## Что это и зачем
 Одна страница, где суперадмин подключает внешние сервисы: AI, Google, мессенджеры, телефонию и источники
-кандидатов (сайты вакансий, рекламные формы). Здесь вводятся ключи и токены.
+кандидатов (рекламные формы). Здесь вводятся ключи и токены.
+
+> **Сайты вакансий (Work.ua, Robota.ua, Djinni) — не интеграции.** У них нет открытого API для работодателя, поэтому
+> карточек с токеном здесь нет (были заготовками и удалены 2026-10-09 вместе с их строками в базе). Кандидаты с этих
+> сайтов попадают в систему двумя путями: **письма-отклики** разбирает почтовый агент ([mail-agent.md](mail-agent.md)),
+> **профиль с открытой страницы** добавляет браузерное расширение ([extension.md](extension.md)). Пробел: расширение
+> пока **не умеет Robota.ua** (только LinkedIn, Work.ua, Djinni, DOU) — с Robota.ua кандидаты приходят только через почту.
 
 Главное правило: **ключи хранятся только в базе и только в зашифрованном виде**. После сохранения ключ больше
 никому не показывается, даже суперадмину. На странице видно только «задан / не задан», дату изменения
@@ -74,7 +80,7 @@
 | `telegram_business` | `GET https://api.telegram.org/bot<token>/getMe` (только чтение), таймаут 10 с | да. URL содержит токен. До запроса токен проверяется по формату `^\d+:[A-Za-z0-9_-]+$` (иначе `invalid_token`, без запроса), вокруг вызова ловится **любой** `Throwable`: в ответ и лог попадают только коды `unauthorized`, `http_<код>`, `connection_failed` |
 | `whatsapp_cloud` | `GET https://graph.facebook.com/v21.0/{phone_number_id}?fields=id` (только чтение), токен в заголовке `Authorization`, таймаут 10 с; `phone_number_id` должен быть числом (иначе `invalid_url` без запроса) | да. 401 или ошибка Graph 190 → `unauthorized` |
 | `viber` | `POST https://chatapi.viber.com/pa/get_account_info` (только чтение), токен в заголовке `X-Viber-Auth-Token` | да. Viber `status: 2` → `unauthorized` |
-| остальные (`openrouter`, `deepgram`, `google_*`, `wazzup`, `phonet`, `ringostat`, `binotel`, `work_ua`, `robota_ua`, `djinni`, `meta_lead_ads`, `kep_signing`) | нет (`supports_check: false`) | нет. OpenRouter и Deepgram — AI/платные вызовы; Google подключается OAuth-согласием (модуль GoogleWorkspace), у его карточек нет полей |
+| остальные (`openrouter`, `deepgram`, `google_*`, `wazzup`, `phonet`, `ringostat`, `binotel`, `meta_lead_ads`, `kep_signing`) | нет (`supports_check: false`) | нет. OpenRouter и Deepgram — AI/платные вызовы; Google подключается OAuth-согласием (модуль GoogleWorkspace), у его карточек нет полей |
 
 Защита в глубину: перед записью `last_error` и лога `IntegrationService` заменяет любые значения секретов в тексте
 на `***` и обрезает до 255 символов. Если обязательный ключ не задан, проверка не выполняется

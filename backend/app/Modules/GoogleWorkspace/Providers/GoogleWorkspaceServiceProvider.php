@@ -9,9 +9,11 @@ use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\GoogleWorkspace\Contracts\CalendarClient;
 use App\Modules\GoogleWorkspace\Contracts\GmailClient;
 use App\Modules\GoogleWorkspace\Contracts\GoogleTokenProvider;
+use App\Modules\GoogleWorkspace\Contracts\Mailer;
 use App\Modules\GoogleWorkspace\Contracts\SheetImportRepository;
 use App\Modules\GoogleWorkspace\Contracts\SheetsClient;
 use App\Modules\GoogleWorkspace\Repositories\EloquentSheetImportRepository;
+use App\Modules\GoogleWorkspace\Services\GmailMailer;
 use App\Modules\GoogleWorkspace\Services\GoogleCalendarClient;
 use App\Modules\GoogleWorkspace\Services\GoogleDashboardNotices;
 use App\Modules\GoogleWorkspace\Services\GoogleGmailClient;
@@ -24,7 +26,7 @@ use Illuminate\Contracts\Foundation\Application;
 
 /**
  * Google Workspace: OAuth connection of Gmail / Calendar / Sheets (tokens in the Integrations SecretVault),
- * REST clients (no google/apiclient), meetings from the candidate card, Google Sheets import.
+ * REST clients (no google/apiclient), sending mail (Mailer → Gmail users.messages.send), meetings from the candidate card, Google Sheets import.
  * Routes under /api/google (routes.php — JSON, routes.web.php — OAuth browser redirects).
  */
 final class GoogleWorkspaceServiceProvider extends ModuleServiceProvider
@@ -38,6 +40,7 @@ final class GoogleWorkspaceServiceProvider extends ModuleServiceProvider
         ));
         $this->app->bind(GoogleTokenProvider::class, GoogleTokenService::class);
         $this->app->bind(GmailClient::class, GoogleGmailClient::class);
+        $this->app->bind(Mailer::class, GmailMailer::class);
         $this->app->bind(CalendarClient::class, GoogleCalendarClient::class);
         $this->app->bind(SheetsClient::class, GoogleSheetsClient::class);
         $this->app->bind(SheetImportRepository::class, EloquentSheetImportRepository::class);

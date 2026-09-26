@@ -10,6 +10,8 @@ export interface GoogleConnection {
   connected: boolean;
   account_email: string | null;
   scopes: string[];
+  /** Gmail: connected with the gmail.send scope (older grants are read-only → reconnect to send). */
+  can_send: boolean;
   error: string | null;
   connected_at: string | null;
 }

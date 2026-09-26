@@ -23,6 +23,9 @@ interface TouchpointRepository
     /** Latest touchpoint of the candidate in the channel that carries a conversation id (meta.thread). */
     public function latestThreadOf(int $candidateId, Channel $channel): ?Touchpoint;
 
+    /** Latest inbound touchpoint of the candidate in the channel (e.g. the mail to reply to). */
+    public function latestInbound(int $candidateId, Channel $channel): ?Touchpoint;
+
     /** When the candidate last wrote to us in the channel (direction in), e.g. for the WhatsApp 24-hour window. */
     public function lastInboundAt(int $candidateId, Channel $channel): ?Carbon;
 

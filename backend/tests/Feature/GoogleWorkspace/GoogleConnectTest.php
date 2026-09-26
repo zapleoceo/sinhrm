@@ -60,7 +60,7 @@ final class GoogleConnectTest extends TestCase
         $this->assertSame('https://sinhrm.example.test/api/google/connect/callback', $query['redirect_uri']);
         $scopes = explode(' ', (string) $query['scope']);
         $this->assertContains('https://www.googleapis.com/auth/gmail.readonly', $scopes);
-        $this->assertNotContains('https://www.googleapis.com/auth/gmail.send', $scopes);
+        $this->assertContains('https://www.googleapis.com/auth/gmail.send', $scopes);
         $this->assertContains('https://www.googleapis.com/auth/calendar.events', $scopes);
         $this->assertContains('openid', $scopes);
         $this->assertContains('email', $scopes);
@@ -109,6 +109,7 @@ final class GoogleConnectTest extends TestCase
     {
         Http::fake(['oauth2.googleapis.com/token' => Http::response($this->tokenAnswer([
             'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/gmail.send',
             'https://www.googleapis.com/auth/calendar.events',
             'https://www.googleapis.com/auth/spreadsheets.readonly',
         ]))]);
@@ -138,7 +139,8 @@ final class GoogleConnectTest extends TestCase
         $status = $this->actingAs($this->superadmin)->getJson('/api/google/status')->assertOk();
         $status->assertJsonPath('data.0.service', 'gmail')->assertJsonPath('data.0.connected', true)
             ->assertJsonPath('data.0.account_email', 'recruiting-box@example.test')
-            ->assertJsonPath('data.0.scopes.0', 'https://www.googleapis.com/auth/gmail.readonly');
+            ->assertJsonPath('data.0.scopes.0', 'https://www.googleapis.com/auth/gmail.readonly')
+            ->assertJsonPath('data.0.can_send', true);
         $integrations = $this->actingAs($this->superadmin)->getJson('/api/integrations')->assertOk();
         foreach ([$status->getContent(), $integrations->getContent(), json_encode(IntegrationLog::query()->get()->toArray())] as $dump) {
             $this->assertStringNotContainsString(self::REFRESH_TOKEN, (string) $dump);
@@ -161,6 +163,8 @@ final class GoogleConnectTest extends TestCase
 
         $this->actingAs($this->superadmin)->getJson('/api/google/status')
             ->assertJsonPath('data.0.connected', true)
+            ->assertJsonPath('data.0.can_send', false)
+            ->assertJsonPath('data.0.scopes', ['https://www.googleapis.com/auth/gmail.readonly'])
             ->assertJsonPath('data.1.service', 'calendar')
             ->assertJsonPath('data.1.connected', false);
         $this->actingAs($this->superadmin)->getJson('/api/google/calendar')->assertJsonPath('data.connected', false);

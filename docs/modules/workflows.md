@@ -87,7 +87,7 @@ skipped, failed}`.
 | `create_document` | документ из шаблона модуля Documents; `send` — сразу на ознакомление; у сотрудника нет логина → черновик, `sent: false, reason: employee_has_no_login` | `document_template_id`, `send?` |
 | `webhook` | POST JSON на https-адрес (см. ниже) | `url` (https) |
 | `start_workflow` | вложенный воркфлоу того же сотрудника (якорь — день выполнения), глубина ≤ 3 (`WorkflowStarter::MAX_DEPTH`), глубже → `failed: depth_limit` (это же останавливает петли A → B → A); неактивный шаблон → `skipped: template_inactive` | `template_id` |
-| `send_email_template` | Gmail не подключён → `skipped: not_connected`; подключён → `skipped: send_not_supported` (подключение Gmail **только на чтение**, `gmail.readonly`; отправка требует scope `gmail.send` и решения владельца) | `subject`, `body` |
+| `send_email_template` | письмо сотруднику (рабочий e-mail, иначе личный) через подключённый Gmail (`GoogleWorkspace\Contracts\Mailer`); в теме и тексте `{{name}}` → ФИО; текст уходит как простой текст (HTML экранируется). Gmail не подключён → `skipped: not_connected`; подключён только на чтение → `skipped: reconnect_to_send`; нет e-mail → `skipped: no_recipient`; лимит 60 писем/час → `failed: rate_limited` («Повторити» позже); ошибка Google → `failed: <код>`; успех → `done {message_id}` | `subject`, `body` |
 | `add_calendar_event` | событие в подключённом Google Calendar в день шага в `time` (по умолч. 10:00), участники — рабочий e-mail сотрудника и исполнитель, Google приглашений не шлёт; не подключён → `skipped: not_connected` | `title?`, `time?` (HH:MM), `duration_minutes?` (15..480), `online?` |
 
 Задачи создаются в общей таблице `tasks` модуля Scripts (`TaskService::schedule`, тип `workflow`, `employee_id`,
@@ -175,8 +175,8 @@ Google не подключён → `skipped`, уведомление руков�
 SQLite (в CI — Postgres); реальные вебхук-получатели и Google Calendar (только `Http::fake` / подменённый клиент).
 
 ## Вопросы и следующие шаги
-- Отправка писем (`send_email_template`) требует scope `gmail.send` — это расширение прав подключения Google; нужно
-  решение владельца. До тех пор шаг честно пропускается.
+- Письмо (`send_email_template`) работает, когда Google подключён с правом отправки (`gmail.send`); старое подключение
+  «только чтение» нужно один раз «Перепідключити».
 - Запрос формы ведёт на внешнюю форму (Google Forms) или профиль — своих форм пока нет.
 - Нет поля «наставник» у сотрудника: `assign_buddy` — задача, выбор фиксируется её выполнением.
 - Метрики шаблона (за 30 дней: запуски, % завершения, среднее время), как в PeopleForce, — не сделаны.

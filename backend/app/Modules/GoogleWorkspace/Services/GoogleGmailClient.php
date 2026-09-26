@@ -55,6 +55,15 @@ final readonly class GoogleGmailClient implements GmailClient
             subject: mb_substr(trim((string) MimeText::header($payload, 'Subject')), 0, 500),
             text: MimeText::extract($payload),
             labelIds: $labels,
+            threadId: is_string($json['threadId'] ?? null) && preg_match('/^[A-Za-z0-9_-]{1,64}$/', $json['threadId']) === 1 ? $json['threadId'] : null,
+            messageId: self::messageId(MimeText::header($payload, 'Message-ID')),
         );
+    }
+
+    private static function messageId(?string $value): ?string
+    {
+        $value = $value === null ? '' : trim($value);
+
+        return preg_match('/^<[^\s<>]{3,500}>$/', $value) === 1 ? $value : null;
     }
 }
