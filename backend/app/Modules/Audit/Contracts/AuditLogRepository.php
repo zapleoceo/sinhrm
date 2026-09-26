@@ -31,6 +31,6 @@ interface AuditLogRepository
     /** @return list<string> */
     public function entityTypes(): array;
 
-    /** Deletes rows older than $before; returns how many. */
-    public function purgeOlderThan(Carbon $before): int;
+    /** Deletes at most $limit rows older than $before (one bounded statement); returns how many. */
+    public function purgeOlderThan(Carbon $before, int $limit): int;
 }

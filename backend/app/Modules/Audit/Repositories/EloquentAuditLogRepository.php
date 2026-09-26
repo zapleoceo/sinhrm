@@ -81,9 +81,11 @@ final class EloquentAuditLogRepository implements AuditLogRepository
             ->map(fn (mixed $t): string => (string) $t)->values()->all();
     }
 
-    public function purgeOlderThan(Carbon $before): int
+    public function purgeOlderThan(Carbon $before, int $limit): int
     {
-        return (int) AuditEntry::query()->where('created_at', '<', $before)->delete();
+        $ids = AuditEntry::query()->where('created_at', '<', $before)->orderBy('id')->limit($limit)->pluck('id')->all();
+
+        return $ids === [] ? 0 : (int) AuditEntry::query()->whereIn('id', $ids)->delete();
     }
 
     /** @return Builder<AuditEntry> */

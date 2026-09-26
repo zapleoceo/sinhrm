@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Ai\Models\AiPromptVersion;
 use App\Modules\Audit\Contracts\AuditLogger;
 use App\Modules\Audit\Contracts\AuditLogRepository;
+use App\Modules\Audit\Privacy\AuditPersonalData;
 use App\Modules\Audit\Repositories\EloquentAuditLogRepository;
 use App\Modules\Audit\Services\AuditRetentionJob;
 use App\Modules\Audit\Services\AuditService;
@@ -15,6 +16,7 @@ use App\Modules\Audit\Support\AuditObserver;
 use App\Modules\Audit\Support\AuditPolicy;
 use App\Modules\Audit\Support\SecretAuditObserver;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Documents\Models\Document;
@@ -70,6 +72,7 @@ final class AuditServiceProvider extends ModuleServiceProvider
             self::TRACKED,
         ));
         $this->app->tag([AuditRetentionJob::class], ScheduledJob::class);
+        $this->app->tag([AuditPersonalData::class], PersonalDataProvider::class);
     }
 
     public function boot(): void

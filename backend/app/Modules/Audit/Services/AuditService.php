@@ -13,6 +13,9 @@ use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Audit\Support\AuditPolicy;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\DatabaseManager;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 final readonly class AuditService implements AuditLogger
 {
@@ -20,23 +23,33 @@ final readonly class AuditService implements AuditLogger
         private AuditLogRepository $repository,
         private AuditPolicy $policy,
         private AuthFactory $auth,
+        private DatabaseManager $db,
+        private LoggerInterface $log,
     ) {}
 
     public function record(string $entityType, int $entityId, AuditAction $action, ?array $changes = null, ?array $meta = null, ?int $actorId = null): void
     {
         $this->policy->assertEntityType($entityType);
         if ($changes !== null) {
-            $changes = $this->policy->sanitize($changes);
+            $changes = $this->policy->sanitize($entityType, $changes);
             if ($changes === [] && $action === AuditAction::Updated) {
                 return; // only technical fields changed
             }
         }
         $actor = $actorId ?? $this->auth->guard()->id();
 
-        $this->repository->store(
-            new AuditRecord($entityType, $entityId, $action, $changes === [] ? null : $changes, $meta),
-            is_numeric($actor) ? (int) $actor : null,
-        );
+        $record = new AuditRecord($entityType, $entityId, $action, $changes === [] ? null : $changes, $meta);
+        $actorId = is_numeric($actor) ? (int) $actor : null;
+
+        // After commit: a rolled-back business write leaves no audit row. Outside a transaction it runs at once.
+        // An audit failure never breaks the business write: it is reported without values.
+        $this->db->afterCommit(function () use ($record, $actorId): void {
+            try {
+                $this->repository->store($record, $actorId);
+            } catch (Throwable $e) {
+                $this->log->error('audit.write_failed', ['entity_type' => $record->entityType, 'entity_id' => $record->entityId, 'action' => $record->action->value, 'error' => $e::class]);
+            }
+        });
     }
 
     /** @return LengthAwarePaginator<int, AuditEntry> */

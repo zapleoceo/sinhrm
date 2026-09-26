@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace Tests\Feature\Audit;
 
 use App\Models\User;
+use App\Modules\Audit\Contracts\AuditLogRepository;
 use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Audit\Services\AuditRetentionJob;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Directory\Models\Branch;
+use App\Modules\Documents\Models\Document;
 use App\Modules\People\Models\Employee;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
 
@@ -44,7 +49,7 @@ final class AuditLogTest extends TestCase
 
         $updated = $this->entry('employee', $employee->id, 'updated');
         $this->assertEquals(['from' => '***', 'to' => '***'], $updated->changes['phone'] ?? null);
-        $this->assertSame('Renamed Person', $updated->changes['full_name']['to'] ?? null);
+        $this->assertEquals(['from' => '***', 'to' => '***'], $updated->changes['full_name'] ?? null);
 
         $raw = (string) json_encode(AuditEntry::query()->get()->toArray());
         $this->assertStringNotContainsString('380509998877', $raw);
@@ -161,9 +166,104 @@ final class AuditLogTest extends TestCase
 
         $job = collect($this->app->tagged(ScheduledJob::class))->first(fn (ScheduledJob $j): bool => $j->name() === 'audit.retention');
         $this->assertInstanceOf(AuditRetentionJob::class, $job);
-        $this->assertSame(['deleted' => 1], $job->run($now));
-        $this->assertSame(['deleted' => 0], $job->run($now));
+        $this->assertSame(['deleted' => 1, 'batches' => 1, 'complete' => true], $job->run($now));
+        $this->assertSame(0, $job->run($now)['deleted']);
         $this->assertSame(1, AuditEntry::query()->count());
+    }
+
+    public function test_retention_deletes_in_bounded_batches_and_stops_on_time_budget(): void
+    {
+        $repo = $this->createMock(AuditLogRepository::class);
+        $repo->expects($this->exactly(3))->method('purgeOlderThan')
+            ->with($this->anything(), AuditRetentionJob::BATCH)
+            ->willReturnOnConsecutiveCalls(AuditRetentionJob::BATCH, AuditRetentionJob::BATCH, 7);
+        $this->assertSame(['deleted' => 2007, 'batches' => 3, 'complete' => true], (new AuditRetentionJob($repo))->run(Carbon::now()));
+
+        // Budget spent after the first batch: stop, the next cron run continues.
+        $slow = $this->createMock(AuditLogRepository::class);
+        $slow->expects($this->once())->method('purgeOlderThan')->willReturn(AuditRetentionJob::BATCH);
+        $t = 0.0;
+        $clock = function () use (&$t): float {
+            $t += 30.0;
+
+            return $t;
+        };
+        $this->assertSame(['deleted' => 1000, 'batches' => 1, 'complete' => false], (new AuditRetentionJob($slow, $clock))->run(Carbon::now()));
+    }
+
+    public function test_document_body_and_file_path_are_never_stored(): void
+    {
+        $this->actingAs($this->superadmin);
+        $employee = Employee::factory()->create();
+        $document = Document::query()->create([
+            'employee_id' => $employee->id, 'title' => 'Offer', 'category' => 'other',
+            'content_md' => 'Salary 99999 UAH, home address Secret street', 'file_path' => 'docs/private-scan.pdf',
+        ]);
+        $document->update(['content_md' => 'Salary 12345 UAH']);
+
+        $raw = (string) json_encode(AuditEntry::query()->where('entity_type', 'document')->get()->toArray());
+        $this->assertStringNotContainsString('99999', $raw);
+        $this->assertStringNotContainsString('12345', $raw);
+        $this->assertStringNotContainsString('private-scan', $raw);
+        $this->assertEquals(['from' => '***', 'to' => '***'], $this->entry('document', $document->id, 'updated')->changes['content_md'] ?? null);
+    }
+
+    public function test_rolled_back_write_leaves_no_audit_row(): void
+    {
+        $this->actingAs($this->superadmin);
+        try {
+            DB::transaction(function (): void {
+                Employee::factory()->create(['full_name' => 'Ghost Person']);
+                throw new RuntimeException('business failure');
+            });
+        } catch (RuntimeException) {
+        }
+
+        $this->assertSame(0, AuditEntry::query()->where('entity_type', 'employee')->count());
+    }
+
+    public function test_audit_failure_never_breaks_the_business_write(): void
+    {
+        $repo = $this->createMock(AuditLogRepository::class);
+        $repo->method('store')->willThrowException(new RuntimeException('audit db down'));
+        $this->app->instance(AuditLogRepository::class, $repo);
+        $log = $this->createMock(LoggerInterface::class);
+        $log->expects($this->atLeastOnce())->method('error')->with('audit.write_failed', $this->anything());
+        $this->app->instance(LoggerInterface::class, $log);
+
+        $this->actingAs($this->superadmin);
+        $employee = Employee::factory()->create(['full_name' => 'Still Saved']);
+
+        $this->assertTrue(Employee::query()->whereKey($employee->id)->exists());
+    }
+
+    public function test_privacy_erase_leaves_no_personal_value_in_the_log_and_export_has_the_audit_section(): void
+    {
+        $branch = Branch::factory()->create();
+        $application = $this->applied($this->vacancyIn($branch), [
+            'full_name' => 'Synthetic Auditperson', 'phone' => '+380500000777', 'email' => 'synthetic.audit@example.test',
+            'telegram_username' => 'synthetic_audit_tg',
+        ]);
+        $id = $application->candidate_id;
+        // A row written under an older, looser policy: erase must re-mask it.
+        AuditEntry::query()->create([
+            'entity_type' => 'candidate', 'entity_id' => $id, 'action' => 'updated',
+            'changes' => ['full_name' => ['from' => 'Synthetic Auditperson', 'to' => 'Synthetic Auditperson Jr']], 'created_at' => Carbon::now(),
+        ]);
+
+        $export = $this->actingAs($this->superadmin)->get("/api/privacy/candidate/{$id}/export")->assertOk();
+        $sections = json_decode((string) $export->getContent(), true)['sections'];
+        $this->assertNotEmpty($sections['audit_log']);
+        $this->assertContains('created', array_column($sections['audit_log'], 'action'));
+
+        $this->actingAs($this->superadmin)->postJson("/api/privacy/candidate/{$id}/erase", ['reason' => 'Written request', 'confirm' => true])
+            ->assertOk()->assertJsonPath('data.erased', true);
+
+        $raw = (string) json_encode(AuditEntry::query()->get()->toArray(), JSON_UNESCAPED_UNICODE);
+        foreach (['Synthetic Auditperson', '380500000777', 'synthetic.audit@example.test', 'synthetic_audit_tg', 'Видалений кандидат'] as $value) {
+            $this->assertStringNotContainsString($value, $raw);
+        }
+        $this->assertGreaterThan(0, AuditEntry::query()->where('entity_type', 'candidate')->where('entity_id', $id)->where('action', 'updated')->count());
     }
 
     private function entry(string $type, int $id, string $action): AuditEntry
