@@ -26,6 +26,13 @@ interface DeskRepository
      */
     public function cases(array $filter, int $limit): Collection;
 
+    /**
+     * How many cases() would find without the limit (sidebar counter).
+     *
+     * @param  array{employee_id?: int|null, status?: string|null, assignee_id?: int|null, category_id?: int|null, open?: bool}  $filter
+     */
+    public function countCases(array $filter): int;
+
     public function findCase(int $id): ?DeskCase;
 
     /** @param  array<string, mixed>  $attributes */

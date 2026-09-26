@@ -11,13 +11,14 @@ use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Tests\Support\NavBadgeAssertions;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
 /** Desk: authz matrix, thread with internal notes, SLA flags, the desk.sla job, attachments. Synthetic data only. */
 final class DeskApiTest extends TestCase
 {
-    use PeopleFixtures, RefreshDatabase;
+    use NavBadgeAssertions, PeopleFixtures, RefreshDatabase;
 
     private const string PDF = "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n";
 
@@ -104,7 +105,13 @@ final class DeskApiTest extends TestCase
 
         // Waiting → the requester answers → in progress; resolve / close / reopen move the clocks.
         $this->actingAs($admin)->patchJson("/api/desk/cases/$id", ['status' => 'waiting'])->assertOk();
+        // Sidebar: the requester sees 1 case waiting for their answer; HR sees the open queue; the employee has no queue badge.
+        $waiting = static fn (array $c): bool => $c['status'] === 'waiting';
+        $this->assertBadgeMatchesList($user, 'desk_mine', '/api/desk/cases/mine', 1, 'data', $waiting);
+        $this->assertBadgeMatchesList($admin, 'desk_queue', '/api/desk/cases?open=1', 1);
+        $this->assertArrayNotHasKey('desk_queue', $this->badgesOf($user));
         $this->actingAs($user)->postJson("/api/desk/cases/$id/comments", ['body' => 'Thanks'])->assertCreated()->assertJsonPath('data.status', 'in_progress');
+        $this->assertBadgeMatchesList($user, 'desk_mine', '/api/desk/cases/mine', 0, 'data', $waiting);
         $this->actingAs($admin)->patchJson("/api/desk/cases/$id", ['status' => 'resolved', 'assignee_id' => $admin->id])->assertOk()
             ->assertJsonPath('data.assignee.id', $admin->id)->assertJsonPath('data.resolved_at', Carbon::now()->toIso8601String());
         $this->actingAs($user)->patchJson("/api/desk/cases/$id", ['status' => 'closed'])->assertOk()->assertJsonPath('data.status', 'closed');

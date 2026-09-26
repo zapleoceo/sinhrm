@@ -8,6 +8,7 @@ import { UserRole } from '../../../core/auth/auth.model';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DocPage, groupDocs, searchDocs, visibleDocs } from './docs.model';
 import { DocsPage } from './docs.page';
+import { visibleMap } from './docs-map';
 
 const doc = (slug: string, group: DocPage['group'], audience: DocPage['audience'], text: string, html = `<p>${text}</p>`): DocPage => ({
   slug,
@@ -44,6 +45,18 @@ describe('docs helpers', () => {
     expect(searchDocs(DOCS, 'опросы токены')).toEqual([]);
     expect(searchDocs(DOCS, 'desk').map((h) => h.doc.slug)).toEqual(['desk']);
     expect(searchDocs(DOCS, 'enps')[0].snippet).toContain('eNPS');
+  });
+});
+
+describe('docs map', () => {
+  it('keeps only blocks whose doc page is visible, falling back to the next allowed page', () => {
+    const pages = [doc('recruiting', 'recruiting', 'all', 'r'), doc('mail-agent', 'admin', 'admin', 'm'), doc('pulse', 'perform', 'all', 'p')];
+    const employee = visibleMap(visibleDocs(pages, ['viewer']));
+    expect(employee.sources.map((b) => [b.id, b.slug])).toEqual([['mail', 'recruiting'], ['sheets', 'recruiting'], ['manual', 'recruiting']]);
+    expect(employee.helpers).toEqual([]);
+    const admin = visibleMap(visibleDocs(pages, ['admin']));
+    expect(admin.sources.map((b) => [b.id, b.slug])).toContainEqual(['jobSites', 'mail-agent']);
+    expect(admin.people.map((b) => b.id)).toEqual(['pulse']);
   });
 });
 
@@ -91,6 +104,34 @@ describe('DocsPage', () => {
     expect(body.querySelector('script')).toBeNull();
     expect(body.innerHTML).not.toContain('onerror');
     expect(body.querySelector('a')?.getAttribute('href')).toMatch(/^unsafe:/); // Angular neutralizes javascript: URLs
+  });
+
+  it('shows the overview map when no section is selected', async () => {
+    const el = await setup(['viewer']);
+    expect(el.querySelector('app-docs-overview')).not.toBeNull();
+    expect(el.textContent).toContain('docs.map.intro');
+    expect(el.querySelector('.crumbs')).toBeNull();
+  });
+
+  it('hides the overview and shows a way back when a section is open', async () => {
+    const el = await setup(['viewer'], 'desk');
+    expect(el.querySelector('app-docs-overview')).toBeNull();
+    expect(el.querySelector('.crumbs a')?.getAttribute('href')).toBe('/docs');
+  });
+
+  it('links each map block to its doc section', async () => {
+    const el = await setup(['viewer']);
+    expect(el.querySelector('[data-block="pulse"]')?.getAttribute('href')).toBe('/docs/pulse');
+    expect(el.querySelector('[data-block="desk"]')?.getAttribute('href')).toBe('/docs/desk');
+  });
+
+  it('hides map blocks of modules the role cannot see', async () => {
+    const viewer = await setup(['viewer']);
+    expect(viewer.querySelector('[data-block="integrations"]')).toBeNull();
+    expect(viewer.querySelector('[data-zone="helpers"]')).toBeNull();
+    TestBed.resetTestingModule();
+    const admin = await setup(['admin']);
+    expect(admin.querySelector('[data-block="integrations"]')?.getAttribute('href')).toBe('/docs/integrations');
   });
 
   it('filters the list by search', async () => {

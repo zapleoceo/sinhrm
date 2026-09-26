@@ -9,6 +9,7 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\HealthCheck;
 use App\Modules\Core\Contracts\MigrationRunner;
 use App\Modules\Core\Contracts\ModuleSettingsRepository;
+use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Http\Controllers\OpsJobsController;
 use App\Modules\Core\Repositories\EloquentModuleSettingsRepository;
@@ -17,6 +18,7 @@ use App\Modules\Core\Services\DatabaseHealthCheck;
 use App\Modules\Core\Services\HealthService;
 use App\Modules\Core\Services\ModuleAccess;
 use App\Modules\Core\Services\ModuleRegistry;
+use App\Modules\Core\Services\NavBadgeService;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Core\Support\NeonConnectionConfig;
 use Illuminate\Support\Facades\Gate;
@@ -42,6 +44,14 @@ final class CoreServiceProvider extends ModuleServiceProvider
 
         // Background jobs for the cron workflow: modules add theirs with $this->app->tag([...], ScheduledJob::class).
         $this->app->bind(OpsJobsController::class, fn ($app) => new OpsJobsController($app->tagged(ScheduledJob::class), $app->make(ModuleAccess::class), $app->make(ModuleRegistry::class)));
+
+        // Sidebar counters (GET /api/nav/badges): modules add theirs with $this->app->tag([...], NavBadgeProvider::class).
+        $this->app->bind(NavBadgeService::class, fn ($app) => new NavBadgeService(
+            $app->tagged(NavBadgeProvider::class),
+            $app['cache.store'],
+            $app->make(ModuleAccess::class),
+            $app->make(ModuleRegistry::class),
+        ));
 
         // Module access (docs/modules/modules-access.md): registry filled by every ModuleServiceProvider::boot.
         $this->app->singleton(ModuleRegistry::class);

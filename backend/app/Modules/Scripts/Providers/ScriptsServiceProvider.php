@@ -6,6 +6,7 @@ namespace App\Modules\Scripts\Providers;
 
 use App\Models\User;
 use App\Modules\Ai\Providers\AiServiceProvider;
+use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
@@ -25,6 +26,7 @@ use App\Modules\Scripts\Repositories\EloquentScriptRepository;
 use App\Modules\Scripts\Repositories\EloquentTaskRepository;
 use App\Modules\Scripts\Services\FollowupJob;
 use App\Modules\Scripts\Services\RulesScriptEvaluator;
+use App\Modules\Scripts\Services\TaskNavBadges;
 use App\Modules\Scripts\Support\ScriptTouchpointEvaluations;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -44,6 +46,7 @@ final class ScriptsServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->app->tag([TaskNavBadges::class], NavBadgeProvider::class);
         $this->app->bind(ScriptRepository::class, EloquentScriptRepository::class);
         $this->app->bind(EvaluationRepository::class, EloquentEvaluationRepository::class);
         $this->app->bind(TaskRepository::class, EloquentTaskRepository::class);

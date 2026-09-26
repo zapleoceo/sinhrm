@@ -1,7 +1,7 @@
 <div class="shell">
   <aside class="sidebar">
   <nav class="sidebar-nav" [attr.aria-label]="'shell.nav.label' | transloco">
-    <a class="brand" routerLink="/">{{ 'app.name' | transloco }}</a>
+    <a class="brand" routerLink="/"><app-logo /></a>
     <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>dashboard</mat-icon>
       <span>{{ 'shell.nav.overview' | transloco }}</span>
@@ -9,10 +9,12 @@
     <a class="nav-link" routerLink="/tasks" routerLinkActive="active">
       <mat-icon>task_alt</mat-icon>
       <span>{{ 'shell.nav.tasks' | transloco }}</span>
+      <app-nav-badge [count]="badges()['tasks'] ?? 0" />
     </a>
     @if (groupVisible('recruiting')) {
     <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('recruiting')" aria-controls="nav-group-recruiting" (click)="toggle('recruiting')">
       <span>{{ 'shell.nav.recruiting' | transloco }}</span>
+      <app-nav-badge [count]="isOpen('recruiting') ? 0 : groupBadge('recruiting')" />
       <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
     </button>
     <div class="nav-group" id="nav-group-recruiting" [class.open]="isOpen('recruiting')"><div class="nav-group-inner">
@@ -32,12 +34,14 @@
     <a class="nav-link" routerLink="/inbox" routerLinkActive="active">
       <mat-icon>inbox</mat-icon>
       <span>{{ 'shell.nav.inbox' | transloco }}</span>
+      <app-nav-badge [count]="badges()['inbox'] ?? 0" />
     </a>
     }
     @if (can('hiring-requests')) {
     <a class="nav-link" routerLink="/hiring-requests" routerLinkActive="active">
       <mat-icon>assignment_add</mat-icon>
       <span>{{ 'shell.nav.hiringRequests' | transloco }}</span>
+      <app-nav-badge [count]="badges()['hiring_inbox'] ?? 0" />
     </a>
     }
     @if (can('recruiting')) {
@@ -51,6 +55,7 @@
     @if (groupVisible('people')) {
     <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('people')" aria-controls="nav-group-people" (click)="toggle('people')">
       <span>{{ 'shell.nav.people' | transloco }}</span>
+      <app-nav-badge [count]="isOpen('people') ? 0 : groupBadge('people')" />
       <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
     </button>
     <div class="nav-group" id="nav-group-people" [class.open]="isOpen('people')"><div class="nav-group-inner">
@@ -82,6 +87,7 @@
     <a class="nav-link" routerLink="/timeoff/approvals" routerLinkActive="active">
       <mat-icon>fact_check</mat-icon>
       <span>{{ 'shell.nav.approvals' | transloco }}</span>
+      <app-nav-badge [count]="badges()['timeoff_approvals'] ?? 0" />
     </a>
     }
     @if (can('time')) {
@@ -94,6 +100,7 @@
     <a class="nav-link" routerLink="/time/approvals" routerLinkActive="active">
       <mat-icon>pending_actions</mat-icon>
       <span>{{ 'shell.nav.timeApprovals' | transloco }}</span>
+      <app-nav-badge [count]="badges()['time_approvals'] ?? 0" />
     </a>
     }
     @if (can('time')) {
@@ -106,6 +113,7 @@
     <a class="nav-link" routerLink="/me/documents" routerLinkActive="active">
       <mat-icon>description</mat-icon>
       <span>{{ 'shell.nav.myDocuments' | transloco }}</span>
+      <app-nav-badge [count]="badges()['my_documents'] ?? 0" />
     </a>
     }
     @if (can('workflows')) {
@@ -119,6 +127,7 @@
     @if (groupVisible('perform')) {
     <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('perform')" aria-controls="nav-group-perform" (click)="toggle('perform')">
       <span>{{ 'shell.nav.perform' | transloco }}</span>
+      <app-nav-badge [count]="isOpen('perform') ? 0 : groupBadge('perform')" />
       <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
     </button>
     <div class="nav-group" id="nav-group-perform" [class.open]="isOpen('perform')"><div class="nav-group-inner">
@@ -150,6 +159,7 @@
     <a class="nav-link" routerLink="/pulse" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>poll</mat-icon>
       <span>{{ 'shell.nav.surveys' | transloco }}</span>
+      <app-nav-badge [count]="badges()['surveys'] ?? 0" />
     </a>
     }
     @if (can('pulse')) {
@@ -163,6 +173,7 @@
     @if (groupVisible('services')) {
     <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('services')" aria-controls="nav-group-services" (click)="toggle('services')">
       <span>{{ 'shell.nav.services' | transloco }}</span>
+      <app-nav-badge [count]="isOpen('services') ? 0 : groupBadge('services')" />
       <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
     </button>
     <div class="nav-group" id="nav-group-services" [class.open]="isOpen('services')"><div class="nav-group-inner">
@@ -170,6 +181,7 @@
     <a class="nav-link" routerLink="/desk" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>support_agent</mat-icon>
       <span>{{ 'shell.nav.desk' | transloco }}</span>
+      <app-nav-badge [count]="badges()['desk_mine'] ?? 0" />
     </a>
     }
     @if (can('knowledge')) {
@@ -201,6 +213,7 @@
     @if (isHr()) {
       <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('admin')" aria-controls="nav-group-admin" (click)="toggle('admin')">
         <span>{{ 'shell.nav.admin' | transloco }}</span>
+        <app-nav-badge [count]="isOpen('admin') ? 0 : groupBadge('admin')" />
         <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
       </button>
       <div class="nav-group" id="nav-group-admin" [class.open]="isOpen('admin')"><div class="nav-group-inner">
@@ -209,12 +222,14 @@
         <a class="nav-link" routerLink="/desk/queue" routerLinkActive="active">
           <mat-icon>inbox</mat-icon>
           <span>{{ 'shell.nav.deskQueue' | transloco }}</span>
+          <app-nav-badge [count]="badges()['desk_queue'] ?? 0" />
         </a>
         }
         @if (can('safe-speak')) {
         <a class="nav-link" routerLink="/safe-speak/inbox" routerLinkActive="active">
           <mat-icon>policy</mat-icon>
           <span>{{ 'shell.nav.safeSpeakInbox' | transloco }}</span>
+          <app-nav-badge [count]="badges()['safe_speak'] ?? 0" />
         </a>
         }
         @if (can('hiring-requests')) {
@@ -261,6 +276,7 @@
         <a class="nav-link" routerLink="/admin/mail" routerLinkActive="active">
           <mat-icon>mark_email_unread</mat-icon>
           <span>{{ 'shell.nav.mail' | transloco }}</span>
+          <app-nav-badge [count]="badges()['mail_unknown'] ?? 0" />
         </a>
         }
         @if (can('google-workspace')) {

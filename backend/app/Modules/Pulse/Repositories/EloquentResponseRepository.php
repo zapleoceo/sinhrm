@@ -28,6 +28,19 @@ final class EloquentResponseRepository implements ResponseRepository
             ->pluck('respondent_hash')->map(static fn (mixed $h): string => (string) $h)->values()->all();
     }
 
+    public function countAnswered(array $tokensByWave): int
+    {
+        if ($tokensByWave === []) {
+            return 0;
+        }
+
+        return SurveyResponse::query()->where(static function ($q) use ($tokensByWave): void {
+            foreach ($tokensByWave as $waveId => $hash) {
+                $q->orWhere(static fn ($w) => $w->where('wave_id', $waveId)->where('respondent_hash', $hash));
+            }
+        })->count();
+    }
+
     public function createOnce(array $attributes): bool
     {
         if (SurveyResponse::query()->where('wave_id', $attributes['wave_id'])

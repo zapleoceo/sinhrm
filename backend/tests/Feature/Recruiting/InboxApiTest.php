@@ -9,12 +9,13 @@ use App\Modules\Directory\Models\Branch;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Models\Candidate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\NavBadgeAssertions;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
 
 final class InboxApiTest extends TestCase
 {
-    use RecruitingFixtures, RefreshDatabase;
+    use NavBadgeAssertions, RecruitingFixtures, RefreshDatabase;
 
     private Branch $north;
 
@@ -24,6 +25,18 @@ final class InboxApiTest extends TestCase
     {
         parent::setUp();
         [$this->north, $this->south] = Branch::factory()->count(2)->create()->all();
+    }
+
+    public function test_nav_badge_counts_the_inbox_in_scope(): void
+    {
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->north]);
+        $this->ingest(Channel::Telegram, '@stranger_one', ['branch_id' => $this->north->id]);
+        $this->ingest(Channel::Whatsapp, '+380931112233', ['branch_id' => $this->south->id]);
+        $this->ingest(Channel::Email, 'nobody@example.test', ['author_id' => $recruiter->id]);
+
+        $this->assertBadgeMatchesList($recruiter, 'inbox', '/api/inbox', 2, 'meta.total');
+        $this->assertBadgeMatchesList($this->userWith(UserRole::Admin), 'inbox', '/api/inbox', 3, 'meta.total');
+        $this->assertBadgeMatchesList($this->userWith(UserRole::Recruiter, [Branch::factory()->create()]), 'inbox', '/api/inbox', 0, 'meta.total');
     }
 
     public function test_inbox_lists_unmatched_messages_in_scope(): void

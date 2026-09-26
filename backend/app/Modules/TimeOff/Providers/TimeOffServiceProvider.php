@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\TimeOff\Providers;
 
 use App\Models\User;
+use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Contracts\WorkingCalendar;
 use App\Modules\Core\Support\ModuleServiceProvider;
@@ -21,6 +22,7 @@ use App\Modules\TimeOff\Repositories\EloquentLedgerRepository;
 use App\Modules\TimeOff\Services\AccrualJob;
 use App\Modules\TimeOff\Services\HolidayWorkingCalendar;
 use App\Modules\TimeOff\Services\TimeOffDashboardSection;
+use App\Modules\TimeOff\Services\TimeOffNavBadges;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 
@@ -42,6 +44,7 @@ final class TimeOffServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->app->tag([TimeOffNavBadges::class], NavBadgeProvider::class);
         $this->app->bind(LeaveSettingsRepository::class, EloquentLeaveSettingsRepository::class);
         $this->app->bind(LedgerRepository::class, EloquentLedgerRepository::class);
         $this->app->bind(LeaveRequestRepository::class, EloquentLeaveRequestRepository::class);

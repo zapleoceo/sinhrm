@@ -33,6 +33,7 @@
 | `date/iso-date.ts` | даты без сдвига часового пояса: `toIsoDate(Date)` → `'YYYY-MM-DD'` по локальному календарю (не через `toISOString()`), `toIsoDateOrNull`, `fromIsoDate('YYYY-MM-DD')` → локальная полночь (переполнение вроде 31.02 → `null`), `toIsoLocalDateTime`/`fromIsoLocalDateTime` (`YYYY-MM-DDTHH:mm`, бывший формат `datetime-local`), `combineDateAndTime`, `toTimeString`/`fromTimeString` (`HH:mm`), `today()`. Контракт API не менялся: на бэкенд уходят те же строки |
 | `date/app-date-adapter.ts`, `date/provide-app-dates.ts` | `provideAppDates()` в `app.config.ts`: `AppDateAdapter` (наследник `NativeDateAdapter`, без новых зависимостей) — неделя с понедельника, в поле ввода всегда `дд.мм.рррр` (принимает также `д.м.рррр`, `дд/мм/рррр`, ISO), ISO-строки читаются как локальная дата; `APP_DATE_FORMATS` (время `HH:mm`, 24 ч). Локаль (`uk-UA`/`ru-RU`/`en-GB`) переключает `LanguageService` вместе с языком интерфейса |
 | `date/datepicker-intl.ts` | подписи кнопок календаря (`common.datepicker.*`) для `MatDatepickerIntl`, обновляются при смене языка; грузится динамическим `import()` — статический импорт тянул весь datepicker в стартовый бандл (+~340 kB) |
+| `ui/logo.ts` | `<app-logo [variant]="'mark'\|'full'" [mono]>` — логотип SinHRM: квадрат с вырезанной «S» (цвет `--app-brand`) + словесный знак Onest; `role=img`, `aria-label="SinHRM"`. Используется на странице входа и в шапке сайдбара; из него же `public/favicon.svg` и растровые иконки (`scripts/gen-icons.mjs`), см. [design-direction.md](../architecture/design-direction.md) §8 |
 | `ui/channel-icon.ts`, `ui/channel-icons.ts` | `<app-channel-icon [key] [label]>` — иконка Font Awesome Free канала / источника / интеграции в цвете бренда: telegram, whatsapp, viber, linkedin, meta_ads, google/gmail/sheets/calendar — брендовые; work_ua/robota_ua/djinni/dou — портфель с буквой (в FA Free их нет); телефония — `faPhoneVolume`, AI — робот/мозг, Deepgram — волна; неизвестный ключ — нейтральный знак вопроса. С `label` — `role=img` + `aria-label` + подсказка, без — декоративная (`aria-hidden`), когда название написано рядом. Используется в карточке кандидата (контакты, чипы источника, фильтры и лента), композере, «Вхідних», дашборде, отчётах, каналах залучення, интеграциях, Google-подключении, странице расширения |
 | `http/api-error.ts` | `apiErrorKey(error, prefix, codes)` — i18n-ключ ошибки API: известный `{code}` → `<prefix>.errors.<code>`, иначе по статусу (`forbidden` 403, `not_found` 404, `validation` 422, `rate_limited` 429), иначе `common.error`; `saveBlob(blob, name)` — скачать ответ-Blob (CSV). Используют Desk, Safe Speak, Knowledge, Assets, Reports |
 
@@ -99,6 +100,17 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 `ok: false` (шаг cron краснеет), исключение уходит в `report()`. Сейчас зарегистрированы, среди прочих, `timeoff.accrue` (начисление отпусков, [timeoff.md](timeoff.md)), `followups` (модуль Scripts —
 задачи-напоминания, [scripts.md](scripts.md)) и `workflows.tick` (шаги воркфлоу и запуск по окончании испытательного срока,
 [workflows.md](workflows.md)).
+
+### Счётчики в меню (`Contracts/NavBadgeProvider`)
+`GET /api/nav/badges` (вход обязателен) отдаёт числа для значков в меню **только текущего пользователя**, например
+`{"data": {"tasks": 1, "inbox": 4}}`. Каждый модуль сам считает свои пункты: класс с `badges(User $user): array`,
+регистрация `$this->app->tag([MyNavBadges::class], NavBadgeProvider::class)`. Правило: число берётся тем же сервисом и
+той же областью видимости, что и список на странице, поэтому совпадает с тем, что человек увидит, открыв пункт (это проверяют
+тесты модулей: значок = длина списка). Нет права на пункт — провайдер не возвращает ключ (значка нет вовсе); 0 — значок скрыт.
+`Services/NavBadgeService` собирает ответы всех провайдеров и держит их в кэше 30 секунд на пользователя (ключ
+`nav-badges:<id>:<хэш ролей>` — смена роли видна сразу), чтобы опрос меню раз в минуту не нагружал базу. Ключи: `tasks`, `inbox`, `hiring_inbox`,
+`timeoff_approvals`, `time_approvals`, `my_documents`, `surveys`, `desk_mine`, `desk_queue`, `safe_speak`, `mail_unknown`
+(что считает каждый — в документации модуля).
 
 ## Логи
 На Vercel логи пишутся в stderr в формате JSON без стектрейса (`LOG_STDERR_FORMATTER=JsonFormatter`, уровень `warning`):

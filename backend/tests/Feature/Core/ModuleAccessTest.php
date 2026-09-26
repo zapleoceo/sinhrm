@@ -95,6 +95,16 @@ final class ModuleAccessTest extends TestCase
         $this->assertTrue($response->json('jobs')['workflows.tick']['ok']);
     }
 
+    public function test_nav_badges_skip_disabled_modules(): void
+    {
+        $user = $this->user(UserRole::Employee);
+        $this->assertArrayHasKey('desk_mine', $this->actingAs($user)->getJson('/api/nav/badges')->assertOk()->json('data'));
+
+        $this->saveSetting('desk', false, UserRole::values());
+
+        $this->assertArrayNotHasKey('desk_mine', $this->actingAs($user)->getJson('/api/nav/badges')->assertOk()->json('data'));
+    }
+
     public function test_settings_page_is_superadmin_only(): void
     {
         $this->actingAs($this->user(UserRole::Admin))->getJson('/api/modules')->assertForbidden();
@@ -135,6 +145,8 @@ final class ModuleAccessTest extends TestCase
     private function saveSetting(string $module, bool $enabled, array $roles): void
     {
         ModuleSetting::query()->updateOrCreate(['module' => $module], ['enabled' => $enabled, 'roles' => $roles]);
+        // Settings are read once per request (scoped binding); a test reuses one app, so drop the cached copy.
+        $this->app->forgetScopedInstances();
     }
 
     private function user(UserRole $role): User

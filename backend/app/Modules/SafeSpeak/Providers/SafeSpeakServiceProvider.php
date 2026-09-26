@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\SafeSpeak\Providers;
 
 use App\Models\User;
+use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\SafeSpeak\Contracts\SafeSpeakRepository;
 use App\Modules\SafeSpeak\Http\Controllers\PublicReportController;
 use App\Modules\SafeSpeak\Http\Middleware\ForceJson;
 use App\Modules\SafeSpeak\Repositories\EloquentSafeSpeakRepository;
+use App\Modules\SafeSpeak\Services\SafeSpeakNavBadges;
 use App\Modules\SafeSpeak\Services\SafeSpeakService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Gate;
@@ -32,6 +34,7 @@ final class SafeSpeakServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->app->tag([SafeSpeakNavBadges::class], NavBadgeProvider::class);
         $this->app->bind(SafeSpeakRepository::class, EloquentSafeSpeakRepository::class);
         // HMAC key for access codes and client buckets.
         $key = static fn (Application $app): string => (string) $app->make('config')->get('app.key');

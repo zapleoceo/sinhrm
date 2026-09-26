@@ -105,7 +105,10 @@ Google Sheets действуют от имени суперадмина, под�
 
 ### Фронтенд
 `features/auth/login.page.ts` — карточка входа; код `?error` переводится в сообщение (`login-error.ts`,
-неизвестный код → общее сообщение). Сессия, guards и язык — в `core/` (см. [core.md](core.md)).
+неизвестный код → общее сообщение, плашка `role=alert` внутри карточки). В карточке сверху — логотип
+(`<app-logo>`) и компактный переключатель языка uk|ru|en; кнопка Google с фирменной «G» ведёт на
+`/api/auth/google/redirect`; фон — анимированные CSS-пятна (статичны при `prefers-reduced-motion`). Дизайн —
+[design-direction.md](../architecture/design-direction.md) §8. Сессия, guards и язык — в `core/` (см. [core.md](core.md)).
 
 ## Как проверить
 Тесты: `tests/Feature/Auth/GoogleCallbackTest.php` (суперадмин, приглашённый, not_invited, blocked,

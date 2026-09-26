@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Desk\Providers;
 
 use App\Models\User;
+use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Desk\Contracts\DeskRepository;
 use App\Modules\Desk\Repositories\EloquentDeskRepository;
+use App\Modules\Desk\Services\DeskNavBadges;
 use App\Modules\Desk\Services\DeskSlaJob;
 use App\Modules\People\Services\PeopleScope;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +32,7 @@ final class DeskServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->app->tag([DeskNavBadges::class], NavBadgeProvider::class);
         $this->app->bind(DeskRepository::class, EloquentDeskRepository::class);
         $this->app->tag([DeskSlaJob::class], ScheduledJob::class);
     }

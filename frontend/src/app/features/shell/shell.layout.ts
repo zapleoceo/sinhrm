@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Logo } from '../../core/ui/logo';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -11,12 +12,14 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { LanguageSwitcher } from './language-switcher';
+import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
 
 /** App frame for signed-in users: sidebar navigation with a pinned footer (help link + user menu). */
 @Component({
   selector: 'app-shell-layout',
   imports: [
+    Logo,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -26,6 +29,7 @@ import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded 
     MatMenuModule,
     TranslocoPipe,
     LanguageSwitcher,
+    NavBadge,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.layout.html',
@@ -34,6 +38,7 @@ import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded 
 export class ShellLayout {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly navBadges = inject(NavBadgesService);
   protected readonly theme = inject(ThemeService);
 
   protected readonly user = this.auth.user;
@@ -53,12 +58,16 @@ export class ShellLayout {
     ),
     { initialValue: this.router.url },
   );
+  /** Counters next to menu items (my tasks, approvals, inboxes…). */
+  protected readonly badges = this.navBadges.badges;
   /** Groups the user opened by hand (remembered per user in localStorage). */
   private readonly expanded = signal<ReadonlySet<NavGroupId>>(new Set());
   /** Group of the current page — always shown open. */
   protected readonly activeGroup = computed(() => groupForUrl(this.url()));
 
   constructor() {
+    const watching = this.navBadges.watch(this.router.events.pipe(filter((e) => e instanceof NavigationEnd)));
+    inject(DestroyRef).onDestroy(() => watching.unsubscribe());
     effect(() => {
       const id = this.user()?.id;
       this.expanded.set(id === undefined ? new Set() : loadExpanded(id));
@@ -83,6 +92,11 @@ export class ShellLayout {
 
   protected isOpen(group: NavGroupId): boolean {
     return this.expanded().has(group);
+  }
+
+  /** A collapsed group header shows the sum of its items' counters. */
+  protected groupBadge(group: NavGroupId): number {
+    return groupBadgeSum(this.badges(), group);
   }
 
   protected toggle(group: NavGroupId): void {

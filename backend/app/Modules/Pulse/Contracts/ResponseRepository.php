@@ -17,6 +17,13 @@ interface ResponseRepository
     public function answeredHashes(int $waveId, array $hashes): array;
 
     /**
+     * How many of these (wave id => respondent hash) pairs are already answered — one count(*) query.
+     *
+     * @param  array<int, string>  $tokensByWave
+     */
+    public function countAnswered(array $tokensByWave): int;
+
+    /**
      * Inserts once per (wave, respondent hash); false when this person has already answered.
      *
      * @param  array<string, mixed>  $attributes

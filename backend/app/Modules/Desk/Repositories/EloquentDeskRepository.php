@@ -41,16 +41,30 @@ final class EloquentDeskRepository implements DeskRepository
 
     public function cases(array $filter, int $limit): Collection
     {
-        return DeskCase::query()
+        return $this->filtered($filter)
             ->with(['employee:id,full_name', 'category', 'assignee:id,name'])
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function countCases(array $filter): int
+    {
+        return $this->filtered($filter)->count();
+    }
+
+    /**
+     * @param  array{employee_id?: int|null, status?: string|null, assignee_id?: int|null, category_id?: int|null, open?: bool}  $filter
+     * @return Builder<DeskCase>
+     */
+    private function filtered(array $filter): Builder
+    {
+        return DeskCase::query()
             ->when(isset($filter['employee_id']), static fn (Builder $q) => $q->where('employee_id', $filter['employee_id']))
             ->when(isset($filter['status']), static fn (Builder $q) => $q->where('status', $filter['status']))
             ->when(isset($filter['assignee_id']), static fn (Builder $q) => $q->where('assignee_id', $filter['assignee_id']))
             ->when(isset($filter['category_id']), static fn (Builder $q) => $q->where('category_id', $filter['category_id']))
-            ->when(($filter['open'] ?? false) === true, static fn (Builder $q) => $q->whereIn('status', CaseStatus::openValues()))
-            ->orderByDesc('id')
-            ->limit($limit)
-            ->get();
+            ->when(($filter['open'] ?? false) === true, static fn (Builder $q) => $q->whereIn('status', CaseStatus::openValues()));
     }
 
     public function findCase(int $id): ?DeskCase

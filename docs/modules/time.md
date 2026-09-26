@@ -24,6 +24,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 - Главная: «Мій тиждень» (часы, сколько не хватает) и «Табелі чекають мого погодження».
 
 ## Как устроено
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeNavBadges` — ключ `time_approvals`: отправленные табели, которые я могу решить (как «Погодження табелів»). `TimesheetService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`.
 Бэкенд — `backend/app/Modules/Time`, маршруты `/api/time/*`; доступ — `People\Services\PeopleScope` (`PeopleContext`:
 `canSeeJob`, `canDecideFor`, `isSelf`), gate `time-manage` (админ) для изменения графиков.
 

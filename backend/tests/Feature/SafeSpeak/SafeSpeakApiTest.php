@@ -13,12 +13,13 @@ use Illuminate\Cache\RateLimiter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\Support\NavBadgeAssertions;
 use Tests\TestCase;
 
 /** Safe Speak: anonymity (nothing identifying stored), hashed codes, brute-force limits, handler gate. Synthetic data. */
 final class SafeSpeakApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use NavBadgeAssertions, RefreshDatabase;
 
     private const string IP = '203.0.113.77';
 
@@ -103,9 +104,12 @@ final class SafeSpeakApiTest extends TestCase
             ->assertJsonCount(2, 'data.messages');
 
         $handler = $this->handler();
+        $this->assertBadgeMatchesList($handler, 'safe_speak', '/api/safe-speak/reports?status=new', 1);
+        $this->assertArrayNotHasKey('safe_speak', $this->badgesOf(User::factory()->withRole(UserRole::Admin)->create()));
         $id = $this->actingAs($handler)->getJson('/api/safe-speak/reports')->assertOk()->assertJsonPath('data.0.messages_count', 2)->json('data.0.id');
         $this->actingAs($handler)->postJson("/api/safe-speak/reports/$id/messages", ['body' => 'We are checking.'])->assertCreated()
             ->assertJsonPath('data.status', 'in_review');
+        $this->assertBadgeMatchesList($handler, 'safe_speak', '/api/safe-speak/reports?status=new', 0);
         $reporterView = $this->postJson('/api/safe-speak/public/follow-up', ['code' => $data['code']])->assertOk()->json('data');
         $this->assertSame('handler', $reporterView['messages'][2]['author']);
         $this->assertStringNotContainsString((string) $handler->name, (string) json_encode($reporterView), 'the reporter does not learn who handles it');
