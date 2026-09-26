@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -8,8 +8,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
-import { SaveVacancy, VACANCY_STATUSES, Vacancy, VacancyStatus } from '../recruiting.model';
-import { recruitingErrorKey } from '../recruiting.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { canWriteRecruiting } from '../recruiting.access';
+import { Ref, SaveVacancy, VACANCY_STATUSES, Vacancy, VacancyStatus } from '../recruiting.model';
+import { RecruitingService, recruitingErrorKey } from '../recruiting.service';
+import { withCurrent } from '../hiring-team';
 import { VacanciesStore } from './vacancies.store';
 
 export interface VacancyDialogData {
@@ -49,6 +52,18 @@ export interface VacancyDialogData {
             }
           </mat-select>
         </mat-form-field>
+        @if (canAssign()) {
+          <mat-form-field>
+            <mat-label>{{ 'recruiting.vacancies.fields.hiringManager' | transloco }}</mat-label>
+            <mat-select formControlName="hiring_manager_id">
+              <mat-option [value]="null">—</mat-option>
+              @for (u of people(); track u.id) {
+                <mat-option [value]="u.id">{{ u.name }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>{{ 'recruiting.vacancies.hiringManagerHint' | transloco }}</mat-hint>
+          </mat-form-field>
+        }
         <mat-form-field>
           <mat-label>{{ 'recruiting.vacancies.fields.status' | transloco }}</mat-label>
           <mat-select formControlName="status">
@@ -80,6 +95,12 @@ export class VacancyDialog implements OnInit {
   protected readonly data = inject<VacancyDialogData>(MAT_DIALOG_DATA);
   private readonly ref = inject<MatDialogRef<VacancyDialog, Vacancy>>(MatDialogRef);
   private readonly directory = inject(DirectoryService);
+  private readonly api = inject(RecruitingService);
+  private readonly auth = inject(AuthService);
+
+  /** Mirrors the API: only recruiting writers assign the hiring manager. */
+  protected readonly canAssign = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
+  protected readonly people = signal<Ref[]>([]);
 
   protected readonly statuses = VACANCY_STATUSES;
   protected readonly branches = signal<DictionaryItem[]>([]);
@@ -92,11 +113,15 @@ export class VacancyDialog implements OnInit {
     position_id: [this.data.vacancy?.position_id ?? (null as number | null)],
     status: [this.data.vacancy?.status ?? ('open' as VacancyStatus)],
     description: [this.data.vacancy?.description ?? ''],
+    hiring_manager_id: [this.data.vacancy?.hiring_manager_id ?? (null as number | null)],
   });
 
   ngOnInit(): void {
     this.directory.active('branches').subscribe({ next: (list) => this.branches.set(list), error: () => undefined });
     this.directory.active('positions').subscribe({ next: (list) => this.positions.set(list), error: () => undefined });
+    if (this.canAssign()) {
+      this.api.assignableUsers().subscribe({ next: (list) => this.people.set(withCurrent(list, this.data.vacancy?.hiring_manager ?? null)), error: () => undefined });
+    }
   }
 
   protected submit(): void {
@@ -111,6 +136,7 @@ export class VacancyDialog implements OnInit {
       position_id: v.position_id,
       status: v.status,
       description: v.description.trim() || null,
+      ...(this.canAssign() ? { hiring_manager_id: v.hiring_manager_id } : {}),
     };
     this.saving.set(true);
     this.error.set(null);

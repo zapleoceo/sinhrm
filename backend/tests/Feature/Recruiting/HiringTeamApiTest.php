@@ -122,4 +122,28 @@ final class HiringTeamApiTest extends TestCase
         $this->actingAs($hr)->getJson("/api/vacancies/{$south->id}")->assertOk();
         $this->actingAs($hr)->patchJson("/api/vacancies/{$south->id}", ['title' => 'No'])->assertForbidden();
     }
+
+    public function test_assignable_users_for_writers_and_hiring_managers_only(): void
+    {
+        User::factory()->create(['name' => 'Zed Blocked', 'status' => 'blocked']);
+        $this->recruiter->forceFill(['name' => 'Rita Recruiter'])->save();
+
+        $this->actingAs($this->recruiter)->getJson('/api/recruiting/assignable-users?q=rita')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $this->recruiter->id);
+        $this->actingAs($this->recruiter)->getJson('/api/recruiting/assignable-users?q=zed')->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($this->manager)->getJson('/api/recruiting/assignable-users')->assertForbidden();
+
+        $this->managed->forceFill(['hiring_manager_id' => $this->manager->id])->save();
+        $this->actingAs($this->manager)->getJson('/api/recruiting/assignable-users')->assertOk()->assertJsonStructure(['data' => [['id', 'name']]]);
+        $this->actingAs($this->recruiter)->getJson('/api/recruiting/assignable-users?q='.str_repeat('a', 101))->assertUnprocessable();
+    }
+
+    public function test_candidate_card_lists_interviewers(): void
+    {
+        $application = $this->applied($this->managed);
+        $this->actingAs($this->recruiter)->putJson("/api/applications/{$application->id}/interviewers", ['user_ids' => [$this->manager->id]])->assertOk();
+
+        $this->actingAs($this->recruiter)->getJson("/api/candidates/{$application->candidate_id}")
+            ->assertOk()->assertJsonPath('data.applications.0.interviewers.0.id', $this->manager->id);
+    }
 }

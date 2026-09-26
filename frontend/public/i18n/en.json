@@ -293,12 +293,14 @@
       "subtitle": "Vacancies of your branches. Open one to see its candidate board.",
       "new": "New vacancy",
       "edit": "Edit vacancy",
+      "hiringManagerHint": "Sees and works only this vacancy, whatever their role",
       "empty": "No vacancies",
       "activeCount": "Active / all candidates",
       "fields": {
         "title": "Title",
         "branch": "Branch",
         "position": "Position",
+        "hiringManager": "Hiring manager",
         "status": "Status",
         "description": "Description"
       }
@@ -347,6 +349,7 @@
       "telegram": "Telegram"
     },
     "card": {
+      "interviewers": { "label": "Interviewers", "hint": "See only this candidate", "none": "No interviewers", "saved": "Interviewers saved" },
       "source": "Source",
       "route": "Route",
       "move": "Move",

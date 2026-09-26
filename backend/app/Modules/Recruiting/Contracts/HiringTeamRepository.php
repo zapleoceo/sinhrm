@@ -16,6 +16,13 @@ interface HiringTeamRepository
     public function interviewApplicationIds(int $userId): array;
 
     /**
+     * Active users for the hiring-team pickers, by name or e-mail, ordered by name.
+     *
+     * @return list<array{id: int, name: string}>
+     */
+    public function activeUsers(?string $query, int $limit): array;
+
+    /**
      * Replaces the interviewers of the application.
      *
      * @param  list<int>  $userIds
