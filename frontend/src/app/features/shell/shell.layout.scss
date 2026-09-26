@@ -21,11 +21,60 @@
 }
 
 .nav-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 0.75rem);
+  box-sizing: border-box;
   font: var(--mat-sys-label-small);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--app-muted);
-  margin: 1.25rem 0.75rem 0.25rem;
+  margin: 1rem 0 0.125rem 0.75rem;
+  padding: 0.25rem 0.5rem 0.25rem 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover { color: var(--mat-sys-on-surface); }
+  &:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+
+  .chevron {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    transform: rotate(-90deg);
+    transition: transform 150ms ease;
+  }
+  &[aria-expanded='true'] .chevron { transform: none; }
+}
+
+/* Collapsed groups: grid 0fr → 1fr gives a short height animation without measuring;
+   visibility keeps hidden links out of the Tab order. */
+.nav-group {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 150ms ease, visibility 150ms;
+
+  &.open {
+    grid-template-rows: 1fr;
+    visibility: visible;
+  }
+}
+
+.nav-group-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-group, .nav-section .chevron { transition: none; }
 }
 
 .nav-link {
@@ -100,5 +149,8 @@
   }
   .brand { padding: 0 0.75rem; }
   .nav-section { display: none; }
+  /* Narrow screen: the menu is a wrapping row, so groups are flattened (all links shown). */
+  .nav-group, .nav-group.open { display: contents; visibility: visible; }
+  .nav-group-inner { display: contents; }
   .name { display: none; }
 }

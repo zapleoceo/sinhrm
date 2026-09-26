@@ -9,7 +9,11 @@
       <mat-icon>task_alt</mat-icon>
       <span>{{ 'shell.nav.tasks' | transloco }}</span>
     </a>
-    <p class="nav-section">{{ 'shell.nav.recruiting' | transloco }}</p>
+    <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('recruiting')" aria-controls="nav-group-recruiting" (click)="toggle('recruiting')">
+      <span>{{ 'shell.nav.recruiting' | transloco }}</span>
+      <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
+    </button>
+    <div class="nav-group" id="nav-group-recruiting" [class.open]="isOpen('recruiting')"><div class="nav-group-inner">
     <a class="nav-link" routerLink="/candidates" routerLinkActive="active">
       <mat-icon>person_search</mat-icon>
       <span>{{ 'shell.nav.candidates' | transloco }}</span>
@@ -30,7 +34,12 @@
       <mat-icon>bar_chart</mat-icon>
       <span>{{ 'shell.nav.reports' | transloco }}</span>
     </a>
-    <p class="nav-section">{{ 'shell.nav.people' | transloco }}</p>
+    </div></div>
+    <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('people')" aria-controls="nav-group-people" (click)="toggle('people')">
+      <span>{{ 'shell.nav.people' | transloco }}</span>
+      <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
+    </button>
+    <div class="nav-group" id="nav-group-people" [class.open]="isOpen('people')"><div class="nav-group-inner">
     <a class="nav-link" routerLink="/people" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>groups</mat-icon>
       <span>{{ 'shell.nav.peopleList' | transloco }}</span>
@@ -71,7 +80,12 @@
       <mat-icon>checklist</mat-icon>
       <span>{{ 'shell.nav.workflowRuns' | transloco }}</span>
     </a>
-    <p class="nav-section">{{ 'shell.nav.perform' | transloco }}</p>
+    </div></div>
+    <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('perform')" aria-controls="nav-group-perform" (click)="toggle('perform')">
+      <span>{{ 'shell.nav.perform' | transloco }}</span>
+      <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
+    </button>
+    <div class="nav-group" id="nav-group-perform" [class.open]="isOpen('perform')"><div class="nav-group-inner">
     <a class="nav-link" routerLink="/perform/objectives" routerLinkActive="active">
       <mat-icon>flag</mat-icon>
       <span>{{ 'shell.nav.objectives' | transloco }}</span>
@@ -96,7 +110,12 @@
       <mat-icon>mood</mat-icon>
       <span>{{ 'shell.nav.mood' | transloco }}</span>
     </a>
-    <p class="nav-section">{{ 'shell.nav.services' | transloco }}</p>
+    </div></div>
+    <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('services')" aria-controls="nav-group-services" (click)="toggle('services')">
+      <span>{{ 'shell.nav.services' | transloco }}</span>
+      <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
+    </button>
+    <div class="nav-group" id="nav-group-services" [class.open]="isOpen('services')"><div class="nav-group-inner">
     <a class="nav-link" routerLink="/desk" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>support_agent</mat-icon>
       <span>{{ 'shell.nav.desk' | transloco }}</span>
@@ -117,84 +136,92 @@
       <mat-icon>tune</mat-icon>
       <span>{{ 'shell.nav.reportBuilder' | transloco }}</span>
     </a>
+</div></div>
     @if (isAdmin()) {
-      <p class="nav-section">{{ 'shell.nav.admin' | transloco }}</p>
-      <a class="nav-link" routerLink="/desk/queue" routerLinkActive="active">
-        <mat-icon>inbox</mat-icon>
-        <span>{{ 'shell.nav.deskQueue' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/safe-speak/inbox" routerLinkActive="active">
-        <mat-icon>policy</mat-icon>
-        <span>{{ 'shell.nav.safeSpeakInbox' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/hiring-requests" routerLinkActive="active">
-        <mat-icon>rule</mat-icon>
-        <span>{{ 'shell.nav.hiringSettings' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/acquisition-channels" routerLinkActive="active">
-        <mat-icon>campaign</mat-icon>
-        <span>{{ 'shell.nav.acquisitionChannels' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/time" routerLinkActive="active">
-        <mat-icon>calendar_view_week</mat-icon>
-        <span>{{ 'shell.nav.timeSchedules' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/assets" routerLinkActive="active">
-        <mat-icon>devices</mat-icon>
-        <span>{{ 'shell.nav.assets' | transloco }}</span>
-      </a>
-    }
-    @if (isSuperadmin()) {
-      <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">
-        <mat-icon>group</mat-icon>
-        <span>{{ 'shell.nav.users' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/integrations" routerLinkActive="active">
-        <mat-icon>hub</mat-icon>
-        <span>{{ 'shell.nav.integrations' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/mail" routerLinkActive="active">
-        <mat-icon>mark_email_unread</mat-icon>
-        <span>{{ 'shell.nav.mail' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/sheets-import" routerLinkActive="active">
-        <mat-icon>table_chart</mat-icon>
-        <span>{{ 'shell.nav.sheetsImport' | transloco }}</span>
-      </a>
-    }
-    @if (isAdmin()) {
-      <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active">
-        <mat-icon>record_voice_over</mat-icon>
-        <span>{{ 'shell.nav.scripts' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/timeoff" routerLinkActive="active">
-        <mat-icon>event_available</mat-icon>
-        <span>{{ 'shell.nav.timeoffSettings' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/workflows" routerLinkActive="active">
-        <mat-icon>account_tree</mat-icon>
-        <span>{{ 'shell.nav.workflows' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/perform/reviews" routerLinkActive="active">
-        <mat-icon>workspace_premium</mat-icon>
-        <span>{{ 'shell.nav.reviewSetup' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/pulse" routerLinkActive="active">
-        <mat-icon>ballot</mat-icon>
-        <span>{{ 'shell.nav.surveyBuilder' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/documents/templates" routerLinkActive="active">
-        <mat-icon>article</mat-icon>
-        <span>{{ 'shell.nav.documentTemplates' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/admin/directory" routerLinkActive="active">
-        <mat-icon>menu_book</mat-icon>
-        <span>{{ 'shell.nav.directory' | transloco }}</span>
-      </a>
-      <a class="nav-link" routerLink="/status" routerLinkActive="active">
-        <mat-icon>monitor_heart</mat-icon>
-        <span>{{ 'shell.nav.status' | transloco }}</span>
-      </a>
+      <button type="button" class="nav-section" [attr.aria-expanded]="isOpen('admin')" aria-controls="nav-group-admin" (click)="toggle('admin')">
+        <span>{{ 'shell.nav.admin' | transloco }}</span>
+        <mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon>
+      </button>
+      <div class="nav-group" id="nav-group-admin" [class.open]="isOpen('admin')"><div class="nav-group-inner">
+      @if (isAdmin()) {
+        <a class="nav-link" routerLink="/desk/queue" routerLinkActive="active">
+          <mat-icon>inbox</mat-icon>
+          <span>{{ 'shell.nav.deskQueue' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/safe-speak/inbox" routerLinkActive="active">
+          <mat-icon>policy</mat-icon>
+          <span>{{ 'shell.nav.safeSpeakInbox' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/hiring-requests" routerLinkActive="active">
+          <mat-icon>rule</mat-icon>
+          <span>{{ 'shell.nav.hiringSettings' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/acquisition-channels" routerLinkActive="active">
+          <mat-icon>campaign</mat-icon>
+          <span>{{ 'shell.nav.acquisitionChannels' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/time" routerLinkActive="active">
+          <mat-icon>calendar_view_week</mat-icon>
+          <span>{{ 'shell.nav.timeSchedules' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/assets" routerLinkActive="active">
+          <mat-icon>devices</mat-icon>
+          <span>{{ 'shell.nav.assets' | transloco }}</span>
+        </a>
+      }
+      @if (isSuperadmin()) {
+        <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">
+          <mat-icon>group</mat-icon>
+          <span>{{ 'shell.nav.users' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/integrations" routerLinkActive="active">
+          <mat-icon>hub</mat-icon>
+          <span>{{ 'shell.nav.integrations' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/mail" routerLinkActive="active">
+          <mat-icon>mark_email_unread</mat-icon>
+          <span>{{ 'shell.nav.mail' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/sheets-import" routerLinkActive="active">
+          <mat-icon>table_chart</mat-icon>
+          <span>{{ 'shell.nav.sheetsImport' | transloco }}</span>
+        </a>
+      }
+      @if (isAdmin()) {
+        <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active">
+          <mat-icon>record_voice_over</mat-icon>
+          <span>{{ 'shell.nav.scripts' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/timeoff" routerLinkActive="active">
+          <mat-icon>event_available</mat-icon>
+          <span>{{ 'shell.nav.timeoffSettings' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/workflows" routerLinkActive="active">
+          <mat-icon>account_tree</mat-icon>
+          <span>{{ 'shell.nav.workflows' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/perform/reviews" routerLinkActive="active">
+          <mat-icon>workspace_premium</mat-icon>
+          <span>{{ 'shell.nav.reviewSetup' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/pulse" routerLinkActive="active">
+          <mat-icon>ballot</mat-icon>
+          <span>{{ 'shell.nav.surveyBuilder' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/documents/templates" routerLinkActive="active">
+          <mat-icon>article</mat-icon>
+          <span>{{ 'shell.nav.documentTemplates' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/admin/directory" routerLinkActive="active">
+          <mat-icon>menu_book</mat-icon>
+          <span>{{ 'shell.nav.directory' | transloco }}</span>
+        </a>
+        <a class="nav-link" routerLink="/status" routerLinkActive="active">
+          <mat-icon>monitor_heart</mat-icon>
+          <span>{{ 'shell.nav.status' | transloco }}</span>
+        </a>
+      }
+      </div></div>
     }
   </nav>
 
