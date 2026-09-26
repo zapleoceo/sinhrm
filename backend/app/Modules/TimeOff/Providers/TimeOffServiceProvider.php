@@ -33,6 +33,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class TimeOffServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'beach_access';
+
+    protected string $moduleGroup = 'people';
+
     /** Leave types, policies, holidays, balance adjustments: superadmin, admin. */
     public const string MANAGE = 'timeoff-manage';
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\MailAgent\Providers;
 
 use App\Modules\Ai\Providers\AiServiceProvider;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
@@ -33,6 +34,13 @@ use Illuminate\Contracts\Foundation\Application;
  */
 final class MailAgentServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'mark_email_unread';
+
+    protected string $moduleGroup = 'admin';
+
+    /** Every route of the module is behind the manage-integrations gate (superadmin only). */
+    protected ?array $defaultRoles = [UserRole::Superadmin];
+
     /** Container tag of MailParser classes. New parser = one class + one line here. */
     public const string PARSERS_TAG = 'mail.parsers';
 

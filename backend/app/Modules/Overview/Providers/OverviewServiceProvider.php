@@ -14,6 +14,8 @@ use App\Modules\Overview\Services\DashboardService;
 /** Home page (dashboard): read-only aggregates over Recruiting and Scripts. Route: /api/dashboard. */
 final class OverviewServiceProvider extends ModuleServiceProvider
 {
+    protected bool $coreModule = true;
+
     public function register(): void
     {
         $this->app->bind(DashboardRepository::class, QueryDashboardRepository::class);

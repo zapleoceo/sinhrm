@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, roleGuard } from './core/auth/auth.guards';
+import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/auth.guards';
 import { HR_STAFF_ROLES } from './core/auth/auth.model';
 
 // `title` is an i18n key (TranslatedTitleStrategy → "SinHRM · <page>").
@@ -13,6 +13,8 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
+    // Pages of a switched-off module → "Розділ вимкнено" (docs/modules/modules-access.md).
+    canActivateChild: [moduleGuard],
     loadComponent: () => import('./features/shell/shell.layout').then((m) => m.ShellLayout),
     children: [
       { path: '', title: 'titles.overview', loadComponent: () => import('./features/overview/dashboard.page').then((m) => m.DashboardPage) },
@@ -191,6 +193,13 @@ export const routes: Routes = [
         title: 'titles.sheetsImport',
         canActivate: [roleGuard('superadmin')],
         loadComponent: () => import('./features/google-workspace/sheets-import.page').then((m) => m.SheetsImportPage),
+      },
+      { path: 'module-off', title: 'titles.moduleOff', loadComponent: () => import('./features/core/module-off.page').then((m) => m.ModuleOffPage) },
+      {
+        path: 'admin/modules',
+        title: 'titles.modules',
+        canActivate: [roleGuard('superadmin')],
+        loadComponent: () => import('./features/core/modules.page').then((m) => m.ModulesPage),
       },
       {
         path: 'admin/integrations',

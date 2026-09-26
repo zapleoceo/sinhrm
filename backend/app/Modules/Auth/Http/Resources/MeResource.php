@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Resources;
 
 use App\Models\User;
+use App\Modules\Core\Services\ModuleAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +25,8 @@ final class MeResource extends JsonResource
             'locale' => $this->locale,
             'roles' => $this->getRoleNames()->values()->all(),
             'status' => $this->status->value,
+            // Modules this user may open (switched on + role allowed); the SPA hides the rest (modules-access.md).
+            'modules' => app(ModuleAccess::class)->allowedKeys($this->resource),
         ];
     }
 }

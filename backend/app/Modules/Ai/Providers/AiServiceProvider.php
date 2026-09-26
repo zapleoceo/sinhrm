@@ -15,6 +15,7 @@ use App\Modules\Ai\Services\AiBrokerProvider;
 use App\Modules\Ai\Services\AiPollJob;
 use App\Modules\Ai\Support\AiHandlerRegistry;
 use App\Modules\Ai\Support\AiPromptRegistry;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use Illuminate\Contracts\Foundation\Application;
@@ -26,6 +27,13 @@ use Illuminate\Contracts\Foundation\Application;
  */
 final class AiServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'smart_toy';
+
+    protected string $moduleGroup = 'admin';
+
+    /** Every route of the module is behind the manage-integrations gate (superadmin only). */
+    protected ?array $defaultRoles = [UserRole::Superadmin];
+
     /** Container tag of AiResultHandler classes (one per AiPurpose). */
     public const string HANDLERS_TAG = 'ai.handlers';
 

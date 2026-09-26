@@ -32,4 +32,6 @@ export interface CurrentUser {
   locale: AppLang;
   roles: UserRole[];
   status: UserStatus;
+  /** Module keys the user may open (switched on + role allowed); absent on old API responses = everything. */
+  modules?: string[];
 }

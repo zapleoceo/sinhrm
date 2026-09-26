@@ -42,6 +42,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class WorkflowsServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'checklist';
+
+    protected string $moduleGroup = 'people';
+
     /** Templates, start / cancel runs, retry steps: superadmin, admin (HR). */
     public const string MANAGE = 'workflows-manage';
 

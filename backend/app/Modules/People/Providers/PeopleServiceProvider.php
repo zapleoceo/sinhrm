@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class PeopleServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'groups';
+
+    protected string $moduleGroup = 'people';
+
     /** Create/edit/terminate employees: superadmin, admin (there is no separate HR role yet). */
     public const string MANAGE = 'people-manage';
 

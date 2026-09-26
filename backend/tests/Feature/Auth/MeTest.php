@@ -39,6 +39,12 @@ final class MeTest extends TestCase
                 'locale' => 'en',
                 'roles' => ['viewer'],
                 'status' => 'active',
+                // Every module a viewer can use today; Ai and MailAgent are superadmin-only (modules-access.md).
+                'modules' => [
+                    'core', 'auth', 'users', 'integrations', 'directory', 'recruiting', 'scripts', 'google-workspace',
+                    'channels', 'people', 'time-off', 'documents', 'workflows', 'perform', 'pulse', 'knowledge', 'desk',
+                    'safe-speak', 'assets', 'hiring-requests', 'time', 'reports', 'overview',
+                ],
             ]);
     }
 

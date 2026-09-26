@@ -14,6 +14,8 @@ use Illuminate\Contracts\Foundation\Application;
 
 final class AuthServiceProvider extends ModuleServiceProvider
 {
+    protected bool $coreModule = true;
+
     protected string $prefix = 'auth';
 
     public function register(): void

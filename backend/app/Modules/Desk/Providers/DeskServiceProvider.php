@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class DeskServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'support_agent';
+
+    protected string $moduleGroup = 'services';
+
     /** Queue, categories, assignment, internal notes: superadmin, admin (HR). */
     public const string MANAGE = 'desk-manage';
 
