@@ -107,6 +107,13 @@ final class EloquentSurveyRepository implements SurveyRepository
             ->orderByDesc('starts_at')->orderByDesc('id')->first();
     }
 
+    public function decidedWaves(SurveyWave $wave): array
+    {
+        return SurveyWave::query()->where('survey_id', $wave->survey_id)->whereNull('subject_employee_id')
+            ->whereKeyNot($wave->id)->where('status', WaveStatus::Closed->value)->whereNotNull('segment_visibility')
+            ->orderBy('id')->get()->values()->all();
+    }
+
     public function hasResponses(Survey $survey): bool
     {
         return SurveyResponse::query()->whereIn('wave_id', SurveyWave::query()->where('survey_id', $survey->id)->select('id'))->exists();

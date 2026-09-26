@@ -13,13 +13,14 @@ use Illuminate\Support\Str;
 
 /**
  * Wave state changes shared by the admin and the "pulse.tick" job: create (with a fresh salt), open, close.
- * Closing wipes the salt (respondent hashes can no longer be recomputed for anyone) and, for a recurring schedule
+ * Closing wipes the salt (respondent hashes can no longer be recomputed for anyone), stores the audience snapshot
+ * (WaveMembership: who was asked, never who answered) and, for a recurring schedule
  * of an active survey, creates the next wave once: same audience and settings, start = previous start + period
  * (never before the previous end), same duration.
  */
 final readonly class WaveLifecycle
 {
-    public function __construct(private SurveyRepository $surveys) {}
+    public function __construct(private SurveyRepository $surveys, private WaveMembership $membership) {}
 
     public static function salt(): string
     {
@@ -49,6 +50,7 @@ final readonly class WaveLifecycle
     public function close(SurveyWave $wave, Carbon $now): bool
     {
         $plannedEnd = $wave->ends_at->copy();
+        $this->membership->snapshot($wave);
         $this->surveys->updateWave($wave, [
             'status' => WaveStatus::Closed->value,
             'salt' => null,

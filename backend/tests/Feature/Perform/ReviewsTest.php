@@ -186,4 +186,40 @@ final class ReviewsTest extends TestCase
         $this->actingAs($this->admin)->postJson("/api/perform/review/cycles/{$cycle}/assignments", ['reviewer_employee_id' => $worker->id] + $body)
             ->assertUnprocessable()->assertJsonPath('code', 'self_target');
     }
+
+    /**
+     * (c) Differencing between cycles: cycle 1 has 3 peer reviewers, cycle 2 the same 3 plus one newcomer. Without
+     * the guard 4 × avg(cycle 2) − 3 × avg(cycle 1) = the newcomer's rating. The later peer group must be hidden.
+     */
+    public function test_peer_group_differing_by_one_reviewer_from_an_earlier_cycle_is_hidden(): void
+    {
+        ['lead' => $lead, 'worker' => $worker, 'peer' => $peer] = $this->org;
+        $peers = [$peer, $this->employee(['manager_id' => $lead->id], $this->login()), $this->employee(['manager_id' => $lead->id], $this->login())];
+
+        $first = $this->cycle(['peer']);
+        foreach ($peers as $p) {
+            $this->submit($this->assignment($first, $worker, $p, 'peer'), $p, 3);
+        }
+        $this->actingAs($this->admin)->postJson("/api/perform/review/cycles/{$first}/close")->assertOk();
+        $this->actingAs($this->userOf($lead))->getJson("/api/perform/review/cycles/{$first}/results/{$worker->id}")->assertOk()
+            ->assertJsonPath('data.groups.peer', ['reviewers' => 3, 'suppressed' => false])
+            ->assertJsonPath('data.competencies.0.scores.peer', 3);
+
+        $newcomer = $this->employee(['manager_id' => $lead->id], $this->login());
+        $second = $this->cycle(['peer']);
+        foreach ([...$peers, $newcomer] as $p) {
+            $this->submit($this->assignment($second, $worker, $p, 'peer'), $p, $p->is($newcomer) ? 1 : 3);
+        }
+        $this->actingAs($this->admin)->postJson("/api/perform/review/cycles/{$second}/close")->assertOk();
+
+        $this->actingAs($this->userOf($lead))->getJson("/api/perform/review/cycles/{$second}/results/{$worker->id}")->assertOk()
+            ->assertJsonPath('data.groups.peer', ['reviewers' => null, 'suppressed' => true, 'hidden_reason' => 'anonymity'])
+            ->assertJsonPath('data.competencies.0.scores.peer', null)
+            ->assertJsonPath('data.comments', []);
+        // The subject's profile tab gives the same answer for both cycles.
+        $all = $this->actingAs($this->userOf($worker))->getJson("/api/perform/review/employees/{$worker->id}/results")->assertOk()->json('data');
+        $peerScores = array_map(static fn (array $r): mixed => $r['competencies'][0]['scores']['peer'], $all);
+        sort($peerScores);
+        $this->assertSame([null, 3], $peerScores);
+    }
 }

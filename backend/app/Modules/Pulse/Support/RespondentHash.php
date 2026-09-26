@@ -14,7 +14,8 @@ use RuntimeException;
  */
 final readonly class RespondentHash
 {
-    public function __construct(private string $key) {}
+    /** @param  list<string>  $previousKeys  APP_PREVIOUS_KEYS, to re-key audience snapshots after a rotation */
+    public function __construct(private string $key, private array $previousKeys = []) {}
 
     public function for(?string $salt, int $employeeId): string
     {
@@ -23,5 +24,37 @@ final readonly class RespondentHash
         }
 
         return hash_hmac('sha256', $salt.':'.$employeeId, $this->key);
+    }
+
+    /**
+     * Wave-independent fingerprint of an audience member (survey_wave_members): equal in every wave, so two
+     * audiences can be compared, but it is never stored next to an answer.
+     */
+    public function member(int $employeeId, ?string $key = null): string
+    {
+        $key ??= $this->key;
+        if ($key === '') {
+            throw new RuntimeException('member fingerprint needs APP_KEY');
+        }
+
+        return hash_hmac('sha256', 'member:'.$employeeId, $key);
+    }
+
+    /** Id of the key behind member fingerprints (not the key itself). */
+    public function keyId(?string $key = null): string
+    {
+        return substr(hash('sha256', 'pulse-member-key:'.($key ?? $this->key)), 0, 16);
+    }
+
+    /** A previous APP_KEY with this key id, or null. */
+    public function previousKey(string $keyId): ?string
+    {
+        foreach ($this->previousKeys as $key) {
+            if ($key !== '' && $this->keyId($key) === $keyId) {
+                return $key;
+            }
+        }
+
+        return null;
     }
 }

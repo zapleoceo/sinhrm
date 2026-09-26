@@ -63,6 +63,14 @@ interface SurveyRepository
     /** Latest earlier non-lifecycle wave of the same survey that has started (for comparison). */
     public function previousWave(SurveyWave $wave): ?SurveyWave;
 
+    /**
+     * Other closed non-lifecycle waves of the same survey whose differencing decision is already made
+     * (segment_visibility set at their close).
+     *
+     * @return list<SurveyWave>
+     */
+    public function decidedWaves(SurveyWave $wave): array;
+
     public function hasResponses(Survey $survey): bool;
 
     /**
