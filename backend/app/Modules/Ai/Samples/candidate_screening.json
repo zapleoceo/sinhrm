@@ -1,0 +1,30 @@
+{
+  "purpose": "candidate_screening",
+  "note": "Synthetic sample for the prompt editor \"Спробувати\" (copied from tests/Fixtures/ai). No real data.",
+  "name": "strong_match_backend",
+  "input": {
+    "vacancy": {
+      "title": "PHP-розробник (Laravel)",
+      "position": "Розробник",
+      "department": "IT",
+      "requirements": "Досвід PHP від 3 років, Laravel, PostgreSQL, REST API, англійська B1+, тести PHPUnit."
+    },
+    "candidate": {
+      "city": "Київ",
+      "tags": [
+        "backend"
+      ],
+      "name": "Тест Тестович"
+    },
+    "materials": [
+      {
+        "channel": "note",
+        "body": "Imported from LinkedIn: PHP Developer. 4 роки досвіду: Laravel 10-11, PostgreSQL, REST API, черги, PHPUnit (покриття 80%). Англійська Upper-Intermediate. Контакт: test.testovych@example.test"
+      },
+      {
+        "channel": "email",
+        "body": "Добрий день! Цікавить ваша вакансія, готовий до технічної співбесіди."
+      }
+    ]
+  }
+}

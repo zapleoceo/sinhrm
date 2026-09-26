@@ -1,0 +1,10 @@
+{
+  "purpose": "mail_classification",
+  "note": "Synthetic sample for the prompt editor \"Спробувати\" (copied from tests/Fixtures/ai). No real data.",
+  "name": "job_board_work_ua_application",
+  "input": {
+    "from": "noreply@jobs.example.test",
+    "subject": "Новий відгук на вакансію «Оператор call-центру»",
+    "body": "Work.ua: на вашу вакансію «Оператор call-центру» відгукнувся кандидат.\nІм'я: Тестенко Оксана\nТелефон: +380 00 000 0001\nE-mail: oksana.test@example.test\nПереглянути резюме на сайті.\n--\nWork.ua — сайт пошуку роботи"
+  }
+}

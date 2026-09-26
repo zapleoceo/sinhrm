@@ -85,6 +85,54 @@ final class EloquentAiRequestRepository implements AiRequestRepository
         );
     }
 
+    public function statsSince(Carbon $since, int $buckets, int $bucketSeconds): array
+    {
+        $stats = [];
+        $latency = [];
+        $rows = AiRequest::query()
+            ->where('created_at', '>=', $since)
+            ->select(['purpose', 'status', 'error', 'tokens_in', 'tokens_out', 'tokens_cached', 'cost_usd', 'created_at', 'completed_at'])
+            ->toBase()
+            ->cursor();
+        foreach ($rows as $row) {
+            $purpose = (string) $row->purpose;
+            $s = $stats[$purpose] ?? [
+                'requests' => 0, 'done' => 0, 'failed' => 0, 'pending' => 0, 'errors' => [], 'avg_latency_s' => null,
+                'tokens_in' => 0, 'tokens_out' => 0, 'tokens_cached' => 0, 'cost_usd' => 0.0, 'series' => array_fill(0, $buckets, 0),
+            ];
+            $s['requests']++;
+            $status = (string) $row->status;
+            if ($status === AiRequestStatus::Done->value) {
+                $s['done']++;
+            } elseif ($status === AiRequestStatus::Failed->value) {
+                $s['failed']++;
+                $code = (string) ($row->error ?? 'unknown');
+                $s['errors'][$code] = ($s['errors'][$code] ?? 0) + 1;
+            } else {
+                $s['pending']++;
+            }
+            $s['tokens_in'] += (int) $row->tokens_in;
+            $s['tokens_out'] += (int) $row->tokens_out;
+            $s['tokens_cached'] += (int) $row->tokens_cached;
+            $s['cost_usd'] += (float) $row->cost_usd;
+            $created = Carbon::parse((string) $row->created_at, 'UTC');
+            $bucket = (int) floor(($created->getTimestamp() - $since->getTimestamp()) / max(1, $bucketSeconds));
+            $s['series'][max(0, min($buckets - 1, $bucket))]++;
+            if ($row->completed_at !== null && $status === AiRequestStatus::Done->value) {
+                $latency[$purpose][] = max(0, Carbon::parse((string) $row->completed_at, 'UTC')->getTimestamp() - $created->getTimestamp());
+            }
+            $stats[$purpose] = $s;
+        }
+        foreach ($stats as $purpose => $s) {
+            $values = $latency[$purpose] ?? [];
+            $stats[$purpose]['avg_latency_s'] = $values === [] ? null : round(array_sum($values) / count($values), 1);
+            $stats[$purpose]['cost_usd'] = round($s['cost_usd'], 6);
+            arsort($stats[$purpose]['errors']);
+        }
+
+        return $stats;
+    }
+
     /** Conditional UPDATE: only a pending row moves, so two finishers never both apply a result. */
     private function finish(AiRequest $request, AiRequestStatus $status, ?string $error): bool
     {

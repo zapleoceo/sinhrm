@@ -32,6 +32,12 @@ final readonly class AiPrompt
         return new self($this->purpose, $this->version, $this->system, $this->user, $this->maxTokens, $this->temperature, $this->schema, $this->schemaName, $capability);
     }
 
+    /** Same request with another instruction text/version (prompt editor) or purpose (prompt trial). */
+    public function with(?string $version = null, ?string $system = null, ?AiPurpose $purpose = null): self
+    {
+        return new self($purpose ?? $this->purpose, $version ?? $this->version, $system ?? $this->system, $this->user, $this->maxTokens, $this->temperature, $this->schema, $this->schemaName, $this->capability);
+    }
+
     /** @return list<array{role: string, content: string}> */
     public function messages(): array
     {
