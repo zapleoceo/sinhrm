@@ -53,7 +53,7 @@ final class GmailSendTest extends TestCase
         $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'email', 'text' => 'Добрий день'])
             ->assertUnprocessable()->assertJsonPath('code', 'channel_not_connected');
         Http::assertNothingSent();
-        $this->assertSame(0, Touchpoint::query()->where('direction', 'out')->count());
+        $this->assertSame(0, Touchpoint::query()->where('channel', 'email')->count());
     }
 
     public function test_read_only_connection_asks_to_reconnect(): void
@@ -138,7 +138,7 @@ final class GmailSendTest extends TestCase
 
         $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'email', 'text' => 'Привіт'])
             ->assertStatus(502)->assertJsonPath('code', 'send_failed')->assertDontSee('fake-provider-detail');
-        $this->assertSame(0, Touchpoint::query()->where('direction', 'out')->count());
+        $this->assertSame(0, Touchpoint::query()->where('channel', 'email')->count());
 
         $this->candidate->forceFill(['email' => null])->save();
         $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'email', 'text' => 'Привіт'])
