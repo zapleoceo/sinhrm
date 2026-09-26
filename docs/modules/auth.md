@@ -17,8 +17,38 @@
 
 ## Как устроено
 ### Роли и статусы
-Enum `Enums\UserRole`: `superadmin`, `admin`, `recruiter`, `viewer` (роли Spatie, guard `web`, создаются
-data-миграцией `2026_09_26_000002_create_default_roles`). Enum `Enums\UserStatus`: `active` | `blocked`.
+Простыми словами: у каждого пользователя одна **глобальная роль** — она решает, какие разделы ему открыты. Кроме неё
+бывают **контекстные роли** — это не роль в списке, а назначение на конкретную вещь: «нанимающий менеджер этой вакансии»,
+«интервьюер этого кандидата», «руководитель этих сотрудников». Набор повторяет практику PeopleForce, HiBob, BambooHR,
+Personio, Workable и Greenhouse (разбор — `D:/Projects/HRM/docs/roles-research.md`, раздел 8).
+
+| Роль (`Enums\UserRole`) | Кто это | Что может |
+|---|---|---|
+| `superadmin` | владелец системы | всё, включая пользователей, интеграции, почту |
+| `admin` | администратор | всё, кроме управления пользователями и интеграциями; справочники, воронки, скрипты |
+| `hr_manager` | HR-менеджер | HR-разделы: люди, отпуска, табели, кейсы, опросы, оценка, документы, воркфлоу, база знаний, техника, заявки на подбор; все филиалы; рекрутинг — только чтение |
+| `recruiter` | рекрутер | рекрутинг в своих филиалах: вакансии, кандидаты, заявки |
+| `employee` | сотрудник | самообслуживание: свой профиль, отпуска, документы, опросы, заявки; рекрутинг — только через контекстную роль |
+| `viewer` | наблюдатель | рекрутинг своих филиалов только на чтение |
+
+Контекстные роли (не хранятся в таблице ролей):
+- **нанимающий менеджер** — поле `vacancies.hiring_manager_id`; видит и ведёт только эту вакансию ([recruiting.md](recruiting.md), «Команда найму»);
+- **интервьюер** — таблица `application_interviewers`; видит только кандидата этой заявки;
+- **руководитель** — вычисляется из `employees.manager_id` (модуль People), отдельно не назначается.
+
+Группы ролей живут в одном месте — статические методы enum: `hrStaff()` (superadmin, admin, hr_manager — действуют как
+HR; на них опираются `PeopleScope::isAdmin` и все gate'ы `*-manage` модулей People/TimeOff/Time/Desk/Pulse/Perform/
+Documents/Workflows/Knowledge/Assets/HiringRequests, а также `BranchAccess` — «все филиалы»), `recruitingWriters()`
+(superadmin, admin, recruiter), `recruitingReaders()` (hrStaff + recruiter + viewer), `valuesOf()` для Spatie.
+Фронтенд повторяет это в `core/auth/auth.model.ts` (`HR_STAFF_ROLES`, `isHrStaff`).
+
+Роли Spatie (guard `web`) создаются data-миграциями `2026_09_26_000002_create_default_roles` и
+`2026_10_09_100001_standardize_roles`. Вторая добавляет `hr_manager` и `employee`, имена старых ролей не меняет,
+а пользователю без роли выдаёт `employee`. Откат (`down`): держатели `hr_manager` получают `admin` (до этого HR был
+админом — доступ не пропадает), назначения `employee` снимаются, обе роли удаляются. Имена ролей в миграции — строки,
+а не enum: старая миграция не должна меняться вслед за кодом.
+
+Enum `Enums\UserStatus`: `active` | `blocked`.
 Язык — `Enums\AppLocale`: `uk` (по умолчанию), `ru`, `en`.
 
 Миграция `2026_09_26_000001_add_auth_fields_to_users_table`: `password` может быть пустым; новые поля
