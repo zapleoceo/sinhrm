@@ -10,6 +10,7 @@ use App\Modules\HiringRequests\Models\HiringRequest;
 use App\Modules\HiringRequests\Models\HiringSettings;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Scripts\Models\Task;
+use App\Modules\TimeOff\Models\Holiday;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\Support\PeopleFixtures;
@@ -19,7 +20,7 @@ use Tests\TestCase;
 
 /**
  * Hiring requests (tz2): authz matrix, route transitions with SLA and notifications, auto-vacancy idempotency,
- * configurable form, auto-closing. Synthetic data only. Default route: requester's manager (2 days) → HR role admin (3 days).
+ * configurable form, auto-closing. Synthetic data only. Default route: requester's manager (2 days) → HR role admin (2 working days).
  */
 final class HiringRequestApiTest extends TestCase
 {
@@ -117,7 +118,7 @@ final class HiringRequestApiTest extends TestCase
         $this->actingAs($admin)->getJson('/api/hiring-requests/inbox')->assertOk()->assertJsonCount(1, 'data'); // HR may override any step
         $this->actingAs($head)->getJson('/api/dashboard')->assertOk()->assertJsonPath('data.hiring.my_approvals.count', 1);
 
-        // SLA: 2 days → overdue on the third; the job escalates to HR once.
+        // SLA: 2 working days (Mon → Wed) → overdue on Thursday; the job escalates to HR once.
         Carbon::setTestNow('2026-10-08 10:00:00');
         $this->actingAs($head)->getJson("/api/hiring-requests/$id")->assertJsonPath('data.overdue', true)->assertJsonPath('data.approvals.0.overdue', true);
         $this->assertSame(1, $this->runJob()['hiring_escalated']);
@@ -160,6 +161,36 @@ final class HiringRequestApiTest extends TestCase
         $this->assertSame(1, $this->runJob()['hiring_closed']);
         $this->assertSame(0, $this->runJob()['hiring_closed']);
         $this->assertSame('closed', HiringRequest::query()->findOrFail($id)->status->value);
+    }
+
+    public function test_sla_counts_working_days_friday_to_tuesday_with_branch_holiday(): void
+    {
+        $org = $this->org();
+        $lead = $this->userOf($org['lead']);
+        $this->login(UserRole::Admin);
+        Holiday::query()->create(['date' => '2026-10-12', 'name' => 'Synthetic branch holiday', 'branch_id' => $this->branch->id]);
+
+        // Friday 10:00 + 2 working days: Saturday/Sunday skipped, Monday is the branch's holiday → Wednesday 10:00.
+        Carbon::setTestNow('2026-10-09 10:00:00');
+        $id = $this->actingAs($lead)->postJson('/api/hiring-requests', $this->payload(['submit' => true]))->assertCreated()
+            ->assertJsonPath('data.approvals.0.due_at', '2026-10-14T10:00:00+00:00')->json('data.id');
+
+        // Over the weekend and on the holiday nothing is overdue and nothing escalates.
+        Carbon::setTestNow('2026-10-12 18:00:00');
+        $this->actingAs($lead)->getJson("/api/hiring-requests/$id")->assertJsonPath('data.approvals.0.overdue', false);
+        $this->assertSame(0, $this->runJob()['hiring_escalated']);
+        Carbon::setTestNow('2026-10-14 10:30:00');
+        $this->actingAs($lead)->getJson("/api/hiring-requests/$id")->assertJsonPath('data.approvals.0.overdue', true);
+        $this->assertSame(1, $this->runJob()['hiring_escalated']);
+    }
+
+    public function test_sla_without_holidays_friday_to_tuesday(): void
+    {
+        $org = $this->org();
+        $lead = $this->userOf($org['lead']);
+        Carbon::setTestNow('2026-10-09 10:00:00');
+        $this->actingAs($lead)->postJson('/api/hiring-requests', $this->payload(['submit' => true]))->assertCreated()
+            ->assertJsonPath('data.approvals.0.due_at', '2026-10-13T10:00:00+00:00');
     }
 
     public function test_reject_cancel_and_manager_skip(): void

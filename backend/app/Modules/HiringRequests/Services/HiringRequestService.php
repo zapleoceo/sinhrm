@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\HiringRequests\Services;
 
 use App\Models\User;
+use App\Modules\Core\Contracts\WorkingCalendar;
 use App\Modules\HiringRequests\Contracts\HiringRequestRepository;
 use App\Modules\HiringRequests\Enums\ApprovalStatus;
 use App\Modules\HiringRequests\Enums\HiringReason;
@@ -40,6 +41,7 @@ final readonly class HiringRequestService
         private EmployeeRepository $employees,
         private VacancyService $vacancies,
         private LoggerInterface $log,
+        private WorkingCalendar $calendar,
     ) {}
 
     /**
@@ -288,7 +290,7 @@ final readonly class HiringRequestService
             $activated = $this->requests->transitionApproval($next, ApprovalStatus::Waiting, [
                 'status' => ApprovalStatus::Pending->value,
                 'activated_at' => $now,
-                'due_at' => $next->sla_days === null ? null : $now->copy()->addDays($next->sla_days),
+                'due_at' => $next->sla_days === null ? null : $this->calendar->addWorkingDays($now, $next->sla_days, $request->branch_id),
             ]);
             if ($activated) {
                 $this->notifier->notify($request, $next, $now);
