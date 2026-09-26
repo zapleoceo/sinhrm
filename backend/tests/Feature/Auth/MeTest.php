@@ -43,7 +43,7 @@ final class MeTest extends TestCase
                 'modules' => [
                     'core', 'auth', 'users', 'integrations', 'directory', 'recruiting', 'scripts', 'google-workspace',
                     'channels', 'people', 'time-off', 'documents', 'workflows', 'perform', 'pulse', 'knowledge', 'desk',
-                    'safe-speak', 'assets', 'hiring-requests', 'time', 'reports', 'overview',
+                    'safe-speak', 'assets', 'hiring-requests', 'time', 'reports', 'overview', 'observability',
                 ],
             ]);
     }

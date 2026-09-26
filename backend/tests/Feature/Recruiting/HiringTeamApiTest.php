@@ -126,9 +126,9 @@ final class HiringTeamApiTest extends TestCase
     public function test_assignable_users_for_writers_and_hiring_managers_only(): void
     {
         User::factory()->create(['name' => 'Zed Blocked', 'status' => 'blocked']);
-        $this->recruiter->forceFill(['name' => 'Rita Recruiter'])->save();
+        $this->recruiter->forceFill(['name' => 'Rita Qzxrecruiter'])->save();
 
-        $this->actingAs($this->recruiter)->getJson('/api/recruiting/assignable-users?q=rita')
+        $this->actingAs($this->recruiter)->getJson('/api/recruiting/assignable-users?q=qzxrecruiter')
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $this->recruiter->id);
         $this->actingAs($this->recruiter)->getJson('/api/recruiting/assignable-users?q=zed')->assertOk()->assertJsonCount(0, 'data');
         $this->actingAs($this->manager)->getJson('/api/recruiting/assignable-users')->assertForbidden();
