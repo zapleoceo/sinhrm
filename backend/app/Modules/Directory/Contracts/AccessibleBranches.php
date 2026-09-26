@@ -14,7 +14,7 @@ use App\Models\User;
 interface AccessibleBranches
 {
     /**
-     * null = no restriction (active superadmin/admin); otherwise the ids of the user's active branches
+     * null = no restriction (active HR staff: superadmin/admin/hr_manager); otherwise the ids of the user's active branches
      * (an empty list = nothing is visible: a user without branches, or a blocked user).
      *
      * @return list<int>|null

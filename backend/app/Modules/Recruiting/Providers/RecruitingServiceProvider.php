@@ -13,6 +13,7 @@ use App\Modules\Recruiting\Ai\ScreeningPrompt;
 use App\Modules\Recruiting\Console\RecruitingDemoCommand;
 use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\HiringTeamRepository;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\ExtensionTokenRepository;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
@@ -34,6 +35,7 @@ use App\Modules\Recruiting\Policies\TouchpointPolicy;
 use App\Modules\Recruiting\Policies\VacancyPolicy;
 use App\Modules\Recruiting\Repositories\EloquentAcquisitionChannelRepository;
 use App\Modules\Recruiting\Repositories\EloquentApplicationRepository;
+use App\Modules\Recruiting\Repositories\EloquentHiringTeamRepository;
 use App\Modules\Recruiting\Repositories\EloquentCandidateRepository;
 use App\Modules\Recruiting\Repositories\EloquentPipelineRepository;
 use App\Modules\Recruiting\Repositories\EloquentScreeningRepository;
@@ -57,7 +59,7 @@ use Laravel\Sanctum\Sanctum;
 /** Routes live at the /api root (vacancies, candidates, applications, inbox, recruiting, reports, pipelines). */
 final class RecruitingServiceProvider extends ModuleServiceProvider
 {
-    /** Write access at all (superadmin, admin, recruiter); entity policies add the branch scope. */
+    /** Write access at all (superadmin, admin, recruiter); entity policies add the branch scope and the hiring manager. */
     public const string WRITE = 'recruiting-write';
 
     /** Pipelines and reject reasons dictionary: superadmin, admin. */
@@ -70,6 +72,7 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         $this->app->bind(VacancyRepository::class, EloquentVacancyRepository::class);
         $this->app->bind(CandidateRepository::class, EloquentCandidateRepository::class);
         $this->app->bind(ApplicationRepository::class, EloquentApplicationRepository::class);
+        $this->app->bind(HiringTeamRepository::class, EloquentHiringTeamRepository::class);
         $this->app->bind(TouchpointRepository::class, EloquentTouchpointRepository::class);
         $this->app->bind(ReportRepository::class, QueryReportRepository::class);
         $this->app->bind(TouchpointIngestor::class, MatchingTouchpointIngestor::class);

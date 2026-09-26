@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Models;
 
+use App\Models\User;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -31,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property-read PipelineStage $stage
  * @property-read RejectReason|null $rejectReason
  * @property-read Collection<int, StageChange> $stageChanges
+ * @property-read Collection<int, User> $interviewers
  */
 final class Application extends Model
 {
@@ -70,6 +73,16 @@ final class Application extends Model
     public function stageChanges(): HasMany
     {
         return $this->hasMany(StageChange::class)->orderBy('at')->orderBy('id');
+    }
+
+    /**
+     * Contextual role: users who interview this candidate for this vacancy (they see only this application).
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function interviewers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'application_interviewers')->withPivot('created_at')->orderBy('users.id');
     }
 
     /** Last contact, or the moment the application appeared when nobody touched it yet. */

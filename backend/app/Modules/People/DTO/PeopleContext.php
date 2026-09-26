@@ -6,7 +6,7 @@ namespace App\Modules\People\DTO;
 
 /**
  * What one user may do with employee records, computed once per request (PeopleScope::for):
- * - admin (superadmin/admin; also acts as HR) — everything;
+ * - admin (HR staff: superadmin/admin/hr_manager) — everything;
  * - self — own profile incl. PII, own leave;
  * - manager — job data and leave of every employee below them (direct and indirect reports), approvals;
  * - everyone active — the directory tier only (name, position, branch, department, work contacts, manager).

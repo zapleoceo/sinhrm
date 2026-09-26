@@ -42,7 +42,7 @@ final class UserAdminService
 
     /**
      * @param  list<int>|null  $branchIds  null = unchanged; a list replaces the user's branches
-     * @param  bool|null  $safeSpeakHandler  null = unchanged; true only for superadmin/admin (may be set on oneself)
+     * @param  bool|null  $safeSpeakHandler  null = unchanged; true only for HR staff — superadmin/admin/hr_manager (may be set on oneself)
      */
     public function update(User $actor, User $target, ?UserRole $role, ?UserStatus $status, ?array $branchIds = null, ?bool $safeSpeakHandler = null): User
     {
@@ -73,7 +73,7 @@ final class UserAdminService
             if ($branchIds !== null) {
                 $this->users->syncBranches($target, $branchIds);
             }
-            $isAdmin = in_array($role ?? $this->users->roleOf($target), [UserRole::Superadmin, UserRole::Admin], true);
+            $isAdmin = in_array($role ?? $this->users->roleOf($target), UserRole::hrStaff(), true);
             if ($safeSpeakHandler === true && ! $isAdmin) {
                 throw UserAdminException::handlerRequiresAdmin();
             }

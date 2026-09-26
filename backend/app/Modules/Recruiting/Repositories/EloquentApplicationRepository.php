@@ -81,10 +81,10 @@ final class EloquentApplicationRepository implements ApplicationRepository
         return Application::query()
             ->with(['candidate', 'vacancy', 'stage'])
             ->where('status', ApplicationStatus::Active->value)
-            ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->whereHas(
-                'vacancy',
-                fn (Builder $v) => $v->whereIn('branch_id', $scope->branchIds ?? []),
-            ))
+            ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->where(fn (Builder $w) => $w
+                ->whereHas('vacancy', fn (Builder $v) => $v->whereIn('branch_id', $scope->branchIds ?? []))
+                ->orWhereIn('vacancy_id', $scope->managedVacancyIds)
+                ->orWhereIn('id', $scope->interviewApplicationIds)))
             ->whereRaw('coalesce(last_touch_at, created_at) < ?', [$before])
             ->orderByRaw('coalesce(last_touch_at, created_at) asc')
             ->orderBy('id')

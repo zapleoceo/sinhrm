@@ -12,19 +12,17 @@ use App\Modules\People\Models\Employee;
 use App\Modules\People\Support\ReportingTree;
 
 /**
- * Access to employee data (People and TimeOff). There is no separate HR role: superadmin/admin act as HR.
+ * Access to employee data (People and TimeOff). HR staff (superadmin, admin, hr_manager — UserRole::hrStaff()) manage everyone.
  * A manager is any user linked to an employee who has reports (direct or indirect) — the subtree follows manager_id.
  */
 final readonly class PeopleScope
 {
-    private const array ADMINS = [UserRole::Superadmin, UserRole::Admin];
-
     public function __construct(private EmployeeRepository $employees) {}
 
     public function isAdmin(User $user): bool
     {
         return $user->isActive()
-            && $user->hasAnyRole(array_map(static fn (UserRole $r): string => $r->value, self::ADMINS));
+            && $user->hasAnyRole(UserRole::valuesOf(UserRole::hrStaff()));
     }
 
     public function employeeOf(User $user): ?Employee

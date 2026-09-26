@@ -28,6 +28,8 @@ final class VacancyResource extends JsonResource
             'position' => $this->relationLoaded('position') ? $ref($this->position) : null,
             'recruiter_id' => $this->recruiter_id,
             'recruiter' => $this->relationLoaded('recruiter') ? $ref($this->recruiter) : null,
+            'hiring_manager_id' => $this->hiring_manager_id,
+            'hiring_manager' => $this->relationLoaded('hiringManager') ? $ref($this->hiringManager) : null,
             'pipeline_id' => $this->pipeline_id,
             'stages' => $this->relationLoaded('pipeline') ? StageResource::collection($this->pipeline->stages) : [],
             'description' => $this->description,

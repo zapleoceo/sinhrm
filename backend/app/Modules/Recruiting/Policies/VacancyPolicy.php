@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\RecruitingScope;
 
-/** Vacancies of the user's branches (admins: all); viewers read-only. */
+/** Vacancies of the user's branches (HR staff: all) or where the user is the hiring manager; viewers read-only. */
 final readonly class VacancyPolicy
 {
     public function __construct(private RecruitingScope $scope) {}
@@ -26,6 +26,6 @@ final readonly class VacancyPolicy
     /** Edit the vacancy and add candidates to it. */
     public function update(User $user, Vacancy $vacancy): bool
     {
-        return $this->scope->canWrite($user) && $this->scope->canSeeVacancy($user, $vacancy);
+        return $this->scope->canWorkVacancy($user, $vacancy);
     }
 }

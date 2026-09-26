@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $department_id
  * @property int|null $position_id
  * @property int $recruiter_id
+ * @property int|null $hiring_manager_id
  * @property int $pipeline_id
  * @property VacancyStatus $status
  * @property string|null $description
@@ -37,6 +38,7 @@ use Illuminate\Support\Carbon;
  * @property-read Department|null $department
  * @property-read Position|null $position
  * @property-read User $recruiter
+ * @property-read User|null $hiringManager
  * @property-read Pipeline $pipeline
  * @property-read Collection<int, Application> $applications
  */
@@ -46,7 +48,7 @@ final class Vacancy extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 'branch_id', 'department_id', 'position_id', 'recruiter_id', 'pipeline_id',
+        'title', 'branch_id', 'department_id', 'position_id', 'recruiter_id', 'hiring_manager_id', 'pipeline_id',
         'status', 'description', 'opened_at', 'closed_at',
     ];
 
@@ -75,6 +77,16 @@ final class Vacancy extends Model
     public function recruiter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recruiter_id');
+    }
+
+    /**
+     * Contextual role: sees and works this vacancy's candidates regardless of the global role.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function hiringManager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'hiring_manager_id');
     }
 
     /** @return BelongsTo<Pipeline, $this> */

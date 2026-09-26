@@ -8,7 +8,7 @@ use App\Modules\People\DTO\PeopleContext;
 
 /**
  * Who is looking at performance data, computed once per request (PerformAccess::viewer):
- * admin (superadmin/admin = HR) — everything; manager — people below them in the org chart (People subtree);
+ * admin (HR staff = superadmin/admin/hr_manager) — everything; manager — people below them in the org chart (People subtree);
  * employee — own items. departmentId drives "team" visibility of objectives.
  */
 final readonly class PerformViewer

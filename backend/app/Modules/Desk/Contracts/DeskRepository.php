@@ -51,9 +51,9 @@ interface DeskRepository
      */
     public function openWithSla(): Collection;
 
-    /** True for an active superadmin/admin user (who may be an assignee). */
+    /** True for an active HR staff user (superadmin/admin/hr_manager) (who may be an assignee). */
     public function isHrUser(int $userId): bool;
 
-    /** The first active superadmin/admin — the fallback assignee of breach tasks. */
+    /** The first active HR staff user — the fallback assignee of breach tasks. */
     public function fallbackHrUserId(): ?int;
 }
