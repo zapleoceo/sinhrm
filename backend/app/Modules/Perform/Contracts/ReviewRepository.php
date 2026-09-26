@@ -96,6 +96,15 @@ interface ReviewRepository
      */
     public function submittedRows(int $cycleId, int $subjectId): array;
 
+    /**
+     * Who submitted about the subject in each cycle, per reviewer type (ids only, no answers) — for the
+     * differencing guard between cycles.
+     *
+     * @param  list<int>  $cycleIds
+     * @return array<int, array<string, list<int>>> cycle id to type to reviewer ids
+     */
+    public function submittedReviewers(array $cycleIds, int $subjectId): array;
+
     /** @return Collection<int, ReviewCycle> active/closed cycles where the employee is a subject */
     public function cyclesAbout(int $subjectId): Collection;
 

@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $salt
  * @property int|null $subject_employee_id
  * @property string|null $trigger_key
+ * @property array<string, array<string, bool>>|null $segment_visibility
  * @property int|null $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -37,11 +38,11 @@ final class SurveyWave extends Model
 {
     protected $fillable = [
         'survey_id', 'parent_wave_id', 'schedule', 'audience', 'anonymous', 'min_group_size', 'starts_at', 'ends_at',
-        'status', 'salt', 'subject_employee_id', 'trigger_key', 'created_by',
+        'status', 'salt', 'subject_employee_id', 'trigger_key', 'created_by', 'segment_visibility',
     ];
 
     /** @var list<string> */
-    protected $hidden = ['salt'];
+    protected $hidden = ['salt', 'segment_visibility'];
 
     /** @var array<string, mixed> */
     protected $attributes = ['status' => 'scheduled', 'schedule' => 'once', 'anonymous' => true, 'min_group_size' => 5];
@@ -70,6 +71,7 @@ final class SurveyWave extends Model
             'schedule' => WaveSchedule::class,
             'status' => WaveStatus::class,
             'audience' => 'array',
+            'segment_visibility' => 'array',
             'anonymous' => 'boolean',
             'min_group_size' => 'integer',
             'starts_at' => 'datetime',

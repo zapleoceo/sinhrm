@@ -190,6 +190,22 @@ final class EloquentReviewRepository implements ReviewRepository
             ])->values()->all();
     }
 
+    public function submittedReviewers(array $cycleIds, int $subjectId): array
+    {
+        if ($cycleIds === []) {
+            return [];
+        }
+        $out = [];
+        $rows = ReviewAssignment::query()->whereIn('cycle_id', $cycleIds)->where('subject_employee_id', $subjectId)
+            ->where('status', AssignmentStatus::Submitted->value)->orderBy('reviewer_employee_id')
+            ->get(['cycle_id', 'type', 'reviewer_employee_id']);
+        foreach ($rows as $row) {
+            $out[$row->cycle_id][$row->type->value][] = $row->reviewer_employee_id;
+        }
+
+        return $out;
+    }
+
     public function cyclesAbout(int $subjectId): Collection
     {
         return ReviewCycle::query()->where('status', '!=', CycleStatus::Draft->value)

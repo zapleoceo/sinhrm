@@ -81,6 +81,15 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 `TimeOff\Services\HolidayWorkingCalendar` (привязка в `TimeOffServiceProvider`), модули зависят только от контракта.
 Сейчас используется в HiringRequests ([hiring-requests.md](hiring-requests.md)).
 
+### Защита от вычитания между выпусками (`Support/MembershipDifferencing`)
+Чистая функция без БД для анонимных агрегатов, которые публикуются повторно (волны опросов, циклы 360): группа
+в новом выпуске показывается, только если её состав совпадает с каждым прошлым **показанным** выпуском той же
+группы или отличается от него хотя бы на минимум людей. Иначе «новый итог минус старый» выдал бы ответ одного-двух
+человек. `symmetricDifference(a, b)` — сколько людей пришло + ушло; `allowed(d, min)` — `d = 0` или `d ≥ min`;
+`visibility(releases)` — видимость каждой группы в каждом выпуске (скрытый выпуск базой не считается). Участники —
+непрозрачные строки (HMAC или id). Используют Pulse ([pulse.md](pulse.md)) и Perform ([perform.md](perform.md)).
+Тест: `tests/Unit/Core/MembershipDifferencingTest.php`.
+
 ### Фоновые задачи (`Contracts/ScheduledJob`)
 У vercel-php нет воркеров и постоянных процессов, а cron Vercel Hobby — раз в сутки. Поэтому GitHub Actions
 (`cron.yml`) каждые 30 минут дёргает `POST /api/ops/jobs/run`. Модуль регистрирует задачу так:
