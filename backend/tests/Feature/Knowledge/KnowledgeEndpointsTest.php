@@ -211,7 +211,8 @@ final class KnowledgeEndpointsTest extends TestCase
         $odesaOnly = $this->article($admin, ['title' => 'Odesa', 'audience' => ['type' => 'branches', 'ids' => [(string) $odesa->id, $odesa->id]]]);
         $viewers = $this->article($admin, ['title' => 'Viewers', 'audience' => ['type' => 'roles', 'roles' => ['viewer', 'viewer']]]);
 
-        $this->actingAs($admin)->getJson("/api/knowledge/articles/$odesaOnly")->assertOk()->assertJsonPath('data.audience', ['type' => 'branches', 'ids' => [$odesa->id]]);
+        $this->actingAs($admin)->getJson("/api/knowledge/articles/$odesaOnly")->assertOk()
+            ->assertJsonPath('data.audience.type', 'branches')->assertJsonPath('data.audience.ids', [$odesa->id]);
         $this->actingAs($employee)->getJson("/api/knowledge/articles/$odesaOnly")->assertOk();
         $this->actingAs($employee)->getJson("/api/knowledge/articles/$kyivOnly")->assertNotFound();
         $this->actingAs($employee)->postJson("/api/knowledge/articles/$kyivOnly/vote", ['helpful' => true])->assertNotFound();
