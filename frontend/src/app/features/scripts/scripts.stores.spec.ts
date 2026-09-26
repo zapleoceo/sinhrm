@@ -23,7 +23,10 @@ const withSteps = (...titles: string[]): ScriptContent => ({
 const task = (id: number, done = false): Task => ({
   id,
   type: 'followup',
+  source: 'recruiting',
   title: `T${id}`,
+  link: null,
+  employee: null,
   assignee_id: 1,
   candidate: null,
   application_id: null,

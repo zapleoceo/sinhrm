@@ -4,7 +4,9 @@ export const SCRIPT_CHANNELS: readonly ScriptChannel[] = ['call', 'chat'];
 export type FollowupCondition = 'no_reply' | 'link_not_completed' | 'gone_silent';
 export const FOLLOWUP_CONDITIONS: readonly FollowupCondition[] = ['no_reply', 'link_not_completed', 'gone_silent'];
 export type EvaluationEngine = 'rules' | 'ai';
-export type TaskType = 'followup' | 'manual' | 'new_applicant';
+export type TaskType = 'followup' | 'manual' | 'new_applicant' | 'workflow' | 'document';
+export type TaskSource = 'recruiting' | 'workflows' | 'documents';
+export const TASK_SOURCES: readonly TaskSource[] = ['recruiting', 'workflows', 'documents'];
 export type TaskDue = 'today' | 'overdue';
 
 /** Template variables (backend TemplateVariable); written as {Name} in template texts. */
@@ -130,7 +132,11 @@ export interface CandidateTemplate {
 export interface Task {
   id: number;
   type: TaskType;
+  source: TaskSource;
   title: string;
+  /** In-app path ("/people/12?tab=documents") or an external https URL (request_form tasks). */
+  link: string | null;
+  employee: { id: number; name: string } | null;
   assignee_id: number;
   candidate: { id: number; name: string } | null;
   application_id: number | null;
@@ -146,6 +152,29 @@ export interface TaskQuery {
   due?: TaskDue;
   candidate_id?: number;
   done?: boolean;
+  source?: TaskSource;
+  employee_id?: number;
+}
+
+/** Who may tick a task: recruiting writers, or its assignee (any role). Document tasks are acknowledged in /me/documents. */
+export function canCompleteTask(task: Pick<Task, 'type' | 'assignee_id'>, userId: number | null, canWriteRecruiting: boolean): boolean {
+  if (task.type === 'document') {
+    return false;
+  }
+  return canWriteRecruiting || (userId !== null && task.assignee_id === userId);
+}
+
+/** In-app links go through the router; everything else opens in a new tab. */
+export function isInternalLink(link: string): boolean {
+  return link.startsWith('/') && !link.startsWith('//');
+}
+
+/** Splits an in-app link into router path and query params: "/people/1?tab=documents". */
+export function splitLink(link: string): { path: string; query: Record<string, string> } {
+  const [path, search = ''] = link.split('?', 2);
+  const query: Record<string, string> = {};
+  new URLSearchParams(search).forEach((value, key) => (query[key] = value));
+  return { path, query };
 }
 
 /** Error codes with their own message (backend ScriptException). */

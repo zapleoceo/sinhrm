@@ -24,10 +24,14 @@ final class EloquentTaskRepository implements TaskRepository
     /** Outbound "messages" for the no_reply / link_not_completed rules (a call is a conversation, not a message). */
     private const array MESSAGE_CHANNELS = [Channel::Telegram, Channel::Whatsapp, Channel::Viber, Channel::Email];
 
+    private const array RELATIONS = ['candidate', 'application.vacancy', 'employee'];
+
     public function list(Scope $scope, TaskFilter $filter, Carbon $now, int $limit): Collection
     {
         return $this->scoped($scope)
-            ->with(['candidate', 'application.vacancy'])
+            ->with(self::RELATIONS)
+            ->when($filter->source !== null, fn (Builder $q) => $q->whereIn('type', $filter->source?->typeValues() ?? []))
+            ->when($filter->employeeId, fn (Builder $q, int $id) => $q->where('employee_id', $id))
             ->when($filter->mine, fn (Builder $q) => $q->where('assignee_id', $scope->userId))
             ->when($filter->candidateId, fn (Builder $q, int $id) => $q->where('candidate_id', $id))
             ->when(! $filter->withDone, fn (Builder $q) => $q->whereNull('done_at'))
@@ -42,7 +46,7 @@ final class EloquentTaskRepository implements TaskRepository
 
     public function find(int $id): ?Task
     {
-        return Task::query()->with(['candidate', 'application.vacancy'])->find($id);
+        return Task::query()->with(self::RELATIONS)->find($id);
     }
 
     public function isVisible(Scope $scope, Task $task): bool
@@ -57,11 +61,40 @@ final class EloquentTaskRepository implements TaskRepository
         return $task;
     }
 
+    public function markDone(Task $task, bool $done, Carbon $at): bool
+    {
+        $changed = Task::query()->whereKey($task->id)
+            ->when($done, fn (Builder $q) => $q->whereNull('done_at'), fn (Builder $q) => $q->whereNotNull('done_at'))
+            ->update(['done_at' => $done ? $at : null, 'updated_at' => Carbon::now()]) === 1;
+        if ($changed) {
+            $task->refresh();
+        }
+
+        return $changed;
+    }
+
     public function createFollowupOnce(array $attributes): bool
     {
         $now = Carbon::now();
 
         return Task::query()->insertOrIgnore([$attributes + ['created_at' => $now, 'updated_at' => $now]]) > 0;
+    }
+
+    public function createOnce(array $attributes): Task
+    {
+        $this->createFollowupOnce($attributes);
+        $task = Task::query()->with(self::RELATIONS)
+            ->where('employee_id', $attributes['employee_id'] ?? null)
+            ->where('rule_key', $attributes['rule_key'])
+            ->first();
+        assert($task instanceof Task);
+
+        return $task;
+    }
+
+    public function findByRule(int $employeeId, string $ruleKey): ?Task
+    {
+        return Task::query()->where('employee_id', $employeeId)->where('rule_key', $ruleKey)->first();
     }
 
     public function activities(): array

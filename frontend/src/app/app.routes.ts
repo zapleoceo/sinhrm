@@ -30,6 +30,10 @@ export const routes: Routes = [
       { path: 'me', title: 'titles.myProfile', loadComponent: () => import('./features/people/profile/profile.page').then((m) => m.ProfilePage) },
       { path: 'timeoff', title: 'titles.timeoff', loadComponent: () => import('./features/timeoff/my/my-timeoff.page').then((m) => m.MyTimeOffPage) },
       { path: 'timeoff/calendar', title: 'titles.teamCalendar', loadComponent: () => import('./features/timeoff/calendar/calendar.page').then((m) => m.CalendarPage) },
+      // Unified tasks, own documents and the workflow board: every active role; the API scopes the data.
+      { path: 'tasks', title: 'titles.tasks', loadComponent: () => import('./features/tasks/my-tasks.page').then((m) => m.MyTasksPage) },
+      { path: 'me/documents', title: 'titles.myDocuments', loadComponent: () => import('./features/documents/my/my-documents.page').then((m) => m.MyDocumentsPage) },
+      { path: 'workflows/runs', title: 'titles.workflowRuns', loadComponent: () => import('./features/workflows/runs/workflow-runs.page').then((m) => m.WorkflowRunsPage) },
       { path: 'timeoff/approvals', title: 'titles.approvals', loadComponent: () => import('./features/timeoff/approvals/approvals.page').then((m) => m.ApprovalsPage) },
       {
         path: 'status',
@@ -48,6 +52,24 @@ export const routes: Routes = [
         title: 'titles.scriptEditor',
         canActivate: [roleGuard('superadmin', 'admin')],
         loadComponent: () => import('./features/scripts/editor/script-editor.page').then((m) => m.ScriptEditorPage),
+      },
+      {
+        path: 'admin/workflows',
+        title: 'titles.workflows',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/workflows/templates/workflow-templates.page').then((m) => m.WorkflowTemplatesPage),
+      },
+      {
+        path: 'admin/workflows/:id',
+        title: 'titles.workflowEditor',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/workflows/editor/workflow-editor.page').then((m) => m.WorkflowEditorPage),
+      },
+      {
+        path: 'admin/documents/templates',
+        title: 'titles.documentTemplates',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/documents/templates/document-templates.page').then((m) => m.DocumentTemplatesPage),
       },
       {
         path: 'admin/users',

@@ -5,8 +5,8 @@ export type ManualStatus = 'off' | 'demo';
 export const MANUAL_STATUSES: readonly ManualStatus[] = ['off', 'demo'];
 
 /** Mirrors backend App\Modules\Integrations\Enums\IntegrationGroup; also the display order. */
-export type IntegrationGroup = 'ai' | 'google' | 'messengers' | 'telephony' | 'sources';
-export const INTEGRATION_GROUPS: readonly IntegrationGroup[] = ['ai', 'google', 'messengers', 'telephony', 'sources'];
+export type IntegrationGroup = 'ai' | 'google' | 'messengers' | 'telephony' | 'sources' | 'documents';
+export const INTEGRATION_GROUPS: readonly IntegrationGroup[] = ['ai', 'google', 'messengers', 'telephony', 'sources', 'documents'];
 
 /** Mirrors backend App\Modules\Integrations\Enums\FieldType. */
 export type FieldType = 'text' | 'secret' | 'url' | 'select';

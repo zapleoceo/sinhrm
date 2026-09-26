@@ -63,6 +63,9 @@ describe('ScriptsService', () => {
     service.tasks({ candidate_id: 4 }).subscribe();
     http.expectOne((r) => r.url === '/api/tasks' && r.params.get('candidate_id') === '4' && !r.params.has('mine')).flush({ data: [] });
 
+    service.tasks({ mine: true, source: 'workflows', employee_id: 12 }).subscribe();
+    http.expectOne((r) => r.url === '/api/tasks' && r.params.get('source') === 'workflows' && r.params.get('employee_id') === '12').flush({ data: [] });
+
     service.setTaskDone(8, true).subscribe();
     const done = http.expectOne({ method: 'PATCH', url: '/api/tasks/8' });
     expect(done.request.body).toEqual({ done: true });

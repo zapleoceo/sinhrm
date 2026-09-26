@@ -11,4 +11,6 @@ enum IntegrationGroup: string
     case Messengers = 'messengers';
     case Telephony = 'telephony';
     case Sources = 'sources';
+    /** Document signing (qualified e-signature). */
+    case Documents = 'documents';
 }

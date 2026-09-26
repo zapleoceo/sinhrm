@@ -3,17 +3,28 @@ import { Observable } from 'rxjs';
 import { ChangeRequest, Employee } from '../people.model';
 import { PeopleService, peopleErrorKey } from '../people.service';
 
-/** Which tabs a profile shows, from the access flags of the API (hidden tiers are not in the payload anyway). */
-export function profileTabs(e: Employee | null): ('overview' | 'job' | 'timeoff' | 'changes')[] {
+export type ProfileTab = 'overview' | 'job' | 'timeoff' | 'changes' | 'documents' | 'workflows';
+
+/**
+ * Which tabs a profile shows, from the access flags of the API (hidden tiers are not in the payload anyway).
+ * Documents: admins, the employee and managers; Workflows: admins and managers, not the employee themself.
+ */
+export function profileTabs(e: Employee | null): ProfileTab[] {
   if (e === null) {
     return [];
   }
-  const tabs: ('overview' | 'job' | 'timeoff' | 'changes')[] = ['overview'];
+  const tabs: ProfileTab[] = ['overview'];
   if (e.access?.job) {
     tabs.push('job', 'timeoff');
   }
   if (e.access?.pii || e.access?.decide) {
     tabs.push('changes');
+  }
+  if (e.access?.job) {
+    tabs.push('documents');
+  }
+  if (e.access?.manage || (e.access?.job && !e.access?.self)) {
+    tabs.push('workflows');
   }
   return tabs;
 }

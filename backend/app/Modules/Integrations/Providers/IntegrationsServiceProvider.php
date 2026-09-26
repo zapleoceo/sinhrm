@@ -18,6 +18,7 @@ use App\Modules\Integrations\Definitions\DjinniDefinition;
 use App\Modules\Integrations\Definitions\GoogleCalendarDefinition;
 use App\Modules\Integrations\Definitions\GoogleGmailDefinition;
 use App\Modules\Integrations\Definitions\GoogleSheetsDefinition;
+use App\Modules\Integrations\Definitions\KepSigningDefinition;
 use App\Modules\Integrations\Definitions\MetaLeadAdsDefinition;
 use App\Modules\Integrations\Definitions\OpenRouterDefinition;
 use App\Modules\Integrations\Definitions\PhonetDefinition;
@@ -71,6 +72,7 @@ final class IntegrationsServiceProvider extends ModuleServiceProvider
             RobotaUaDefinition::class,
             DjinniDefinition::class,
             MetaLeadAdsDefinition::class,
+            KepSigningDefinition::class,
         ], self::DEFINITIONS_TAG);
 
         $this->app->bind(IntegrationRegistry::class, fn (Application $app): IntegrationRegistry => new IntegrationRegistry(
