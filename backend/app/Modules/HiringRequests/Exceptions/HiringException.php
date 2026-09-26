@@ -55,6 +55,12 @@ final class HiringException extends RuntimeException
         return new self('vacancy_taken', 409);
     }
 
+    /** Only an open vacancy of the request's branch can be linked. */
+    public static function vacancyNotLinkable(): self
+    {
+        return new self('vacancy_not_linkable', 422);
+    }
+
     /** The recruiter of the new vacancy must be an active user. */
     public static function invalidRecruiter(): self
     {
