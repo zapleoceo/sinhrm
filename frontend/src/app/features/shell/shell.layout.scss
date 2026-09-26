@@ -4,14 +4,72 @@
   min-height: 100vh;
 }
 
+/* Sidebar fills the viewport height: the nav scrolls, the footer (help + user menu) stays pinned. */
 .sidebar {
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: var(--app-gap) 0.75rem;
+  height: 100vh;
   border-right: 1px solid var(--app-border);
   background: var(--mat-sys-surface-container-low);
 }
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--app-gap) 0.75rem;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem 0.75rem;
+  border-top: 1px solid var(--app-border);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover { background: var(--mat-sys-surface-container-high); }
+  &:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+}
+
+.user-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.name, .email {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.email {
+  font: var(--mat-sys-body-small);
+  color: var(--app-muted);
+}
+
+.user-chevron { color: var(--app-muted); flex-shrink: 0; }
 
 .brand {
   font: var(--mat-sys-title-medium);
@@ -95,25 +153,11 @@
 
 .main { display: flex; flex-direction: column; min-width: 0; }
 
-.topbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem var(--app-gap);
-  border-bottom: 1px solid var(--app-border);
-}
-
-.user { gap: 0.5rem; }
-
-.spacer { flex: 1; }
-
 .avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   border-radius: 50%;
-  vertical-align: middle;
-  margin-right: 0.5rem;
 }
 
 .fallback {
@@ -140,22 +184,27 @@
 @media (max-width: 720px) {
   .shell { grid-template-columns: 1fr; }
   .sidebar {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--app-border);
+  }
+  .sidebar-nav {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    border-right: 0;
-    border-bottom: 1px solid var(--app-border);
+    overflow: visible;
     padding: 0.5rem;
   }
+  .sidebar-footer {
+    flex-direction: row;
+    align-items: center;
+    padding: 0.5rem;
+  }
+  .user { width: auto; flex: 1; min-width: 0; }
   .brand { padding: 0 0.75rem; }
   .nav-section { display: none; }
   /* Narrow screen: the menu is a wrapping row, so groups are flattened (all links shown). */
   .nav-group, .nav-group.open { display: contents; visibility: visible; }
   .nav-group-inner { display: contents; }
-  .name { display: none; }
-}
-
-/* Help link sits at the bottom of the sidebar, outside the collapsible groups. */
-.nav-help {
-  margin-top: auto;
 }
