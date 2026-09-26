@@ -76,7 +76,7 @@
 - **«Мої задачі»** — задачи «Настрій команди знизився» (источник «Опитування», `?source=pulse`).
 
 ## Как устроено
-- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/PulseNavBadges` — ключ `surveys` («Опитування»): открытые волны для меня, на которые я ещё не ответил (`responded = false` в `GET /api/pulse/my/waves`). Анонимность не страдает: считается только мой собственный признак «ответил», как и на странице.
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/PulseNavBadges` — ключ `surveys` («Опитування»): открытые волны для меня, на которые я ещё не ответил (`responded = false` в `GET /api/pulse/my/waves`). Анонимность не страдает: считается только мой собственный признак «ответил», как и на странице. Кто в аудитории волны, решает PHP (`WaveAudience`), поэтому открытые волны перебираются в коде (их единицы), а ответы считаются одним `count(*)` (`ResponseService::countPending`).
 Бэкенд — `backend/app/Modules/Pulse`, маршруты `/api/pulse/*`, все за `auth:sanctum` + `EnsureUserIsActive`.
 Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::isAdmin` — конструктор, волны,
 ответы неанонимных волн, настройки настроения. Фоновая задача `pulse.tick` (`Services/PulseTickJob`,

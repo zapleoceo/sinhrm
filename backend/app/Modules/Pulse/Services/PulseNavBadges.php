@@ -14,6 +14,6 @@ final readonly class PulseNavBadges implements NavBadgeProvider
 
     public function badges(User $user): array
     {
-        return ['surveys' => count(array_filter($this->responses->mine($user), static fn (array $item): bool => ! $item['responded']))];
+        return ['surveys' => $this->responses->countPending($user)];
     }
 }

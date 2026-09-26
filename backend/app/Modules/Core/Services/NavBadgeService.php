@@ -24,7 +24,7 @@ final readonly class NavBadgeService
     public function for(User $user): array
     {
         /** @var array<string, int> */
-        return $this->cache->remember('nav-badges:'.$user->id, self::TTL_SECONDS, function () use ($user): array {
+        return $this->cache->remember($this->key($user), self::TTL_SECONDS, function () use ($user): array {
             $badges = [];
             foreach ($this->providers as $provider) {
                 $badges = $provider->badges($user) + $badges;
@@ -37,6 +37,15 @@ final readonly class NavBadgeService
 
     public function forget(User $user): void
     {
-        $this->cache->forget('nav-badges:'.$user->id);
+        $this->cache->forget($this->key($user));
+    }
+
+    /** Per user and per role set: a role change shows the right items at once instead of after the TTL. */
+    private function key(User $user): string
+    {
+        $roles = $user->getRoleNames()->map(static fn (mixed $r): string => (string) $r)->all();
+        sort($roles);
+
+        return 'nav-badges:'.$user->id.':'.substr(sha1(implode(',', $roles).'|'.(int) $user->safe_speak_handler), 0, 12);
     }
 }

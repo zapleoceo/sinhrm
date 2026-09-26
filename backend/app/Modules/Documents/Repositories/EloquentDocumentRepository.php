@@ -20,17 +20,28 @@ final class EloquentDocumentRepository implements DocumentRepository
 
     public function list(DocumentFilter $filter, int $limit): Collection
     {
-        return Document::query()
+        return $this->filtered($filter)
             ->with(self::RELATIONS)
-            ->when($filter->employeeIds !== null, fn (Builder $q) => $q->whereIn('employee_id', $filter->employeeIds ?? []))
-            ->when($filter->employeeId, fn (Builder $q, int $id) => $q->where('employee_id', $id))
-            ->when($filter->status, fn (Builder $q, DocumentStatus $s) => $q->where('status', $s->value))
-            ->when($filter->category, fn (Builder $q, string $c) => $q->where('category', $c))
-            ->when(! $filter->withDrafts, fn (Builder $q) => $q->where('status', '!=', DocumentStatus::Draft->value))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->limit($limit)
             ->get();
+    }
+
+    public function count(DocumentFilter $filter): int
+    {
+        return $this->filtered($filter)->count();
+    }
+
+    /** @return Builder<Document> */
+    private function filtered(DocumentFilter $filter): Builder
+    {
+        return Document::query()
+            ->when($filter->employeeIds !== null, fn (Builder $q) => $q->whereIn('employee_id', $filter->employeeIds ?? []))
+            ->when($filter->employeeId, fn (Builder $q, int $id) => $q->where('employee_id', $id))
+            ->when($filter->status, fn (Builder $q, DocumentStatus $s) => $q->where('status', $s->value))
+            ->when($filter->category, fn (Builder $q, string $c) => $q->where('category', $c))
+            ->when(! $filter->withDrafts, fn (Builder $q) => $q->where('status', '!=', DocumentStatus::Draft->value));
     }
 
     public function find(int $id): ?Document

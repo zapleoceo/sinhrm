@@ -7,7 +7,6 @@ namespace App\Modules\Desk\Services;
 use App\Models\User;
 use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Desk\Enums\CaseStatus;
-use App\Modules\Desk\Models\DeskCase;
 use App\Modules\Desk\Providers\DeskServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -21,9 +20,9 @@ final readonly class DeskNavBadges implements NavBadgeProvider
 
     public function badges(User $user): array
     {
-        $badges = ['desk_mine' => $this->desk->mine($user)->filter(static fn (DeskCase $c): bool => $c->status === CaseStatus::Waiting)->count()];
+        $badges = ['desk_mine' => $this->desk->countMine($user, CaseStatus::Waiting)];
         if (Gate::forUser($user)->allows(DeskServiceProvider::MANAGE)) {
-            $badges['desk_queue'] = $this->desk->queue(['open' => true])->count();
+            $badges['desk_queue'] = $this->desk->countQueue(['open' => true]);
         }
 
         return $badges;

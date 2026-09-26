@@ -39,6 +39,17 @@ final class NavBadgesTest extends TestCase
         $this->assertArrayHasKey('desk_queue', $all);
     }
 
+    public function test_a_role_change_is_not_hidden_by_the_cache(): void
+    {
+        $user = User::factory()->withRole(UserRole::Recruiter)->create();
+        $this->assertArrayNotHasKey('mail_unknown', $this->actingAs($user)->getJson('/api/nav/badges')->assertOk()->json('data'));
+
+        $user->syncRoles([UserRole::Superadmin->value]);
+        $fresh = $user->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertArrayHasKey('mail_unknown', $this->actingAs($fresh)->getJson('/api/nav/badges')->assertOk()->json('data'));
+    }
+
     public function test_counts_are_cached_per_user_for_a_short_time(): void
     {
         $calls = 0;

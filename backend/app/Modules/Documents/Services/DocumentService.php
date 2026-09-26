@@ -67,7 +67,22 @@ final readonly class DocumentService
             return new Collection;
         }
 
-        return $this->documents->list(new DocumentFilter(employeeIds: [$ctx->selfId], withDrafts: false), self::LIMIT);
+        return $this->documents->list(self::mineFilter($ctx->selfId), self::LIMIT);
+    }
+
+    /** How many of mine() wait for my acknowledgement (status sent) — sidebar counter. */
+    public function countAwaitingMe(PeopleContext $ctx): int
+    {
+        if ($ctx->selfId === null) {
+            return 0;
+        }
+
+        return $this->documents->count(self::mineFilter($ctx->selfId, DocumentStatus::Sent));
+    }
+
+    private static function mineFilter(int $selfId, ?DocumentStatus $status = null): DocumentFilter
+    {
+        return new DocumentFilter(employeeIds: [$selfId], status: $status, withDrafts: false);
     }
 
     public function canView(PeopleContext $ctx, Document $document): bool
