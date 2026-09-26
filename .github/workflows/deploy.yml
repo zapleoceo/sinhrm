@@ -10,6 +10,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: read # gate: labels of the PR
+  actions: read # gate: find the last successful production Deploy run
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -29,7 +30,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       go: ${{ steps.check.outputs.go }}
+      api: ${{ steps.paths.outputs.api }}
+      web: ${{ steps.paths.outputs.web }}
     steps:
+      # Needed only so the "paths" step below can `require` .github/scripts/deploy-gate.js.
+      - uses: actions/checkout@v7
+        with: { ref: "${{ github.event.workflow_run.head_sha }}" }
+
       # main → production always; a pull request → preview only with the "preview" label (deploy budget).
       - id: check
         uses: actions/github-script@v9
@@ -42,6 +49,32 @@ jobs:
               if (data.some((l) => l.name === 'preview')) { core.setOutput('go', 'true'); return; }
             }
             core.setOutput('go', 'false');
+
+      # Which of the two Vercel projects (API / Web) actually need a new deployment — Hobby plan
+      # caps at 100 deploys/day and every run used to produce 2 regardless of what changed.
+      # See .github/scripts/deploy-gate.js for the testable logic (deploy-gate.test.js).
+      - id: paths
+        if: steps.check.outputs.go == 'true'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const gate = require('./.github/scripts/deploy-gate.js');
+            const run = context.payload.workflow_run;
+            const isPush = run.event === 'push' && run.head_branch === 'main';
+            let flags;
+            if (isPush) {
+              const baseSha = await gate.findLastSuccessfulProductionSha(github, { ...context.repo });
+              flags = baseSha
+                ? gate.classifyPaths(await gate.getChangedPathsForPush(github, context.repo, baseSha, run.head_sha))
+                : { api: true, web: true }; // no prior successful deploy found -> deploy both
+            } else {
+              const pr = (run.pull_requests ?? [])[0];
+              const baseBranch = pr ? pr.base.ref : 'main';
+              const files = await gate.getChangedPathsForPr(github, context.repo, baseBranch, run.head_sha);
+              flags = gate.applyPreviewForce(gate.classifyPaths(files), true);
+            }
+            core.setOutput('api', String(flags.api));
+            core.setOutput('web', String(flags.web));
 
   deploy:
     needs: gate
@@ -60,6 +93,7 @@ jobs:
 
       - name: API — build & deploy
         id: api
+        if: needs.gate.outputs.api == 'true'
         working-directory: backend
         env: { VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_API }}" }
         run: |
@@ -71,6 +105,7 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: API — migrations via /api/ops/migrate (DB credentials stay in Vercel)
+        if: needs.gate.outputs.api == 'true'
         working-directory: backend
         env:
           OPS_SECRET: "${{ secrets.OPS_SECRET }}"
@@ -86,6 +121,7 @@ jobs:
 
       - name: Web — build & deploy
         id: web
+        if: needs.gate.outputs.web == 'true'
         working-directory: frontend
         env:
           VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_WEB }}"
@@ -119,6 +155,7 @@ jobs:
 
       - name: Smoke — /api/health
         id: smoke
+        if: needs.gate.outputs.api == 'true'
         working-directory: backend
         env:
           API_URL: "${{ steps.api.outputs.url }}"
@@ -130,7 +167,10 @@ jobs:
           echo "$out" | grep -q '"ok":true'
 
       - name: Comment preview links on PR
-        if: env.TARGET == 'preview' && always()
+        if: >-
+          env.TARGET == 'preview' &&
+          (needs.gate.outputs.api == 'true' || needs.gate.outputs.web == 'true') &&
+          always()
         uses: actions/github-script@v9
         env:
           WEB_URL: ${{ steps.web.outputs.url }}
