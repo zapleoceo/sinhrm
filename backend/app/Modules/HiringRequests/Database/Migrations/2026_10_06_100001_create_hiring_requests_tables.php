@@ -103,7 +103,7 @@ return new class extends Migration
         // Default route (tz2): the requester's manager → HR (admins). A branch director step is added in the settings.
         DB::table('hiring_route_steps')->insert([
             ['position' => 1, 'name' => 'Manager', 'kind' => 'manager', 'role' => null, 'user_id' => null, 'sla_days' => 2, 'created_at' => $now, 'updated_at' => $now],
-            ['position' => 2, 'name' => 'HR', 'kind' => 'role', 'role' => 'admin', 'user_id' => null, 'sla_days' => 3, 'created_at' => $now, 'updated_at' => $now],
+            ['position' => 2, 'name' => 'HR', 'kind' => 'role', 'role' => 'admin', 'user_id' => null, 'sla_days' => 2, 'created_at' => $now, 'updated_at' => $now],
         ]);
     }
 
