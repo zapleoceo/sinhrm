@@ -11,6 +11,7 @@ enum ClipperSite: string
     case WorkUa = 'work_ua';
     case Djinni = 'djinni';
     case Dou = 'dou';
+    case RobotaUa = 'robota_ua';
 
     /** @return list<string> exact hosts a profile_url of this site may have */
     public function hosts(): array
@@ -20,6 +21,7 @@ enum ClipperSite: string
             self::WorkUa => ['work.ua', 'www.work.ua'],
             self::Djinni => ['djinni.co', 'www.djinni.co'],
             self::Dou => ['dou.ua', 'www.dou.ua'],
+            self::RobotaUa => ['robota.ua', 'www.robota.ua'],
         };
     }
 
@@ -30,6 +32,7 @@ enum ClipperSite: string
             self::WorkUa => 'Work.ua',
             self::Djinni => 'Djinni',
             self::Dou => 'DOU',
+            self::RobotaUa => 'Robota.ua',
         };
     }
 
@@ -40,12 +43,13 @@ enum ClipperSite: string
             self::WorkUa => CandidateSource::WorkUa,
             self::Djinni => CandidateSource::Djinni,
             self::Dou => CandidateSource::Dou,
+            self::RobotaUa => CandidateSource::RobotaUa,
         };
     }
 
     /**
      * Canonical form used as the dedupe key: https, lowercase host without "www.", path without trailing slash
-     * (Work.ua: without the /ru|/en language prefix), no query/fragment. Null when not an https URL of this site.
+     * (Work.ua: without the /ru|/en language prefix; Robota.ua: without /ua|/ru|/en), no query/fragment. Null when not an https URL of this site.
      */
     public function normalizeUrl(string $url): ?string
     {
@@ -62,6 +66,9 @@ enum ClipperSite: string
         if ($this === self::WorkUa) {
             // The same resume in another interface language: /ru/resumes/1 = /en/resumes/1 = /resumes/1.
             $path = (string) preg_replace('#^/(ru|en)(?=/)#', '', $path);
+        }
+        if ($this === self::RobotaUa) {
+            $path = (string) preg_replace('#^/(ua|ru|en)(?=/)#', '', $path);
         }
         if ($path === '') {
             return null;

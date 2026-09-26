@@ -16,6 +16,7 @@ import { extract as linkedin } from './extractors/linkedin';
 import { extract as workua } from './extractors/workua';
 import { extract as djinni } from './extractors/djinni';
 import { extract as dou } from './extractors/dou';
+import { extract as robotaua } from './extractors/robotaua';
 import type { ExtractResult, Profile, SourceSite } from './types';
 
 const extractors: Record<SourceSite, (doc: Document, url: string) => Profile> = {
@@ -23,6 +24,7 @@ const extractors: Record<SourceSite, (doc: Document, url: string) => Profile> = 
   work_ua: workua,
   djinni,
   dou,
+  robota_ua: robotaua,
 };
 
 export function extractFromDocument(doc: Document, url: string): ExtractResult {

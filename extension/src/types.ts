@@ -1,4 +1,4 @@
-export type SourceSite = 'linkedin' | 'work_ua' | 'djinni' | 'dou';
+export type SourceSite = 'linkedin' | 'work_ua' | 'djinni' | 'dou' | 'robota_ua';
 
 export interface Profile {
   full_name: string;

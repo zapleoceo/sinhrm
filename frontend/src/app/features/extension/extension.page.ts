@@ -106,7 +106,7 @@ const INACTIVE: ExtensionTokenStatus = { active: false, created_at: null, last_u
 })
 export class ExtensionPage implements OnInit {
   /** Sites the Clipper reads profiles from (extension/src/extractors). */
-  protected readonly sites = ['linkedin', 'work_ua', 'djinni', 'dou'] as const;
+  protected readonly sites = ['linkedin', 'work_ua', 'djinni', 'dou', 'robota_ua'] as const;
   private readonly api = inject(ExtensionService);
   private readonly clipboard = inject(Clipboard);
 
