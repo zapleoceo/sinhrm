@@ -31,6 +31,10 @@ use Illuminate\Contracts\Foundation\Application;
  */
 final class GoogleWorkspaceServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'table_chart';
+
+    protected string $moduleGroup = 'admin';
+
     protected string $prefix = 'google';
 
     public function register(): void

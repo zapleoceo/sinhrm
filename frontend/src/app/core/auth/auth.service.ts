@@ -31,6 +31,12 @@ export class AuthService {
     return this.state()?.roles.includes(role) ?? false;
   }
 
+  /** Module is switched on and allowed for the user's role (docs/modules/modules-access.md). */
+  hasModule(key: string): boolean {
+    const modules = this.state()?.modules;
+    return modules === undefined || modules.includes(key);
+  }
+
   setLocale(locale: AppLang): void {
     this.state.update((u) => (u ? { ...u, locale } : u));
   }

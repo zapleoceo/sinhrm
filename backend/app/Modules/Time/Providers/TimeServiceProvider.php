@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class TimeServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'schedule';
+
+    protected string $moduleGroup = 'people';
+
     /** Work schedules: superadmin, admin. */
     public const string MANAGE = 'time-manage';
 

@@ -25,6 +25,14 @@ final class ObservabilityServiceProvider extends ModuleServiceProvider
 
     protected string $prefix = 'errors';
 
+    protected string $moduleIcon = 'bug_report';
+
+    /**
+     * Core (docs/modules/modules-access.md): POST /api/errors/client is infrastructure every signed-in user must reach,
+     * and the log itself is already superadmin only (can:manage-integrations), so there is nothing to switch off.
+     */
+    protected bool $coreModule = true;
+
     public function register(): void
     {
         $this->app->singleton(ErrorRecorder::class);

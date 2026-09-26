@@ -39,6 +39,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class ScriptsServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'record_voice_over';
+
+    protected string $moduleGroup = 'recruiting';
+
     /** Create/edit/publish/activate scripts: superadmin, admin. */
     public const string MANAGE = 'scripts-manage';
 

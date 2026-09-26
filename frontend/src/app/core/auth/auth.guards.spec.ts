@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, CanActivateFn, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
-import { authGuard, guestGuard, roleGuard } from './auth.guards';
+import { authGuard, guestGuard, moduleGuard, roleGuard } from './auth.guards';
 import { AuthService } from './auth.service';
 import { CurrentUser, UserRole } from './auth.model';
 
@@ -55,5 +55,34 @@ describe('auth guards', () => {
     expect(await run(guestGuard, ['viewer'])).toBe('/');
     TestBed.resetTestingModule();
     expect(await run(guestGuard, null)).toBe(true);
+  });
+});
+
+describe('moduleGuard', () => {
+  async function visit(url: string, modules: string[]): Promise<boolean | string> {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { load: () => Promise.resolve(), hasModule: (k: string) => modules.includes(k) } },
+      ],
+    });
+    const result = await TestBed.runInInjectionContext(() =>
+      moduleGuard({} as ActivatedRouteSnapshot, { url } as RouterStateSnapshot),
+    );
+    return result instanceof UrlTree ? TestBed.inject(Router).serializeUrl(result) : (result as boolean);
+  }
+
+  it('lets pages of an available module through', async () => {
+    expect(await visit('/candidates/5', ['recruiting'])).toBe(true);
+  });
+
+  it('sends pages of a switched-off module to the friendly page', async () => {
+    expect(await visit('/perform/objectives', ['recruiting'])).toBe('/module-off?module=perform');
+  });
+
+  it('never blocks core pages', async () => {
+    expect(await visit('/admin/users', [])).toBe(true);
+    TestBed.resetTestingModule();
+    expect(await visit('/', [])).toBe(true);
   });
 });

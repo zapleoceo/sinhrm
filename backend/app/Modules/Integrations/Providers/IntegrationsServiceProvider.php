@@ -38,6 +38,8 @@ use Illuminate\Support\Facades\Route;
 
 final class IntegrationsServiceProvider extends ModuleServiceProvider
 {
+    protected bool $coreModule = true;
+
     /** Ability guarding the integrations admin: active superadmin only. */
     public const string MANAGE_INTEGRATIONS = 'manage-integrations';
 

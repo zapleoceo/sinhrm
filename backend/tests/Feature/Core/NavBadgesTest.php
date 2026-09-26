@@ -7,6 +7,8 @@ namespace Tests\Feature\Core;
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\NavBadgeProvider;
+use App\Modules\Core\Services\ModuleAccess;
+use App\Modules\Core\Services\ModuleRegistry;
 use App\Modules\Core\Services\NavBadgeService;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -64,7 +66,7 @@ final class NavBadgesTest extends TestCase
                 return ['probe' => $user->id];
             }
         };
-        $service = new NavBadgeService([$provider], $this->app->make(Repository::class));
+        $service = new NavBadgeService([$provider], $this->app->make(Repository::class), $this->app->make(ModuleAccess::class), $this->app->make(ModuleRegistry::class));
         [$a, $b] = User::factory()->count(2)->create()->all();
 
         $this->assertSame($a->id, $service->for($a)['probe'] ?? null);

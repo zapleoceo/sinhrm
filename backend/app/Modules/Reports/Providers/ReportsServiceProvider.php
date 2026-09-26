@@ -50,6 +50,10 @@ use Illuminate\Contracts\Foundation\Application;
  */
 final class ReportsServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'analytics';
+
+    protected string $moduleGroup = 'services';
+
     public const string REPORTS_TAG = 'reports.definitions';
 
     public const string DATASETS_TAG = 'reports.datasets';

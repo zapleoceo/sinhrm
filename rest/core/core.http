@@ -25,3 +25,21 @@ Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 X-XSRF-TOKEN: {{xsrf}}
 Referer: {{host}}/
+
+### GET /api/modules — core.modules.index (superadmin)
+GET {{host}}/api/modules
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/modules/{key} — core.modules.update (superadmin; switching off keeps data)
+PUT {{host}}/api/modules/pulse
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "enabled": false,
+    "roles": ["admin", "hr_manager", "employee"]
+}

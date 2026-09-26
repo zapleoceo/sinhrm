@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\Gate;
 /** Knowledge base: categories, versioned Markdown articles with an audience, search, votes. Routes: /api/knowledge/*. */
 final class KnowledgeServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'menu_book';
+
+    protected string $moduleGroup = 'services';
+
     /** Categories, articles, drafts, versions: superadmin, admin (HR). */
     public const string MANAGE = 'knowledge-manage';
 

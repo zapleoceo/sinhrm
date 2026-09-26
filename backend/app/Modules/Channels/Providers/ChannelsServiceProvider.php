@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\Route;
 /** Channels: provider webhooks → timeline, sending from the card, channel admin. Routes at the /api root. */
 final class ChannelsServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'forum';
+
+    protected string $moduleGroup = 'recruiting';
+
     public const string ADAPTERS_TAG = 'channels.adapters';
 
     public const string WEBHOOK_LIMITER = 'channel-webhooks';

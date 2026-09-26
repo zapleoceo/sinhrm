@@ -26,6 +26,13 @@ final class PrivacyServiceProvider extends ModuleServiceProvider
 
     protected string $prefix = 'privacy';
 
+    protected string $moduleIcon = 'shield_person';
+
+    protected string $moduleGroup = 'admin';
+
+    /** Every page and route of the module is behind privacy-manage (superadmin, admin). */
+    protected ?array $defaultRoles = [UserRole::Superadmin, UserRole::Admin];
+
     public function register(): void
     {
         $this->app->bind(PersonalDataService::class, fn ($app) => new PersonalDataService($app->tagged(PersonalDataProvider::class)));

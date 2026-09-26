@@ -16,5 +16,9 @@
 (`errors.prune`, 30 дней), `Http\Controllers\ErrorLogController` (`/api/errors/*`), фронт —
 `features/observability/errors.page.ts`, `core/errors/*`.
 
+Модуль базовый (`$coreModule = true`, [modules-access.md](modules-access.md)): на странице «Модулі» его нельзя
+выключить. Причина — `POST /api/errors/client` принимает отчёты от каждого вошедшего пользователя при любой роли;
+сам журнал и так закрыт для всех, кроме суперадмина, а `errors.prune` работает всегда.
+
 ## Как проверить
-`tests/Feature/Observability/ErrorLogTest.php`, `frontend/src/app/core/errors/error-reporter.spec.ts`.
+`tests/Feature/Observability/ErrorLogTest.php`, `tests/Feature/Core/ModuleAccessTest.php`, `frontend/src/app/core/errors/error-reporter.spec.ts`.

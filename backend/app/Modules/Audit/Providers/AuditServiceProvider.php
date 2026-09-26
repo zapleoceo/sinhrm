@@ -62,6 +62,13 @@ final class AuditServiceProvider extends ModuleServiceProvider
 
     protected string $prefix = 'audit';
 
+    protected string $moduleIcon = 'history';
+
+    protected string $moduleGroup = 'admin';
+
+    /** The "Журнал дій" page is superadmin only. Switching the module off stops its API and retention job. */
+    protected ?array $defaultRoles = [UserRole::Superadmin];
+
     public function register(): void
     {
         $this->app->bind(AuditLogRepository::class, EloquentAuditLogRepository::class);
