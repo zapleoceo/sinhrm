@@ -25,6 +25,7 @@ import { Application, CHANNELS, LogTouch, STAGE_FILTER, Stage, TimelineFilter } 
 import { recruitingErrorKey } from '../recruiting.service';
 import { CandidateCardStore } from './candidate-card.store';
 import { ScreeningPanel } from './screening-panel';
+import { InterviewersPanel } from './interviewers-panel';
 import { TouchComposer } from './touch-composer';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { hasChannelIcon } from '../../../core/ui/channel-icons';
@@ -37,7 +38,7 @@ import { hasChannelIcon } from '../../../core/ui/channel-icons';
  */
 @Component({
   selector: 'app-candidate-card',
-  imports: [
+  imports: [InterviewersPanel,
     DatePipe,
     MatButtonModule,
     ChannelIcon,

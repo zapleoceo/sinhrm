@@ -70,6 +70,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         ->whereNumber('application')->name('recruiting.applications.move');
     Route::put('applications/{application}/interviewers', [ApplicationController::class, 'interviewers'])
         ->whereNumber('application')->name('recruiting.applications.interviewers');
+    Route::get('recruiting/assignable-users', [ApplicationController::class, 'assignableUsers'])->name('recruiting.assignable-users');
     Route::get('recruiting/stale', [ApplicationController::class, 'stale'])->name('recruiting.stale');
 
     Route::get('inbox', [InboxController::class, 'index'])->name('recruiting.inbox.index');

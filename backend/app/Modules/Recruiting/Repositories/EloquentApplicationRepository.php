@@ -39,7 +39,7 @@ final class EloquentApplicationRepository implements ApplicationRepository
     public function forCandidate(int $candidateId): Collection
     {
         return Application::query()
-            ->with(['vacancy.branch', 'vacancy.pipeline.stages', 'stage', 'rejectReason', 'stageChanges.toStage', 'stageChanges.byUser'])
+            ->with(['vacancy.branch', 'vacancy.pipeline.stages', 'stage', 'rejectReason', 'stageChanges.toStage', 'stageChanges.byUser', 'interviewers'])
             ->where('candidate_id', $candidateId)
             ->orderByDesc('updated_at')
             ->orderByDesc('id')

@@ -137,6 +137,13 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
   `Contracts/HiringTeamRepository`); фильтры списков вакансий, кандидатов и «застоявшихся» заявок добавляют их через `OR`.
   `RecruitingScope::canWorkVacancy` = (писатель и вакансия в его филиалах) или нанимающий менеджер. «Вхідні» и отчёты
   по-прежнему режутся только филиалами — контекстные роли их не открывают.
+- Где это в интерфейсе: в диалоге вакансии («Редагувати вакансію») поле «Наймаючий менеджер» — выпадающий список людей,
+  видно только рекрутинговым писателям. В карточке кандидата под каждой заявкой — «Інтерв'юери»: писатель выбирает
+  несколько человек, сохраняется сразу; остальные видят имена. Список людей — `GET /api/recruiting/assignable-users?q=`
+  (активные пользователи `{id, name}`, по имени/e-mail, до 50; доступ — писатели и нанимающие менеджеры хотя бы одной
+  вакансии, иначе 403; `q` длиннее 100 — 422). Карточка получает `applications[].interviewers [{id, name}]`.
+  Фронтенд: `vacancies/vacancy.dialog.ts`, `card/interviewers-panel.ts`, `hiring-team.ts` (`withCurrent` — текущие
+  назначенные всегда есть в списке), методы `assignableUsers` / `setInterviewers` в `recruiting.service.ts`.
 
 Политики: `VacancyPolicy` (view/create/update), `CandidatePolicy` (view/create/update), `ApplicationPolicy::move` (по филиалу вакансии),
 `TouchpointPolicy::resolve` (разбор «Вхідних»). Запись проверяется в `FormRequest::authorize()`, чтение карточек — `Gate` в контроллере,
@@ -163,6 +170,7 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 | `GET /api/candidates/{id}/timeline` | `channel=call,telegram,stage` (или массив; `stage` = шаги), `perPage, page` | новые сверху: `{type: touchpoint\|stage_change, at, touchpoint\|stage_change}`; у касания `touchpoint.evaluation` — `{id, score, engine, next_step_fixed, script_version_id}` или `null` (оценка по скрипту, см. ниже) |
 | `POST /api/candidates/{id}/touchpoints` | `{channel (note\|call\|meeting\|telegram\|whatsapp\|viber\|email), direction?, body (обязателен для note), occurred_at?, duration_sec?, application_id?}` | 201, `via_product=true` |
 | `POST /api/applications/{id}/move` | `{stage_id, reason?, reject_reason_id?}` | заявка; ошибки см. «Правила» |
+| `GET /api/recruiting/assignable-users` | `?q=` | `{data: [{id, name}]}` — до 50 активных; 403 не писателю и не нанимающему менеджеру |
 | `PUT /api/applications/{id}/interviewers` | `{user_ids: int[]}` | заявка с `interviewers [{id, name}]`; 403 без права, 422 неактивный/несуществующий пользователь или нет поля |
 | `GET /api/recruiting/stale` | `days` 1..365 (строка `"3"` ок; по умолч. 3) | до 200 заявок, самые старые сверху; `meta.days` |
 | `GET /api/inbox` | `perPage, page` | касания без кандидата в пределах доступа |

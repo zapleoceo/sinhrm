@@ -67,6 +67,26 @@ describe('RecruitingService', () => {
     http.match(() => true).forEach((r) => r.flush({ data: {} }));
   });
 
+  it('loads assignable users and replaces interviewers', () => {
+    let names: string[] = [];
+    api.assignableUsers('ann').subscribe((list) => (names = list.map((u) => u.name)));
+    const u = http.expectOne((r) => r.url === '/api/recruiting/assignable-users');
+    expect(u.request.params.get('q')).toBe('ann');
+    u.flush({ data: [{ id: 3, name: 'Ann' }] });
+    expect(names).toEqual(['Ann']);
+
+    api.setInterviewers(9, [3, 4]).subscribe();
+    const p = http.expectOne('/api/applications/9/interviewers');
+    expect(p.request.method).toBe('PUT');
+    expect(p.request.body).toEqual({ user_ids: [3, 4] });
+    p.flush({ data: { id: 9 } });
+
+    api.assignableUsers().subscribe();
+    const all = http.expectOne((r) => r.url === '/api/recruiting/assignable-users');
+    expect(all.request.params.has('q')).toBe(false);
+    all.flush({ data: [] });
+  });
+
   it('requests stale with days and reports with a range', () => {
     api.stale(3).subscribe();
     expect(http.expectOne((r) => r.url === '/api/recruiting/stale').request.params.get('days')).toBe('3');

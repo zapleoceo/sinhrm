@@ -83,6 +83,9 @@ export interface Vacancy {
   position: Ref | null;
   recruiter_id: number;
   recruiter: Ref | null;
+  /** Contextual role: sees and works only this vacancy. */
+  hiring_manager_id: number | null;
+  hiring_manager: Ref | null;
   pipeline_id: number;
   stages: Stage[];
   description: string | null;
@@ -99,6 +102,8 @@ export interface SaveVacancy {
   position_id?: number | null;
   status?: VacancyStatus;
   description?: string | null;
+  /** Only recruiting writers may send it (the API answers 422 to a hiring manager). */
+  hiring_manager_id?: number | null;
 }
 
 export interface CandidateBrief {
@@ -142,6 +147,8 @@ export interface Application {
   stage?: Stage;
   stages?: Stage[];
   route?: RouteStep[];
+  /** Contextual role: who interviews this candidate for this vacancy (card only). */
+  interviewers?: Ref[];
 }
 
 /** Acquisition channel (tz3; backend Recruiting AcquisitionChannel). utm_rules/costs — managers only. */
