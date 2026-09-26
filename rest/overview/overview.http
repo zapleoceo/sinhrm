@@ -1,0 +1,8 @@
+# Overview — main endpoints. Generated skeleton, synthetic data only.
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Overview operations: /api/docs (tag "Overview").
+
+### GET /api/dashboard — overview.dashboard
+GET {{host}}/api/dashboard
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

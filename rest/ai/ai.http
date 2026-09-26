@@ -1,0 +1,78 @@
+# Ai — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@purpose = 1
+@version = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Ai operations: /api/docs (tag "Ai").
+
+### GET /api/ai/status — ai.status
+GET {{host}}/api/ai/status
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/ai/test — ai.test
+POST {{host}}/api/ai/test
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/ai/stats — ?period=today|7d|30d
+GET {{host}}/api/ai/stats
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/ai/prompts/{purpose} — ai.prompts.show
+GET {{host}}/api/ai/prompts/{{purpose}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/ai/prompts/{purpose} — ai.prompts.save
+POST {{host}}/api/ai/prompts/{{purpose}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "body": "Example body"
+}
+
+### POST /api/ai/prompts/{purpose}/versions/{version}/activate — ai.prompts.activate
+POST {{host}}/api/ai/prompts/{{purpose}}/versions/{{version}}/activate
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/ai/prompts/{purpose}/builtin — ai.prompts.builtin
+POST {{host}}/api/ai/prompts/{{purpose}}/builtin
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### PUT /api/ai/prompts/{purpose}/capability — ai.prompts.capability
+PUT {{host}}/api/ai/prompts/{{purpose}}/capability
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "capability": "chat:fast"
+}
+
+### POST /api/ai/prompts/{purpose}/trial — ai.prompts.trial
+POST {{host}}/api/ai/prompts/{{purpose}}/trial
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "body": "Example body"
+}

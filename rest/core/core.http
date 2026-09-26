@@ -1,0 +1,27 @@
+# Core — main endpoints. Generated skeleton, synthetic data only.
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Core operations: /api/docs (tag "Core").
+
+### GET /api/health — core.health
+GET {{host}}/api/health
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/ops/migrate — core.ops.migrate
+POST {{host}}/api/ops/migrate
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "fresh": true
+}
+
+### POST /api/ops/jobs/run — core.ops.jobs
+POST {{host}}/api/ops/jobs/run
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/

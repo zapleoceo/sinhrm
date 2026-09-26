@@ -1,0 +1,107 @@
+# Assets — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@employee = 1
+@type = 1
+@asset = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Assets operations: /api/docs (tag "Assets").
+
+### GET /api/assets/employee/{employee} — GET /api/assets/employee/{id}: current and past assets of one employee
+GET {{host}}/api/assets/employee/{{employee}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/assets/types — assets.types.index
+GET {{host}}/api/assets/types
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/assets/types — assets.types.store
+POST {{host}}/api/assets/types
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
+
+### PATCH /api/assets/types/{type} — assets.types.update
+PATCH {{host}}/api/assets/types/{{type}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
+
+### GET /api/assets — assets.index
+GET {{host}}/api/assets
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/assets — assets.store
+POST {{host}}/api/assets
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "inventory_number": "Example inventory number",
+    "name": "Example name"
+}
+
+### GET /api/assets/{asset} — assets.show
+GET {{host}}/api/assets/{{asset}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/assets/{asset} — assets.update
+PATCH {{host}}/api/assets/{{asset}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "inventory_number": "Example inventory number",
+    "name": "Example name"
+}
+
+### POST /api/assets/{asset}/assign — assets.assign
+POST {{host}}/api/assets/{{asset}}/assign
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "employee_id": 1,
+    "date": "2026-10-01T09:00:00Z",
+    "condition": "Example condition",
+    "status": "in_stock"
+}
+
+### POST /api/assets/{asset}/return — assets.return
+POST {{host}}/api/assets/{{asset}}/return
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "employee_id": 1,
+    "date": "2026-10-01T09:00:00Z",
+    "condition": "Example condition",
+    "status": "in_stock"
+}

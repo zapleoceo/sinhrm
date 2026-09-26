@@ -1,0 +1,147 @@
+# Perform — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@id = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Perform operations: /api/docs (tag "Perform").
+
+### GET /api/perform/one-on-ones — perform.one-on-ones.index
+GET {{host}}/api/perform/one-on-ones
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/perform/one-on-ones — perform.one-on-ones.store
+POST {{host}}/api/perform/one-on-ones
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "employee_id": 1,
+    "scheduled_at": "2026-10-01T09:00:00Z"
+}
+
+### GET /api/perform/one-on-ones/{id} — perform.one-on-ones.show
+GET {{host}}/api/perform/one-on-ones/{{id}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/perform/one-on-ones/{id} — perform.one-on-ones.update
+PATCH {{host}}/api/perform/one-on-ones/{{id}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "scheduled_at": "2026-10-01T09:00:00Z",
+    "status": "scheduled",
+    "notes_shared": "Example notes shared",
+    "notes_private_manager": "Example notes private manager",
+    "agenda": [
+        {
+            "text": "Example text"
+        }
+    ],
+    "action_items": [
+        {
+            "text": "Example text"
+        }
+    ]
+}
+
+### GET /api/perform/one-on-one-templates — perform.templates.index
+GET {{host}}/api/perform/one-on-one-templates
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/perform/one-on-one-templates — perform.templates.store
+POST {{host}}/api/perform/one-on-one-templates
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "agenda": [
+        "Example agenda"
+    ]
+}
+
+### GET /api/perform/objectives — perform.objectives.index
+GET {{host}}/api/perform/objectives
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/perform/objectives — perform.objectives.store
+POST {{host}}/api/perform/objectives
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "scope": "personal",
+    "period": "Example period",
+    "title": "Example title",
+    "key_results": [
+        {
+            "title": "Example title",
+            "start": 1.5,
+            "target": 1.5
+        }
+    ],
+    "visibility": "public"
+}
+
+### GET /api/perform/objectives/{id} — perform.objectives.show
+GET {{host}}/api/perform/objectives/{{id}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/perform/objectives/{id} — perform.objectives.update
+PUT {{host}}/api/perform/objectives/{{id}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "scope": "personal",
+    "period": "Example period",
+    "title": "Example title",
+    "key_results": [
+        {
+            "title": "Example title",
+            "start": 1.5,
+            "target": 1.5
+        }
+    ],
+    "visibility": "public"
+}
+
+### GET /api/perform/kpis — perform.kpis.index
+GET {{host}}/api/perform/kpis
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/perform/kpis — perform.kpis.store
+POST {{host}}/api/perform/kpis
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "employee_id": 1,
+    "metric": "Example metric",
+    "period": "Example period",
+    "target": 1.5
+}

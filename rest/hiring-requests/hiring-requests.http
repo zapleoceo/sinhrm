@@ -1,0 +1,119 @@
+# HiringRequests — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@id = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of HiringRequests operations: /api/docs (tag "HiringRequests").
+
+### GET /api/hiring-requests — hiring.index
+GET {{host}}/api/hiring-requests
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/hiring-requests — hiring.store
+POST {{host}}/api/hiring-requests
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "title": "Example title",
+    "branch_id": 1,
+    "reason": "new_position"
+}
+
+### GET /api/hiring-requests/inbox — hiring.inbox
+GET {{host}}/api/hiring-requests/inbox
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/hiring-requests/meta — What the current user may do: create, and the configurable form fields for the wizard
+GET {{host}}/api/hiring-requests/meta
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/hiring-requests/{id} — hiring.show
+GET {{host}}/api/hiring-requests/{{id}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/hiring-requests/{id} — hiring.update
+PATCH {{host}}/api/hiring-requests/{{id}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "title": "Example title",
+    "branch_id": 1,
+    "reason": "new_position"
+}
+
+### POST /api/hiring-requests/{id}/submit — hiring.submit
+POST {{host}}/api/hiring-requests/{{id}}/submit
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/hiring-requests/{id}/decision — hiring.decide
+POST {{host}}/api/hiring-requests/{{id}}/decision
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "decision": "approve"
+}
+
+### POST /api/hiring-requests/{id}/cancel — hiring.cancel
+POST {{host}}/api/hiring-requests/{{id}}/cancel
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/hiring-requests/{id}/close — hiring.close
+POST {{host}}/api/hiring-requests/{{id}}/close
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/hiring-requests/settings — hiring.settings.show
+GET {{host}}/api/hiring-requests/settings
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/hiring-requests/settings — hiring.settings.update
+PUT {{host}}/api/hiring-requests/settings
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "form_fields": [
+        {
+            "key": "Example key",
+            "label": "Example label",
+            "type": "text"
+        }
+    ],
+    "creator_user_ids": [
+        1
+    ],
+    "auto_vacancy": true,
+    "route": [
+        {
+            "name": "Example name",
+            "kind": "manager"
+        }
+    ]
+}

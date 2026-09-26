@@ -1,0 +1,137 @@
+# Recruiting — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@rejectReason = 1
+@channel = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Recruiting operations: /api/docs (tag "Recruiting").
+
+### GET /api/pipelines — recruiting.pipelines.index
+GET {{host}}/api/pipelines
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/pipelines — recruiting.pipelines.store
+POST {{host}}/api/pipelines
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "stages": [
+        {
+            "name": "Example name",
+            "kind": "attract"
+        }
+    ]
+}
+
+### GET /api/reject-reasons — ?all=1 → inactive too (admin screens); default → active only (reject prompt)
+GET {{host}}/api/reject-reasons
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/reject-reasons — recruiting.reject-reasons.store
+POST {{host}}/api/reject-reasons
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
+
+### PATCH /api/reject-reasons/{rejectReason} — recruiting.reject-reasons.update
+PATCH {{host}}/api/reject-reasons/{{rejectReason}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
+
+### GET /api/acquisition-channels — recruiting.channels.index
+GET {{host}}/api/acquisition-channels
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/acquisition-channels — recruiting.channels.store
+POST {{host}}/api/acquisition-channels
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "code": "Example code",
+    "name": "Example name"
+}
+
+### POST /api/acquisition-channels/resolve — "Which channel would these UTM tags give?" — the rules editor's test box
+POST {{host}}/api/acquisition-channels/resolve
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "utm_source": "Example utm source",
+    "utm_medium": "Example utm medium",
+    "utm_campaign": "Example utm campaign",
+    "priority": 1
+}
+
+### PATCH /api/acquisition-channels/{channel} — recruiting.channels.update
+PATCH {{host}}/api/acquisition-channels/{{channel}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "code": "Example code",
+    "name": "Example name"
+}
+
+### POST /api/acquisition-channels/{channel}/utm-rules — recruiting.channels.rules.store
+POST {{host}}/api/acquisition-channels/{{channel}}/utm-rules
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "utm_source": "Example utm source",
+    "utm_medium": "Example utm medium",
+    "utm_campaign": "Example utm campaign",
+    "priority": 1
+}
+
+### GET /api/vacancies — recruiting.vacancies.index
+GET {{host}}/api/vacancies
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/vacancies — recruiting.vacancies.store
+POST {{host}}/api/vacancies
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "title": "Example title",
+    "branch_id": 1
+}
