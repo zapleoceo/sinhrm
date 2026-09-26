@@ -1,0 +1,117 @@
+# Workflows — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@workflowRun = 1
+@runStep = 1
+@workflowTemplate = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Workflows operations: /api/docs (tag "Workflows").
+
+### GET /api/workflows/runs — workflows.runs.index
+GET {{host}}/api/workflows/runs
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/workflows/runs — workflows.runs.store
+POST {{host}}/api/workflows/runs
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "template_id": 1,
+    "employee_id": 1
+}
+
+### GET /api/workflows/runs/{workflowRun} — workflows.runs.show
+GET {{host}}/api/workflows/runs/{{workflowRun}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/workflows/runs/{workflowRun}/steps/{runStep}/complete — workflows.steps.complete
+POST {{host}}/api/workflows/runs/{{workflowRun}}/steps/{{runStep}}/complete
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/workflows/runs/{workflowRun}/steps/{runStep}/skip — workflows.steps.skip
+POST {{host}}/api/workflows/runs/{{workflowRun}}/steps/{{runStep}}/skip
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "reason": "Example reason"
+}
+
+### GET /api/workflows/templates — workflows.templates.index
+GET {{host}}/api/workflows/templates
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/workflows/templates — workflows.templates.store
+POST {{host}}/api/workflows/templates
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "kind": "onboarding",
+    "trigger": "manual",
+    "steps": [
+        {
+            "title": "Example title",
+            "action": "create_task",
+            "offset_days": -365,
+            "assignee_rule": "employee"
+        }
+    ]
+}
+
+### GET /api/workflows/templates/{workflowTemplate} — workflows.templates.show
+GET {{host}}/api/workflows/templates/{{workflowTemplate}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/workflows/templates/{workflowTemplate} — workflows.templates.update
+PUT {{host}}/api/workflows/templates/{{workflowTemplate}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "kind": "onboarding",
+    "trigger": "manual",
+    "steps": [
+        {
+            "title": "Example title",
+            "action": "create_task",
+            "offset_days": -365,
+            "assignee_rule": "employee"
+        }
+    ]
+}
+
+### POST /api/workflows/templates/{workflowTemplate}/steps/reorder — workflows.templates.reorder
+POST {{host}}/api/workflows/templates/{{workflowTemplate}}/steps/reorder
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "ids": [
+        1
+    ]
+}

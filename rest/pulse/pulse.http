@@ -1,0 +1,94 @@
+# Pulse — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@id = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Pulse operations: /api/docs (tag "Pulse").
+
+### GET /api/pulse/my/waves — pulse.my.waves
+GET {{host}}/api/pulse/my/waves
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/pulse/waves/{id}/form — pulse.waves.form
+GET {{host}}/api/pulse/waves/{{id}}/form
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/pulse/waves/{id}/responses — pulse.waves.respond
+POST {{host}}/api/pulse/waves/{{id}}/responses
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "answers": [
+        "Example answers"
+    ]
+}
+
+### GET /api/pulse/waves/{id}/results — pulse.waves.results
+GET {{host}}/api/pulse/waves/{{id}}/results
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/pulse/waves/{id}/compare — pulse.waves.compare
+GET {{host}}/api/pulse/waves/{{id}}/compare
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/pulse/mood/today — pulse.mood.today
+GET {{host}}/api/pulse/mood/today
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/pulse/mood — pulse.mood.store
+POST {{host}}/api/pulse/mood
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "score": 1
+}
+
+### GET /api/pulse/mood/me — pulse.mood.me
+GET {{host}}/api/pulse/mood/me
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/pulse/mood/team — pulse.mood.team
+GET {{host}}/api/pulse/mood/team
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/pulse/mood/settings — pulse.mood.settings
+GET {{host}}/api/pulse/mood/settings
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/pulse/mood/settings — pulse.mood.settings.update
+PUT {{host}}/api/pulse/mood/settings
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "weekdays": [
+        1
+    ],
+    "question": "Example question",
+    "required": true,
+    "alert_drop": 1.5,
+    "min_group": 5
+}
+
+### GET /api/pulse/templates — pulse.templates
+GET {{host}}/api/pulse/templates
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

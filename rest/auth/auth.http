@@ -1,0 +1,37 @@
+# Auth — main endpoints. Generated skeleton, synthetic data only.
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Auth operations: /api/docs (tag "Auth").
+
+### GET /api/auth/me — auth.me
+GET {{host}}/api/auth/me
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/auth/me/locale — auth.me.locale
+PATCH {{host}}/api/auth/me/locale
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "locale": "uk"
+}
+
+### POST /api/auth/logout — auth.logout
+POST {{host}}/api/auth/logout
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/auth/google/redirect — auth.google.redirect
+GET {{host}}/api/auth/google/redirect
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/auth/google/callback — auth.google.callback
+GET {{host}}/api/auth/google/callback
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

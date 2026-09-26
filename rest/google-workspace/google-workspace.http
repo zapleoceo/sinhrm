@@ -1,0 +1,101 @@
+# GoogleWorkspace — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@candidate = 1
+@sheetImport = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of GoogleWorkspace operations: /api/docs (tag "GoogleWorkspace").
+
+### GET /api/google/calendar — Whether "Schedule a meeting" can work (the card disables the button otherwise)
+GET {{host}}/api/google/calendar
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/google/candidates/{candidate}/meetings — 201 {data: {event_id, meet_link, html_link, touchpoint}}; calendar not connected → 422
+POST {{host}}/api/google/candidates/{{candidate}}/meetings
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "title": "Example title",
+    "start": "2026-10-01T09:00:00Z",
+    "duration_minutes": 15,
+    "type": "branch"
+}
+
+### GET /api/google/status — google.status
+GET {{host}}/api/google/status
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/google/sheets/inspect — google.sheets.inspect
+POST {{host}}/api/google/sheets/inspect
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "url": "https://example.com/profile"
+}
+
+### GET /api/google/sheets/imports — google.sheets.imports.index
+GET {{host}}/api/google/sheets/imports
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/google/sheets/imports — google.sheets.imports.store
+POST {{host}}/api/google/sheets/imports
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+"Example text"
+
+### PATCH /api/google/sheets/imports/{sheetImport} — google.sheets.imports.update
+PATCH {{host}}/api/google/sheets/imports/{{sheetImport}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "auto_sync": true,
+    "mapping": {
+        "full_name": 0,
+        "phone": 0,
+        "email": 0,
+        "telegram": 0,
+        "source": 0,
+        "utm_source": 0,
+        "utm_medium": 0,
+        "utm_campaign": 0,
+        "utm_content": 0,
+        "utm_term": 0,
+        "vacancy": 0,
+        "created_at": 0
+    }
+}
+
+### POST /api/google/sheets/imports/{sheetImport}/run — google.sheets.imports.run
+POST {{host}}/api/google/sheets/imports/{{sheetImport}}/run
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/google/connect — GET /api/google/connect?services=gmail,calendar,sheets (default: all three)
+GET {{host}}/api/google/connect
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/google/connect/callback — GET /api/google/connect/callback?code=…&state=…
+GET {{host}}/api/google/connect/callback
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

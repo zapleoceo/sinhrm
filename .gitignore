@@ -12,3 +12,6 @@ vendor/
 *.sqlite3
 *.db
 SENSITIVE*
+
+# REST client: real session/XSRF values go here, never in the shared env file
+rest/http-client.private.env.json

@@ -1,0 +1,138 @@
+# Scripts — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@script = 1
+@version = 1
+@candidate = 1
+@touchpoint = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Scripts operations: /api/docs (tag "Scripts").
+
+### GET /api/scripts — ?archived=1 — include archived scripts
+GET {{host}}/api/scripts
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/scripts — scripts.store
+POST {{host}}/api/scripts
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "channel": "call"
+}
+
+### GET /api/scripts/{script} — The editor: the active version and the draft with their content
+GET {{host}}/api/scripts/{{script}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/scripts/{script} — scripts.update
+PATCH {{host}}/api/scripts/{{script}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "archived": true
+}
+
+### GET /api/scripts/{script}/versions — scripts.versions
+GET {{host}}/api/scripts/{{script}}/versions
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/scripts/{script}/test — Evaluation preview of a pasted text; nothing is stored
+POST {{host}}/api/scripts/{{script}}/test
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "text": "Example text"
+}
+
+### PUT /api/scripts/{script}/draft — Always 200 (also when the draft row was just created: PUT replaces "the draft" of the script)
+PUT {{host}}/api/scripts/{{script}}/draft
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "steps": [
+        {
+            "id": "Example id",
+            "title": "Example title",
+            "weight": 0
+        }
+    ],
+    "objections": [
+        {
+            "id": "Example id",
+            "trigger": "Example trigger",
+            "answer": "Example answer"
+        }
+    ],
+    "templates": [
+        {
+            "id": "Example id",
+            "key": "Example key",
+            "title": "Example title",
+            "text": "Example text"
+        }
+    ],
+    "followups": [
+        {
+            "id": "Example id",
+            "condition": "no_reply",
+            "delay_days": 0
+        }
+    ],
+    "next_step_patterns": {
+        "positive": [
+            "Example positive"
+        ],
+        "negative": [
+            "Example negative"
+        ]
+    }
+}
+
+### POST /api/scripts/{script}/publish — scripts.publish
+POST {{host}}/api/scripts/{{script}}/publish
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/scripts/{script}/activate/{version} — scripts.activate
+POST {{host}}/api/scripts/{{script}}/activate/{{version}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/candidates/{candidate}/templates — GET /api/candidates/{candidate}/templates — same visibility as the card
+GET {{host}}/api/candidates/{{candidate}}/templates
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/touchpoints/{touchpoint}/evaluation — GET /api/touchpoints/{touchpoint}/evaluation — visible with the candidate (or the inbox item); missing but eligible → evaluated now; otherwise 404 not_evaluated
+GET {{host}}/api/touchpoints/{{touchpoint}}/evaluation
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/reports/scripts — scripts.report
+GET {{host}}/api/reports/scripts
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

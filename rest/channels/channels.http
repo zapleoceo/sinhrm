@@ -1,0 +1,81 @@
+# Channels — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@channelKey = 1
+@candidate = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Channels operations: /api/docs (tag "Channels").
+
+### POST /api/webhooks/{channelKey} — channels.webhook
+POST {{host}}/api/webhooks/{{channelKey}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/webhooks/{channelKey} — GET handshake (WhatsApp): echo hub.challenge as plain text
+GET {{host}}/api/webhooks/{{channelKey}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/channels — GET /channels — which channels can send / call now (any active user)
+GET {{host}}/api/channels
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/candidates/{candidate}/messages — channels.messages.send
+POST {{host}}/api/candidates/{{candidate}}/messages
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "channel": "telegram",
+    "text": "Example text"
+}
+
+### POST /api/candidates/{candidate}/call — channels.call
+POST {{host}}/api/candidates/{{candidate}}/call
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/channels/admin — channels.admin
+GET {{host}}/api/channels/admin
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/channels/{channelKey}/register-webhook — channels.register
+POST {{host}}/api/channels/{{channelKey}}/register-webhook
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/channels/{channelKey}/test — channels.test
+POST {{host}}/api/channels/{{channelKey}}/test
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "to": "Example to"
+}
+
+### POST /api/channels/{channelKey}/simulate — channels.simulate
+POST {{host}}/api/channels/{{channelKey}}/simulate
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "candidate_id": 1,
+    "contact": "Example contact",
+    "text": "Example text"
+}

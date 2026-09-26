@@ -1,0 +1,124 @@
+# TimeOff — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@leaveType = 1
+@policy = 1
+@holiday = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of TimeOff operations: /api/docs (tag "TimeOff").
+
+### GET /api/timeoff/types — ?all=1 adds inactive types (admins only)
+GET {{host}}/api/timeoff/types
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/timeoff/types — timeoff.types.store
+POST {{host}}/api/timeoff/types
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "code": "Example code"
+}
+
+### GET /api/timeoff/holidays — timeoff.holidays.index
+GET {{host}}/api/timeoff/holidays
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/timeoff/holidays — timeoff.holidays.store
+POST {{host}}/api/timeoff/holidays
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "date": "2026-10-01",
+    "name": "Example name"
+}
+
+### PATCH /api/timeoff/types/{leaveType} — timeoff.types.update
+PATCH {{host}}/api/timeoff/types/{{leaveType}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "code": "Example code"
+}
+
+### GET /api/timeoff/policies — timeoff.policies.index
+GET {{host}}/api/timeoff/policies
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/timeoff/policies — timeoff.policies.store
+POST {{host}}/api/timeoff/policies
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "leave_type_id": 1,
+    "annual_days": 1.5
+}
+
+### PATCH /api/timeoff/policies/{policy} — timeoff.policies.update
+PATCH {{host}}/api/timeoff/policies/{{policy}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "leave_type_id": 1,
+    "annual_days": 1.5
+}
+
+### PATCH /api/timeoff/holidays/{holiday} — timeoff.holidays.update
+PATCH {{host}}/api/timeoff/holidays/{{holiday}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "date": "2026-10-01",
+    "name": "Example name"
+}
+
+### POST /api/timeoff/balances/adjust — timeoff.balances.adjust
+POST {{host}}/api/timeoff/balances/adjust
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "employee_id": 1,
+    "leave_type_id": 1,
+    "delta": 1.5
+}
+
+### GET /api/timeoff/balances — timeoff.balances.index
+GET {{host}}/api/timeoff/balances
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/timeoff/balances/history — timeoff.balances.history
+GET {{host}}/api/timeoff/balances/history
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

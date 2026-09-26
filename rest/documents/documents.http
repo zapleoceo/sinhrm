@@ -1,0 +1,116 @@
+# Documents — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@document = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Documents operations: /api/docs (tag "Documents").
+
+### GET /api/documents — documents.index
+GET {{host}}/api/documents
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/documents — documents.store
+POST {{host}}/api/documents
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "employee_id": 1
+}
+
+### GET /api/me/documents — GET /api/me/documents — own documents, drafts hidden; no linked employee → empty list
+GET {{host}}/api/me/documents
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/documents/{document} — documents.show
+GET {{host}}/api/documents/{{document}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/documents/{document} — documents.update
+PATCH {{host}}/api/documents/{{document}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "title": "Example title",
+    "category": "Example category",
+    "content_md": "Example content md",
+    "status": "archived"
+}
+
+### GET /api/documents/{document}/file — The attached file as a download (never inline: the browser must not render an uploaded file on our origin)
+GET {{host}}/api/documents/{{document}}/file
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/documents/{document}/file — documents.upload
+POST {{host}}/api/documents/{{document}}/file
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: multipart/form-data; boundary=b
+
+--b
+Content-Disposition: form-data; name="file"; filename="example.pdf"
+Content-Type: application/pdf
+
+< ./example.pdf
+--b--
+
+### POST /api/documents/{document}/acknowledge — documents.acknowledge
+POST {{host}}/api/documents/{{document}}/acknowledge
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/documents/{document}/reject — documents.reject
+POST {{host}}/api/documents/{{document}}/reject
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "reason": "Example reason"
+}
+
+### GET /api/documents/templates — ?archived=1 — with archived ones
+GET {{host}}/api/documents/templates
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/documents/templates — documents.templates.store
+POST {{host}}/api/documents/templates
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "body": "Example body"
+}
+
+### POST /api/documents/templates/preview — Rendered preview (sanitized HTML) with an employee's values or synthetic sample values
+POST {{host}}/api/documents/templates/preview
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "body": "Example body"
+}

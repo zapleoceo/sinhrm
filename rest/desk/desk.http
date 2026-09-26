@@ -1,0 +1,98 @@
+# Desk — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@case = 1
+@attachment = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Desk operations: /api/docs (tag "Desk").
+
+### GET /api/desk/categories — desk.categories.index
+GET {{host}}/api/desk/categories
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/desk/categories — desk.categories.store
+POST {{host}}/api/desk/categories
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
+
+### GET /api/desk/cases/mine — desk.cases.mine
+GET {{host}}/api/desk/cases/mine
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/desk/cases — desk.cases.store
+POST {{host}}/api/desk/cases
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "category_id": 1,
+    "subject": "Example subject",
+    "body": "Example body"
+}
+
+### GET /api/desk/cases — desk.cases.queue
+GET {{host}}/api/desk/cases
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/desk/cases/{case} — desk.cases.show
+GET {{host}}/api/desk/cases/{{case}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/desk/cases/{case} — desk.cases.update
+PATCH {{host}}/api/desk/cases/{{case}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "status": "new",
+    "assignee_id": 1,
+    "category_id": 1
+}
+
+### POST /api/desk/cases/{case}/comments — desk.cases.comment
+POST {{host}}/api/desk/cases/{{case}}/comments
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "body": "Example body"
+}
+
+### POST /api/desk/cases/{case}/attachments — Reuses the Documents upload validation (pdf/png/jpg/docx, ≤ 2 MB); the type is re-checked from the bytes
+POST {{host}}/api/desk/cases/{{case}}/attachments
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: multipart/form-data; boundary=b
+
+--b
+Content-Disposition: form-data; name="file"; filename="example.pdf"
+Content-Type: application/pdf
+
+< ./example.pdf
+--b--
+
+### GET /api/desk/cases/{case}/attachments/{attachment} — Always a download (never inline on our origin), like documents
+GET {{host}}/api/desk/cases/{{case}}/attachments/{{attachment}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

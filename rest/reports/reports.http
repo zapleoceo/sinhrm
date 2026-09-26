@@ -1,0 +1,92 @@
+# Reports — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@key = 1
+@id = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Reports operations: /api/docs (tag "Reports").
+
+### GET /api/reports/catalog — reports.catalog
+GET {{host}}/api/reports/catalog
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/reports/catalog/{key} — reports.run
+GET {{host}}/api/reports/catalog/{{key}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/reports/catalog/{key}/csv — reports.csv
+GET {{host}}/api/reports/catalog/{{key}}/csv
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/reports/builder/datasets — reports.builder.datasets
+GET {{host}}/api/reports/builder/datasets
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/reports/builder/run — reports.builder.run
+POST {{host}}/api/reports/builder/run
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "dataset": "Example dataset"
+}
+
+### POST /api/reports/builder/csv — reports.builder.csv
+POST {{host}}/api/reports/builder/csv
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "dataset": "Example dataset"
+}
+
+### GET /api/reports/saved — reports.saved.index
+GET {{host}}/api/reports/saved
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/reports/saved — reports.saved.store
+POST {{host}}/api/reports/saved
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "kind": "builder",
+    "definition": [
+        "Example definition"
+    ]
+}
+
+### PUT /api/reports/saved/{id} — reports.saved.update
+PUT {{host}}/api/reports/saved/{{id}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name",
+    "kind": "builder",
+    "definition": [
+        "Example definition"
+    ]
+}
+
+### GET /api/reports/saved/{id}/run — Runs a saved report under the owner's current scope (as JSON or CSV with ?format=csv)
+GET {{host}}/api/reports/saved/{{id}}/run
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

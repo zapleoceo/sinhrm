@@ -1,0 +1,35 @@
+# Directory — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@dictionary = 1
+@id = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Directory operations: /api/docs (tag "Directory").
+
+### GET /api/directory/{dictionary} — directory.index
+GET {{host}}/api/directory/{{dictionary}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/directory/{dictionary} — directory.store
+POST {{host}}/api/directory/{{dictionary}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
+
+### PATCH /api/directory/{dictionary}/{id} — directory.update
+PATCH {{host}}/api/directory/{{dictionary}}/{{id}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
