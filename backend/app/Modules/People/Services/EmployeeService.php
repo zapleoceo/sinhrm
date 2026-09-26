@@ -10,6 +10,7 @@ use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Events\EmployeeHired;
+use App\Modules\People\Events\EmployeeTerminated;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Support\ReportingTree;
@@ -113,8 +114,10 @@ final readonly class EmployeeService
             'termination_reason' => $reason,
         ]);
         $this->log->info('people.employee_terminated', ['id' => $employee->id, 'by' => $actor->id]);
+        $terminated = $this->find($employee->id);
+        $this->events->dispatch(new EmployeeTerminated($terminated));
 
-        return $this->find($employee->id);
+        return $terminated;
     }
 
     /**

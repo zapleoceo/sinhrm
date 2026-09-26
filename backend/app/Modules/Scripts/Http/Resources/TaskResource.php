@@ -20,7 +20,12 @@ final class TaskResource extends JsonResource
         return [
             'id' => $this->id,
             'type' => $this->type->value,
+            'source' => $this->type->source()->value,
             'title' => $this->title,
+            'link' => $this->link,
+            'employee' => $this->relationLoaded('employee') && $this->employee !== null
+                ? ['id' => $this->employee->id, 'name' => $this->employee->full_name]
+                : null,
             'assignee_id' => $this->assignee_id,
             'candidate' => $this->relationLoaded('candidate') && $this->candidate !== null
                 ? ['id' => $this->candidate->id, 'name' => $this->candidate->full_name]

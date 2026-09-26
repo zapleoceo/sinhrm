@@ -1,0 +1,147 @@
+@if (store.loading() && !store.template()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+@if (store.failed()) {
+  <div class="state">
+    <p>{{ 'common.error' | transloco }}</p>
+    <button mat-stroked-button type="button" (click)="store.load(id())">{{ 'common.retry' | transloco }}</button>
+  </div>
+}
+
+@if (store.template(); as t) {
+  @let h = store.head();
+  <header class="page-head">
+    <div>
+      <a mat-button routerLink="/admin/workflows"><mat-icon>arrow_back</mat-icon>{{ 'workflows.templates.title' | transloco }}</a>
+      <h1>{{ h.name || t.name }}</h1>
+      <p class="muted">
+        {{ 'workflows.editor.runsCount' | transloco: { n: t.runs_count } }} · {{ t.updated_at | date: 'dd.MM.yyyy HH:mm' }}
+        @if (store.dirty()) {
+          · <strong class="unsaved">{{ 'workflows.editor.unsaved' | transloco }}</strong>
+        }
+      </p>
+    </div>
+    <div class="actions">
+      <button mat-flat-button type="button" (click)="save()" [disabled]="store.saving() || !store.dirty()">
+        <mat-icon>save</mat-icon>{{ 'workflows.editor.save' | transloco }}
+      </button>
+    </div>
+  </header>
+
+  <section class="head-form">
+    <mat-form-field class="grow" subscriptSizing="dynamic">
+      <mat-label>{{ 'workflows.fields.name' | transloco }}</mat-label>
+      <input matInput [value]="h.name" (input)="store.setHead({ name: val($event) })" maxlength="200" required />
+      @if (store.error('name'); as e) { <mat-hint class="err">{{ e }}</mat-hint> }
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>{{ 'workflows.fields.kind' | transloco }}</mat-label>
+      <mat-select [value]="h.kind" (selectionChange)="setKind($event.value)">
+        @for (k of kinds; track k) {
+          <mat-option [value]="k">{{ 'workflows.kind.' + k | transloco }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>{{ 'workflows.fields.trigger' | transloco }}</mat-label>
+      <mat-select [value]="h.trigger" (selectionChange)="setTrigger($event.value)">
+        @for (tr of triggers; track tr) {
+          <mat-option [value]="tr">{{ 'workflows.trigger.' + tr | transloco }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    @if (h.trigger === 'probation_end') {
+      <mat-form-field subscriptSizing="dynamic" class="narrow">
+        <mat-label>{{ 'workflows.fields.probationDays' | transloco }}</mat-label>
+        <input matInput type="number" min="1" max="730" [value]="h.probation_days" (input)="store.setHead({ probation_days: int($event, 1, 730) })" />
+        @if (store.error('probation_days'); as e) { <mat-hint class="err">{{ e }}</mat-hint> }
+      </mat-form-field>
+    }
+    <mat-slide-toggle [checked]="!!h.active" (change)="store.setHead({ active: $event.checked })">{{ 'workflows.fields.active' | transloco }}</mat-slide-toggle>
+  </section>
+
+  <h2 class="section">{{ 'workflows.editor.steps' | transloco }} ({{ store.steps().length }})</h2>
+  <p class="muted hint">{{ 'workflows.editor.stepsHint' | transloco }}</p>
+  <div class="list" cdkDropList [cdkDropListData]="store.steps()" (cdkDropListDropped)="dropStep($event)">
+    @for (step of store.steps(); track step.key; let i = $index) {
+      <article class="item" cdkDrag>
+        <div class="item-head">
+          <mat-icon cdkDragHandle class="handle" [attr.aria-label]="'workflows.editor.drag' | transloco">drag_indicator</mat-icon>
+          <span class="num">{{ i + 1 }}</span>
+          <mat-form-field class="grow" subscriptSizing="dynamic">
+            <mat-label>{{ 'workflows.fields.stepTitle' | transloco }}</mat-label>
+            <input matInput [value]="step.title" (input)="store.updateStep(i, { title: val($event) })" maxlength="200" required />
+            @if (store.error('steps.' + i + '.title'); as e) { <mat-hint class="err">{{ e }}</mat-hint> }
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'workflows.fields.action' | transloco }}</mat-label>
+            <mat-select [value]="step.action" (selectionChange)="setAction(i, $event.value)">
+              @for (a of actions; track a) {
+                <mat-option [value]="a">{{ 'workflows.action.' + a | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <button mat-icon-button type="button" (click)="store.removeStep(i)" [attr.aria-label]="'workflows.editor.removeStep' | transloco"><mat-icon>delete</mat-icon></button>
+        </div>
+        <div class="item-head">
+          <mat-form-field subscriptSizing="dynamic" class="offset">
+            <mat-label>{{ 'workflows.fields.offset' | transloco }}</mat-label>
+            <input matInput type="number" min="-365" max="365" [value]="step.offset_days" (input)="store.updateStep(i, { offset_days: int($event, -365, 365) })" />
+            <mat-hint>{{ 'workflows.editor.offsetHint' | transloco: { n: (step.offset_days >= 0 ? '+' : '') + step.offset_days } }}</mat-hint>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'workflows.fields.assignee' | transloco }}</mat-label>
+            <mat-select [value]="step.assignee_rule" (selectionChange)="setRule(i, $event.value)">
+              @for (r of rules; track r) {
+                <mat-option [value]="r">{{ 'workflows.assignee.' + r | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (step.assignee_rule === 'specific_user') {
+            <mat-form-field subscriptSizing="dynamic" class="narrow">
+              <mat-label>{{ 'workflows.fields.userId' | transloco }}</mat-label>
+              <input matInput type="number" min="1" [value]="step.assignee_user_id" (input)="store.updateStep(i, { assignee_user_id: userId($event) })" required />
+              @if (store.error('steps.' + i + '.assignee_user_id'); as e) { <mat-hint class="err">{{ e }}</mat-hint> }
+            </mat-form-field>
+          }
+        </div>
+        <app-step-config
+          [action]="step.action"
+          [config]="step.config"
+          [documentTemplates]="store.documentOptions()"
+          [workflows]="store.otherWorkflows()"
+          [errors]="configErrors(i)"
+          (changed)="setConfig(i, $event)"
+        />
+      </article>
+    } @empty {
+      <p class="muted">{{ 'workflows.editor.noSteps' | transloco }}</p>
+    }
+  </div>
+  <button mat-stroked-button type="button" (click)="store.addStep()"><mat-icon>add</mat-icon>{{ 'workflows.editor.addStep' | transloco }}</button>
+
+  <section class="secret">
+    <h2 class="section">{{ 'workflows.secret.title' | transloco }}</h2>
+    <p class="muted hint">{{ 'workflows.secret.hint' | transloco }}</p>
+    <p>
+      @if (t.webhook_secret.is_set) {
+        {{ 'workflows.secret.isSet' | transloco }} <code>{{ t.webhook_secret.masked }}</code>
+        @if (t.webhook_secret.updated_at) {
+          <span class="muted"> · {{ t.webhook_secret.updated_at | date: 'dd.MM.yyyy' }}</span>
+        }
+      } @else {
+        <span class="muted">{{ 'workflows.secret.notSet' | transloco }}</span>
+      }
+    </p>
+    <div class="item-head">
+      <mat-form-field class="grow" subscriptSizing="dynamic">
+        <mat-label>{{ 'workflows.secret.new' | transloco }}</mat-label>
+        <input matInput type="password" autocomplete="new-password" minlength="16" maxlength="200" [value]="secret()" (input)="secret.set(val($event))" />
+      </mat-form-field>
+      <button mat-stroked-button type="button" (click)="saveSecret(false)" [disabled]="secret().trim().length === 0">{{ 'workflows.secret.save' | transloco }}</button>
+      @if (t.webhook_secret.is_set) {
+        <button mat-button type="button" (click)="saveSecret(true)">{{ 'workflows.secret.clear' | transloco }}</button>
+      }
+    </div>
+  </section>
+}

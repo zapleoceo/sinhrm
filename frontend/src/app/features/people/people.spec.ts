@@ -97,8 +97,16 @@ describe('People helpers', () => {
   it('shows profile tabs by access flags', () => {
     expect(profileTabs(null)).toEqual([]);
     expect(profileTabs(employee())).toEqual(['overview']);
-    expect(profileTabs(employee({ job: true, pii: false, decide: true, manage: false, self: false }))).toEqual(['overview', 'job', 'timeoff', 'changes']);
-    expect(profileTabs(employee({ job: true, pii: true, decide: false, manage: false, self: true }))).toEqual(['overview', 'job', 'timeoff', 'changes']);
+    expect(profileTabs(employee({ job: true, pii: false, decide: true, manage: false, self: false }))).toEqual([
+      'overview',
+      'job',
+      'timeoff',
+      'changes',
+      'documents',
+      'workflows',
+    ]);
+    expect(profileTabs(employee({ job: true, pii: true, decide: false, manage: false, self: true }))).toEqual(['overview', 'job', 'timeoff', 'changes', 'documents']);
+    expect(profileTabs(employee({ job: true, pii: true, decide: true, manage: true, self: true }))).toContain('workflows');
   });
 
   it('knows who manages people', () => {

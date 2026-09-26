@@ -1,0 +1,12 @@
+title = "SinHRM gitleaks config"
+
+[extend]
+useDefault = true
+
+# Test fixtures use obviously fake secrets named "synthetic-*" (see docs/architecture/secrets.md).
+# Syntax compatible with gitleaks 8.24 (used by gitleaks-action): a match is ignored when the secret
+# itself matches one of these regexes. Real secrets live in the database / Vercel env, never in the repo.
+[allowlist]
+description = "Synthetic secrets in test fixtures"
+regexTarget = "secret"
+regexes = ['''^synthetic-[a-z0-9-]+$''']

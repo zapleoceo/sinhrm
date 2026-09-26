@@ -14,14 +14,17 @@ import { LeaveRequestForm } from '../../timeoff/widgets/leave-request-form';
 import { RequestAction, RequestsList } from '../../timeoff/widgets/requests-list';
 import { initials } from '../org-tree';
 import { CHANGEABLE_FIELDS, ChangeRequest, Employee, fieldLabelKey } from '../people.model';
+import { EmployeeDocumentsTab } from '../../documents/profile/employee-documents.tab';
+import { EmployeeRunsTab } from '../../workflows/runs/employee-runs.tab';
 import { ChangeRequestDialog } from './change-request.dialog';
 import { EmployeeDialog, EmployeeDialogData } from './employee.dialog';
-import { ProfileStore } from './profile.store';
+import { ProfileStore, ProfileTab } from './profile.store';
 import { TerminateDialog } from './terminate.dialog';
 
 /**
  * Employee profile (/people/:id) and "My profile" (/me). Tabs follow the API's access flags: Overview for everyone,
- * Job and Time off for admins, the employee and managers above, Change requests for admins, the employee and deciders.
+ * Job and Time off for admins, the employee and managers above, Change requests for admins, the employee and deciders,
+ * Documents for admins, the employee and managers, Workflows for admins and managers.
  */
 @Component({
   selector: 'app-profile-page',
@@ -36,6 +39,8 @@ import { TerminateDialog } from './terminate.dialog';
     BalancesPanel,
     LeaveRequestForm,
     RequestsList,
+    EmployeeDocumentsTab,
+    EmployeeRunsTab,
   ],
   providers: [ProfileStore, LeaveRequestsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,7 +81,7 @@ import { TerminateDialog } from './terminate.dialog';
         </div>
       </header>
 
-      <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms">
+      <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" [selectedIndex]="initialTab()">
         <mat-tab [label]="'people.tabs.overview' | transloco">
           <dl class="facts">
             <dt>{{ 'people.fields.workEmail' | transloco }}</dt>
@@ -173,6 +178,22 @@ import { TerminateDialog } from './terminate.dialog';
             </ul>
           </mat-tab>
         }
+
+        @if (store.tabs().includes('documents')) {
+          <mat-tab [label]="'people.tabs.documents' | transloco">
+            <ng-template matTabContent>
+              <app-employee-documents-tab [employeeId]="e.id" [canManage]="!!e.access?.manage" />
+            </ng-template>
+          </mat-tab>
+        }
+
+        @if (store.tabs().includes('workflows')) {
+          <mat-tab [label]="'people.tabs.workflows' | transloco">
+            <ng-template matTabContent>
+              <app-employee-runs-tab [employeeId]="e.id" [canStart]="!!e.access?.manage" />
+            </ng-template>
+          </mat-tab>
+        }
       </mat-tab-group>
     }
   `,
@@ -200,6 +221,8 @@ import { TerminateDialog } from './terminate.dialog';
 export class ProfilePage {
   /** Route param :id; absent on /me. */
   readonly id = input<string | undefined>(undefined);
+  /** Query param ?tab=documents|workflows|… preselects a tab (e.g. links from tasks). */
+  readonly tab = input<string | undefined>(undefined);
 
   protected readonly store = inject(ProfileStore);
   protected readonly requests = inject(LeaveRequestsStore);
@@ -208,6 +231,11 @@ export class ProfilePage {
   private readonly i18n = inject(TranslocoService);
   protected readonly fields = CHANGEABLE_FIELDS;
   protected readonly label = fieldLabelKey;
+  protected readonly initialTab = computed(() => {
+    const wanted = this.tab();
+    const index = wanted === undefined ? -1 : this.store.tabs().indexOf(wanted as ProfileTab);
+    return Math.max(0, index);
+  });
   protected readonly customFields = computed(() => Object.entries(this.store.employee()?.custom_fields ?? {}));
 
   constructor() {

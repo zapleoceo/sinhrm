@@ -1,6 +1,6 @@
 {
   "app": { "name": "SinHRM", "tagline": "Recruiting without the noise" },
-  "common": { "cancel": "Cancel", "retry": "Try again", "loading": "Loading…", "error": "Something went wrong", "all": "All", "close": "Close" },
+  "common": { "confirm": "Confirm", "cancel": "Cancel", "retry": "Try again", "loading": "Loading…", "error": "Something went wrong", "all": "All", "close": "Close" },
   "roles": { "superadmin": "Superadmin", "admin": "Admin", "recruiter": "Recruiter", "viewer": "Viewer" },
   "statuses": { "active": "Active", "blocked": "Blocked" },
   "langs": { "uk": "Українська", "ru": "Русский", "en": "English" },
@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "People", "peopleList": "Employees", "orgChart": "Org chart", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings" },
+    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "People", "peopleList": "Employees", "orgChart": "Org chart", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings", "tasks": "My tasks", "myDocuments": "My documents", "workflowRuns": "Workflows", "workflows": "Workflows", "documentTemplates": "Document templates" },
     "menu": { "open": "User menu", "language": "Language", "extension": "Browser extension", "logout": "Sign out", "myProfile": "My profile" },
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
@@ -135,7 +135,8 @@
       "google": "Google",
       "messengers": "Messengers",
       "telephony": "Telephony",
-      "sources": "Candidate sources"
+      "sources": "Candidate sources",
+      "documents": "Documents"
     },
     "secret": {
       "notSet": "not set",
@@ -221,7 +222,8 @@
       "project_id": "Project ID",
       "inbox": "Responses inbox",
       "api_token": "API token",
-      "page_id": "Page ID"
+      "page_id": "Page ID",
+      "provider": "Provider"
     },
     "items": {
       "ai_broker": {
@@ -295,7 +297,8 @@
       "meta_lead_ads": {
         "name": "Meta Lead Ads",
         "description": "Leads from Facebook and Instagram forms"
-      }
+      },
+      "kep_signing": { "name": "Qualified e-signature of documents (Diia.Signature / Vchasno)", "description": "Placeholder: qualified electronic signature of employee documents. Not working yet — only “Acknowledged” is available for now." }
     }
   },
   "palette": {
@@ -478,7 +481,7 @@
     "errors": {"channel_not_connected": "Channel not connected", "no_conversation": "The candidate has not written in this channel yet — nowhere to reply", "template_required": "WhatsApp: more than 24 hours since the candidate's last message — an approved template is required", "invalid_recipient": "Invalid recipient", "send_failed": "The service did not accept the message, try later", "telephony_not_connected": "Telephony is not connected", "click_to_call_unsupported": "This telephony cannot call from the card", "no_phone": "The candidate has no phone", "not_demo": "Demo events are available only in \"Demo\" mode", "channel_off": "Switch the integration on first (\"Demo\" mode)", "unsupported": "Not available for this integration", "application_mismatch": "The application belongs to another candidate", "generic": "Could not complete the action"}
   },
   "extension": {"title": "Browser extension", "explain": "SinHRM Clipper adds a candidate from the profile page you are viewing (LinkedIn, Work.ua, Djinni, DOU) in one click. It uses a personal token instead of your session.", "active": "Token is active", "inactive": "No active token. Create one and paste it into the extension settings.", "createdAt": "Created", "lastUsedAt": "Last used", "expiresAt": "Expires", "never": "never", "create": "Create token", "regenerate": "Create a new token", "revoke": "Revoke", "onceTitle": "Copy the token now", "onceHint": "It is shown only once. Creating a new token revokes this one.", "copy": "Copy", "copied": "Copied", "error": "Could not update the token. Try again.", "installTitle": "How to install", "docs": "Full instructions", "install": {"step1": "Download sinhrm-clipper.zip (built by CI or with npm run package in extension/) and unzip it.", "step2": "Open chrome://extensions and turn on Developer mode.", "step3": "Click “Load unpacked” and choose the unzipped folder.", "step4": "Open the extension options, paste the token and click “Check connection”."}, "privacy": "The extension reads only the page you are viewing and only when you click its button. It does not crawl or scrape in the background."},
-  "titles": { "extension": "Browser extension", "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "Employees", "orgChart": "Org chart", "profile": "Employee profile", "myProfile": "My profile", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings" },
+  "titles": { "extension": "Browser extension", "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "Employees", "orgChart": "Org chart", "profile": "Employee profile", "myProfile": "My profile", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings", "tasks": "My tasks", "myDocuments": "My documents", "workflowRuns": "Workflows", "workflows": "Workflow templates", "workflowEditor": "Workflow editor", "documentTemplates": "Document templates" },
   "overview": {
     "warnings": { "google_reconnect_required": "Google ({{service}}) must be reconnected: access expired or was revoked.", "open": "Open integrations" },
     "greeting": "Hello, {{name}}!",
@@ -555,7 +558,8 @@
       "overdue": "overdue",
       "empty": "No tasks",
       "newApplicantTitle": "Call the new applicant (within an hour)",
-      "type": { "followup": "reminder", "manual": "task", "new_applicant": "new application" }
+      "open": "Open",
+      "type": { "followup": "reminder", "manual": "task", "new_applicant": "new application", "workflow": "workflow step", "document": "document" }
     },
     "errors": { "no_draft": "No draft to publish", "version_not_published": "This version is not published yet", "nothing_to_evaluate": "The script has neither a draft nor an active version yet", "script_archived": "The script is archived: restore it first", "not_evaluated": "This touch was not evaluated", "forbidden": "Not enough permissions", "validation": "Check the fields: there are errors", "generic": "Something went wrong" }
   },
@@ -596,7 +600,7 @@
     "status": { "active": "Working", "on_leave": "On leave", "terminated": "Terminated" },
     "employmentType": { "full_time": "Full time", "part_time": "Part time", "contractor": "Contractor" },
     "weekday": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },
-    "tabs": { "overview": "Overview", "job": "Job", "timeoff": "Time off", "changes": "Change requests", "personal": "Personal" },
+    "tabs": { "overview": "Overview", "job": "Job", "timeoff": "Time off", "changes": "Change requests", "personal": "Personal", "documents": "Documents", "workflows": "Workflows" },
     "edit": { "title": "Edit" },
     "terminate": { "action": "Terminate", "title": "Terminate {{name}}", "hint": "The record stays in the history; the person disappears from the directory and the org chart.", "reason": "Reason", "confirm": "Terminate" },
     "changes": { "new": "Request a change", "hint": "Your manager or HR will review the change; the profile updates after approval.", "comment": "Comment", "send": "Send", "sent": "Request sent", "nothing": "Nothing has changed", "empty": "No change requests" },
@@ -625,5 +629,48 @@
     "approvals": { "title": "Approvals", "subtitle": "Requests of your people waiting for a decision", "leave": "Leave requests: {{n}}", "changes": "Profile changes: {{n}}", "none": "Nothing to approve" },
     "settings": { "title": "Time off settings", "subtitle": "Leave types, policies per branch and public holidays", "types": "Leave types", "policies": "Policies", "holidays": "Holidays", "name": "Name", "code": "Code", "color": "Color", "paid": "paid", "unpaid": "unpaid", "tracked": "with balance", "unlimited": "no limit", "withApproval": "needs approval", "autoApproved": "approved automatically", "active": "Active", "add": "Add", "defaultPolicy": "Company default", "perYear": "{{n}} days a year", "carryAll": "unused days carry over", "carryMax": "carry over up to {{n}}", "annualDays": "Days a year", "accrual": "Accrual", "carryOver": "Carry over max", "allBranches": "All branches", "date": "Date", "delete": "Delete", "noHolidays": "No holidays this year" },
     "errors": { "insufficient_balance": "Not enough days on the balance", "overlap": "Overlaps another request", "no_working_days": "No working days in this range", "range_too_long": "The range is too long", "inactive_type": "This leave type is switched off", "invalid_status": "The request has already been decided", "forbidden": "Not allowed", "no_employee": "Your account is not linked to an employee record yet", "validation": "Check the fields" }
+  },
+  "tasks": {
+    "title": "My tasks",
+    "subtitle": "Every task assigned to you: recruiting, workflow steps, documents to acknowledge.",
+    "source": "Source",
+    "due": "Due",
+    "dueAll": "Any due date",
+    "dueToday": "Today",
+    "dueOverdue": "Overdue",
+    "showDone": "Show completed",
+    "sources": { "recruiting": "Recruiting", "workflows": "Workflows", "documents": "Documents" }
+  },
+  "workflows": {
+    "templates": { "title": "Workflows", "subtitle": "Onboarding, offboarding and other process templates: steps, due dates, owners.", "create": "Create", "delete": "Delete template", "empty": "No templates yet", "confirmDelete": "Delete template “{{name}}”?" },
+    "fields": { "name": "Name", "kind": "Kind", "trigger": "Trigger", "steps": "Steps", "runs": "Runs", "updated": "Updated", "inactive": "inactive", "active": "Active", "probationDays": "Probation period, days", "stepTitle": "Step title", "action": "Action", "offset": "Offset, days", "assignee": "Assignee", "userId": "User ID", "status": "Status", "template": "Template", "employeeId": "Employee ID" },
+    "kind": { "onboarding": "Onboarding", "offboarding": "Offboarding", "custom": "Custom" },
+    "trigger": { "manual": "Manual", "employee_hired": "Employee hired", "employee_terminated": "Employee terminated", "probation_end": "End of probation" },
+    "action": { "create_task": "Create a task", "request_form": "Request a form", "send_email_template": "Send an email", "add_calendar_event": "Calendar event", "create_document": "Create a document", "upload_document_request": "Request a document upload", "webhook": "Webhook", "start_workflow": "Start another workflow", "notify_manager": "Notify the manager", "assign_buddy": "Assign a buddy" },
+    "assignee": { "employee": "Employee", "manager": "Manager", "hr_admin": "HR / admin", "specific_user": "Specific user" },
+    "runStatus": { "running": "Running", "completed": "Completed", "cancelled": "Cancelled" },
+    "stepStatus": { "pending": "pending", "done": "done", "skipped": "skipped", "failed": "failed" },
+    "editor": { "save": "Save", "saved": "Template saved", "unsaved": "Unsaved changes", "runsCount": "Runs: {{n}}", "steps": "Steps", "stepsHint": "Drag a step by its handle to reorder. A step is due relative to the event date (hire, termination, etc.).", "drag": "Drag", "removeStep": "Remove step", "addStep": "Add step", "noSteps": "No steps yet", "offsetHint": "day {{n}} from the date" },
+    "config": { "taskTitle": "Task text", "formUrl": "Form link (https)", "subject": "Email subject", "body": "Email text", "eventTitle": "Event title", "time": "Time", "duration": "Duration, min", "online": "Online meeting", "documentTemplate": "Document template", "sendDocument": "Send for acknowledgement right away", "documentName": "Which document to request", "webhookUrl": "Webhook URL (https)", "webhookHint": "The request is signed with the template key (see below).", "workflow": "Workflow", "message": "Message" },
+    "secret": { "title": "Webhook signing key", "hint": "Signs webhook requests of this template. The key itself is never shown.", "isSet": "Key is set:", "notSet": "No key set", "new": "New key (16–200 characters)", "save": "Save key", "clear": "Remove key", "saved": "Key saved", "cleared": "Key removed", "length": "The key must be 16 to 200 characters long" },
+    "runs": { "title": "Workflows", "subtitle": "Running onboarding and offboarding processes of your people and their progress.", "empty": "No runs", "emptyEmployee": "No workflows have been started for this employee yet", "anchor": "Anchor date", "hasFailed": "Some steps failed", "child": "child run", "openProfile": "profile", "cancel": "Cancel run", "confirmCancel": "Cancel this run? Unfinished steps will be closed.", "cancelled": "Run cancelled", "start": "Start", "started": "Workflow started" },
+    "step": { "complete": "Done", "skip": "Skip", "retry": "Retry", "skipReason": "Reason for skipping (optional)", "waiting": "waiting for a person", "attempts": "attempts: {{n}}", "completeDone": "Step completed", "skipDone": "Step skipped", "retryDone": "Step retried" },
+    "result": { "not_connected": "Integration is not connected", "send_not_supported": "Sending is not supported", "no_manager": "The employee has no manager", "no_assignee": "Could not resolve the assignee", "missing_secret": "Webhook signing key is not set", "blocked_host": "Address is blocked (internal network)", "blocked_port": "Port is blocked", "invalid_url": "Invalid address", "unresolved_host": "Host could not be resolved", "connection_error": "Connection error", "http": "The server answered with an HTTP error", "depth_limit": "Nested workflow depth exceeded", "template_inactive": "Template is inactive", "template_missing": "Template not found", "document_template_missing": "Document template not found", "template_archived": "Document template is archived", "cancelled": "Cancelled", "generic": "Internal step error" },
+    "errors": { "depth_limit": "Nested workflow depth exceeded", "run_not_running": "The run is already finished or cancelled", "step_not_open": "The step is already closed", "step_not_failed": "Only a failed step can be retried", "has_runs": "The template already has runs and cannot be deleted. Deactivate it instead.", "invalid_order": "Invalid step order — reload the page", "forbidden": "Not enough permissions", "not_found": "Not found", "validation": "Check the form fields" }
+  },
+  "documents": {
+    "empty": "No documents",
+    "uploaded": "File uploaded",
+    "sent": "Sent for acknowledgement",
+    "archived": "Document archived",
+    "status": { "draft": "Draft", "sent": "Sent", "signed": "Acknowledged", "rejected": "Rejected", "archived": "Archived" },
+    "signature": { "manual_ack": "Acknowledgement", "kep_pending": "Qualified e-signature" },
+    "fields": { "name": "Name", "category": "Category", "body": "Template text (Markdown)", "template": "Template", "title": "Document title", "content": "Document text (Markdown)" },
+    "templates": { "title": "Document templates", "subtitle": "Orders, contracts, policies with variables — a document is generated for a specific employee.", "create": "New template", "showArchived": "Show archived", "archived": "archived", "empty": "No templates yet", "pick": "Pick a template on the left or create a new one", "variables": "Variables", "markdownHint": "Markdown: # heading, **bold**, lists. Variables go in curly braces.", "preview": "Preview", "unknown": "Unknown variables: {{list}}", "save": "Save", "saved": "Template saved", "archive": "Archive", "restore": "Restore" },
+    "create": { "title": "New document", "fromTemplate": "From template", "manual": "Manual", "titleOverride": "Title (optional — defaults to the template)", "submit": "Create", "required": "Pick a template or enter a title" },
+    "actions": { "more": "Document actions", "view": "View", "upload": "Upload file", "send": "Send for acknowledgement", "archive": "Archive", "acknowledge": "Acknowledged", "reject": "Reject", "confirmReject": "Reject document" },
+    "view": { "title": "Document", "sentAt": "sent", "rejectReason": "Rejection reason", "signatures": "Signatures", "reason": "Rejection reason (optional)" },
+    "my": { "title": "My documents", "subtitle": "Documents sent to you for acknowledgement and those already signed.", "review": "Review" },
+    "errors": { "unknown_variables": "The text contains unknown variables", "not_editable": "The document has already been sent and cannot be changed", "invalid_file": "Unsupported file type (PDF, PNG, JPG, DOCX)", "file_too_large": "The file is larger than 2 MB", "empty_document": "The document is empty — add text or a file", "employee_has_no_login": "The employee has no login", "already_signed": "The document is already signed", "not_sent": "The document has not been sent yet", "forbidden": "Not enough permissions", "not_found": "Document not found", "validation": "Check the form fields" }
   }
 }

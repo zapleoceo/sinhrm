@@ -46,6 +46,8 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | MailAgent (разбор Gmail: отклики → кандидаты и задачи, письма кандидатов → касания) | ✅ | [modules/mail-agent.md](../modules/mail-agent.md) |
 | People (сотрудники, оргструктура, самообслуживание, найм из Recruiting) | ✅ | [modules/people.md](../modules/people.md) |
 | TimeOff (отпуска: типы, политики, праздники, баланс-журнал, запросы, календарь, начисление) | ✅ | [modules/timeoff.md](../modules/timeoff.md) |
+| Documents (шаблоны документов, документы сотрудников, файлы в БД, «Ознайомлений»; КЕП — заготовка) | ✅ | [modules/documents.md](../modules/documents.md) |
+| Workflows (онбординг/офбординг: шаблоны, снимки запусков, исполнители шагов, триггеры People, `workflows.tick`) | ✅ | [modules/workflows.md](../modules/workflows.md) |
 | Extension (браузерное расширение `extension/`: кандидат с открытой страницы профиля; API — в Recruiting, токен только для `/api/clipper/*`) | ✅ код, установка вручную | [modules/extension.md](../modules/extension.md) |
 | Channels (вебхуки мессенджеров и телефонии → лента кандидата, отправка из карточки, демо-события) | ✅ код, включается токенами | [modules/channels.md](../modules/channels.md) |
 
@@ -57,6 +59,10 @@ Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн �
 - Холодный старт API ~0.3–1 с после простоя.
 - Фоновые задачи выполняются с задержкой до ~30 мин (частота cron): модули регистрируют `Core\Contracts\ScheduledJob`,
   cron вызывает `POST /api/ops/jobs/run` ([core.md](../modules/core.md)).
+- Шаги воркфлоу выполняются тем же cron (`workflows.tick`, до 50 шагов за вызов); вебхуки воркфлоу — синхронно в нём,
+  с таймаутом 10 с и SSRF-защитой ([workflows.md](../modules/workflows.md)).
+- Файлы документов до 2 МБ хранятся в Postgres (base64) за интерфейсом `DocumentStorage` — до выбора объектного
+  хранилища ([documents.md](../modules/documents.md)).
 - Работа «после ответа» (оценка разговора по скрипту) — `dispatchAfterResponse()` в том же запросе, без очереди.
 - Постоянные соединения (Telegram userbot, WebSocket) невозможны — только вебхуки: Telegram Business, WhatsApp Cloud, Viber и
   телефония присылают события на `POST /api/webhooks/{key}` ([channels.md](../modules/channels.md)); все каналы пишут касания

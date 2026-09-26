@@ -75,6 +75,8 @@ export class ScriptsService {
       due: query.due,
       candidate_id: query.candidate_id,
       done: query.done ? 1 : undefined,
+      source: query.source,
+      employee_id: query.employee_id,
     });
     return this.http.get<{ data: Task[] }>('/api/tasks', { params }).pipe(map((r) => r.data));
   }

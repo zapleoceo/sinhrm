@@ -7,13 +7,19 @@ namespace App\Modules\Scripts\Services;
 use App\Models\User;
 use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Scripts\Contracts\TaskRepository;
+use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\DTO\TaskFilter;
 use App\Modules\Scripts\Enums\TaskType;
+use App\Modules\Scripts\Events\TaskCompleted;
 use App\Modules\Scripts\Models\Task;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
-/** Recruiter tasks: listing within the Recruiting scope and marking done/undone. */
+/**
+ * The unified task list: recruiter follow-ups (Recruiting scope) plus workflow and document tasks of employees
+ * (assigned to a person). Listing, marking done/undone, creating tasks for other modules exactly once.
+ */
 final readonly class TaskService
 {
     public const int LIMIT = 200;
@@ -25,7 +31,11 @@ final readonly class TaskService
     /** Stored title (fallback); the UI shows a translated label by type "new_applicant". */
     public const string NEW_APPLICANT_TITLE = 'Call the new applicant';
 
-    public function __construct(private TaskRepository $tasks, private RecruitingScope $scope) {}
+    public function __construct(
+        private TaskRepository $tasks,
+        private RecruitingScope $scope,
+        private Dispatcher $events,
+    ) {}
 
     /** @return Collection<int, Task> */
     public function list(User $actor, TaskFilter $filter, ?Carbon $now = null): Collection
@@ -38,10 +48,17 @@ final readonly class TaskService
         return $actor->isActive() && $this->tasks->isVisible($this->scope->for($actor), $task);
     }
 
-    /** Writers (not viewers) may close tasks they see; closing twice keeps the first done_at. */
+    /**
+     * The assignee may always close their own task (an employee with the viewer role completes onboarding tasks);
+     * writers (not viewers) may close tasks they see. Closing twice keeps the first done_at.
+     */
     public function canUpdate(User $actor, Task $task): bool
     {
-        return $this->scope->canWrite($actor) && ($task->assignee_id === $actor->id || $this->canSee($actor, $task));
+        if (! $actor->isActive()) {
+            return false;
+        }
+
+        return $task->assignee_id === $actor->id || ($this->scope->canWrite($actor) && $this->canSee($actor, $task));
     }
 
     /**
@@ -61,12 +78,36 @@ final readonly class TaskService
         ]);
     }
 
-    public function setDone(Task $task, bool $done, ?Carbon $at = null): Task
+    /** A workflow/document task, once per (employee, rule key); a repeat returns the stored task. */
+    public function schedule(NewTask $task): Task
     {
-        if ($done === ($task->done_at !== null)) {
-            return $task;
+        return $this->tasks->createOnce($task->attributes());
+    }
+
+    /** Closes the task of another module (step completed elsewhere, document acknowledged). No event. */
+    public function closeByRule(int $employeeId, string $ruleKey, ?Carbon $at = null): void
+    {
+        $task = $this->tasks->findByRule($employeeId, $ruleKey);
+        if ($task !== null) {
+            $this->setDone($task, true, $at);
+        }
+    }
+
+    /** A user ticks the task: marks it and tells the owning module (TaskCompleted) when it became done. */
+    public function complete(User $actor, Task $task, bool $done): Task
+    {
+        // Atomic transition: TaskCompleted is dispatched exactly once even for concurrent clicks.
+        if ($this->tasks->markDone($task, $done, Carbon::now()) && $done) {
+            $this->events->dispatch(new TaskCompleted($task, $actor));
         }
 
-        return $this->tasks->update($task, ['done_at' => $done ? ($at ?? Carbon::now()) : null]);
+        return $task;
+    }
+
+    public function setDone(Task $task, bool $done, ?Carbon $at = null): Task
+    {
+        $this->tasks->markDone($task, $done, $at ?? Carbon::now());
+
+        return $task;
     }
 }

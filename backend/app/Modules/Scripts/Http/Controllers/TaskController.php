@@ -35,6 +35,9 @@ final class TaskController
 
     public function update(UpdateTaskRequest $request, Task $task): TaskResource
     {
-        return new TaskResource($this->tasks->setDone($task, $request->done())->load(['candidate', 'application.vacancy']));
+        $actor = $request->user();
+        assert($actor instanceof User);
+
+        return new TaskResource($this->tasks->complete($actor, $task, $request->done())->load(['candidate', 'application.vacancy', 'employee']));
     }
 }

@@ -28,6 +28,9 @@ interface TaskRepository
     /** @param  array<string, mixed>  $attributes */
     public function update(Task $task, array $attributes): Task;
 
+    /** Atomic done/undone: UPDATE ... WHERE done_at IS [NOT] NULL. False when already in that state. */
+    public function markDone(Task $task, bool $done, Carbon $at): bool;
+
     /**
      * Inserts the follow-up unless a task with the same (application_id, rule_key) exists. Idempotent under races
      * (unique index).
@@ -35,6 +38,15 @@ interface TaskRepository
      * @param  array<string, mixed>  $attributes
      */
     public function createFollowupOnce(array $attributes): bool;
+
+    /**
+     * Creates the employee task unless one with the same (employee_id, rule_key) exists; returns the stored one.
+     *
+     * @param  array<string, mixed>  $attributes  employee_id and rule_key are required
+     */
+    public function createOnce(array $attributes): Task;
+
+    public function findByRule(int $employeeId, string $ruleKey): ?Task;
 
     /** @return list<ApplicationActivity> every active application with the moments the follow-up rules need */
     public function activities(): array;
