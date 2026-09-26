@@ -30,7 +30,7 @@ final class DirectoryApiTest extends TestCase
     {
         $this->getJson('/api/directory/branches')->assertUnauthorized();
         $this->postJson('/api/directory/branches', ['name' => 'X'])->assertUnauthorized();
-        $this->postJson('/api/directory/import')->assertUnauthorized();
+        $this->postJson('/api/directory/import')->assertNotFound(); // import removed: dictionaries are manual
     }
 
     public function test_any_active_user_can_read_every_dictionary(): void
@@ -83,7 +83,7 @@ final class DirectoryApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.name', 'Branch One')
             ->assertJsonPath('data.status', 'active')
-            ->assertJsonPath('data.external_id', null)
+            ->assertJsonMissingPath('data.external_id')
             ->assertJsonPath('data.city', ['id' => $city->id, 'name' => 'Sample City'])
             ->json('data.id');
 

@@ -19,7 +19,7 @@ final class Branch extends DictionaryItem
 
     protected $table = 'branches';
 
-    protected $fillable = ['external_id', 'name', 'status', 'city_id'];
+    protected $fillable = ['name', 'status', 'city_id'];
 
     /** @return BelongsTo<City, $this> */
     public function city(): BelongsTo

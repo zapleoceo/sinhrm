@@ -2,7 +2,7 @@
 
 ## Что это и зачем
 Одна страница, где суперадмин подключает внешние сервисы: AI, Google, мессенджеры, телефонию и источники
-кандидатов (сайты вакансий, Sintegrum, рекламные формы). Здесь вводятся ключи и токены.
+кандидатов (сайты вакансий, рекламные формы). Здесь вводятся ключи и токены.
 
 Главное правило: **ключи хранятся только в базе и только в зашифрованном виде**. После сохранения ключ больше
 никому не показывается, даже суперадмину. На странице видно только «задан / не задан», дату изменения
@@ -63,7 +63,6 @@
 |---|---|---|
 | `ai_broker` | `GET {base_url}/v1/health` (публичный, **без ключа**), таймаут 10 с | да. Эндпоинты chat/jobs не вызываются: AI-вызовы запрещены до решения владельца |
 | `telegram_business` | `GET https://api.telegram.org/bot<token>/getMe` (только чтение), таймаут 10 с | да. URL содержит токен. До запроса токен проверяется по формату `^\d+:[A-Za-z0-9_-]+$` (иначе `invalid_token`, без запроса), вокруг вызова ловится **любой** `Throwable`: в ответ и лог попадают только коды `unauthorized`, `http_<код>`, `connection_failed` |
-| `sintegrum_api` | проверка URL через `OutboundUrlGuard` и наличия токена → статус `demo`, `last_error = not_verified` | только DNS-резолв хоста, HTTP-запроса **нет**. TODO: схема авторизации Sintegrum API не подтверждена. Реальные запросы к Sintegrum делает импорт справочников (ниже) |
 | `whatsapp_cloud` | `GET https://graph.facebook.com/v21.0/{phone_number_id}?fields=id` (только чтение), токен в заголовке `Authorization`, таймаут 10 с; `phone_number_id` должен быть числом (иначе `invalid_url` без запроса) | да. 401 или ошибка Graph 190 → `unauthorized` |
 | `viber` | `POST https://chatapi.viber.com/pa/get_account_info` (только чтение), токен в заголовке `X-Viber-Auth-Token` | да. Viber `status: 2` → `unauthorized` |
 | остальные (`openrouter`, `deepgram`, `google_*`, `wazzup`, `phonet`, `ringostat`, `binotel`, `work_ua`, `robota_ua`, `djinni`, `meta_lead_ads`, `kep_signing`) | нет (`supports_check: false`) | нет. OpenRouter и Deepgram — AI/платные вызовы; Google подключается OAuth-согласием (модуль GoogleWorkspace), у его карточек нет полей |
@@ -91,7 +90,6 @@
 | `telegram_business`, `whatsapp_cloud`, `viber`, `phonet`, `ringostat`, `binotel` | модуль Channels ([channels.md](channels.md)): вебхуки → лента кандидата, отправка из карточки, регистрация вебхука, тест, демо-события | конфиг через `Services/IntegrationConfigLoader` (настройки + секреты из `SecretVault`, только в памяти). Секреты вебхуков: `telegram_business.webhook_secret` (создаёт «Зареєструвати вебхук»), `whatsapp_cloud.app_secret` + `verify_token`, `viber.token`, у телефонии `webhook_token` (`?token=`, временная схема) и у Ringostat `callback_extension`. Журнал: `webhook_received/rejected/registered/register_failed`, `test_sent/failed`, `send_failed`, `simulated`, `delivery_failed`, `business_connected/disconnected`, `call_requested/failed` — только коды и счётчики. Режим канала = статус интеграции (`off` → вебхуки 404; `demo` → принимаются, отправка без провайдера; `connected`/`error` → реально) |
 | `kep_signing` (группа `documents`) | **заготовка, не используется**: квалифицированная подпись документов (Дія.Підпис / Вчасно) для модуля Documents ([documents.md](documents.md)) | поля `provider` (`diia_signature` \| `vchasno`) и секрет `api_token` (необязательный); проверки нет, статус остаётся `off`. Сейчас документы подтверждаются только «Ознайомлений» (`manual_ack`); метод `kep_pending` зарезервирован. До реализации нужны: выбор провайдера, доступ к API, юридическая проверка процесса подписи |
 | `workflows` (служебная строка, без карточки) | модуль Workflows ([workflows.md](workflows.md)) хранит в `SecretVault` ключи подписи вебхуков по шаблонам (`webhook_secret:<id шаблона>`) | вебхук-шаг читает ключ при отправке; API шаблона показывает только `is_set` и маску |
-| `sintegrum_api` | импорт справочников — `Directory\Services\SintegrumDirectoryImporter` ([directory.md](directory.md)) | `base_url` (настройка), `token` (через `SecretVault`); запросы `GET {base_url}/{cities,branches,departments,jobs}/list` с `Authorization: Bearer`, через `OutboundUrlGuard`; журнал `directory_imported` / `directory_import_failed` в `integration_logs` (только счётчики/код ошибки) |
 
 ### Вычистка секретов из логов (`Support/SecretScrubber`)
 В `bootstrap/app.php` зарегистрирован репортер исключений: если текст исключения (или любого `previous`)
@@ -151,7 +149,7 @@ placeholder маска или «не задано», кнопка «Очисти
 ## Как проверить
 Тесты: `tests/Feature/Integrations/IntegrationsApiTest.php` (401/403, 404 неизвестного ключа, список и маскирование
 со сканированием всего ответа, шифрование в БД, семантика set/unchanged/delete, валидация, проверки через
-`Http::fake` — Telegram ok/401/обрыв, AI Broker health ok/503, Sintegrum без сети, логи без секретов, лимит 50,
+`Http::fake` — Telegram ok/401/обрыв, AI Broker health ok/503, логи без секретов, лимит 50,
 AI-флаг, битый токен без запроса и без записи в лог, любой Throwable → код, https-only, SSRF-блокировки, сброс статуса после изменения), `tests/Unit/Integrations/*` (в т.ч. `OutboundUrlGuardTest` — все запрещённые диапазоны, `SecretScrubberTest` — редактирование через обработчик исключений и `Log::spy`) (хранилище: шифротекст ≠ открытый текст, маска; реестр; сервис: очистка
 секретов из сообщений, пропуск проверки без ключа). Фронт: `integrations.service.spec.ts`, `integrations.store.spec.ts`.
 

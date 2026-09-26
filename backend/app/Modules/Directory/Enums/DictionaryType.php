@@ -28,28 +28,4 @@ enum DictionaryType: string
             self::Positions => Position::class,
         };
     }
-
-    /**
-     * Sintegrum REST resource ("<base>/<resource>/list"). Positions are "jobs" in Sintegrum.
-     * Paths come from the Sintegrum apidoc (list actions); the live response is NOT verified yet.
-     */
-    public function sintegrumResource(): string
-    {
-        return match ($this) {
-            self::Branches => 'branches',
-            self::Cities => 'cities',
-            self::Departments => 'departments',
-            self::Positions => 'jobs',
-        };
-    }
-
-    /**
-     * Import order: cities before branches (a branch may reference its city).
-     *
-     * @return list<self>
-     */
-    public static function importOrder(): array
-    {
-        return [self::Cities, self::Branches, self::Departments, self::Positions];
-    }
 }

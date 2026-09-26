@@ -88,26 +88,9 @@
     "save": "Зберегти",
     "disable": "Вимкнути",
     "enable": "Увімкнути",
-    "fromSintegrum": "Імпортовано із Sintegrum",
     "empty": "Записів немає",
     "loadError": "Не вдалося завантажити довідник",
-    "import": {
-      "button": "Імпорт із Sintegrum",
-      "running": "Імпортуємо…",
-      "done": "Імпорт завершено",
-      "counts": "нових {{created}}, оновлено {{updated}}, без змін {{skipped}}",
-      "openIntegrations": "Відкрити інтеграції"
-    },
     "errors": {
-      "integration_not_configured": "Інтеграцію Sintegrum API не налаштовано: задайте адресу й токен в «Інтеграціях».",
-      "sintegrum_unauthorized": "Sintegrum відхилив токен (401/403). Перевірте токен в «Інтеграціях».",
-      "sintegrum_unreachable": "Sintegrum недоступний. Спробуйте пізніше.",
-      "sintegrum_bad_response": "Sintegrum повернув дані в невідомому форматі. Нічого не змінено.",
-      "sintegrum_timeout": "Імпорт перевищив ліміт часу. Нічого не змінено.",
-      "sintegrum_invalid_url": "Невірна адреса Sintegrum API (лише https://…).",
-      "sintegrum_blocked_host": "Адреса Sintegrum API веде у внутрішню мережу — заборонено.",
-      "sintegrum_blocked_port": "Порт в адресі Sintegrum API заборонено (лише 443).",
-      "sintegrum_unresolved_host": "Хост Sintegrum API не знайдено.",
       "validation": "Перевірте введені дані",
       "generic": "Не вдалося виконати дію"
     }
@@ -280,10 +263,6 @@
       "binotel": {
         "name": "Binotel",
         "description": "Телефонія: дзвінки та записи"
-      },
-      "sintegrum_api": {
-        "name": "Sintegrum API",
-        "description": "Філії та вакансії з Sintegrum"
       },
       "work_ua": {
         "name": "Work.ua",

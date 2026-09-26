@@ -2,12 +2,10 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
-  DIRECTORY_ERROR_CODES,
   DictionaryItem,
   DictionaryPage,
   DictionaryQuery,
   DictionaryType,
-  ImportReport,
   SaveDictionaryItem,
 } from './directory.model';
 
@@ -42,19 +40,11 @@ export class DirectoryService {
   update(type: DictionaryType, id: number, body: SaveDictionaryItem): Observable<DictionaryItem> {
     return this.http.patch<{ data: DictionaryItem }>(`${API}/${type}/${id}`, body).pipe(map((r) => r.data));
   }
-
-  import(): Observable<ImportReport> {
-    return this.http.post<{ data: ImportReport }>(`${API}/import`, {}).pipe(map((r) => r.data));
-  }
 }
 
 /** i18n key for a failed directory API call. */
 export function directoryErrorKey(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (DIRECTORY_ERROR_CODES as readonly string[]).includes(code)) {
-      return `directory.errors.${code}`;
-    }
     if (error.status === 422) {
       return 'directory.errors.validation';
     }

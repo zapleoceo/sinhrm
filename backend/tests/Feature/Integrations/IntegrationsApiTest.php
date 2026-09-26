@@ -71,7 +71,7 @@ final class IntegrationsApiTest extends TestCase
             ->assertJsonPath('ai_policy.enabled', false);
 
         $byKey = $this->byKey($response);
-        $this->assertCount(19, $byKey);
+        $this->assertCount(18, $byKey);
         // KEP signing: a documented placeholder — off, no connection check.
         $this->assertSame('documents', $byKey['kep_signing']['group']);
         $this->assertSame('off', $byKey['kep_signing']['status']);
@@ -231,17 +231,6 @@ final class IntegrationsApiTest extends TestCase
 
         $this->actingAs($this->superadmin)->postJson('/api/integrations/ai_broker/check')
             ->assertOk()->assertJsonPath('data.status', 'error')->assertJsonPath('data.last_error', 'http_503');
-    }
-
-    public function test_sintegrum_check_is_offline_and_reports_not_verified(): void
-    {
-        Http::fake();
-        $this->actingAs($this->superadmin)
-            ->putJson('/api/integrations/sintegrum_api', ['secrets' => ['token' => 'fake-sintegrum-token']])->assertOk();
-
-        $this->actingAs($this->superadmin)->postJson('/api/integrations/sintegrum_api/check')
-            ->assertOk()->assertJsonPath('data.status', 'demo')->assertJsonPath('data.last_error', 'not_verified');
-        Http::assertNothingSent();
     }
 
     public function test_check_not_supported_is_422(): void

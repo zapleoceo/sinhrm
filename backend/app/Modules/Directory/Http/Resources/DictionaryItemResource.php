@@ -17,7 +17,6 @@ final class DictionaryItemResource extends JsonResource
     {
         $data = [
             'id' => $this->id,
-            'external_id' => $this->external_id,
             'name' => $this->name,
             'status' => $this->status->value,
             'created_at' => $this->created_at?->toIso8601String(),

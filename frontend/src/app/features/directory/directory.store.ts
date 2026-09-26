@@ -1,13 +1,13 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { DictionaryItem, DictionaryQuery, DictionaryType, ImportReport, SaveDictionaryItem } from './directory.model';
+import { DictionaryItem, DictionaryQuery, DictionaryType, SaveDictionaryItem } from './directory.model';
 import { DirectoryService, directoryErrorKey } from './directory.service';
 
 const DEFAULT_QUERY: DictionaryQuery = { page: 1, perPage: 50 };
 
 /**
- * State of the directory page (provided per page): the active dictionary tab, its filters and rows,
- * and the Sintegrum import. Rename and enable/disable are optimistic with rollback; onError gets an i18n key.
+ * State of the directory page (provided per page): the active dictionary tab, its filters and rows.
+ * Rename and enable/disable are optimistic with rollback; onError gets an i18n key.
  */
 @Injectable()
 export class DirectoryStore {
@@ -20,11 +20,6 @@ export class DirectoryStore {
   readonly loading = signal(false);
   readonly failed = signal(false);
   readonly pending = signal<ReadonlySet<number>>(new Set());
-
-  readonly importing = signal(false);
-  readonly importReport = signal<ImportReport | null>(null);
-  /** i18n key of the last import failure. */
-  readonly importError = signal<string | null>(null);
 
   load(): void {
     this.loading.set(true);
@@ -79,23 +74,6 @@ export class DirectoryStore {
   /** Not optimistic: the new row needs its id; the list is reloaded to keep the server order. */
   create(name: string): Observable<DictionaryItem> {
     return this.api.create(this.type(), { name: name.trim() }).pipe(tap(() => this.load()));
-  }
-
-  runImport(): void {
-    this.importing.set(true);
-    this.importError.set(null);
-    this.importReport.set(null);
-    this.api.import().subscribe({
-      next: (report) => {
-        this.importReport.set(report);
-        this.importing.set(false);
-        this.load();
-      },
-      error: (e: unknown) => {
-        this.importError.set(directoryErrorKey(e));
-        this.importing.set(false);
-      },
-    });
   }
 
   private optimistic(item: DictionaryItem, body: SaveDictionaryItem, onError: (key: string) => void): void {

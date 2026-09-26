@@ -119,10 +119,6 @@ admin / сам / руководитель прямой и через урове�
 Вручную (нужна сессия): `curl -i "https://sinhrm.vercel.app/api/people?perPage=20"` → без сессии 401.
 
 ## Следующие шаги и вопросы
-- **Импорт сотрудников из Sintegrum** (`POST /api/people/import/sintegrum`) не сделан: эндпоинт списка пользователей
-  Sintegrum неизвестен. План — по образцу `Directory\Services\SintegrumDirectoryImporter` (токен из `SecretVault`,
-  `OutboundUrlGuard`, терпимый маппер `hired_at/fired_at`, `branch/department/job` → справочники по `external_id`),
-  пометка «не проверено на живом API», данные в репозиторий не попадают.
 - Роль `hr` (отдельно от `admin`) — нужно решение владельца.
 - Нет загрузки аватара (только `avatar_url`), нет истории должностей, нет конструктора доп. полей (`custom_fields` —
   свободные пары ключ/значение, правятся через API).

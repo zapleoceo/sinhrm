@@ -21,7 +21,6 @@ final class DepartmentFactory extends Factory
     public function definition(): array
     {
         return [
-            'external_id' => null,
             'name' => 'Department '.fake()->unique()->bothify('??-###'),
             'status' => DirectoryStatus::Active,
         ];

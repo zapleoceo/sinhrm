@@ -10,8 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Company dictionaries, modelled on Sintegrum (branch, city, department, job). Filled by the importer
-        // or by hand; rows are never deleted, only disabled. external_id = id in Sintegrum (string: tolerant).
+        // Company dictionaries (branch, city, department, job). Filled by hand; rows are never deleted,
+        // only disabled. external_id is dropped later by 2026_10_07_100001_drop_directory_external_ids.
         foreach (['cities', 'departments', 'positions'] as $name) {
             Schema::create($name, function (Blueprint $table): void {
                 $this->dictionaryColumns($table);

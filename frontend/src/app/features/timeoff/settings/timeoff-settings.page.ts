@@ -17,7 +17,7 @@ import { ACCRUAL_MODES, AccrualMode, Holiday, LeavePolicy, LeaveType } from '../
 import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
 
 /**
- * Leave settings (superadmin, admin): leave types, policies (company default + per branch, Sintegrum-style
+ * Leave settings (superadmin, admin): leave types, policies (company default + per branch,
  * "vacation days per branch"), public holidays of a year. Small inline forms; changes apply immediately.
  */
 @Component({
