@@ -19,6 +19,7 @@ use App\Modules\Ai\Models\AiRequest;
 use App\Modules\Ai\Support\AiHandlerRegistry;
 use App\Modules\Ai\Support\AiSettingsReader;
 use App\Modules\Ai\Support\JsonOutput;
+use App\Modules\Ai\Support\PromptOverrides;
 use App\Modules\Integrations\Contracts\AiPolicy;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +27,7 @@ use Illuminate\Support\Sleep;
 
 /**
  * The only entry point to AI for other modules:
+ * 0. an edited prompt version active in the admin replaces the instruction part (PromptOverrides);
  * 1. gate: global switch (AiPolicy) → provider configured (key + integration not "off") → purpose switched on;
  * 2. daily caps from ai_requests (attempts and cost since 00:00 UTC) → ai_budget_exceeded;
  * 3. submit, then poll with backoff within $waitSeconds (≤ 40 s: serverless requests end at 60 s);
@@ -51,6 +53,7 @@ final readonly class AiService
         private AiSettingsReader $settings,
         private AiRequestRepository $requests,
         private AiHandlerRegistry $handlers,
+        private PromptOverrides $overrides,
     ) {}
 
     /** null = AI can run for this purpose; otherwise the refusal code (ai_disabled | ai_not_configured | ai_purpose_disabled). */
@@ -86,6 +89,8 @@ final readonly class AiService
     {
         $this->assertAvailable($prompt->purpose);
         $this->assertBudget();
+        // Active edited version from the admin prompt editor (instruction part only; OUTPUT stays code-owned).
+        $prompt = $this->overrides->apply($prompt);
         $prompt = $prompt->withCapability($prompt->capability ?? $this->settings->read()->capabilityFor($prompt->purpose));
 
         $request = $this->requests->create([
@@ -209,7 +214,10 @@ final readonly class AiService
         if ($request->attempts >= self::MAX_ATTEMPTS) {
             return null;
         }
-        $prompt ??= $this->handlers->get($request->purpose)->rebuild($request);
+        if ($prompt === null) {
+            $rebuilt = $this->handlers->get($request->purpose)->rebuild($request);
+            $prompt = $rebuilt === null ? null : $this->overrides->apply($rebuilt);
+        }
         if ($prompt !== null && $request->capability !== null) {
             $prompt = $prompt->withCapability($request->capability);
         }
