@@ -34,6 +34,8 @@ final class DashboardAccessTest extends TestCase
     {
         yield 'superadmin sees all branches' => [UserRole::Superadmin, false, 3];
         yield 'admin sees all branches' => [UserRole::Admin, false, 3];
+        yield 'hr_manager sees all branches (read-only HR)' => [UserRole::HrManager, false, 3];
+        yield 'employee with branch sees nothing (branches do not open Recruiting)' => [UserRole::Employee, true, 0];
         yield 'recruiter with branch sees it only' => [UserRole::Recruiter, true, 1];
         yield 'recruiter without branches sees zeros' => [UserRole::Recruiter, false, 0];
         yield 'viewer with branch sees it only' => [UserRole::Viewer, true, 1];

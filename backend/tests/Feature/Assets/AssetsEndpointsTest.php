@@ -24,6 +24,7 @@ final class AssetsEndpointsTest extends TestCase
     {
         yield 'recruiter' => [UserRole::Recruiter];
         yield 'viewer' => [UserRole::Viewer];
+        yield 'employee' => [UserRole::Employee];
     }
 
     /** @return iterable<string, array{UserRole}> */
@@ -31,6 +32,7 @@ final class AssetsEndpointsTest extends TestCase
     {
         yield 'superadmin' => [UserRole::Superadmin];
         yield 'admin' => [UserRole::Admin];
+        yield 'hr_manager' => [UserRole::HrManager];
     }
 
     /** @param  array<string, mixed>  $attributes */
@@ -63,9 +65,19 @@ final class AssetsEndpointsTest extends TestCase
     }
 
     #[DataProvider('adminRoles')]
-    public function test_admin_roles_can_manage_inventory(UserRole $role): void
+    public function test_hr_staff_roles_can_manage_inventory(UserRole $role): void
     {
-        $this->actingAs($this->login($role))->getJson('/api/assets')->assertOk()->assertJsonCount(0, 'data');
+        $user = $this->login($role);
+        $type = $this->actingAs($user)->postJson('/api/assets/types', ['name' => 'Type '.$role->value])->assertCreated()->json('data.id');
+        $this->actingAs($user)->patchJson("/api/assets/types/$type", ['name' => 'Renamed '.$role->value])->assertOk();
+        $id = $this->asset($user, ['type_id' => $type]);
+        $this->actingAs($user)->patchJson("/api/assets/$id", ['name' => 'Edited'])->assertOk();
+        $holder = $this->employee();
+        $this->actingAs($user)->postJson("/api/assets/$id/assign", ['employee_id' => $holder->id])->assertOk();
+        $this->actingAs($user)->postJson("/api/assets/$id/return", [])->assertOk();
+        $this->actingAs($user)->getJson('/api/assets')->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($user)->getJson("/api/assets/employee/$holder->id")->assertOk()->assertJsonCount(1, 'data');
+        $this->assertSame($user->id, AssetAssignment::query()->sole()->assigned_by);
     }
 
     public function test_guest_and_blocked_user_are_rejected(): void

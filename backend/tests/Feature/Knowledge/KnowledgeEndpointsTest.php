@@ -25,6 +25,7 @@ final class KnowledgeEndpointsTest extends TestCase
     {
         yield 'recruiter' => [UserRole::Recruiter];
         yield 'viewer' => [UserRole::Viewer];
+        yield 'employee' => [UserRole::Employee];
     }
 
     /** @param  array<string, mixed>  $attributes */
@@ -54,9 +55,21 @@ final class KnowledgeEndpointsTest extends TestCase
         $this->actingAs($user)->getJson("/api/knowledge/articles/$id")->assertOk()->assertJsonPath('data.body_md', null);
     }
 
-    public function test_superadmin_is_an_editor(): void
+    /** @return iterable<string, array{UserRole}> */
+    public static function hrStaffRoles(): iterable
     {
-        $super = $this->login(UserRole::Superadmin);
+        yield 'superadmin' => [UserRole::Superadmin];
+        yield 'admin' => [UserRole::Admin];
+        yield 'hr_manager' => [UserRole::HrManager];
+    }
+
+    #[DataProvider('hrStaffRoles')]
+    public function test_hr_staff_roles_are_editors(UserRole $role): void
+    {
+        $super = $this->login($role);
+        $this->actingAs($super)->postJson('/api/knowledge/categories', ['name' => 'Cat'])->assertCreated();
+        $other = $this->article($this->login(UserRole::Admin), ['audience' => ['type' => 'roles', 'roles' => ['viewer']]]);
+        $this->actingAs($super)->patchJson("/api/knowledge/articles/$other", ['title' => 'Edited'])->assertOk()->assertJsonPath('data.version', 2);
         $id = $this->article($super, ['status' => 'draft']);
         $this->actingAs($super)->getJson("/api/knowledge/articles/$id")->assertOk()->assertJsonPath('data.body_md', 'text');
         $this->actingAs($super)->getJson("/api/knowledge/articles/$id/versions")->assertOk();
@@ -221,5 +234,29 @@ final class KnowledgeEndpointsTest extends TestCase
         $this->actingAs($this->login(UserRole::Recruiter))->getJson("/api/knowledge/articles/$viewers")->assertNotFound();
         $titles = array_column((array) $this->actingAs($noBranch)->getJson('/api/knowledge/articles')->json('data'), 'title');
         $this->assertSame(['Viewers'], $titles);
+    }
+
+    public function test_audience_by_role_for_employee_and_hr_manager(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $branch = Branch::query()->create(['name' => 'Dnipro syn', 'status' => 'active']);
+        $employee = $this->login(UserRole::Employee);
+        $this->employee(['branch_id' => $branch->id], $employee);
+        $hr = $this->login(UserRole::HrManager);
+
+        $forEmployees = $this->article($admin, ['title' => 'Employees', 'audience' => ['type' => 'roles', 'roles' => ['employee']]]);
+        $forRecruiters = $this->article($admin, ['title' => 'Recruiters', 'audience' => ['type' => 'roles', 'roles' => ['recruiter']]]);
+        $this->article($admin, ['title' => 'Dnipro', 'audience' => ['type' => 'branches', 'ids' => [$branch->id]]]);
+        $this->article($admin, ['title' => 'Draft', 'status' => 'draft']);
+
+        $titles = fn (User $u): array => array_column((array) $this->actingAs($u)->getJson('/api/knowledge/articles')->assertOk()->json('data'), 'title');
+        $this->assertEqualsCanonicalizing(['Employees', 'Dnipro'], $titles($employee));
+        $this->actingAs($employee)->getJson("/api/knowledge/articles/$forRecruiters")->assertNotFound();
+        $this->actingAs($employee)->postJson("/api/knowledge/articles/$forEmployees/vote", ['helpful' => true])->assertOk();
+        $this->actingAs($this->login(UserRole::Viewer))->getJson("/api/knowledge/articles/$forEmployees")->assertNotFound();
+
+        // hr_manager is an editor: every article, drafts included, and the versions endpoint.
+        $this->assertCount(4, $titles($hr));
+        $this->actingAs($hr)->getJson("/api/knowledge/articles/$forRecruiters/versions")->assertOk();
     }
 }
