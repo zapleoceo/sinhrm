@@ -7,6 +7,8 @@ namespace App\Modules\Recruiting\Providers;
 use App\Models\User;
 use App\Modules\Ai\Providers\AiServiceProvider;
 use App\Modules\Core\Contracts\NavBadgeProvider;
+use App\Modules\Core\Contracts\PersonalDataProvider;
+use App\Modules\Core\Contracts\RetentionSource;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Recruiting\Ai\ScreeningAiHandler;
@@ -34,6 +36,7 @@ use App\Modules\Recruiting\Policies\ApplicationPolicy;
 use App\Modules\Recruiting\Policies\CandidatePolicy;
 use App\Modules\Recruiting\Policies\TouchpointPolicy;
 use App\Modules\Recruiting\Policies\VacancyPolicy;
+use App\Modules\Recruiting\Privacy\CandidatePersonalData;
 use App\Modules\Recruiting\Repositories\EloquentAcquisitionChannelRepository;
 use App\Modules\Recruiting\Repositories\EloquentApplicationRepository;
 use App\Modules\Recruiting\Repositories\EloquentCandidateRepository;
@@ -70,6 +73,9 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->app->tag([InboxNavBadges::class], NavBadgeProvider::class);
+        // Personal-data export/erase (Privacy module, docs/architecture/secrets.md).
+        $this->app->tag([CandidatePersonalData::class], PersonalDataProvider::class);
+        $this->app->tag([CandidatePersonalData::class], RetentionSource::class);
         $this->app->bind(PipelineRepository::class, EloquentPipelineRepository::class);
         $this->app->bind(AcquisitionChannelRepository::class, EloquentAcquisitionChannelRepository::class);
         $this->app->bind(VacancyRepository::class, EloquentVacancyRepository::class);

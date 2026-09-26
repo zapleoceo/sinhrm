@@ -132,6 +132,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/recruiting/channels/acquisition-channels.page').then((m) => m.AcquisitionChannelsPage),
       },
       {
+        path: 'admin/privacy',
+        title: 'titles.privacy',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/privacy/privacy-settings.page').then((m) => m.PrivacySettingsPage),
+      },
+      {
         path: 'admin/time',
         title: 'titles.timeSchedules',
         canActivate: [roleGuard(...HR_STAFF_ROLES)],
