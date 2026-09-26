@@ -50,6 +50,8 @@
 `frontend/src/app/features/assets`: `assets.page` (`/admin/assets`), `employee-assets.tab` (вкладка профиля
 `assets`), `assets.service`, `assets.model`.
 
+**Интерфейс (2026-09-26):** Даты вводятся только выпадающим календарём Angular Material (формат дд.мм.рррр, неделя с понедельника; [core.md](core.md)), в API уходит прежний `YYYY-MM-DD` (`core/date/iso-date.ts`, без сдвига часового пояса): дата покупки и дата выдачи/возврата.
+
 ## Как проверить
 `php artisan test --filter=Assets` — доступ, уникальность номера (в т.ч. регистр), выдача/возврат/повторная выдача и
 история, запрет прямого `assigned`, доступ к вкладке по People, шаг `collect_assets` (одна задача со списком,

@@ -21,11 +21,13 @@ import { TasksWidget } from '../../scripts/tasks/tasks-widget';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from '../board/reject.dialog';
 import { canWriteRecruiting } from '../recruiting.access';
 import { formatDuration } from '../recruiting.format';
-import { Application, CHANNEL_ICONS, CHANNELS, LogTouch, STAGE_FILTER, Stage, TimelineFilter } from '../recruiting.model';
+import { Application, CHANNELS, LogTouch, STAGE_FILTER, Stage, TimelineFilter } from '../recruiting.model';
 import { recruitingErrorKey } from '../recruiting.service';
 import { CandidateCardStore } from './candidate-card.store';
 import { ScreeningPanel } from './screening-panel';
 import { TouchComposer } from './touch-composer';
+import { ChannelIcon } from '../../../core/ui/channel-icon';
+import { hasChannelIcon } from '../../../core/ui/channel-icons';
 
 /**
  * The candidate card: contacts and source/UTM chips, the ROUTE per vacancy (stages with time spent), a stage
@@ -38,6 +40,7 @@ import { TouchComposer } from './touch-composer';
   imports: [
     DatePipe,
     MatButtonModule,
+    ChannelIcon,
     MatChipsModule,
     MatIconModule,
     MatMenuModule,
@@ -67,7 +70,7 @@ export class CandidateCard {
   private readonly clipboard = inject(Clipboard);
   protected readonly hire = inject(HireAction);
 
-  protected readonly icons = CHANNEL_ICONS;
+  protected readonly hasIcon = hasChannelIcon;
   protected readonly filterChips: readonly TimelineFilter[] = [...CHANNELS.filter((c) => c !== 'system'), STAGE_FILTER];
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
   protected readonly utm = computed(() => Object.entries(this.store.candidate()?.utm ?? {}));

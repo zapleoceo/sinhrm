@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { EXTENSION_DOCS_URL, ExtensionTokenStatus } from './extension.model';
 import { ExtensionService } from './extension.service';
+import { ChannelIcon } from '../../core/ui/channel-icon';
 
 const INACTIVE: ExtensionTokenStatus = { active: false, created_at: null, last_used_at: null, expires_at: null };
 
@@ -15,11 +16,16 @@ const INACTIVE: ExtensionTokenStatus = { active: false, created_at: null, last_u
  */
 @Component({
   selector: 'app-extension-page',
-  imports: [DatePipe, MatButtonModule, MatIconModule, TranslocoPipe],
+  imports: [ChannelIcon, DatePipe, MatButtonModule, MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h1>{{ 'extension.title' | transloco }}</h1>
     <p class="muted">{{ 'extension.explain' | transloco }}</p>
+    <ul class="sites" [attr.aria-label]="'extension.sites' | transloco">
+      @for (s of sites; track s) {
+        <li><app-channel-icon [key]="s" />{{ 'recruiting.source.' + s | transloco }}</li>
+      }
+    </ul>
 
     <section class="panel" aria-live="polite">
       @if (status(); as s) {
@@ -85,6 +91,8 @@ const INACTIVE: ExtensionTokenStatus = { active: false, created_at: null, last_u
   `,
   styles: `
     :host { display: block; max-width: 48rem; }
+    .sites { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; list-style: none; padding: 0; margin: 0 0 1rem; }
+    .sites li { display: inline-flex; align-items: center; gap: 0.35rem; }
     .panel { border: 1px solid var(--app-border); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
     dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0.5rem 0; }
     dd { margin: 0; }
@@ -97,6 +105,8 @@ const INACTIVE: ExtensionTokenStatus = { active: false, created_at: null, last_u
   `,
 })
 export class ExtensionPage implements OnInit {
+  /** Sites the Clipper reads profiles from (extension/src/extractors). */
+  protected readonly sites = ['linkedin', 'work_ua', 'djinni', 'dou'] as const;
   private readonly api = inject(ExtensionService);
   private readonly clipboard = inject(Clipboard);
 

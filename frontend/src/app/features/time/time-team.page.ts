@@ -8,11 +8,13 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { TeamRow, addWeeks, mondayOf } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
+import { toIsoDate } from '../../core/date/iso-date';
+import { WeekPicker } from './week-picker';
 
 /** Team overview (/time/team?week=): every visible employee's week — status, expected, worked, overtime, missing. */
 @Component({
   selector: 'app-time-team-page',
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe],
+  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, WeekPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -23,6 +25,7 @@ import { TimeService, timeErrorKey } from './time.service';
       <div class="row">
         <button mat-icon-button type="button" (click)="go(-1)" [attr.aria-label]="'time.week.prev' | transloco"><mat-icon>chevron_left</mat-icon></button>
         <button mat-icon-button type="button" (click)="go(1)" [attr.aria-label]="'time.week.next' | transloco"><mat-icon>chevron_right</mat-icon></button>
+        <app-week-picker [weekStart]="weekStart()" (weekChange)="goTo($event)" />
       </div>
     </header>
     @if (loading()) {
@@ -78,7 +81,7 @@ export class TimeTeamPage {
   private readonly i18n = inject(TranslocoService);
   protected readonly rows = signal<TeamRow[]>([]);
   protected readonly loading = signal(false);
-  protected readonly weekStart = computed(() => mondayOf(this.week() ?? new Date().toISOString().slice(0, 10)));
+  protected readonly weekStart = computed(() => mondayOf(this.week() ?? toIsoDate(new Date())));
   protected readonly missingCount = computed(() => this.rows().filter((r) => r.missing > 0 && r.status !== 'submitted' && r.status !== 'approved').length);
 
   constructor() {
@@ -86,7 +89,11 @@ export class TimeTeamPage {
   }
 
   protected go(delta: number): void {
-    void this.router.navigate([], { queryParams: { week: addWeeks(this.weekStart(), delta) } });
+    this.goTo(addWeeks(this.weekStart(), delta));
+  }
+
+  protected goTo(week: string): void {
+    void this.router.navigate([], { queryParams: { week } });
   }
 
   private load(week: string): void {

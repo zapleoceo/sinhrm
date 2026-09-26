@@ -156,6 +156,8 @@ placeholder маска или «не задано», кнопка «Очисти
 [google-workspace.md](google-workspace.md)).
 Маршрут `/admin/integrations` — `roleGuard('superadmin')`.
 
+**Интерфейс (2026-09-26):** У названия каждой интеграции — иконка сервиса (`app-channel-icon`, Font Awesome Free: Telegram, WhatsApp, Viber, Meta, Google, телефония, AI…; [core.md](core.md)).
+
 ## Как проверить
 Тесты: `tests/Feature/Integrations/IntegrationsApiTest.php` (401/403, 404 неизвестного ключа, список и маскирование
 со сканированием всего ответа, шифрование в БД, семантика set/unchanged/delete, валидация, проверки через

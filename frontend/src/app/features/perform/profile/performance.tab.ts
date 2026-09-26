@@ -12,6 +12,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DevelopmentPlan, Kpi, Objective, OneOnOne, ReviewResult, progressTone } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { ReviewResults } from '../reviews/review-results';
+import { toIsoDate } from '../../../core/date/iso-date';
 
 /**
  * Profile tab "Performance": objectives, KPIs, development plans (managers/admins add a plan and KPIs; the
@@ -159,7 +160,7 @@ export class PerformanceTab {
   protected readonly results = signal<ReviewResult[]>([]);
   protected readonly tone = progressTone;
   protected metric = '';
-  protected period = new Date().toISOString().slice(0, 7);
+  protected period = toIsoDate(new Date()).slice(0, 7);
   protected target: number | null = null;
   protected planTitle = '';
   protected planActions = '';

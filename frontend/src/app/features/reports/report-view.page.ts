@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, effect, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -14,13 +15,14 @@ import { DirectoryService } from '../directory/directory.service';
 import { ReportFilter, ReportResult } from './reports.model';
 import { ReportTable } from './report-table';
 import { ReportsService, reportsErrorKey } from './reports.service';
+import { fromIsoDate, toIsoDate } from '../../core/date/iso-date';
 
 type Filters = Partial<Record<ReportFilter, string>>;
 
 /** One catalog report (/reports/catalog/:key?from=&to=…): its filters, table + CSS bars, CSV, save. */
 @Component({
   selector: 'app-report-view-page',
-  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, RouterLink, TranslocoPipe, ReportTable],
+  imports: [MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, RouterLink, TranslocoPipe, ReportTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -51,10 +53,19 @@ type Filters = Partial<Record<ReportFilter, string>>;
                 </mat-form-field>
               }
               @default {
-                <mat-form-field subscriptSizing="dynamic">
-                  <mat-label>{{ 'reports.filters.' + f | transloco }}</mat-label>
-                  <input matInput [type]="f === 'from' || f === 'to' ? 'date' : f === 'weeks' ? 'number' : 'text'" [value]="filters()[f] ?? ''" (change)="set(f, val($event))" />
-                </mat-form-field>
+                @if (f === 'from' || f === 'to') {
+                  <mat-form-field subscriptSizing="dynamic">
+                    <mat-label>{{ 'reports.filters.' + f | transloco }}</mat-label>
+                    <input matInput [matDatepicker]="filterDate" [value]="dateOf(f)" (dateChange)="set(f, toIso($event.value) || undefined)" />
+                    <mat-datepicker-toggle matIconSuffix [for]="filterDate" />
+                    <mat-datepicker #filterDate />
+                  </mat-form-field>
+                } @else {
+                  <mat-form-field subscriptSizing="dynamic">
+                    <mat-label>{{ 'reports.filters.' + f | transloco }}</mat-label>
+                    <input matInput [type]="f === 'weeks' ? 'number' : 'text'" [value]="filters()[f] ?? ''" (change)="set(f, val($event))" />
+                  </mat-form-field>
+                }
               }
             }
           }
@@ -105,6 +116,12 @@ export class ReportViewPage implements OnInit {
 
   ngOnInit(): void {
     this.directory.active('branches').subscribe({ next: (list) => this.branches.set(list), error: () => this.branches.set([]) });
+  }
+
+  protected readonly toIso = toIsoDate;
+
+  protected dateOf(key: ReportFilter): Date | null {
+    return fromIsoDate(this.filters()[key]);
   }
 
   protected val(event: Event): string {

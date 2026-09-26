@@ -97,6 +97,8 @@ API: `GET/POST /api/reports/saved`, `PUT/DELETE /saved/{id}`, `GET /saved/{id}/r
 `builder.page` (`?saved=<id>`), `report-table` (таблица + CSS-полосы), `reports.service` (CSV — Blob → `saveBlob` из
 `core/http/api-error.ts`), `reports.model` (`barPercent`, `columnMax`, `filterParams`, `cleanSpec`).
 
+**Интерфейс (2026-09-26):** Даты вводятся только выпадающим календарём Angular Material (формат дд.мм.рррр, неделя с понедельника; [core.md](core.md)), в API уходит прежний `YYYY-MM-DD` (`core/date/iso-date.ts`, без сдвига часового пояса): фильтры «з» / «по» отчётов каталога.
+
 ## Как проверить
 `php artisan test --filter=Reports` — состав каталога по ролям (25 отчётов у админа, нет pay gap), область People и
 филиалов, PII (`age`, колонки конструктора), белый список (422 на неизвестные колонки/наборы/операторы/агрегаты),

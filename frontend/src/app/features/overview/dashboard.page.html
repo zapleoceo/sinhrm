@@ -170,7 +170,7 @@
         <tbody>
           @for (r of store.touches(); track r.channel) {
             <tr>
-              <th scope="row"><mat-icon inline>{{ icons[r.channel] }}</mat-icon> {{ 'recruiting.channel.' + r.channel | transloco }}</th>
+              <th scope="row"><app-channel-icon [key]="r.channel" /> {{ 'recruiting.channel.' + r.channel | transloco }}</th>
               <td class="barcell"><span class="bar" [style.width.%]="r.width"></span><span class="num">{{ r.count }}</span></td>
             </tr>
           } @empty {

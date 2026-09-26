@@ -10,8 +10,9 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
-import { isWeekend, toIso } from '../timeoff.dates';
+import { isWeekend } from '../timeoff.dates';
 import { CalendarStore } from './calendar.store';
+import { toIsoDate } from '../../../core/date/iso-date';
 
 /**
  * Team calendar: month grid (CSS grid, no calendar library), a row per absent colleague, cells coloured by leave
@@ -118,7 +119,7 @@ export class CalendarPage implements OnInit {
   protected readonly store = inject(CalendarStore);
   private readonly directory = inject(DirectoryService);
   protected readonly branches = signal<DictionaryItem[]>([]);
-  protected readonly today = toIso(new Date());
+  protected readonly today = toIsoDate(new Date());
   protected readonly weekend = isWeekend;
 
   ngOnInit(): void {

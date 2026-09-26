@@ -158,6 +158,8 @@ Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::i
 | `mood/mood-checkin.widget.ts` | карточка настроения (главная и `/pulse/mood`) |
 | `mood/mood.page.ts` | история, тренд команды, настройки |
 
+**Интерфейс (2026-09-26):** Даты вводятся только выпадающим календарём Angular Material (формат дд.мм.рррр, неделя с понедельника; [core.md](core.md)), в API уходит прежний `YYYY-MM-DD` (`core/date/iso-date.ts`, без сдвига часового пояса): начало и конец волны опроса.
+
 ## Как проверить
 - `php artisan test --filter=Pulse` — Feature: `AnonymityTest` (**ответы по одному в открытой волне ничего не
   раскрывают — только диапазон участия; после закрытия — результаты; отдел, чей остаток мал, не показывается;

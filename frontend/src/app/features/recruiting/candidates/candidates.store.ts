@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Candidate, CandidateQuery } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
 
@@ -15,8 +15,6 @@ export class CandidatesStore {
   readonly total = signal(0);
   readonly loading = signal(false);
   readonly failed = signal(false);
-  readonly selectedId = signal<number | null>(null);
-  readonly selectedIndex = computed(() => this.items().findIndex((c) => c.id === this.selectedId()));
 
   load(): void {
     const seq = ++this.seq;
@@ -48,16 +46,5 @@ export class CandidatesStore {
   setPage(page: number, perPage: number): void {
     this.query.update((q) => ({ ...q, page, perPage }));
     this.load();
-  }
-
-  /** Next (+1) / previous (-1) candidate id in the list, or null at the edges / empty list. */
-  neighbour(step: 1 | -1): number | null {
-    const list = this.items();
-    if (list.length === 0) {
-      return null;
-    }
-    const index = this.selectedIndex();
-    const next = index === -1 ? 0 : index + step;
-    return next >= 0 && next < list.length ? list[next].id : null;
   }
 }

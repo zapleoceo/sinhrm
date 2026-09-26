@@ -3,14 +3,15 @@
     <h1>{{ 'recruiting.reports.title' | transloco }}</h1>
     <p class="muted">{{ 'recruiting.reports.subtitle' | transloco }}</p>
   </div>
-  <form class="range" (submit)="$event.preventDefault(); apply(from.value, to.value)">
+  <form class="range" (submit)="$event.preventDefault(); apply(period.value?.start ?? null, period.value?.end ?? null)">
     <mat-form-field subscriptSizing="dynamic">
-      <mat-label>{{ 'recruiting.reports.from' | transloco }}</mat-label>
-      <input matInput type="date" #from [value]="store.range().from" />
-    </mat-form-field>
-    <mat-form-field subscriptSizing="dynamic">
-      <mat-label>{{ 'recruiting.reports.to' | transloco }}</mat-label>
-      <input matInput type="date" #to [value]="store.range().to" />
+      <mat-label>{{ 'recruiting.reports.from' | transloco }} — {{ 'recruiting.reports.to' | transloco }}</mat-label>
+      <mat-date-range-input [rangePicker]="reportRange" #period="matDateRangeInput">
+        <input matStartDate [value]="start()" [placeholder]="'recruiting.reports.from' | transloco" />
+        <input matEndDate [value]="end()" [placeholder]="'recruiting.reports.to' | transloco" />
+      </mat-date-range-input>
+      <mat-datepicker-toggle matIconSuffix [for]="reportRange" />
+      <mat-date-range-picker #reportRange />
     </mat-form-field>
     <button mat-stroked-button type="submit">{{ 'recruiting.reports.apply' | transloco }}</button>
   </form>
@@ -39,7 +40,7 @@
         <tr>
           <th scope="col">{{ 'recruiting.reports.recruiter' | transloco }}</th>
           @for (c of channels; track c) {
-            <th scope="col" class="num">{{ 'recruiting.channel.' + c | transloco }}</th>
+            <th scope="col" class="num"><app-channel-icon [key]="c" /> {{ 'recruiting.channel.' + c | transloco }}</th>
           }
           <th scope="col" class="num">{{ 'recruiting.card.viaProduct' | transloco }}</th>
           <th scope="col" class="num">{{ 'recruiting.card.captured' | transloco }}</th>
@@ -77,7 +78,7 @@
       <tbody>
         @for (r of store.sources()?.rows ?? []; track r.source) {
           <tr>
-            <th scope="row">{{ 'recruiting.source.' + r.source | transloco }}</th>
+            <th scope="row"><app-channel-icon [key]="r.source" /> {{ 'recruiting.source.' + r.source | transloco }}</th>
             <td class="barcell"><span class="bar" [style.width.%]="bar(r.candidates, maxSource())"></span><span class="num">{{ r.candidates }}</span></td>
             <td class="num">{{ r.hired }}</td>
           </tr>

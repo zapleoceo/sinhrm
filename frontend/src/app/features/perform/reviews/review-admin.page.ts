@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +12,7 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Competency, REVIEW_TYPES, RatingScale, ReviewCycle, ReviewType, parseIds } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
+import { toIsoDate } from '../../../core/date/iso-date';
 
 /**
  * Review setup (/admin/perform/reviews, admins): rating scales, competencies, and the cycle wizard —
@@ -19,7 +21,7 @@ import { PerformService, performErrorKey } from '../perform.service';
  */
 @Component({
   selector: 'app-review-admin-page',
-  imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, MatStepperModule, TranslocoPipe],
+  imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, MatStepperModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -86,11 +88,11 @@ import { PerformService, performErrorKey } from '../perform.service';
             </mat-form-field>
             <mat-form-field subscriptSizing="dynamic">
               <mat-label>{{ 'perform.admin.from' | transloco }}</mat-label>
-              <input matInput type="date" [(ngModel)]="periodStart" />
+              <input matInput [matDatepicker]="dp1" [(ngModel)]="periodStart" /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 />
             </mat-form-field>
             <mat-form-field subscriptSizing="dynamic">
               <mat-label>{{ 'perform.admin.to' | transloco }}</mat-label>
-              <input matInput type="date" [(ngModel)]="periodEnd" />
+              <input matInput [matDatepicker]="dp2" [(ngModel)]="periodEnd" /><mat-datepicker-toggle matIconSuffix [for]="dp2" /><mat-datepicker #dp2 />
             </mat-form-field>
           </div>
           <button mat-flat-button matStepperNext type="button">{{ 'perform.admin.next' | transloco }}</button>
@@ -180,8 +182,8 @@ export class ReviewAdminPage implements OnInit {
   protected competencyName = '';
   protected competencyScale: number | null = null;
   protected cycleName = '';
-  protected periodStart = '';
-  protected periodEnd = '';
+  protected periodStart: Date | null = null;
+  protected periodEnd: Date | null = null;
   protected branchIds = '';
   protected departmentIds = '';
   protected types: ReviewType[] = ['self', 'manager'];
@@ -238,8 +240,8 @@ export class ReviewAdminPage implements OnInit {
     this.api
       .createCycle({
         name: this.cycleName,
-        period_start: this.periodStart,
-        period_end: this.periodEnd,
+        period_start: toIsoDate(this.periodStart),
+        period_end: toIsoDate(this.periodEnd),
         participants: { branch_ids: parseIds(this.branchIds), department_ids: parseIds(this.departmentIds) },
         types: this.types,
         competency_ids: this.picked,
