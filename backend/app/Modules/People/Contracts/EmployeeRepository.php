@@ -40,6 +40,12 @@ interface EmployeeRepository
      */
     public function working(?array $ids = null, ?int $branchId = null): Collection;
 
+    /**
+     * SELECT … FOR UPDATE on the employee row (inside a transaction): serializes leave requests, approvals and
+     * ledger writes of one employee (overlap and balance checks are read-then-write).
+     */
+    public function lockForUpdate(int $id): void;
+
     /** @param  array<string, mixed>  $attributes */
     public function create(array $attributes): Employee;
 

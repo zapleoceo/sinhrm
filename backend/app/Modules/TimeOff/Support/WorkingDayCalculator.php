@@ -7,10 +7,12 @@ namespace App\Modules\TimeOff\Support;
 use App\Modules\TimeOff\Enums\HalfDay;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use InvalidArgumentException;
 
 /**
  * Working days of a leave: Mon–Fri, minus public holidays. A half day takes 0.5 off the first (start) or the last
  * (end) day when that day is a working day; a one-day half-day leave is 0.5. Pure: no DB, no clock.
+ * A span over MAX_SPAN_DAYS throws (never a silently truncated count).
  */
 final class WorkingDayCalculator
 {
@@ -23,11 +25,14 @@ final class WorkingDayCalculator
      */
     public static function workingDates(CarbonInterface $from, CarbonInterface $to, array $holidays): array
     {
+        if ($from->diffInDays($to) > self::MAX_SPAN_DAYS) {
+            throw new InvalidArgumentException('Leave span exceeds '.self::MAX_SPAN_DAYS.' days');
+        }
         $skip = array_fill_keys($holidays, true);
         $dates = [];
         $day = CarbonImmutable::parse($from->toDateString());
         $end = CarbonImmutable::parse($to->toDateString());
-        for ($i = 0; $day->lte($end) && $i <= self::MAX_SPAN_DAYS; $i++, $day = $day->addDay()) {
+        for (; $day->lte($end); $day = $day->addDay()) {
             if ($day->isWeekend() || isset($skip[$day->toDateString()])) {
                 continue;
             }

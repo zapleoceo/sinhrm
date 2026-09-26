@@ -32,14 +32,28 @@ final class AccrualCalculatorTest extends TestCase
         $this->assertSame(1.67, AccrualCalculator::amount(AccrualMode::YearlyUpfront, 20, CarbonImmutable::parse('2026-12-01'), $now));
     }
 
-    public function test_monthly_is_a_twelfth_from_the_hire_month(): void
+    public function test_monthly_is_the_cumulative_target_minus_accrued(): void
     {
         $now = CarbonImmutable::parse('2026-10-05');
 
-        $this->assertSame(2.0, AccrualCalculator::amount(AccrualMode::Monthly, 24, CarbonImmutable::parse('2020-01-01'), $now));
+        $this->assertSame(2.0, AccrualCalculator::amount(AccrualMode::Monthly, 24, CarbonImmutable::parse('2020-01-01'), $now, 18));
+        // first run of the year catches up Jan..Oct
+        $this->assertSame(20.0, AccrualCalculator::amount(AccrualMode::Monthly, 24, CarbonImmutable::parse('2020-01-01'), $now));
         $this->assertSame(2.0, AccrualCalculator::amount(AccrualMode::Monthly, 24, CarbonImmutable::parse('2026-10-31'), $now));
-        $this->assertSame(1.67, AccrualCalculator::amount(AccrualMode::Monthly, 20, CarbonImmutable::parse('2026-01-01'), $now));
         $this->assertNull(AccrualCalculator::amount(AccrualMode::Monthly, 24, CarbonImmutable::parse('2026-11-01'), $now));
+    }
+
+    public function test_twelve_monthly_grants_sum_exactly_to_the_annual_norm(): void
+    {
+        foreach ([20.0, 24.0, 17.5, 1.0] as $annual) {
+            $accrued = 0.0;
+            for ($month = 1; $month <= 12; $month++) {
+                $grant = AccrualCalculator::amount(AccrualMode::Monthly, $annual, CarbonImmutable::parse('2020-01-01'), CarbonImmutable::create(2026, $month, 1), $accrued);
+                $this->assertNotNull($grant);
+                $accrued = round($accrued + $grant, 2);
+            }
+            $this->assertSame($annual, $accrued, "annual $annual");
+        }
     }
 
     public function test_expiring_part(): void

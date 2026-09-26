@@ -7,6 +7,7 @@ namespace Tests\Unit\TimeOff;
 use App\Modules\TimeOff\Enums\HalfDay;
 use App\Modules\TimeOff\Support\WorkingDayCalculator;
 use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -47,10 +48,9 @@ final class WorkingDayCalculatorTest extends TestCase
         );
     }
 
-    public function test_the_walk_is_bounded(): void
+    public function test_a_span_over_the_limit_throws_instead_of_truncating(): void
     {
-        $days = WorkingDayCalculator::days(CarbonImmutable::parse('2000-01-01'), CarbonImmutable::parse('2100-01-01'), HalfDay::None, []);
-
-        $this->assertLessThanOrEqual(WorkingDayCalculator::MAX_SPAN_DAYS, $days);
+        $this->expectException(InvalidArgumentException::class);
+        WorkingDayCalculator::days(CarbonImmutable::parse('2000-01-01'), CarbonImmutable::parse('2100-01-01'), HalfDay::None, []);
     }
 }

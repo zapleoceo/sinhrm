@@ -52,7 +52,7 @@ final class AccrualJobTest extends TestCase
 
     public function test_monthly_policy_grants_once_per_month(): void
     {
-        LeavePolicy::query()->update(['accrual_mode' => 'monthly', 'annual_days' => 18]);
+        LeavePolicy::query()->update(['accrual_mode' => 'monthly', 'annual_days' => 20]);
         $employee = $this->employee(['hired_at' => '2025-01-15']);
 
         Carbon::setTestNow('2026-10-05 09:00:00');
@@ -61,8 +61,23 @@ final class AccrualJobTest extends TestCase
         Carbon::setTestNow('2026-11-01 00:30:00');
         $this->runJobs();
 
-        $this->assertSame(3.0, $this->balance($employee));
+        // October catches up Jan..Oct (20 × 10/12 = 16.67), November adds the next step to the cumulative 18.33
+        $this->assertSame(18.33, $this->balance($employee));
         $this->assertSame(['2026-10', '2026-11'], LedgerEntry::query()->orderBy('id')->pluck('period')->all());
+    }
+
+    public function test_a_year_of_monthly_runs_sums_exactly_to_the_annual_norm(): void
+    {
+        LeavePolicy::query()->update(['accrual_mode' => 'monthly', 'annual_days' => 20]);
+        $employee = $this->employee(['hired_at' => '2025-01-15']);
+
+        for ($month = 1; $month <= 12; $month++) {
+            Carbon::setTestNow(Carbon::create(2026, $month, 1, 0, 30));
+            $this->runJobs();
+        }
+
+        $this->assertSame(20.0, $this->balance($employee));
+        $this->assertSame(12, LedgerEntry::query()->where('reason', 'accrual')->count());
     }
 
     public function test_unused_balance_above_carry_over_expires_on_jan_1(): void

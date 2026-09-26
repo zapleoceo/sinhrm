@@ -31,6 +31,7 @@ final class EloquentEmployeeRepository implements EmployeeRepository
                     ->orWhereRaw('lower(work_email) like ?', [$like])
                     ->orWhere('phone', 'like', $like));
             })
+            ->when($filter->onlyIds !== null, fn (Builder $q) => $q->whereIn('id', $filter->onlyIds ?? []))
             ->when($filter->branchId, fn (Builder $q, int $id) => $q->where('branch_id', $id))
             ->when($filter->departmentId, fn (Builder $q, int $id) => $q->where('department_id', $id))
             ->when($filter->positionId, fn (Builder $q, int $id) => $q->where('position_id', $id))
@@ -87,6 +88,11 @@ final class EloquentEmployeeRepository implements EmployeeRepository
             ->when($branchId, fn (Builder $q, int $id) => $q->where('branch_id', $id))
             ->orderBy('full_name')
             ->get();
+    }
+
+    public function lockForUpdate(int $id): void
+    {
+        Employee::query()->whereKey($id)->lockForUpdate()->first();
     }
 
     public function create(array $attributes): Employee

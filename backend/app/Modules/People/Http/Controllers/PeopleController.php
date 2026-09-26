@@ -28,12 +28,14 @@ final class PeopleController
     /** Directory tier only, for every active user. */
     public function index(ListPeopleRequest $request): AnonymousResourceCollection
     {
-        return EmployeeResource::collection($this->service->list($request->filter()));
+        return EmployeeResource::collection($this->service->list($this->scope->for($this->actor($request)), $request->filter()));
     }
 
     public function show(Request $request, Employee $employee): EmployeeResource
     {
-        return EmployeeResource::for($this->service->find($employee->id), $this->scope->for($this->actor($request)));
+        $ctx = $this->scope->for($this->actor($request));
+
+        return EmployeeResource::for($this->service->findVisible($ctx, $employee->id), $ctx);
     }
 
     public function store(SaveEmployeeRequest $request): JsonResponse

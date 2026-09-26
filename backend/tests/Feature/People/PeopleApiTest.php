@@ -202,6 +202,25 @@ final class PeopleApiTest extends TestCase
             ->assertJsonPath('data.0.full_name', 'Worker Person');
     }
 
+    public function test_terminated_people_are_visible_only_to_admins_and_managers_above(): void
+    {
+        $org = $this->org();
+        $gone = Employee::factory()->terminated()->create(['full_name' => 'Gone Worker', 'manager_id' => $org['lead']->id]);
+        $url = '/api/people/'.$gone->id;
+
+        $this->actingAs($this->login(UserRole::Admin))->getJson($url)->assertOk()->assertJsonPath('data.status', 'terminated');
+        foreach ([$org['lead'], $org['head']] as $manager) {
+            $this->actingAs($this->userOf($manager))->getJson($url)->assertOk();
+            $this->actingAs($this->userOf($manager))->getJson('/api/people?status=terminated')->assertOk()
+                ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $gone->id);
+        }
+        foreach ([$this->userOf($org['peer']), $this->userOf($org['other']), $this->login(UserRole::Viewer)] as $user) {
+            $this->actingAs($user)->getJson($url)->assertNotFound();
+            $this->actingAs($user)->getJson('/api/people?status=terminated')->assertOk()->assertJsonPath('meta.total', 0);
+        }
+        $this->actingAs($this->login(UserRole::Admin))->getJson('/api/people?status=terminated')->assertOk()->assertJsonPath('meta.total', 1);
+    }
+
     public function test_me_employee(): void
     {
         $org = $this->org();

@@ -50,6 +50,16 @@ final class EloquentLedgerRepository implements LedgerRepository
             ->exists();
     }
 
+    public function accruedInYear(int $employeeId, int $leaveTypeId, int $year): float
+    {
+        return round((float) LedgerEntry::query()
+            ->where('employee_id', $employeeId)
+            ->where('leave_type_id', $leaveTypeId)
+            ->where('reason', LedgerReason::Accrual->value)
+            ->where('period', 'like', sprintf('%04d-%%', $year))
+            ->sum('delta'), 2);
+    }
+
     public function hasEntriesBefore(int $employeeId, int $leaveTypeId, Carbon $before): bool
     {
         return LedgerEntry::query()

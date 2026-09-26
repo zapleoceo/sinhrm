@@ -17,6 +17,9 @@ interface LedgerRepository
 
     public function hasPeriod(int $employeeId, int $leaveTypeId, LedgerReason $reason, string $period): bool;
 
+    /** Sum of monthly accrual rows of the year (periods "YYYY-MM"). */
+    public function accruedInYear(int $employeeId, int $leaveTypeId, int $year): float;
+
     public function hasEntriesBefore(int $employeeId, int $leaveTypeId, Carbon $before): bool;
 
     /**

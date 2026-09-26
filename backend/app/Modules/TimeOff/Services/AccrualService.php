@@ -8,6 +8,7 @@ use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Models\Employee;
 use App\Modules\TimeOff\Contracts\LeaveSettingsRepository;
 use App\Modules\TimeOff\Contracts\LedgerRepository;
+use App\Modules\TimeOff\Enums\AccrualMode;
 use App\Modules\TimeOff\Enums\LedgerReason;
 use App\Modules\TimeOff\Models\LeaveType;
 use App\Modules\TimeOff\Support\AccrualCalculator;
@@ -17,7 +18,7 @@ use Illuminate\Support\Carbon;
  * Grants leave by policy. Idempotent per employee / type / period: the ledger's unique (employee, type, reason,
  * period) makes a repeated or overlapping run a no-op.
  * - yearly_upfront: once per year ("2026"), prorated by months when hired during the year;
- * - monthly: once per month ("2026-10"), annual / 12;
+ * - monthly: once per month ("2026-10"): cumulative year target minus already accrued (no rounding drift);
  * - Jan 1 (first run of a year): the balance left from previous years above carry_over_max expires ("expiry").
  * Only the current period is granted (a missed month is not back-filled — the cron runs every 30 minutes).
  */
@@ -70,7 +71,10 @@ final readonly class AccrualService
             if ($this->ledger->hasPeriod($employee->id, $type->id, LedgerReason::Accrual, $period)) {
                 continue;
             }
-            $amount = AccrualCalculator::amount($policy->accrual_mode, $policy->annualDays(), $employee->hired_at, $now);
+            $accrued = $policy->accrual_mode === AccrualMode::Monthly
+                ? $this->ledger->accruedInYear($employee->id, $type->id, $now->year)
+                : 0.0;
+            $amount = AccrualCalculator::amount($policy->accrual_mode, $policy->annualDays(), $employee->hired_at, $now, $accrued);
             if ($amount === null || $amount <= 0) {
                 continue;
             }

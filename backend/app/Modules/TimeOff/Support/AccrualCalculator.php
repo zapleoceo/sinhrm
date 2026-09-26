@@ -19,16 +19,19 @@ final class AccrualCalculator
     /**
      * Grant for the period containing $now, or null when the employee is not hired yet in that period.
      * Yearly up front: the full year, prorated by whole months when hired during the year (hire month counts).
-     * Monthly: annual / 12 for every month the employee works in (hire month counts).
+     * Monthly: the cumulative target of the year (annual × months worked so far / 12, rounded once) minus what was
+     * already accrued this year — so 12 grants of 20/12 sum to exactly 20.00, no rounding drift.
      */
-    public static function amount(AccrualMode $mode, float $annualDays, CarbonInterface $hiredAt, CarbonInterface $now): ?float
+    public static function amount(AccrualMode $mode, float $annualDays, CarbonInterface $hiredAt, CarbonInterface $now, float $accruedThisYear = 0.0): ?float
     {
         if ($mode === AccrualMode::Monthly) {
             if ($hiredAt->gt($now->copy()->endOfMonth())) {
                 return null;
             }
+            $firstMonth = $hiredAt->year === $now->year ? $hiredAt->month : 1;
+            $target = round($annualDays * ($now->month - $firstMonth + 1) / 12, 2);
 
-            return round($annualDays / 12, 2);
+            return round($target - $accruedThisYear, 2);
         }
         if ($hiredAt->year > $now->year) {
             return null;

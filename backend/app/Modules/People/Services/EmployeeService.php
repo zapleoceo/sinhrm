@@ -7,6 +7,7 @@ namespace App\Modules\People\Services;
 use App\Models\User;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\EmployeeFilter;
+use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Events\EmployeeHired;
 use App\Modules\People\Exceptions\PeopleException;
@@ -27,10 +28,33 @@ final readonly class EmployeeService
         private LoggerInterface $log,
     ) {}
 
-    /** @return LengthAwarePaginator<int, Employee> */
-    public function list(EmployeeFilter $filter): LengthAwarePaginator
+    /**
+     * Terminated people are listed only to admins and to managers who were above them (their subtree).
+     *
+     * @return LengthAwarePaginator<int, Employee>
+     */
+    public function list(PeopleContext $ctx, EmployeeFilter $filter): LengthAwarePaginator
     {
+        if ($filter->status === EmployeeStatus::Terminated && ! $ctx->admin) {
+            $filter = $filter->restrictedTo($ctx->subtreeIds);
+        }
+
         return $this->employees->paginate($filter);
+    }
+
+    /**
+     * Profile lookup: a terminated employee is 404 for everyone but admins and managers above them.
+     *
+     * @throws ModelNotFoundException<Employee>
+     */
+    public function findVisible(PeopleContext $ctx, int $id): Employee
+    {
+        $employee = $this->find($id);
+        if ($employee->isTerminated() && ! $ctx->admin && ! $ctx->isAbove($id)) {
+            throw (new ModelNotFoundException)->setModel(Employee::class, [$id]);
+        }
+
+        return $employee;
     }
 
     /** @throws ModelNotFoundException<Employee> */
@@ -43,7 +67,15 @@ final readonly class EmployeeService
     public function create(User $actor, array $attributes): Employee
     {
         $attributes['status'] ??= EmployeeStatus::Active->value;
-        $employee = $this->employees->create($attributes);
+        $employee = $this->employees->transaction(function () use ($attributes): Employee {
+            $employee = $this->employees->create($attributes);
+            // A new record has no reports yet, but keep the invariant in one place (e.g. future subtree transplant).
+            if (isset($attributes['manager_id'])) {
+                $this->assertNoCycle($employee->id, (int) $attributes['manager_id']);
+            }
+
+            return $employee;
+        });
         $this->log->info('people.employee_created', ['id' => $employee->id, 'by' => $actor->id]);
         $this->events->dispatch(new EmployeeHired($employee));
 

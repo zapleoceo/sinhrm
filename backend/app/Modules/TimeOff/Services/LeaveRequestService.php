@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\TimeOff\Services;
 
 use App\Models\User;
+use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
 use App\Modules\TimeOff\Contracts\LeaveRequestRepository;
@@ -36,6 +37,7 @@ final readonly class LeaveRequestService
         private LeaveRequestRepository $requests,
         private LeaveSettingsRepository $settings,
         private LedgerRepository $ledger,
+        private EmployeeRepository $employees,
         private BalanceService $balances,
         private LoggerInterface $log,
     ) {}
@@ -94,6 +96,8 @@ final readonly class LeaveRequestService
         $override = $data->overrideBalance && $ctx->admin;
 
         $request = $this->requests->transaction(function () use ($actor, $employee, $type, $data, $days, $override): LeaveRequest {
+            // Serialize per employee: the overlap and balance checks below are read-then-write.
+            $this->employees->lockForUpdate($employee->id);
             if ($this->requests->overlapping($employee->id, $data->startsOn, $data->endsOn)) {
                 throw TimeOffException::overlap();
             }
@@ -126,6 +130,8 @@ final readonly class LeaveRequestService
     {
         $this->assertCanDecide($ctx, $request);
         $this->requests->transaction(function () use ($actor, $request, $comment): void {
+            // Same lock as create(): two approvals of one employee cannot both pass the balance check.
+            $this->employees->lockForUpdate($request->employee_id);
             if ($request->status !== LeaveRequestStatus::Pending) {
                 throw TimeOffException::invalidStatus();
             }
@@ -174,6 +180,7 @@ final readonly class LeaveRequestService
             throw TimeOffException::forbidden();
         }
         $this->requests->transaction(function () use ($actor, $request, $status): void {
+            $this->employees->lockForUpdate($request->employee_id);
             if (! $this->requests->transition($request, $status, ['status' => LeaveRequestStatus::Cancelled->value])) {
                 throw TimeOffException::invalidStatus();
             }
