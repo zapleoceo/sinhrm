@@ -43,7 +43,7 @@ final class AuditLogTest extends TestCase
         $this->assertSame('***', $created->changes['personal_email']['to'] ?? null);
 
         $updated = $this->entry('employee', $employee->id, 'updated');
-        $this->assertSame(['from' => '***', 'to' => '***'], $updated->changes['phone'] ?? null);
+        $this->assertEquals(['from' => '***', 'to' => '***'], $updated->changes['phone'] ?? null);
         $this->assertSame('Renamed Person', $updated->changes['full_name']['to'] ?? null);
 
         $raw = (string) json_encode(AuditEntry::query()->get()->toArray());
@@ -88,9 +88,9 @@ final class AuditLogTest extends TestCase
         $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['status' => 'blocked'])->assertOk();
 
         $role = $this->entry('user', $user->id, 'role_changed');
-        $this->assertSame(['from' => 'viewer', 'to' => 'employee'], $role->changes['role'] ?? null);
+        $this->assertEquals(['from' => 'viewer', 'to' => 'employee'], $role->changes['role'] ?? null);
         $this->assertSame($this->superadmin->id, $role->user_id);
-        $this->assertSame(['from' => 'active', 'to' => 'blocked'], $this->entry('user', $user->id, 'status_changed')->changes['status'] ?? null);
+        $this->assertEquals(['from' => 'active', 'to' => 'blocked'], $this->entry('user', $user->id, 'status_changed')->changes['status'] ?? null);
     }
 
     public function test_stage_move_is_logged_and_shown_in_candidate_history_only_to_those_who_see_the_candidate(): void
