@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "SinHRM Clipper",
+  "version": "0.1.0",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "SinHRM Clipper",
+    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  },
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "options_page": "options.html",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "https://www.linkedin.com/*",
+    "https://www.work.ua/*",
+    "https://djinni.co/*",
+    "https://dou.ua/*",
+    "https://www.dou.ua/*",
+    "https://sinhrm.vercel.app/*"
+  ]
+}

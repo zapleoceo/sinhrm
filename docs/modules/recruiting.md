@@ -51,11 +51,12 @@
 | `candidates` | `full_name, phone (E.164), email (lowercase), telegram_username (lowercase, без @), city_id?, source, utm (jsonb), tags (jsonb), owner_id, created_by` | индексы на трёх контактах — ключи дедупликации |
 | `applications` | `candidate_id, vacancy_id, stage_id, status (active\|hired\|rejected), reject_reason_id?, rejected_note, stage_entered_at, last_touch_at, closed_at` | `unique(candidate_id, vacancy_id)` |
 | `stage_changes` | `application_id, from_stage_id? (null = создание), to_stage_id, by_user_id?, reason, at` | маршрут кандидата |
+| `candidate_profile_urls` | `candidate_id, site (linkedin\|work_ua\|djinni\|dou), url (unique)` | ссылки на профили из браузерного расширения; нормализованный URL — ещё один ключ дедупликации (миграция `2026_10_01_100001`) |
 | `touchpoints` | `candidate_id?, application_id?, branch_id?, stage_change_id?, channel, direction (in\|out), author_id?, occurred_at, body, meta (jsonb: duration_sec, recording_url, contact), external_id, via_product, integration_key` | `unique(channel, external_id)` — дедуп повторной доставки (NULL не конфликтуют) |
 | view `unmatched_messages` | `SELECT * FROM touchpoints WHERE candidate_id IS NULL` | для SQL/BI; API читает саму таблицу. ⚠ `SELECT *` фиксирует колонки при создании: изменение `touchpoints` потребует пересоздать view в той же миграции |
 
 Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MANUAL` — каналы ручной записи, `isTouch()` = не `system`),
-`Direction`, `CandidateSource` (`manual, work_ua, robota_ua, djinni, meta_ads, site, referral, telegram, import, inbox, other`), `TimelineItemType`.
+`Direction`, `CandidateSource` (`manual, work_ua, robota_ua, djinni, linkedin, dou, meta_ads, site, referral, telegram, import, inbox, other`), `TimelineItemType`, `ClipperSite` (сайты расширения: допустимые хосты, нормализация URL, соответствие `CandidateSource`).
 
 ### Правила
 - **Статус заявки = тип этапа.** Терминальный `closed` → `rejected` (нужен `reject_reason_id`, иначе 422 `reject_reason_required`),
@@ -138,6 +139,20 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 
 Ошибки бизнес-правил — `Exceptions/RecruitingException` → `{message, code, …}`.
 
+### Браузерное расширение (`ExtensionController`, `Services/ClipperService`, `Services/ExtensionTokenService`)
+Эндпоинты `/api/me/extension-token` (сессия) и `/api/clipper/*` (только токен с ability `clipper`, `throttle:clipper` —
+30/мин на токен) — [extension.md](extension.md). Импорт одной страницы (`ClipperService::import`):
+1. `profile_url` проверяется в `ClipCandidateRequest`: https, хост сайта из `source_site` (`linkedin.com`, `work.ua`,
+   `djinni.co`, `dou.ua`, с `www.` или без), без логина/порта → иначе 422; нормализуется (`ClipperSite::normalizeUrl`).
+2. Поиск: сначала `candidate_profile_urls.url`, затем телефон → e-mail → Telegram (глобально, как везде).
+3. Найден, но не виден пользователю (чужой филиал) → 409 `duplicate_candidate {restricted: true}`, ссылка не привязывается.
+   Найден и виден → 200: ссылка привязывается (если новая), заявка на вакансию создаётся (если её ещё нет).
+4. Не найден → 201: кандидат (`source` = сайт, владелец и автор — пользователь токена) + ссылка + заявка в одной транзакции;
+   гонка по уникальным индексам → повторный поиск, как совпадение.
+5. Заметка (`channel=note`, `meta.source=extension`) «Imported from <Сайт>: <url>» + заголовок, город, текст до 2000 символов —
+   для нового кандидата и для найденного, если добавилась ссылка или заявка; повторный клик на той же странице ничего не пишет.
+Вакансия не из области видимости → 403 `vacancy_out_of_scope`; роль без права записи (viewer) → 403.
+
 ### Оценка касаний по скрипту в ленте (`Contracts/TouchpointEvaluations`)
 Recruiting не знает, как оцениваются разговоры: `TouchpointService::timeline()` после выборки страницы запрашивает у
 контракта `TouchpointEvaluations::summaries(ids)` краткие оценки касаний этой страницы (один запрос) и кладёт их в
@@ -195,6 +210,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts` и «Надіслати» через `features/channels/channels.service.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме |
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |
 | `reports/` | `/reports`, таблицы с CSS-полосками, `pivotTouches` |
+| `features/extension/` | `/settings/extension` — токен расширения ([extension.md](extension.md)); источники `linkedin`, `dou` в `recruiting.model.ts` |
 | `palette/` | `CommandPalette` в CDK overlay (`CommandPaletteService`), Ctrl/⌘+K — в оболочке ([shell.md](shell.md)) |
 
 Строки — `recruiting.*` и `palette.*` в `public/i18n/{uk,ru,en}.json`. Общие стили страниц (`.page-head`, `.filters`, `.panel`, `.state`)
@@ -209,7 +225,10 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 ingestor (сопоставление, дедуп, «Вхідні»), `CandidateService` (моки: раскрытие дубля, гонка → 409), `ApplicationService`.
 `createOrMatch`, `findOpenByTitle` и встречи проверяются тестами модулей-потребителей: `tests/Feature/GoogleWorkspace/{SheetsImportTest,MeetingTest}`,
 `tests/Feature/MailAgent/MailSyncTest`.
-Фронт: `recruiting.service.spec.ts`, `recruiting.format.spec.ts`, `recruiting.stores.spec.ts`.
+`tests/Feature/Recruiting/ExtensionApiTest.php` — токен (выдача, ротация, отзыв, срок), изоляция токена от остального API,
+импорт (создание с заметкой, совпадение по ссылке/телефону/e-mail, хост ссылки → 422, филиалы, viewer, лимит 30/мин, CORS);
+`tests/Unit/Recruiting/ClipperSiteTest.php` — нормализация ссылок.
+Фронт: `features/extension/extension.spec.ts`, `recruiting.service.spec.ts`, `recruiting.format.spec.ts`, `recruiting.stores.spec.ts`.
 
 Вручную на preview (нужна сессия; демо-данные уже в БД):
 ```bash

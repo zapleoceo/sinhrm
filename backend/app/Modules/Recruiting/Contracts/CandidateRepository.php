@@ -24,6 +24,12 @@ interface CandidateRepository
      */
     public function findByContacts(ContactKeys $keys, ?int $exceptId = null): ?array;
 
+    /** The candidate a normalized profile URL (browser extension import) belongs to. */
+    public function findByProfileUrl(string $url): ?Candidate;
+
+    /** Links a normalized profile URL to the candidate; false when the URL is already linked (to anyone). */
+    public function attachProfileUrl(int $candidateId, string $site, string $url): bool;
+
     public function isVisible(Scope $scope, int $candidateId): bool;
 
     /** @param  array<string, mixed>  $attributes */

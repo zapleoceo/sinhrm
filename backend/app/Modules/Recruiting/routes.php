@@ -5,12 +5,15 @@ declare(strict_types=1);
 use App\Modules\Auth\Http\Middleware\EnsureUserIsActive;
 use App\Modules\Recruiting\Http\Controllers\ApplicationController;
 use App\Modules\Recruiting\Http\Controllers\CandidateController;
+use App\Modules\Recruiting\Http\Controllers\ExtensionController;
 use App\Modules\Recruiting\Http\Controllers\InboxController;
 use App\Modules\Recruiting\Http\Controllers\PipelineController;
 use App\Modules\Recruiting\Http\Controllers\ReportController;
 use App\Modules\Recruiting\Http\Controllers\VacancyController;
 use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
+use App\Modules\Recruiting\Services\ExtensionTokenService;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 
 // /api/* of the Recruiting module. Reading: any active user, limited to their scope (RecruitingScope);
 // writing: FormRequest::authorize() → entity policies (Policies/*). No DELETE anywhere.
@@ -58,3 +61,18 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         Route::get('reject-reasons', [ReportController::class, 'rejectReasons'])->name('recruiting.reports.reject-reasons');
     });
 });
+
+// Browser extension token: managed from the SPA session (a clipper token cannot reach these — see the provider).
+Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
+    Route::get('me/extension-token', [ExtensionController::class, 'tokenStatus'])->name('recruiting.extension-token.show');
+    Route::post('me/extension-token', [ExtensionController::class, 'issueToken'])->name('recruiting.extension-token.issue');
+    Route::delete('me/extension-token', [ExtensionController::class, 'revokeToken'])->name('recruiting.extension-token.revoke');
+});
+
+// /api/clipper/* — the only routes that accept the extension's bearer token (ability "clipper"); CORS in config/cors.php.
+Route::prefix('clipper')
+    ->middleware(['auth:sanctum', CheckAbilities::class.':'.ExtensionTokenService::ABILITY, EnsureUserIsActive::class, 'throttle:clipper'])
+    ->group(function (): void {
+        Route::get('me', [ExtensionController::class, 'me'])->name('recruiting.clipper.me');
+        Route::post('candidates', [ExtensionController::class, 'clip'])->name('recruiting.clipper.candidates');
+    });

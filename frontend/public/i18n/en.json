@@ -19,7 +19,7 @@
   },
   "shell": {
     "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status", "mail": "Mail", "sheetsImport": "Google Sheets import" },
-    "menu": { "open": "User menu", "language": "Language", "logout": "Sign out" },
+    "menu": { "open": "User menu", "language": "Language", "extension": "Browser extension", "logout": "Sign out" },
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
   "status": { "title": "System status", "apiOk": "API is up", "apiDown": "API is unreachable", "checking": "Checking…", "version": "Version" },
@@ -416,6 +416,8 @@
       "work_ua": "Work.ua",
       "robota_ua": "Robota.ua",
       "djinni": "Djinni",
+      "linkedin": "LinkedIn",
+      "dou": "DOU",
       "meta_ads": "Meta ads",
       "site": "Website",
       "referral": "Referral",
@@ -475,7 +477,8 @@
     "composer": {"send": "Send", "sendDemo": "Send (demo)", "sent": "Message sent", "sentDemo": "Demo: the message was recorded without sending", "notConnected": "The channel is not connected — the message was not sent.", "logManually": "Log manually"},
     "errors": {"channel_not_connected": "Channel not connected", "no_conversation": "The candidate has not written in this channel yet — nowhere to reply", "template_required": "WhatsApp: more than 24 hours since the candidate's last message — an approved template is required", "invalid_recipient": "Invalid recipient", "send_failed": "The service did not accept the message, try later", "telephony_not_connected": "Telephony is not connected", "click_to_call_unsupported": "This telephony cannot call from the card", "no_phone": "The candidate has no phone", "not_demo": "Demo events are available only in \"Demo\" mode", "channel_off": "Switch the integration on first (\"Demo\" mode)", "unsupported": "Not available for this integration", "application_mismatch": "The application belongs to another candidate", "generic": "Could not complete the action"}
   },
-  "titles": { "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import" },
+  "extension": {"title": "Browser extension", "explain": "SinHRM Clipper adds a candidate from the profile page you are viewing (LinkedIn, Work.ua, Djinni, DOU) in one click. It uses a personal token instead of your session.", "active": "Token is active", "inactive": "No active token. Create one and paste it into the extension settings.", "createdAt": "Created", "lastUsedAt": "Last used", "expiresAt": "Expires", "never": "never", "create": "Create token", "regenerate": "Create a new token", "revoke": "Revoke", "onceTitle": "Copy the token now", "onceHint": "It is shown only once. Creating a new token revokes this one.", "copy": "Copy", "copied": "Copied", "error": "Could not update the token. Try again.", "installTitle": "How to install", "docs": "Full instructions", "install": {"step1": "Download sinhrm-clipper.zip (built by CI or with npm run package in extension/) and unzip it.", "step2": "Open chrome://extensions and turn on Developer mode.", "step3": "Click “Load unpacked” and choose the unzipped folder.", "step4": "Open the extension options, paste the token and click “Check connection”."}, "privacy": "The extension reads only the page you are viewing and only when you click its button. It does not crawl or scrape in the background."},
+  "titles": { "extension": "Browser extension", "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import" },
   "overview": {
     "warnings": { "google_reconnect_required": "Google ({{service}}) must be reconnected: access expired or was revoked.", "open": "Open integrations" },
     "greeting": "Hello, {{name}}!",

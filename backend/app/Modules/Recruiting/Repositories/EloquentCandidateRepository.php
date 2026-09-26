@@ -14,6 +14,7 @@ use App\Modules\Recruiting\Models\Candidate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
 
 final class EloquentCandidateRepository implements CandidateRepository
 {
@@ -71,6 +72,22 @@ final class EloquentCandidateRepository implements CandidateRepository
         }
 
         return null;
+    }
+
+    public function findByProfileUrl(string $url): ?Candidate
+    {
+        return Candidate::query()
+            ->whereIn('id', DB::table('candidate_profile_urls')->select('candidate_id')->where('url', $url))
+            ->first();
+    }
+
+    public function attachProfileUrl(int $candidateId, string $site, string $url): bool
+    {
+        $now = now();
+
+        return DB::table('candidate_profile_urls')->insertOrIgnore([
+            'candidate_id' => $candidateId, 'site' => $site, 'url' => $url, 'created_at' => $now, 'updated_at' => $now,
+        ]) === 1;
     }
 
     public function isVisible(Scope $scope, int $candidateId): bool

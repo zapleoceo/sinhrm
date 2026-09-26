@@ -58,6 +58,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // The SPA (same origin as the API through the Vercel rewrite); links returned to the browser extension point here.
+    'frontend_url' => env('FRONTEND_URL', 'https://sinhrm.vercel.app'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

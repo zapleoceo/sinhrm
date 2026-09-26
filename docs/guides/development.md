@@ -17,12 +17,15 @@
 оркестрация; валидация — FormRequest; логика — Service; SQL — только Repository; зависимости — через интерфейсы и DI.
 Каждый эндпоинт — Feature-тест, каждый сервис — Unit-тест. Никаких секретов в конфиге.
 
+**Браузерное расширение (`extension/`):** TypeScript без фреймворка, esbuild, Vitest + jsdom на вымышленных HTML-фикстурах
+(реальные страницы сайтов в репозиторий не копируем), ESLint; `npm run lint|typecheck|test|package` — job `extension` в CI.
+
 **Фронтенд (Angular):** standalone, signals, `inject()`, `OnPush`, typed forms, без `any`, HTTP только через сервисы
 в `core/api`, строки интерфейса — через i18n (ru/uk/en). Тесты — Vitest.
 
 ## Документация
 Изменил модуль → обнови `docs/modules/<модуль>.md` (CI проверяет). Имя страницы — имя модуля в kebab-case
-(`GoogleWorkspace` → `google-workspace.md`, `features/mail-agent` → `mail-agent.md`; `scripts/docs-check.sh`). Структура страницы:
+(`GoogleWorkspace` → `google-workspace.md`, `features/mail-agent` → `mail-agent.md`, папка `extension/` → `extension.md`; `scripts/docs-check.sh`). Структура страницы:
 «Что это и зачем» (просто) → «Как пользоваться» → «Как устроено» (техника) → «Как проверить».
 Архитектурные решения — `docs/adr/NNNN-название.md`.
 

@@ -21,6 +21,7 @@ export const routes: Routes = [
       { path: 'candidates', title: 'titles.candidates', loadComponent: () => import('./features/recruiting/candidates/candidates.page').then((m) => m.CandidatesPage) },
       { path: 'candidates/:id', title: 'titles.candidates', loadComponent: () => import('./features/recruiting/candidates/candidates.page').then((m) => m.CandidatesPage) },
       { path: 'inbox', title: 'titles.inbox', loadComponent: () => import('./features/recruiting/inbox/inbox.page').then((m) => m.InboxPage) },
+      { path: 'settings/extension', title: 'titles.extension', loadComponent: () => import('./features/extension/extension.page').then((m) => m.ExtensionPage) },
       { path: 'reports', title: 'titles.reports', loadComponent: () => import('./features/recruiting/reports/reports.page').then((m) => m.ReportsPage) },
       {
         path: 'status',
