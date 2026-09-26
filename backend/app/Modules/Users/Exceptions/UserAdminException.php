@@ -30,6 +30,12 @@ final class UserAdminException extends RuntimeException
         return new self('last_superadmin', 422);
     }
 
+    /** The Safe Speak handler flag is only for superadmin/admin. */
+    public static function handlerRequiresAdmin(): self
+    {
+        return new self('handler_requires_admin', 422);
+    }
+
     public function render(): JsonResponse
     {
         return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode], $this->status);

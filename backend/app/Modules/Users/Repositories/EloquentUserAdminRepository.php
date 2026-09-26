@@ -68,6 +68,11 @@ final class EloquentUserAdminRepository implements UserAdminRepository
         $user->forceFill(['status' => $status])->save();
     }
 
+    public function setSafeSpeakHandler(User $user, bool $handler): void
+    {
+        $user->forceFill(['safe_speak_handler' => $handler])->save();
+    }
+
     public function syncBranches(User $user, array $branchIds): void
     {
         $user->branches()->sync($branchIds);

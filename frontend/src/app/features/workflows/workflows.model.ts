@@ -16,7 +16,8 @@ export type WorkflowAction =
   | 'webhook'
   | 'start_workflow'
   | 'notify_manager'
-  | 'assign_buddy';
+  | 'assign_buddy'
+  | 'collect_assets';
 export const WORKFLOW_ACTIONS: readonly WorkflowAction[] = [
   'create_task',
   'request_form',
@@ -28,6 +29,7 @@ export const WORKFLOW_ACTIONS: readonly WorkflowAction[] = [
   'start_workflow',
   'notify_manager',
   'assign_buddy',
+  'collect_assets',
 ];
 
 export type AssigneeRule = 'employee' | 'manager' | 'hr_admin' | 'specific_user';
@@ -184,6 +186,7 @@ export const STEP_RESULT_CODES = [
   'document_template_missing',
   'template_archived',
   'cancelled',
+  'no_assets',
 ] as const;
 
 /** Default config of a freshly chosen action: only the keys the server knows for it. */
@@ -191,6 +194,7 @@ export function defaultConfig(action: WorkflowAction): StepConfig {
   switch (action) {
     case 'create_task':
     case 'assign_buddy':
+    case 'collect_assets':
       return { title: '' };
     case 'request_form':
       return { title: '', url: '' };

@@ -14,6 +14,9 @@
 - **Філії** — мультивыбор в строке (только для рекрутера и наблюдателя; у суперадмина и админа — «Усі філії»,
   они филиалами не ограничены). Сохраняется при закрытии списка; предлагаются только активные филиалы.
 - Свою роль, статус и филиалы менять нельзя; последнего активного суперадмина нельзя понизить или заблокировать.
+- **Зробити обробником Safe Speak / Прибрати з обробників** — кнопка в строке суперадмина и админа: только такие
+  пользователи читают анонимные сообщения ([safe-speak.md](safe-speak.md)). Флаг можно поставить и себе (это не
+  смена роли); при понижении до рекрутера/наблюдателя флаг снимается автоматически.
 
 ## Как устроено
 ### Доступ
@@ -26,10 +29,10 @@ Gate `manage-users` (`Providers\UsersServiceProvider::MANAGE_USERS`): актив
 |---|---|---|
 | `GET /` | `q`, `status` (`active\|blocked`), `role`, `perPage` 1..100 (строка `"20"` тоже принимается), `page` | `{data: [...], links, meta}` |
 | `POST /` | `{email, name, role: admin\|recruiter\|viewer}` | 201 `{data: user}`; e-mail занят → 409 `{code: "email_taken"}`; ошибки полей → 422 |
-| `PATCH /{id}` | `{role?, status?, branch_ids?}` | 200 `{data: user}`; себя → 422 `self_change_forbidden`; последний активный суперадмин → 422 `last_superadmin`; нет id → 404 |
+| `PATCH /{id}` | `{role?, status?, branch_ids?, safe_speak_handler?}` | 200 `{data: user}`; себя (роль/статус/филиалы) → 422 `self_change_forbidden`; последний активный суперадмин → 422 `last_superadmin`; флаг обработчика не админу → 422 `handler_requires_admin`; нет id → 404 |
 
 Пользователь в ответе (`Http/Resources/UserResource`): `id, name, email, avatar_url, roles[], status, branches[{id, name, status}], locale,
-invited_by, last_login_at, created_at`. `DELETE` не реализован намеренно.
+safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реализован намеренно.
 
 ### Филиалы пользователя
 `branch_ids` — **полная замена** филиалов (`[]` — снять все; поле не передано — без изменений). Каждый id — целое
@@ -44,6 +47,13 @@ invited_by, last_login_at, created_at`. `DELETE` не реализован на�
 - Проверка «последний активный суперадмин» и само изменение выполняются в одной транзакции с блокировкой строк
   суперадминов (`Repositories\EloquentUserAdminRepository::transaction`), чтобы два одновременных запроса не
   оставили систему без суперадмина.
+
+### Обработчик Safe Speak
+Колонка `users.safe_speak_handler boolean default false` — миграция модуля Users
+`Database/Migrations/2026_10_05_100001_add_safe_speak_handler_to_users.php`. Явный флаг, а не новая роль: читать
+анонимные жалобы должны не все админы. Сервис: `true` только для суперадмина/админа (с учётом роли, меняемой тем же
+запросом); смена роли на не-админскую снимает флаг в той же транзакции. Проверка доступа — gate `safe-speak-handle`
+модуля SafeSpeak.
 
 ### Слои
 `Http/Controllers/UsersController` → `Http/Requests` (`ListUsersRequest`, `InviteUserRequest`, `UpdateUserRequest`) →

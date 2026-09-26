@@ -17,6 +17,8 @@ enum TaskType: string
     case Document = 'document';
     /** "Team mood dropped" for a manager (Pulse mood alerts). */
     case MoodAlert = 'mood_alert';
+    /** "A helpdesk case breached its SLA" for the assignee / HR (Desk module, job desk.sla). */
+    case DeskSla = 'desk_sla';
 
     /** Source group of the "Мої задачі" filter. */
     public function source(): TaskSource
@@ -25,6 +27,7 @@ enum TaskType: string
             self::Workflow => TaskSource::Workflows,
             self::Document => TaskSource::Documents,
             self::MoodAlert => TaskSource::Pulse,
+            self::DeskSla => TaskSource::Desk,
             self::Followup, self::Manual, self::NewApplicant => TaskSource::Recruiting,
         };
     }

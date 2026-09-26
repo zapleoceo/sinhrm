@@ -11,6 +11,7 @@ enum TaskSource: string
     case Workflows = 'workflows';
     case Documents = 'documents';
     case Pulse = 'pulse';
+    case Desk = 'desk';
 
     /** @return list<string> task type values of this source */
     public function typeValues(): array

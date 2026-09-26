@@ -11,6 +11,8 @@ export interface AdminUser {
   /** Branch scope (Directory module); superadmin/admin are not limited by it. */
   branches: UserBranch[];
   locale: AppLang;
+  /** Safe Speak: reads and answers anonymous reports (superadmin/admin only). */
+  safe_speak_handler: boolean;
   invited_by: number | null;
   last_login_at: string | null;
   created_at: string | null;
@@ -47,7 +49,9 @@ export interface UpdateUser {
   status?: UserStatus;
   /** Full replacement of the user's branches (active branch ids only). */
   branch_ids?: number[];
+  /** Safe Speak handler flag; the API accepts true only for superadmin/admin. */
+  safe_speak_handler?: boolean;
 }
 
 /** Business error codes returned by the users API ({code}); anything else → "generic". */
-export const USER_ERROR_CODES = ['email_taken', 'self_change_forbidden', 'last_superadmin'] as const;
+export const USER_ERROR_CODES = ['email_taken', 'self_change_forbidden', 'last_superadmin', 'handler_requires_admin'] as const;

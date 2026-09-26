@@ -13,6 +13,7 @@ const USER: AdminUser = {
   status: 'active',
   branches: [],
   locale: 'uk',
+  safe_speak_handler: false,
   invited_by: 1,
   last_login_at: null,
   created_at: null,

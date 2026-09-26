@@ -26,6 +26,13 @@ export interface ConfigChange {
           <input matInput [value]="text(c['title'])" (input)="set('title', val($event))" [readonly]="readonly()" maxlength="200" />
         </mat-form-field>
       }
+      @case ('collect_assets') {
+        <mat-form-field subscriptSizing="dynamic" class="wide">
+          <mat-label>{{ 'workflows.config.taskTitle' | transloco }}</mat-label>
+          <input matInput [value]="text(c['title'])" (input)="set('title', val($event))" [readonly]="readonly()" maxlength="120" />
+          <mat-hint>{{ 'workflows.config.collectAssetsHint' | transloco }}</mat-hint>
+        </mat-form-field>
+      }
       @case ('assign_buddy') {
         <mat-form-field subscriptSizing="dynamic" class="wide">
           <mat-label>{{ 'workflows.config.taskTitle' | transloco }}</mat-label>

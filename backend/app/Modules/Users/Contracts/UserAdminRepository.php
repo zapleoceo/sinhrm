@@ -29,6 +29,8 @@ interface UserAdminRepository
     /** @param  list<int>  $branchIds  replaces the user's branches (Directory module, table branch_user) */
     public function syncBranches(User $user, array $branchIds): void;
 
+    public function setSafeSpeakHandler(User $user, bool $handler): void;
+
     public function countActiveSuperadmins(): int;
 
     /**

@@ -40,20 +40,23 @@ final class UserAdminService
         return $user;
     }
 
-    /** @param  list<int>|null  $branchIds  null = unchanged; a list replaces the user's branches */
-    public function update(User $actor, User $target, ?UserRole $role, ?UserStatus $status, ?array $branchIds = null): User
+    /**
+     * @param  list<int>|null  $branchIds  null = unchanged; a list replaces the user's branches
+     * @param  bool|null  $safeSpeakHandler  null = unchanged; true only for superadmin/admin (may be set on oneself)
+     */
+    public function update(User $actor, User $target, ?UserRole $role, ?UserStatus $status, ?array $branchIds = null, ?bool $safeSpeakHandler = null): User
     {
-        if ($role === null && $status === null && $branchIds === null) {
+        if ($role === null && $status === null && $branchIds === null && $safeSpeakHandler === null) {
             return $target;
         }
-        if ($actor->id === $target->id) {
+        if ($actor->id === $target->id && ($role !== null || $status !== null || $branchIds !== null)) {
             throw UserAdminException::selfChange();
         }
 
         $losesSuperadmin = ($role !== null && $role !== UserRole::Superadmin)
             || $status === UserStatus::Blocked;
 
-        return $this->users->transaction(function () use ($actor, $target, $role, $status, $branchIds, $losesSuperadmin): User {
+        return $this->users->transaction(function () use ($actor, $target, $role, $status, $branchIds, $safeSpeakHandler, $losesSuperadmin): User {
             if ($losesSuperadmin
                 && $target->isActive()
                 && $this->users->roleOf($target) === UserRole::Superadmin
@@ -70,12 +73,23 @@ final class UserAdminService
             if ($branchIds !== null) {
                 $this->users->syncBranches($target, $branchIds);
             }
+            $isAdmin = in_array($role ?? $this->users->roleOf($target), [UserRole::Superadmin, UserRole::Admin], true);
+            if ($safeSpeakHandler === true && ! $isAdmin) {
+                throw UserAdminException::handlerRequiresAdmin();
+            }
+            if ($safeSpeakHandler !== null) {
+                $this->users->setSafeSpeakHandler($target, $safeSpeakHandler);
+            } elseif (! $isAdmin && $target->safe_speak_handler) {
+                // Demoted from admin: the handler flag goes with the role.
+                $this->users->setSafeSpeakHandler($target, false);
+            }
             $this->log->info('users.updated', [
                 'user_id' => $target->id,
                 'by' => $actor->id,
                 'role' => $role?->value,
                 'status' => $status?->value,
                 'branch_ids' => $branchIds,
+                'safe_speak_handler' => $safeSpeakHandler,
             ]);
 
             return $target;

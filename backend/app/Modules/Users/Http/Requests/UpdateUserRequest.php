@@ -23,6 +23,8 @@ final class UpdateUserRequest extends FormRequest
             // Full replacement of the user's branches ([] = none). Only existing active branches.
             'branch_ids' => ['sometimes', 'present', 'array', 'max:200'],
             'branch_ids.*' => ['integer', 'distinct', Rule::exists(Branch::class, 'id')->where('status', DirectoryStatus::Active->value)],
+            // Safe Speak handler (reads anonymous reports); only for superadmin/admin — checked by the service.
+            'safe_speak_handler' => ['sometimes', 'required', 'boolean'],
         ];
     }
 
@@ -34,6 +36,12 @@ final class UpdateUserRequest extends FormRequest
     public function status(): ?UserStatus
     {
         return $this->enum('status', UserStatus::class);
+    }
+
+    /** null = not sent (unchanged) */
+    public function safeSpeakHandler(): ?bool
+    {
+        return $this->has('safe_speak_handler') ? $this->boolean('safe_speak_handler') : null;
     }
 
     /** @return list<int>|null null = not sent (unchanged) */

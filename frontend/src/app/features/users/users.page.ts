@@ -142,6 +142,16 @@ export class UsersPage implements OnInit {
     this.optimistic(user, { branches }, { branch_ids: ids });
   }
 
+  /** The Safe Speak handler flag is offered to superadmin/admin only (the API refuses it for other roles). */
+  protected canHandle(user: AdminUser): boolean {
+    return user.roles.includes('superadmin') || user.roles.includes('admin');
+  }
+
+  protected toggleHandler(user: AdminUser): void {
+    const safe_speak_handler = !user.safe_speak_handler;
+    this.optimistic(user, { safe_speak_handler }, { safe_speak_handler });
+  }
+
   protected toggleBlock(user: AdminUser): void {
     const status: UserStatus = user.status === 'active' ? 'blocked' : 'active';
     this.optimistic(user, { status }, { status });

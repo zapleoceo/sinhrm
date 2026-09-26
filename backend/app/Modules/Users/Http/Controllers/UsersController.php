@@ -39,6 +39,7 @@ final class UsersController
             $request->role(),
             $request->status(),
             $request->branchIds(),
+            $request->safeSpeakHandler(),
         ));
     }
 

@@ -50,6 +50,11 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Workflows (онбординг/офбординг: шаблоны, снимки запусков, исполнители шагов, триггеры People, `workflows.tick`) | ✅ | [modules/workflows.md](../modules/workflows.md) |
 | Perform (1:1, цели OKR, KPI, фидбек, оценка 360 по компетенциям, планы развития; доступ по модели People) | ✅ | [modules/perform.md](../modules/perform.md) |
 | Pulse (опросы с волнами и расписанием, анонимность с порогом группы, eNPS, сравнение волн, опросы жизненного цикла, настроение, `pulse.tick`) | ✅ | [modules/pulse.md](../modules/pulse.md) |
+| Desk (обращения в HR: категории с SLA, внутренние заметки, файлы, `desk.sla`) | ✅ | [modules/desk.md](../modules/desk.md) |
+| SafeSpeak (анонимные сообщения: код доступа, без пользователя/IP/времени, обработчики по флагу) | ✅ | [modules/safe-speak.md](../modules/safe-speak.md) |
+| Knowledge (база знаний: Markdown → очищенный HTML, аудитория, поиск, версии, голоса) | ✅ | [modules/knowledge.md](../modules/knowledge.md) |
+| Assets (активы, история выдач, шаг воркфлоу `collect_assets`) | ✅ | [modules/assets.md](../modules/assets.md) |
+| Reports (каталог отчётов по всем модулям, конструктор по белому списку, CSV) | ✅ | [modules/reports.md](../modules/reports.md) |
 | Extension (браузерное расширение `extension/`: кандидат с открытой страницы профиля; API — в Recruiting, токен только для `/api/clipper/*`) | ✅ код, установка вручную | [modules/extension.md](../modules/extension.md) |
 | Channels (вебхуки мессенджеров и телефонии → лента кандидата, отправка из карточки, демо-события) | ✅ код, включается токенами | [modules/channels.md](../modules/channels.md) |
 
@@ -69,6 +74,10 @@ Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн �
   ([pulse.md](../modules/pulse.md)).
 - Файлы документов до 2 МБ хранятся в Postgres (base64) за интерфейсом `DocumentStorage` — до выбора объектного
   хранилища ([documents.md](../modules/documents.md)).
+- Анонимная сторона Safe Speak (`/api/safe-speak/public/*`) подключена вне групп `api`/`web`: без сессии, Sanctum и
+  CSRF, лимиты — по HMAC-хэшу адреса в кэше ([safe-speak.md](../modules/safe-speak.md)).
+- Отчёты считаются на лету в запросе (без хранилища/материализации): группировки по месяцам и корзинам — в PHP
+  (одинаково на Postgres и SQLite), конструктор — до 5000 строк, CSV — потоком ([reports.md](../modules/reports.md)).
 - Работа «после ответа» (оценка разговора по скрипту) — `dispatchAfterResponse()` в том же запросе, без очереди.
 - Постоянные соединения (Telegram userbot, WebSocket) невозможны — только вебхуки: Telegram Business, WhatsApp Cloud, Viber и
   телефония присылают события на `POST /api/webhooks/{key}` ([channels.md](../modules/channels.md)); все каналы пишут касания

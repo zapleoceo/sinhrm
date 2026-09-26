@@ -22,7 +22,7 @@
       <mat-icon>inbox</mat-icon>
       <span>{{ 'shell.nav.inbox' | transloco }}</span>
     </a>
-    <a class="nav-link" routerLink="/reports" routerLinkActive="active">
+    <a class="nav-link" routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>bar_chart</mat-icon>
       <span>{{ 'shell.nav.reports' | transloco }}</span>
     </a>
@@ -80,8 +80,41 @@
       <mat-icon>mood</mat-icon>
       <span>{{ 'shell.nav.mood' | transloco }}</span>
     </a>
+    <p class="nav-section">{{ 'shell.nav.services' | transloco }}</p>
+    <a class="nav-link" routerLink="/desk" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <mat-icon>support_agent</mat-icon>
+      <span>{{ 'shell.nav.desk' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/knowledge" routerLinkActive="active">
+      <mat-icon>menu_book</mat-icon>
+      <span>{{ 'shell.nav.knowledge' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/safe-speak" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <mat-icon>shield</mat-icon>
+      <span>{{ 'shell.nav.safeSpeak' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/reports/catalog" routerLinkActive="active">
+      <mat-icon>analytics</mat-icon>
+      <span>{{ 'shell.nav.reportCatalog' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/reports/builder" routerLinkActive="active">
+      <mat-icon>tune</mat-icon>
+      <span>{{ 'shell.nav.reportBuilder' | transloco }}</span>
+    </a>
     @if (isAdmin()) {
       <p class="nav-section">{{ 'shell.nav.admin' | transloco }}</p>
+      <a class="nav-link" routerLink="/desk/queue" routerLinkActive="active">
+        <mat-icon>inbox</mat-icon>
+        <span>{{ 'shell.nav.deskQueue' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/safe-speak/inbox" routerLinkActive="active">
+        <mat-icon>policy</mat-icon>
+        <span>{{ 'shell.nav.safeSpeakInbox' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/admin/assets" routerLinkActive="active">
+        <mat-icon>devices</mat-icon>
+        <span>{{ 'shell.nav.assets' | transloco }}</span>
+      </a>
     }
     @if (isSuperadmin()) {
       <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">
