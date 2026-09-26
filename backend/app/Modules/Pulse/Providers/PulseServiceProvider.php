@@ -41,7 +41,10 @@ final class PulseServiceProvider extends ModuleServiceProvider
         $this->app->bind(ResponseRepository::class, EloquentResponseRepository::class);
         $this->app->bind(MoodRepository::class, EloquentMoodRepository::class);
         $this->app->bind(WaveMemberRepository::class, EloquentWaveMemberRepository::class);
-        $this->app->bind(RespondentHash::class, static fn (): RespondentHash => new RespondentHash((string) config('app.key')));
+        $this->app->bind(RespondentHash::class, static fn (): RespondentHash => new RespondentHash(
+            (string) config('app.key'),
+            array_values(array_map('strval', (array) config('app.previous_keys', []))),
+        ));
         $this->app->tag([PulseTickJob::class], ScheduledJob::class);
     }
 

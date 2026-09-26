@@ -194,7 +194,7 @@ final readonly class ResponseService
 
         $min = max($wave->min_group_size, $previous->min_group_size ?? 1);
         $totalSafe = $previous === null || (SafeComparison::allowed(count($current), count($before), $min)
-            && ($diff === null || MembershipDifferencing::allowed($diff['total'], $min)));
+            && ($diff === null || (! $diff['unknown'] && MembershipDifferencing::allowed($diff['total'], $min))));
         if ($department !== null) {
             // A manager's whole view is one department: hidden in a wave by the differencing guard = no numbers.
             $current = isset($hiddenNow[$department]) ? [] : $current;

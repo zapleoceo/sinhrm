@@ -10,7 +10,6 @@ use App\Modules\Pulse\Enums\WaveStatus;
 use App\Modules\Pulse\Models\Survey;
 use App\Modules\Pulse\Models\SurveyResponse;
 use App\Modules\Pulse\Models\SurveyWave;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
@@ -108,13 +107,11 @@ final class EloquentSurveyRepository implements SurveyRepository
             ->orderByDesc('starts_at')->orderByDesc('id')->first();
     }
 
-    public function closedWavesBefore(SurveyWave $wave): array
+    public function decidedWaves(SurveyWave $wave): array
     {
         return SurveyWave::query()->where('survey_id', $wave->survey_id)->whereNull('subject_employee_id')
-            ->whereKeyNot($wave->id)->where('status', WaveStatus::Closed->value)
-            ->where(fn (Builder $q) => $q->where('starts_at', '<', $wave->starts_at)
-                ->orWhere(fn (Builder $q) => $q->where('starts_at', $wave->starts_at)->where('id', '<', $wave->id)))
-            ->orderBy('starts_at')->orderBy('id')->get()->values()->all();
+            ->whereKeyNot($wave->id)->where('status', WaveStatus::Closed->value)->whereNotNull('segment_visibility')
+            ->orderBy('id')->get()->values()->all();
     }
 
     public function hasResponses(Survey $survey): bool
