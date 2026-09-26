@@ -12,10 +12,12 @@ use App\Modules\People\Services\PeopleScope;
 use App\Modules\Pulse\Contracts\MoodRepository;
 use App\Modules\Pulse\Contracts\ResponseRepository;
 use App\Modules\Pulse\Contracts\SurveyRepository;
+use App\Modules\Pulse\Contracts\WaveMemberRepository;
 use App\Modules\Pulse\Listeners\StartExitSurvey;
 use App\Modules\Pulse\Repositories\EloquentMoodRepository;
 use App\Modules\Pulse\Repositories\EloquentResponseRepository;
 use App\Modules\Pulse\Repositories\EloquentSurveyRepository;
+use App\Modules\Pulse\Repositories\EloquentWaveMemberRepository;
 use App\Modules\Pulse\Services\PulseTickJob;
 use App\Modules\Pulse\Support\RespondentHash;
 use Illuminate\Support\Facades\Event;
@@ -38,6 +40,7 @@ final class PulseServiceProvider extends ModuleServiceProvider
         $this->app->bind(SurveyRepository::class, EloquentSurveyRepository::class);
         $this->app->bind(ResponseRepository::class, EloquentResponseRepository::class);
         $this->app->bind(MoodRepository::class, EloquentMoodRepository::class);
+        $this->app->bind(WaveMemberRepository::class, EloquentWaveMemberRepository::class);
         $this->app->bind(RespondentHash::class, static fn (): RespondentHash => new RespondentHash((string) config('app.key')));
         $this->app->tag([PulseTickJob::class], ScheduledJob::class);
     }

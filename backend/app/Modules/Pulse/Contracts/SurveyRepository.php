@@ -63,6 +63,13 @@ interface SurveyRepository
     /** Latest earlier non-lifecycle wave of the same survey that has started (for comparison). */
     public function previousWave(SurveyWave $wave): ?SurveyWave;
 
+    /**
+     * Closed non-lifecycle waves of the same survey that started before $wave, oldest first.
+     *
+     * @return list<SurveyWave>
+     */
+    public function closedWavesBefore(SurveyWave $wave): array;
+
     public function hasResponses(Survey $survey): bool;
 
     /**

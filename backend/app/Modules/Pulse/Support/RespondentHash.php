@@ -24,4 +24,17 @@ final readonly class RespondentHash
 
         return hash_hmac('sha256', $salt.':'.$employeeId, $this->key);
     }
+
+    /**
+     * Wave-independent fingerprint of an audience member (survey_wave_members): equal in every wave, so two
+     * audiences can be compared, but it is never stored next to an answer.
+     */
+    public function member(int $employeeId): string
+    {
+        if ($this->key === '') {
+            throw new RuntimeException('member fingerprint needs APP_KEY');
+        }
+
+        return hash_hmac('sha256', 'member:'.$employeeId, $this->key);
+    }
 }

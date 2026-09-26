@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Pulse\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\MembershipDifferencing;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Services\PeopleScope;
@@ -36,7 +37,11 @@ use Illuminate\Support\Carbon;
  * 3. Results are aggregates only; a group (the wave, a question, a manager's department) smaller than the wave's
  *    minimum (at least 5 for anonymous waves) is suppressed; a branch/department is listed only when it and the
  *    rest of the wave are both at least the minimum (SafeSegments), so no group can be obtained by subtraction.
- * 4. Individual responses are listed only for non-anonymous waves (admins).
+ * 4. Differencing across waves (WaveMembership, audience snapshots): a segment whose audience, or the rest of the
+ *    wave outside it, is 1..min-1 people away from an earlier shown release of the same survey is hidden in the later
+ *    wave (results, compare, a manager's department); a comparison is withheld when the audiences (or the answer
+ *    counts) of the two waves differ by 1..min-1 people.
+ * 5. Individual responses are listed only for non-anonymous waves (admins).
  * Who reads results: admins — everything; managers — their own department of non-lifecycle waves (same minimum).
  */
 final readonly class ResponseService
@@ -49,6 +54,7 @@ final readonly class ResponseService
         private PeopleScope $scope,
         private RespondentHash $hash,
         private EmployeeRepository $employees,
+        private WaveMembership $membership,
     ) {}
 
     /**
@@ -139,10 +145,15 @@ final readonly class ResponseService
             return $scope + $this->participation($wave, count($rows), $department);
         }
         $questions = $wave->survey->questions;
+        if ($department !== null && in_array($department, $this->membership->hiddenSegments($wave, 'department_id'), true)) {
+            return $scope + ['state' => $wave->status->value, 'hidden_reason' => 'anonymity']
+                + WaveResults::summary($questions, [], $wave->min_group_size);
+        }
         $out = $scope + ['state' => $wave->status->value]
             + WaveResults::summary($questions, array_column($rows, 'answers'), $wave->min_group_size);
         if ($department === null && ($segment === 'branch' || $segment === 'department')) {
-            $out['segments'] = $this->segments($rows, $segment.'_id', $questions, $wave->min_group_size);
+            $hidden = $this->membership->hiddenSegments($wave, $segment.'_id');
+            $out['segments'] = $this->segments($rows, $segment.'_id', $questions, $wave->min_group_size, $hidden);
         }
 
         return $out;
@@ -176,15 +187,25 @@ final readonly class ResponseService
         $current = $this->responses->answersOf($wave->id, $department);
         $before = $previous === null ? [] : $this->responses->answersOf($previous->id, $department);
         $key = $segment === 'branch' ? 'branch_id' : 'department_id';
+        $scopeKey = $department === null ? $key : 'department_id';
+        $hiddenNow = array_flip($this->membership->hiddenSegments($wave, $scopeKey));
+        $hiddenThen = $previous === null ? [] : array_flip($this->membership->hiddenSegments($previous, $scopeKey));
+        $diff = $previous === null ? null : $this->membership->differences($wave, $previous, $key, $department);
 
         $min = max($wave->min_group_size, $previous->min_group_size ?? 1);
-        $totalSafe = $previous === null || SafeComparison::allowed(count($current), count($before), $min);
+        $totalSafe = $previous === null || (SafeComparison::allowed(count($current), count($before), $min)
+            && ($diff === null || MembershipDifferencing::allowed($diff['total'], $min)));
+        if ($department !== null) {
+            // A manager's whole view is one department: hidden in a wave by the differencing guard = no numbers.
+            $current = isset($hiddenNow[$department]) ? [] : $current;
+            $totalSafe = $totalSafe && ! isset($hiddenNow[$department]) && ! isset($hiddenThen[$department]);
+        }
         $rows = [$this->compareRow(null, null, $questions, $current, $before, $wave, $previous, $totalSafe)];
         if ($department === null) {
             $rawNow = self::groupBy($current, $key);
             $rawThen = self::groupBy($before, $key);
-            $now = SafeSegments::allowed($rawNow, $wave->min_group_size, count($current));
-            $then = $previous === null ? [] : SafeSegments::allowed($rawThen, $previous->min_group_size, count($before));
+            $now = SafeSegments::allowed(array_diff_key($rawNow, $hiddenNow), $wave->min_group_size, count($current));
+            $then = $previous === null ? [] : SafeSegments::allowed(array_diff_key($rawThen, $hiddenThen), $previous->min_group_size, count($before));
             $ids = array_values(array_unique([...array_keys($now), ...array_keys($then)]));
             sort($ids);
             $names = $this->responses->segmentNames($segment, $ids);
@@ -192,9 +213,12 @@ final readonly class ResponseService
                 $segNow = count($rawNow[$id] ?? []);
                 $segThen = count($rawThen[$id] ?? []);
                 // The segment itself and the rest of the wave outside it: both must not differ by a handful of people.
+                $members = $diff['segments'][$id] ?? null;
                 $safe = $previous === null || ($totalSafe
                     && SafeComparison::allowed($segNow, $segThen, $min)
-                    && SafeComparison::allowed(count($current) - $segNow, count($before) - $segThen, $min));
+                    && SafeComparison::allowed(count($current) - $segNow, count($before) - $segThen, $min)
+                    && ($members === null || (MembershipDifferencing::allowed($members['own'], $min)
+                        && MembershipDifferencing::allowed($members['rest'], $min))));
                 $rows[] = $this->compareRow($id, $names[$id] ?? null, $questions, $now[$id] ?? [], $then[$id] ?? [], $wave, $previous, $safe);
             }
         }
@@ -286,15 +310,18 @@ final readonly class ResponseService
     }
 
     /**
-     * Segments that may be shown (SafeSegments); the rest are not listed at all.
+     * Segments that may be shown (SafeSegments); the rest are not listed at all. $hidden (the differencing guard)
+     * are taken out first, so SafeSegments also keeps them from being recovered as "total minus the others".
      *
      * @param  list<array{answers: array<string, mixed>, branch_id: int|null, department_id: int|null}>  $rows
      * @param  list<array<string, mixed>>  $questions
+     * @param  list<int>  $hidden
      * @return list<array<string, mixed>>
      */
-    private function segments(array $rows, string $key, array $questions, int $minGroup): array
+    private function segments(array $rows, string $key, array $questions, int $minGroup, array $hidden = []): array
     {
-        $allowed = SafeSegments::allowed(self::groupBy($rows, $key), max(1, $minGroup), count($rows));
+        $groups = array_diff_key(self::groupBy($rows, $key), array_flip($hidden));
+        $allowed = SafeSegments::allowed($groups, max(1, $minGroup), count($rows));
         ksort($allowed);
         $names = $this->responses->segmentNames(str_replace('_id', '', $key), array_keys($allowed));
         $out = [];
