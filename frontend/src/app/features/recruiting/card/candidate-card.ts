@@ -25,6 +25,9 @@ import { Application, CHANNELS, LogTouch, STAGE_FILTER, Stage, TimelineFilter } 
 import { recruitingErrorKey } from '../recruiting.service';
 import { CandidateCardStore } from './candidate-card.store';
 import { ScreeningPanel } from './screening-panel';
+import { AuditHistory } from '../../audit/audit-history';
+import { AuditLoader } from '../../audit/audit.model';
+import { AuditService } from '../../audit/audit.service';
 import { InterviewersPanel } from './interviewers-panel';
 import { TouchComposer } from './touch-composer';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
@@ -53,6 +56,7 @@ import { hasChannelIcon } from '../../../core/ui/channel-icons';
     EvaluationBadge,
     TasksWidget,
     ScreeningPanel,
+    AuditHistory,
     PrivacyActions,
   ],
   providers: [CandidateCardStore],
@@ -76,6 +80,14 @@ export class CandidateCard {
   protected readonly hasIcon = hasChannelIcon;
   protected readonly filterChips: readonly TimelineFilter[] = [...CHANNELS.filter((c) => c !== 'system'), STAGE_FILTER];
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
+  private readonly audit = inject(AuditService);
+  /** Change history: shown to everyone who can open the card (the API applies the same recruiting scope). */
+  /** Loaded lazily, on the first expand of the section. */
+  protected readonly historyOpen = signal(false);
+  protected readonly historyLoader = computed<AuditLoader>(() => {
+    const id = this.candidateId();
+    return (paging) => this.audit.candidateHistory(id, paging);
+  });
   protected readonly utm = computed(() => Object.entries(this.store.candidate()?.utm ?? {}));
   protected readonly duration = formatDuration;
   /** "Schedule a meeting" works only with a connected Google Calendar. */

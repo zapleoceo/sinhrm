@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Users\Services;
 
 use App\Models\User;
+use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Audit\Enums\AuditAction;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Users\Contracts\UserAdminRepository;
@@ -18,6 +20,7 @@ final class UserAdminService
     public function __construct(
         private readonly UserAdminRepository $users,
         private readonly LoggerInterface $log,
+        private readonly AuditLogger $audit,
     ) {}
 
     /** @return LengthAwarePaginator<int, User> */
@@ -35,6 +38,7 @@ final class UserAdminService
 
         $user = $this->users->invite($email, $name, $role, $actor);
         // Audit without personal data: ids and role only.
+        $this->audit->record('user', $user->id, AuditAction::RoleChanged, ['role' => ['from' => null, 'to' => $role->value]], null, $actor->id);
         $this->log->info('users.invited', ['user_id' => $user->id, 'invited_by' => $actor->id, 'role' => $role->value]);
 
         return $user;
@@ -65,7 +69,11 @@ final class UserAdminService
             }
 
             if ($role !== null) {
+                $previous = $this->users->roleOf($target);
                 $this->users->setRole($target, $role);
+                if ($previous !== $role) {
+                    $this->audit->record('user', $target->id, AuditAction::RoleChanged, ['role' => ['from' => $previous?->value, 'to' => $role->value]], null, $actor->id);
+                }
             }
             if ($status !== null) {
                 $this->users->setStatus($target, $status);

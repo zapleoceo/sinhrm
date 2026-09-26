@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Auth\Http\Middleware\EnsureUserIsActive;
 use App\Modules\People\Http\Controllers\ChangeRequestController;
+use App\Modules\People\Http\Controllers\EmployeeHistoryController;
 use App\Modules\People\Http\Controllers\HireController;
 use App\Modules\People\Http\Controllers\MyEmployeeController;
 use App\Modules\People\Http\Controllers\PeopleController;
@@ -25,6 +26,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     Route::middleware('can:'.PeopleServiceProvider::MANAGE)->group(function (): void {
         Route::post('people', [PeopleController::class, 'store'])->name('people.store');
         Route::patch('people/{employee}', [PeopleController::class, 'update'])->whereNumber('employee')->name('people.update');
+        Route::get('people/{employee}/history', EmployeeHistoryController::class)->whereNumber('employee')->name('people.history');
         Route::post('people/{employee}/terminate', [PeopleController::class, 'terminate'])
             ->whereNumber('employee')->name('people.terminate');
     });

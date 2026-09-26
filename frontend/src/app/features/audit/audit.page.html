@@ -1,0 +1,110 @@
+<header class="head">
+  <h1>{{ 'audit.title' | transloco }}</h1>
+</header>
+
+<div class="filters">
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>{{ 'audit.filters.user' | transloco }}</mat-label>
+    <mat-select [value]="query().user_id" (valueChange)="onUser($event)">
+      <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+      @for (u of users(); track u.id) {
+        <mat-option [value]="u.id">{{ u.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>{{ 'audit.filters.entityType' | transloco }}</mat-label>
+    <mat-select [value]="query().entity_type" (valueChange)="onEntityType($event)">
+      <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+      @for (t of entityTypes(); track t.value) {
+        <mat-option [value]="t.value">{{ t.key ? (t.key | transloco) : t.value }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>{{ 'audit.filters.action' | transloco }}</mat-label>
+    <mat-select [value]="query().action" (valueChange)="onAction($event)">
+      <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+      @for (a of actions(); track a.value) {
+        <mat-option [value]="a.value">{{ a.key ? (a.key | transloco) : a.value }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>{{ 'audit.filters.from' | transloco }}</mat-label>
+    <input matInput [matDatepicker]="fromPicker" (dateChange)="onFrom($event.value)" />
+    <mat-datepicker-toggle matIconSuffix [for]="fromPicker" />
+    <mat-datepicker #fromPicker />
+  </mat-form-field>
+  <mat-form-field subscriptSizing="dynamic">
+    <mat-label>{{ 'audit.filters.to' | transloco }}</mat-label>
+    <input matInput [matDatepicker]="toPicker" (dateChange)="onTo($event.value)" />
+    <mat-datepicker-toggle matIconSuffix [for]="toPicker" />
+    <mat-datepicker #toPicker />
+  </mat-form-field>
+</div>
+
+<section class="panel" aria-live="polite">
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (failed()) {
+    <div class="state">
+      <p>{{ 'audit.loadError' | transloco }}</p>
+      <button mat-stroked-button type="button" (click)="load()">{{ 'common.retry' | transloco }}</button>
+    </div>
+  } @else if (!loading() && rows().length === 0) {
+    <p class="state muted">{{ 'audit.empty' | transloco }}</p>
+  } @else {
+    <table mat-table [dataSource]="rows()">
+      <ng-container matColumnDef="time">
+        <th mat-header-cell *matHeaderCellDef>{{ 'audit.columns.time' | transloco }}</th>
+        <td mat-cell *matCellDef="let r" class="nowrap">{{ r.at | date: 'dd.MM.yyyy HH:mm' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="user">
+        <th mat-header-cell *matHeaderCellDef>{{ 'audit.columns.user' | transloco }}</th>
+        <td mat-cell *matCellDef="let r">{{ r.userName ?? ('audit.system' | transloco) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="action">
+        <th mat-header-cell *matHeaderCellDef>{{ 'audit.columns.action' | transloco }}</th>
+        <td mat-cell *matCellDef="let r">{{ r.actionKey ? (r.actionKey | transloco) : r.action }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="entity">
+        <th mat-header-cell *matHeaderCellDef>{{ 'audit.columns.entity' | transloco }}</th>
+        <td mat-cell *matCellDef="let r">
+          @if (r.link) {
+            <a [routerLink]="r.link">{{ r.entityKey ? (r.entityKey | transloco) : r.entityType }} #{{ r.entityId }}</a>
+          } @else {
+            {{ r.entityKey ? (r.entityKey | transloco) : r.entityType }} #{{ r.entityId }}
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="changes">
+        <th mat-header-cell *matHeaderCellDef>{{ 'audit.columns.changes' | transloco }}</th>
+        <td mat-cell *matCellDef="let r">
+          <ul class="changes">
+            @for (line of r.lines; track $index) {
+              <li>{{ line }}</li>
+            }
+          </ul>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+    </table>
+  }
+
+  <mat-paginator
+    [length]="total()"
+    [pageIndex]="(query().page ?? 1) - 1"
+    [pageSize]="query().perPage"
+    [pageSizeOptions]="[10, 20, 50, 100]"
+    (page)="onPage($event)"
+  />
+</section>
