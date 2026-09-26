@@ -1,3 +1,4 @@
+import { Logo } from '../../core/ui/logo';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
@@ -17,6 +18,7 @@ import { NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-group
 @Component({
   selector: 'app-shell-layout',
   imports: [
+    Logo,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,

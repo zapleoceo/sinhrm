@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>.t { fill: #1a5fb4 } @media (prefers-color-scheme: dark) { .t { fill: #62a0ea } }</style>
+  <mask id="s" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32">
+    <rect width="32" height="32" fill="#fff"/>
+    <path d="M21 10.6C19.8 9.4 18.1 8.6 16 8.6c-2.9 0-4.9 1.5-4.9 3.6 0 4.9 9.8 2.9 9.8 7.8 0 2.1-2 3.5-4.9 3.5-2.1 0-3.9-.8-5.1-2.1" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round"/>
+  </mask>
+  <rect class="t" x="2" y="2" width="28" height="28" rx="8" mask="url(#s)"/>
+</svg>
