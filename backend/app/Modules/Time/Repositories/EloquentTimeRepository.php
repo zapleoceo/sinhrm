@@ -81,14 +81,28 @@ final class EloquentTimeRepository implements TimeRepository
 
     public function submitted(?array $employeeIds, ?int $exceptEmployeeId, int $limit): Collection
     {
-        return Timesheet::query()->with(['employee', 'entries'])
-            ->where('status', TimesheetStatus::Submitted->value)
-            ->when($employeeIds !== null, fn (Builder $q) => $q->whereIn('employee_id', $employeeIds ?? []))
-            ->when($exceptEmployeeId, fn (Builder $q, int $id) => $q->where('employee_id', '!=', $id))
+        return $this->submittedQuery($employeeIds, $exceptEmployeeId)->with(['employee', 'entries'])
             ->orderBy('week_start')
             ->orderBy('id')
             ->limit($limit)
             ->get();
+    }
+
+    public function countSubmitted(?array $employeeIds, ?int $exceptEmployeeId): int
+    {
+        return $this->submittedQuery($employeeIds, $exceptEmployeeId)->count();
+    }
+
+    /**
+     * @param  list<int>|null  $employeeIds
+     * @return Builder<Timesheet>
+     */
+    private function submittedQuery(?array $employeeIds, ?int $exceptEmployeeId): Builder
+    {
+        return Timesheet::query()
+            ->where('status', TimesheetStatus::Submitted->value)
+            ->when($employeeIds !== null, fn (Builder $q) => $q->whereIn('employee_id', $employeeIds ?? []))
+            ->when($exceptEmployeeId, fn (Builder $q, int $id) => $q->where('employee_id', '!=', $id));
     }
 
     public function replaceEntries(Timesheet $timesheet, array $entries): void

@@ -47,6 +47,9 @@ interface LeaveRequestRepository
      */
     public function pendingFor(?array $employeeIds, ?int $exceptEmployeeId, int $limit): Collection;
 
+    /** @param  list<int>|null  $employeeIds  how many pendingFor() would find without the limit */
+    public function countPendingFor(?array $employeeIds, ?int $exceptEmployeeId): int;
+
     /** @param  array<string, mixed>  $attributes */
     public function create(array $attributes): LeaveRequest;
 

@@ -30,6 +30,7 @@ HR готовит документы сотрудникам — приказ о 
 - Воркфлоу может создать документ сам (действие `create_document`, [workflows.md](workflows.md)).
 
 ## Как устроено
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/DocumentNavBadges` — ключ `my_documents`: мои документы, которые можно подписать/ознакомиться (статус `sent`, в списке у них `can_acknowledge = true`).
 Бэкенд — `backend/app/Modules/Documents`, маршруты под `/api` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`. Gate `documents-manage` (`Providers/DocumentsServiceProvider::MANAGE`) = `PeopleScope::isAdmin`.
 

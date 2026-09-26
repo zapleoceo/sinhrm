@@ -11,12 +11,13 @@ use App\Modules\MailAgent\Models\SenderRule;
 use App\Modules\MailAgent\Models\UnknownSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Support\NavBadgeAssertions;
 use Tests\TestCase;
 
 /** Admin → Mail: rules CRUD, unknown-senders queue, status, processed log. Synthetic addresses only. */
 final class MailAdminApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use NavBadgeAssertions, RefreshDatabase;
 
     private User $superadmin;
 
@@ -74,6 +75,8 @@ final class MailAdminApiTest extends TestCase
         $one = $this->unknown('notify@board.example.test', 5);
         $this->unknown('alerts@mail.board.example.test', 2);
         $other = $this->unknown('person@elsewhere.example.test', 1);
+        $this->assertBadgeMatchesList($this->superadmin, 'mail_unknown', '/api/mail/unknown-senders', 3);
+        $this->assertArrayNotHasKey('mail_unknown', $this->badgesOf(User::factory()->withRole(UserRole::Admin)->create()));
 
         $this->actingAs($this->superadmin)->getJson('/api/mail/unknown-senders')->assertOk()
             ->assertJsonPath('data.0.email', 'notify@board.example.test')

@@ -147,6 +147,17 @@ final readonly class TimesheetService
         return $this->time->submitted($ctx->admin ? null : $ctx->subtreeIds, $ctx->selfId, self::LIMIT);
     }
 
+    /** How many approvals() would list without the limit (sidebar counter). */
+    public function approvalsCount(User $user): int
+    {
+        $ctx = $this->scope->for($user);
+        if (! $ctx->admin && ! $ctx->isManager()) {
+            return 0;
+        }
+
+        return $this->time->countSubmitted($ctx->admin ? null : $ctx->subtreeIds, $ctx->selfId);
+    }
+
     /**
      * Team overview of a week: every visible working employee (subtree, or all for admins) with totals and status.
      *

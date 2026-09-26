@@ -16,6 +16,7 @@
   `closed`). Без флага обработчика — 403 даже админу.
 
 ## Как устроено
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/SafeSpeakNavBadges` — ключ `safe_speak` («Вхідні Safe Speak», только обработчики — тот же gate `safe-speak-handle`): новые обращения (статус `new`), которые ещё никто не взял. Ничего об отправителе не раскрывается — это просто число.
 Бэкенд — `backend/app/Modules/SafeSpeak`.
 
 ### Что хранится (`Database/Migrations/2026_10_05_400001_create_safe_speak_tables.php`)

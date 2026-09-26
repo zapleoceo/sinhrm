@@ -14,13 +14,14 @@ use App\Modules\Scripts\Enums\ScriptChannel;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Support\NavBadgeAssertions;
 use Tests\Support\RecruitingFixtures;
 use Tests\Support\ScriptFixtures;
 use Tests\TestCase;
 
 final class TasksAndFollowupsTest extends TestCase
 {
-    use RecruitingFixtures, RefreshDatabase, ScriptFixtures;
+    use NavBadgeAssertions, RecruitingFixtures, RefreshDatabase, ScriptFixtures;
 
     private const string URL = '/api/ops/jobs/run';
 
@@ -122,6 +123,23 @@ final class TasksAndFollowupsTest extends TestCase
         $this->actingAs($mine)->getJson('/api/tasks?mine=1')->assertOk()->assertJsonCount(2, 'data');
         $this->actingAs($mine)->getJson('/api/tasks?mine=1&done=1')->assertOk()->assertJsonCount(3, 'data')
             ->assertJsonPath('data.2.id', $today->id);
+    }
+
+    public function test_nav_badge_counts_my_open_tasks_like_the_page(): void
+    {
+        Carbon::setTestNow('2026-09-10 12:00:00');
+        $mine = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $colleague = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $app = $this->applied($this->vacancy);
+        $this->task($mine->id, $app, '2026-09-08 10:00');
+        $done = $this->task($mine->id, $app, '2026-09-10 18:00', 'b');
+        $this->task($colleague->id, $app, '2026-09-10 09:00', 'c');
+        $done->forceFill(['done_at' => Carbon::now()])->save();
+
+        // Only my own, not done: the colleague's task in the same branch does not count.
+        $this->assertBadgeMatchesList($mine, 'tasks', '/api/tasks?mine=1', 1);
+        $this->assertBadgeMatchesList($colleague, 'tasks', '/api/tasks?mine=1', 1);
+        $this->assertBadgeMatchesList($this->userWith(UserRole::Recruiter, [$this->branch]), 'tasks', '/api/tasks?mine=1', 0);
     }
 
     /** @return list<string> */
