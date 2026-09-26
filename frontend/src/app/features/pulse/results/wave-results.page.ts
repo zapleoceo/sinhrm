@@ -130,7 +130,12 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
               <tbody>
                 @for (r of c.rows; track r.segment ?? -1) {
                   <tr>
-                    <th scope="row">{{ r.name ?? (r.segment === null && $first ? ('pulse.results.all' | transloco) : '—') }}</th>
+                    <th scope="row">
+                      {{ r.name ?? (r.segment === null && $first ? ('pulse.results.all' | transloco) : '—') }}
+                      @if (r.hidden_reason === 'anonymity') {
+                        <br /><small class="muted">{{ 'pulse.results.diffHidden' | transloco }}</small>
+                      }
+                    </th>
                     @for (cell of r.questions; track cell.id) {
                       <td>
                         @if (cell.current === null && cell.previous === null) {
