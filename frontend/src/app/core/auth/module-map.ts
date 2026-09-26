@@ -37,6 +37,7 @@ const URL_MODULES: readonly (readonly [prefix: string, module: string])[] = [
   ['/admin/mail', 'mail-agent'],
   ['/admin/sheets-import', 'google-workspace'],
   ['/admin/privacy', 'privacy'],
+  ['/admin/audit', 'audit'],
 ];
 
 /** Module of a URL (longest matching prefix wins), or null for pages of core modules. */

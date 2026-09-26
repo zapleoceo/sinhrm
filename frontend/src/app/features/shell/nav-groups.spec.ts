@@ -11,6 +11,7 @@ describe('nav groups', () => {
     expect(groupForUrl('/timeoff')).toBe('people');
     expect(groupForUrl('/pulse/mood')).toBe('perform');
     expect(groupForUrl('/admin/users')).toBe('admin');
+    expect(groupForUrl('/admin/audit')).toBe('admin');
   });
 
   it('keeps top-level pages outside groups', () => {

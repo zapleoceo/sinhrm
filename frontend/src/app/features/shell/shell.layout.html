@@ -278,6 +278,12 @@
           <mat-icon>hub</mat-icon>
           <span>{{ 'shell.nav.integrations' | transloco }}</span>
         </a>
+        @if (can('audit')) {
+        <a class="nav-link" routerLink="/admin/audit" routerLinkActive="active">
+          <mat-icon>history</mat-icon>
+          <span>{{ 'shell.nav.audit' | transloco }}</span>
+        </a>
+        }
         @if (can('mail-agent')) {
         <a class="nav-link" routerLink="/admin/mail" routerLinkActive="active">
           <mat-icon>mark_email_unread</mat-icon>

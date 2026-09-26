@@ -41,7 +41,8 @@ final class EloquentSecretVault implements SecretVault
 
     public function forget(string $integrationKey, string $name): void
     {
-        $this->query($integrationKey)->where('name', $name)->delete();
+        // Per model, not a bulk delete: model events let the audit log record "secret cleared" (never the value).
+        $this->query($integrationKey)->where('name', $name)->get()->each(fn (IntegrationSecret $s) => $s->delete());
     }
 
     public function describe(string $integrationKey): array

@@ -23,7 +23,7 @@ final class ModuleAccessTest extends TestCase
     {
         $modules = $this->app->make(ModuleRegistry::class)->all();
 
-        $this->assertCount(26, $modules);
+        $this->assertCount(27, $modules);
         $core = array_keys(array_filter($modules, static fn ($m): bool => $m->core));
         sort($core);
         $this->assertSame(['auth', 'core', 'directory', 'integrations', 'overview', 'users'], $core);
@@ -31,7 +31,8 @@ final class ModuleAccessTest extends TestCase
 
     public function test_defaults_are_seeded_and_preserve_todays_access(): void
     {
-        $this->assertSame(20, ModuleSetting::query()->count());
+        $this->assertSame(21, ModuleSetting::query()->count());
+        $this->assertSame(['superadmin'], ModuleSetting::query()->where('module', 'audit')->value('roles'));
         $this->assertSame(['superadmin', 'admin'], ModuleSetting::query()->where('module', 'privacy')->value('roles'));
         $this->assertTrue(ModuleSetting::query()->where('enabled', false)->doesntExist());
         $this->assertSame(UserRole::values(), ModuleSetting::query()->where('module', 'recruiting')->value('roles'));
@@ -120,6 +121,18 @@ final class ModuleAccessTest extends TestCase
             ->assertJsonPath('jobs', fn (array $jobs): bool => $jobs['privacy.retention'] === ['ok' => true, 'skipped' => 'module_disabled']);
     }
 
+    public function test_audit_routes_and_retention_job_follow_the_switch(): void
+    {
+        config(['ops.secret' => 'test-secret']);
+        $this->saveSetting('audit', false, ['superadmin']);
+
+        $this->actingAs($this->user(UserRole::Superadmin))->getJson('/api/audit')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'module_disabled');
+        $jobs = $this->postJson('/api/ops/jobs/run', [], ['X-Ops-Secret' => 'test-secret'])->assertOk()->json('jobs');
+        $this->assertSame(['ok' => true, 'skipped' => 'module_disabled'], $jobs['audit.retention']);
+    }
+
     public function test_settings_are_cached_and_the_cache_is_dropped_on_save(): void
     {
         $super = $this->user(UserRole::Superadmin);
@@ -138,7 +151,7 @@ final class ModuleAccessTest extends TestCase
 
         $this->actingAs($this->user(UserRole::Superadmin))->getJson('/api/modules')
             ->assertOk()
-            ->assertJsonCount(26, 'data')
+            ->assertJsonCount(27, 'data')
             ->assertJsonFragment(['key' => 'recruiting', 'core' => false, 'enabled' => true, 'name_key' => 'modules.names.recruiting']);
     }
 

@@ -223,4 +223,11 @@
     }
   </section>
 
+  <details class="history" #history (toggle)="historyOpen.set(history.open)">
+    <summary><h3>{{ 'audit.history' | transloco }}</h3></summary>
+    @if (historyOpen()) {
+      <app-audit-history [loader]="historyLoader()" />
+    }
+  </details>
+
 }
