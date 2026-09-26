@@ -6,6 +6,7 @@ namespace App\Modules\MailAgent\Providers;
 
 use App\Modules\Ai\Providers\AiServiceProvider;
 use App\Modules\Core\Contracts\NavBadgeProvider;
+use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\MailAgent\Ai\MailClassificationAiHandler;
@@ -18,6 +19,7 @@ use App\Modules\MailAgent\Parsers\DjinniParser;
 use App\Modules\MailAgent\Parsers\GenericParser;
 use App\Modules\MailAgent\Parsers\RobotaUaParser;
 use App\Modules\MailAgent\Parsers\WorkUaParser;
+use App\Modules\MailAgent\Privacy\MailPersonalData;
 use App\Modules\MailAgent\Repositories\EloquentMailLogRepository;
 use App\Modules\MailAgent\Repositories\EloquentSenderRuleRepository;
 use App\Modules\MailAgent\Repositories\EloquentUnknownSenderRepository;
@@ -41,6 +43,8 @@ final class MailAgentServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->app->tag([MailNavBadges::class], NavBadgeProvider::class);
+        // Personal-data export/erase (Privacy module, docs/architecture/secrets.md).
+        $this->app->tag([MailPersonalData::class], PersonalDataProvider::class);
         $this->app->tag([WorkUaParser::class, RobotaUaParser::class, DjinniParser::class, GenericParser::class], self::PARSERS_TAG);
         $this->app->bind(ParserRegistry::class, fn (Application $app): ParserRegistry => new ParserRegistry($app->tagged(self::PARSERS_TAG)));
 

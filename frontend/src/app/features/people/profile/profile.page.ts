@@ -27,6 +27,7 @@ import { ChangeRequestDialog } from './change-request.dialog';
 import { EmployeeDialog, EmployeeDialogData } from './employee.dialog';
 import { ProfileStore, ProfileTab } from './profile.store';
 import { TerminateDialog } from './terminate.dialog';
+import { PrivacyActions } from '../../privacy/privacy-actions';
 
 /**
  * Employee profile (/people/:id) and "My profile" (/me). Tabs follow the API's access flags: Overview for everyone,
@@ -52,6 +53,7 @@ import { TerminateDialog } from './terminate.dialog';
     PerformanceTab,
     EmployeeAssetsTab,
     AuditHistory,
+    PrivacyActions,
   ],
   providers: [ProfileStore, LeaveRequestsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -89,6 +91,7 @@ import { TerminateDialog } from './terminate.dialog';
               <button mat-button type="button" class="danger" (click)="terminate(e)">{{ 'people.terminate.action' | transloco }}</button>
             }
           }
+          <app-privacy-actions type="employee" [subjectId]="e.id" [name]="e.full_name" [erasable]="e.status === 'terminated'" (erased)="store.load(e.id)" />
         </div>
       </header>
 
