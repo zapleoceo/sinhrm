@@ -181,7 +181,7 @@ Recruiting не знает, как оцениваются разговоры: `T
   `ai_not_configured`, `ai_purpose_disabled` (422, строка не создаётся), `ai_budget_exceeded` (429, строка `failed`).
 - `GET /api/candidates/{id}/screenings` — право просмотра кандидата; последняя оценка по каждой заявке; до 3 незавершённых
   опрашиваются у брокера один раз.
-- Промпт `Ai/ScreeningPrompt` (`screening.v3`) из `Ai/ScreeningInput`, который собирает `Ai/ScreeningPromptFactory`:
+- Промпт `Ai/ScreeningPrompt` (`screening.v4`) из `Ai/ScreeningInput`, который собирает `Ai/ScreeningPromptFactory`:
   название/должность/отдел/описание вакансии, город и теги кандидата, 20 последних касаний-материалов (заметки — в т.ч.
   текст резюме из клиппера — и входящие сообщения/расшифровки кандидата) через `PiiRedactor` (без ФИО, телефонов,
   e-mail, ссылок, @ников); нет ни одного материала → модель не вызывается, скрининг `failed` / `insufficient_data`;

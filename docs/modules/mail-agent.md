@@ -107,7 +107,7 @@ cvUrl}`; нет ни телефона, ни e-mail → `parse_failed`. Вака�
 `Services/RulesMailClassifier` (привязан по умолчанию) — правила из `sender_rules` (загружаются один раз за запуск).
 ШІ ничего не решает при разборе письма. `Services/AiMailClassifier::suggest()` вызывается процессором для отправителя,
 попавшего в очередь без ответа ШІ (`unknown_senders.ai_status IS NULL`), один раз, **без ожидания** (промпт
-`Ai/MailClassificationPrompt`, `mail_classify.v3`: адрес, тема ≤ 300, тело ≤ 1500 без цитат и подписи —
+`Ai/MailClassificationPrompt`, `mail_classify.v4`: адрес, тема ≤ 300, тело ≤ 1500 без цитат и подписи —
 `Support/MailBodyCleaner`). Ответ применяет `Ai/MailClassificationAiHandler` (обычно в задаче `ai.poll`):
 - `conf ≥ 0.85` (`AUTO_APPLY_CONFIDENCE`) **и** конкретный признак (подсказка по домену совпала с типом или извлечены контакты
   заявителя — `MailClassificationPrompt::autoApplicable`) → `MailAgentService::createAiRule()` — правило на точный адрес, `source = ai`,

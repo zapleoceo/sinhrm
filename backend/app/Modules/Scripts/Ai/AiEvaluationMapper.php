@@ -23,6 +23,9 @@ final class AiEvaluationMapper
 
     private const int COMMENT_MAX = 300;
 
+    /** script_eval.v4: 0-2 tips (quality review: 0-5 varied between runs for the same talk). */
+    public const int TIPS_MAX = 2;
+
     /**
      * @param  array<string, mixed>  $json
      * @return array{steps: array<string, array{done: bool, quote: string|null, comment: string|null}>, objections_handled: list<string>, next_step_fixed: bool, next_step_quote: string|null, recommendations: list<string>}
@@ -50,13 +53,15 @@ final class AiEvaluationMapper
             'objections_handled' => JsonOutput::strings($json, 'handled', 50, 64),
             'next_step_fixed' => JsonOutput::bool($json, 'next'),
             'next_step_quote' => JsonOutput::text($json, 'next_quote', self::QUOTE_MAX),
-            'recommendations' => JsonOutput::strings($json, 'tips', 5, 400),
+            'recommendations' => JsonOutput::strings($json, 'tips', self::TIPS_MAX, 400),
         ];
     }
 
     /** @param  array<string, mixed>  $data  output of parse() (possibly after a JSON round trip) */
-    public static function toResult(ScriptContent $script, array $data): EvaluationResult
+    public static function toResult(ScriptContent $script, array $data, ?string $sentText = null): EvaluationResult
     {
+        // A quote that is not a literal substring of what the model saw is dropped (no paraphrases or typos as evidence).
+        $verbatim = static fn (mixed $q): ?string => is_string($q) && ($sentText === null || str_contains(self::norm($sentText), self::norm($q))) ? $q : null;
         /** @var array<string, array{done?: bool, quote?: string|null, comment?: string|null}> $given */
         $given = is_array($data['steps'] ?? null) ? $data['steps'] : [];
         $steps = [];
@@ -70,7 +75,7 @@ final class AiEvaluationMapper
                 'required' => $step->required,
                 'weight' => $step->weight,
                 'done' => $done,
-                'quote' => $done ? ($answer['quote'] ?? null) : null,
+                'quote' => $done ? $verbatim($answer['quote'] ?? null) : null,
                 'comment' => $answer['comment'] ?? null,
             ];
             if (! $done && $step->required) {
@@ -100,9 +105,14 @@ final class AiEvaluationMapper
             engine: EvaluationEngine::Ai,
             score: ScriptScore::compute($steps),
             steps: $steps,
-            nextStep: ['fixed' => $fixed, 'quote' => is_string($quote) ? $quote : null, 'negative_quote' => null],
+            nextStep: ['fixed' => $fixed, 'quote' => $verbatim($quote), 'negative_quote' => null],
             objections: $objections,
             recommendations: $recommendations,
         );
+    }
+
+    private static function norm(string $s): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $s)));
     }
 }

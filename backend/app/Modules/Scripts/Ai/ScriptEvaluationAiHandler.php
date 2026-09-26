@@ -47,7 +47,8 @@ final readonly class ScriptEvaluationAiHandler implements AiResultHandler
         if ($version === null) {
             return;
         }
-        $result = AiEvaluationMapper::toResult($version->content(), $data);
+        $touch = $this->touchpoints->find($request->subject_id);
+        $result = AiEvaluationMapper::toResult($version->content(), $data, ScriptEvaluationPrompt::sentText((string) $touch?->body));
         $this->evaluations->storeAi($request->subject_id, $version->id, [
             'score' => $result->score,
             'result' => $result->result(),

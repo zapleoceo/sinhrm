@@ -46,7 +46,7 @@ final readonly class AiScriptEvaluator implements ScriptEvaluator
             throw ScriptException::aiUnavailable($outcome->error ?? 'ai_pending');
         }
 
-        return AiEvaluationMapper::toResult($script, $outcome->data);
+        return AiEvaluationMapper::toResult($script, $outcome->data, ScriptEvaluationPrompt::sentText($text));
     }
 
     /**

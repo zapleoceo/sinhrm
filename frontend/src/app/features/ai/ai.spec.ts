@@ -32,7 +32,7 @@ const SCREENING: Screening = {
   gaps: [],
   questions: [],
   error: null,
-  prompt_version: 'screening.v3',
+  prompt_version: 'screening.v4',
   advisory: true,
   created_at: null,
   completed_at: null,

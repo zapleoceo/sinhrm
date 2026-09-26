@@ -25,7 +25,7 @@ use Illuminate\Support\Carbon;
  */
 final class MailClassificationPrompt implements AiPromptTemplate
 {
-    public const string VERSION = 'mail_classify.v3';
+    public const string VERSION = 'mail_classify.v4';
 
     public const int MAX_TOKENS = 1500;
 
@@ -44,6 +44,7 @@ final class MailClassificationPrompt implements AiPromptTemplate
     public const array RULES = [
         'kind: job_board = job-site notice about an application; candidate = a person writing about a job for themselves; colleague = work/business letter, not an application; newsletter = marketing, digest, service notice; ignore = spam, phishing, bounces.',
         'job_board only with an explicit job-site signal (site name/domain, application notice); parser: work_ua | robota_ua | djinni | generic; otherwise null.',
+        'colleague only with an explicit internal/business-relationship cue; missing job signals do not mean colleague. A short/vague letter from an unfamiliar external address → candidate, conf ≤0.5.',
         'conf 0..1, calibrated: short, vague or no identifying signal → ≤0.5; ≥0.85 only without real doubt (applied without a person).',
         "cand only for candidate/job_board about one applicant: the applicant's own name, phone, email, vacancy, copied exactly; otherwise all null.",
     ];

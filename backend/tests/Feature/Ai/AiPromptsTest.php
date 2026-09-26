@@ -90,6 +90,8 @@ final class AiPromptsTest extends TestCase
         $this->assertNull($screening->skipReason($this->cases('candidate_screening')[0]['input']));
         $capped = $screening->parse('{"score":88,"unmet":["English C1"],"summary":"s","pros":[],"cons":[],"ask":[]}');
         $this->assertSame([69, 'maybe'], [$capped['score'], $capped['verdict']]);
+        $this->assertSame(85, $screening->parse('{"score":100,"proof":false,"unmet":[],"summary":"s","pros":[],"cons":[],"ask":["q"]}')['score']);
+        $this->assertSame(96, $screening->parse('{"score":96,"proof":true,"unmet":[],"summary":"s","pros":[],"cons":[],"ask":["q"]}')['score']);
 
         $mail = $this->template('mail_classification');
         $this->assertSame('no_content', $mail->skipReason(['from' => 'a@b.example.test', 'subject' => ' ', 'body' => '> quoted only']));

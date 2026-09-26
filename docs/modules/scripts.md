@@ -137,7 +137,7 @@ viewer — например, новый сотрудник) и, как рань�
 |---|---|
 | `scripts` | `name, channel (call\|chat), active_version_id?, archived` |
 | `script_versions` | `script_id, version, published_at? (null = черновик), author_id, steps, objections, templates, followups, next_step_patterns` (jsonb); `unique(script_id, version)`. Опубликованная версия неизменяема: сервис правит только черновик, а модель бросает `LogicException` при попытке изменить опубликованную |
-| `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (jsonb: steps[+comment у ШІ], next_step, objections[+handled], recommendations[+ai_tip]), prompt_version? (ШІ, напр. `script_eval.v3`), ai_request_id? (fk ai_requests), created_at` — миграция `2026_10_08_100003` |
+| `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (jsonb: steps[+comment у ШІ], next_step, objections[+handled], recommendations[+ai_tip]), prompt_version? (ШІ, напр. `script_eval.v4`), ai_request_id? (fk ai_requests), created_at` — миграция `2026_10_08_100003` |
 | `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (followup\|manual\|new_applicant\|workflow\|document\|mood_alert), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
 
 Форма контента (валидация `Http/Requests/ValidatesScriptContent` + value-объекты `DTO/ScriptContent`, `DTO/ScriptStep`):

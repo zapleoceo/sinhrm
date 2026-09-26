@@ -67,7 +67,7 @@ final class ScreeningApiTest extends TestCase
             ->assertJsonPath('data.score', 82)
             ->assertJsonPath('data.verdict', 'fit')
             ->assertJsonPath('data.advisory', true)
-            ->assertJsonPath('data.prompt_version', 'screening.v3')
+            ->assertJsonPath('data.prompt_version', 'screening.v4')
             ->assertJsonPath('data.questions.0', 'Який рівень англійської?');
 
         $user = $this->brokerSubmits[0]['messages'][1]['content'];

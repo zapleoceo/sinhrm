@@ -23,7 +23,7 @@ use App\Modules\Scripts\DTO\ScriptContent;
  */
 final class ScriptEvaluationPrompt implements AiPromptTemplate
 {
-    public const string VERSION = 'script_eval.v3';
+    public const string VERSION = 'script_eval.v4';
 
     /** Room for reasoning tokens + a quote and a note per step. */
     public const int MAX_TOKENS = 3000;
@@ -41,11 +41,11 @@ final class ScriptEvaluationPrompt implements AiPromptTemplate
     /** @var list<string> */
     public const array RULES = [
         'done = the step goal is clearly achieved (meaning, not keywords). A URL or [link] in the text satisfies a link step.',
-        'quote = exact transcript fragment ≤200 chars proving a done step; null if not done.',
+        'quote = ≤200 chars copied character-for-character from the transcript (no paraphrase, no typo fixes); null if not done.',
         'note = one sentence: why done or what is missing.',
         'handled = ids of objections the candidate raised and the recruiter answered in the spirit of the script answer.',
         'next = true if the talk ends with a concrete agreed next step or, in a message, an explicit call to action with a time or channel (date/time, booked interview, link to complete by a deadline); "think about it"/"we will call" → false. Hints: SCRIPT.next_ok, SCRIPT.next_bad.',
-        'tips = ≤5 concrete tips for this recruiter about this talk; no praise.',
+        'tips = 0-2 concrete tips only for real problems; [] if nothing is wrong; no praise.',
         'Every SCRIPT step id exactly once, in order; only ids from SCRIPT; no score.',
     ];
 
@@ -77,6 +77,12 @@ final class ScriptEvaluationPrompt implements AiPromptTemplate
         return AiEvaluationMapper::parse(JsonOutput::decode($text) ?? throw InvalidAiOutput::because('not_json'));
     }
 
+    /** The transcript exactly as the model saw it (redacted, cut): quotes are checked against it. */
+    public static function sentText(string $text): string
+    {
+        return mb_substr(PiiRedactor::redact(trim($text)), 0, self::TEXT_LIMIT);
+    }
+
     /** Expected: {done_steps: [ids], next_step_fixed: bool, objections_handled?: [ids]}. */
     public function compare(array $parsed, array $expected): array
     {
@@ -106,7 +112,7 @@ final class ScriptEvaluationPrompt implements AiPromptTemplate
             purpose: AiPurpose::ScriptEvaluation,
             version: self::VERSION,
             system: self::system($script),
-            user: PromptBuilder::data(['transcript' => mb_substr(PiiRedactor::redact(trim($text)), 0, self::TEXT_LIMIT)]),
+            user: PromptBuilder::data(['transcript' => self::sentText($text)]),
             maxTokens: self::MAX_TOKENS,
             temperature: 0.1,
             schema: self::schema(),

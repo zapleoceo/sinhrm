@@ -90,7 +90,7 @@ final class MailAiTest extends TestCase
         $this->app->make(AiPollJob::class)->run(Carbon::now());
 
         $rule = SenderRule::query()->sole();
-        $this->assertSame(['partner@unknown.example.test', 'candidate', 'ai', null, 'mail_classify.v3'], [
+        $this->assertSame(['partner@unknown.example.test', 'candidate', 'ai', null, 'mail_classify.v4'], [
             $rule->pattern, $rule->kind->value, $rule->source, $rule->created_by, $rule->prompt_version,
         ]);
         $this->assertSame('candidate', $rule->kind->value);

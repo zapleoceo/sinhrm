@@ -49,6 +49,23 @@ final class EvaluationServiceTest extends TestCase
         $this->assertSame('Назвіть дату співбесіди.', $result->recommendations[2]['text'] ?? null);
     }
 
+    public function test_quotes_must_be_verbatim_and_tips_are_capped(): void
+    {
+        $data = AiEvaluationMapper::parse([
+            'steps' => [
+                ['id' => 'greet', 'done' => true, 'quote' => 'добрий   ДЕНЬ', 'note' => 'ok'],
+                ['id' => 'invite', 'done' => true, 'quote' => 'Запрошую на співбесіту', 'note' => 'ok'],
+            ],
+            'handled' => [], 'next' => true, 'next_quote' => 'не було такого', 'tips' => ['a', 'b', 'c'],
+        ]);
+        $result = AiEvaluationMapper::toResult($this->script(), $data, 'Добрий день! Запрошую на співбесіду завтра.');
+
+        $this->assertSame('добрий   ДЕНЬ', $result->steps[0]['quote'], 'whitespace/case differences are tolerated');
+        $this->assertNull($result->steps[1]['quote'], 'a typo is not a quote');
+        $this->assertNull($result->nextStep['quote']);
+        $this->assertCount(2, array_filter($result->recommendations, static fn (array $r): bool => $r['type'] === 'ai_tip'));
+    }
+
     public function test_invalid_shapes_are_rejected(): void
     {
         foreach ([

@@ -22,7 +22,7 @@ use App\Modules\Ai\Support\PromptBuilder;
  */
 final class ScreeningPrompt implements AiPromptTemplate
 {
-    public const string VERSION = 'screening.v3';
+    public const string VERSION = 'screening.v4';
 
     public const int MAX_TOKENS = 2500;
 
@@ -47,15 +47,18 @@ final class ScreeningPrompt implements AiPromptTemplate
     public const array RULES = [
         'Split requirements into must (explicit: years, level, license, key skill) and nice (the rest).',
         'unmet = must requirements the materials contradict or do not confirm; any unmet → score ≤69.',
-        'score 0..100: 90+ all must and most nice, 70-89 all must, 40-69 partly, <40 no match.',
+        'score 0..100: 90+ all must and most nice, 70-89 all must, 40-69 partly, <40 no match. proof = claims backed by verifiable evidence (metrics, portfolio, test results); without proof max 85.',
         'Ignore age, gender, nationality, family, health, religion, appearance, names: they never affect the score.',
-        'summary ≤200 chars; pros, cons ≤5 each, tied to requirements; ask ≤5 interview questions closing the cons.',
+        'summary ≤200 chars; pros, cons ≤5 each, tied to requirements; ask 1-5 interview questions (even a full match: verify a self-reported claim).',
     ];
 
-    public const string OUTPUT = '{"score":int,"unmet":[str],"summary":str,"pros":[str],"cons":[str],"ask":[str]}';
+    public const string OUTPUT = '{"score":int,"proof":bool,"unmet":[str],"summary":str,"pros":[str],"cons":[str],"ask":[str]}';
 
     /** Highest score (and "maybe") when a must-have requirement is unmet — enforced on the server too. */
     public const int UNMET_CAP = 69;
+
+    /** Highest score without verifiable evidence (proof = false) — enforced on the server. */
+    public const int NO_PROOF_CAP = 85;
 
     public function purpose(): AiPurpose
     {
@@ -164,6 +167,9 @@ final class ScreeningPrompt implements AiPromptTemplate
         if ($unmet !== []) {
             $score = min($score, self::UNMET_CAP);
         }
+        if (($json['proof'] ?? false) !== true) {
+            $score = min($score, self::NO_PROOF_CAP);
+        }
 
         return [
             'score' => $score,
@@ -193,9 +199,10 @@ final class ScreeningPrompt implements AiPromptTemplate
         return [
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['score', 'unmet', 'summary', 'pros', 'cons', 'ask'],
+            'required' => ['score', 'proof', 'unmet', 'summary', 'pros', 'cons', 'ask'],
             'properties' => [
                 'score' => ['type' => 'integer'],
+                'proof' => ['type' => 'boolean'],
                 'unmet' => $list,
                 'summary' => ['type' => 'string'],
                 'pros' => $list,
