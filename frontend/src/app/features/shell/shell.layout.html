@@ -55,6 +55,31 @@
       <mat-icon>checklist</mat-icon>
       <span>{{ 'shell.nav.workflowRuns' | transloco }}</span>
     </a>
+    <p class="nav-section">{{ 'shell.nav.perform' | transloco }}</p>
+    <a class="nav-link" routerLink="/perform/objectives" routerLinkActive="active">
+      <mat-icon>flag</mat-icon>
+      <span>{{ 'shell.nav.objectives' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/perform/one-on-ones" routerLinkActive="active">
+      <mat-icon>forum</mat-icon>
+      <span>{{ 'shell.nav.oneOnOnes' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/perform/feedback" routerLinkActive="active">
+      <mat-icon>rate_review</mat-icon>
+      <span>{{ 'shell.nav.feedback' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/perform/reviews" routerLinkActive="active">
+      <mat-icon>grading</mat-icon>
+      <span>{{ 'shell.nav.reviews' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/pulse" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <mat-icon>poll</mat-icon>
+      <span>{{ 'shell.nav.surveys' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/pulse/mood" routerLinkActive="active">
+      <mat-icon>mood</mat-icon>
+      <span>{{ 'shell.nav.mood' | transloco }}</span>
+    </a>
     @if (isAdmin()) {
       <p class="nav-section">{{ 'shell.nav.admin' | transloco }}</p>
     }
@@ -88,6 +113,14 @@
       <a class="nav-link" routerLink="/admin/workflows" routerLinkActive="active">
         <mat-icon>account_tree</mat-icon>
         <span>{{ 'shell.nav.workflows' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/admin/perform/reviews" routerLinkActive="active">
+        <mat-icon>workspace_premium</mat-icon>
+        <span>{{ 'shell.nav.reviewSetup' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/admin/pulse" routerLinkActive="active">
+        <mat-icon>ballot</mat-icon>
+        <span>{{ 'shell.nav.surveyBuilder' | transloco }}</span>
       </a>
       <a class="nav-link" routerLink="/admin/documents/templates" routerLinkActive="active">
         <mat-icon>article</mat-icon>

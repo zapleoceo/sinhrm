@@ -79,10 +79,13 @@
 | Событие | Когда | Кто слушает |
 |---|---|---|
 | `Events/EmployeeHired` | создание сотрудника — вручную (`POST /api/people`, `hired_at` обязателен) и наймом из рекрутинга | TimeOff — начисление отпуска текущего периода; Workflows — запуск шаблонов `employee_hired` (якорь `hired_at`, один раз на сотрудника) |
-| `Events/EmployeeTerminated` | `POST /api/people/{id}/terminate` (после сохранения `fired_at`) | Workflows — запуск шаблонов `employee_terminated` (якорь `fired_at`) |
+| `Events/EmployeeTerminated` | `POST /api/people/{id}/terminate` (после сохранения `fired_at`) | Workflows — запуск шаблонов `employee_terminated` (якорь `fired_at`); Pulse — вихідне опитування (`exit`, один раз на дату увольнения, [pulse.md](pulse.md)) |
 
 Ошибка подписчика Workflows пишется в лог и не ломает запрос найма/увольнения ([workflows.md](workflows.md)).
-Профиль сотрудника на фронтенде получил вкладки «Документи» ([documents.md](documents.md)) и «Воркфлоу».
+Профиль сотрудника на фронтенде получил вкладки «Документи» ([documents.md](documents.md)), «Воркфлоу» и
+«Продуктивність» (цели, KPI, планы развития, 1:1, результаты оценки — админу, самому сотруднику и руководителям выше;
+[perform.md](perform.md)). Perform и Pulse используют `PeopleScope`/`PeopleContext` как единую модель доступа
+(админ = HR, руководитель — поддерево по `manager_id`), `EmployeeRepository::working()` и `managerMap()`.
 
 ### Слои
 `Http/Controllers` (`PeopleController`, `MyEmployeeController`, `ChangeRequestController`, `HireController`) →

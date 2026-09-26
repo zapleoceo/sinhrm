@@ -48,6 +48,8 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | TimeOff (отпуска: типы, политики, праздники, баланс-журнал, запросы, календарь, начисление) | ✅ | [modules/timeoff.md](../modules/timeoff.md) |
 | Documents (шаблоны документов, документы сотрудников, файлы в БД, «Ознайомлений»; КЕП — заготовка) | ✅ | [modules/documents.md](../modules/documents.md) |
 | Workflows (онбординг/офбординг: шаблоны, снимки запусков, исполнители шагов, триггеры People, `workflows.tick`) | ✅ | [modules/workflows.md](../modules/workflows.md) |
+| Perform (1:1, цели OKR, KPI, фидбек, оценка 360 по компетенциям, планы развития; доступ по модели People) | ✅ | [modules/perform.md](../modules/perform.md) |
+| Pulse (опросы с волнами и расписанием, анонимность с порогом группы, eNPS, сравнение волн, опросы жизненного цикла, настроение, `pulse.tick`) | ✅ | [modules/pulse.md](../modules/pulse.md) |
 | Extension (браузерное расширение `extension/`: кандидат с открытой страницы профиля; API — в Recruiting, токен только для `/api/clipper/*`) | ✅ код, установка вручную | [modules/extension.md](../modules/extension.md) |
 | Channels (вебхуки мессенджеров и телефонии → лента кандидата, отправка из карточки, демо-события) | ✅ код, включается токенами | [modules/channels.md](../modules/channels.md) |
 
@@ -61,6 +63,10 @@ Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн �
   cron вызывает `POST /api/ops/jobs/run` ([core.md](../modules/core.md)).
 - Шаги воркфлоу выполняются тем же cron (`workflows.tick`, до 50 шагов за вызов); вебхуки воркфлоу — синхронно в нём,
   с таймаутом 10 с и SSRF-защитой ([workflows.md](../modules/workflows.md)).
+- Опросы и настроение (`pulse.tick` тем же cron): открытие/закрытие волн, следующая волна расписания, опросы 30/90 дней
+  и уведомления о падении настроения — с задержкой до ~30 мин. Анонимность обеспечивает сервер: в ответах анонимных
+  волн нет id сотрудника и времени, соль хэша стирается при закрытии, группы меньше минимума не показываются
+  ([pulse.md](../modules/pulse.md)).
 - Файлы документов до 2 МБ хранятся в Postgres (base64) за интерфейсом `DocumentStorage` — до выбора объектного
   хранилища ([documents.md](../modules/documents.md)).
 - Работа «после ответа» (оценка разговора по скрипту) — `dispatchAfterResponse()` в том же запросе, без очереди.

@@ -3,11 +3,12 @@ import { Observable } from 'rxjs';
 import { ChangeRequest, Employee } from '../people.model';
 import { PeopleService, peopleErrorKey } from '../people.service';
 
-export type ProfileTab = 'overview' | 'job' | 'timeoff' | 'changes' | 'documents' | 'workflows';
+export type ProfileTab = 'overview' | 'job' | 'timeoff' | 'changes' | 'documents' | 'workflows' | 'performance';
 
 /**
  * Which tabs a profile shows, from the access flags of the API (hidden tiers are not in the payload anyway).
- * Documents: admins, the employee and managers; Workflows: admins and managers, not the employee themself.
+ * Documents: admins, the employee and managers; Workflows: admins and managers, not the employee themself;
+ * Performance (objectives, KPIs, plans, 1:1s, review results): admins, the employee and managers above.
  */
 export function profileTabs(e: Employee | null): ProfileTab[] {
   if (e === null) {
@@ -25,6 +26,9 @@ export function profileTabs(e: Employee | null): ProfileTab[] {
   }
   if (e.access?.manage || (e.access?.job && !e.access?.self)) {
     tabs.push('workflows');
+  }
+  if (e.access?.job) {
+    tabs.push('performance');
   }
   return tabs;
 }

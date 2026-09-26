@@ -34,6 +34,15 @@ export const routes: Routes = [
       { path: 'tasks', title: 'titles.tasks', loadComponent: () => import('./features/tasks/my-tasks.page').then((m) => m.MyTasksPage) },
       { path: 'me/documents', title: 'titles.myDocuments', loadComponent: () => import('./features/documents/my/my-documents.page').then((m) => m.MyDocumentsPage) },
       { path: 'workflows/runs', title: 'titles.workflowRuns', loadComponent: () => import('./features/workflows/runs/workflow-runs.page').then((m) => m.WorkflowRunsPage) },
+      // Perform and Pulse: every active role; the API scopes the data (admin all, managers their people, own items).
+      { path: 'perform/one-on-ones', title: 'titles.oneOnOnes', loadComponent: () => import('./features/perform/one-on-ones/one-on-ones.page').then((m) => m.OneOnOnesPage) },
+      { path: 'perform/objectives', title: 'titles.objectives', loadComponent: () => import('./features/perform/objectives/objectives.page').then((m) => m.ObjectivesPage) },
+      { path: 'perform/feedback', title: 'titles.feedback', loadComponent: () => import('./features/perform/feedback/feedback.page').then((m) => m.FeedbackPage) },
+      { path: 'perform/reviews', title: 'titles.myReviews', loadComponent: () => import('./features/perform/reviews/my-reviews.page').then((m) => m.MyReviewsPage) },
+      { path: 'pulse', title: 'titles.mySurveys', loadComponent: () => import('./features/pulse/my/my-surveys.page').then((m) => m.MySurveysPage) },
+      { path: 'pulse/mood', title: 'titles.mood', loadComponent: () => import('./features/pulse/mood/mood.page').then((m) => m.MoodPage) },
+      { path: 'pulse/waves/:id', title: 'titles.respond', loadComponent: () => import('./features/pulse/respond/respond.page').then((m) => m.RespondPage) },
+      { path: 'pulse/waves/:id/results', title: 'titles.surveyResults', loadComponent: () => import('./features/pulse/results/wave-results.page').then((m) => m.WaveResultsPage) },
       { path: 'timeoff/approvals', title: 'titles.approvals', loadComponent: () => import('./features/timeoff/approvals/approvals.page').then((m) => m.ApprovalsPage) },
       {
         path: 'status',
@@ -64,6 +73,18 @@ export const routes: Routes = [
         title: 'titles.workflowEditor',
         canActivate: [roleGuard('superadmin', 'admin')],
         loadComponent: () => import('./features/workflows/editor/workflow-editor.page').then((m) => m.WorkflowEditorPage),
+      },
+      {
+        path: 'admin/perform/reviews',
+        title: 'titles.reviewSetup',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/perform/reviews/review-admin.page').then((m) => m.ReviewAdminPage),
+      },
+      {
+        path: 'admin/pulse',
+        title: 'titles.surveys',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/pulse/surveys/surveys.page').then((m) => m.SurveysPage),
       },
       {
         path: 'admin/documents/templates',

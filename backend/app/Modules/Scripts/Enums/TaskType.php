@@ -15,6 +15,8 @@ enum TaskType: string
     case Workflow = 'workflow';
     /** "Read and acknowledge the document" for the employee (Documents module). */
     case Document = 'document';
+    /** "Team mood dropped" for a manager (Pulse mood alerts). */
+    case MoodAlert = 'mood_alert';
 
     /** Source group of the "Мої задачі" filter. */
     public function source(): TaskSource
@@ -22,6 +24,7 @@ enum TaskType: string
         return match ($this) {
             self::Workflow => TaskSource::Workflows,
             self::Document => TaskSource::Documents,
+            self::MoodAlert => TaskSource::Pulse,
             self::Followup, self::Manual, self::NewApplicant => TaskSource::Recruiting,
         };
     }

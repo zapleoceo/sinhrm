@@ -7,17 +7,19 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { CHANNEL_ICONS } from '../recruiting/recruiting.model';
+import { MoodCheckinWidget } from '../pulse/mood/mood-checkin.widget';
 import { TasksWidget } from '../scripts/tasks/tasks-widget';
 import { TaskQuery } from '../scripts/scripts.model';
 import { OverviewStore } from './overview.store';
 
 /**
  * Home page: what needs attention today. Counters (click-through), my tasks for today (overdue included),
- * the most stale candidates, the funnel of active applications and touches of the last 7 days by channel.
+ * the most stale candidates, the funnel of active applications and touches of the last 7 days by channel;
+ * the daily mood check-in (Pulse) for users with an employee record.
  */
 @Component({
   selector: 'app-dashboard-page',
-  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TasksWidget],
+  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TasksWidget, MoodCheckinWidget],
   providers: [OverviewStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.page.html',
