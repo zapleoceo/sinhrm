@@ -39,6 +39,11 @@ export class ChannelsService {
     return this.availability().find((a) => a.channel === channel && a.mode !== 'off')?.mode ?? 'off';
   }
 
+  /** Why a channel is off (e-mail: "reconnect_to_send" when Google is connected read-only); null otherwise. */
+  reasonOf(channel: string): string | null {
+    return this.availability().find((a) => a.channel === channel)?.reason ?? null;
+  }
+
   send(candidateId: number, body: SendMessage): Observable<Touchpoint> {
     return this.http.post<{ data: Touchpoint }>(`/api/candidates/${candidateId}/messages`, body).pipe(map((r) => r.data));
   }

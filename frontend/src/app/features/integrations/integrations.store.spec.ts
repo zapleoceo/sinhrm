@@ -38,7 +38,7 @@ describe('IntegrationsStore', () => {
   });
 
   it('loads and groups in the fixed group order, skipping empty groups', () => {
-    api.list$ = of({ data: [item('viber', 'messengers'), item('ai_broker', 'ai'), item('djinni', 'sources')], ai_policy: { enabled: true } });
+    api.list$ = of({ data: [item('viber', 'messengers'), item('ai_broker', 'ai'), item('meta_lead_ads', 'sources')], ai_policy: { enabled: true } });
     store.load();
 
     expect(store.loading()).toBe(false);

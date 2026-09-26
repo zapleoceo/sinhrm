@@ -165,6 +165,9 @@ final readonly class MailMessageProcessor
     private function ingest(GmailMessage $message, string $contact, array $meta): Touchpoint
     {
         $body = trim($message->subject."\n\n".$message->text);
+        // For replies from the card (Gmail threadId + Message-ID). Not IncomingMessage::thread on purpose: job boards
+        // put many candidates into one Gmail thread, so the thread must never decide which candidate a mail belongs to.
+        $reply = array_filter(['gmail_thread' => $message->threadId, 'message_id' => $message->messageId], 'is_string');
 
         return $this->ingestor->ingest(new IncomingMessage(
             channel: Channel::Email,
@@ -175,7 +178,7 @@ final readonly class MailMessageProcessor
             externalId: $message->id,
             integrationKey: GoogleService::Gmail->integrationKey(),
             viaProduct: false,
-            meta: ['subject' => $message->subject, 'from' => (string) $message->fromEmail] + $meta,
+            meta: ['subject' => $message->subject, 'from' => (string) $message->fromEmail] + $reply + $meta,
         ));
     }
 

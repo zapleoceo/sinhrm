@@ -14,6 +14,9 @@ enum GoogleService: string
     case Calendar = 'calendar';
     case Sheets = 'sheets';
 
+    /** Sending mail through the connected mailbox (candidate card, workflows). Optional: without it Gmail still reads. */
+    public const string GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send';
+
     /** Always requested: the connected account's e-mail comes from the id_token. */
     public const array IDENTITY_SCOPES = ['openid', 'email'];
 
@@ -22,11 +25,28 @@ enum GoogleService: string
         return 'google_'.$this->value;
     }
 
-    /** @return list<string> */
+    /**
+     * Everything requested on the consent screen.
+     *
+     * @return list<string>
+     */
     public function scopes(): array
     {
         return match ($this) {
-            // Read-only on purpose: the mail agent never sends mail (scope minimisation).
+            self::Gmail => [...$this->requiredScopes(), self::GMAIL_SEND_SCOPE],
+            default => $this->requiredScopes(),
+        };
+    }
+
+    /**
+     * Scopes without which the service is not connected at all. gmail.send is not here: a mailbox connected before
+     * sending existed (or with the send box unticked) keeps reading, only sending asks for a reconnect.
+     *
+     * @return list<string>
+     */
+    public function requiredScopes(): array
+    {
+        return match ($this) {
             self::Gmail => ['https://www.googleapis.com/auth/gmail.readonly'],
             self::Calendar => ['https://www.googleapis.com/auth/calendar.events'],
             self::Sheets => ['https://www.googleapis.com/auth/spreadsheets.readonly'],

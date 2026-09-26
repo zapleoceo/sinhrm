@@ -46,6 +46,23 @@ describe('ChannelsService', () => {
     expect(service.modeOf('whatsapp')).toBe('off');
   });
 
+  it('knows why e-mail sending is off (Gmail connected read-only)', () => {
+    service.ensureAvailability();
+    http.expectOne('/api/channels').flush({
+      data: [{ key: 'google_gmail', channel: 'email', mode: 'off', reason: 'reconnect_to_send' }],
+    });
+    expect(service.modeOf('email')).toBe('off');
+    expect(service.reasonOf('email')).toBe('reconnect_to_send');
+    expect(service.reasonOf('telegram')).toBeNull();
+  });
+
+  it('sends an e-mail with a subject', () => {
+    service.send(7, { channel: 'email', text: 'Hi', subject: 'Interview' }).subscribe();
+    const req = http.expectOne({ method: 'POST', url: '/api/candidates/7/messages' });
+    expect(req.request.body).toEqual({ channel: 'email', text: 'Hi', subject: 'Interview' });
+    req.flush({ data: { id: 43 } });
+  });
+
   it('retries availability after a failure', () => {
     service.ensureAvailability();
     http.expectOne('/api/channels').flush(null, { status: 500, statusText: 'Server Error' });
