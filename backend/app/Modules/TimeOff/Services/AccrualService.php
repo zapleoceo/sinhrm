@@ -20,7 +20,7 @@ use Illuminate\Support\Carbon;
  * - yearly_upfront: once per year ("2026"), prorated by months when hired during the year;
  * - monthly: once per month ("2026-10"): cumulative year target minus already accrued (no rounding drift);
  * - Jan 1 (first run of a year): the balance left from previous years above carry_over_max expires ("expiry").
- * Only the current period is granted (a missed month is not back-filled — the cron runs every 30 minutes).
+ * Only the current period is granted (missed months of the current year are caught up (cumulative target minus already granted) — the cron runs every 30 minutes).
  */
 final readonly class AccrualService
 {
