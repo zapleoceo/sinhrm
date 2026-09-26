@@ -26,6 +26,8 @@ final class ErrorLogTest extends TestCase
     {
         parent::setUp();
         Carbon::setTestNow('2026-10-20 12:00:00');
+        // Other suites' reported exceptions may be committed outside their test transaction (reconnects) — start clean.
+        ErrorEvent::query()->delete();
         Route::middleware('api')->get('api/_test/boom', static function (): never {
             throw new RuntimeException('token bot123456:ABCdef_ghi for ivan.petrenko@example.com, phone +380 67 123 45 67');
         })->name('test.boom');
