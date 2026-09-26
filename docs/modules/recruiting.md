@@ -65,7 +65,7 @@
 | `acquisition_channels`, `channel_utm_rules`, `acquisition_channel_costs` | справочник каналов привлечения, правила UTM, расходы | [acquisition-channels.md](acquisition-channels.md); data-миграция `…200002_seed_channels_from_sources` |
 | `applications` | `candidate_id, vacancy_id, stage_id, status (active\|hired\|rejected), reject_reason_id?, rejected_note, stage_entered_at, last_touch_at, closed_at` | `unique(candidate_id, vacancy_id)` |
 | `stage_changes` | `application_id, from_stage_id? (null = создание), to_stage_id, by_user_id?, reason, at` | маршрут кандидата |
-| `candidate_profile_urls` | `candidate_id, site (linkedin\|work_ua\|djinni\|dou), url (unique)` | ссылки на профили из браузерного расширения; нормализованный URL — ещё один ключ дедупликации (миграция `2026_10_01_100001`) |
+| `candidate_profile_urls` | `candidate_id, site (linkedin\|work_ua\|djinni|dou|robota_ua)\|dou), url (unique)` | ссылки на профили из браузерного расширения; нормализованный URL — ещё один ключ дедупликации (миграция `2026_10_01_100001`) |
 | `touchpoints` | `candidate_id?, application_id?, branch_id?, stage_change_id?, channel, direction (in\|out), author_id?, occurred_at, body, meta (jsonb: duration_sec, recording_url, contact), external_id, via_product, integration_key` | `unique(channel, external_id)` — дедуп повторной доставки (NULL не конфликтуют) |
 | `candidate_screenings` | `application_id, candidate_id, vacancy_id, status (pending\|done\|failed), trigger (manual\|auto), score?, verdict? (fit\|maybe\|no), summary?, strengths/gaps/questions (jsonb), prompt_version, ai_request_id?, error?, requested_by?, completed_at` | ШІ-скринінг (миграция `2026_10_08_100005`); вердикт считает сервер по баллу (≥ 70 / ≥ 40) |
 | view `unmatched_messages` | `SELECT * FROM touchpoints WHERE candidate_id IS NULL` | для SQL/BI; API читает саму таблицу. ⚠ `SELECT *` фиксирует колонки при создании: изменение `touchpoints` потребует пересоздать view в той же миграции |
@@ -188,7 +188,7 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 Эндпоинты `/api/me/extension-token` (сессия) и `/api/clipper/*` (только токен с ability `clipper`, `throttle:clipper` —
 30/мин на токен) — [extension.md](extension.md). Импорт одной страницы (`ClipperService::import`):
 1. `profile_url` проверяется в `ClipCandidateRequest`: https, хост сайта из `source_site` (`linkedin.com`, `work.ua`,
-   `djinni.co`, `dou.ua`, с `www.` или без), без логина/порта → иначе 422; нормализуется (`ClipperSite::normalizeUrl`).
+   `djinni.co`, `dou.ua`, `robota.ua`, с `www.` или без), без логина/порта → иначе 422; нормализуется (`ClipperSite::normalizeUrl`; для Work.ua и Robota.ua срезается языковой префикс).
 2. Поиск: сначала `candidate_profile_urls.url`, затем телефон → e-mail → Telegram (глобально, как везде).
 3. Найден, но не виден пользователю (чужой филиал) → 409 `duplicate_candidate {restricted: true}`, ссылка не привязывается.
    Найден и виден → 200: ссылка привязывается (если новая), заявка на вакансию создаётся (если её ещё нет).
