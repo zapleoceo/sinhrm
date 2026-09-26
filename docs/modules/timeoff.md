@@ -48,6 +48,11 @@
 Единица `hours` у типа сейчас только справочная: запросы считаются в рабочих днях.
 
 ### Расчёты (чистые классы, без БД)
+- `Services/HolidayWorkingCalendar` — реализация общего контракта `Core\Contracts\WorkingCalendar` (привязка в
+  `TimeOffServiceProvider`): `addWorkingDays(from, days, branchId)` и `isWorkingDay(day, branchId)` на тех же правилах
+  (пн–пт минус праздники: общие + филиала). Им пользуются сроки согласований других модулей (сейчас — HiringRequests),
+  чтобы не было второго способа считать рабочие дни. `WorkingCalendar::DEFAULT_SLA_DAYS = 2`.
+- `Support/WorkingDayCalculator::addWorkingDays(from, days, holidays)` — дата + N рабочих дней, время суток сохраняется.
 - `Support/WorkingDayCalculator::days(from, to, halfDay, holidays)` — пн–пт минус праздники; `start`/`end` снимают 0.5 с
   первого/последнего дня, если он рабочий; однодневный полудневный запрос = 0.5; период длиннее 366 дней — исключение
   (`InvalidArgumentException`), а не молча обрезанный подсчёт.
@@ -132,7 +137,7 @@
 одинаковый запрос → один, второе согласование видит баланс после первого),
 `AccrualJobTest` (через `POST /api/ops/jobs/run`: год наперёд идемпотентно и пропорционально, помесячно, 12 помесячных
 запусков = ровно годовая норма, сгорание 1 января,
-без политики — ничего). Unit: `WorkingDayCalculatorTest`, `AccrualCalculatorTest`, `LeaveServicesTest`.
+без политики — ничего). Feature: `WorkingCalendarTest` (праздники общие/филиала). Unit: `WorkingDayCalculatorTest` (в т.ч. пятница → вторник, выходной старт, новый год), `AccrualCalculatorTest`, `LeaveServicesTest`.
 Фронт: `timeoff.spec.ts`.
 
 ## Ограничения и следующие шаги

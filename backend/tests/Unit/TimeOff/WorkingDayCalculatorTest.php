@@ -7,6 +7,7 @@ namespace Tests\Unit\TimeOff;
 use App\Modules\TimeOff\Enums\HalfDay;
 use App\Modules\TimeOff\Support\WorkingDayCalculator;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -52,5 +53,34 @@ final class WorkingDayCalculatorTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         WorkingDayCalculator::days(CarbonImmutable::parse('2000-01-01'), CarbonImmutable::parse('2100-01-01'), HalfDay::None, []);
+    }
+
+    /** @return iterable<string, array{string, int, list<string>, string}> */
+    public static function addCases(): iterable
+    {
+        yield 'monday + 2' => ['2026-10-12 09:00:00', 2, [], '2026-10-14 09:00:00'];
+        yield 'friday + 2 → tuesday' => ['2026-10-16 10:00:00', 2, [], '2026-10-20 10:00:00'];
+        yield 'friday + 1 → monday' => ['2026-10-16 17:30:00', 1, [], '2026-10-19 17:30:00'];
+        yield 'saturday + 1 → monday' => ['2026-10-17 10:00:00', 1, [], '2026-10-19 10:00:00'];
+        yield 'sunday + 2 → tuesday' => ['2026-10-18 10:00:00', 2, [], '2026-10-20 10:00:00'];
+        yield 'friday + 2 with monday holiday → wednesday' => ['2026-10-16 10:00:00', 2, ['2026-10-19'], '2026-10-21 10:00:00'];
+        yield 'holiday on a weekend changes nothing' => ['2026-10-16 10:00:00', 2, ['2026-10-17'], '2026-10-20 10:00:00'];
+        yield 'start day being a holiday is not counted' => ['2026-10-14 10:00:00', 1, ['2026-10-14'], '2026-10-15 10:00:00'];
+        yield 'across new year' => ['2026-12-31 12:00:00', 2, ['2027-01-01'], '2027-01-05 12:00:00'];
+        yield 'zero days' => ['2026-10-17 10:00:00', 0, [], '2026-10-17 10:00:00'];
+    }
+
+    /** @param  list<string>  $holidays */
+    #[DataProvider('addCases')]
+    public function test_add_working_days(string $from, int $days, array $holidays, string $expected): void
+    {
+        $this->assertSame($expected, WorkingDayCalculator::addWorkingDays(Carbon::parse($from), $days, $holidays)->toDateTimeString());
+    }
+
+    public function test_add_working_days_does_not_mutate_the_start(): void
+    {
+        $from = Carbon::parse('2026-10-16 10:00:00');
+        WorkingDayCalculator::addWorkingDays($from, 2, []);
+        $this->assertSame('2026-10-16 10:00:00', $from->toDateTimeString());
     }
 }

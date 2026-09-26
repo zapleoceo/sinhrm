@@ -7,11 +7,12 @@ namespace App\Modules\TimeOff\Support;
 use App\Modules\TimeOff\Enums\HalfDay;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 /**
  * Working days of a leave: Mon–Fri, minus public holidays. A half day takes 0.5 off the first (start) or the last
- * (end) day when that day is a working day; a one-day half-day leave is 0.5. Pure: no DB, no clock.
+ * (end) day when that day is a working day; a one-day half-day leave is 0.5. Also moves a date forward by N working days (approval SLA deadlines). Pure: no DB, no clock.
  * A span over MAX_SPAN_DAYS throws (never a silently truncated count).
  */
 final class WorkingDayCalculator
@@ -40,6 +41,29 @@ final class WorkingDayCalculator
         }
 
         return $dates;
+    }
+
+    /**
+     * $from moved forward by $days working days, time of day kept (Friday 10:00 + 2 → Tuesday 10:00).
+     * Throws when the holidays leave no room within MAX_SPAN_DAYS (never a silently wrong deadline).
+     *
+     * @param  list<string>  $holidays  Y-m-d dates
+     */
+    public static function addWorkingDays(Carbon $from, int $days, array $holidays): Carbon
+    {
+        $skip = array_fill_keys($holidays, true);
+        $day = $from->copy();
+        for ($left = $days, $walked = 0; $left > 0; $walked++) {
+            if ($walked > self::MAX_SPAN_DAYS) {
+                throw new InvalidArgumentException('No working days within '.self::MAX_SPAN_DAYS.' days');
+            }
+            $day = $day->addDay();
+            if (! $day->isWeekend() && ! isset($skip[$day->toDateString()])) {
+                $left--;
+            }
+        }
+
+        return $day;
     }
 
     /** @param  list<string>  $holidays  Y-m-d dates */

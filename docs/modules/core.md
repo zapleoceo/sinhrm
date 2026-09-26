@@ -71,6 +71,15 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 `Http/Controllers/OpsMigrateController`, `Contracts/MigrationRunner` → `Services/ArtisanMigrationRunner`.
 Тест: `tests/Feature/Core/OpsMigrateTest.php`. `APP_ENV` задаётся переменной Vercel: `production` / `preview`.
 
+### Рабочие дни (`Contracts/WorkingCalendar`)
+Один общий календарь рабочих дней для сроков согласований (SLA) всех модулей: рабочий день — пн–пт, если это не
+праздник из TimeOff (общий или праздник филиала). По умолчанию срок согласования — 2 рабочих дня
+(`WorkingCalendar::DEFAULT_SLA_DAYS`). Пример: пятница 10:00 + 2 рабочих дня → вторник 10:00.
+Технически: `addWorkingDays(Carbon $from, int $days, ?int $branchId)` (время суток сохраняется, старт в выходной
+считается со следующего рабочего дня) и `isWorkingDay(Carbon $day, ?int $branchId)`. Реализация —
+`TimeOff\Services\HolidayWorkingCalendar` (привязка в `TimeOffServiceProvider`), модули зависят только от контракта.
+Сейчас используется в HiringRequests ([hiring-requests.md](hiring-requests.md)).
+
 ### Фоновые задачи (`Contracts/ScheduledJob`)
 У vercel-php нет воркеров и постоянных процессов, а cron Vercel Hobby — раз в сутки. Поэтому GitHub Actions
 (`cron.yml`) каждые 30 минут дёргает `POST /api/ops/jobs/run`. Модуль регистрирует задачу так:
