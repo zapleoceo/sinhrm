@@ -45,6 +45,9 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
             @if (c.account_email) {
               <span class="muted">{{ c.account_email }}</span>
             }
+            @if (c.service === 'gmail' && c.connected && !c.can_send) {
+              <span class="notice error">{{ 'google.connect.reconnectToSend' | transloco }}</span>
+            }
           </li>
         }
       </ul>
