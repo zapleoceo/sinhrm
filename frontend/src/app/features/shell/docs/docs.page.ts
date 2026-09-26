@@ -9,15 +9,21 @@ import { catchError, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DocPage, groupDocs, searchDocs, visibleDocs } from './docs.model';
 import { DocsService } from './docs.service';
+import { DocsOverview } from './docs-overview';
 
 /** In-app documentation (/docs, /docs/:slug): plain-language parts of docs/, grouped by module, with search and role filter. */
 @Component({
   selector: 'app-docs-page',
-  imports: [MatFormFieldModule, MatIconModule, MatInputModule, RouterLink, RouterLinkActive, TranslocoPipe],
+  imports: [DocsOverview, MatFormFieldModule, MatIconModule, MatInputModule, RouterLink, RouterLinkActive, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
       <div>
+        @if (slug()) {
+          <nav class="crumbs" [attr.aria-label]="'docs.map.crumbs' | transloco">
+            <a routerLink="/docs" class="back">{{ 'docs.map.back' | transloco }}</a>
+          </nav>
+        }
         <h1>{{ 'docs.title' | transloco }}</h1>
         <p class="muted">{{ 'docs.subtitle' | transloco }}</p>
       </div>
@@ -62,12 +68,14 @@ import { DocsService } from './docs.service';
         } @else if (slug()) {
           <p class="muted">{{ 'docs.notFound' | transloco }}</p>
         } @else {
-          <p class="muted">{{ 'docs.pick' | transloco }}</p>
+          <app-docs-overview [docs]="docs()" />
         }
       </section>
     </div>
   `,
   styles: `
+    .crumbs { font-size: 0.85rem; margin-bottom: 0.25rem; }
+    .back { color: var(--mat-sys-primary); text-decoration: none; }
     .layout { display: grid; grid-template-columns: minmax(14rem, 18rem) 1fr; gap: 1rem; align-items: start; }
     @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
     .toc { padding: 0.75rem; }
