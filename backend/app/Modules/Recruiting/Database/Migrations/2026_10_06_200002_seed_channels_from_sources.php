@@ -83,9 +83,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('candidates')->update(['channel_id' => null, 'added_via' => null]);
-        DB::table('channel_utm_rules')->delete();
-        DB::table('acquisition_channel_costs')->delete();
-        DB::table('acquisition_channels')->delete();
+        // Data migration: intentionally a no-op. Rolling back must never delete admin-entered channels, rules,
+        // costs or candidate attribution; the schema migration's down() drops the tables if really needed.
     }
 };

@@ -95,6 +95,8 @@ final readonly class HiringRequestService
      */
     public function update(User $user, HiringRequest $request, array $data): HiringRequest
     {
+        // canEdit() is already false outside Draft, so a non-Draft request falls through to assertStatus() → 409
+        // ("invalid_status"); in Draft only the requester/HR pass. No write happens on either path.
         abort_unless($this->access->canEdit($user, $request) || $request->status !== HiringRequestStatus::Draft, 403);
         $this->assertStatus($request, [HiringRequestStatus::Draft]);
         $this->requests->update($request, $this->attributes($data + $request->only(['reason', 'replaced_employee_id', 'salary_min', 'salary_max']), false, $data));
@@ -105,6 +107,8 @@ final readonly class HiringRequestService
     /** @throws HiringException */
     public function submit(User $user, HiringRequest $request, ?Carbon $now = null): HiringRequest
     {
+        // canEdit() is already false outside Draft, so a non-Draft request falls through to assertStatus() → 409
+        // ("invalid_status"); in Draft only the requester/HR pass. No write happens on either path.
         abort_unless($this->access->canEdit($user, $request) || $request->status !== HiringRequestStatus::Draft, 403);
         $this->assertStatus($request, [HiringRequestStatus::Draft]);
         $now ??= Carbon::now();
