@@ -63,6 +63,8 @@ export const routes: Routes = [
       { path: 'desk/cases/:id', title: 'titles.deskCase', loadComponent: () => import('./features/desk/case.page').then((m) => m.CasePage) },
       { path: 'safe-speak', title: 'titles.safeSpeak', loadComponent: () => import('./features/safe-speak/report.page').then((m) => m.SafeSpeakPage) },
       { path: 'knowledge', title: 'titles.knowledge', loadComponent: () => import('./features/knowledge/knowledge.page').then((m) => m.KnowledgePage) },
+      { path: 'docs', title: 'titles.docs', loadComponent: () => import('./features/shell/docs/docs.page').then((m) => m.DocsPage) },
+      { path: 'docs/:slug', title: 'titles.docs', loadComponent: () => import('./features/shell/docs/docs.page').then((m) => m.DocsPage) },
       { path: 'knowledge/:id', title: 'titles.article', loadComponent: () => import('./features/knowledge/article.page').then((m) => m.ArticlePage) },
       { path: 'reports/catalog', title: 'titles.reportCatalog', loadComponent: () => import('./features/reports/catalog.page').then((m) => m.ReportCatalogPage) },
       { path: 'reports/catalog/:key', title: 'titles.reportCatalog', loadComponent: () => import('./features/reports/report-view.page').then((m) => m.ReportViewPage) },

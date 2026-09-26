@@ -3,11 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "start": "npm run docs && ng serve",
+    "build": "npm run docs && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "docs": "node scripts/build-docs.mjs",
+    "test:docs": "node --test scripts/build-docs.test.mjs"
   },
   "private": true,
   "packageManager": "npm@11.17.0",
@@ -36,6 +38,7 @@
     "angular-eslint": "22.5.0",
     "eslint": "^10.9.1",
     "jsdom": "^30.0.0",
+    "marked": "^18.0.14",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "8.70.1",
