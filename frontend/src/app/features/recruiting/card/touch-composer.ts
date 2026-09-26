@@ -20,6 +20,8 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
  * "Шаблон" inserts a filled message template of the active scripts (Scripts module) into the text.
  * Messengers (Telegram / WhatsApp / Viber) that are connected (demo or live) also get "Надіслати": the message goes
  * out through the channel (Channels module). If the channel turns out not connected, the composer offers to log it.
+ * E-mail sends through the connected Gmail (optional subject); Gmail connected read-only → a reconnect hint and a
+ * disabled "Надіслати".
  */
 @Component({
   selector: 'app-touch-composer',
@@ -61,10 +63,22 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
           </mat-form-field>
         }
       </div>
+      @if (canSend() && form.controls.channel.value === 'email') {
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>{{ 'channels.composer.subject' | transloco }}</mat-label>
+          <input matInput formControlName="subject" maxlength="255" />
+        </mat-form-field>
+      }
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>{{ 'recruiting.composer.body' | transloco }}</mat-label>
         <textarea matInput formControlName="body" rows="2" maxlength="10000"></textarea>
       </mat-form-field>
+      @if (reconnectToSend()) {
+        <p class="fallback" role="status">
+          <mat-icon>sync_problem</mat-icon>
+          <span class="grow">{{ 'channels.composer.reconnectGmail' | transloco }}</span>
+        </p>
+      }
       @if (notConnected()) {
         <p class="fallback" role="status">
           <mat-icon>link_off</mat-icon>
@@ -80,6 +94,12 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
           <button mat-flat-button type="button" [disabled]="busy() || !sendable()" (click)="send()">
             <mat-icon>send</mat-icon>
             {{ (sendMode() === 'demo' ? 'channels.composer.sendDemo' : 'channels.composer.send') | transloco }}
+          </button>
+        } @else if (reconnectToSend()) {
+          <button mat-stroked-button type="submit" [disabled]="busy() || !valid()">{{ 'recruiting.composer.submit' | transloco }}</button>
+          <button mat-flat-button type="button" disabled>
+            <mat-icon>send</mat-icon>
+            {{ 'channels.composer.send' | transloco }}
           </button>
         } @else {
           <button mat-flat-button type="submit" [disabled]="busy() || !valid()">{{ 'recruiting.composer.submit' | transloco }}</button>
@@ -111,6 +131,7 @@ export class TouchComposer implements OnInit {
     channel: ['note' as Channel],
     direction: ['out' as Direction],
     body: [''],
+    subject: [''],
     minutes: [null as number | null],
   });
   /** The last send failed with channel_not_connected: offer to log the touch by hand. */
@@ -126,6 +147,11 @@ export class TouchComposer implements OnInit {
   protected sendMode(): 'off' | 'demo' | 'live' {
     const channel = this.channel();
     return SEND_CHANNELS.includes(channel) ? this.channelsApi.modeOf(channel) : 'off';
+  }
+
+  /** E-mail chosen while Gmail is connected read-only (no gmail.send): sending needs a reconnect. */
+  protected reconnectToSend(): boolean {
+    return this.channel() === 'email' && this.channelsApi.reasonOf('email') === 'reconnect_to_send';
   }
 
   protected canSend(): boolean {
@@ -147,7 +173,7 @@ export class TouchComposer implements OnInit {
   }
 
   reset(): void {
-    this.form.patchValue({ body: '', minutes: null });
+    this.form.patchValue({ body: '', subject: '', minutes: null });
     this.busy.set(false);
     this.notConnected.set(false);
   }
@@ -163,7 +189,12 @@ export class TouchComposer implements OnInit {
       return;
     }
     this.busy.set(true);
-    this.sent.emit({ channel: this.channel() as SendChannel, text: this.form.controls.body.value.trim() });
+    const message: SendMessage = { channel: this.channel() as SendChannel, text: this.form.controls.body.value.trim() };
+    const subject = this.form.controls.subject.value.trim();
+    if (message.channel === 'email' && subject) {
+      message.subject = subject;
+    }
+    this.sent.emit(message);
   }
 
   /** Appends the template to the text (a blank line between it and what was typed before). */

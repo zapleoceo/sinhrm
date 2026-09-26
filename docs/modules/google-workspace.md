@@ -2,7 +2,8 @@
 
 ## Что это и зачем
 SinHRM умеет работать с **одним Google-аккаунтом компании** (например, общим ящиком рекрутинга):
-- **Gmail** — читать входящие письма (их разбирает [почтовый агент](mail-agent.md)) и в будущем отправлять;
+- **Gmail** — читать входящие письма (их разбирает [почтовый агент](mail-agent.md)) и отправлять письма кандидатам и
+  сотрудникам (кнопка «Надіслати» в карточке кандидата, шаг воркфлоу «Лист»);
 - **Календарь** — из карточки кандидата создать встречу (онлайн — сразу со ссылкой Google Meet);
 - **Таблицы** — загрузить кандидатов из Google-таблицы (например, ответы Google Form или выгрузку рекламы).
 
@@ -19,6 +20,12 @@ SinHRM умеет работать с **одним Google-аккаунтом к�
 **Если Google отозвал доступ** (пароль сменили, доступ отозван, или истекли 7 дней в режиме Testing — см. ниже) —
 на главной у суперадмина появится предупреждение «Google (…) потребує перепідключення», а статус сервиса станет «Помилка».
 Нужно снова нажать «Перепідключити».
+
+**Письма.** Письмо уходит от имени подключённого ящика. Если Google подключали **до того, как появилась отправка**
+(тогда просили только чтение), почта продолжает читаться, но отправлять нельзя: в карточке кандидата на канале «E-mail»
+видно «Перепідключіть Google, щоб надсилати листи», кнопка «Надіслати» неактивна, а на странице интеграций у Gmail —
+подсказка нажать «Перепідключити». После повторного согласия (с галочкой «отправка») всё работает. Чтобы ящик не забанили
+за спам, из системы уходит **не больше 60 писем в час** на весь ящик; сверх этого — «Забагато листів за годину».
 
 **Встреча (рекрутер, админ, суперадмин — для кандидатов, которых он видит):** карточка кандидата → **«Запланувати
 зустріч»** → дата, время, длительность, формат «Онлайн (Google Meet)» или «У філії» (+ место), заметки, галочка «Додати
@@ -39,7 +46,7 @@ SinHRM умеет работать с **одним Google-аккаунтом к�
    `GOOGLE_CLIENT_ID`) → Authorized redirect URIs: `https://sinhrm.vercel.app/api/google/connect/callback`.
    Без этого Google покажет `redirect_uri_mismatch`. Адрес также виден на странице интеграций (подсказка под кнопкой).
 2. **Включить API** в том же проекте Google Cloud: Gmail API, Google Calendar API, Google Sheets API.
-3. **OAuth consent screen**: добавить scopes `gmail.readonly` (только чтение — агент почту не отправляет), `calendar.events`, `spreadsheets.readonly`
+3. **OAuth consent screen**: добавить scopes `gmail.readonly` (чтение для почтового агента), `gmail.send` (отправка писем), `calendar.events`, `spreadsheets.readonly`
    (они «sensitive/restricted»). Пока приложение в режиме **Testing**, аккаунт ящика должен быть в списке test users, а
    **refresh token живёт 7 дней** — раз в неделю нужно «Перепідключити» (система предупредит на главной). Чтобы снять
    ограничение — перевести приложение в Production (для Gmail-scopes Google требует верификацию).
@@ -56,8 +63,10 @@ SinHRM умеет работать с **одним Google-аккаунтом к�
   `google_error=consent_denied`. Иначе `Services/GoogleConnectService::complete()` меняет код на токены
   (`POST https://oauth2.googleapis.com/token`, `grant_type=authorization_code`, **тот же OAuth-клиент, что и вход** —
   `config('services.google')`, redirect URI — `services.google.connect_redirect`, env `GOOGLE_CONNECT_REDIRECT_URI`, по
-  умолчанию prod-адрес выше). Сервис считается подключённым, только если **все** его scopes есть в ответе `scope`;
-  иначе он попадает в `missing` → `?connected=google&missing=calendar`. E-mail аккаунта берётся из `id_token` (получен
+  умолчанию prod-адрес выше). Сервис считается подключённым, только если все его **обязательные** scopes
+  (`GoogleService::requiredScopes()`) есть в ответе `scope`; в `settings.scopes` пишется то, что реально выдано. У Gmail
+  `gmail.send` необязателен: без него почта читается, а отправка выключена (`ConnectionState::canSend()`, поле `can_send`
+  в `/api/google/status`). Иначе сервис попадает в `missing` → `?connected=google&missing=calendar`. E-mail аккаунта берётся из `id_token` (получен
   напрямую от Google по TLS, подпись не перепроверяется — используется только как подпись в интерфейсе).
 - В URL и лог попадают только коды (`google.connect_failed {code}`), никогда код авторизации или токены.
 
@@ -92,6 +101,27 @@ google_unreachable | google_bad_response` (`Exceptions/GoogleException`, тел�
 | `Services/GoogleGmailClient` (`Contracts/GmailClient`) | `GET /gmail/v1/users/me/messages?q=…&maxResults=…`, `GET …/messages/{id}?format=full` → `DTO/GmailMessage` (From, Subject, текст через `Support/MimeText`: предпочтительно `text/plain`, иначе HTML → текст без `script/style`, ссылки сохраняются; base64url, перекодировка charset) |
 | `Services/GoogleCalendarClient` (`Contracts/CalendarClient`) | `POST /calendar/v3/calendars/primary/events?conferenceDataVersion=1|0&sendUpdates=none`; онлайн — `conferenceData.createRequest {requestId: uuid, conferenceSolutionKey: hangoutsMeet}` |
 | `Services/GoogleSheetsClient` (`Contracts/SheetsClient`) | `GET /v4/spreadsheets/{id}/values/{A1-range}?majorDimension=ROWS` |
+| `Services/GmailMailer` (`Contracts/Mailer`) | `POST /gmail/v1/users/me/messages/send {raw, threadId?}` — см. «Отправка писем» ниже |
+
+### Отправка писем (`Contracts/Mailer` → `Services/GmailMailer`)
+Простыми словами: другие модули говорят «отправь письмо такому-то адресату с такой темой и текстом», а этот класс
+собирает письмо и отдаёт его Gmail. Сами тексты писем в код не зашиты — их пишет рекрутер в карточке или админ в шаге
+воркфлоу (хранятся в БД).
+- `state()` без запросов в сеть: `ready` | `not_connected` (Gmail не подключён) | `reconnect_to_send` (подключён без
+  `gmail.send`). `send()` в последних двух случаях — `google_gmail_not_connected` (422) / `gmail_send_scope_missing` (409).
+- Письмо (`Support/MimeMessage`, RFC 2822): `To`, `Subject`, `MIME-Version`, `multipart/alternative` из `text/plain` и
+  `text/html` (оба base64, UTF-8). `From` не пишем — Gmail ставит адрес подключённого ящика. Тема и имя с не-ASCII —
+  RFC 2047 `=?UTF-8?B?…?=`, куски режутся по границе символа. **HTML — только экранированный текст** (`htmlspecialchars`
+  + `<br>`), разметка пользователя никогда не уходит как HTML. CR/LF и управляющие символы в заголовках вырезаются
+  (защита от подстановки `Bcc:`), адрес проверяется `FILTER_VALIDATE_EMAIL`, иначе `invalid_mail` (422).
+- Ответ в ветку: `OutgoingMail::threadId` → `threadId` в запросе, `inReplyTo` (Message-ID письма кандидата, только
+  вида `<…@…>`) → заголовки `In-Reply-To` и `References`.
+- Лимит: `GmailMailer::MAX_PER_HOUR = 60` писем в час на ящик (атомарный счётчик `RateLimiter::hit()` — без гонки «проверил, потом посчитал»; ключ
+  `google:gmail-send`) → `gmail_send_rate_limited` (429) + запись `gmail_send_rate_limited` в журнал интеграции.
+- Безопасность: хост — константа, редиректы запрещены, таймауты 15/5 с (всё через `Support/GoogleApi`), токен берётся из
+  `SecretVault`, в журнал попадает только код ошибки (`gmail_send_failed {code}`), не тело ответа Google и не токен.
+- Входящие письма почтового агента теперь сохраняют в `meta` касания `gmail_thread` (threadId) и `message_id` (заголовок
+  `Message-ID`) — для ответа в ту же ветку (`GoogleGmailClient::get`, `DTO/GmailMessage::threadId|messageId`).
 
 ### Встречи (`Services/MeetingService`, `Http/Controllers/MeetingController`)
 `POST /api/google/candidates/{candidate}/meetings` `{title, start (ISO 8601 с часовым поясом), duration_minutes 15..480,
@@ -149,9 +179,15 @@ e-mail / Telegram (глобально) — **matched**, иначе **created** (
 - `MeetingTest` — не подключён (422, без запросов); онлайн: `conferenceDataVersion=1`, `sendUpdates=none`, Meet,
   участники, касание с `meta`; «в филиале» без конференции; доступ (чужой филиал, viewer); валидация; ошибка Google → 502
   без касания.
+- `GmailSendTest` — Gmail не подключён / подключён только на чтение (`reason: reconnect_to_send` в `/api/channels`,
+  422 без запросов к Google); отправка: адрес, заголовок авторизации, тема в RFC 2047, `<script>` только экранированным,
+  касание `email/out` с `external_id` и `gmail_thread`, токены не в логах; ответ в ветку (`threadId`, `In-Reply-To`,
+  `References`, «Re: тема»); ошибка Google → 502 `send_failed` без касания; кандидат без e-mail → `invalid_recipient`;
+  лимит 60/час → 429 `rate_limited`. `GoogleConnectTest`: `gmail.send` в запросе, `can_send`, согласие только на чтение.
 - `SheetsImportTest` — доступ; URL; inspect + предложенное сопоставление; импорт (создан / найден / пропущен / ошибка
   строки / вакансия), отчёт без значений; повторный запуск только новых строк; PATCH; `sheets.sync`.
-- Unit: `tests/Unit/GoogleWorkspace/GoogleSupportTest` (MIME, HTML → текст, адреса, URL таблицы, диапазоны, подсказки
+- Unit: `tests/Unit/GoogleWorkspace/MimeMessageTest` (RFC 2047 по символам, подстановка заголовков, неверный адрес,
+  экранированный HTML, base64url); `tests/Unit/GoogleWorkspace/GoogleSupportTest` (MIME, HTML → текст, адреса, URL таблицы, диапазоны, подсказки
   колонок, `id_token`).
 
 Фронт: `google.spec.ts`. Вручную на prod (нужны шаги владельца выше): Інтеграції → «Підключити Google» → согласие →

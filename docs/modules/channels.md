@@ -6,7 +6,8 @@
 кандидат, касание попадает в его ленту; если нет — во «Вхідні», где его привязывают одним кликом. Дальше вся переписка
 этого чата сама идёт к тому же кандидату.
 
-Из карточки можно **отправить** сообщение в Telegram / WhatsApp / Viber: оно уходит через подключённый канал и сразу
+Из карточки можно **отправить** сообщение в Telegram / WhatsApp / Viber, а также **письмо на e-mail** кандидата
+(через подключённый Gmail — см. [google-workspace.md](google-workspace.md#отправка-писем-contractsmailer--servicesgmailmailer)): оно уходит через подключённый канал и сразу
 появляется в ленте. Если канал не подключён — система так и скажет и предложит «Записати вручну».
 
 Пока токенов нет, канал можно перевести в режим **«Демо»**: кнопка «Демо-подія» создаёт правдоподобное входящее сообщение
@@ -106,8 +107,8 @@ Ringostat станет доступен только после появлени
 |---|---|---|---|
 | `POST /api/webhooks/{key}` | провайдер (подпись) | формат провайдера | 200 `acknowledge()`; неизвестный ключ / выключено → 404; подпись → 403; > 1 МБ → 413 |
 | `GET /api/webhooks/{key}` | Meta (verify token) | `hub.*` | 200 `text/plain` challenge; иначе 403/404 |
-| `GET /api/channels` | любой активный | — | `{data: [{key, channel, mode}]}` для мессенджеров и телефонии |
-| `POST /api/candidates/{id}/messages` | `CandidatePolicy::update` | `{channel: telegram\|whatsapp\|viber, text ≤ 4096, application_id?}` | 201 касание; 422 `channel_not_connected \| no_conversation \| template_required \| invalid_recipient \| application_mismatch`; 502 `send_failed` |
+| `GET /api/channels` | любой активный | — | `{data: [{key, channel, mode, reason?}]}` для мессенджеров, телефонии и e-mail (`google_gmail`: `live`, если Gmail подключён с `gmail.send`, иначе `off` и `reason: not_connected \| reconnect_to_send`) |
+| `POST /api/candidates/{id}/messages` | `CandidatePolicy::update` | `{channel: telegram\|whatsapp\|viber\|email, text ≤ 4096, application_id?, subject? ≤ 255 (только email)}` | 201 касание; 422 `channel_not_connected \| no_conversation \| template_required \| invalid_recipient \| application_mismatch`; 429 `rate_limited` (email, > 60 писем/час на ящик); 502 `send_failed` |
 | `POST /api/candidates/{id}/call` | `CandidatePolicy::update` | — | 202 `{status: requested, integration}`; 422 `telephony_not_connected \| click_to_call_unsupported \| no_phone`; сам звонок придёт вебхуком |
 | `GET /api/channels/admin` | суперадмин | — | `{data: [{key, channel, mode, webhook_url, auth, can_register, can_send, can_call, handshake}]}` |
 | `POST /api/channels/{key}/register-webhook` | суперадмин | — | `{data: {registered: true}}`; 422 `channel_off \| unsupported \| channel_not_connected`; 502 `send_failed` (старый секрет сохраняется) |

@@ -37,7 +37,8 @@ trait GoogleFixtures
     }
 
     /** Stores a grant as the callback would; the access token is valid for an hour unless $expired. */
-    protected function connectGoogle(GoogleService $service, int $userId, bool $expired = false): void
+    /** @param  list<string>|null  $scopes  granted scopes (default: everything the service asks for) */
+    protected function connectGoogle(GoogleService $service, int $userId, bool $expired = false, ?array $scopes = null): void
     {
         $this->app->make(GoogleConnectionStore::class)->connect(
             $service,
@@ -45,7 +46,7 @@ trait GoogleFixtures
             self::ACCESS_TOKEN,
             $expired ? Carbon::now()->subMinute() : Carbon::now()->addHour(),
             'recruiting-box@example.test',
-            $service->scopes(),
+            $scopes ?? $service->scopes(),
             $userId,
         );
     }

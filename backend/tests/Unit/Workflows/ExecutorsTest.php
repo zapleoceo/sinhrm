@@ -9,6 +9,7 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\GoogleWorkspace\Contracts\CalendarClient;
 use App\Modules\GoogleWorkspace\DTO\MeetingData;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
+use App\Modules\GoogleWorkspace\Support\MimeText;
 use App\Modules\Integrations\Contracts\HostResolver;
 use App\Modules\People\Models\Employee;
 use App\Modules\Workflows\DTO\StepContext;
@@ -22,6 +23,7 @@ use App\Modules\Workflows\Services\AssigneeResolver;
 use App\Modules\Workflows\Support\ExecutorRegistry;
 use App\Modules\Workflows\Support\WebhookSecrets;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\Support\FakeHostResolver;
@@ -92,16 +94,56 @@ final class ExecutorsTest extends TestCase
         $this->assertSame(['new.person@example.test', 'hr@example.test'], $call['attendees']);
     }
 
-    public function test_connected_gmail_is_still_read_only(): void
+    public function test_read_only_gmail_asks_to_reconnect(): void
     {
         $this->configureGoogleClient();
         $admin = User::factory()->withRole(UserRole::Admin)->create();
-        $this->connectGoogle(GoogleService::Gmail, $admin->id);
+        $this->connectGoogle(GoogleService::Gmail, $admin->id, scopes: GoogleService::Gmail->requiredScopes());
+        Http::fake();
 
         $outcome = $this->app->make(ExecutorRegistry::class)->for(StepAction::SendEmailTemplate)
             ->execute($this->context(new StepSnapshot('Mail', StepAction::SendEmailTemplate, 0, AssigneeRule::HrAdmin, null, ['subject' => 's', 'body' => 'b'])));
 
-        $this->assertSame(['reason' => 'send_not_supported'], $outcome->result);
+        $this->assertSame(['reason' => 'reconnect_to_send'], $outcome->result);
+        Http::assertNothingSent();
+    }
+
+    public function test_send_email_step_sends_through_gmail(): void
+    {
+        $this->configureGoogleClient();
+        $admin = User::factory()->withRole(UserRole::Admin)->create();
+        $this->connectGoogle(GoogleService::Gmail, $admin->id);
+        Http::preventStrayRequests();
+        Http::fake(['gmail.googleapis.com/*' => Http::response(['id' => 'sent-1', 'threadId' => 'thr-1'])]);
+        $snapshot = new StepSnapshot('Mail', StepAction::SendEmailTemplate, 0, AssigneeRule::HrAdmin, null, ['subject' => 'Вітаємо, {{name}}', 'body' => 'Перший день <b>завтра</b>']);
+
+        $outcome = $this->app->make(ExecutorRegistry::class)->for(StepAction::SendEmailTemplate)
+            ->execute($this->context($snapshot, null, ['full_name' => 'Олена Тест', 'work_email' => 'Olena@Example.test']));
+
+        $this->assertSame('done', $outcome->status->value);
+        $this->assertSame(['message_id' => 'sent-1'], $outcome->result);
+        Http::assertSent(function (Request $r): bool {
+            $raw = MimeText::decodeBase64Url((string) $r['raw']);
+
+            return $r->url() === 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send'
+                && str_contains($raw, 'To: =?UTF-8?B?')
+                && str_contains($raw, '<olena@example.test>')
+                && str_contains($raw, 'Subject: =?UTF-8?B?'.base64_encode('Вітаємо, Олена Тест').'?=')
+                && str_contains((string) base64_decode($this->htmlPart($raw)), '&lt;b&gt;завтра&lt;/b&gt;');
+        });
+    }
+
+    public function test_send_email_step_without_recipient_is_skipped(): void
+    {
+        $this->configureGoogleClient();
+        $admin = User::factory()->withRole(UserRole::Admin)->create();
+        $this->connectGoogle(GoogleService::Gmail, $admin->id);
+        Http::fake();
+
+        $outcome = $this->app->make(ExecutorRegistry::class)->for(StepAction::SendEmailTemplate)
+            ->execute($this->context(new StepSnapshot('Mail', StepAction::SendEmailTemplate, 0, AssigneeRule::HrAdmin, null, ['subject' => 's', 'body' => 'b']), null, ['work_email' => null, 'personal_email' => null]));
+
+        $this->assertSame(['reason' => 'no_recipient'], $outcome->result);
         Http::assertNothingSent();
     }
 
@@ -154,5 +196,14 @@ final class ExecutorsTest extends TestCase
         ]);
 
         return new StepContext($run, $step, $snapshot, $employee, $now);
+    }
+
+    /** Base64 body of the HTML part of a raw MIME message. */
+    private function htmlPart(string $raw): string
+    {
+        $rest = substr($raw, (int) strpos($raw, 'Content-Type: text/html'));
+        $start = (int) strpos($rest, "\r\n\r\n") + 4;
+
+        return str_replace("\r\n", '', substr($rest, $start, (int) strpos($rest, "\r\n--", $start) - $start));
     }
 }

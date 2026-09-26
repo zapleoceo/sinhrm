@@ -4,15 +4,17 @@ export type ChannelMode = 'off' | 'demo' | 'live';
 /** Mirrors backend App\Modules\Channels\Enums\WebhookAuth. */
 export type WebhookAuth = 'header_secret' | 'hmac' | 'query_token';
 
-/** Timeline channels that can be sent from the candidate card (backend SendMessageRequest::CHANNELS). */
-export type SendChannel = 'telegram' | 'whatsapp' | 'viber';
-export const SEND_CHANNELS: readonly string[] = ['telegram', 'whatsapp', 'viber'];
+/** Timeline channels that can be sent from the candidate card (backend SendMessageRequest::CHANNELS). E-mail = connected Gmail. */
+export type SendChannel = 'telegram' | 'whatsapp' | 'viber' | 'email';
+export const SEND_CHANNELS: readonly string[] = ['telegram', 'whatsapp', 'viber', 'email'];
 
 /** Item of GET /api/channels (any active user): what the card can do now. */
 export interface ChannelAvailability {
   key: string;
   channel: string;
   mode: ChannelMode;
+  /** E-mail only, when off: not_connected | reconnect_to_send (Gmail connected read-only). */
+  reason?: string | null;
 }
 
 /** Item of GET /api/channels/admin (superadmin): webhook info for the Integrations page. */
@@ -33,6 +35,8 @@ export interface SendMessage {
   channel: SendChannel;
   text: string;
   application_id?: number;
+  /** E-mail only; empty → "Re: <last mail subject>" on the server. */
+  subject?: string;
 }
 
 /** Body of POST /api/channels/{key}/simulate. */
@@ -61,4 +65,5 @@ export const CHANNEL_ERROR_CODES = [
   'channel_off',
   'unsupported',
   'application_mismatch',
+  'rate_limited',
 ] as const;

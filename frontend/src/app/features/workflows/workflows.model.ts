@@ -172,6 +172,9 @@ export const WORKFLOW_ERROR_CODES = ['depth_limit', 'run_not_running', 'step_not
 export const STEP_RESULT_CODES = [
   'not_connected',
   'send_not_supported',
+  'reconnect_to_send',
+  'no_recipient',
+  'rate_limited',
   'no_manager',
   'no_assignee',
   'missing_secret',

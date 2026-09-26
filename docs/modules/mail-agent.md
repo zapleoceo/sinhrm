@@ -87,7 +87,9 @@ cvUrl}`; нет ни телефона, ни e-mail → `parse_failed`. Вака�
 - Нашлась → `CandidateService::createOrMatch()` (совпадение по телефону/e-mail/Telegram — тот же кандидат; иначе новый,
   источник по парсеру: `work_ua | robota_ua | djinni | other`, способ добавления `added_via = mail`, канал привлечения — по
   UTM или источнику, [acquisition-channels.md](acquisition-channels.md)) → заявка на первом этапе с датой письма (если ещё нет) →
-  касание e-mail (тема + текст, до 5000 символов; в `meta`: `subject, from, full_name, vacancy_title, cv_url, parser`) →
+  касание e-mail (тема + текст, до 5000 символов; в `meta`: `subject, from, full_name, vacancy_title, cv_url, parser`, а также `gmail_thread` и `message_id` —
+  чтобы ответ из карточки ушёл в ту же ветку Gmail; ветка **не** используется для поиска кандидата: сайты вакансий кладут
+  разных кандидатов в одну ветку) →
   если заявка новая — задача `Scripts\Services\TaskService::scheduleNewApplicantCall()` рекрутеру вакансии →
   `application`.
 - Не нашлась → кандидат **не создаётся**: касание с разобранными полями в `meta` уходит во «Вхідні» (или в карточку, если
