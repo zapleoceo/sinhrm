@@ -175,6 +175,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/users/users.page').then((m) => m.UsersPage),
       },
       {
+        path: 'admin/audit',
+        title: 'titles.audit',
+        canActivate: [roleGuard('superadmin')],
+        loadComponent: () => import('./features/audit/audit.page').then((m) => m.AuditPage),
+      },
+      {
         path: 'admin/timeoff',
         title: 'titles.timeoffSettings',
         canActivate: [roleGuard(...HR_STAFF_ROLES)],

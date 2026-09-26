@@ -6,6 +6,7 @@ use App\Modules\Auth\Http\Middleware\EnsureUserIsActive;
 use App\Modules\Recruiting\Http\Controllers\AcquisitionChannelController;
 use App\Modules\Recruiting\Http\Controllers\ApplicationController;
 use App\Modules\Recruiting\Http\Controllers\CandidateController;
+use App\Modules\Recruiting\Http\Controllers\CandidateHistoryController;
 use App\Modules\Recruiting\Http\Controllers\ExtensionController;
 use App\Modules\Recruiting\Http\Controllers\InboxController;
 use App\Modules\Recruiting\Http\Controllers\PipelineController;
@@ -57,6 +58,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     Route::patch('candidates/{candidate}', [CandidateController::class, 'update'])->whereNumber('candidate')->name('recruiting.candidates.update');
     Route::get('candidates/{candidate}/timeline', [CandidateController::class, 'timeline'])
         ->whereNumber('candidate')->name('recruiting.candidates.timeline');
+    Route::get('candidates/{candidate}/history', CandidateHistoryController::class)
+        ->whereNumber('candidate')->name('recruiting.candidates.history');
     Route::post('candidates/{candidate}/touchpoints', [CandidateController::class, 'logTouch'])
         ->whereNumber('candidate')->name('recruiting.candidates.touchpoints');
 
