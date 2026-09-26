@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: read # gate: labels of the PR
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
