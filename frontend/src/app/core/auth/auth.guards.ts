@@ -1,7 +1,8 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateChildFn, CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { UserRole } from './auth.model';
+import { moduleForUrl } from './module-map';
 
 /** Signed-in users only; guests go to /login. */
 export const authGuard: CanActivateFn = async () => {
@@ -30,4 +31,16 @@ export const guestGuard: CanActivateFn = async () => {
   const router = inject(Router);
   await auth.load();
   return auth.isLoggedIn() ? router.createUrlTree(['/']) : true;
+};
+
+/**
+ * Pages of a switched-off (or role-restricted) module open the friendly "Розділ вимкнено" page instead.
+ * The API enforces the same rule (403 module_disabled / module_forbidden); this only avoids a broken page.
+ */
+export const moduleGuard: CanActivateChildFn = async (_route, state) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  await auth.load();
+  const module = moduleForUrl(state.url);
+  return module === null || auth.hasModule(module) ? true : router.createUrlTree(['/module-off'], { queryParams: { module } });
 };

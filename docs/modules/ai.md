@@ -350,3 +350,7 @@ AIB_PROJECT_KEY=<ключ, только в своей оболочке> php arti
 - `tests/Feature/Scripts/AiEvaluationTest`, `tests/Feature/MailAgent/MailAiTest`, `tests/Feature/Recruiting/ScreeningApiTest`,
   `tests/Unit/Ai/AiSupportTest`, `tests/Unit/Scripts/EvaluationServiceTest`.
 - Фронт: `features/ai/ai.spec.ts`. Живой брокер в тестах не вызывается (`Http::fake`, ключ `synthetic-…`).
+
+## Доступ к модулю
+
+Ключ модуля `ai`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — только суперадмин. Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Если выключить, задача `ai.poll` не запускается, а ИИ-функции других модулей ведут себя как при выключенном AI. Подробнее — [modules-access.md](modules-access.md).

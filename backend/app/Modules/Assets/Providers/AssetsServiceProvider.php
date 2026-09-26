@@ -19,6 +19,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class AssetsServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'devices';
+
+    protected string $moduleGroup = 'admin';
+
     /** Inventory, assign/return: superadmin, admin (HR). */
     public const string MANAGE = 'assets-manage';
 

@@ -14,14 +14,14 @@ const USER = { id: 7, name: 'U', email: 'u@example.com', avatar_url: null, local
 const logout = vi.fn().mockResolvedValue(undefined);
 const langUse = vi.fn().mockResolvedValue(undefined);
 
-async function setup(): Promise<{ el: HTMLElement; router: Router; detect: () => Promise<void> }> {
+async function setup(modules?: string[]): Promise<{ el: HTMLElement; router: Router; detect: () => Promise<void> }> {
   logout.mockClear();
   langUse.mockClear();
   TestBed.configureTestingModule({
     imports: [ShellLayout, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     providers: [
       provideRouter([{ path: '**', component: Blank }]),
-      { provide: AuthService, useValue: { user: signal(USER), logout } },
+      { provide: AuthService, useValue: { user: signal(USER), logout, hasModule: (k: string) => modules === undefined || modules.includes(k) } },
       { provide: LanguageService, useValue: { current: signal('uk'), use: langUse } },
     ],
   });
@@ -128,5 +128,27 @@ describe('ShellLayout user menu in sidebar footer', () => {
     await detect();
     expect(logout).toHaveBeenCalled();
     expect(nav).toHaveBeenCalledWith('/login');
+  });
+});
+
+describe('ShellLayout module access', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('hides items of unavailable modules and a group with none left', async () => {
+    const { el } = await setup(['core', 'people', 'time', 'desk']);
+    const links = [...el.querySelectorAll('a.nav-link')].map((a) => a.getAttribute('href'));
+    expect(links).toContain('/people');
+    expect(links).toContain('/time');
+    expect(links).not.toContain('/timeoff');
+    expect(links).not.toContain('/knowledge');
+    expect(header(el, 'recruiting')).toBeNull();
+    expect(header(el, 'perform')).toBeNull();
+    expect(header(el, 'people')).not.toBeNull();
+  });
+
+  it('shows everything when every module is available', async () => {
+    const { el } = await setup();
+    expect(header(el, 'recruiting')).not.toBeNull();
+    expect(el.querySelector('a[href="/candidates"]')).not.toBeNull();
   });
 });

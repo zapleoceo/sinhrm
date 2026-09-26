@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\Route;
  */
 final class SafeSpeakServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'shield';
+
+    protected string $moduleGroup = 'services';
+
     /** Read and answer reports: active superadmin/admin with users.safe_speak_handler = true. */
     public const string HANDLE = 'safe-speak-handle';
 
@@ -42,7 +46,7 @@ final class SafeSpeakServiceProvider extends ModuleServiceProvider
         Gate::define(self::HANDLE, fn (User $user): bool => $this->app->make(SafeSpeakService::class)->isHandler($user));
 
         if (! $this->app->routesAreCached()) {
-            Route::prefix('api/safe-speak/public')->middleware(ForceJson::class)->group($this->moduleDir().'/routes.public.php');
+            Route::prefix('api/safe-speak/public')->middleware([ForceJson::class, ...$this->accessMiddleware()])->group($this->moduleDir().'/routes.public.php');
         }
     }
 }

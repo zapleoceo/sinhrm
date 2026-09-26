@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Gate;
 
 final class UsersServiceProvider extends ModuleServiceProvider
 {
+    protected bool $coreModule = true;
+
     /** Ability guarding the users admin. Only superadmin for now (admin role will get it later). */
     public const string MANAGE_USERS = 'manage-users';
 

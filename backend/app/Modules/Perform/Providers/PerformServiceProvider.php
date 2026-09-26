@@ -28,6 +28,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class PerformServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'flag';
+
+    protected string $moduleGroup = 'perform';
+
     /** Review setup (scales, competencies, cycles), 1:1 templates: superadmin, admin. */
     public const string MANAGE = 'perform-manage';
 

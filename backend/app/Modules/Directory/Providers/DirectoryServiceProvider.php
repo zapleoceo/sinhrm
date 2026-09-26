@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Gate;
 
 final class DirectoryServiceProvider extends ModuleServiceProvider
 {
+    protected bool $coreModule = true;
+
     /** Create/edit/disable dictionary items: active superadmin or admin. */
     public const string MANAGE_DIRECTORY = 'manage-directory';
 

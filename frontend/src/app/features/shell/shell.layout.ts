@@ -11,7 +11,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { LanguageSwitcher } from './language-switcher';
-import { NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
+import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
 
 /** App frame for signed-in users: sidebar navigation with a pinned footer (help link + user menu). */
 @Component({
@@ -69,6 +69,16 @@ export class ShellLayout {
       // untracked: only navigation re-runs this, so the user can still fold the current group.
       if (group && !untracked(this.expanded).has(group)) this.setExpanded(group, true);
     });
+  }
+
+  /** Module is switched on and allowed for the user (hidden otherwise, docs/modules/modules-access.md). */
+  protected can(module: string): boolean {
+    return this.auth.hasModule(module);
+  }
+
+  /** A group is shown while at least one of its modules is available. */
+  protected groupVisible(group: NavGroupId): boolean {
+    return NAV_GROUP_MODULES[group].some((m) => this.auth.hasModule(m));
   }
 
   protected isOpen(group: NavGroupId): boolean {

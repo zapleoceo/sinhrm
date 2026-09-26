@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class HiringRequestsServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'assignment_add';
+
+    protected string $moduleGroup = 'recruiting';
+
     /** Settings, vacancy link, closing: superadmin, admin (HR). */
     public const string MANAGE = 'hiring-manage';
 

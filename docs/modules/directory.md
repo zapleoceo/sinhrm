@@ -89,3 +89,7 @@ if ($ids !== null) {
 ```bash
 curl -i "https://sinhrm.vercel.app/api/directory/branches?perPage=20"   # без сессии → 401
 ```
+
+## Доступ к модулю
+
+Ключ модуля `directory`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).

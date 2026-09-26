@@ -13,6 +13,15 @@ const GROUP_PREFIXES: Readonly<Record<NavGroupId, readonly string[]>> = {
   admin: ['/desk/queue', '/safe-speak/inbox', '/admin', '/status'],
 };
 
+/** Modules whose pages sit in each group: a group with none of them available is hidden (modules-access.md). */
+export const NAV_GROUP_MODULES: Readonly<Record<NavGroupId, readonly string[]>> = {
+  recruiting: ['recruiting', 'hiring-requests'],
+  people: ['people', 'time-off', 'time', 'documents', 'workflows'],
+  perform: ['perform', 'pulse'],
+  services: ['desk', 'knowledge', 'safe-speak', 'reports'],
+  admin: ['core'],
+};
+
 /** Group that contains the given URL, or null for top-level pages (Overview, Tasks, profile…). */
 export function groupForUrl(url: string): NavGroupId | null {
   const path = url.split(/[?#]/)[0];

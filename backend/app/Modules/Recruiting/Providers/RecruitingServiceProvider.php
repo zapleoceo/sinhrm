@@ -59,6 +59,10 @@ use Laravel\Sanctum\Sanctum;
 /** Routes live at the /api root (vacancies, candidates, applications, inbox, recruiting, reports, pipelines). */
 final class RecruitingServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'person_search';
+
+    protected string $moduleGroup = 'recruiting';
+
     /** Write access at all (superadmin, admin, recruiter); entity policies add the branch scope and the hiring manager. */
     public const string WRITE = 'recruiting-write';
 

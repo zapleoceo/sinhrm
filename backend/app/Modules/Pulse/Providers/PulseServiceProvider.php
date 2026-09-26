@@ -30,6 +30,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class PulseServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'poll';
+
+    protected string $moduleGroup = 'perform';
+
     /** The survey builder, waves, identified responses, mood settings: superadmin, admin. */
     public const string MANAGE = 'pulse-manage';
 

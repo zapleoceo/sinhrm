@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\Gate;
  */
 final class DocumentsServiceProvider extends ModuleServiceProvider
 {
+    protected string $moduleIcon = 'description';
+
+    protected string $moduleGroup = 'people';
+
     /** Templates and writing documents: superadmin, admin (HR). */
     public const string MANAGE = 'documents-manage';
 

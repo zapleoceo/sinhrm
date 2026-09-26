@@ -22,7 +22,7 @@ export const MODULES = {
   perform: ['perform', 'all'], pulse: ['perform', 'all'],
   desk: ['services', 'all'], knowledge: ['services', 'all'], 'safe-speak': ['services', 'all'],
   users: ['admin', 'admin'], integrations: ['admin', 'admin'], 'google-workspace': ['admin', 'admin'], 'mail-agent': ['admin', 'admin'],
-  directory: ['admin', 'admin'], ai: ['admin', 'admin'],
+  directory: ['admin', 'admin'], ai: ['admin', 'admin'], 'modules-access': ['admin', 'admin'],
 };
 
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
