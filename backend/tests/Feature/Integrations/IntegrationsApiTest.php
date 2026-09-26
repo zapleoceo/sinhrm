@@ -71,7 +71,7 @@ final class IntegrationsApiTest extends TestCase
             ->assertJsonPath('ai_policy.enabled', false);
 
         $byKey = $this->byKey($response);
-        $this->assertCount(18, $byKey);
+        $this->assertCount(15, $byKey);
         // KEP signing: a documented placeholder — off, no connection check.
         $this->assertSame('documents', $byKey['kep_signing']['group']);
         $this->assertSame('off', $byKey['kep_signing']['status']);

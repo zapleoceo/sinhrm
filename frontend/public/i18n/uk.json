@@ -218,7 +218,6 @@
       "token": "Токен",
       "domain": "Домен",
       "project_id": "ID проєкту",
-      "inbox": "Скринька для відгуків",
       "api_token": "API-токен",
       "page_id": "ID сторінки",
       "provider": "Провайдер"
@@ -275,18 +274,6 @@
       "binotel": {
         "name": "Binotel",
         "description": "Телефонія: дзвінки та записи"
-      },
-      "work_ua": {
-        "name": "Work.ua",
-        "description": "Відгуки з Work.ua"
-      },
-      "robota_ua": {
-        "name": "Robota.ua",
-        "description": "Відгуки з Robota.ua"
-      },
-      "djinni": {
-        "name": "Djinni",
-        "description": "Відгуки з Djinni"
       },
       "meta_lead_ads": {
         "name": "Meta Lead Ads",
