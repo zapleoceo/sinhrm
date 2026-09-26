@@ -71,7 +71,8 @@
 skipped, failed}`.
 
 Исполнители — `Contracts/StepExecutor` (`action()`, `configRules()`, `execute(StepContext): StepOutcome`),
-регистрируются тегом `workflows.executors` (Open/Closed: новое действие = класс + строка в провайдере + значение enum).
+регистрируются тегом `workflows.executors` (Open/Closed: новое действие = класс + строка в провайдере + значение enum;
+исполнитель может жить в другом модуле и тегироваться из его провайдера — так подключён `collect_assets` из Assets).
 `Support/ExecutorRegistry` находит исполнителя по действию. Результат: `done`, `skipped` (код причины), `failed` (код
 ошибки) или `waiting` (создана задача — шаг ждёт человека).
 
@@ -81,6 +82,7 @@ skipped, failed}`.
 | `request_form` | задача «заповнити форму», ссылка — https-адрес формы или профиль | `title?`, `url?` (https) |
 | `upload_document_request` | задача «надати документ …», ссылка — вкладка «Документи» профиля | `document_name` |
 | `assign_buddy` | задача выбрать наставника (поля «наставник» пока нет) | `title?` |
+| `collect_assets` | офбординг: задача со списком активов, которые числятся за сотрудником («Зібрати активи: INV-001 Ноутбук, …», ссылка — вкладка «Активи»); шаг ждёт задачу; ничего не числится → `skipped: no_assets`. Исполнитель живёт в модуле Assets и подключается тегом `workflows.executors` из `AssetsServiceProvider` ([assets.md](assets.md)) | `title?` (≤ 120) |
 | `notify_manager` | задача-уведомление руководителю сотрудника, **не блокирует** (шаг сразу `done`); нет руководителя с логином → `skipped: no_manager` | `message?` |
 | `create_document` | документ из шаблона модуля Documents; `send` — сразу на ознакомление; у сотрудника нет логина → черновик, `sent: false, reason: employee_has_no_login` | `document_template_id`, `send?` |
 | `webhook` | POST JSON на https-адрес (см. ниже) | `url` (https) |

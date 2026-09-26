@@ -43,6 +43,15 @@ export const routes: Routes = [
       { path: 'pulse/mood', title: 'titles.mood', loadComponent: () => import('./features/pulse/mood/mood.page').then((m) => m.MoodPage) },
       { path: 'pulse/waves/:id', title: 'titles.respond', loadComponent: () => import('./features/pulse/respond/respond.page').then((m) => m.RespondPage) },
       { path: 'pulse/waves/:id/results', title: 'titles.surveyResults', loadComponent: () => import('./features/pulse/results/wave-results.page').then((m) => m.WaveResultsPage) },
+      // Desk, Safe Speak, Knowledge, Reports: every active role; the API decides what each user sees.
+      { path: 'desk', title: 'titles.desk', loadComponent: () => import('./features/desk/my-cases.page').then((m) => m.MyCasesPage) },
+      { path: 'desk/cases/:id', title: 'titles.deskCase', loadComponent: () => import('./features/desk/case.page').then((m) => m.CasePage) },
+      { path: 'safe-speak', title: 'titles.safeSpeak', loadComponent: () => import('./features/safe-speak/report.page').then((m) => m.SafeSpeakPage) },
+      { path: 'knowledge', title: 'titles.knowledge', loadComponent: () => import('./features/knowledge/knowledge.page').then((m) => m.KnowledgePage) },
+      { path: 'knowledge/:id', title: 'titles.article', loadComponent: () => import('./features/knowledge/article.page').then((m) => m.ArticlePage) },
+      { path: 'reports/catalog', title: 'titles.reportCatalog', loadComponent: () => import('./features/reports/catalog.page').then((m) => m.ReportCatalogPage) },
+      { path: 'reports/catalog/:key', title: 'titles.reportCatalog', loadComponent: () => import('./features/reports/report-view.page').then((m) => m.ReportViewPage) },
+      { path: 'reports/builder', title: 'titles.reportBuilder', loadComponent: () => import('./features/reports/builder.page').then((m) => m.ReportBuilderPage) },
       { path: 'timeoff/approvals', title: 'titles.approvals', loadComponent: () => import('./features/timeoff/approvals/approvals.page').then((m) => m.ApprovalsPage) },
       {
         path: 'status',
@@ -91,6 +100,31 @@ export const routes: Routes = [
         title: 'titles.documentTemplates',
         canActivate: [roleGuard('superadmin', 'admin')],
         loadComponent: () => import('./features/documents/templates/document-templates.page').then((m) => m.DocumentTemplatesPage),
+      },
+      {
+        path: 'desk/queue',
+        title: 'titles.deskQueue',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/desk/queue.page').then((m) => m.DeskQueuePage),
+      },
+      {
+        // Admins only; the API additionally requires the explicit Safe Speak handler flag.
+        path: 'safe-speak/inbox',
+        title: 'titles.safeSpeakInbox',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/safe-speak/inbox.page').then((m) => m.SafeSpeakInboxPage),
+      },
+      {
+        path: 'admin/knowledge/:id',
+        title: 'titles.articleEditor',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/knowledge/editor.page').then((m) => m.KnowledgeEditorPage),
+      },
+      {
+        path: 'admin/assets',
+        title: 'titles.assets',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/assets/assets.page').then((m) => m.AssetsPage),
       },
       {
         path: 'admin/users',

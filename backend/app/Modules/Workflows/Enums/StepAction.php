@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Workflows\Enums;
 
-/** What a workflow step does when it is due. Each value has exactly one StepExecutor (Executors/*). */
+/** What a workflow step does when it is due. Each value has exactly one StepExecutor (Executors/*, or tagged by another module). */
 enum StepAction: string
 {
     case CreateTask = 'create_task';
@@ -17,4 +17,6 @@ enum StepAction: string
     case StartWorkflow = 'start_workflow';
     case NotifyManager = 'notify_manager';
     case AssignBuddy = 'assign_buddy';
+    /** Offboarding: a task listing the assets the employee holds (executor registered by the Assets module). */
+    case CollectAssets = 'collect_assets';
 }

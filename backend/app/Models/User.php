@@ -29,6 +29,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $locale
  * @property Carbon|null $last_login_at
  * @property int|null $invited_by
+ * @property bool $safe_speak_handler Safe Speak: may read and answer anonymous reports (admins only)
  * @property-read Collection<int, Branch> $branches
  */
 #[Fillable(['name', 'email', 'password', 'google_id', 'avatar_url', 'status', 'locale', 'last_login_at', 'invited_by'])]
@@ -48,6 +49,7 @@ class User extends Authenticatable
     protected $attributes = [
         'status' => 'active',
         'locale' => 'uk',
+        'safe_speak_handler' => false,
     ];
 
     public function isActive(): bool
@@ -75,6 +77,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'status' => UserStatus::class,
+            'safe_speak_handler' => 'boolean',
         ];
     }
 }

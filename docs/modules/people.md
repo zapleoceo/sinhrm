@@ -84,7 +84,8 @@
 Ошибка подписчика Workflows пишется в лог и не ломает запрос найма/увольнения ([workflows.md](workflows.md)).
 Профиль сотрудника на фронтенде получил вкладки «Документи» ([documents.md](documents.md)), «Воркфлоу» и
 «Продуктивність» (цели, KPI, планы развития, 1:1, результаты оценки — админу, самому сотруднику и руководителям выше;
-[perform.md](perform.md)). Perform и Pulse используют `PeopleScope`/`PeopleContext` как единую модель доступа
+[perform.md](perform.md)) и «Активи» (что числится за сотрудником сейчас и раньше — тот же уровень «Робота»:
+админ, сам сотрудник, руководители выше; [assets.md](assets.md)). Perform и Pulse используют `PeopleScope`/`PeopleContext` как единую модель доступа
 (админ = HR, руководитель — поддерево по `manager_id`), `EmployeeRepository::working()` и `managerMap()`.
 
 ### Слои

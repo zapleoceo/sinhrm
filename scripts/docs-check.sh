@@ -2,7 +2,7 @@
 # Fails the PR when a module's code changed but its documentation page did not.
 # Module code: backend/app/Modules/<Name>/**, frontend/src/app/features/<name>/**, frontend/src/app/core/** (→ core),
 #              extension/** (the browser extension, top-level folder → extension)
-# Required doc: docs/modules/<name>.md in kebab-case (GoogleWorkspace → google-workspace, features/mail-agent → mail-agent).
+# Required doc: docs/modules/<name>.md in kebab-case (GoogleWorkspace → google-workspace, SafeSpeak → safe-speak, features/mail-agent → mail-agent).
 #               Aliases: TimeOff (backend) and features/timeoff → timeoff.md.
 set -euo pipefail
 BASE="${1:-origin/main}"

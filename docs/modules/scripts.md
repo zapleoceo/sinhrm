@@ -110,7 +110,9 @@ AI отказывается, при включённом — сообщает «
 ### Общий список задач («Мої задачі»)
 Таблица `tasks` — **единая** для всех модулей: кроме задач рекрутинга в ней задачи воркфлоу (тип `workflow`,
 [workflows.md](workflows.md)), «ознайомитися з документом» (тип `document`, [documents.md](documents.md)) и «настрій
-команди знизився» для руководителя (тип `mood_alert`, источник `pulse`, ключ `mood:<ISO-неделя>`, [pulse.md](pulse.md)). Для них
+команди знизився» для руководителя (тип `mood_alert`, источник `pulse`, ключ `mood:<ISO-неделя>`, [pulse.md](pulse.md)) и
+«SLA порушено» по обращению в HR (тип `desk_sla`, источник `desk`, ключ `desk:<id обращения>:first_response|resolve`,
+[desk.md](desk.md)). Для них
 заполнены `employee_id` (о ком задача) и `link` (относительный путь в интерфейсе, у `request_form` — https-адрес
 внешней формы), идемпотентность — `unique(employee_id, rule_key)` с ключами `wf:<id шага запуска>` и `doc:<id документа>`.
 Другие модули создают задачи через `TaskService::schedule(DTO/NewTask)` (повтор возвращает существующую) и закрывают
@@ -118,7 +120,7 @@ AI отказывается, при включённом — сообщает «
 `Events/TaskCompleted` — Workflows закрывает связанный шаг. Отметить задачу может **её исполнитель** (даже с ролью
 viewer — например, новый сотрудник) и, как раньше, superadmin/admin/recruiter, которые её видят. Задачу `document`
 интерфейс не закрывает галочкой — ознакомление подтверждается кнопкой «Ознайомлений» в «Мої документи».
-Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse`), сроку и
+Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse|desk`), сроку и
 закрытым. Миграция `Database/Migrations/2026_10_03_100001_generalize_tasks_table.php`.
 
 Запуск: `Services/FollowupJob` зарегистрирован как `Core\Contracts\ScheduledJob` → `POST /api/ops/jobs/run`

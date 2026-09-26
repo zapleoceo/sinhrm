@@ -28,6 +28,7 @@ final class UserResource extends JsonResource
                 ->map(static fn (Branch $b): array => ['id' => $b->id, 'name' => $b->name, 'status' => $b->status->value])
                 ->values()
                 ->all(),
+            'safe_speak_handler' => (bool) $this->safe_speak_handler,
             'locale' => $this->locale,
             'invited_by' => $this->invited_by,
             'last_login_at' => $this->last_login_at?->toIso8601String(),

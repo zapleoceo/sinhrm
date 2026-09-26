@@ -29,6 +29,7 @@
 | `i18n/translated-title.strategy.ts` | `TitleStrategy`: `title` маршрута — ключ i18n (`titles.*`), во вкладке «SinHRM · Кандидати»; при смене языка заголовок переводится заново (`selectTranslate`). Без `title` — просто «SinHRM» (он же в `index.html`) |
 | `theme/theme.service.ts` | светлая/тёмная тема: по умолчанию как в ОС, выбор хранится в localStorage (`<html data-theme>`) |
 | `storage/safe-storage.ts` | localStorage без исключений (приватный режим, запрет cookies) |
+| `http/api-error.ts` | `apiErrorKey(error, prefix, codes)` — i18n-ключ ошибки API: известный `{code}` → `<prefix>.errors.<code>`, иначе по статусу (`forbidden` 403, `not_found` 404, `validation` 422, `rate_limited` 429), иначе `common.error`; `saveBlob(blob, name)` — скачать ответ-Blob (CSV). Используют Desk, Safe Speak, Knowledge, Assets, Reports |
 
 Все строки интерфейса — через Transloco (`'ключ' | transloco`); новый текст добавляется во все три файла `public/i18n`.
 

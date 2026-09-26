@@ -17,6 +17,7 @@ import { CHANGEABLE_FIELDS, ChangeRequest, Employee, fieldLabelKey } from '../pe
 import { EmployeeDocumentsTab } from '../../documents/profile/employee-documents.tab';
 import { EmployeeRunsTab } from '../../workflows/runs/employee-runs.tab';
 import { PerformanceTab } from '../../perform/profile/performance.tab';
+import { EmployeeAssetsTab } from '../../assets/employee-assets.tab';
 import { ChangeRequestDialog } from './change-request.dialog';
 import { EmployeeDialog, EmployeeDialogData } from './employee.dialog';
 import { ProfileStore, ProfileTab } from './profile.store';
@@ -44,6 +45,7 @@ import { TerminateDialog } from './terminate.dialog';
     EmployeeDocumentsTab,
     EmployeeRunsTab,
     PerformanceTab,
+    EmployeeAssetsTab,
   ],
   providers: [ProfileStore, LeaveRequestsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -202,6 +204,14 @@ import { TerminateDialog } from './terminate.dialog';
           <mat-tab [label]="'people.tabs.performance' | transloco">
             <ng-template matTabContent>
               <app-performance-tab [employeeId]="e.id" [canManage]="!!e.access?.decide" />
+            </ng-template>
+          </mat-tab>
+        }
+
+        @if (store.tabs().includes('assets')) {
+          <mat-tab [label]="'people.tabs.assets' | transloco">
+            <ng-template matTabContent>
+              <app-employee-assets-tab [employeeId]="e.id" />
             </ng-template>
           </mat-tab>
         }
