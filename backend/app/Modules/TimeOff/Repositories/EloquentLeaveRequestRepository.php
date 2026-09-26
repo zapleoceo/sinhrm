@@ -84,14 +84,28 @@ final class EloquentLeaveRequestRepository implements LeaveRequestRepository
 
     public function pendingFor(?array $employeeIds, ?int $exceptEmployeeId, int $limit): Collection
     {
-        return LeaveRequest::query()->with(self::RELATIONS)
-            ->where('status', LeaveRequestStatus::Pending->value)
-            ->when($employeeIds !== null, fn (Builder $q) => $q->whereIn('employee_id', $employeeIds ?? []))
-            ->when($exceptEmployeeId, fn (Builder $q, int $id) => $q->where('employee_id', '!=', $id))
+        return $this->pending($employeeIds, $exceptEmployeeId)->with(self::RELATIONS)
             ->orderBy('created_at')
             ->orderBy('id')
             ->limit($limit)
             ->get();
+    }
+
+    public function countPendingFor(?array $employeeIds, ?int $exceptEmployeeId): int
+    {
+        return $this->pending($employeeIds, $exceptEmployeeId)->count();
+    }
+
+    /**
+     * @param  list<int>|null  $employeeIds
+     * @return Builder<LeaveRequest>
+     */
+    private function pending(?array $employeeIds, ?int $exceptEmployeeId): Builder
+    {
+        return LeaveRequest::query()
+            ->where('status', LeaveRequestStatus::Pending->value)
+            ->when($employeeIds !== null, fn (Builder $q) => $q->whereIn('employee_id', $employeeIds ?? []))
+            ->when($exceptEmployeeId, fn (Builder $q, int $id) => $q->where('employee_id', '!=', $id));
     }
 
     public function create(array $attributes): LeaveRequest

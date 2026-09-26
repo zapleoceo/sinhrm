@@ -21,6 +21,7 @@
 - Задачи о просрочке — в «Мої задачі», источник «Звернення» (`desk`).
 
 ## Как устроено
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/DeskNavBadges` — ключ `desk_mine` («Мої звернення»): мои обращения в статусе «Очікує відповіді» (`waiting`, HR ждёт ответа от меня); ключ `desk_queue` («Черга звернень», только HR с правом `desk-manage`): открытые обращения — как фильтр очереди по умолчанию. Оба числа — один `count(*)` (`DeskService::countMine/countQueue`, общий с `cases()` построитель запроса).
 Бэкенд — `backend/app/Modules/Desk`, маршруты `/api/desk/*` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`; gate `desk-manage` = `PeopleScope::isAdmin` (очередь, категории).
 

@@ -18,6 +18,9 @@ interface DocumentRepository
      */
     public function list(DocumentFilter $filter, int $limit): Collection;
 
+    /** How many list() would find without the limit (sidebar counter). */
+    public function count(DocumentFilter $filter): int;
+
     public function find(int $id): ?Document;
 
     /** @param  array<string, mixed>  $attributes */

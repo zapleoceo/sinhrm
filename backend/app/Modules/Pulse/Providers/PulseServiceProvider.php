@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Pulse\Providers;
 
 use App\Models\User;
+use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\People\Events\EmployeeTerminated;
@@ -18,6 +19,7 @@ use App\Modules\Pulse\Repositories\EloquentMoodRepository;
 use App\Modules\Pulse\Repositories\EloquentResponseRepository;
 use App\Modules\Pulse\Repositories\EloquentSurveyRepository;
 use App\Modules\Pulse\Repositories\EloquentWaveMemberRepository;
+use App\Modules\Pulse\Services\PulseNavBadges;
 use App\Modules\Pulse\Services\PulseTickJob;
 use App\Modules\Pulse\Support\RespondentHash;
 use Illuminate\Support\Facades\Event;
@@ -37,6 +39,7 @@ final class PulseServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->app->tag([PulseNavBadges::class], NavBadgeProvider::class);
         $this->app->bind(SurveyRepository::class, EloquentSurveyRepository::class);
         $this->app->bind(ResponseRepository::class, EloquentResponseRepository::class);
         $this->app->bind(MoodRepository::class, EloquentMoodRepository::class);

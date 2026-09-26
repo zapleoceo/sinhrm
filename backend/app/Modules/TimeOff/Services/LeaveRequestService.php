@@ -215,6 +215,16 @@ final readonly class LeaveRequestService
         return $this->requests->pendingFor($ctx->admin ? null : $ctx->subtreeIds, $ctx->admin ? null : $ctx->selfId, $limit);
     }
 
+    /** How many approvals() would list without the limit (sidebar counter). */
+    public function approvalsCount(PeopleContext $ctx): int
+    {
+        if (! $ctx->admin && ! $ctx->isManager()) {
+            return 0;
+        }
+
+        return $this->requests->countPendingFor($ctx->admin ? null : $ctx->subtreeIds, $ctx->admin ? null : $ctx->selfId);
+    }
+
     public function days(Employee $employee, Carbon $from, Carbon $to, HalfDay $halfDay): float
     {
         return WorkingDayCalculator::days($from, $to, $halfDay, $this->settings->holidayDates($from, $to, $employee->branch_id));

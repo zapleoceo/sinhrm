@@ -13,6 +13,7 @@ use App\Modules\Scripts\Models\Task;
 use App\Modules\TimeOff\Models\Holiday;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Support\NavBadgeAssertions;
 use Tests\Support\PeopleFixtures;
 use Tests\Support\RecruitingFixtures;
 use Tests\Support\WorkflowFixtures;
@@ -24,7 +25,7 @@ use Tests\TestCase;
  */
 final class HiringRequestApiTest extends TestCase
 {
-    use PeopleFixtures, RecruitingFixtures, RefreshDatabase, WorkflowFixtures {
+    use NavBadgeAssertions, PeopleFixtures, RecruitingFixtures, RefreshDatabase, WorkflowFixtures {
         PeopleFixtures::login insteadof WorkflowFixtures;
         PeopleFixtures::employee insteadof WorkflowFixtures;
         PeopleFixtures::userOf insteadof WorkflowFixtures;
@@ -116,6 +117,9 @@ final class HiringRequestApiTest extends TestCase
         $this->assertSame(1, Task::query()->where('type', 'hiring_approval')->where('assignee_id', $head->id)->count());
         $this->actingAs($head)->getJson('/api/hiring-requests/inbox')->assertOk()->assertJsonCount(1, 'data');
         $this->actingAs($admin)->getJson('/api/hiring-requests/inbox')->assertOk()->assertJsonCount(1, 'data'); // HR may override any step
+        $this->assertBadgeMatchesList($head, 'hiring_inbox', '/api/hiring-requests/inbox', 1);
+        $this->assertBadgeMatchesList($admin, 'hiring_inbox', '/api/hiring-requests/inbox', 1);
+        $this->assertBadgeMatchesList($lead, 'hiring_inbox', '/api/hiring-requests/inbox', 0); // the requester decides nothing
         $this->actingAs($head)->getJson('/api/dashboard')->assertOk()->assertJsonPath('data.hiring.my_approvals.count', 1);
 
         // SLA: 2 working days (Mon → Wed) → overdue on Thursday; the job escalates to HR once.

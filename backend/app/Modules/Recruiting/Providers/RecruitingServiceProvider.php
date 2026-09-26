@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Providers;
 
 use App\Models\User;
 use App\Modules\Ai\Providers\AiServiceProvider;
+use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Recruiting\Ai\ScreeningAiHandler;
@@ -45,6 +46,7 @@ use App\Modules\Recruiting\Repositories\QueryReportRepository;
 use App\Modules\Recruiting\Repositories\SanctumExtensionTokenRepository;
 use App\Modules\Recruiting\Services\AutoScreeningJob;
 use App\Modules\Recruiting\Services\ExtensionTokenService;
+use App\Modules\Recruiting\Services\InboxNavBadges;
 use App\Modules\Recruiting\Services\MatchingTouchpointIngestor;
 use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Recruiting\Support\NullTouchpointEvaluations;
@@ -67,6 +69,7 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->app->tag([InboxNavBadges::class], NavBadgeProvider::class);
         $this->app->bind(PipelineRepository::class, EloquentPipelineRepository::class);
         $this->app->bind(AcquisitionChannelRepository::class, EloquentAcquisitionChannelRepository::class);
         $this->app->bind(VacancyRepository::class, EloquentVacancyRepository::class);

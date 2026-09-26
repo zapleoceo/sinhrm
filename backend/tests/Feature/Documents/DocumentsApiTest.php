@@ -13,13 +13,14 @@ use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Tests\Support\NavBadgeAssertions;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
 /** Documents: templates, rendering & sanitization, access, send → acknowledge, files. Synthetic data only. */
 final class DocumentsApiTest extends TestCase
 {
-    use PeopleFixtures, RefreshDatabase;
+    use NavBadgeAssertions, PeopleFixtures, RefreshDatabase;
 
     private const string PDF = "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n";
 
@@ -122,6 +123,10 @@ final class DocumentsApiTest extends TestCase
         $worker = $this->userOf($org['worker']);
         $this->actingAs($worker)->getJson('/api/me/documents')->assertOk()->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $sent->id)->assertJsonPath('data.0.can_acknowledge', true);
+        // Sidebar: documents I can acknowledge (the draft and the other employee's document do not count).
+        $ack = static fn (array $d): bool => $d['can_acknowledge'] === true;
+        $this->assertBadgeMatchesList($worker, 'my_documents', '/api/me/documents', 1, 'data', $ack);
+        $this->assertBadgeMatchesList($this->userOf($org['lead']), 'my_documents', '/api/me/documents', 0, 'data', $ack);
         $this->actingAs($worker)->getJson("/api/documents/{$sent->id}")->assertOk()
             ->assertJsonPath('data.content_md', null)
             ->assertJsonPath('data.html', "<p>Text</p>\n");

@@ -13,6 +13,7 @@ use App\Modules\TimeOff\Models\LeaveType;
 use App\Modules\TimeOff\Models\LedgerEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Support\NavBadgeAssertions;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
@@ -22,7 +23,7 @@ use Tests\TestCase;
  */
 final class LeaveRequestApiTest extends TestCase
 {
-    use PeopleFixtures, RefreshDatabase;
+    use NavBadgeAssertions, PeopleFixtures, RefreshDatabase;
 
     /** @var array{head: Employee, lead: Employee, worker: Employee, peer: Employee, other: Employee} */
     private array $org;
@@ -217,6 +218,11 @@ final class LeaveRequestApiTest extends TestCase
         $this->actingAs($this->userOf($this->org['head']))->getJson('/api/timeoff/approvals')->assertOk()->assertJsonCount(3, 'data');
         $this->actingAs($this->userOf($this->org['worker']))->getJson('/api/timeoff/approvals')->assertOk()->assertJsonCount(0, 'data');
         $this->actingAs($this->login(UserRole::Admin))->getJson('/api/timeoff/approvals')->assertOk()->assertJsonCount(4, 'data');
+        // sidebar badge = the same approvals list
+        $this->assertBadgeMatchesList($this->userOf($this->org['lead']), 'timeoff_approvals', '/api/timeoff/approvals', 2);
+        $this->assertBadgeMatchesList($this->userOf($this->org['head']), 'timeoff_approvals', '/api/timeoff/approvals', 3);
+        $this->assertBadgeMatchesList($this->userOf($this->org['worker']), 'timeoff_approvals', '/api/timeoff/approvals', 0);
+        $this->assertBadgeMatchesList($this->login(UserRole::Admin), 'timeoff_approvals', '/api/timeoff/approvals', 4);
 
         // balances of someone else: managers above and admins only
         $worker = $this->org['worker']->id;

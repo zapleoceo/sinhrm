@@ -28,20 +28,31 @@ final class EloquentTaskRepository implements TaskRepository
 
     public function list(Scope $scope, TaskFilter $filter, Carbon $now, int $limit): Collection
     {
-        return $this->scoped($scope)
+        return $this->filtered($scope, $filter, $now)
             ->with(self::RELATIONS)
+            ->orderByRaw('case when done_at is null then 0 else 1 end')
+            ->orderBy('due_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function count(Scope $scope, TaskFilter $filter, Carbon $now): int
+    {
+        return $this->filtered($scope, $filter, $now)->count();
+    }
+
+    /** @return Builder<Task> */
+    private function filtered(Scope $scope, TaskFilter $filter, Carbon $now): Builder
+    {
+        return $this->scoped($scope)
             ->when($filter->source !== null, fn (Builder $q) => $q->whereIn('type', $filter->source?->typeValues() ?? []))
             ->when($filter->employeeId, fn (Builder $q, int $id) => $q->where('employee_id', $id))
             ->when($filter->mine, fn (Builder $q) => $q->where('assignee_id', $scope->userId))
             ->when($filter->candidateId, fn (Builder $q, int $id) => $q->where('candidate_id', $id))
             ->when(! $filter->withDone, fn (Builder $q) => $q->whereNull('done_at'))
             ->when($filter->due === TaskDue::Today, fn (Builder $q) => $q->where('due_at', '<=', $now->copy()->endOfDay()))
-            ->when($filter->due === TaskDue::Overdue, fn (Builder $q) => $q->where('due_at', '<', $now->copy()->startOfDay()))
-            ->orderByRaw('case when done_at is null then 0 else 1 end')
-            ->orderBy('due_at')
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+            ->when($filter->due === TaskDue::Overdue, fn (Builder $q) => $q->where('due_at', '<', $now->copy()->startOfDay()));
     }
 
     public function find(int $id): ?Task

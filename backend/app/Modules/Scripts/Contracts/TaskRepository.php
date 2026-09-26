@@ -21,6 +21,9 @@ interface TaskRepository
      */
     public function list(Scope $scope, TaskFilter $filter, Carbon $now, int $limit): Collection;
 
+    /** How many tasks list() would find without the limit (sidebar counter). */
+    public function count(Scope $scope, TaskFilter $filter, Carbon $now): int;
+
     public function find(int $id): ?Task;
 
     public function isVisible(Scope $scope, Task $task): bool;

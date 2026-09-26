@@ -70,6 +70,24 @@ final readonly class DeskService
         return $self === null ? new Collection : $this->desk->cases(['employee_id' => $self->id], self::LIMIT);
     }
 
+    /** How many of mine() have this status (sidebar counter; 0 without an employee record). */
+    public function countMine(User $user, CaseStatus $status): int
+    {
+        $self = $this->scope->employeeOf($user);
+
+        return $self === null ? 0 : $this->desk->countCases(['employee_id' => $self->id, 'status' => $status->value]);
+    }
+
+    /**
+     * How many queue() would list without the limit (sidebar counter).
+     *
+     * @param  array{status?: string|null, assignee_id?: int|null, category_id?: int|null, open?: bool}  $filter
+     */
+    public function countQueue(array $filter): int
+    {
+        return $this->desk->countCases($filter);
+    }
+
     /**
      * HR queue with filters.
      *
