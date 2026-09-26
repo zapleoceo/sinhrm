@@ -14,7 +14,6 @@ use App\Modules\Integrations\Contracts\SecretVault;
 use App\Modules\Integrations\Definitions\AiBrokerDefinition;
 use App\Modules\Integrations\Definitions\BinotelDefinition;
 use App\Modules\Integrations\Definitions\DeepgramDefinition;
-use App\Modules\Integrations\Definitions\DjinniDefinition;
 use App\Modules\Integrations\Definitions\GoogleCalendarDefinition;
 use App\Modules\Integrations\Definitions\GoogleGmailDefinition;
 use App\Modules\Integrations\Definitions\GoogleSheetsDefinition;
@@ -23,12 +22,10 @@ use App\Modules\Integrations\Definitions\MetaLeadAdsDefinition;
 use App\Modules\Integrations\Definitions\OpenRouterDefinition;
 use App\Modules\Integrations\Definitions\PhonetDefinition;
 use App\Modules\Integrations\Definitions\RingostatDefinition;
-use App\Modules\Integrations\Definitions\RobotaUaDefinition;
 use App\Modules\Integrations\Definitions\TelegramBusinessDefinition;
 use App\Modules\Integrations\Definitions\ViberDefinition;
 use App\Modules\Integrations\Definitions\WazzupDefinition;
 use App\Modules\Integrations\Definitions\WhatsappCloudDefinition;
-use App\Modules\Integrations\Definitions\WorkUaDefinition;
 use App\Modules\Integrations\Repositories\EloquentIntegrationRepository;
 use App\Modules\Integrations\Repositories\EloquentSecretVault;
 use App\Modules\Integrations\Services\AiPolicyService;
@@ -66,9 +63,6 @@ final class IntegrationsServiceProvider extends ModuleServiceProvider
             PhonetDefinition::class,
             RingostatDefinition::class,
             BinotelDefinition::class,
-            WorkUaDefinition::class,
-            RobotaUaDefinition::class,
-            DjinniDefinition::class,
             MetaLeadAdsDefinition::class,
             KepSigningDefinition::class,
         ], self::DEFINITIONS_TAG);

@@ -218,7 +218,6 @@
       "token": "Token",
       "domain": "Domain",
       "project_id": "Project ID",
-      "inbox": "Responses inbox",
       "api_token": "API token",
       "page_id": "Page ID",
       "provider": "Provider"
@@ -275,18 +274,6 @@
       "binotel": {
         "name": "Binotel",
         "description": "Telephony: calls and recordings"
-      },
-      "work_ua": {
-        "name": "Work.ua",
-        "description": "Responses from Work.ua"
-      },
-      "robota_ua": {
-        "name": "Robota.ua",
-        "description": "Responses from Robota.ua"
-      },
-      "djinni": {
-        "name": "Djinni",
-        "description": "Responses from Djinni"
       },
       "meta_lead_ads": {
         "name": "Meta Lead Ads",
