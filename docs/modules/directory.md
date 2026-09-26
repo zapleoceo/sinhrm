@@ -54,7 +54,7 @@ Enum `Enums/DirectoryStatus` (`active`, `disabled`), `Enums/DictionaryType` (`br
 
 ### Как работает ограничение по филиалам
 Контракт `Contracts/AccessibleBranches` (реализация `Services/BranchAccess`), метод `for(User): ?list<int>`:
-- активный `superadmin` / `admin` → `null` — без ограничений;
+- активный `superadmin` / `admin` / `hr_manager` (`UserRole::hrStaff()`) → `null` — без ограничений;
 - `recruiter` / `viewer` → id **активных** филиалов из `branch_user` (выключенный филиал доступ не даёт);
 - заблокированный пользователь или пользователь без филиалов → `[]` — не видит ничего.
 

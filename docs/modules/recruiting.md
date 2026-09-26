@@ -116,9 +116,27 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 | Роль | Видит | Может менять |
 |---|---|---|
 | superadmin, admin | всё | всё; воронки и причины отказов (gate `recruiting-manage`) |
+| hr_manager | всё | ничего (403) |
 | recruiter | вакансии своих филиалов (`AccessibleBranches`), их заявки и кандидатов + кандидатов, которых он создал/ведёт; «Вхідні» своих филиалов и свои | вакансии/кандидатов/заявки в этих пределах |
 | viewer | как recruiter | ничего (403) |
+| employee | ничего, даже если ему назначены филиалы | — |
+| нанимающий менеджер вакансии (любая роль) | эту вакансию, её доску, заявки и кандидатов | эту вакансию (кроме смены нанимающего менеджера), движение её заявок, интервьюеров её заявок |
+| интервьюер заявки (любая роль) | кандидата этой заявки | ничего |
 | заблокированный / без филиалов | ничего (403 / пустые списки) | — |
+
+#### Команда найму (контекстные роли)
+Простыми словами: руководителю, который нанимает себе человека, не нужна роль рекрутера — его назначают нанимающим
+менеджером конкретной вакансии, и он видит только её. Интервьюер видит только того кандидата, которого собеседует.
+- Нанимающий менеджер — `vacancies.hiring_manager_id` (FK `users`, `nullOnDelete`). Ставит/снимает только рекрутинговый
+  писатель (gate `recruiting-write`) через `PATCH /api/vacancies/{id}` `{hiring_manager_id}`; самому менеджеру поле
+  запрещено (422), чтобы он не передал вакансию. В ответе вакансии — `hiring_manager_id`, `hiring_manager {id, name}`.
+- Интервьюеры — таблица `application_interviewers (application_id, user_id, created_at)`, PK по паре, каскадное удаление.
+  `PUT /api/applications/{id}/interviewers` `{user_ids: int[]}` заменяет список целиком (пустой — снимает всех, до 20,
+  только активные пользователи). Право — `ApplicationPolicy::assignInterviewers` (как у `move`).
+- Технически: `DTO/Scope` получил `managedVacancyIds` и `interviewApplicationIds` (заполняет `RecruitingScope::for` через
+  `Contracts/HiringTeamRepository`); фильтры списков вакансий, кандидатов и «застоявшихся» заявок добавляют их через `OR`.
+  `RecruitingScope::canWorkVacancy` = (писатель и вакансия в его филиалах) или нанимающий менеджер. «Вхідні» и отчёты
+  по-прежнему режутся только филиалами — контекстные роли их не открывают.
 
 Политики: `VacancyPolicy` (view/create/update), `CandidatePolicy` (view/create/update), `ApplicationPolicy::move` (по филиалу вакансии),
 `TouchpointPolicy::resolve` (разбор «Вхідних»). Запись проверяется в `FormRequest::authorize()`, чтение карточек — `Gate` в контроллере,
@@ -145,6 +163,7 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 | `GET /api/candidates/{id}/timeline` | `channel=call,telegram,stage` (или массив; `stage` = шаги), `perPage, page` | новые сверху: `{type: touchpoint\|stage_change, at, touchpoint\|stage_change}`; у касания `touchpoint.evaluation` — `{id, score, engine, next_step_fixed, script_version_id}` или `null` (оценка по скрипту, см. ниже) |
 | `POST /api/candidates/{id}/touchpoints` | `{channel (note\|call\|meeting\|telegram\|whatsapp\|viber\|email), direction?, body (обязателен для note), occurred_at?, duration_sec?, application_id?}` | 201, `via_product=true` |
 | `POST /api/applications/{id}/move` | `{stage_id, reason?, reject_reason_id?}` | заявка; ошибки см. «Правила» |
+| `PUT /api/applications/{id}/interviewers` | `{user_ids: int[]}` | заявка с `interviewers [{id, name}]`; 403 без права, 422 неактивный/несуществующий пользователь или нет поля |
 | `GET /api/recruiting/stale` | `days` 1..365 (строка `"3"` ок; по умолч. 3) | до 200 заявок, самые старые сверху; `meta.days` |
 | `GET /api/inbox` | `perPage, page` | касания без кандидата в пределах доступа |
 | `POST /api/inbox/{touchpoint}/link` | `{candidate_id}` | касание; уже привязано → 409 `already_linked` |

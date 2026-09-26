@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, roleGuard } from './core/auth/auth.guards';
+import { HR_STAFF_ROLES } from './core/auth/auth.model';
 
 // `title` is an i18n key (TranslatedTitleStrategy → "SinHRM · <page>").
 export const routes: Routes = [
@@ -89,37 +90,37 @@ export const routes: Routes = [
       {
         path: 'admin/workflows',
         title: 'titles.workflows',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/workflows/templates/workflow-templates.page').then((m) => m.WorkflowTemplatesPage),
       },
       {
         path: 'admin/workflows/:id',
         title: 'titles.workflowEditor',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/workflows/editor/workflow-editor.page').then((m) => m.WorkflowEditorPage),
       },
       {
         path: 'admin/perform/reviews',
         title: 'titles.reviewSetup',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/perform/reviews/review-admin.page').then((m) => m.ReviewAdminPage),
       },
       {
         path: 'admin/pulse',
         title: 'titles.surveys',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/pulse/surveys/surveys.page').then((m) => m.SurveysPage),
       },
       {
         path: 'admin/documents/templates',
         title: 'titles.documentTemplates',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/documents/templates/document-templates.page').then((m) => m.DocumentTemplatesPage),
       },
       {
         path: 'admin/hiring-requests',
         title: 'titles.hiringSettings',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/hiring-requests/hiring-settings.page').then((m) => m.HiringSettingsPage),
       },
       {
@@ -131,32 +132,32 @@ export const routes: Routes = [
       {
         path: 'admin/time',
         title: 'titles.timeSchedules',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/time/time-schedules.page').then((m) => m.TimeSchedulesPage),
       },
       {
         path: 'desk/queue',
         title: 'titles.deskQueue',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/desk/queue.page').then((m) => m.DeskQueuePage),
       },
       {
         // Admins only; the API additionally requires the explicit Safe Speak handler flag.
         path: 'safe-speak/inbox',
         title: 'titles.safeSpeakInbox',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/safe-speak/inbox.page').then((m) => m.SafeSpeakInboxPage),
       },
       {
         path: 'admin/knowledge/:id',
         title: 'titles.articleEditor',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/knowledge/editor.page').then((m) => m.KnowledgeEditorPage),
       },
       {
         path: 'admin/assets',
         title: 'titles.assets',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/assets/assets.page').then((m) => m.AssetsPage),
       },
       {
@@ -168,7 +169,7 @@ export const routes: Routes = [
       {
         path: 'admin/timeoff',
         title: 'titles.timeoffSettings',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...HR_STAFF_ROLES)],
         loadComponent: () => import('./features/timeoff/settings/timeoff-settings.page').then((m) => m.TimeOffSettingsPage),
       },
       {

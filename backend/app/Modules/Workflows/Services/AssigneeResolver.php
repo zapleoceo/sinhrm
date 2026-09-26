@@ -29,7 +29,7 @@ final readonly class AssigneeResolver
         };
     }
 
-    /** The admin who started the run, else the first active superadmin/admin. */
+    /** The admin who started the run, else the first active HR staff user. */
     public function hr(?User $startedBy = null): ?int
     {
         if ($startedBy !== null && $this->scope->isAdmin($startedBy)) {

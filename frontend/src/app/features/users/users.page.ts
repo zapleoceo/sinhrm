@@ -14,7 +14,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus } from '../../core/auth/auth.model';
+import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus, isHrStaff } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { DictionaryItem } from '../directory/directory.model';
 import { DirectoryService } from '../directory/directory.service';
@@ -70,14 +70,14 @@ export class UsersPage implements OnInit {
   protected readonly failed = signal(false);
   protected readonly pending = signal<ReadonlySet<number>>(new Set());
   /**
-   * Selected branch ids per branch-scoped user (recruiter/viewer; superadmin/admin see every branch).
+   * Selected branch ids per branch-scoped user (recruiter/viewer/employee; HR staff see every branch).
    * A stable array per row: a fresh one on every check would reset an open multi-select.
    */
   protected readonly scopedBranchIds = computed(
     () =>
       new Map(
         this.users()
-          .filter((u) => !u.roles.includes('superadmin') && !u.roles.includes('admin'))
+          .filter((u) => !isHrStaff(u.roles))
           .map((u) => [u.id, u.branches.map((b) => b.id)] as const),
       ),
   );
@@ -142,9 +142,9 @@ export class UsersPage implements OnInit {
     this.optimistic(user, { branches }, { branch_ids: ids });
   }
 
-  /** The Safe Speak handler flag is offered to superadmin/admin only (the API refuses it for other roles). */
+  /** The Safe Speak handler flag is offered to HR staff only (the API refuses it for other roles). */
   protected canHandle(user: AdminUser): boolean {
-    return user.roles.includes('superadmin') || user.roles.includes('admin');
+    return isHrStaff(user.roles);
   }
 
   protected toggleHandler(user: AdminUser): void {

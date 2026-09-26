@@ -1,3 +1,4 @@
+import { isHrStaff } from '../../../core/auth/auth.model';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -127,7 +128,7 @@ export class MoodPage implements OnInit {
   protected readonly history = signal<MoodEntry[]>([]);
   protected readonly team = signal<TeamMood | null>(null);
   protected readonly settings = signal<MoodSettings | null>(null);
-  protected readonly isAdmin = computed(() => (this.auth.user()?.roles ?? []).some((r) => r === 'superadmin' || r === 'admin'));
+  protected readonly isAdmin = computed(() => isHrStaff(this.auth.user()?.roles ?? []));
   protected readonly emoji = moodEmoji;
 
   ngOnInit(): void {

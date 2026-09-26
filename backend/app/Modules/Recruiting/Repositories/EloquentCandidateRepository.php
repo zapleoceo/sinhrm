@@ -109,8 +109,8 @@ final class EloquentCandidateRepository implements CandidateRepository
     }
 
     /**
-     * Restricted users see candidates they own/created and candidates with an application on a vacancy of their
-     * branches.
+     * Restricted users see candidates they own/created, candidates with an application on a vacancy of their
+     * branches, and candidates reachable through a contextual role (hiring manager, interviewer).
      *
      * @param  Builder<Candidate>  $query
      * @return Builder<Candidate>
@@ -131,6 +131,16 @@ final class EloquentCandidateRepository implements CandidateRepository
                         ->whereColumn('applications.candidate_id', 'candidates.id')
                         ->whereIn('vacancies.branch_id', $scope->branchIds ?? []);
                 });
+            if ($scope->hasContextualAccess()) {
+                // Contextual roles: candidates of vacancies the user manages, and of applications they interview.
+                $w->orWhereExists(function (QueryBuilder $sub) use ($scope): void {
+                    $sub->selectRaw('1')
+                        ->from('applications')
+                        ->whereColumn('applications.candidate_id', 'candidates.id')
+                        ->where(fn (QueryBuilder $a) => $a->whereIn('applications.vacancy_id', $scope->managedVacancyIds)
+                            ->orWhereIn('applications.id', $scope->interviewApplicationIds));
+                });
+            }
         });
     }
 }

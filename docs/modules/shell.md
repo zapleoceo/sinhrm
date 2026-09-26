@@ -45,5 +45,7 @@
 `npx ng test --watch=false` (guards, AuthService, язык, сворачивание меню — `nav-groups.spec.ts`, `shell.layout.spec.ts`), `npx ng build`.
 Вручную: войти → переключить тему и язык → обновить страницу (выбор сохранился) → «Вийти» ведёт на `/login`.
 Открыть любой календарь (например, «Мої відсутності») → неделя с понедельника, месяцы на языке интерфейса; Ctrl/⌘+K ничего не делает.
+HR-страницы (`admin/workflows*`, `admin/perform/reviews`, `admin/pulse`, `admin/documents/templates`, `admin/hiring-requests`, `admin/time`, `desk/queue`, `safe-speak/inbox`, `admin/knowledge/:id`, `admin/assets`, `admin/timeoff`) охраняет `roleGuard(...HR_STAFF_ROLES)` — открыты и `hr_manager`; в меню их показывает `isHr()`. `admin/acquisition-channels`, `admin/scripts`, `admin/directory`, `status` остаются за `superadmin`/`admin` (`isAdmin()`).
+
 Свернуть/развернуть раздел меню, обновить страницу — состояние сохранилось; открыть `/perform/objectives` — «Продуктивність» раскрылась сама.
 Пользователь не суперадмин не видит пункт «Користувачі», а прямой переход на `/admin/users` возвращает на `/`.

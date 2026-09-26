@@ -21,6 +21,9 @@
 ## Как устроено
 ### Доступ
 Gate `manage-users` (`Providers\UsersServiceProvider::MANAGE_USERS`): активный пользователь с ролью `superadmin`.
+Назначаемые роли (приглашение и смена): `admin`, `hr_manager`, `recruiter`, `employee`, `viewer` — что каждая значит, см.
+[auth.md](auth.md) «Роли и статусы». В списке пользователей есть фильтр по роли, подписи ролей переведены (uk/ru/en,
+ключи `roles.*`). Филиалы выбираются только для ролей вне HR (у `superadmin`/`admin`/`hr_manager` — все филиалы).
 Роль `admin` пока доступа не имеет. Все маршруты: `auth:sanctum` + `EnsureUserIsActive` + `can:manage-users`.
 Гость → 401, другая роль → 403.
 
@@ -49,6 +52,7 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
   оставили систему без суперадмина.
 
 ### Обработчик Safe Speak
+Флаг можно дать HR (`superadmin`, `admin`, `hr_manager` — `UserRole::hrStaff()`); другим ролям — 422 `handler_requires_admin`.
 Колонка `users.safe_speak_handler boolean default false` — миграция модуля Users
 `Database/Migrations/2026_10_05_100001_add_safe_speak_handler_to_users.php`. Явный флаг, а не новая роль: читать
 анонимные жалобы должны не все админы. Сервис: `true` только для суперадмина/админа (с учётом роли, меняемой тем же

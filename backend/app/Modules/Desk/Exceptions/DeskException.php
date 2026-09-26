@@ -26,7 +26,7 @@ final class DeskException extends RuntimeException
         return new self('category_inactive', 422);
     }
 
-    /** Assignees are superadmin/admin (HR) users only. */
+    /** Assignees are HR staff (superadmin/admin/hr_manager) only. */
     public static function invalidAssignee(): self
     {
         return new self('invalid_assignee', 422);
