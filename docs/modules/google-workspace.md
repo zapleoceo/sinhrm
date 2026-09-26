@@ -116,7 +116,7 @@ google_unreachable | google_bad_response` (`Exceptions/GoogleException`, тел�
   (защита от подстановки `Bcc:`), адрес проверяется `FILTER_VALIDATE_EMAIL`, иначе `invalid_mail` (422).
 - Ответ в ветку: `OutgoingMail::threadId` → `threadId` в запросе, `inReplyTo` (Message-ID письма кандидата, только
   вида `<…@…>`) → заголовки `In-Reply-To` и `References`.
-- Лимит: `GmailMailer::MAX_PER_HOUR = 60` писем в час на ящик (`Illuminate\Cache\RateLimiter`, ключ
+- Лимит: `GmailMailer::MAX_PER_HOUR = 60` писем в час на ящик (атомарный счётчик `RateLimiter::hit()` — без гонки «проверил, потом посчитал»; ключ
   `google:gmail-send`) → `gmail_send_rate_limited` (429) + запись `gmail_send_rate_limited` в журнал интеграции.
 - Безопасность: хост — константа, редиректы запрещены, таймауты 15/5 с (всё через `Support/GoogleApi`), токен берётся из
   `SecretVault`, в журнал попадает только код ошибки (`gmail_send_failed {code}`), не тело ответа Google и не токен.

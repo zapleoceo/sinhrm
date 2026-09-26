@@ -94,4 +94,43 @@ final class EnpsAndCompareTest extends TestCase
         $this->assertEquals(['id' => 'q1', 'current' => 4.0, 'previous' => 2.0, 'delta' => 2.0], $rows['Sales']['questions'][1]);
         $this->assertEquals(['id' => 'q1', 'current' => 5.0, 'previous' => 3.0, 'delta' => 2.0], $rows['Ops']['questions'][1]);
     }
+
+    /**
+     * Differencing attack: wave 2 = the same 5 Sales people plus one newcomer. Without protection
+     * 6 × avg(wave 2) − 5 × avg(wave 1) = the newcomer's own answer. The comparison must hide it.
+     */
+    public function test_one_newcomer_between_waves_does_not_leak_through_the_delta(): void
+    {
+        $sales = Department::factory()->create(['name' => 'Sales']);
+        $ops = Department::factory()->create(['name' => 'Ops']);
+        $survey = $this->survey();
+        $first = $this->wave($survey, ['starts_at' => '2026-09-01', 'ends_at' => '2026-09-07']);
+        $second = $this->wave($survey, ['starts_at' => '2026-10-01', 'ends_at' => '2026-10-07']);
+        $salesPeople = $this->people(5, ['department_id' => $sales->id]);
+        $opsPeople = $this->people(5, ['department_id' => $ops->id]);
+        $newcomer = $this->people(1, ['department_id' => $sales->id])[0];
+        foreach ([...$salesPeople, ...$opsPeople] as $p) {
+            $this->answer($first, $p, ['enps' => 8, 'q1' => 3]);
+            $this->answer($second, $p, ['enps' => 8, 'q1' => 3]);
+        }
+        $this->answer($second, $newcomer, ['enps' => 0, 'q1' => 1]);
+        $first->update(['status' => 'closed', 'salt' => null]);
+        $second->update(['status' => 'closed', 'salt' => null]);
+
+        $data = $this->actingAs($this->login(UserRole::Admin))
+            ->getJson("/api/pulse/waves/{$second->id}/compare?segment=department")->assertOk()->json('data');
+        foreach ($data['rows'] as $row) {
+            if ($row['name'] === 'Ops') {
+                continue; // Ops is identical in both waves (difference 0), it may be compared.
+            }
+            $this->assertSame('anonymity', $row['hidden_reason'], (string) $row['name']);
+            foreach ($row['questions'] as $cell) {
+                $this->assertNull($cell['previous']);
+                $this->assertNull($cell['delta']);
+            }
+        }
+        $ops = array_values(array_filter($data['rows'], static fn (array $r): bool => $r['name'] === 'Ops'))[0];
+        // Ops itself is unchanged, but the rest of the wave outside Ops gained the newcomer: still hidden.
+        $this->assertSame('anonymity', $ops['hidden_reason']);
+    }
 }

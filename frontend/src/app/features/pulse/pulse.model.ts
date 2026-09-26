@@ -134,7 +134,7 @@ export interface WaveCompare {
   current?: { id: number; starts_at: string };
   previous?: { id: number; starts_at: string } | null;
   questions: { id: string; type: QuestionType; text: string }[];
-  rows?: { segment: number | null; name: string | null; questions: CompareCell[] }[];
+  rows?: { segment: number | null; name: string | null; questions: CompareCell[]; hidden_reason?: 'anonymity' | null }[];
   participation?: ParticipationInfo;
 }
 

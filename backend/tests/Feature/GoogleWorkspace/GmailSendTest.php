@@ -7,7 +7,9 @@ namespace Tests\Feature\GoogleWorkspace;
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
+use App\Modules\GoogleWorkspace\DTO\OutgoingMail;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
+use App\Modules\GoogleWorkspace\Exceptions\GoogleException;
 use App\Modules\GoogleWorkspace\Services\GmailMailer;
 use App\Modules\GoogleWorkspace\Support\MimeText;
 use App\Modules\Recruiting\Models\Candidate;
@@ -157,6 +159,27 @@ final class GmailSendTest extends TestCase
         $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'email', 'text' => 'Привіт'])
             ->assertStatus(429)->assertJsonPath('code', 'rate_limited');
         Http::assertNothingSent();
+    }
+
+    public function test_rate_limit_counts_atomically_and_lets_exactly_the_limit_through(): void
+    {
+        $this->connectGoogle(GoogleService::Gmail, $this->recruiter->id);
+        Http::fake([self::SEND => Http::response(['id' => 'fake-sent-4'])]);
+        $mailer = $this->app->make(GmailMailer::class);
+        $limiter = $this->app->make(RateLimiter::class);
+        for ($i = 0; $i < GmailMailer::MAX_PER_HOUR - 1; $i++) {
+            $limiter->hit(GmailMailer::LIMITER_KEY, 3600);
+        }
+
+        $mailer->send(new OutgoingMail('olena.sample@example.test', 'S', 'last free slot'));
+        $this->assertSame(GmailMailer::MAX_PER_HOUR, $limiter->attempts(GmailMailer::LIMITER_KEY));
+        try {
+            $mailer->send(new OutgoingMail('olena.sample@example.test', 'S', 'over the limit'));
+            $this->fail('expected gmail_send_rate_limited');
+        } catch (GoogleException $e) {
+            $this->assertSame('gmail_send_rate_limited', $e->errorCode);
+        }
+        Http::assertSentCount(1);
     }
 
     private function url(): string

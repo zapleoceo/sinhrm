@@ -53,12 +53,13 @@ final readonly class GmailMailer implements Mailer
             MailerState::Ready => null,
         };
         $raw = MimeMessage::build($mail, Str::random(32));
-        if ($this->limiter->tooManyAttempts(self::LIMITER_KEY, self::MAX_PER_HOUR)) {
+        // Atomic: hit() is a cache increment that returns the new count, so two parallel sends can never both pass
+        // the last free slot (a check-then-hit would let them).
+        if ($this->limiter->hit(self::LIMITER_KEY, 3600) > self::MAX_PER_HOUR) {
             $this->connections->log(GoogleService::Gmail, LogLevel::Warning, 'gmail_send_rate_limited');
 
             throw GoogleException::sendRateLimited();
         }
-        $this->limiter->hit(self::LIMITER_KEY, 3600);
 
         $body = ['raw' => MimeMessage::base64Url($raw)];
         $threadId = $mail->threadId !== null && self::isId($mail->threadId) ? $mail->threadId : null;
