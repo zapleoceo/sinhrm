@@ -1,5 +1,6 @@
 <div class="shell">
-  <nav class="sidebar" [attr.aria-label]="'shell.nav.label' | transloco">
+  <aside class="sidebar">
+  <nav class="sidebar-nav" [attr.aria-label]="'shell.nav.label' | transloco">
     <a class="brand" routerLink="/">{{ 'app.name' | transloco }}</a>
     <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>dashboard</mat-icon>
@@ -243,53 +244,58 @@
       }
       </div></div>
     }
-    <a class="nav-link nav-help" routerLink="/docs" routerLinkActive="active">
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-link" routerLink="/docs" routerLinkActive="active">
       <mat-icon>help_outline</mat-icon>
       <span>{{ 'shell.nav.docs' | transloco }}</span>
     </a>
-  </nav>
+    @if (user(); as u) {
+      <button type="button" class="user" [matMenuTriggerFor]="menu" [attr.aria-label]="'shell.menu.open' | transloco">
+        @if (u.avatar_url) {
+          <img class="avatar" [src]="u.avatar_url" alt="" referrerpolicy="no-referrer" width="32" height="32" />
+        } @else {
+          <span class="avatar fallback" aria-hidden="true">{{ initial() }}</span>
+        }
+        <span class="user-text">
+          <span class="name">{{ u.name }}</span>
+          <span class="email">{{ u.email }}</span>
+        </span>
+        <mat-icon class="user-chevron" aria-hidden="true">unfold_more</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu" yPosition="above">
+        <div class="menu-head" role="presentation">
+          <strong>{{ u.name }}</strong>
+          <span class="muted">{{ u.email }}</span>
+        </div>
+        <mat-divider />
+        <div class="menu-lang" role="presentation" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+          <span class="muted">{{ 'shell.menu.language' | transloco }}</span>
+          <app-language-switcher />
+        </div>
+        <mat-divider />
+        <button mat-menu-item type="button" class="theme-toggle" (click)="theme.toggle()">
+          <mat-icon>{{ themeIcon() }}</mat-icon>
+          <span>{{ themeLabel() | transloco }}</span>
+        </button>
+        <a mat-menu-item routerLink="/me">
+          <mat-icon>badge</mat-icon>
+          <span>{{ 'shell.menu.myProfile' | transloco }}</span>
+        </a>
+        <a mat-menu-item routerLink="/settings/extension">
+          <mat-icon>extension</mat-icon>
+          <span>{{ 'shell.menu.extension' | transloco }}</span>
+        </a>
+        <button mat-menu-item type="button" class="logout" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>{{ 'shell.menu.logout' | transloco }}</span>
+        </button>
+      </mat-menu>
+    }
+  </div>
+  </aside>
 
   <div class="main">
-    <header class="topbar">
-      <span class="spacer"></span>
-      <button mat-icon-button type="button" (click)="theme.toggle()" [matTooltip]="themeLabel() | transloco" [attr.aria-label]="themeLabel() | transloco">
-        <mat-icon>{{ themeIcon() }}</mat-icon>
-      </button>
-      @if (user(); as u) {
-        <button mat-button type="button" class="user" [matMenuTriggerFor]="menu" [attr.aria-label]="'shell.menu.open' | transloco">
-          @if (u.avatar_url) {
-            <img class="avatar" [src]="u.avatar_url" alt="" referrerpolicy="no-referrer" width="28" height="28" />
-          } @else {
-            <span class="avatar fallback" aria-hidden="true">{{ initial() }}</span>
-          }
-          <span class="name">{{ u.name }}</span>
-        </button>
-        <mat-menu #menu="matMenu" xPosition="before">
-          <div class="menu-head" role="presentation">
-            <strong>{{ u.name }}</strong>
-            <span class="muted">{{ u.email }}</span>
-          </div>
-          <mat-divider />
-          <div class="menu-lang" role="presentation" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
-            <span class="muted">{{ 'shell.menu.language' | transloco }}</span>
-            <app-language-switcher />
-          </div>
-          <mat-divider />
-          <a mat-menu-item routerLink="/me">
-            <mat-icon>badge</mat-icon>
-            <span>{{ 'shell.menu.myProfile' | transloco }}</span>
-          </a>
-          <a mat-menu-item routerLink="/settings/extension">
-            <mat-icon>extension</mat-icon>
-            <span>{{ 'shell.menu.extension' | transloco }}</span>
-          </a>
-          <button mat-menu-item type="button" (click)="logout()">
-            <mat-icon>logout</mat-icon>
-            <span>{{ 'shell.menu.logout' | transloco }}</span>
-          </button>
-        </mat-menu>
-      }
-    </header>
     <main class="content">
       <router-outlet />
     </main>

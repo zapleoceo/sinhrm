@@ -7,7 +7,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
@@ -15,7 +14,7 @@ import { LanguageSwitcher } from './language-switcher';
 import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
 
-/** App frame for signed-in users: sidebar navigation + top bar with the user menu. */
+/** App frame for signed-in users: sidebar navigation with a pinned footer (help link + user menu). */
 @Component({
   selector: 'app-shell-layout',
   imports: [
@@ -26,7 +25,6 @@ import { NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-group
     MatDividerModule,
     MatIconModule,
     MatMenuModule,
-    MatTooltipModule,
     TranslocoPipe,
     LanguageSwitcher,
     NavBadge,
