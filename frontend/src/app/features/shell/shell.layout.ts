@@ -1,3 +1,4 @@
+import { isHrStaff } from '../../core/auth/auth.model';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -38,6 +39,8 @@ export class ShellLayout {
   protected readonly isSuperadmin = computed(() => this.user()?.roles.includes('superadmin') ?? false);
   /** Dictionaries are managed by superadmin and admin. */
   protected readonly isAdmin = computed(() => this.isSuperadmin() || (this.user()?.roles.includes('admin') ?? false));
+  /** HR settings pages (People, TimeOff, Desk, Pulse, Workflows, …): superadmin, admin, hr_manager. */
+  protected readonly isHr = computed(() => isHrStaff(this.user()?.roles ?? []));
   protected readonly initial = computed(() => (this.user()?.name ?? '?').charAt(0).toUpperCase());
   protected readonly themeLabel = computed(() => (this.theme.theme() === 'dark' ? 'shell.theme.toLight' : 'shell.theme.toDark'));
   protected readonly themeIcon = computed(() => (this.theme.theme() === 'dark' ? 'light_mode' : 'dark_mode'));

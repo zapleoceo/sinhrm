@@ -1,8 +1,14 @@
 /** Mirrors backend App\Modules\Auth\Enums\UserRole. */
-export type UserRole = 'superadmin' | 'admin' | 'recruiter' | 'viewer';
-export const USER_ROLES: readonly UserRole[] = ['superadmin', 'admin', 'recruiter', 'viewer'];
+export type UserRole = 'superadmin' | 'admin' | 'hr_manager' | 'recruiter' | 'employee' | 'viewer';
+export const USER_ROLES: readonly UserRole[] = ['superadmin', 'admin', 'hr_manager', 'recruiter', 'employee', 'viewer'];
 /** Roles a superadmin can give through an invitation. */
-export const INVITABLE_ROLES: readonly UserRole[] = ['admin', 'recruiter', 'viewer'];
+export const INVITABLE_ROLES: readonly UserRole[] = ['admin', 'hr_manager', 'recruiter', 'employee', 'viewer'];
+/** Mirrors backend UserRole::hrStaff(): they act as HR (People, TimeOff, Desk, Pulse, Workflows, …) and see every branch. */
+export const HR_STAFF_ROLES: readonly UserRole[] = ['superadmin', 'admin', 'hr_manager'];
+
+export function isHrStaff(roles: readonly UserRole[]): boolean {
+  return roles.some((r) => HR_STAFF_ROLES.includes(r));
+}
 
 /** Mirrors backend App\Modules\Auth\Enums\UserStatus. */
 export type UserStatus = 'active' | 'blocked';

@@ -121,7 +121,8 @@ describe('People helpers', () => {
 
   it('knows who manages people', () => {
     expect(canManagePeople(['admin'])).toBe(true);
-    expect(canManagePeople(['recruiter', 'viewer'])).toBe(false);
+    expect(canManagePeople(['hr_manager'])).toBe(true);
+    expect(canManagePeople(['recruiter', 'viewer', 'employee'])).toBe(false);
   });
 
   it('walks, filters and counts the org tree', () => {

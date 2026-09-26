@@ -1,3 +1,4 @@
+import { isHrStaff } from '../../core/auth/auth.model';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -91,7 +92,7 @@ export class KnowledgePage implements OnInit {
   protected readonly query = signal<ArticleQuery>({});
   protected readonly loading = signal(false);
   /** Admins (HR) write articles; the API enforces it (gate knowledge-manage). */
-  protected readonly editor = computed(() => this.auth.hasRole('superadmin') || this.auth.hasRole('admin'));
+  protected readonly editor = computed(() => isHrStaff(this.auth.user()?.roles ?? []));
 
   constructor() {
     this.typed.pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed()).subscribe((q) => {

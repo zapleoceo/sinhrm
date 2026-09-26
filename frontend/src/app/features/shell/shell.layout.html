@@ -117,7 +117,7 @@
       <mat-icon>tune</mat-icon>
       <span>{{ 'shell.nav.reportBuilder' | transloco }}</span>
     </a>
-    @if (isAdmin()) {
+    @if (isHr()) {
       <p class="nav-section">{{ 'shell.nav.admin' | transloco }}</p>
       <a class="nav-link" routerLink="/desk/queue" routerLinkActive="active">
         <mat-icon>inbox</mat-icon>
@@ -131,10 +131,12 @@
         <mat-icon>rule</mat-icon>
         <span>{{ 'shell.nav.hiringSettings' | transloco }}</span>
       </a>
-      <a class="nav-link" routerLink="/admin/acquisition-channels" routerLinkActive="active">
-        <mat-icon>campaign</mat-icon>
-        <span>{{ 'shell.nav.acquisitionChannels' | transloco }}</span>
-      </a>
+      @if (isAdmin()) {
+        <a class="nav-link" routerLink="/admin/acquisition-channels" routerLinkActive="active">
+          <mat-icon>campaign</mat-icon>
+          <span>{{ 'shell.nav.acquisitionChannels' | transloco }}</span>
+        </a>
+      }
       <a class="nav-link" routerLink="/admin/time" routerLinkActive="active">
         <mat-icon>calendar_view_week</mat-icon>
         <span>{{ 'shell.nav.timeSchedules' | transloco }}</span>
@@ -162,11 +164,7 @@
         <span>{{ 'shell.nav.sheetsImport' | transloco }}</span>
       </a>
     }
-    @if (isAdmin()) {
-      <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active">
-        <mat-icon>record_voice_over</mat-icon>
-        <span>{{ 'shell.nav.scripts' | transloco }}</span>
-      </a>
+    @if (isHr()) {
       <a class="nav-link" routerLink="/admin/timeoff" routerLinkActive="active">
         <mat-icon>event_available</mat-icon>
         <span>{{ 'shell.nav.timeoffSettings' | transloco }}</span>
@@ -186,6 +184,12 @@
       <a class="nav-link" routerLink="/admin/documents/templates" routerLinkActive="active">
         <mat-icon>article</mat-icon>
         <span>{{ 'shell.nav.documentTemplates' | transloco }}</span>
+      </a>
+    }
+    @if (isAdmin()) {
+      <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active">
+        <mat-icon>record_voice_over</mat-icon>
+        <span>{{ 'shell.nav.scripts' | transloco }}</span>
       </a>
       <a class="nav-link" routerLink="/admin/directory" routerLinkActive="active">
         <mat-icon>menu_book</mat-icon>
