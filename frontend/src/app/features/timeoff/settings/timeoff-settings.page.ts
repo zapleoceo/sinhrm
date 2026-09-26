@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -15,6 +16,7 @@ import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
 import { ACCRUAL_MODES, AccrualMode, Holiday, LeavePolicy, LeaveType } from '../timeoff.model';
 import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
+import { toIsoDate } from '../../../core/date/iso-date';
 
 /**
  * Leave settings (superadmin, admin): leave types, policies (company default + per branch,
@@ -26,7 +28,7 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
     ReactiveFormsModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatFormFieldModule,
+    MatDatepickerModule, MatFormFieldModule,
     MatIconModule,
     MatInputModule,
     MatSelectModule,
@@ -140,7 +142,7 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
           }
         </ul>
         <form class="inline" [formGroup]="holidayForm" (ngSubmit)="addHoliday()">
-          <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'timeoff.settings.date' | transloco }}</mat-label><input matInput type="date" formControlName="date" /></mat-form-field>
+          <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'timeoff.settings.date' | transloco }}</mat-label><input matInput [matDatepicker]="dp1" formControlName="date" /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 /></mat-form-field>
           <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'timeoff.settings.name' | transloco }}</mat-label><input matInput formControlName="name" /></mat-form-field>
           <mat-form-field subscriptSizing="dynamic">
             <mat-label>{{ 'people.fields.branch' | transloco }}</mat-label>
@@ -196,7 +198,7 @@ export class TimeOffSettingsPage implements OnInit {
     carry_over_max: [null as number | null],
   });
   protected readonly holidayForm = this.fb.group({
-    date: ['', Validators.required],
+    date: [null as Date | null, Validators.required],
     name: ['', Validators.required],
     branch_id: [null as number | null],
   });
@@ -246,7 +248,8 @@ export class TimeOffSettingsPage implements OnInit {
       this.holidayForm.markAllAsTouched();
       return;
     }
-    this.run(this.api.saveHoliday(null, this.holidayForm.getRawValue()), () => {
+    const holiday = this.holidayForm.getRawValue();
+    this.run(this.api.saveHoliday(null, { ...holiday, date: toIsoDate(holiday.date) }), () => {
       this.holidayForm.reset();
       this.loadHolidays();
     });

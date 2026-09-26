@@ -1,7 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { calendarRows, monthDays, monthRange, shiftMonth, toIso } from '../timeoff.dates';
+import { calendarRows, monthDays, monthRange, shiftMonth } from '../timeoff.dates';
 import { CalendarData } from '../timeoff.model';
 import { TimeOffService } from '../timeoff.service';
+import { toIsoDate } from '../../../core/date/iso-date';
 
 /** Team calendar state: the month shown, optional branch filter, absences laid out per employee × day. */
 @Injectable()
@@ -9,7 +10,7 @@ export class CalendarStore {
   private readonly api = inject(TimeOffService);
   private seq = 0;
 
-  readonly month = signal(shiftMonth(toIso(new Date()), 0));
+  readonly month = signal(shiftMonth(toIsoDate(new Date()), 0));
   readonly branchId = signal<number | undefined>(undefined);
   readonly data = signal<CalendarData>({ absences: [], holidays: [] });
   readonly loading = signal(false);

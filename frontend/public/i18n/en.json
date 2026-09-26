@@ -1,6 +1,6 @@
 {
   "app": { "name": "SinHRM", "tagline": "Recruiting without the noise" },
-  "common": { "confirm": "Confirm", "cancel": "Cancel", "retry": "Try again", "loading": "Loading…", "error": "Something went wrong", "all": "All", "close": "Close", "save": "Save", "delete": "Delete" },
+  "common": { "confirm": "Confirm", "cancel": "Cancel", "retry": "Try again", "loading": "Loading…", "error": "Something went wrong", "all": "All", "close": "Close", "save": "Save", "delete": "Delete", "datepicker": {"calendar": "Calendar", "open": "Open calendar", "close": "Close calendar", "prevMonth": "Previous month", "nextMonth": "Next month", "prevYear": "Previous year", "nextYear": "Next year", "prevYears": "Previous 24 years", "nextYears": "Next 24 years", "chooseDate": "Choose date", "chooseMonthYear": "Choose month and year", "start": "Start date", "end": "End date", "time": "Time", "openTime": "Choose time", "invalid": "Invalid date (dd.mm.yyyy)"} },
   "roles": { "superadmin": "Superadmin", "admin": "Admin", "recruiter": "Recruiter", "viewer": "Viewer" },
   "statuses": { "active": "Active", "blocked": "Blocked" },
   "langs": { "uk": "Українська", "ru": "Русский", "en": "English" },
@@ -283,13 +283,6 @@
       "kep_signing": { "name": "Qualified e-signature of documents (Diia.Signature / Vchasno)", "description": "Placeholder: qualified electronic signature of employee documents. Not working yet — only “Acknowledged” is available for now." }
     }
   },
-  "palette": {
-    "title": "Quick jump",
-    "open": "Search",
-    "placeholder": "Candidate, vacancy, section…",
-    "nothing": "Nothing found",
-    "keys": "↑↓ select · Enter open · Esc close"
-  },
   "recruiting": {
     "search": "Search",
     "save": "Save",
@@ -336,7 +329,7 @@
       "new": "New candidate",
       "search": "Name, phone, e-mail, @telegram",
       "empty": "No candidates found",
-      "pick": "Pick a candidate on the left. j/k or ↑/↓ — next/previous, / — search.",
+      "pick": "Pick a candidate on the left.",
       "duplicate": "This candidate already exists (match: {{by}}).",
       "openExisting": "Open card",
       "fields": {
@@ -370,15 +363,13 @@
       "capturedHint": "Captured from an external channel (integration)",
       "created": "Created",
       "noTouches": "No touches yet",
-      "more": "Show more",
-      "keys": "Ctrl/⌘+K — quick jump · j/k — next candidate"
+      "more": "Show more"
     },
     "composer": {
       "channel": "Channel",
       "direction": "Direction",
       "minutes": "Minutes",
       "body": "Text / summary",
-      "hint": "Ctrl/⌘+Enter to save",
       "submit": "Log",
       "saved": "Touch saved"
     },
@@ -497,7 +488,7 @@
     "composer": {"send": "Send", "sendDemo": "Send (demo)", "sent": "Message sent", "sentDemo": "Demo: the message was recorded without sending", "notConnected": "The channel is not connected — the message was not sent.", "logManually": "Log manually"},
     "errors": {"channel_not_connected": "Channel not connected", "no_conversation": "The candidate has not written in this channel yet — nowhere to reply", "template_required": "WhatsApp: more than 24 hours since the candidate's last message — an approved template is required", "invalid_recipient": "Invalid recipient", "send_failed": "The service did not accept the message, try later", "telephony_not_connected": "Telephony is not connected", "click_to_call_unsupported": "This telephony cannot call from the card", "no_phone": "The candidate has no phone", "not_demo": "Demo events are available only in \"Demo\" mode", "channel_off": "Switch the integration on first (\"Demo\" mode)", "unsupported": "Not available for this integration", "application_mismatch": "The application belongs to another candidate", "generic": "Could not complete the action"}
   },
-  "extension": {"title": "Browser extension", "explain": "SinHRM Clipper adds a candidate from the profile page you are viewing (LinkedIn, Work.ua, Djinni, DOU) in one click. It uses a personal token instead of your session.", "active": "Token is active", "inactive": "No active token. Create one and paste it into the extension settings.", "createdAt": "Created", "lastUsedAt": "Last used", "expiresAt": "Expires", "never": "never", "create": "Create token", "regenerate": "Create a new token", "revoke": "Revoke", "onceTitle": "Copy the token now", "onceHint": "It is shown only once. Creating a new token revokes this one.", "copy": "Copy", "copied": "Copied", "error": "Could not update the token. Try again.", "installTitle": "How to install", "docs": "Full instructions", "install": {"step1": "Download sinhrm-clipper.zip (built by CI or with npm run package in extension/) and unzip it.", "step2": "Open chrome://extensions and turn on Developer mode.", "step3": "Click “Load unpacked” and choose the unzipped folder.", "step4": "Open the extension options, paste the token and click “Check connection”."}, "privacy": "The extension reads only the page you are viewing and only when you click its button. It does not crawl or scrape in the background."},
+  "extension": {"sites": "Supported sites", "title": "Browser extension", "explain": "SinHRM Clipper adds a candidate from the profile page you are viewing (LinkedIn, Work.ua, Djinni, DOU) in one click. It uses a personal token instead of your session.", "active": "Token is active", "inactive": "No active token. Create one and paste it into the extension settings.", "createdAt": "Created", "lastUsedAt": "Last used", "expiresAt": "Expires", "never": "never", "create": "Create token", "regenerate": "Create a new token", "revoke": "Revoke", "onceTitle": "Copy the token now", "onceHint": "It is shown only once. Creating a new token revokes this one.", "copy": "Copy", "copied": "Copied", "error": "Could not update the token. Try again.", "installTitle": "How to install", "docs": "Full instructions", "install": {"step1": "Download sinhrm-clipper.zip (built by CI or with npm run package in extension/) and unzip it.", "step2": "Open chrome://extensions and turn on Developer mode.", "step3": "Click “Load unpacked” and choose the unzipped folder.", "step4": "Open the extension options, paste the token and click “Check connection”."}, "privacy": "The extension reads only the page you are viewing and only when you click its button. It does not crawl or scrape in the background."},
   "titles": { "extension": "Browser extension", "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "Employees", "orgChart": "Org chart", "profile": "Employee profile", "myProfile": "My profile", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings", "tasks": "My tasks", "myDocuments": "My documents", "workflowRuns": "Workflows", "workflows": "Workflow templates", "workflowEditor": "Workflow editor", "documentTemplates": "Document templates", "oneOnOnes": "1:1 meetings", "objectives": "Objectives", "feedback": "Feedback", "myReviews": "My reviews", "mySurveys": "Surveys", "mood": "Mood", "respond": "Survey", "surveyResults": "Survey results", "reviewSetup": "Performance reviews", "surveys": "Survey builder", "desk": "My requests", "deskCase": "Request", "deskQueue": "Helpdesk queue", "safeSpeak": "Safe Speak", "safeSpeakInbox": "Safe Speak inbox", "knowledge": "Knowledge base", "article": "Article", "articleEditor": "Article editor", "assets": "Assets", "reportCatalog": "Report catalog", "reportBuilder": "Report builder", "hiringRequests": "Hiring requests", "hiringInbox": "Request approvals", "hiringNew": "Hiring request", "hiringRequest": "Hiring request", "hiringSettings": "Hiring request settings", "acquisitionChannels": "Acquisition channels", "time": "My timesheet", "timeApprovals": "Timesheet approvals", "timeTeam": "Team timesheets", "timeSchedules": "Work schedules" },
   "overview": {
     "warnings": { "google_reconnect_required": "Google ({{service}}) must be reconnected: access expired or was revoked.", "open": "Open integrations" },
@@ -1190,14 +1181,14 @@
     "kind": { "manager": "Requester's manager", "role": "Role", "user": "Specific user" },
     "fieldType": { "text": "Text", "textarea": "Long text", "number": "Number", "date": "Date", "select": "Select", "checkbox": "Checkbox" },
     "overdue": "Overdue",
-    "fields": { "title": "Position / title", "requester": "Requester", "status": "Status", "step": "Current step", "progress": "Hired", "created": "Created", "branch": "Branch", "department": "Department", "position": "Position (dictionary)", "headcount": "Headcount", "priority": "Priority", "reason": "Reason", "searchEmployee": "Find employee (Enter)", "replaced": "Replaced employee", "startDate": "Desired start date", "salaryMin": "Salary from", "salaryMax": "Salary to", "currency": "Currency", "requirements": "Requirements", "salary": "Salary", "recruiter": "Recruiter" },
+    "fields": { "title": "Position / title", "requester": "Requester", "status": "Status", "step": "Current step", "progress": "Hired", "created": "Created", "branch": "Branch", "department": "Department", "position": "Position (dictionary)", "headcount": "Headcount", "priority": "Priority", "reason": "Reason", "searchEmployee": "Find employee", "replaced": "Replaced employee", "startDate": "Desired start date", "salaryMin": "Salary from", "salaryMax": "Salary to", "currency": "Currency", "requirements": "Requirements", "salary": "Salary", "recruiter": "Recruiter" },
     "wizard": { "title": "New hiring request", "editTitle": "Edit draft", "steps": "Request steps", "step0": "Position", "step1": "Details", "step2": "Review", "back": "Back", "next": "Next", "saveDraft": "Save draft", "submit": "Send for approval", "missing": "Fill in the required fields: {{fields}}" },
     "detail": { "edit": "Edit", "cancel": "Cancel request", "close": "Close request", "details": "Details", "route": "Approval route", "due": "Due: {{date}}", "noRoute": "The route appears after sending", "comment": "Comment (required to reject)", "recruiter": "Vacancy recruiter", "approve": "Approve", "reject": "Reject", "vacancy": "Vacancy", "hired": "Hired {{hired}} of {{headcount}}", "noVacancy": "Approved; the vacancy is not open yet.", "openVacancy": "Open vacancy", "linkVacancy": "Or link an existing vacancy", "vacancyAfterApproval": "The vacancy appears after approval" },
     "settings": { "title": "Hiring request settings", "subtitle": "Approval route, form fields, who may create. Changes apply to new requests.", "route": "Approval route", "stepName": "Step name", "kind": "Approver", "role": "Role", "user": "User", "sla": "SLA, days", "up": "Move up", "down": "Move down", "addStep": "Add step", "fields": "Extra form fields", "fieldsHint": "Field order is the form order; required fields are checked on sending.", "key": "Key", "label": "Label", "type": "Type", "options": "Options, comma-separated", "required": "Required", "addField": "Add field", "access": "Access and vacancy", "creatorsHint": "Admins and managers can create requests; add more users here.", "creators": "Extra request creators", "autoVacancy": "Open the vacancy automatically on approval", "saved": "Saved" },
     "errors": { "invalid_status": "Not available in the current status", "replaced_employee_required": "Choose the replaced employee", "required_fields": "Fill in the required fields", "invalid_field": "Invalid field value", "salary_range": "Minimum salary is above the maximum", "vacancy_taken": "The vacancy is linked to another request", "invalid_recruiter": "Choose an active recruiter", "invalid_route": "Check the route steps", "no_default_pipeline": "No default pipeline", "forbidden": "Not allowed", "not_found": "Request not found", "validation": "Check the fields", "rate_limited": "Too many requests" }
   },
   "time": {
-    "week": { "title": "My timesheet", "titleOf": "Timesheet: {{name}}", "range": "Week {{from}} – {{to}}", "prev": "Previous week", "today": "This week", "next": "Next week", "comment": "Manager's comment", "project": "Project", "category": "Category", "holiday": "Holiday", "worked": "Worked", "expected": "Expected", "overtime": "Overtime", "missing": "Missing", "absence": "Absence", "schedule": "Schedule {{hours}} h/day", "addRow": "Add line", "fill": "Fill by schedule", "submit": "Submit for approval", "saved": "Timesheet saved" },
+    "week": { "pick": "Week", "title": "My timesheet", "titleOf": "Timesheet: {{name}}", "range": "Week {{from}} – {{to}}", "prev": "Previous week", "today": "This week", "next": "Next week", "comment": "Manager's comment", "project": "Project", "category": "Category", "holiday": "Holiday", "worked": "Worked", "expected": "Expected", "overtime": "Overtime", "missing": "Missing", "absence": "Absence", "schedule": "Schedule {{hours}} h/day", "addRow": "Add line", "fill": "Fill by schedule", "submit": "Submit for approval", "saved": "Timesheet saved" },
     "status": { "draft": "Draft", "submitted": "Submitted", "approved": "Approved", "rejected": "Returned" },
     "weekday": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },
     "scheduleSource": { "employee": "personal", "branch": "branch", "company": "company", "default": "default" },

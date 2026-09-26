@@ -136,6 +136,8 @@ e-mail / Telegram (глобально) — **matched**, иначе **created** (
 
 Строки — `google.*` в `public/i18n/{uk,ru,en}.json`.
 
+**Интерфейс (2026-09-26):** Даты вводятся только выпадающим календарём Angular Material (формат дд.мм.рррр, неделя с понедельника; [core.md](core.md)), в API уходит прежний `YYYY-MM-DD` (`core/date/iso-date.ts`, без сдвига часового пояса); в «Запланувати зустріч» день — календарь, время — `mat-timepicker` (шаг 15 мин, 24 ч), в API по-прежнему `toIsoWithOffset(date, time)`. Сервисы Gmail / Calendar / Sheets в панели подключения показаны иконками Font Awesome (`app-channel-icon`).
+
 ## Как проверить
 Бэкенд (Google везде подменён `Http::fake`, `Http::preventStrayRequests()`; все значения синтетические):
 - `tests/Feature/GoogleWorkspace/GoogleConnectTest` — 401/403; redirect: scopes, `offline`, `consent`, state в сессии,

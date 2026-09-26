@@ -3,8 +3,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { CONNECT_ERROR_CODES, GOOGLE_SERVICES, GoogleConnection, GoogleService as Service, connectUrl } from './google.model';
+import { CONNECT_ERROR_CODES, GOOGLE_SERVICES, GoogleConnection, connectUrl } from './google.model';
 import { GoogleService } from './google.service';
+import { ChannelIcon } from '../../core/ui/channel-icon';
 
 /**
  * Integrations → Google: state of Gmail / Calendar / Sheets and the "Connect Google" button (browser navigation to
@@ -12,7 +13,7 @@ import { GoogleService } from './google.service';
  */
 @Component({
   selector: 'app-google-connect-panel',
-  imports: [MatButtonModule, MatIconModule, TranslocoPipe],
+  imports: [ChannelIcon, MatButtonModule, MatIconModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="panel" aria-live="polite">
@@ -38,7 +39,7 @@ import { GoogleService } from './google.service';
       <ul class="services">
         @for (c of connections(); track c.service) {
           <li [attr.data-state]="state(c)">
-            <mat-icon aria-hidden="true">{{ icons[c.service] }}</mat-icon>
+            <app-channel-icon [key]="c.service" />
             <span class="name">{{ 'google.services.' + c.service | transloco }}</span>
             <span class="state">{{ 'google.connect.state.' + state(c) | transloco }}</span>
             @if (c.account_email) {
@@ -76,7 +77,6 @@ export class GoogleConnectPanel implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly href = connectUrl(GOOGLE_SERVICES);
-  protected readonly icons: Record<Service, string> = { gmail: 'mail', calendar: 'event', sheets: 'table_chart' };
   protected readonly connections = signal<GoogleConnection[]>([]);
   protected readonly redirectUri = signal<string | null>(null);
   protected readonly notConfigured = signal(false);

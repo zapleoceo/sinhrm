@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { CANDIDATE_SOURCES, Candidate, CandidateSource, DuplicateCandidate, SaveCandidate } from '../recruiting.model';
 import { RecruitingService, duplicateOf, recruitingErrorKey } from '../recruiting.service';
+import { ChannelIcon } from '../../../core/ui/channel-icon';
 
 export interface CandidateDialogData {
   vacancyId?: number;
@@ -21,7 +22,7 @@ export interface CandidateDialogData {
  */
 @Component({
   selector: 'app-candidate-dialog',
-  imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
+  imports: [ChannelIcon, ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ 'recruiting.candidates.new' | transloco }}</h2>
@@ -51,7 +52,7 @@ export interface CandidateDialogData {
             <mat-label>{{ 'recruiting.candidates.fields.source' | transloco }}</mat-label>
             <mat-select formControlName="source">
               @for (s of sources; track s) {
-                <mat-option [value]="s">{{ 'recruiting.source.' + s | transloco }}</mat-option>
+                <mat-option [value]="s"><app-channel-icon [key]="s" /> {{ 'recruiting.source.' + s | transloco }}</mat-option>
               }
             </mat-select>
           </mat-form-field>

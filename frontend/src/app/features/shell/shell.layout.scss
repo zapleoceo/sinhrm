@@ -59,11 +59,6 @@
 
 .spacer { flex: 1; }
 
-.palette {
-  color: var(--app-muted);
-  kbd { font: var(--mat-sys-label-small); border: 1px solid var(--app-border); border-radius: 4px; padding: 0 0.3rem; margin-left: 0.5rem; }
-}
-
 .avatar {
   width: 28px;
   height: 28px;
@@ -106,5 +101,4 @@
   .brand { padding: 0 0.75rem; }
   .nav-section { display: none; }
   .name { display: none; }
-  .palette-label, .palette kbd { display: none; }
 }

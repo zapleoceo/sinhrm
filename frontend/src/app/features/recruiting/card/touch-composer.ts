@@ -11,11 +11,12 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { SEND_CHANNELS, SendChannel, SendMessage } from '../../channels/channels.model';
 import { ChannelsService } from '../../channels/channels.service';
 import { TemplateMenu } from '../../scripts/templates/template-menu';
-import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '../recruiting.model';
+import { Channel, Direction, LogTouch, MANUAL_CHANNELS } from '../recruiting.model';
+import { ChannelIcon } from '../../../core/ui/channel-icon';
 
 /**
  * Logs a touch by hand: note (text required), call (minutes), meeting, or a messenger/e-mail contact made outside.
- * Ctrl/Cmd+Enter submits. Emits the body; the parent sends it and calls reset() on success.
+ * Emits the body; the parent sends it and calls reset() on success.
  * "Шаблон" inserts a filled message template of the active scripts (Scripts module) into the text.
  * Messengers (Telegram / WhatsApp / Viber) that are connected (demo or live) also get "Надіслати": the message goes
  * out through the channel (Channels module). If the channel turns out not connected, the composer offers to log it.
@@ -23,6 +24,7 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
 @Component({
   selector: 'app-touch-composer',
   imports: [
+    ChannelIcon,
     ReactiveFormsModule,
     MatButtonModule,
     MatButtonToggleModule,
@@ -35,12 +37,12 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <form class="composer" [formGroup]="form" (ngSubmit)="submit()" (keydown.control.enter)="submit()" (keydown.meta.enter)="submit()">
+    <form class="composer" [formGroup]="form" (ngSubmit)="submit()">
       <div class="line">
         <mat-button-toggle-group formControlName="channel" [attr.aria-label]="'recruiting.composer.channel' | transloco" hideSingleSelectionIndicator>
           @for (c of channels; track c) {
             <mat-button-toggle [value]="c" [title]="'recruiting.channel.' + c | transloco">
-              <mat-icon>{{ icons[c] }}</mat-icon>
+              <app-channel-icon [key]="c" />
               <span class="visually-hidden">{{ 'recruiting.channel.' + c | transloco }}</span>
             </mat-button-toggle>
           }
@@ -72,7 +74,7 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
       }
       <div class="actions">
         <app-template-menu [candidateId]="candidateId()" (picked)="insertTemplate($event)" />
-        <span class="muted hint grow">{{ 'recruiting.composer.hint' | transloco }}</span>
+        <span class="grow"></span>
         @if (canSend()) {
           <button mat-stroked-button type="submit" [disabled]="busy() || !valid()">{{ 'recruiting.composer.submit' | transloco }}</button>
           <button mat-flat-button type="button" [disabled]="busy() || !sendable()" (click)="send()">
@@ -91,7 +93,6 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
     .dir { width: 9rem; }
     .min { width: 7rem; }
     .actions { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
-    .hint { font-size: 0.8rem; }
     .grow { flex: 1; }
     .fallback { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 0.9rem; color: var(--mat-sys-error); }
   `,
@@ -105,7 +106,6 @@ export class TouchComposer implements OnInit {
   readonly sent = output<SendMessage>();
 
   protected readonly channels = MANUAL_CHANNELS;
-  protected readonly icons = CHANNEL_ICONS;
   protected readonly busy = signal(false);
   protected readonly form = inject(NonNullableFormBuilder).group({
     channel: ['note' as Channel],

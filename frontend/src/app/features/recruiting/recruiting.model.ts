@@ -43,18 +43,6 @@ export const CANDIDATE_SOURCES: readonly CandidateSource[] = [
 export const STAGE_FILTER = 'stage';
 export type TimelineFilter = Channel | typeof STAGE_FILTER;
 
-/** Material Symbols icon per channel: meaning is carried by icon + text, never by color only. */
-export const CHANNEL_ICONS: Record<Channel, string> = {
-  call: 'call',
-  telegram: 'send',
-  whatsapp: 'chat',
-  viber: 'forum',
-  email: 'mail',
-  note: 'sticky_note_2',
-  meeting: 'groups',
-  system: 'settings',
-};
-
 export interface Ref {
   id: number;
   name: string;

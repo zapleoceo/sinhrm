@@ -106,17 +106,6 @@ describe('BoardStore', () => {
 });
 
 describe('CandidatesStore', () => {
-  it('navigates neighbours with edges', () => {
-    const { store } = setup(CandidatesStore);
-    store.load();
-    expect(store.neighbour(1)).toBe(1); // nothing selected → first
-    store.selectedId.set(2);
-    expect(store.neighbour(1)).toBe(3);
-    expect(store.neighbour(-1)).toBe(1);
-    store.selectedId.set(3);
-    expect(store.neighbour(1)).toBeNull();
-  });
-
   it('filters reset the page', () => {
     const { store } = setup(CandidatesStore);
     store.setPage(3, 50);

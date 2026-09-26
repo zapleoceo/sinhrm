@@ -3,15 +3,18 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTimepickerModule } from '@angular/material/timepicker';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ListItem, ONE_ON_ONE_STATUSES, OneOnOne, OneOnOnePatch, OneOnOneTemplate, itemsBody, newItem, splitMeetings, toggleItem } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
+import { combineDateAndTime, toIsoDateOrNull, toIsoLocalDateTime } from '../../../core/date/iso-date';
 
 /**
  * 1:1 meetings (/perform/one-on-ones): upcoming and past; the selected meeting with its agenda, shared notes,
@@ -19,7 +22,7 @@ import { PerformService, performErrorKey } from '../perform.service';
  */
 @Component({
   selector: 'app-one-on-ones-page',
-  imports: [DatePipe, FormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, TranslocoPipe],
+  imports: [DatePipe, FormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, MatTimepickerModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -36,7 +39,15 @@ import { PerformService, performErrorKey } from '../perform.service';
       </mat-form-field>
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>{{ 'perform.fields.when' | transloco }}</mat-label>
-        <input matInput type="datetime-local" name="when" [(ngModel)]="newWhen" required />
+        <input matInput [matDatepicker]="whenDay" name="when" [(ngModel)]="newDay" required />
+        <mat-datepicker-toggle matIconSuffix [for]="whenDay" />
+        <mat-datepicker #whenDay />
+      </mat-form-field>
+      <mat-form-field subscriptSizing="dynamic" class="narrow">
+        <mat-label>{{ 'common.datepicker.time' | transloco }}</mat-label>
+        <input matInput [matTimepicker]="whenTime" name="whenTime" [(ngModel)]="newTime" required />
+        <mat-timepicker-toggle matIconSuffix [for]="whenTime" [attr.aria-label]="'common.datepicker.openTime' | transloco" />
+        <mat-timepicker #whenTime interval="15m" />
       </mat-form-field>
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>{{ 'perform.fields.template' | transloco }}</mat-label>
@@ -47,7 +58,7 @@ import { PerformService, performErrorKey } from '../perform.service';
           }
         </mat-select>
       </mat-form-field>
-      <button mat-flat-button type="submit" [disabled]="!newEmployee || !newWhen"><mat-icon>add</mat-icon>{{ 'perform.oneOnOnes.schedule' | transloco }}</button>
+      <button mat-flat-button type="submit" [disabled]="!newEmployee || !newDay || !newTime"><mat-icon>add</mat-icon>{{ 'perform.oneOnOnes.schedule' | transloco }}</button>
     </form>
 
     @if (loading()) {
@@ -137,7 +148,7 @@ import { PerformService, performErrorKey } from '../perform.service';
             </mat-form-field>
             <mat-form-field subscriptSizing="dynamic">
               <mat-label>{{ 'perform.fields.due' | transloco }}</mat-label>
-              <input matInput type="date" [(ngModel)]="actionDue" />
+              <input matInput [matDatepicker]="dp1" [(ngModel)]="actionDue" /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 />
             </mat-form-field>
             <button mat-icon-button type="button" (click)="add('action_items')" [attr.aria-label]="'perform.oneOnOnes.addAction' | transloco"><mat-icon>add</mat-icon></button>
           </div>
@@ -177,11 +188,12 @@ export class OneOnOnesPage implements OnInit {
   protected readonly selected = computed(() => this.items().find((m) => m.id === this.selectedId()) ?? null);
   protected readonly groups = computed(() => splitMeetings(this.items(), new Date()));
   protected newEmployee: number | null = null;
-  protected newWhen = '';
+  protected newDay: Date | null = null;
+  protected newTime: Date | null = null;
   protected newTemplate: number | null = null;
   protected agendaText = '';
   protected actionText = '';
-  protected actionDue = '';
+  protected actionDue: Date | null = null;
   protected shared = '';
   protected privateNotes = '';
 
@@ -211,10 +223,11 @@ export class OneOnOnesPage implements OnInit {
   }
 
   protected create(): void {
-    if (!this.newEmployee || !this.newWhen) {
+    const when = toIsoLocalDateTime(combineDateAndTime(this.newDay, this.newTime));
+    if (!this.newEmployee || !when) {
       return;
     }
-    this.api.createOneOnOne({ employee_id: Number(this.newEmployee), scheduled_at: this.newWhen, template_id: this.newTemplate }).subscribe({
+    this.api.createOneOnOne({ employee_id: Number(this.newEmployee), scheduled_at: when, template_id: this.newTemplate }).subscribe({
       next: (m) => {
         this.items.update((list) => [m, ...list]);
         this.select(m);
@@ -238,7 +251,7 @@ export class OneOnOnesPage implements OnInit {
     if (!m || !text.trim()) {
       return;
     }
-    const item = newItem(text, list === 'action_items' && this.actionDue ? this.actionDue : null);
+    const item = newItem(text, list === 'action_items' ? toIsoDateOrNull(this.actionDue) : null);
     this.save({ [list]: itemsBody([...m[list], item]) as ListItem[] });
     this.agendaText = list === 'agenda' ? '' : this.agendaText;
     this.actionText = list === 'action_items' ? '' : this.actionText;

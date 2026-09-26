@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -18,20 +18,15 @@ import { APPLICATION_STATUSES, CANDIDATE_SOURCES, Candidate } from '../recruitin
 import { CandidateDialog } from './candidate.dialog';
 import { RecruitingService } from '../recruiting.service';
 import { CandidatesStore } from './candidates.store';
-
-/** Keys that must not hijack typing in inputs. */
-function isTyping(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null;
-  return !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
-}
+import { ChannelIcon } from '../../../core/ui/channel-icon';
 
 /**
- * Split view: candidates list on the left, the open card on the right (/candidates/:id). j/k or ↓/↑ move between
- * candidates without leaving the card; "/" focuses the search.
+ * Split view: candidates list on the left, the open card on the right (/candidates/:id).
  */
 @Component({
   selector: 'app-candidates-page',
   imports: [
+    ChannelIcon,
     CandidateCard,
     MatButtonModule,
     MatFormFieldModule,
@@ -45,7 +40,6 @@ function isTyping(target: EventTarget | null): boolean {
   ],
   providers: [CandidatesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown)': 'onKey($event)' },
   template: `
     <div class="split" [class.has-card]="id()">
       <aside class="list">
@@ -77,7 +71,7 @@ function isTyping(target: EventTarget | null): boolean {
             <mat-select [value]="store.query().source" (valueChange)="store.patchQuery({ source: $event })">
               <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
               @for (s of sources; track s) {
-                <mat-option [value]="s">{{ 'recruiting.source.' + s | transloco }}</mat-option>
+                <mat-option [value]="s"><app-channel-icon [key]="s" /> {{ 'recruiting.source.' + s | transloco }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -174,10 +168,6 @@ export class CandidatesPage implements OnInit {
   protected readonly channels = toSignal(inject(RecruitingService).channels(), { initialValue: [] });
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
 
-  constructor() {
-    effect(() => this.store.selectedId.set(this.id() ?? null));
-  }
-
   ngOnInit(): void {
     this.search$
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
@@ -210,23 +200,4 @@ export class CandidatesPage implements OnInit {
       });
   }
 
-  protected onKey(e: KeyboardEvent): void {
-    if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || this.dialog.openDialogs.length > 0) {
-      return;
-    }
-    if (e.key === '/') {
-      e.preventDefault();
-      document.getElementById('candidate-search')?.focus();
-      return;
-    }
-    const step = e.key === 'j' || e.key === 'ArrowDown' ? 1 : e.key === 'k' || e.key === 'ArrowUp' ? -1 : 0;
-    if (step === 0) {
-      return;
-    }
-    const next = this.store.neighbour(step);
-    if (next !== null) {
-      e.preventDefault();
-      void this.router.navigate(['/candidates', next]);
-    }
-  }
 }

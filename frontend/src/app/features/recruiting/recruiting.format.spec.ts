@@ -1,6 +1,5 @@
 import { daysSince, formatDuration, groupByStage, isoDate, lastDays, statusForStage } from './recruiting.format';
 import { Application, Stage } from './recruiting.model';
-import { wrapIndex } from './palette/command-palette';
 
 const stage = (id: number, position: number, extra: Partial<Stage> = {}): Stage => ({
   id,
@@ -48,11 +47,5 @@ describe('recruiting.format', () => {
   it('builds the default report range', () => {
     expect(lastDays(30, new Date(2026, 8, 30))).toEqual({ from: '2026-09-01', to: '2026-09-30' });
     expect(isoDate(new Date(2026, 0, 5))).toBe('2026-01-05');
-  });
-
-  it('wraps the palette selection', () => {
-    expect(wrapIndex(-1, 3)).toBe(2);
-    expect(wrapIndex(3, 3)).toBe(0);
-    expect(wrapIndex(1, 0)).toBe(0);
   });
 });

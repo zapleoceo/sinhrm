@@ -7,14 +7,15 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { canWriteRecruiting } from '../recruiting.access';
-import { CHANNEL_ICONS, Touchpoint } from '../recruiting.model';
+import { Touchpoint } from '../recruiting.model';
 import { InboxResolveDialog, InboxResolveData } from './inbox-resolve.dialog';
 import { InboxStore } from './inbox.store';
+import { ChannelIcon } from '../../../core/ui/channel-icon';
 
 /** Messages captured from outside that matched no candidate. Triage: link or create; resolved ones disappear. */
 @Component({
   selector: 'app-inbox-page',
-  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, TranslocoPipe],
+  imports: [ChannelIcon, DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, TranslocoPipe],
   providers: [InboxStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -40,7 +41,7 @@ import { InboxStore } from './inbox.store';
       <ul class="rows">
         @for (m of store.items(); track m.id) {
           <li class="row">
-            <mat-icon class="icon" [attr.aria-hidden]="true">{{ icons[m.channel] }}</mat-icon>
+            <app-channel-icon class="icon" [key]="m.channel" />
             <div class="body">
               <div class="line">
                 <strong>{{ m.meta.contact ?? '—' }}</strong>
@@ -73,7 +74,6 @@ export class InboxPage implements OnInit {
   protected readonly store = inject(InboxStore);
   private readonly dialog = inject(MatDialog);
   private readonly auth = inject(AuthService);
-  protected readonly icons = CHANNEL_ICONS;
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
 
   ngOnInit(): void {

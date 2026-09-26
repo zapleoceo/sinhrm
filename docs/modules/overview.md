@@ -49,6 +49,8 @@ Scripts; своих таблиц нет. Блоки других модулей 
 полосок), `overview.service.ts`, `overview.model.ts` (`statTiles` — куда ведёт каждый счётчик). Виджет задач —
 `features/scripts/tasks/tasks-widget.ts`. Строки — `overview.*` в `public/i18n/{uk,ru,en}.json`.
 
+**Интерфейс (2026-09-26):** Блок «Дотики за каналами» — иконки каналов Font Awesome в цветах бренда (`app-channel-icon`, [core.md](core.md)).
+
 ## Как проверить
 `tests/Feature/TimeOff/LeaveRequestApiTest::test_dashboard_shows_who_is_out_and_my_approvals` — блок `timeoff`.
 `tests/Feature/Overview/DashboardApiTest` — гость 401; рекрутер видит только свой филиал (счётчики, зависшие, «Вхідні»,
