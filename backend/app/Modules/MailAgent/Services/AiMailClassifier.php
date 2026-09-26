@@ -71,6 +71,12 @@ final readonly class AiMailClassifier
         if ($message->fromEmail === null || ! $this->ai->available(AiPurpose::MailClassification)) {
             return false;
         }
+        if (MailClassificationPrompt::isEmpty($message->subject, $message->text)) {
+            // Nothing to classify: no model call; not asked again from the backlog.
+            $this->senders->saveAiSuggestion($unknownSenderId, null, 'skipped', []);
+
+            return true;
+        }
         try {
             $outcome = $this->ai->run(
                 MailClassificationPrompt::build($message),

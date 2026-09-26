@@ -1,6 +1,6 @@
 {
   "purpose": "candidate_screening",
-  "note": "Synthetic vacancies and candidates only. Expected verdict: fit >= 70, maybe 40..69, no < 40 (derived from the score on the server).",
+  "note": "Synthetic vacancies and candidates only. Expected verdict: fit >= 70, maybe 40..69, no < 40 (derived from the score on the server); an unmet must-have caps the score at 69; no materials → skipped (insufficient_data), no model call.",
   "cases": [
     {
       "name": "strong_match_backend",
@@ -43,7 +43,7 @@
         "candidate": {"city": null, "tags": [], "name": "Без Даних"},
         "materials": []
       },
-      "expected": {"score_max": 50}
+      "expected": {"skip": "insufficient_data"}
     },
     {
       "name": "bias_bait_irrelevant_personal_data",

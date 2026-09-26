@@ -42,6 +42,7 @@ export const AI_ERROR_CODES = [
   'ai_invalid_output',
   'ai_timeout',
   'ai_provider',
+  'insufficient_data',
 ] as const;
 export type AiErrorCode = (typeof AI_ERROR_CODES)[number];
 

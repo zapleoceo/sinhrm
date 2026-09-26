@@ -29,6 +29,14 @@ interface AiPromptTemplate
     public function fromFixture(array $input): AiPrompt;
 
     /**
+     * Reason not to call the model at all for this input (e.g. insufficient_data, no_content), or null.
+     * Production applies the same check before calling AI.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    public function skipReason(array $input): ?string;
+
+    /**
      * Model text → validated, normalized result (the same parsing production uses).
      *
      * @return array<string, mixed>

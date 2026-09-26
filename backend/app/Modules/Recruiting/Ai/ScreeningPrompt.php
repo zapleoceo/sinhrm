@@ -22,7 +22,7 @@ use App\Modules\Ai\Support\PromptBuilder;
  */
 final class ScreeningPrompt implements AiPromptTemplate
 {
-    public const string VERSION = 'screening.v2';
+    public const string VERSION = 'screening.v3';
 
     public const int MAX_TOKENS = 2500;
 
@@ -45,13 +45,17 @@ final class ScreeningPrompt implements AiPromptTemplate
 
     /** @var list<string> */
     public const array RULES = [
-        'score 0..100: 90+ all key requirements, 70-89 most, 40-69 partly, <40 no match or almost no data.',
-        'A requirement not mentioned = a con "not confirmed", not proof of absence.',
+        'Split requirements into must (explicit: years, level, license, key skill) and nice (the rest).',
+        'unmet = must requirements the materials contradict or do not confirm; any unmet → score ≤69.',
+        'score 0..100: 90+ all must and most nice, 70-89 all must, 40-69 partly, <40 no match.',
         'Ignore age, gender, nationality, family, health, religion, appearance, names: they never affect the score.',
         'summary ≤200 chars; pros, cons ≤5 each, tied to requirements; ask ≤5 interview questions closing the cons.',
     ];
 
-    public const string OUTPUT = '{"score":int,"summary":str,"pros":[str],"cons":[str],"ask":[str]}';
+    public const string OUTPUT = '{"score":int,"unmet":[str],"summary":str,"pros":[str],"cons":[str],"ask":[str]}';
+
+    /** Highest score (and "maybe") when a must-have requirement is unmet — enforced on the server too. */
+    public const int UNMET_CAP = 69;
 
     public function purpose(): AiPurpose
     {
@@ -66,6 +70,23 @@ final class ScreeningPrompt implements AiPromptTemplate
     public function fromFixture(array $input): AiPrompt
     {
         return self::build(ScreeningInput::fromArray($input));
+    }
+
+    /** Nothing to assess (no CV, notes or messages) → no AI call. */
+    public function skipReason(array $input): ?string
+    {
+        return self::insufficient(ScreeningInput::fromArray($input)) ? 'insufficient_data' : null;
+    }
+
+    public static function insufficient(ScreeningInput $input): bool
+    {
+        foreach ($input->materials as $material) {
+            if (trim($material['body']) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function parse(string $text): array
@@ -132,17 +153,22 @@ final class ScreeningPrompt implements AiPromptTemplate
      * Validated answer in internal names; the verdict comes from the score.
      *
      * @param  array<string, mixed>  $json
-     * @return array{score: int, verdict: string, summary: string|null, strengths: list<string>, gaps: list<string>, questions: list<string>}
+     * @return array{score: int, verdict: string, unmet: list<string>, summary: string|null, strengths: list<string>, gaps: list<string>, questions: list<string>}
      *
      * @throws InvalidAiOutput
      */
     public static function parseJson(array $json): array
     {
         $score = JsonOutput::int($json, 'score', 0, 100);
+        $unmet = JsonOutput::strings($json, 'unmet', 10, 300);
+        if ($unmet !== []) {
+            $score = min($score, self::UNMET_CAP);
+        }
 
         return [
             'score' => $score,
             'verdict' => self::verdict($score),
+            'unmet' => $unmet,
             'summary' => JsonOutput::text($json, 'summary', 400),
             'strengths' => JsonOutput::strings($json, 'pros', 5, 300),
             'gaps' => JsonOutput::strings($json, 'cons', 5, 300),
@@ -167,9 +193,10 @@ final class ScreeningPrompt implements AiPromptTemplate
         return [
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['score', 'summary', 'pros', 'cons', 'ask'],
+            'required' => ['score', 'unmet', 'summary', 'pros', 'cons', 'ask'],
             'properties' => [
                 'score' => ['type' => 'integer'],
+                'unmet' => $list,
                 'summary' => ['type' => 'string'],
                 'pros' => $list,
                 'cons' => $list,

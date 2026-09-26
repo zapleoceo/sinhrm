@@ -61,7 +61,8 @@ export interface UnknownSender {
 }
 
 export interface AiSuggestion {
-  status: 'pending' | 'done' | 'failed';
+  /** skipped = empty letter, AI not asked. */
+  status: 'pending' | 'done' | 'failed' | 'skipped';
   kind: SenderKind | null;
   parser: ParserKey | null;
   confidence: number | null;

@@ -17,7 +17,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Result of the AI classification of a queued sender (subject "unknown_sender"), owner decision:
- * - confidence ≥ AUTO_APPLY_CONFIDENCE → an exact-address sender rule with source "ai" is created automatically
+ * - confidence ≥ AUTO_APPLY_CONFIDENCE and a concrete signal (MailClassificationPrompt::autoApplicable) → an exact-address sender rule with source "ai" is created automatically
  *   (MailAgentService::createAiRule) and the sender's queued messages are re-processed by the normal pipeline;
  *   the superadmin sees such rules (filter "created by AI") and can delete them — already processed messages are
  *   not re-processed back;
@@ -55,8 +55,8 @@ final readonly class MailClassificationAiHandler implements AiResultHandler
         }
         $kind = SenderKind::tryFrom((string) ($data['kind'] ?? ''));
         $confidence = (float) ($data['confidence'] ?? 0);
-        if ($kind !== null && $confidence >= self::AUTO_APPLY_CONFIDENCE) {
-            $sender = $this->senders->find($request->subject_id);
+        $sender = $this->senders->find($request->subject_id);
+        if ($kind !== null && $sender !== null && MailClassificationPrompt::autoApplicable($sender->email, $data)) {
             $rule = $this->mail->createAiRule(
                 $request->subject_id,
                 $kind,
@@ -65,7 +65,7 @@ final readonly class MailClassificationAiHandler implements AiResultHandler
                 $request->prompt_version,
                 $request->id,
             );
-            if ($rule !== null && $sender !== null) {
+            if ($rule !== null) {
                 $counts = $this->reprocess->reprocessSender($sender->email);
                 $this->log->info('mail.ai_rule_applied', ['rule_id' => $rule->id, 'ai_request_id' => $request->id] + $counts);
 

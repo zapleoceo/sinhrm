@@ -56,8 +56,7 @@ final readonly class ScreeningService
         }
         // A refusal before any request stores nothing.
         $this->ai->assertAvailable(AiPurpose::CandidateScreening);
-        $prompt = $this->prompts->forApplication($application->id);
-        assert($prompt !== null);
+        $input = $this->prompts->input($application->id);
         $screening = $this->screenings->create([
             'application_id' => $application->id,
             'candidate_id' => $application->candidate_id,
@@ -67,8 +66,14 @@ final readonly class ScreeningService
             'prompt_version' => ScreeningPrompt::VERSION,
             'requested_by' => $actor?->id,
         ]);
+        if ($input === null || ScreeningPrompt::insufficient($input)) {
+            // No CV, notes or messages: nothing to assess, no model call.
+            $this->screenings->finish($screening->id, CandidateScreening::FAILED, ['error' => 'insufficient_data']);
+
+            return $this->screenings->find($screening->id) ?? $screening;
+        }
         try {
-            $outcome = $this->ai->run($prompt, ScreeningAiHandler::SUBJECT, $screening->id, [], $waitSeconds);
+            $outcome = $this->ai->run(ScreeningPrompt::build($input), ScreeningAiHandler::SUBJECT, $screening->id, [], $waitSeconds);
             $this->screenings->update($screening, ['ai_request_id' => $outcome->requestId]);
         } catch (AiException $e) {
             $this->screenings->finish($screening->id, CandidateScreening::FAILED, ['error' => $e->errorCode]);

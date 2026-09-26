@@ -47,7 +47,7 @@ final class EloquentUnknownSenderRepository implements UnknownSenderRepository
         return UnknownSender::query()->where('email', $email)->first();
     }
 
-    public function saveAiSuggestion(int $id, int $requestId, string $status, array $fields): void
+    public function saveAiSuggestion(int $id, ?int $requestId, string $status, array $fields): void
     {
         if (is_array($fields['ai_extracted'] ?? null)) {
             // A query-builder update skips model casts.
@@ -55,7 +55,7 @@ final class EloquentUnknownSenderRepository implements UnknownSenderRepository
         }
         UnknownSender::query()
             ->whereKey($id)
-            ->where(fn (Builder $q) => $q->whereNull('ai_request_id')->orWhere('ai_request_id', '<=', $requestId))
+            ->when($requestId !== null, fn ($q) => $q->where(fn (Builder $w) => $w->whereNull('ai_request_id')->orWhere('ai_request_id', '<=', $requestId)))
             ->update(['ai_status' => $status, 'ai_request_id' => $requestId] + $fields + ['updated_at' => Carbon::now()]);
     }
 

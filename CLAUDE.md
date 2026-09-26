@@ -11,7 +11,7 @@
 5. Бэкенд: `app/Modules/<Name>` — Controller (оркестрация) → FormRequest → Service → Repository; интерфейсы + DI;
    Feature-тест на эндпоинт, Unit на сервис. Фронт: `core/` + `features/<name>`, standalone, signals, без `any`, i18n ru/uk/en.
 6. Локально среду не поднимаем. Проверка — CI и preview-деплой; в PR раздел «Доказательство» с реальными curl.
-7. AI утверждён владельцем (AI Broker, `chat:sales`). Вызывать провайдеров только через `Ai/Services/AiService` (флаг в админке,
+7. AI утверждён владельцем (AI Broker; возможность по функции, сейчас `chat:fast`). Вызывать провайдеров только через `Ai/Services/AiService` (флаг в админке,
    лимиты, без логирования промптов); новый/изменённый промпт — новая версия и текст в `docs/modules/ai.md`.
 8. Метрики сабагентов — ledger вне репозитория (`D:\Projects\HRM\docs\tasks\*.agent-metrics.tsv`).
 

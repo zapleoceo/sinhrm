@@ -14,6 +14,7 @@ use App\Modules\GoogleWorkspace\DTO\GmailMessage;
 use App\Modules\MailAgent\Enums\ParserKey;
 use App\Modules\MailAgent\Enums\SenderKind;
 use App\Modules\MailAgent\Support\MailBodyCleaner;
+use App\Modules\MailAgent\Support\SenderSuggester;
 use Illuminate\Support\Carbon;
 
 /**
@@ -24,7 +25,7 @@ use Illuminate\Support\Carbon;
  */
 final class MailClassificationPrompt implements AiPromptTemplate
 {
-    public const string VERSION = 'mail_classify.v2';
+    public const string VERSION = 'mail_classify.v3';
 
     public const int MAX_TOKENS = 1500;
 
@@ -42,8 +43,8 @@ final class MailClassificationPrompt implements AiPromptTemplate
     /** @var list<string> */
     public const array RULES = [
         'kind: job_board = job-site notice about an application; candidate = a person writing about a job for themselves; colleague = work/business letter, not an application; newsletter = marketing, digest, service notice; ignore = spam, phishing, bounces.',
-        'parser only for job_board: work_ua | robota_ua | djinni | generic; otherwise null.',
-        'conf 0..1; ≥0.85 only without real doubt: it is applied without a person.',
+        'job_board only with an explicit job-site signal (site name/domain, application notice); parser: work_ua | robota_ua | djinni | generic; otherwise null.',
+        'conf 0..1, calibrated: short, vague or no identifying signal → ≤0.5; ≥0.85 only without real doubt (applied without a person).',
         "cand only for candidate/job_board about one applicant: the applicant's own name, phone, email, vacancy, copied exactly; otherwise all null.",
     ];
 
@@ -72,6 +73,39 @@ final class MailClassificationPrompt implements AiPromptTemplate
         ));
     }
 
+    public function skipReason(array $input): ?string
+    {
+        return self::isEmpty((string) ($input['subject'] ?? ''), (string) ($input['body'] ?? '')) ? 'no_content' : null;
+    }
+
+    /** Server-side prefilter: a letter without subject and body is not worth a model call. */
+    public static function isEmpty(string $subject, string $body): bool
+    {
+        return trim($subject) === '' && MailBodyCleaner::clean($body) === '';
+    }
+
+    /**
+     * Auto-apply guard (round 1 of the experiment: models gave 0.95+ to vague letters): confidence ≥ threshold AND a
+     * concrete signal — the rule-based hint for the sender domain agrees with the kind, or applicant contacts were
+     * extracted for a candidate/job-board letter. Otherwise the answer stays a suggestion in the queue.
+     *
+     * @param  array<string, mixed>  $parsed  output of parseJson()
+     */
+    public static function autoApplicable(string $from, array $parsed): bool
+    {
+        if ((float) ($parsed['confidence'] ?? 0) < MailClassificationAiHandler::AUTO_APPLY_CONFIDENCE) {
+            return false;
+        }
+        [$hint] = SenderSuggester::suggest(mb_strtolower($from));
+        if ($hint !== null && $hint->value === ($parsed['kind'] ?? null)) {
+            return true;
+        }
+        $x = is_array($parsed['extracted'] ?? null) ? $parsed['extracted'] : [];
+
+        return in_array($parsed['kind'] ?? null, ['candidate', 'job_board'], true)
+            && (($x['phone'] ?? null) !== null || ($x['email'] ?? null) !== null || ($x['full_name'] ?? null) !== null);
+    }
+
     public function parse(string $text): array
     {
         return self::parseJson(JsonOutput::decode($text) ?? throw InvalidAiOutput::because('not_json'));
@@ -85,7 +119,7 @@ final class MailClassificationPrompt implements AiPromptTemplate
             $checks['parser'] = ($parsed['parser'] ?? null) === $expected['parser'];
         }
         if (array_key_exists('auto_apply', $expected)) {
-            $checks['auto_apply'] = ((float) ($parsed['confidence'] ?? 0) >= MailClassificationAiHandler::AUTO_APPLY_CONFIDENCE) === $expected['auto_apply'];
+            $checks['auto_apply'] = self::autoApplicable((string) ($expected['from'] ?? ''), $parsed) === $expected['auto_apply'];
         }
         foreach ((array) ($expected['extracted'] ?? []) as $field => $value) {
             $got = is_array($parsed['extracted'] ?? null) ? ($parsed['extracted'][$field] ?? null) : null;

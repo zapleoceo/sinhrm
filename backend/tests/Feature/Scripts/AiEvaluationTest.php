@@ -51,7 +51,7 @@ final class AiEvaluationTest extends TestCase
 
         $evaluation = ScriptEvaluation::query()->where('touchpoint_id', $touchId)->sole();
         $this->assertSame('ai', $evaluation->engine->value);
-        $this->assertSame('script_eval.v2', $evaluation->prompt_version);
+        $this->assertSame('script_eval.v3', $evaluation->prompt_version);
         $this->assertSame(50, $evaluation->score, 's1 (20) + s3 (30) of 100, whatever the model says');
         $this->assertNotNull($evaluation->ai_request_id);
         $this->assertSame(['missed_step', 'ai_tip'], array_column($evaluation->result['recommendations'], 'type'));

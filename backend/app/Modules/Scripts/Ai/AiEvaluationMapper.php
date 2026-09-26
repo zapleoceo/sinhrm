@@ -12,7 +12,7 @@ use App\Modules\Scripts\Enums\EvaluationEngine;
 use App\Modules\Scripts\Support\ScriptScore;
 
 /**
- * Model answer (script_eval.v2, short keys) → validated data (internal names) → EvaluationResult. The score is computed here from the script
+ * Model answer (script_eval.v3, short keys) → validated data (internal names) → EvaluationResult. The score is computed here from the script
  * weights (ScriptScore), never taken from the model; unknown step/objection ids are ignored, missing steps count as
  * not done. Recommendations: the same codes as the rules engine (missed required step, next step not fixed) plus the
  * model's Ukrainian tips as type "ai_tip".

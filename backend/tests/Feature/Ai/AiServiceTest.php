@@ -53,7 +53,7 @@ final class AiServiceTest extends TestCase
         $this->assertTrue($outcome->isDone());
         $this->assertSame('готово', $outcome->data['reply'] ?? null);
         Http::assertSent(fn (Request $r): bool => $r->method() === 'POST'
-            && $r->url() === self::BROKER.'/v1/jobs?capability=chat%3Asales'
+            && $r->url() === self::BROKER.'/v1/jobs?capability=chat%3Afast'
             && $r->header('X-Project-Key') === [self::PROJECT_KEY]);
         $body = $this->brokerSubmits[0];
         $this->assertArrayNotHasKey('model', $body, 'Empty model setting: the broker chooses (owner decision).');
@@ -63,7 +63,7 @@ final class AiServiceTest extends TestCase
 
         $row = AiRequest::query()->sole();
         $this->assertSame('done', $row->status->value);
-        $this->assertSame('chat:sales', $row->capability);
+        $this->assertSame('chat:fast', $row->capability);
         $this->assertSame(['1200', '300', '1024'], [(string) $row->tokens_in, (string) $row->tokens_out, (string) $row->tokens_cached]);
         $this->assertEqualsWithDelta(0.004, $row->cost_usd, 1e-9);
         $this->assertSame(TestPrompt::VERSION, $row->prompt_version);
@@ -72,14 +72,14 @@ final class AiServiceTest extends TestCase
 
     public function test_capability_per_purpose_and_model_override_are_sent(): void
     {
-        $this->enableAi(['capability' => 'chat:fast', 'model' => 'synthetic/model-x']);
+        $this->enableAi(['capability' => 'structured', 'model' => 'synthetic/model-x']);
         $this->fakeBroker([[self::doneAnswer(['ok' => true, 'reply' => 'так'])]]);
 
         $this->ai()->run(TestPrompt::build());
 
-        $this->assertSame(['chat:fast'], $this->brokerCapabilities);
+        $this->assertSame(['structured'], $this->brokerCapabilities);
         $this->assertSame('synthetic/model-x', $this->brokerSubmits[0]['model']);
-        $this->assertSame('chat:fast', AiRequest::query()->value('capability'));
+        $this->assertSame('structured', AiRequest::query()->value('capability'));
     }
 
     public function test_backoff_stays_within_the_wait_budget_then_defers(): void
@@ -227,7 +227,7 @@ final class AiServiceTest extends TestCase
             ->assertJsonPath('data.tokens_cached', 1024);
         $this->actingAs($super)->getJson('/api/ai/status')->assertOk()
             ->assertJsonPath('data.available', true)
-            ->assertJsonPath('data.capabilities.script_evaluation', 'chat:sales')
+            ->assertJsonPath('data.capabilities.script_evaluation', 'chat:fast')
             ->assertJsonPath('data.model', null)
             ->assertJsonPath('data.usage.requests', 1)
             ->assertJsonPath('data.limits.requests', 200)

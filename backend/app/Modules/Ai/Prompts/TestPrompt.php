@@ -37,6 +37,11 @@ final class TestPrompt implements AiPromptTemplate
         return self::build();
     }
 
+    public function skipReason(array $input): ?string
+    {
+        return null;
+    }
+
     public function parse(string $text): array
     {
         return self::parseJson(JsonOutput::decode($text) ?? throw InvalidAiOutput::because('not_json'));

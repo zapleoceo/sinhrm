@@ -34,6 +34,9 @@ final readonly class ScreeningAiHandler implements AiResultHandler
     public function apply(AiRequest $request, array $data): void
     {
         if ($request->subject_type === self::SUBJECT && $request->subject_id !== null) {
+            // Unmet must-haves are shown first among the gaps.
+            $data['gaps'] = array_slice(array_values(array_unique([...(array) ($data['unmet'] ?? []), ...(array) ($data['gaps'] ?? [])])), 0, 5);
+            unset($data['unmet']);
             $this->screenings->finish($request->subject_id, CandidateScreening::DONE, $data);
         }
     }

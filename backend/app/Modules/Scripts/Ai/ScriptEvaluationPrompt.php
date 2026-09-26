@@ -23,7 +23,7 @@ use App\Modules\Scripts\DTO\ScriptContent;
  */
 final class ScriptEvaluationPrompt implements AiPromptTemplate
 {
-    public const string VERSION = 'script_eval.v2';
+    public const string VERSION = 'script_eval.v3';
 
     /** Room for reasoning tokens + a quote and a note per step. */
     public const int MAX_TOKENS = 3000;
@@ -40,11 +40,11 @@ final class ScriptEvaluationPrompt implements AiPromptTemplate
 
     /** @var list<string> */
     public const array RULES = [
-        'done = the step goal is clearly achieved (meaning, not keywords).',
+        'done = the step goal is clearly achieved (meaning, not keywords). A URL or [link] in the text satisfies a link step.',
         'quote = exact transcript fragment ≤200 chars proving a done step; null if not done.',
         'note = one sentence: why done or what is missing.',
         'handled = ids of objections the candidate raised and the recruiter answered in the spirit of the script answer.',
-        'next = true only if the talk ends with a concrete agreed next step (date/time, booked interview, link with a deadline); "think about it"/"we will call" → false. Hints: SCRIPT.next_ok, SCRIPT.next_bad.',
+        'next = true if the talk ends with a concrete agreed next step or, in a message, an explicit call to action with a time or channel (date/time, booked interview, link to complete by a deadline); "think about it"/"we will call" → false. Hints: SCRIPT.next_ok, SCRIPT.next_bad.',
         'tips = ≤5 concrete tips for this recruiter about this talk; no praise.',
         'Every SCRIPT step id exactly once, in order; only ids from SCRIPT; no score.',
     ];
@@ -65,6 +65,11 @@ final class ScriptEvaluationPrompt implements AiPromptTemplate
     public function fromFixture(array $input): AiPrompt
     {
         return self::build(ScriptContent::fromArray((array) ($input['script'] ?? [])), (string) ($input['transcript'] ?? ''));
+    }
+
+    public function skipReason(array $input): ?string
+    {
+        return trim((string) ($input['transcript'] ?? '')) === '' ? 'no_content' : null;
     }
 
     public function parse(string $text): array

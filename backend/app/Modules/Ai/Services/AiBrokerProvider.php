@@ -19,7 +19,7 @@ use Throwable;
 
 /**
  * AI Broker (https://aib.zapleo.com, docs of the broker: docs/api.md):
- *   POST {base}/v1/jobs?capability=<per purpose, default chat:sales>  X-Project-Key
+ *   POST {base}/v1/jobs?capability=<per purpose, default chat:fast>  X-Project-Key
  *        {messages, model? (only when set: empty = the broker chooses), max_tokens, temperature, response_format?}
  *     → 202 {job_id, poll_after_s}
  *   GET  {base}/v1/jobs/{id} → {status pending|done|error, text, model, tokens_in, tokens_out, cost_usd, finish_reason,

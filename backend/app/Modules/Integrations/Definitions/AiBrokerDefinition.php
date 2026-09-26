@@ -23,7 +23,7 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
 {
     public const string DEFAULT_BASE_URL = 'https://aib.zapleo.com';
 
-    public const string DEFAULT_CAPABILITY = 'chat:sales';
+    public const string DEFAULT_CAPABILITY = 'chat:fast';
 
     /** Broker capabilities allowed for SinHRM tasks (broker docs/api.md). */
     public const array CAPABILITIES = ['chat:fast', 'chat:smart', 'chat:sales', 'structured'];
@@ -54,12 +54,12 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
         return [
             FieldSpec::url('base_url', required: true, default: self::DEFAULT_BASE_URL),
             FieldSpec::secret('project_key'),
-            // Broker lane per purpose (owner: chat:sales for now; final values come from the experiment).
+            // Broker lane per purpose: chat:fast after experiment round 1 (sales/smart timed out); final after round 2.
             FieldSpec::select('capability', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_script_evaluation', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_mail_classification', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_candidate_screening', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
-            // Empty by default (owner decision): the request then carries no model and the broker picks it for chat:sales.
+            // Empty by default (owner decision): the request then carries no model and the broker picks it for the capability.
             FieldSpec::text('model'),
             FieldSpec::text('max_requests_per_day', default: (string) self::DEFAULT_MAX_REQUESTS),
             FieldSpec::text('daily_cap_usd', default: self::DEFAULT_CAP_USD),

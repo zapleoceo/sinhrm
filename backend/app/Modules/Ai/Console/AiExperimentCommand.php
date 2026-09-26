@@ -84,6 +84,13 @@ final class AiExperimentCommand extends Command
             if ($this->option('case') !== null && $case['name'] !== $this->option('case')) {
                 continue;
             }
+            $skip = $template->skipReason($case['input']);
+            if ($skip !== null) {
+                $results[] = ['name' => $case['name'], 'status' => 'skipped', 'error' => $skip, 'latency_ms' => 0, 'cost_usd' => 0.0,
+                    'pass' => ($case['expected']['skip'] ?? null) === $skip];
+
+                continue;
+            }
             $prompt = $template->fromFixture($case['input'])->withCapability($capability);
             $started = hrtime(true);
             $row = ['name' => $case['name'], 'status' => 'error', 'error' => null];

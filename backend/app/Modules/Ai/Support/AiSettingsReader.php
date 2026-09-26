@@ -11,7 +11,7 @@ use App\Modules\Integrations\Enums\IntegrationStatus;
 use App\Modules\Integrations\Services\IntegrationConfigLoader;
 
 /**
- * AI settings live in the ai_broker integration (admin "Інтеграції" → AI Broker): capability (default chat:sales),
+ * AI settings live in the ai_broker integration (admin "Інтеграції" → AI Broker): capability (default chat:fast),
  * model (empty = broker chooses), daily caps and per-purpose on/off switches. Invalid numbers fall back to defaults,
  * so a typo can never lift a cap. Read once per request/job run.
  */

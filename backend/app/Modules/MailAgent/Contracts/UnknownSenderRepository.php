@@ -21,12 +21,12 @@ interface UnknownSenderRepository
     public function touch(string $email, string $subject, Carbon $at, ?SenderKind $suggestedKind, ?ParserKey $suggestedParser): ?UnknownSender;
 
     /**
-     * AI suggestion state of a queued sender (status pending|done|failed). No-op when the row is gone (a rule was
+     * AI suggestion state of a queued sender (status pending|done|failed|skipped). No-op when the row is gone (a rule was
      * created meanwhile) or when it already holds the result of a newer AI request.
      *
      * @param  array<string, mixed>  $fields  ai_kind, ai_parser, ai_confidence, ai_extracted
      */
-    public function saveAiSuggestion(int $id, int $requestId, string $status, array $fields): void;
+    public function saveAiSuggestion(int $id, ?int $requestId, string $status, array $fields): void;
 
     /** @return Collection<int, UnknownSender> queued senders the AI was never asked about, most frequent first */
     public function withoutAiSuggestion(int $limit): Collection;

@@ -8,6 +8,7 @@ use App\Modules\Ai\Contracts\AiPromptTemplate;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Models\AiRequest;
 use App\Modules\Ai\Support\AiPromptRegistry;
+use App\Modules\MailAgent\Ai\MailClassificationPrompt;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
@@ -79,6 +80,23 @@ final class AiPromptsTest extends TestCase
                 $this->assertNotContains(false, $checks, $purpose.'/'.$case['name'].': '.json_encode($checks));
             }
         }
+    }
+
+    public function test_skip_rules_and_server_side_guards(): void
+    {
+        $screening = $this->template('candidate_screening');
+        $noMaterials = array_values(array_filter($this->cases('candidate_screening'), static fn (array $c): bool => $c['name'] === 'no_materials'))[0];
+        $this->assertSame('insufficient_data', $screening->skipReason($noMaterials['input']));
+        $this->assertNull($screening->skipReason($this->cases('candidate_screening')[0]['input']));
+        $capped = $screening->parse('{"score":88,"unmet":["English C1"],"summary":"s","pros":[],"cons":[],"ask":[]}');
+        $this->assertSame([69, 'maybe'], [$capped['score'], $capped['verdict']]);
+
+        $mail = $this->template('mail_classification');
+        $this->assertSame('no_content', $mail->skipReason(['from' => 'a@b.example.test', 'subject' => ' ', 'body' => '> quoted only']));
+        $vague = ['kind' => 'colleague', 'parser' => null, 'confidence' => 0.97, 'extracted' => null];
+        $this->assertFalse(MailClassificationPrompt::autoApplicable('someone@mail.example.test', $vague));
+        $this->assertTrue(MailClassificationPrompt::autoApplicable('noreply@robota.ua', ['kind' => 'job_board', 'confidence' => 0.9]));
+        $this->assertFalse(MailClassificationPrompt::autoApplicable('noreply@robota.ua', ['kind' => 'job_board', 'confidence' => 0.8]));
     }
 
     public function test_experiment_command_runs_fixtures_against_the_broker(): void

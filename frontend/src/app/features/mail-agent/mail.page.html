@@ -79,7 +79,7 @@
           <div class="who">
             <strong>{{ u.email }}</strong>
             <span class="muted">{{ u.sample_subject }} · {{ 'mail.unknown.count' | transloco: { n: u.count } }}</span>
-            @if (u.ai; as ai) {
+            @if (u.ai?.status !== 'skipped' && u.ai; as ai) {
               <span class="ai" [attr.data-status]="ai.status">
                 <mat-icon inline aria-hidden="true">smart_toy</mat-icon>
                 @switch (ai.status) {

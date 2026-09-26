@@ -82,7 +82,7 @@ final class MailAiTest extends TestCase
     public function test_confident_answer_creates_an_ai_rule_and_reprocesses_the_queued_mail_once(): void
     {
         $this->enableAi();
-        $this->fakeBroker([[self::doneAnswer($this->answer('colleague', 0.92))]]);
+        $this->fakeBroker([[self::doneAnswer($this->answer('candidate', 0.92, 'Олена Вигадана', 'partner@unknown.example.test'))]]);
         $this->fakeGmail();
         $this->actingAs($this->superadmin)->postJson('/api/mail/sync')->assertOk();
         $this->assertSame(['unknown', 'unknown'], MailMessage::query()->orderBy('gmail_id')->toBase()->pluck('outcome')->all());
@@ -90,12 +90,13 @@ final class MailAiTest extends TestCase
         $this->app->make(AiPollJob::class)->run(Carbon::now());
 
         $rule = SenderRule::query()->sole();
-        $this->assertSame(['partner@unknown.example.test', 'colleague', 'ai', null, 'mail_classify.v2'], [
+        $this->assertSame(['partner@unknown.example.test', 'candidate', 'ai', null, 'mail_classify.v3'], [
             $rule->pattern, $rule->kind->value, $rule->source, $rule->created_by, $rule->prompt_version,
         ]);
+        $this->assertSame('candidate', $rule->kind->value);
         $this->assertEqualsWithDelta(0.92, $rule->ai_confidence, 1e-9);
         $this->assertSame(0, UnknownSender::query()->count());
-        $this->assertSame(['skipped', 'skipped'], MailMessage::query()->orderBy('gmail_id')->toBase()->pluck('outcome')->all());
+        $this->assertSame(['inbox', 'inbox'], MailMessage::query()->orderBy('gmail_id')->toBase()->pluck('outcome')->all());
 
         // Idempotent: nothing is left in "unknown", a second run changes nothing.
         $this->assertSame(['reprocessed' => 0, 'errors' => 0], $this->app->make(MailReprocessService::class)->reprocessSender('partner@unknown.example.test'));
@@ -107,7 +108,35 @@ final class MailAiTest extends TestCase
 
         // Undo = delete the rule; processed messages stay as they are (documented).
         $this->actingAs($this->superadmin)->deleteJson("/api/mail/rules/{$rule->id}")->assertNoContent();
-        $this->assertSame(['skipped', 'skipped'], MailMessage::query()->orderBy('gmail_id')->toBase()->pluck('outcome')->all());
+        $this->assertSame(['inbox', 'inbox'], MailMessage::query()->orderBy('gmail_id')->toBase()->pluck('outcome')->all());
+    }
+
+    public function test_confident_answer_without_a_concrete_signal_stays_in_the_queue(): void
+    {
+        $this->enableAi();
+        // Round 1 of the experiment: a vague letter got 0.95+ — without a domain hint or contacts it is not applied.
+        $this->fakeBroker([[self::doneAnswer($this->answer('colleague', 0.97))]]);
+        $this->fakeGmail();
+        $this->actingAs($this->superadmin)->postJson('/api/mail/sync')->assertOk();
+
+        $this->app->make(AiPollJob::class)->run(Carbon::now());
+
+        $this->assertSame(0, SenderRule::query()->count());
+        $this->assertSame(['done', 'colleague'], [UnknownSender::query()->value('ai_status'), UnknownSender::query()->sole()->ai_kind?->value]);
+    }
+
+    public function test_letter_without_subject_and_body_is_not_sent_to_ai(): void
+    {
+        $this->enableAi();
+        $this->fakeBroker([[self::doneAnswer($this->answer('ignore', 0.99))]]);
+        $this->mailbox = [];
+        $this->addMail('m-empty', 'X <empty@void.example.test>', '', '', 100);
+        $this->fakeGmail();
+
+        $this->actingAs($this->superadmin)->postJson('/api/mail/sync')->assertOk();
+
+        $this->assertSame([], $this->brokerSubmits);
+        $this->assertSame('skipped', UnknownSender::query()->value('ai_status'));
     }
 
     public function test_threshold_is_inclusive_at_085_and_an_existing_manual_rule_wins(): void
@@ -160,13 +189,13 @@ final class MailAiTest extends TestCase
     }
 
     /** @return array<string, mixed> */
-    private function answer(string $kind, float $confidence, ?string $name = null): array
+    private function answer(string $kind, float $confidence, ?string $name = null, ?string $email = null): array
     {
         return [
             'kind' => $kind,
             'parser' => null,
             'conf' => $confidence,
-            'cand' => ['name' => $name, 'phone' => null, 'email' => null, 'vacancy' => null],
+            'cand' => ['name' => $name, 'phone' => null, 'email' => $email, 'vacancy' => null],
         ];
     }
 }

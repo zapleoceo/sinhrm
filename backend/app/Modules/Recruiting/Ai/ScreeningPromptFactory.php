@@ -22,6 +22,13 @@ final readonly class ScreeningPromptFactory
 
     public function forApplication(int $applicationId): ?AiPrompt
     {
+        $input = $this->input($applicationId);
+
+        return $input === null ? null : ScreeningPrompt::build($input);
+    }
+
+    public function input(int $applicationId): ?ScreeningInput
+    {
         $application = $this->applications->find($applicationId);
         if ($application === null) {
             return null;
@@ -30,7 +37,7 @@ final readonly class ScreeningPromptFactory
         $vacancy = $application->vacancy;
         $candidate = $application->candidate;
 
-        return ScreeningPrompt::build(new ScreeningInput(
+        return new ScreeningInput(
             vacancyTitle: $vacancy->title,
             position: $vacancy->position?->name,
             department: $vacancy->department?->name,
@@ -39,6 +46,6 @@ final readonly class ScreeningPromptFactory
             tags: $candidate->tags ?? [],
             names: [$candidate->full_name],
             materials: $this->screenings->materials($candidate->id, self::MATERIALS_COUNT),
-        ));
+        );
     }
 }

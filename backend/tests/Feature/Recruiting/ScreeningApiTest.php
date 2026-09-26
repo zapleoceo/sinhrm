@@ -67,7 +67,7 @@ final class ScreeningApiTest extends TestCase
             ->assertJsonPath('data.score', 82)
             ->assertJsonPath('data.verdict', 'fit')
             ->assertJsonPath('data.advisory', true)
-            ->assertJsonPath('data.prompt_version', 'screening.v2')
+            ->assertJsonPath('data.prompt_version', 'screening.v3')
             ->assertJsonPath('data.questions.0', 'Який рівень англійської?');
 
         $user = $this->brokerSubmits[0]['messages'][1]['content'];
@@ -75,7 +75,7 @@ final class ScreeningApiTest extends TestCase
             $this->assertStringNotContainsString($pii, $user);
         }
         $this->assertStringContainsString('Laravel від 3 років', $user);
-        $this->assertSame(['chat:sales'], $this->brokerCapabilities);
+        $this->assertSame(['chat:fast'], $this->brokerCapabilities);
 
         $this->actingAs($this->userWith(UserRole::Viewer, [$this->branch]))
             ->getJson("/api/candidates/{$this->application->candidate_id}/screenings")
@@ -98,6 +98,24 @@ final class ScreeningApiTest extends TestCase
         $this->actingAs($recruiter)->getJson("/api/candidates/{$this->application->candidate_id}/screenings")
             ->assertOk()->assertJsonPath('data.0.status', 'done')->assertJsonPath('data.0.score', 82);
         $this->assertSame(0, $this->app->make(AiPollJob::class)->run(Carbon::now())['polled']);
+    }
+
+    public function test_unmet_must_have_caps_the_score_and_no_materials_means_no_call(): void
+    {
+        $this->enableAi();
+        $this->fakeBroker([[self::doneAnswer(['unmet' => ['Англійська C1 не підтверджена']] + self::ANSWER)]]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+
+        $this->actingAs($recruiter)->postJson("/api/applications/{$this->application->id}/screening")->assertCreated()
+            ->assertJsonPath('data.score', 69)
+            ->assertJsonPath('data.verdict', 'maybe')
+            ->assertJsonPath('data.gaps.0', 'Англійська C1 не підтверджена');
+
+        $empty = $this->applied($this->application->vacancy, ['full_name' => 'Без Матеріалів']);
+        $this->actingAs($recruiter)->postJson("/api/applications/{$empty->id}/screening")->assertCreated()
+            ->assertJsonPath('data.status', 'failed')
+            ->assertJsonPath('data.error', 'insufficient_data');
+        $this->assertCount(1, $this->brokerSubmits);
     }
 
     public function test_authorization_follows_the_candidate_policy(): void
