@@ -15,8 +15,9 @@ use SensitiveParameter;
 /**
  * OAuth consent for Gmail / Calendar / Sheets (separate from login, same OAuth client):
  * 1) authorizationUrl() — offline access + prompt=consent (so Google always returns a refresh token);
- * 2) complete() — exchanges the code, keeps only the services whose scopes were actually granted
- *    (the consent screen lets the user untick scopes) and stores the grant per service.
+ * 2) complete() — exchanges the code, keeps only the services whose required scopes were actually granted
+ *    (the consent screen lets the user untick scopes) and stores the grant per service with the scopes it really
+ *    got (the optional gmail.send may be missing — then Gmail reads but cannot send).
  */
 final readonly class GoogleConnectService
 {
@@ -77,7 +78,7 @@ final readonly class GoogleConnectService
         $connected = [];
         $missing = [];
         foreach ($requested as $service) {
-            if (array_diff($service->scopes(), $granted) !== []) {
+            if (array_diff($service->requiredScopes(), $granted) !== []) {
                 $missing[] = $service;
 
                 continue;
@@ -88,7 +89,7 @@ final readonly class GoogleConnectService
                 (string) $json['access_token'],
                 Carbon::now()->addSeconds($expiresIn),
                 $email,
-                $service->scopes(),
+                array_values(array_intersect($service->scopes(), $granted)),
                 $actor->id,
             );
             $connected[] = $service;

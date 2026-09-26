@@ -24,6 +24,17 @@ final readonly class ConnectionState
         public ?Carbon $connectedAt,
     ) {}
 
+    public function hasScope(string $scope): bool
+    {
+        return in_array($scope, $this->scopes, true);
+    }
+
+    /** Gmail only: connected and the gmail.send scope was granted (older grants have gmail.readonly only). */
+    public function canSend(): bool
+    {
+        return $this->service === GoogleService::Gmail && $this->usable && $this->hasScope(GoogleService::GMAIL_SEND_SCOPE);
+    }
+
     /** @return array<string, mixed> */
     public function toArray(): array
     {
@@ -34,6 +45,7 @@ final readonly class ConnectionState
             'connected' => $this->usable,
             'account_email' => $this->accountEmail,
             'scopes' => $this->scopes,
+            'can_send' => $this->canSend(),
             'error' => $this->error,
             'connected_at' => $this->connectedAt?->toIso8601String(),
         ];

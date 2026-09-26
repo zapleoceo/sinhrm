@@ -52,6 +52,17 @@ final class EloquentTouchpointRepository implements TouchpointRepository
             ->first();
     }
 
+    public function latestInbound(int $candidateId, Channel $channel): ?Touchpoint
+    {
+        return Touchpoint::query()
+            ->where('candidate_id', $candidateId)
+            ->where('channel', $channel->value)
+            ->where('direction', 'in')
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
     public function lastInboundAt(int $candidateId, Channel $channel): ?Carbon
     {
         $at = Touchpoint::query()

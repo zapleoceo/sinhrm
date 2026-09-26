@@ -56,7 +56,7 @@ final class MessagesApiTest extends TestCase
 
     public function test_validation(): void
     {
-        $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'email', 'text' => 'x'])->assertUnprocessable();
+        $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'note', 'text' => 'x'])->assertUnprocessable();
         $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'telegram', 'text' => ''])->assertUnprocessable();
         $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'telegram', 'text' => str_repeat('a', 4097)])->assertUnprocessable();
     }
@@ -177,6 +177,7 @@ final class MessagesApiTest extends TestCase
         $this->assertSame('live', $data['whatsapp_cloud']['mode']);
         $this->assertSame('off', $data['viber']['mode']);
         $this->assertSame('call', $data['phonet']['channel']);
+        $this->assertSame(['key' => 'google_gmail', 'channel' => 'email', 'mode' => 'off', 'reason' => 'not_connected'], $data['google_gmail']);
         $this->getJson('/api/channels')->assertOk();
         auth()->forgetGuards();
         $this->getJson('/api/channels')->assertUnauthorized();
