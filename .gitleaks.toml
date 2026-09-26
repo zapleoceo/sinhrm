@@ -1,0 +1,12 @@
+title = "SinHRM gitleaks config"
+
+[extend]
+useDefault = true
+
+# Test fixtures use obviously fake secrets named "synthetic-*" (see docs/architecture/secrets.md).
+# Allowed ONLY inside test directories; real secrets live in the database / Vercel env, never in the repo.
+[[allowlists]]
+description = "Synthetic secrets in test fixtures"
+condition = "AND"
+paths = ['''^(backend/tests|frontend/src/.*\.spec\.ts|extension/test)''']
+regexes = ['''synthetic-[a-z0-9-]+''']
