@@ -23,10 +23,10 @@ final class ModuleAccessTest extends TestCase
     {
         $modules = $this->app->make(ModuleRegistry::class)->all();
 
-        $this->assertCount(27, $modules);
+        $this->assertCount(28, $modules);
         $core = array_keys(array_filter($modules, static fn ($m): bool => $m->core));
         sort($core);
-        $this->assertSame(['auth', 'core', 'directory', 'integrations', 'overview', 'users'], $core);
+        $this->assertSame(['auth', 'core', 'directory', 'integrations', 'observability', 'overview', 'users'], $core);
     }
 
     public function test_defaults_are_seeded_and_preserve_todays_access(): void
@@ -121,6 +121,18 @@ final class ModuleAccessTest extends TestCase
             ->assertJsonPath('jobs', fn (array $jobs): bool => $jobs['privacy.retention'] === ['ok' => true, 'skipped' => 'module_disabled']);
     }
 
+    public function test_error_log_is_core_and_client_reports_stay_open_to_every_role(): void
+    {
+        $this->assertTrue($this->app->make(ModuleRegistry::class)->all()['observability']->core);
+        $this->actingAs($this->user(UserRole::Superadmin))->putJson('/api/modules/observability', ['enabled' => false, 'roles' => []])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'module_core');
+
+        $payload = ['kind' => 'TypeError', 'message' => 'boom', 'location' => 'chunk.js:1:1', 'route' => '/tasks'];
+        $this->actingAs($this->user(UserRole::Employee))->postJson('/api/errors/client', $payload)->assertNoContent();
+        $this->actingAs($this->user(UserRole::Employee))->getJson('/api/errors')->assertForbidden();
+    }
+
     public function test_audit_routes_and_retention_job_follow_the_switch(): void
     {
         config(['ops.secret' => 'test-secret']);
@@ -151,7 +163,7 @@ final class ModuleAccessTest extends TestCase
 
         $this->actingAs($this->user(UserRole::Superadmin))->getJson('/api/modules')
             ->assertOk()
-            ->assertJsonCount(27, 'data')
+            ->assertJsonCount(28, 'data')
             ->assertJsonFragment(['key' => 'recruiting', 'core' => false, 'enabled' => true, 'name_key' => 'modules.names.recruiting']);
     }
 

@@ -297,6 +297,10 @@
           <span>{{ 'shell.nav.sheetsImport' | transloco }}</span>
         </a>
         }
+        <a class="nav-link" routerLink="/admin/errors" routerLinkActive="active">
+          <mat-icon>bug_report</mat-icon>
+          <span>{{ 'shell.nav.errors' | transloco }}</span>
+        </a>
       }
       @if (isHr()) {
         @if (can('time-off')) {

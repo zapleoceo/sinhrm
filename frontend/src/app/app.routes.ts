@@ -214,6 +214,12 @@ export const routes: Routes = [
         loadComponent: () => import('./features/core/modules.page').then((m) => m.ModulesPage),
       },
       {
+        path: 'admin/errors',
+        title: 'titles.errors',
+        canActivate: [roleGuard('superadmin')],
+        loadComponent: () => import('./features/observability/errors.page').then((m) => m.ErrorsPage),
+      },
+      {
         path: 'admin/integrations',
         title: 'titles.integrations',
         canActivate: [roleGuard('superadmin')],
