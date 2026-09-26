@@ -73,6 +73,11 @@ final class EloquentScriptRepository implements ScriptRepository
         return ScriptVersion::query()->where('script_id', $scriptId)->where('version', $version)->first();
     }
 
+    public function findVersionById(int $id): ?ScriptVersion
+    {
+        return ScriptVersion::query()->find($id);
+    }
+
     public function versions(int $scriptId): Collection
     {
         return ScriptVersion::query()->with('author')->where('script_id', $scriptId)->orderByDesc('version')->get();

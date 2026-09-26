@@ -24,6 +24,7 @@ import { formatDuration } from '../recruiting.format';
 import { Application, CHANNELS, LogTouch, STAGE_FILTER, Stage, TimelineFilter } from '../recruiting.model';
 import { recruitingErrorKey } from '../recruiting.service';
 import { CandidateCardStore } from './candidate-card.store';
+import { ScreeningPanel } from './screening-panel';
 import { TouchComposer } from './touch-composer';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { hasChannelIcon } from '../../../core/ui/channel-icons';
@@ -31,7 +32,8 @@ import { hasChannelIcon } from '../../../core/ui/channel-icons';
 /**
  * The candidate card: contacts and source/UTM chips, the ROUTE per vacancy (stages with time spent), a stage
  * control, and the merged timeline of every touch (made in SinHRM or captured outside) with channel filters.
- * Evaluated calls/chat messages carry a script score badge; the candidate's open tasks are listed above the timeline.
+ * Evaluated calls/chat messages carry a script score badge; the candidate's open tasks are listed above the timeline;
+ * the AI screening per application (advisory, "Оцінка ШІ, рішення за людиною") sits above the tasks.
  */
 @Component({
   selector: 'app-candidate-card',
@@ -48,6 +50,7 @@ import { hasChannelIcon } from '../../../core/ui/channel-icons';
     TouchComposer,
     EvaluationBadge,
     TasksWidget,
+    ScreeningPanel,
   ],
   providers: [CandidateCardStore],
   changeDetection: ChangeDetectionStrategy.OnPush,

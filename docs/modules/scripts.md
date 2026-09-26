@@ -18,12 +18,14 @@
 Скрипты **не зашиваются в код**: текст хранится в базе и вводится через интерфейс. Репозиторий публичный — в тестах
 и примерах только синтетические скрипты.
 
-### Почему оценка «по правилам», а не AI
-AI-провайдеров нельзя вызывать, пока владелец не утвердил модели и промпты (общий выключатель AI в «Інтеграціях»,
-по умолчанию выключен). Поэтому сейчас работает **оценка по правилам** — без внешних сервисов, мгновенно и одинаково
-для всех. Место для AI подготовлено (`AiScriptEvaluator`), но оно **никогда не обращается к провайдеру**: при выключенном
-AI отказывается, при включённом — сообщает «не настроено», и система всё равно оценивает правилами. У каждой оценки
-видно, кто её сделал: «правила» или «AI».
+### Правила и ШІ
+Есть два движка. **Правила** — без внешних сервисов, мгновенно: шаг засчитан, если прозвучало его ключевое слово.
+**ШІ** (владелец утвердил AI Broker, `chat:sales`) — модель читает разговор и решает по смыслу, с цитатой и коротким
+комментарием к каждому шагу и советами рекрутеру; балл всё равно считает система по весам шагов. ШІ работает, когда
+включены общий выключатель AI, ключ AI Broker и функция «ШІ: оцінка за скриптом»; иначе, при превышении дневного лимита
+или ошибке — оценивают правила, так что оценка есть всегда. Если ответ ШІ не успел (≈25 с после записи звонка;
+в ленте — сразу без ожидания), сначала сохраняется оценка правилами, а фоновая задача `ai.poll` заменяет её оценкой ШІ,
+когда ответ готов. У каждой оценки видно, кто её сделал: «правила» или «ШІ». Промпт, данные и лимиты — [ai.md](ai.md).
 
 ## Как пользоваться
 **Администратор (суперадмин, админ):**
@@ -84,7 +86,7 @@ AI отказывается, при включённом — сообщает «
 
 **Ограничения правил** (честно): это совпадение слов, а не понимание. Синонимы и перефразирование без ключевого слова
 не засчитываются; «не домовились на завтра» засчитается как «завтра». Качество зависит от ключевых слов — их стоит
-подбирать на реальных расшифровках через «Перевірку на тексті». Более умная оценка — задача AI-версии после утверждения.
+подбирать на реальных расшифровках через «Перевірку на тексті». Понимание смысла — у движка ШІ (выше).
 
 ### Напоминания и задачи
 Правило версии: `{condition, delay_days, template_key}`. Проверяется для **каждой активной заявки** (кандидат × вакансия):
@@ -135,7 +137,7 @@ viewer — например, новый сотрудник) и, как рань�
 |---|---|
 | `scripts` | `name, channel (call\|chat), active_version_id?, archived` |
 | `script_versions` | `script_id, version, published_at? (null = черновик), author_id, steps, objections, templates, followups, next_step_patterns` (jsonb); `unique(script_id, version)`. Опубликованная версия неизменяема: сервис правит только черновик, а модель бросает `LogicException` при попытке изменить опубликованную |
-| `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (jsonb: steps, next_step, objections, recommendations), created_at` |
+| `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (jsonb: steps[+comment у ШІ], next_step, objections[+handled], recommendations[+ai_tip]), prompt_version? (ШІ, напр. `script_eval.v4`), ai_request_id? (fk ai_requests), created_at` — миграция `2026_10_08_100003` |
 | `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (followup\|manual\|new_applicant\|workflow\|document\|mood_alert), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
 
 Форма контента (валидация `Http/Requests/ValidatesScriptContent` + value-объекты `DTO/ScriptContent`, `DTO/ScriptStep`):
@@ -174,9 +176,14 @@ viewer — например, новый сотрудник) и, как рань�
 ### Слои и связи с другими модулями
 `Http/Controllers/*` → `Http/Requests/*` → `Services/*` (`ScriptService`, `EvaluationService`, `TemplateService`,
 `FollowupService`, `TaskService`, `ScriptReportService`) → `Contracts/*Repository` (`Repositories/Eloquent*`).
-Оценщики — `Contracts/ScriptEvaluator` (`RulesScriptEvaluator` привязан по умолчанию, `AiScriptEvaluator` за `AiPolicy`).
+Оценщики — `Contracts/ScriptEvaluator` (`RulesScriptEvaluator` привязан по умолчанию; `AiScriptEvaluator` — через `Ai/Services/AiService`,
+промпт `Ai/ScriptEvaluationPrompt`, разбор и балл `Ai/AiEvaluationMapper` + `Support/ScriptScore` (общий с правилами),
+отложенный ответ применяет `Ai/ScriptEvaluationAiHandler` → `EvaluationRepository::storeAi` (заменяет оценку правилами той же версии,
+оценку ШІ не перезаписывает)). `EvaluationService::evaluateTouchpoint($id, $aiWaitSeconds)`: после записи звонка ждёт ≤ 25 с
+(`Jobs/EvaluateTouchpoint::AI_WAIT_SECONDS`), ленивая оценка ленты — 0 с.
 Связи: Recruiting — модели, `RecruitingScope` (доступ), событие `TouchpointRecorded`; модуль подменяет контракт Recruiting
-`TouchpointEvaluations` (оценка в ленте, [recruiting.md](recruiting.md)); Integrations — `AiPolicy`; Core — `ScheduledJob`.
+`TouchpointEvaluations` (оценка в ленте, [recruiting.md](recruiting.md)); Ai — `AiService`, обработчик и шаблон промпта по тегам
+(`AiServiceProvider::HANDLERS_TAG`, `PROMPTS_TAG`); Core — `ScheduledJob`.
 
 ### Фронтенд (`frontend/src/app/features/scripts`)
 | Файл | Что |
@@ -184,7 +191,7 @@ viewer — например, новый сотрудник) и, как рань�
 | `scripts.model.ts`, `scripts.service.ts`, `scripts.access.ts` | типы API, HTTP-клиент, `scriptsErrorKey`, `renderTemplate` (предпросмотр, те же правила, что на бэкенде), `canManageScripts` |
 | `list/scripts.page.ts` | `/admin/scripts`: список, создание, архивные |
 | `editor/script-editor.page.*`, `editor/script-editor.store.ts` | `/admin/scripts/:id`: вкладки, CDK drag&drop шагов, чипы переменных, «перевірка на тексті», версии |
-| `evaluation/evaluation-view.ts`, `evaluation/evaluation-badge.ts` | детали оценки; значок в ленте карточки (детали грузятся по клику) |
+| `evaluation/evaluation-view.ts`, `evaluation/evaluation-badge.ts` | детали оценки (у ШІ — комментарий под шагом и советы с пометкой «ШІ»); значок в ленте карточки с движком «правила» / «ШІ» (детали грузятся по клику) |
 | `templates/template-menu.ts` | кнопка «Шаблон» в `TouchComposer` карточки |
 | `tasks/tasks-widget.ts`, `tasks/tasks.store.ts` | задачи с галочкой (оптимистично, с откатом) — на главной и в карточке |
 
@@ -195,11 +202,13 @@ viewer — например, новый сотрудник) и, как рань�
 Бэкенд: `tests/Feature/Scripts/ScriptsApiTest` (права: recruiter/viewer только читают; версии: черновик → публикация →
 новый черновик v2 → откат на v1, неизменяемость, валидация контента, архив, «перевірка на тексті»), `EvaluationApiTest`
 (автооценка звонка после ответа, значок в ленте, детали, чужой филиал 403, что оценивается/не оценивается, повторная
-оценка не дублируется, включённый AI не делает ни одного HTTP-запроса, ленивая оценка ≤ 5 на запрос ленты и в `GET …/evaluation`), `TemplatesApiTest`, `TasksAndFollowupsTest`
+оценка не дублируется, включённый AI без настроенного провайдера не делает ни одного HTTP-запроса, ленивая оценка ≤ 5 на запрос ленты и в `GET …/evaluation`),
+`AiEvaluationTest` (оценка ШІ с баллом по весам и `prompt_version`, побайтно одинаковый `system` для одной версии, медленный ответ →
+сначала правила, `ai.poll` заменяет один раз, лимит/ошибка провайдера → правила, функция выключена → без HTTP, «перевірка на тексті» через ШІ), `TemplatesApiTest`, `TasksAndFollowupsTest`
 (секрет ops, три условия, идемпотентность, фильтры `mine/due/candidate_id/done`, доступ), `ScriptReportTest`.
 Unit: `tests/Unit/Scripts/*` — оценщик (веса, цитаты, «подумайте» после «завтра», шаблоны фраз, отказ во вложенных
 квантификаторах и длинных фразах, лимит бэктрекинга → «не совпало» + лог без текста), правила напоминаний,
-подстановка шаблонов, выбор движка. Фронт: `scripts.service.spec.ts`, `scripts.model.spec.ts`, `scripts.stores.spec.ts`.
+подстановка шаблонов; `EvaluationServiceTest` — балл, разбор ответа ШІ, стабильный `system`. Фронт: `scripts.service.spec.ts`, `scripts.model.spec.ts`, `scripts.stores.spec.ts`.
 
 Вручную на preview (нужна сессия admin): создать скрипт → шаг «Привітання» с ключевым словом `добрий день` →
 «Перевірка на тексті» → опубликовать → в карточке кандидата записать звонок с текстом → через секунду обновить ленту —
@@ -216,5 +225,5 @@ curl -s -X POST https://<api>/api/ops/jobs/run -H "X-Ops-Secret: $OPS_SECRET"  #
 Первая версия скрипта — внутренний гайд рекрутера филиала (звонок: приветствие → интерес к кандидату → о компании →
 вакансия и условия → отбор с акцентом на e-собеседовании → **фиксация следующего шага** → вопросы → завершение;
 возражения; скрипт переписки; напоминания через 1 / 1–2 / 3–4 дня). Он вводится через редактор в базу, не в код.
-AI-оценка (после утверждения моделей и промпта владельцем): промпт = активная версия скрипта (стабильная часть →
-prompt caching), разговор — в конце; результат в том же формате `EvaluationResult`, `engine = ai`.
+AI-оценка реализована так: промпт = инструкции + активная версия скрипта (стабильная часть → prompt caching), разговор —
+в конце; результат в том же формате `EvaluationResult`, `engine = ai` ([ai.md](ai.md)).

@@ -20,6 +20,10 @@ final class SenderRuleResource extends JsonResource
             'kind' => $this->kind->value,
             'parser' => $this->parser?->value,
             'hits' => $this->hits,
+            // manual | ai: rules created by an auto-applied AI classification carry the confidence and the prompt version.
+            'source' => $this->source,
+            'ai_confidence' => $this->ai_confidence,
+            'prompt_version' => $this->prompt_version,
             'last_seen_at' => $this->last_seen_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

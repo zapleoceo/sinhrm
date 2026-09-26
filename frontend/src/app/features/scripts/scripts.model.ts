@@ -95,25 +95,31 @@ export interface StepResult {
   weight: number;
   done: boolean;
   quote: string | null;
+  /** AI engine only: a short Ukrainian explanation of the decision. */
+  comment?: string | null;
 }
 
 export type Recommendation =
   | { type: 'missed_step'; step_id: string; title: string }
   | { type: 'next_step_not_fixed' }
-  | { type: 'negative_phrase'; quote: string };
+  | { type: 'negative_phrase'; quote: string }
+  /** AI engine: a ready tip in Ukrainian (not translated). */
+  | { type: 'ai_tip'; text: string };
 
 export interface EvaluationDetails {
   engine: EvaluationEngine;
   score: number;
   steps: StepResult[];
   next_step: { fixed: boolean; quote: string | null; negative_quote: string | null };
-  objections: { id: string; trigger: string; raised: boolean; quote: string | null }[];
+  objections: { id: string; trigger: string; raised: boolean; quote: string | null; handled?: boolean }[];
   recommendations: Recommendation[];
 }
 
 /** GET /api/touchpoints/{id}/evaluation. */
 export interface TouchEvaluation extends EvaluationDetails {
   id: number;
+  /** AI evaluations: e.g. script_eval.v2. */
+  prompt_version?: string | null;
   touchpoint_id: number;
   script: { id: number; name: string | null; version: number; version_id: number } | null;
   created_at: string | null;

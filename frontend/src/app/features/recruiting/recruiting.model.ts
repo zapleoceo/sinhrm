@@ -395,3 +395,26 @@ export interface DuplicateCandidate {
   existing_id: number;
   matched_by: 'phone' | 'email' | 'telegram';
 }
+
+/** AI screening verdict, derived from the score on the server (fit ≥ 70, maybe ≥ 40). */
+export type ScreeningVerdict = 'fit' | 'maybe' | 'no';
+
+/** AI screening of an application (tz6). Advisory only: shown as "Оцінка ШІ, рішення за людиною". */
+export interface Screening {
+  id: number;
+  application_id: number;
+  vacancy: { id: number; title: string | null };
+  status: 'pending' | 'done' | 'failed';
+  trigger: 'manual' | 'auto';
+  score: number | null;
+  verdict: ScreeningVerdict | null;
+  summary: string | null;
+  strengths: string[];
+  gaps: string[];
+  questions: string[];
+  error: string | null;
+  prompt_version: string;
+  advisory: true;
+  created_at: string | null;
+  completed_at: string | null;
+}

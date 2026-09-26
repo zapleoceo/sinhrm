@@ -17,6 +17,8 @@ use Illuminate\Support\Carbon;
  * @property EvaluationEngine $engine
  * @property int $score
  * @property array{steps: list<array<string, mixed>>, next_step: array<string, mixed>, objections: list<array<string, mixed>>, recommendations: list<array<string, mixed>>} $result
+ * @property string|null $prompt_version AI only, e.g. script_eval.v1
+ * @property int|null $ai_request_id
  * @property Carbon|null $created_at
  * @property-read ScriptVersion $version
  * @property-read Touchpoint $touchpoint
@@ -25,7 +27,7 @@ final class ScriptEvaluation extends Model
 {
     public const null UPDATED_AT = null;
 
-    protected $fillable = ['touchpoint_id', 'script_version_id', 'engine', 'score', 'result'];
+    protected $fillable = ['touchpoint_id', 'script_version_id', 'engine', 'score', 'result', 'prompt_version', 'ai_request_id'];
 
     /** @return BelongsTo<ScriptVersion, $this> */
     public function version(): BelongsTo

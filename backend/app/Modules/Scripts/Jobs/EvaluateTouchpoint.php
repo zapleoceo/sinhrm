@@ -17,12 +17,15 @@ final class EvaluateTouchpoint
 {
     use Dispatchable;
 
+    /** AI answer wait after the response (the serverless request still has to end within 60 s). */
+    public const int AI_WAIT_SECONDS = 25;
+
     public function __construct(public readonly int $touchpointId) {}
 
     public function handle(EvaluationService $service): void
     {
         try {
-            $evaluation = $service->evaluateTouchpoint($this->touchpointId);
+            $evaluation = $service->evaluateTouchpoint($this->touchpointId, self::AI_WAIT_SECONDS);
             if ($evaluation !== null) {
                 Log::info('scripts.touch_evaluated', [
                     'touchpoint_id' => $this->touchpointId,

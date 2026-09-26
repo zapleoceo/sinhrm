@@ -11,9 +11,9 @@ use Illuminate\Support\Carbon;
 
 final class EloquentSenderRuleRepository implements SenderRuleRepository
 {
-    public function all(): Collection
+    public function all(?string $source = null): Collection
     {
-        return SenderRule::query()->orderBy('pattern')->get();
+        return SenderRule::query()->when($source !== null, fn ($q) => $q->where('source', $source))->orderBy('pattern')->get();
     }
 
     public function find(int $id): ?SenderRule

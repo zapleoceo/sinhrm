@@ -1,4 +1,5 @@
 {
+  "ai": {"panel":{"title":"ШІ: стан, використання і перевірка","explain":"ШІ працює лише коли увімкнено загальний перемикач, задано ключ AI Broker і інтеграцію не вимкнено. Ліміти на день рахуються за 00:00 UTC. Налаштування — у картці AI Broker нижче.","test":"Тестовий запит","testOk":"Відповідь отримано: «{{reply}}»","testDeferred":"Відповідь ще готується — перевірте пізніше","tokens":"токени: {{in}} → {{out}}, з кешу {{cached}}","available":"ШІ доступний","model":"Модель","modelAuto":"обирає брокер","on":"увімкнено","requests":"Запити сьогодні: {{used}} з {{limit}}","cost":"Витрати сьогодні: ${{used}} з ${{limit}}","cached":"Токенів з кешу промпта: {{cached}} з {{input}} вхідних"},"purposes":{"script_evaluation":"Оцінка за скриптом","mail_classification":"Сортування пошти","candidate_screening":"Скринінг кандидатів"},"errors":{"ai_disabled":"ШІ вимкнено загальним перемикачем","ai_not_configured":"AI Broker не налаштовано: ключ або режим інтеграції","ai_purpose_disabled":"Цю функцію ШІ вимкнено в налаштуваннях","ai_budget_exceeded":"Денний ліміт ШІ вичерпано — спробуйте завтра","ai_invalid_output":"ШІ відповів у неправильному форматі","ai_timeout":"ШІ не відповів вчасно","ai_provider":"Помилка з боку AI-провайдера","throttled":"Забагато запитів, зачекайте хвилину","insufficient_data":"Недостатньо даних для оцінки: немає резюме, нотаток чи повідомлень кандидата","generic":"Не вдалося виконати запит до ШІ"}},
   "app": { "name": "SinHRM", "tagline": "Рекрутинг без зайвого шуму" },
   "common": { "confirm": "Підтвердити", "cancel": "Скасувати", "retry": "Спробувати ще", "loading": "Завантаження…", "error": "Щось пішло не так", "all": "Усі", "close": "Закрити", "save": "Зберегти", "delete": "Видалити", "datepicker": {"calendar": "Календар", "open": "Відкрити календар", "close": "Закрити календар", "prevMonth": "Попередній місяць", "nextMonth": "Наступний місяць", "prevYear": "Попередній рік", "nextYear": "Наступний рік", "prevYears": "Попередні 24 роки", "nextYears": "Наступні 24 роки", "chooseDate": "Обрати дату", "chooseMonthYear": "Обрати місяць і рік", "start": "Початок", "end": "Кінець", "time": "Час", "openTime": "Обрати час", "invalid": "Невірна дата (дд.мм.рррр)"} },
   "roles": { "superadmin": "Суперадмін", "admin": "Адміністратор", "recruiter": "Рекрутер", "viewer": "Спостерігач" },
@@ -96,6 +97,7 @@
     }
   },
   "integrations": {
+    "options": {"on":"Увімкнено","off":"Вимкнено","chat:fast":"chat:fast — швидко","chat:smart":"chat:smart — розумно","chat:sales":"chat:sales — продажі","structured":"structured — структуровано","diia_signature":"Дія.Підпис","vchasno":"Вчасно"},
     "title": "Інтеграції",
     "subtitle": "Ключі та налаштування зовнішніх сервісів. Секрети зберігаються зашифрованими і не показуються повторно.",
     "loadError": "Не вдалося завантажити інтеграції",
@@ -195,7 +197,17 @@
       "callback_extension": "Внутрішній номер для дзвінка з картки",
       "base_url": "Адреса API",
       "project_key": "Ключ проєкту",
-      "daily_cap_usd": "Денний ліміт, $",
+      "daily_cap_usd": "Денний ліміт витрат, $",
+      "capability": "Можливість брокера (тестовий запит)",
+      "capability_script_evaluation": "Можливість: оцінка за скриптом",
+      "capability_mail_classification": "Можливість: сортування пошти",
+      "capability_candidate_screening": "Можливість: скринінг",
+      "model": "Модель (порожньо — обирає брокер)",
+      "max_requests_per_day": "Запитів на день, не більше",
+      "ai_script_evaluation": "ШІ: оцінка за скриптом",
+      "ai_mail_classification": "ШІ: сортування пошти",
+      "ai_candidate_screening": "ШІ: скринінг кандидатів",
+      "ai_screening_auto": "Автоскринінг нових відгуків",
       "api_key": "API-ключ",
       "mailbox": "Поштова скринька",
       "sheet_url": "Посилання на таблицю",
@@ -214,7 +226,7 @@
     "items": {
       "ai_broker": {
         "name": "AI Broker",
-        "description": "Власний шлюз до AI-моделей з лімітом витрат"
+        "description": "Власний шлюз до AI-моделей: можливість на кожну функцію, денні ліміти запитів і витрат"
       },
       "openrouter": {
         "name": "OpenRouter",
@@ -284,6 +296,7 @@
     }
   },
   "recruiting": {
+    "screening": {"title":"Скринінг ШІ","label":"Оцінка ШІ, рішення за людиною","run":"ШІ-скринінг","again":"Оцінити ще раз","pending":"ШІ ще оцінює — оновіть трохи пізніше.","strengths":"Сильні сторони","gaps":"Прогалини","questions":"Питання на співбесіду","verdict":{"fit":"підходить","maybe":"можливо","no":"не підходить"}},
     "search": "Пошук",
     "save": "Зберегти",
     "required": "Обовʼязкове поле",
@@ -560,7 +573,7 @@
     "evaluation": {
       "badge": "Скрипт {{score}}",
       "score": "Бал {{score}}/100",
-      "engine": { "rules": "правила", "ai": "AI" },
+      "engine": { "rules": "правила", "ai": "ШІ" },
       "nextFixed": "Наступний крок зафіксовано",
       "nextNotFixed": "Наступний крок не зафіксовано",
       "done": "виконано",
@@ -590,6 +603,7 @@
     "errors": { "google_gmail_not_connected": "Gmail не підключено", "google_calendar_not_connected": "Google Календар не підключено", "google_sheets_not_connected": "Google Таблиці не підключено", "reconnect_required": "Google потребує перепідключення", "google_oauth_not_configured": "OAuth-клієнт Google не налаштовано на сервері", "google_unauthorized": "Google відхилив доступ", "google_forbidden": "Немає доступу (перевірте дозволи або доступ до таблиці)", "google_not_found": "Не знайдено (перевірте посилання й доступ)", "google_unreachable": "Google недоступний, спробуйте пізніше", "invalid_sheet_url": "Потрібне посилання виду https://docs.google.com/spreadsheets/d/…", "consent_denied": "Доступ не надано", "invalid_state": "Сесія підключення застаріла — спробуйте ще раз", "invalid_services": "Невідомі сервіси Google", "validation": "Перевірте поля", "generic": "Не вдалося виконати дію з Google" }
   },
   "mail": {
+    "ai": {"suggestion":"ШІ пропонує: {{kind}} ({{confidence}}%)","extracted":"дані з листа","pending":"ШІ аналізує лист…","failed":"ШІ не зміг визначити"},
     "title": "Пошта",
     "subtitle": "Агент читає підключену скриньку Gmail кожні 30 хвилин: відгуки з сайтів вакансій стають кандидатами й задачами, листи кандидатів — дотиками в картці.",
     "syncNow": "Синхронізувати зараз",
@@ -602,7 +616,7 @@
     "tabs": { "unknown": "Невідомі відправники", "rules": "Правила", "log": "Журнал" },
     "kinds": { "job_board": "Сайт вакансій", "candidate": "Кандидат", "colleague": "Колега", "newsletter": "Розсилка", "ignore": "Ігнорувати" },
     "parsers": { "work_ua": "Work.ua", "robota_ua": "Robota.ua", "djinni": "Djinni", "generic": "Загальний" },
-    "rules": { "pattern": "Адреса або @домен", "hint": "hr@site.ua — одна адреса, @site.ua — увесь домен", "kind": "Тип", "parser": "Розбір", "hits": "Спрацювань: {{n}}", "add": "Додати", "delete": "Видалити правило", "empty": "Правил ще немає", "created": "Правило додано" },
+    "rules": { "pattern": "Адреса або @домен", "hint": "hr@site.ua — одна адреса, @site.ua — увесь домен", "kind": "Тип", "parser": "Розбір", "hits": "Спрацювань: {{n}}", "add": "Додати", "delete": "Видалити правило", "empty": "Правил ще немає", "created": "Правило додано", "aiOnly": "Лише створені ШІ", "byAi": "створено ШІ, {{confidence}}%" },
     "unknown": { "count": "листів: {{n}}", "domain": "Для всього домену", "assign": "Застосувати", "dismiss": "Прибрати з черги", "empty": "Черга порожня", "assigned": "Правило створено" },
     "log": { "received": "Отримано", "sender": "Відправник", "subject": "Тема", "outcome": "Результат", "empty": "Ще нічого не оброблено" },
     "outcomes": { "application": "Відгук → кандидат", "touchpoint": "Лист кандидата", "inbox": "У «Вхідні»", "skipped": "Пропущено", "unknown": "Невідомий", "parse_failed": "Не розпізнано" },

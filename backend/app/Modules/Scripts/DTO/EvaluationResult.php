@@ -8,12 +8,13 @@ use App\Modules\Scripts\Enums\EvaluationEngine;
 
 /**
  * Outcome of checking a text (call transcript / chat message) against a script version.
- * Recommendations are codes, not sentences: the UI translates them (uk/ru/en).
+ * Recommendations are codes, not sentences: the UI translates them (uk/ru/en); the AI engine adds type "ai_tip" with
+ * a ready Ukrainian text, and a short Ukrainian "comment" per step.
  *
- * @phpstan-type StepResult array{id: string, title: string, required: bool, weight: int, done: bool, quote: string|null}
+ * @phpstan-type StepResult array{id: string, title: string, required: bool, weight: int, done: bool, quote: string|null, comment?: string|null}
  * @phpstan-type NextStep array{fixed: bool, quote: string|null, negative_quote: string|null}
- * @phpstan-type ObjectionResult array{id: string, trigger: string, raised: bool, quote: string|null}
- * @phpstan-type Recommendation array{type: string, step_id?: string, title?: string, quote?: string}
+ * @phpstan-type ObjectionResult array{id: string, trigger: string, raised: bool, quote: string|null, handled?: bool}
+ * @phpstan-type Recommendation array{type: string, step_id?: string, title?: string, quote?: string, text?: string}
  */
 final readonly class EvaluationResult
 {

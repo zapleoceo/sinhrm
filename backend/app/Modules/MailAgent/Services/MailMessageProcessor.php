@@ -33,11 +33,12 @@ use App\Modules\Recruiting\Support\ContactNormalizer;
 use App\Modules\Scripts\Services\TaskService;
 
 /**
- * One inbound message → one outcome (no AI unless AiPolicy is on — and even then no provider call):
+ * One inbound message → one outcome (decided by rules only; AI never decides):
  * - sent by us / no sender → skipped;
  * - sender rule: ignore / newsletter / colleague → skipped; candidate → e-mail touchpoint; job_board → parser;
  * - no rule, sender is a known candidate's e-mail → touchpoint;
- * - otherwise → unknown_senders queue (address + subject only).
+ * - otherwise → unknown_senders queue (address + subject only) + an AI suggestion when AI is available
+ *   (AiMailClassifier: sender, subject, first 1500 cleaned characters of the body; shown in the queue, never applied).
  * Job board: vacancy found by exact title → candidate create-or-match + application + touchpoint + "call within
  * 1 hour" task for the vacancy recruiter; vacancy not found → the touchpoint goes to the Inbox with parsed fields.
  */
@@ -67,7 +68,11 @@ final readonly class MailMessageProcessor
         $classification = $this->classify($message);
         if ($classification === null) {
             [$kind, $parser] = SenderSuggester::suggest($message->fromEmail);
-            $this->unknown->touch($message->fromEmail, $message->subject, $message->receivedAt, $kind, $parser);
+            $sender = $this->unknown->touch($message->fromEmail, $message->subject, $message->receivedAt, $kind, $parser);
+            if ($sender !== null && $sender->ai_status === null) {
+                // A suggestion for the queue only (asked once per sender); the superadmin still confirms a rule.
+                $this->ai->suggest($message, $sender->id);
+            }
 
             return new ProcessResult(MailOutcome::Unknown);
         }
@@ -93,7 +98,7 @@ final readonly class MailMessageProcessor
             return new Classification(SenderKind::Candidate);
         }
 
-        return $this->ai->classify($message);
+        return null;
     }
 
     private function application(GmailMessage $message, Classification $classification, ?User $actor): ProcessResult

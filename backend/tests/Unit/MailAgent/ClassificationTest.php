@@ -5,19 +5,16 @@ declare(strict_types=1);
 namespace Tests\Unit\MailAgent;
 
 use App\Modules\GoogleWorkspace\DTO\GmailMessage;
-use App\Modules\Integrations\Contracts\AiPolicy;
 use App\Modules\MailAgent\Contracts\SenderRuleRepository;
 use App\Modules\MailAgent\Enums\ParserKey;
 use App\Modules\MailAgent\Enums\SenderKind;
 use App\Modules\MailAgent\Models\SenderRule;
-use App\Modules\MailAgent\Services\AiMailClassifier;
 use App\Modules\MailAgent\Services\RulesMailClassifier;
 use App\Modules\MailAgent\Support\SenderPattern;
 use App\Modules\MailAgent\Support\SenderSuggester;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 
 final class ClassificationTest extends TestCase
 {
@@ -55,22 +52,6 @@ final class ClassificationTest extends TestCase
         $this->assertSame([null, null], SenderSuggester::suggest('olena@example.test'));
     }
 
-    public function test_ai_classifier_never_decides_until_approved(): void
-    {
-        foreach ([false, true] as $enabled) {
-            $policy = new class($enabled) implements AiPolicy
-            {
-                public function __construct(private readonly bool $on) {}
-
-                public function enabled(): bool
-                {
-                    return $this->on;
-                }
-            };
-            $this->assertNull((new AiMailClassifier($policy, new NullLogger))->classify($this->mail('x@example.test')));
-        }
-    }
-
     private function mail(string $from): GmailMessage
     {
         return new GmailMessage('m', Carbon::now(), mb_strtolower($from), null, 'Subject', 'Text');
@@ -92,7 +73,7 @@ final class ClassificationTest extends TestCase
             /** @param  list<SenderRule>  $rules */
             public function __construct(private readonly array $rules) {}
 
-            public function all(): Collection
+            public function all(?string $source = null): Collection
             {
                 return new Collection($this->rules);
             }

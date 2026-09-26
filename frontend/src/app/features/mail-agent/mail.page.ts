@@ -24,7 +24,8 @@ interface Draft {
 
 /**
  * Admin → Mail (superadmin): Gmail connection and last sync, "Sync now", sender rules CRUD, the unknown-senders
- * queue (one click turns a sender into a rule) and the recent processed-mail log.
+ * queue (one click turns a sender into a rule; AI suggestions are shown with the label "ШІ", confident ones become
+ * rules by themselves and are marked in the rules list) and the recent processed-mail log.
  */
 @Component({
   selector: 'app-mail-page',
@@ -104,12 +105,23 @@ export class MailPage implements OnInit {
     this.store.deleteRule(rule, this.toast);
   }
 
+  /** Rules list filter: all, or only those created automatically by AI. */
+  protected readonly aiOnly = signal(false);
+  protected readonly visibleRules = computed(() => (this.aiOnly() ? this.store.rules().filter((r) => r.source === 'ai') : this.store.rules()));
+
+  /** The AI suggestion (when done) pre-selects the kind; otherwise the rule-based guess. */
   protected draft(sender: UnknownSender): Draft {
+    const ai = sender.ai?.status === 'done' ? sender.ai : null;
+    const kind = ai?.kind ?? sender.suggested_kind ?? 'ignore';
     return this.drafts()[sender.id] ?? {
-      kind: sender.suggested_kind ?? 'ignore',
-      parser: sender.suggested_parser,
-      domain: sender.suggested_kind === 'job_board' || sender.suggested_kind === 'newsletter',
+      kind,
+      parser: ai?.parser ?? sender.suggested_parser,
+      domain: kind === 'job_board' || kind === 'newsletter',
     };
+  }
+
+  protected confidence(value: number | null | undefined): number {
+    return Math.round((value ?? 0) * 100);
   }
 
   protected patchDraft(sender: UnknownSender, patch: Partial<Draft>): void {

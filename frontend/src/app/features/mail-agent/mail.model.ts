@@ -33,6 +33,10 @@ export interface SenderRule {
   kind: SenderKind;
   parser: ParserKey | null;
   hits: number;
+  /** manual | ai (created automatically from a confident AI classification, confidence ≥ 0.85). */
+  source?: 'manual' | 'ai';
+  ai_confidence?: number | null;
+  prompt_version?: string | null;
   last_seen_at: string | null;
   created_at: string | null;
 }
@@ -52,6 +56,18 @@ export interface UnknownSender {
   last_seen_at: string;
   suggested_kind: SenderKind | null;
   suggested_parser: ParserKey | null;
+  /** AI suggestion (below the auto-apply threshold); null = AI was not asked. */
+  ai?: AiSuggestion | null;
+}
+
+export interface AiSuggestion {
+  /** skipped = empty letter, AI not asked. */
+  status: 'pending' | 'done' | 'failed' | 'skipped';
+  kind: SenderKind | null;
+  parser: ParserKey | null;
+  confidence: number | null;
+  /** Applicant data from the letter, kept only for confident candidate/job-board answers (prefill, not applied). */
+  extracted: { full_name: string | null; phone: string | null; email: string | null; vacancy_title: string | null } | null;
 }
 
 export interface AssignSender {

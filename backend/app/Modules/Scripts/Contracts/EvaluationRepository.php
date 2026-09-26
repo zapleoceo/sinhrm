@@ -20,6 +20,14 @@ interface EvaluationRepository
     public function createOnce(int $touchpointId, array $attributes): ScriptEvaluation;
 
     /**
+     * Stores an AI evaluation: creates it, or replaces a RULES evaluation of the same script version (the rules result
+     * was stored while the AI answer was pending). An existing AI evaluation is kept (idempotent).
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function storeAi(int $touchpointId, int $scriptVersionId, array $attributes): ScriptEvaluation;
+
+    /**
      * @param  list<int>  $touchpointIds
      * @return array<int, ScriptEvaluation> touchpoint id → evaluation
      */

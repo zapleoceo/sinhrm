@@ -22,6 +22,23 @@ interface MailLogRepository
 
     public function processedSince(Carbon $since): int;
 
+    /**
+     * Gmail ids of messages from the address that ended in the unknown-senders queue (outcome "unknown"), oldest first.
+     *
+     * @return list<string>
+     */
+    public function unknownFrom(string $email, int $limit): array;
+
+    /** Gmail id of the newest logged message from the address. */
+    public function latestFrom(string $email): ?string;
+
+    /**
+     * Result of a re-processing (only a row still in outcome "unknown" is changed: idempotent).
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function updateUnknown(string $gmailId, array $attributes): bool;
+
     public function startRun(string $trigger, ?int $userId, Carbon $at): MailSyncRun;
 
     /** @param  array<string, int>  $counts */
