@@ -53,6 +53,7 @@
 Наблюдатель (viewer) всё видит в пределах своих филиалов, но ничего не меняет (кнопок записи нет, API вернёт 403).
 
 ## Как устроено
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/InboxNavBadges` — ключ `inbox`: сообщения во «Вхідні» без кандидата в области видимости пользователя (`InboxService::list(..., 1)->total()`, то же число, что `meta.total` списка).
 
 ### Сущности и таблицы (`backend/app/Modules/Recruiting/Database/Migrations`)
 | Таблица | Главное | Заметки |

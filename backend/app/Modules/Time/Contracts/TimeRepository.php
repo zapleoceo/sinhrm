@@ -43,6 +43,9 @@ interface TimeRepository
      */
     public function submitted(?array $employeeIds, ?int $exceptEmployeeId, int $limit): Collection;
 
+    /** @param  list<int>|null  $employeeIds  how many submitted() would find without the limit */
+    public function countSubmitted(?array $employeeIds, ?int $exceptEmployeeId): int;
+
     /**
      * Replaces all entries of the week.
      *

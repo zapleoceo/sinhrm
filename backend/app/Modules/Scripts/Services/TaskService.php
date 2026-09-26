@@ -43,6 +43,12 @@ final readonly class TaskService
         return $this->tasks->list($this->scope->for($actor), $filter, $now ?? Carbon::now(), self::LIMIT);
     }
 
+    /** Same filter as list(), without the limit (sidebar counter). */
+    public function count(User $actor, TaskFilter $filter, ?Carbon $now = null): int
+    {
+        return $this->tasks->count($this->scope->for($actor), $filter, $now ?? Carbon::now());
+    }
+
     public function canSee(User $actor, Task $task): bool
     {
         return $actor->isActive() && $this->tasks->isVisible($this->scope->for($actor), $task);

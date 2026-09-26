@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Documents\Providers;
 
 use App\Models\User;
+use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Documents\Contracts\DocumentRepository;
 use App\Modules\Documents\Contracts\DocumentStorage;
@@ -12,6 +13,7 @@ use App\Modules\Documents\Contracts\DocumentTemplateRepository;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
 use App\Modules\Documents\Repositories\EloquentDocumentRepository;
 use App\Modules\Documents\Repositories\EloquentDocumentTemplateRepository;
+use App\Modules\Documents\Services\DocumentNavBadges;
 use App\Modules\People\Services\PeopleScope;
 use Illuminate\Support\Facades\Gate;
 
@@ -26,6 +28,7 @@ final class DocumentsServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->app->tag([DocumentNavBadges::class], NavBadgeProvider::class);
         $this->app->bind(DocumentRepository::class, EloquentDocumentRepository::class);
         $this->app->bind(DocumentTemplateRepository::class, EloquentDocumentTemplateRepository::class);
         // Object storage later = another implementation here.

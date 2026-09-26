@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\Support\NavBadgeAssertions;
 use Tests\Support\PeopleFixtures;
 use Tests\Support\PulseFixtures;
 use Tests\TestCase;
@@ -22,7 +23,7 @@ use Tests\TestCase;
  */
 final class AnonymityTest extends TestCase
 {
-    use PeopleFixtures, PulseFixtures, RefreshDatabase;
+    use NavBadgeAssertions, PeopleFixtures, PulseFixtures, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -211,7 +212,12 @@ final class AnonymityTest extends TestCase
         $this->actingAs($this->userOf($inside))->getJson("/api/pulse/waves/{$wave->id}/form")->assertOk()->assertJsonCount(5, 'data.questions');
         $this->actingAs($this->userOf($inside))->postJson("/api/pulse/waves/{$wave->id}/responses", ['answers' => ['enps' => 11, 'q1' => 0, 'pick' => 5]])
             ->assertUnprocessable()->assertJsonPath('code', 'invalid_answers')->assertJsonPath('questions', ['enps', 'q1', 'pick']);
+        // Sidebar: open waves addressed to me and not answered yet.
+        $notAnswered = static fn (array $w): bool => $w['responded'] === false;
+        $this->assertBadgeMatchesList($this->userOf($inside), 'surveys', '/api/pulse/my/waves', 1, 'data', $notAnswered);
+        $this->assertBadgeMatchesList($this->userOf($outside), 'surveys', '/api/pulse/my/waves', 0, 'data', $notAnswered);
         $this->answer($wave, $inside, ['enps' => '8', 'q1' => 3, 'tags' => [2, 0, 2]]);
+        $this->assertBadgeMatchesList($this->userOf($inside), 'surveys', '/api/pulse/my/waves', 0, 'data', $notAnswered);
 
         $this->assertSame($inside->id, DB::table('survey_responses')->value('employee_id'));
         $this->actingAs($this->login(UserRole::Admin))->getJson("/api/pulse/waves/{$wave->id}/responses")->assertOk()

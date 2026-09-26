@@ -64,6 +64,33 @@ final readonly class ResponseService
      */
     public function mine(User $user): array
     {
+        $out = [];
+        foreach ($this->myOpenWaves($user) as ['wave' => $wave, 'token' => $token]) {
+            $out[] = ['wave' => $wave, 'responded' => $this->responses->answeredHashes($wave->id, [$token]) !== []];
+        }
+
+        return $out;
+    }
+
+    /** How many of mine() are not answered yet (sidebar counter): one count(*) over all my tokens. */
+    public function countPending(User $user): int
+    {
+        $tokens = [];
+        foreach ($this->myOpenWaves($user) as ['wave' => $wave, 'token' => $token]) {
+            $tokens[$wave->id] = $token;
+        }
+
+        return count($tokens) - $this->responses->countAnswered($tokens);
+    }
+
+    /**
+     * Open waves whose audience includes the user, with the user's respondent token. The audience rules live in PHP
+     * (WaveAudience), so this is the single place both the list and the counter use.
+     *
+     * @return list<array{wave: SurveyWave, token: string}>
+     */
+    private function myOpenWaves(User $user): array
+    {
         $employee = $this->scope->employeeOf($user);
         if ($employee === null) {
             return [];
@@ -71,8 +98,7 @@ final readonly class ResponseService
         $out = [];
         foreach ($this->surveys->openWaves() as $wave) {
             if ($wave->salt !== null && WaveAudience::includes($wave, $employee)) {
-                $token = $this->hash->for($wave->salt, $employee->id);
-                $out[] = ['wave' => $wave, 'responded' => $this->responses->answeredHashes($wave->id, [$token]) !== []];
+                $out[] = ['wave' => $wave, 'token' => $this->hash->for($wave->salt, $employee->id)];
             }
         }
 

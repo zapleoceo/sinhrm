@@ -15,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Tests\Support\NavBadgeAssertions;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
@@ -24,7 +25,7 @@ use Tests\TestCase;
  */
 final class TimeApiTest extends TestCase
 {
-    use PeopleFixtures, RefreshDatabase;
+    use NavBadgeAssertions, PeopleFixtures, RefreshDatabase;
 
     private const string WEEK = '2026-10-05';
 
@@ -100,6 +101,9 @@ final class TimeApiTest extends TestCase
         // Decisions: the manager (not the employee, not a colleague); reject needs a comment and reopens the week.
         $this->actingAs($lead)->getJson('/api/time/approvals')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.overtime', 7.5);
         $this->actingAs($worker)->getJson('/api/time/approvals')->assertOk()->assertJsonCount(0, 'data');
+        $this->assertBadgeMatchesList($lead, 'time_approvals', '/api/time/approvals', 1);
+        $this->assertBadgeMatchesList($worker, 'time_approvals', '/api/time/approvals', 0);
+        $this->assertBadgeMatchesList($this->userOf($org['head']), 'time_approvals', '/api/time/approvals', 1);
         $this->actingAs($worker)->postJson("/api/time/timesheets/$id/decision", ['decision' => 'approve'])->assertForbidden();
         $this->actingAs($this->userOf($org['peer']))->postJson("/api/time/timesheets/$id/decision", ['decision' => 'approve'])->assertNotFound();
         $this->actingAs($lead)->postJson("/api/time/timesheets/$id/decision", ['decision' => 'reject'])->assertUnprocessable();
