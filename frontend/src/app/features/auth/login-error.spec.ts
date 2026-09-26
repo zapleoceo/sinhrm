@@ -48,4 +48,15 @@ describe('LoginPage', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('[role=alert]')).toBeNull();
   });
+
+  it('places the language switcher inside the card and links the Google button to the login flow', () => {
+    const fixture = TestBed.createComponent(LoginPage);
+    fixture.detectChanges();
+    const card = (fixture.nativeElement as HTMLElement).querySelector('section.card');
+    expect(card?.querySelector('app-language-switcher')).not.toBeNull();
+    expect(card?.querySelector('app-logo')).not.toBeNull();
+    const button = card?.querySelector<HTMLAnchorElement>('a.google');
+    expect(button?.getAttribute('href')).toBe('/api/auth/google/redirect');
+    expect(button?.textContent?.trim()).toBe('Continue with Google');
+  });
 });

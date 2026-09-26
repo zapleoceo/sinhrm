@@ -236,6 +236,9 @@ final readonly class HiringRequestService
             throw HiringException::vacancyTaken();
         }
         $vacancy = $this->vacancies->find($vacancyId);
+        if ($vacancy->status !== VacancyStatus::Open || $vacancy->branch_id !== $request->branch_id) {
+            throw HiringException::vacancyNotLinkable();
+        }
         if (! $this->requests->transition($request, HiringRequestStatus::Approved, [
             'vacancy_id' => $vacancy->id, 'recruiter_id' => $vacancy->recruiter_id, 'status' => HiringRequestStatus::InProgress->value,
         ])) {

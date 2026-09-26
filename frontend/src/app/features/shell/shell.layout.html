@@ -1,7 +1,7 @@
 <div class="shell">
   <aside class="sidebar">
   <nav class="sidebar-nav" [attr.aria-label]="'shell.nav.label' | transloco">
-    <a class="brand" routerLink="/">{{ 'app.name' | transloco }}</a>
+    <a class="brand" routerLink="/"><app-logo /></a>
     <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>dashboard</mat-icon>
       <span>{{ 'shell.nav.overview' | transloco }}</span>

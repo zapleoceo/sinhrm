@@ -75,9 +75,9 @@
 .user-chevron { color: var(--app-muted); flex-shrink: 0; }
 
 .brand {
-  font: var(--mat-sys-title-medium);
-  color: var(--mat-sys-primary);
+  display: flex;
   text-decoration: none;
+  --app-logo-size: 28px;
   padding: 0 0.75rem 1.25rem;
 }
 
