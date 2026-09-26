@@ -31,6 +31,7 @@
         </button>
       </span>
     }
+    <app-privacy-actions type="candidate" [subjectId]="c.id" [name]="c.full_name" [erasable]="!c.anonymized_at" (erased)="store.refresh()" />
     <mat-chip-set [attr.aria-label]="'recruiting.card.source' | transloco">
       @if (c.channel; as ch) {
         <mat-chip [disableRipple]="true" class="channel" [matTooltip]="'recruiting.channels.channel' | transloco"

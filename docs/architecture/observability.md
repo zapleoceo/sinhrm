@@ -71,6 +71,7 @@ JSON, ему ничего грузить не нужно), `X-Frame-Options: DEN
 | `style-src` | `'self' 'unsafe-inline' https://fonts.googleapis.com` | Angular вставляет стили компонентов тегами `<style>`, сборка встраивает CSS шрифтов в `index.html` |
 | `font-src` | `'self' https://fonts.gstatic.com` | Roboto и Material Symbols |
 | `img-src` | `'self' data: https://*.googleusercontent.com` | аватар Google в меню |
+| `manifest-src` | `'self'` | `site.webmanifest`; иконки (`favicon.svg`, `apple-touch-icon.png`) — свои файлы, покрыты `img-src 'self'` |
 | `connect-src` | `'self'` | API на том же домене (rewrite Vercel) |
 | `object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests` | | |
 

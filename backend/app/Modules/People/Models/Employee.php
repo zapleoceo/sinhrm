@@ -34,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $custom_fields
  * @property Carbon $hired_at
  * @property Carbon|null $fired_at
+ * @property Carbon|null $anonymized_at personal data erased after offboarding (Privacy)
  * @property string|null $termination_reason
  * @property EmployeeStatus $status
  * @property EmploymentType $employment_type
@@ -120,6 +121,7 @@ final class Employee extends Model
             'fired_at' => 'date',
             'custom_fields' => 'array',
             'work_schedule' => 'array',
+            'anonymized_at' => 'datetime',
         ];
     }
 
