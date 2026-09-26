@@ -17,6 +17,7 @@ use App\Modules\Pulse\Models\SurveyWave;
 use App\Modules\Pulse\Support\AnswerValidator;
 use App\Modules\Pulse\Support\Participation;
 use App\Modules\Pulse\Support\RespondentHash;
+use App\Modules\Pulse\Support\SafeComparison;
 use App\Modules\Pulse\Support\SafeSegments;
 use App\Modules\Pulse\Support\WaveAudience;
 use App\Modules\Pulse\Support\WaveResults;
@@ -176,23 +177,25 @@ final readonly class ResponseService
         $before = $previous === null ? [] : $this->responses->answersOf($previous->id, $department);
         $key = $segment === 'branch' ? 'branch_id' : 'department_id';
 
-        $rows = [[
-            'segment' => null,
-            'name' => null,
-            'questions' => array_map(fn (array $q): array => $this->delta($q, $current, $before, $wave, $previous), $questions),
-        ]];
+        $min = max($wave->min_group_size, $previous->min_group_size ?? 1);
+        $totalSafe = $previous === null || SafeComparison::allowed(count($current), count($before), $min);
+        $rows = [$this->compareRow(null, null, $questions, $current, $before, $wave, $previous, $totalSafe)];
         if ($department === null) {
-            $now = SafeSegments::allowed(self::groupBy($current, $key), $wave->min_group_size, count($current));
-            $then = $previous === null ? [] : SafeSegments::allowed(self::groupBy($before, $key), $previous->min_group_size, count($before));
+            $rawNow = self::groupBy($current, $key);
+            $rawThen = self::groupBy($before, $key);
+            $now = SafeSegments::allowed($rawNow, $wave->min_group_size, count($current));
+            $then = $previous === null ? [] : SafeSegments::allowed($rawThen, $previous->min_group_size, count($before));
             $ids = array_values(array_unique([...array_keys($now), ...array_keys($then)]));
             sort($ids);
             $names = $this->responses->segmentNames($segment, $ids);
             foreach ($ids as $id) {
-                $rows[] = [
-                    'segment' => $id,
-                    'name' => $names[$id] ?? null,
-                    'questions' => array_map(fn (array $q): array => $this->delta($q, $now[$id] ?? [], $then[$id] ?? [], $wave, $previous), $questions),
-                ];
+                $segNow = count($rawNow[$id] ?? []);
+                $segThen = count($rawThen[$id] ?? []);
+                // The segment itself and the rest of the wave outside it: both must not differ by a handful of people.
+                $safe = $previous === null || ($totalSafe
+                    && SafeComparison::allowed($segNow, $segThen, $min)
+                    && SafeComparison::allowed(count($current) - $segNow, count($before) - $segThen, $min));
+                $rows[] = $this->compareRow($id, $names[$id] ?? null, $questions, $now[$id] ?? [], $then[$id] ?? [], $wave, $previous, $safe);
             }
         }
 
@@ -301,6 +304,23 @@ final readonly class ResponseService
         }
 
         return $out;
+    }
+
+    /**
+     * One row of the comparison. When the audiences of the two waves differ by only a few people ($safe = false),
+     * the previous value and the delta are withheld (hidden_reason = anonymity): subtracting them would expose the
+     * answers of the people who joined or left.
+     *
+     * @param  list<array<string, mixed>>  $questions
+     * @param  list<array{answers: array<string, mixed>, branch_id: int|null, department_id: int|null}>  $now
+     * @param  list<array{answers: array<string, mixed>, branch_id: int|null, department_id: int|null}>  $then
+     * @return array<string, mixed>
+     */
+    private function compareRow(?int $id, ?string $name, array $questions, array $now, array $then, SurveyWave $wave, ?SurveyWave $previous, bool $safe): array
+    {
+        $cells = array_map(fn (array $q): array => $this->delta($q, $now, $safe ? $then : [], $wave, $safe ? $previous : null), $questions);
+
+        return ['segment' => $id, 'name' => $name, 'questions' => $cells, 'hidden_reason' => $safe ? null : 'anonymity'];
     }
 
     /**
