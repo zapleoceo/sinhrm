@@ -57,7 +57,8 @@ abstract class AbstractTelephonyAdapter implements ChannelAdapter
             occurredAt: Payload::time($payload, $this->startKeys(), Carbon::now()),
             contact: $contact,
             body: null,
-            externalId: $id,
+            // Prefixed with the provider key: three telephony providers share the "call" channel, ids may collide.
+            externalId: $this->key().':'.$id,
             meta: array_filter([
                 'duration_sec' => Payload::int($payload, $this->durationKeys()) ?? 0,
                 'recording_url' => Payload::httpsUrl($payload, $this->recordingKeys()),

@@ -181,6 +181,21 @@ final class WebhookApiTest extends TestCase
         $this->assertSame(125, $touch->meta['duration_sec'] ?? null);
         $this->assertSame('https://records.example.test/1.mp3', $touch->meta['recording_url'] ?? null);
         $this->assertNull($touch->body);
+        $this->assertSame('phonet:call-1', $touch->external_id);
+    }
+
+    public function test_same_call_id_from_two_providers_creates_two_touches(): void
+    {
+        $this->channel('phonet', IntegrationStatus::Demo, ['webhook_token' => self::PHONE_TOKEN], ['domain' => 'demo.example.test']);
+        $this->channel('binotel', IntegrationStatus::Demo, ['webhook_token' => self::PHONE_TOKEN]);
+
+        $this->postJson('/api/webhooks/phonet?token='.self::PHONE_TOKEN, ['event' => 'call.hangup', 'uuid' => '555', 'lgDirection' => 4,
+            'otherLegs' => [['num' => '0501112233']], 'billSecs' => 10])->assertOk();
+        $this->post('/api/webhooks/binotel?token='.self::PHONE_TOKEN, ['requestType' => 'apiCallCompleted',
+            'callDetails' => ['generalCallID' => '555', 'callType' => '1', 'externalNumber' => '0931234567', 'billsec' => '40']])->assertOk();
+
+        $this->assertEqualsCanonicalizing(['phonet:555', 'binotel:555'],
+            Touchpoint::query()->where('channel', 'call')->pluck('external_id')->all());
     }
 
     public function test_binotel_form_payload_and_unsafe_recording_link(): void
