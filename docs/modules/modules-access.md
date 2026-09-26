@@ -36,7 +36,7 @@
 
 По умолчанию (сразу после обновления) всё включено, а роли совпадают с тем, кто пользовался модулем раньше: у
 большинства модулей — все роли, у «ШІ» (Ai) и «Поштовий агент» (MailAgent) — только суперадмин (их страницы и так
-закрыты правом `manage-integrations`). Поведение системы для людей не меняется, пока суперадмин сам ничего не выключит.
+закрыты правом `manage-integrations`). У «Персональні дані» (Privacy) — суперадмин и администратор (право `privacy-manage`). Поведение системы для людей не меняется, пока суперадмин сам ничего не выключит.
 
 ## Как устроено
 
@@ -46,7 +46,7 @@
 | Ключ | kebab-case папки модуля: `HiringRequests` → `hiring-requests`, `TimeOff` → `time-off` |
 | Хранение | таблица `module_settings` (`module` уникальный, `enabled`, `roles` jsonb); миграция Core заполняет значения по умолчанию для всех небазовых модулей; нет строки — берутся значения по умолчанию |
 | Проверка на сервере | middleware `Core\Http\Middleware\EnsureModuleAccessible` ставится `ModuleServiceProvider` на все маршруты небазового модуля (и на публичные маршруты Safe Speak) |
-| Правила | `Core\Services\ModuleAccess` (`enabled`, `allows`, `allowedKeys`), настройки читаются один раз за запрос |
+| Правила | `Core\Services\ModuleAccess` (`enabled`, `allows`, `allowedKeys`); настройки в кэше 60 секунд (`module_settings`), кэш сбрасывается при сохранении |
 | Фоновые задачи | `POST /api/ops/jobs/run` пропускает `ScheduledJob` выключенного модуля (модуль определяется по пространству имён класса): `{"ok": true, "skipped": "module_disabled"}` |
 | API для интерфейса | `GET /api/auth/me` → `modules`: ключи доступных пользователю модулей |
 | Админка | `GET /api/modules`, `PUT /api/modules/{key}` (`{enabled, roles}`), право `manage-modules` (суперадмин) |

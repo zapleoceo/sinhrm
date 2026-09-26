@@ -39,6 +39,11 @@
 
 Все строки интерфейса — через Transloco (`'ключ' | transloco`); новый текст добавляется во все три файла `public/i18n`.
 
+### Персональные данные: общие контракты
+`Contracts\PersonalDataProvider` (выгрузка и обезличивание своей части данных человека) и `Contracts\RetentionSource`
+(кого можно обезличить по сроку хранения), субъект — `DTO\DataSubject` + `Enums\DataSubjectType` (`candidate`,
+`employee`). Модули регистрируют их тегами; исполняет модуль Privacy — [privacy.md](privacy.md).
+
 ## Как проверить
 Тесты: `iso-date.spec.ts`, `app-date-adapter.spec.ts`, `datepicker-intl.spec.ts`, `channel-icon.spec.ts`, `tests/Feature/Core/HealthTest.php`, `tests/Feature/Core/OpsJobsTest.php`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
 `auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.

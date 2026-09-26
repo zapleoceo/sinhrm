@@ -7,9 +7,11 @@ namespace Tests\Feature\Core;
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Models\ModuleSetting;
+use App\Modules\Core\Services\ModuleAccess;
 use App\Modules\Core\Services\ModuleRegistry;
 use App\Modules\Knowledge\Models\KbArticle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /** docs/modules/modules-access.md: company-wide on/off + per-role visibility, enforced on the server. */
@@ -21,7 +23,7 @@ final class ModuleAccessTest extends TestCase
     {
         $modules = $this->app->make(ModuleRegistry::class)->all();
 
-        $this->assertCount(25, $modules);
+        $this->assertCount(26, $modules);
         $core = array_keys(array_filter($modules, static fn ($m): bool => $m->core));
         sort($core);
         $this->assertSame(['auth', 'core', 'directory', 'integrations', 'overview', 'users'], $core);
@@ -29,7 +31,8 @@ final class ModuleAccessTest extends TestCase
 
     public function test_defaults_are_seeded_and_preserve_todays_access(): void
     {
-        $this->assertSame(19, ModuleSetting::query()->count());
+        $this->assertSame(20, ModuleSetting::query()->count());
+        $this->assertSame(['superadmin', 'admin'], ModuleSetting::query()->where('module', 'privacy')->value('roles'));
         $this->assertTrue(ModuleSetting::query()->where('enabled', false)->doesntExist());
         $this->assertSame(UserRole::values(), ModuleSetting::query()->where('module', 'recruiting')->value('roles'));
         $this->assertSame(['superadmin'], ModuleSetting::query()->where('module', 'ai')->value('roles'));
@@ -105,13 +108,37 @@ final class ModuleAccessTest extends TestCase
         $this->assertArrayNotHasKey('desk_mine', $this->actingAs($user)->getJson('/api/nav/badges')->assertOk()->json('data'));
     }
 
+    public function test_privacy_routes_and_retention_job_follow_the_switch(): void
+    {
+        config(['ops.secret' => 'test-secret']);
+        $this->saveSetting('privacy', false, ['superadmin', 'admin']);
+
+        $this->actingAs($this->user(UserRole::Admin))->getJson('/api/privacy/settings')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'module_disabled');
+        $this->postJson('/api/ops/jobs/run', [], ['X-Ops-Secret' => 'test-secret'])->assertOk()
+            ->assertJsonPath('jobs', fn (array $jobs): bool => $jobs['privacy.retention'] === ['ok' => true, 'skipped' => 'module_disabled']);
+    }
+
+    public function test_settings_are_cached_and_the_cache_is_dropped_on_save(): void
+    {
+        $super = $this->user(UserRole::Superadmin);
+        $this->actingAs($super)->getJson('/api/auth/me')->assertOk();
+        $this->assertTrue(Cache::has(ModuleAccess::CACHE_KEY));
+
+        $this->actingAs($super)->putJson('/api/modules/pulse', ['enabled' => false, 'roles' => []])->assertOk();
+
+        // The old cached copy was dropped: the cache now holds the saved value, not the stale one.
+        $this->assertFalse(Cache::get(ModuleAccess::CACHE_KEY)['pulse']['enabled']);
+    }
+
     public function test_settings_page_is_superadmin_only(): void
     {
         $this->actingAs($this->user(UserRole::Admin))->getJson('/api/modules')->assertForbidden();
 
         $this->actingAs($this->user(UserRole::Superadmin))->getJson('/api/modules')
             ->assertOk()
-            ->assertJsonCount(25, 'data')
+            ->assertJsonCount(26, 'data')
             ->assertJsonFragment(['key' => 'recruiting', 'core' => false, 'enabled' => true, 'name_key' => 'modules.names.recruiting']);
     }
 
@@ -147,6 +174,7 @@ final class ModuleAccessTest extends TestCase
         ModuleSetting::query()->updateOrCreate(['module' => $module], ['enabled' => $enabled, 'roles' => $roles]);
         // Settings are read once per request (scoped binding); a test reuses one app, so drop the cached copy.
         $this->app->forgetScopedInstances();
+        Cache::forget(ModuleAccess::CACHE_KEY);
     }
 
     private function user(UserRole $role): User

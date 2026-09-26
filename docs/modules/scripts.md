@@ -199,6 +199,10 @@ viewer — например, новый сотрудник) и, как рань�
 Строки — `scripts.*` в `public/i18n/{uk,ru,en}.json` (для задачи из почты — `scripts.tasks.newApplicantTitle` и
 `scripts.tasks.type.new_applicant`).
 
+### Персональные данные
+`Privacy\ScriptsPersonalData`: выгрузка задач и оценок по скрипту; при удалении данных оценки звонков кандидата (в них
+цитаты) удаляются, заголовок задачи становится «Видалений кандидат #id» / «Видалений співробітник #id». [privacy.md](privacy.md).
+
 ## Как проверить
 Бэкенд: `tests/Feature/Scripts/ScriptsApiTest` (права: recruiter/viewer только читают; версии: черновик → публикация →
 новый черновик v2 → откат на v1, неизменяемость, валидация контента, архив, «перевірка на тексті»), `EvaluationApiTest`

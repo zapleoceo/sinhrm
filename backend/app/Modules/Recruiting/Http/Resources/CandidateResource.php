@@ -33,6 +33,7 @@ final class CandidateResource extends JsonResource
             'owner_id' => $this->owner_id,
             'owner' => $this->relationLoaded('owner') && $this->owner !== null ? ['id' => $this->owner->id, 'name' => $this->owner->name] : null,
             'applications' => ApplicationResource::collection($this->whenLoaded('applications')),
+            'anonymized_at' => $this->anonymized_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

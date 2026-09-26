@@ -21,11 +21,12 @@ final class HiringSettingsController
 
     public function update(SaveHiringSettingsRequest $request): JsonResponse
     {
-        $this->settings->save($request->settingsData());
+        // The route is validated (and may throw 422) before anything is written: a rejected request changes nothing.
         $route = $request->routeSteps();
         if ($route !== null) {
             $this->settings->saveRoute($route);
         }
+        $this->settings->save($request->settingsData());
 
         return $this->respond();
     }

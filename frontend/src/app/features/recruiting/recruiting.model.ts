@@ -195,6 +195,8 @@ export interface VacancySourceRow {
 }
 
 export interface Candidate extends CandidateBrief {
+  /** Personal data erased (Privacy): name is "Видалений кандидат #id", contacts are empty. */
+  anonymized_at?: string | null;
   channel_id: number | null;
   channel: { id: number; code: string; name: string; type: ChannelType } | null;
   added_via: AddedVia | null;

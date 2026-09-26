@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property list<string>|null $tags
  * @property int|null $owner_id
  * @property int|null $created_by
+ * @property Carbon|null $anonymized_at personal data erased (Privacy)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read City|null $city
@@ -84,7 +85,7 @@ final class Candidate extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['source' => CandidateSource::class, 'added_via' => AddedVia::class, 'utm' => 'array', 'tags' => 'array'];
+        return ['source' => CandidateSource::class, 'added_via' => AddedVia::class, 'utm' => 'array', 'tags' => 'array', 'anonymized_at' => 'datetime'];
     }
 
     protected static function newFactory(): CandidateFactory

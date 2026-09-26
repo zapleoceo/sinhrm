@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\ModuleSettingsRepository;
 use App\Modules\Core\Support\ModuleDefinition;
+use Illuminate\Contracts\Cache\Repository as Cache;
 
 /**
  * Who may use which module (docs/modules/modules-access.md). This is an EXTRA restriction on top of the
@@ -18,16 +19,21 @@ use App\Modules\Core\Support\ModuleDefinition;
  *  - other users need at least one allowed system role. Contextual roles (hiring manager, interviewer,
  *    line manager) are not system roles: such a person passes with the base role, usually "employee";
  *  - a user without any system role is treated as "employee".
- * Settings are read once per request (scoped binding).
+ * Settings are cached for CACHE_SECONDS (dropped on save) and kept in memory for the request (scoped binding).
  */
 final class ModuleAccess
 {
+    public const string CACHE_KEY = 'module_settings';
+
+    public const int CACHE_SECONDS = 60;
+
     /** @var array<string, array{enabled: bool, roles: list<string>}>|null */
     private ?array $stored = null;
 
     public function __construct(
         private readonly ModuleRegistry $registry,
         private readonly ModuleSettingsRepository $settings,
+        private readonly Cache $cache,
     ) {}
 
     /** @return array{enabled: bool, roles: list<string>} effective setting (stored row, else the module defaults) */
@@ -36,7 +42,9 @@ final class ModuleAccess
         if ($module->core) {
             return ['enabled' => true, 'roles' => UserRole::values()];
         }
-        $this->stored ??= $this->settings->all();
+        /** @var array<string, array{enabled: bool, roles: list<string>}> $stored */
+        $stored = $this->stored ?? $this->cache->remember(self::CACHE_KEY, self::CACHE_SECONDS, fn (): array => $this->settings->all());
+        $this->stored = $stored;
 
         return $this->stored[$module->key] ?? ['enabled' => true, 'roles' => $module->defaultRoles];
     }
@@ -87,6 +95,7 @@ final class ModuleAccess
     public function save(ModuleDefinition $module, bool $enabled, array $roles): void
     {
         $this->settings->save($module->key, $enabled, $roles);
+        $this->cache->forget(self::CACHE_KEY);
         $this->stored = null;
     }
 }
