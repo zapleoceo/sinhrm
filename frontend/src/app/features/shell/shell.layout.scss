@@ -22,6 +22,9 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  // Scrolling the menu to its end must not scroll the page behind it.
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: var(--app-gap) 0.75rem;
 }
 
