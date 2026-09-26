@@ -9,6 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
+import { HireAction } from '../../people/hire.action';
 import { CandidateDialog, CandidateDialogData } from '../candidates/candidate.dialog';
 import { canWriteRecruiting } from '../recruiting.access';
 import { daysSince } from '../recruiting.format';
@@ -84,6 +85,11 @@ import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject.dia
               @if (app.is_stale) {
                 <span class="stale-text"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.board.stale' | transloco: { days: idle(app) } }}</span>
               }
+              @if (canWrite() && col.stage.is_hire) {
+                <button mat-stroked-button type="button" class="hire" (click)="hire.run(app.id)">
+                  <mat-icon>badge</mat-icon>{{ 'people.hire.action' | transloco }}
+                </button>
+              }
             </article>
           } @empty {
             <p class="empty muted">—</p>
@@ -112,6 +118,7 @@ import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject.dia
     .meta { font-size: 0.8rem; font-variant-numeric: tabular-nums; }
     .stale-text { color: var(--app-warning); font-size: 0.8rem; }
     .empty { text-align: center; margin: 1rem 0; }
+    .hire { margin-top: 0.25rem; align-self: flex-start; }
     .cdk-drag-preview { box-shadow: var(--mat-sys-level3); }
     .cdk-drag-placeholder { opacity: 0.3; }
     .cdk-drag-animating, .cdk-drop-list-dragging .card:not(.cdk-drag-placeholder) { transition: transform 150ms ease-out; }
@@ -127,6 +134,7 @@ export class BoardPage {
   private readonly i18n = inject(TranslocoService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  protected readonly hire = inject(HireAction);
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
 
   constructor() {

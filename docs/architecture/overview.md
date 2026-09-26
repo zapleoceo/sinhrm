@@ -44,6 +44,8 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Overview (главная страница — дашборд) | ✅ | [modules/overview.md](../modules/overview.md) |
 | GoogleWorkspace (OAuth-подключение Gmail/Calendar/Sheets, встречи, импорт из таблиц) | ✅ | [modules/google-workspace.md](../modules/google-workspace.md) |
 | MailAgent (разбор Gmail: отклики → кандидаты и задачи, письма кандидатов → касания) | ✅ | [modules/mail-agent.md](../modules/mail-agent.md) |
+| People (сотрудники, оргструктура, самообслуживание, найм из Recruiting) | ✅ | [modules/people.md](../modules/people.md) |
+| TimeOff (отпуска: типы, политики, праздники, баланс-журнал, запросы, календарь, начисление) | ✅ | [modules/timeoff.md](../modules/timeoff.md) |
 | Extension (браузерное расширение `extension/`: кандидат с открытой страницы профиля; API — в Recruiting, токен только для `/api/clipper/*`) | ✅ код, установка вручную | [modules/extension.md](../modules/extension.md) |
 | Channels (вебхуки мессенджеров и телефонии → лента кандидата, отправка из карточки, демо-события) | ✅ код, включается токенами | [modules/channels.md](../modules/channels.md) |
 

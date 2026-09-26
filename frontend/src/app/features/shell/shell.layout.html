@@ -22,6 +22,27 @@
       <mat-icon>bar_chart</mat-icon>
       <span>{{ 'shell.nav.reports' | transloco }}</span>
     </a>
+    <p class="nav-section">{{ 'shell.nav.people' | transloco }}</p>
+    <a class="nav-link" routerLink="/people" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <mat-icon>groups</mat-icon>
+      <span>{{ 'shell.nav.peopleList' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/people/org-chart" routerLinkActive="active">
+      <mat-icon>account_tree</mat-icon>
+      <span>{{ 'shell.nav.orgChart' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/timeoff" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <mat-icon>beach_access</mat-icon>
+      <span>{{ 'shell.nav.timeoff' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/timeoff/calendar" routerLinkActive="active">
+      <mat-icon>calendar_month</mat-icon>
+      <span>{{ 'shell.nav.teamCalendar' | transloco }}</span>
+    </a>
+    <a class="nav-link" routerLink="/timeoff/approvals" routerLinkActive="active">
+      <mat-icon>fact_check</mat-icon>
+      <span>{{ 'shell.nav.approvals' | transloco }}</span>
+    </a>
     @if (isAdmin()) {
       <p class="nav-section">{{ 'shell.nav.admin' | transloco }}</p>
     }
@@ -47,6 +68,10 @@
       <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active">
         <mat-icon>record_voice_over</mat-icon>
         <span>{{ 'shell.nav.scripts' | transloco }}</span>
+      </a>
+      <a class="nav-link" routerLink="/admin/timeoff" routerLinkActive="active">
+        <mat-icon>event_available</mat-icon>
+        <span>{{ 'shell.nav.timeoffSettings' | transloco }}</span>
       </a>
       <a class="nav-link" routerLink="/admin/directory" routerLinkActive="active">
         <mat-icon>menu_book</mat-icon>
@@ -90,6 +115,10 @@
             <app-language-switcher />
           </div>
           <mat-divider />
+          <a mat-menu-item routerLink="/me">
+            <mat-icon>badge</mat-icon>
+            <span>{{ 'shell.menu.myProfile' | transloco }}</span>
+          </a>
           <a mat-menu-item routerLink="/settings/extension">
             <mat-icon>extension</mat-icon>
             <span>{{ 'shell.menu.extension' | transloco }}</span>

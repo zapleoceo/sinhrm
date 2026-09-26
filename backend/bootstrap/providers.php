@@ -10,8 +10,10 @@ use App\Modules\GoogleWorkspace\Providers\GoogleWorkspaceServiceProvider;
 use App\Modules\Integrations\Providers\IntegrationsServiceProvider;
 use App\Modules\MailAgent\Providers\MailAgentServiceProvider;
 use App\Modules\Overview\Providers\OverviewServiceProvider;
+use App\Modules\People\Providers\PeopleServiceProvider;
 use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
 use App\Modules\Scripts\Providers\ScriptsServiceProvider;
+use App\Modules\TimeOff\Providers\TimeOffServiceProvider;
 use App\Modules\Users\Providers\UsersServiceProvider;
 use App\Providers\AppServiceProvider;
 
@@ -28,5 +30,7 @@ return [
     GoogleWorkspaceServiceProvider::class,
     MailAgentServiceProvider::class,
     ChannelsServiceProvider::class,
+    PeopleServiceProvider::class,
+    TimeOffServiceProvider::class,
     OverviewServiceProvider::class,
 ];

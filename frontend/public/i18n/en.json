@@ -18,8 +18,8 @@
     }
   },
   "shell": {
-    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status", "mail": "Mail", "sheetsImport": "Google Sheets import" },
-    "menu": { "open": "User menu", "language": "Language", "extension": "Browser extension", "logout": "Sign out" },
+    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "People", "peopleList": "Employees", "orgChart": "Org chart", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings" },
+    "menu": { "open": "User menu", "language": "Language", "extension": "Browser extension", "logout": "Sign out", "myProfile": "My profile" },
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
   "status": { "title": "System status", "apiOk": "API is up", "apiDown": "API is unreachable", "checking": "Checking…", "version": "Version" },
@@ -478,7 +478,7 @@
     "errors": {"channel_not_connected": "Channel not connected", "no_conversation": "The candidate has not written in this channel yet — nowhere to reply", "template_required": "WhatsApp: more than 24 hours since the candidate's last message — an approved template is required", "invalid_recipient": "Invalid recipient", "send_failed": "The service did not accept the message, try later", "telephony_not_connected": "Telephony is not connected", "click_to_call_unsupported": "This telephony cannot call from the card", "no_phone": "The candidate has no phone", "not_demo": "Demo events are available only in \"Demo\" mode", "channel_off": "Switch the integration on first (\"Demo\" mode)", "unsupported": "Not available for this integration", "application_mismatch": "The application belongs to another candidate", "generic": "Could not complete the action"}
   },
   "extension": {"title": "Browser extension", "explain": "SinHRM Clipper adds a candidate from the profile page you are viewing (LinkedIn, Work.ua, Djinni, DOU) in one click. It uses a personal token instead of your session.", "active": "Token is active", "inactive": "No active token. Create one and paste it into the extension settings.", "createdAt": "Created", "lastUsedAt": "Last used", "expiresAt": "Expires", "never": "never", "create": "Create token", "regenerate": "Create a new token", "revoke": "Revoke", "onceTitle": "Copy the token now", "onceHint": "It is shown only once. Creating a new token revokes this one.", "copy": "Copy", "copied": "Copied", "error": "Could not update the token. Try again.", "installTitle": "How to install", "docs": "Full instructions", "install": {"step1": "Download sinhrm-clipper.zip (built by CI or with npm run package in extension/) and unzip it.", "step2": "Open chrome://extensions and turn on Developer mode.", "step3": "Click “Load unpacked” and choose the unzipped folder.", "step4": "Open the extension options, paste the token and click “Check connection”."}, "privacy": "The extension reads only the page you are viewing and only when you click its button. It does not crawl or scrape in the background."},
-  "titles": { "extension": "Browser extension", "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import" },
+  "titles": { "extension": "Browser extension", "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "Employees", "orgChart": "Org chart", "profile": "Employee profile", "myProfile": "My profile", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings" },
   "overview": {
     "warnings": { "google_reconnect_required": "Google ({{service}}) must be reconnected: access expired or was revoked.", "open": "Open integrations" },
     "greeting": "Hello, {{name}}!",
@@ -496,7 +496,13 @@
     "touches": "Touches in {{days}} days: {{n}}",
     "empty": "Nothing yet",
     "toBoards": "To vacancies",
-    "toReports": "To reports"
+    "toReports": "To reports",
+    "outToday": "Out today: {{n}}",
+    "nobodyOut": "Everyone is in",
+    "until": "until {{date}}",
+    "toCalendar": "Team calendar",
+    "myApprovals": "Waiting for my approval: {{n}}",
+    "toApprovals": "To approvals"
   },
   "scripts": {
     "title": "Scripts",
@@ -579,5 +585,45 @@
     "log": { "received": "Received", "sender": "Sender", "subject": "Subject", "outcome": "Outcome", "empty": "Nothing processed yet" },
     "outcomes": { "application": "Application → candidate", "touchpoint": "Candidate e-mail", "inbox": "To Inbox", "skipped": "Skipped", "unknown": "Unknown", "parse_failed": "Not recognized" },
     "errors": { "duplicate_rule": "This rule already exists", "google_gmail_not_connected": "Gmail is not connected", "reconnect_required": "Google must be reconnected", "google_unreachable": "Gmail is unreachable, try later", "google_unauthorized": "Google refused access", "validation": "Check the fields", "generic": "The action failed" }
+  },
+  "people": {
+    "loadError": "Could not load people",
+    "required": "Required",
+    "invalidEmail": "Invalid email",
+    "save": "Save",
+    "directory": { "title": "Employees", "subtitle": "{{n}} people", "search": "Name, e-mail or phone", "add": "Add employee", "working": "Working", "empty": "Nobody found", "view": "View", "table": "Table", "cards": "Cards" },
+    "fields": { "fullName": "Full name", "position": "Position", "department": "Department", "branch": "Branch", "manager": "Manager", "status": "Status", "contacts": "Contacts", "workEmail": "Work e-mail", "phone": "Phone", "hiredAt": "Hire date", "firedAt": "Last working day", "employmentType": "Employment type", "birthDate": "Birth date", "personalEmail": "Personal e-mail", "address": "Address", "emergencyContact": "Emergency contact", "reports": "Direct reports", "schedule": "Work schedule" },
+    "status": { "active": "Working", "on_leave": "On leave", "terminated": "Terminated" },
+    "employmentType": { "full_time": "Full time", "part_time": "Part time", "contractor": "Contractor" },
+    "weekday": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },
+    "tabs": { "overview": "Overview", "job": "Job", "timeoff": "Time off", "changes": "Change requests", "personal": "Personal" },
+    "edit": { "title": "Edit" },
+    "terminate": { "action": "Terminate", "title": "Terminate {{name}}", "hint": "The record stays in the history; the person disappears from the directory and the org chart.", "reason": "Reason", "confirm": "Terminate" },
+    "changes": { "new": "Request a change", "hint": "Your manager or HR will review the change; the profile updates after approval.", "comment": "Comment", "send": "Send", "sent": "Request sent", "nothing": "Nothing has changed", "empty": "No change requests" },
+    "changeStatus": { "pending": "Pending", "approved": "Approved", "rejected": "Rejected" },
+    "orgChart": { "title": "Org chart", "subtitle": "{{n}} people", "myTeam": "My team", "expand": "Expand all", "collapse": "Collapse all", "all": "Whole company", "empty": "Nobody here yet", "toggle": "Show or hide reports", "showTeam": "Show in the org chart" },
+    "hire": { "action": "Create employee", "created": "Employee {{name}} created", "exists": "{{name}} is already an employee", "open": "Open" },
+    "errors": { "no_employee": "Your account is not linked to an employee record yet. Ask HR to link it.", "manager_cycle": "A person cannot report to themselves or to someone below them", "already_terminated": "Already terminated", "already_decided": "This request has already been decided", "not_hired": "Move the candidate to the hire stage first", "forbidden": "Not allowed", "not_found": "Not found", "validation": "Check the fields" }
+  },
+  "timeoff": {
+    "loadError": "Could not load time off",
+    "balances": "Balances",
+    "newRequest": "New request",
+    "requests": "Requests",
+    "noRequests": "No requests yet",
+    "created": "Request sent",
+    "daysCount": "{{n}} working days",
+    "my": { "title": "My time off", "subtitle": "Balances, requests and their status" },
+    "balance": { "available": "days available", "details": "balance {{balance}} · pending {{pending}} · used this year {{used}}", "usedUnlimited": "days used this year (no limit)" },
+    "fields": { "type": "Leave type", "from": "From", "to": "To", "halfDay": "Half day", "comment": "Comment", "override": "Allow a negative balance (admin)" },
+    "halfDay": { "none": "Full days", "start": "First day is half", "end": "Last day is half" },
+    "preview": { "available": "available: {{n}}" },
+    "status": { "pending": "Pending", "approved": "Approved", "rejected": "Rejected", "cancelled": "Cancelled" },
+    "actions": { "approve": "Approve", "reject": "Reject", "cancel": "Cancel request", "submit": "Send request" },
+    "accrual": { "yearly_upfront": "yearly, up front", "monthly": "monthly" },
+    "calendar": { "title": "Team calendar", "subtitle": "Who is absent this month (grey: weekends, amber: holidays, hatched: pending)", "prev": "Previous", "next": "Next", "empty": "Nobody is absent this month" },
+    "approvals": { "title": "Approvals", "subtitle": "Requests of your people waiting for a decision", "leave": "Leave requests: {{n}}", "changes": "Profile changes: {{n}}", "none": "Nothing to approve" },
+    "settings": { "title": "Time off settings", "subtitle": "Leave types, policies per branch and public holidays", "types": "Leave types", "policies": "Policies", "holidays": "Holidays", "name": "Name", "code": "Code", "color": "Color", "paid": "paid", "unpaid": "unpaid", "tracked": "with balance", "unlimited": "no limit", "withApproval": "needs approval", "autoApproved": "approved automatically", "active": "Active", "add": "Add", "defaultPolicy": "Company default", "perYear": "{{n}} days a year", "carryAll": "unused days carry over", "carryMax": "carry over up to {{n}}", "annualDays": "Days a year", "accrual": "Accrual", "carryOver": "Carry over max", "allBranches": "All branches", "date": "Date", "delete": "Delete", "noHolidays": "No holidays this year" },
+    "errors": { "insufficient_balance": "Not enough days on the balance", "overlap": "Overlaps another request", "no_working_days": "No working days in this range", "range_too_long": "The range is too long", "inactive_type": "This leave type is switched off", "invalid_status": "The request has already been decided", "forbidden": "Not allowed", "no_employee": "Your account is not linked to an employee record yet", "validation": "Check the fields" }
   }
 }

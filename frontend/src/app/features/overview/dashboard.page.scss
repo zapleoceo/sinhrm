@@ -49,3 +49,5 @@ th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(
   border-radius: 12px;
 }
 .warning-banner mat-icon { color: var(--app-warning); }
+
+.dot { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; flex: none; }

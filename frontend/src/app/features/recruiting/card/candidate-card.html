@@ -53,6 +53,11 @@
             <span class="stale"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.card.stale' | transloco }}</span>
           }
           <span class="spacer"></span>
+          @if (canWrite() && app.status === 'hired') {
+            <button mat-flat-button type="button" (click)="hire.run(app.id)">
+              <mat-icon>badge</mat-icon>{{ 'people.hire.action' | transloco }}
+            </button>
+          }
           @if (canWrite()) {
             <button mat-stroked-button type="button" [matMenuTriggerFor]="moveMenu">
               {{ 'recruiting.card.move' | transloco }}<mat-icon iconPositionEnd>arrow_drop_down</mat-icon>

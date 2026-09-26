@@ -15,6 +15,7 @@ import { SendMessage } from '../../channels/channels.model';
 import { channelErrorCode, channelErrorKey } from '../../channels/channels.service';
 import { GoogleService } from '../../google-workspace/google.service';
 import { MeetingDialog, MeetingDialogData } from '../../google-workspace/meeting.dialog';
+import { HireAction } from '../../people/hire.action';
 import { EvaluationBadge } from '../../scripts/evaluation/evaluation-badge';
 import { TasksWidget } from '../../scripts/tasks/tasks-widget';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from '../board/reject.dialog';
@@ -61,6 +62,7 @@ export class CandidateCard {
   private readonly composer = viewChild(TouchComposer);
   private readonly google = inject(GoogleService);
   private readonly clipboard = inject(Clipboard);
+  protected readonly hire = inject(HireAction);
 
   protected readonly icons = CHANNEL_ICONS;
   protected readonly filterChips: readonly TimelineFilter[] = [...CHANNELS.filter((c) => c !== 'system'), STAGE_FILTER];
