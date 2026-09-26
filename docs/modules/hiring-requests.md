@@ -94,8 +94,8 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 | `GET / PATCH /api/hiring-requests/{id}` | видящие / автор или HR, только черновик (иначе 409 `invalid_status`) | |
 | `POST …/{id}/submit`, `…/cancel` | автор или HR | 409 при неверном статусе |
 | `POST …/{id}/decision` `{decision: approve\|reject, comment (обязателен при reject), recruiter_id?}` | согласующий шага | 403 / 409 |
-| `POST …/{id}/close`, `…/vacancy {recruiter_id?}`, `…/link-vacancy {vacancy_id}` | HR | идемпотентно / 409 `vacancy_taken` |
-| `GET / PUT /api/hiring-requests/settings` `{form_fields?, creator_user_ids?, auto_vacancy?, route?}` | HR | + список активных пользователей для выбора; маршрут: роль из `UserRole`, пользователь активен → иначе 422 `invalid_route` |
+| `POST …/{id}/close`, `…/vacancy {recruiter_id?}`, `…/link-vacancy {vacancy_id}` | HR | идемпотентно / 409 `vacancy_taken`; привязать можно только **открытую вакансию филиала заявки**, иначе 422 `vacancy_not_linkable` (проверка на сервере, не только в форме) |
+| `GET / PUT /api/hiring-requests/settings` `{form_fields?, creator_user_ids?, auto_vacancy?, route?}` | HR | + список активных пользователей для выбора; маршрут: роль из `UserRole`, пользователь активен → иначе 422 `invalid_route`; при 422 ничего не сохраняется (маршрут проверяется до записи остальных настроек) |
 
 ### Фронтенд
 `frontend/src/app/features/hiring-requests`: `hiring-list.page` (реестр и «На погодження»), `hiring-wizard.page`,
