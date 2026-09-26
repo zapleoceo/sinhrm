@@ -4,6 +4,7 @@ import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angula
 import { MAT_ICON_DEFAULT_OPTIONS } from '@angular/material/icon';
 import { provideTransloco } from '@jsverse/transloco';
 import { routes } from './app.routes';
+import { provideAppDates } from './core/date/provide-app-dates';
 import { APP_LANGS, DEFAULT_LANG } from './core/auth/auth.model';
 import { AuthService } from './core/auth/auth.service';
 import { csrfInterceptor, XSRF_HEADER } from './core/http/csrf.interceptor';
@@ -34,6 +35,8 @@ export const appConfig: ApplicationConfig = {
       },
       loader: TranslocoHttpLoader,
     }),
+    // Material datepicker/timepicker: native Date, Monday-first, dd.MM.yyyy, locale follows the UI language.
+    provideAppDates(),
     { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
     provideAppInitializer(async () => {
       inject(ThemeService).init();

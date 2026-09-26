@@ -6,11 +6,11 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
-import { CHANNEL_ICONS } from '../recruiting/recruiting.model';
 import { MoodCheckinWidget } from '../pulse/mood/mood-checkin.widget';
 import { TasksWidget } from '../scripts/tasks/tasks-widget';
 import { TaskQuery } from '../scripts/scripts.model';
 import { OverviewStore } from './overview.store';
+import { ChannelIcon } from '../../core/ui/channel-icon';
 
 /**
  * Home page: what needs attention today. Counters (click-through), my tasks for today (overdue included),
@@ -19,7 +19,7 @@ import { OverviewStore } from './overview.store';
  */
 @Component({
   selector: 'app-dashboard-page',
-  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TasksWidget, MoodCheckinWidget],
+  imports: [ChannelIcon, DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TasksWidget, MoodCheckinWidget],
   providers: [OverviewStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.page.html',
@@ -28,7 +28,6 @@ import { OverviewStore } from './overview.store';
 export class DashboardPage implements OnInit {
   protected readonly store = inject(OverviewStore);
   private readonly auth = inject(AuthService);
-  protected readonly icons = CHANNEL_ICONS;
   protected readonly firstName = computed(() => (this.auth.user()?.name ?? '').split(' ')[0]);
   protected readonly myTasks: TaskQuery = { mine: true, due: 'today' };
 

@@ -92,6 +92,8 @@ TypeScript без фреймворка, сборка esbuild, тесты Vitest 
 
 Подробности токенов — [auth.md](auth.md#токены-браузерного-расширения), дедупликации и заметки — [recruiting.md](recruiting.md).
 
+**Интерфейс (2026-09-26):** Под описанием — строка «Підтримувані сайти» с иконками LinkedIn, Work.ua, Djinni, DOU (`app-channel-icon`, [core.md](core.md)), тот же набор, что в `extension/src/extractors`.
+
 ## Как проверить
 - Расширение: `cd extension && npm ci && npm run lint && npm run typecheck && npm test && npm run package`
   (тесты: определение сайта, извлечение на вымышленных страницах всех четырёх сайтов — JSON-LD, `og:`, DOM, обрезка

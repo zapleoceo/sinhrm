@@ -87,3 +87,6 @@ body {
 }
 
 .state { padding: 2.5rem 1rem; text-align: center; }
+
+/* Week picker (features/time/week-picker.ts): days of the selected week inside the datepicker overlay. */
+.app-week-day { background: color-mix(in srgb, var(--mat-sys-primary) 14%, transparent); }

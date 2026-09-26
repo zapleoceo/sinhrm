@@ -1,6 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -11,6 +12,9 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AcquisitionChannel, CHANNEL_TYPES, ChannelType } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
 import { ChannelsService, UtmInput, channelErrorKey, ruleLabel } from './channels.service';
+import { toIsoDate } from '../../../core/date/iso-date';
+import { ChannelIcon } from '../../../core/ui/channel-icon';
+import { hasChannelIcon } from '../../../core/ui/channel-icons';
 
 /**
  * Admin: acquisition channels dictionary (tz3) — channel, technical name (code), type, active; UTM rules per
@@ -18,7 +22,7 @@ import { ChannelsService, UtmInput, channelErrorKey, ruleLabel } from './channel
  */
 @Component({
   selector: 'app-acquisition-channels-page',
-  imports: [DecimalPipe, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, MatSlideToggleModule, TranslocoPipe],
+  imports: [ChannelIcon, DecimalPipe, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, MatSlideToggleModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -44,7 +48,7 @@ import { ChannelsService, UtmInput, channelErrorKey, ruleLabel } from './channel
     @for (ch of channels(); track ch.id) {
       <section class="panel box" [class.inactive]="!ch.active">
         <div class="row head">
-          <h2>{{ ch.name }} <code>{{ ch.code }}</code></h2>
+          <h2>@if (hasIcon(ch.code)) {<app-channel-icon [key]="ch.code" /> }{{ ch.name }} <code>{{ ch.code }}</code></h2>
           <span class="muted">{{ 'recruiting.channels.types.' + ch.type | transloco }}</span>
           <mat-slide-toggle [checked]="ch.active" (change)="save(ch, { active: $event.checked })">{{ 'recruiting.channels.active' | transloco }}</mat-slide-toggle>
         </div>
@@ -81,9 +85,16 @@ import { ChannelsService, UtmInput, channelErrorKey, ruleLabel } from './channel
                 <li class="muted">{{ 'recruiting.channels.noCosts' | transloco }}</li>
               }
             </ul>
-            <form class="row" (submit)="$event.preventDefault(); addCost(ch, from.value, to.value, amount.value)">
-              <mat-form-field subscriptSizing="dynamic" class="sm"><mat-label>{{ 'recruiting.channels.from' | transloco }}</mat-label><input matInput #from type="date" required /></mat-form-field>
-              <mat-form-field subscriptSizing="dynamic" class="sm"><mat-label>{{ 'recruiting.channels.to' | transloco }}</mat-label><input matInput #to type="date" required /></mat-form-field>
+            <form class="row" (submit)="$event.preventDefault(); addCost(ch, period.value?.start ?? null, period.value?.end ?? null, amount.value)">
+              <mat-form-field subscriptSizing="dynamic" class="period">
+                <mat-label>{{ 'recruiting.channels.from' | transloco }} — {{ 'recruiting.channels.to' | transloco }}</mat-label>
+                <mat-date-range-input [rangePicker]="costPeriod" #period="matDateRangeInput" required>
+                  <input matStartDate [placeholder]="'recruiting.channels.from' | transloco" required />
+                  <input matEndDate [placeholder]="'recruiting.channels.to' | transloco" required />
+                </mat-date-range-input>
+                <mat-datepicker-toggle matIconSuffix [for]="costPeriod" />
+                <mat-date-range-picker #costPeriod />
+              </mat-form-field>
               <mat-form-field subscriptSizing="dynamic" class="sm"><mat-label>{{ 'recruiting.channels.amount' | transloco }}</mat-label><input matInput #amount type="number" min="0" required /></mat-form-field>
               <button mat-icon-button type="submit" [attr.aria-label]="'recruiting.channels.addCost' | transloco"><mat-icon>add</mat-icon></button>
             </form>
@@ -121,6 +132,7 @@ import { ChannelsService, UtmInput, channelErrorKey, ruleLabel } from './channel
     .list { list-style: none; padding: 0; margin: 0 0 0.5rem; }
     .list li { display: flex; align-items: center; gap: 0.25rem; }
     .sm { width: 9rem; }
+    .period { width: 16rem; }
     .xs { width: 6rem; }
   `,
 })
@@ -130,6 +142,7 @@ export class AcquisitionChannelsPage implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly types = CHANNEL_TYPES;
+  protected readonly hasIcon = hasChannelIcon;
   protected readonly channels = signal<AcquisitionChannel[]>([]);
   protected readonly tested = signal<number | null | undefined>(undefined);
   protected readonly testedName = computed(() => this.channels().find((c) => c.id === this.tested())?.name ?? null);
@@ -168,7 +181,8 @@ export class AcquisitionChannelsPage implements OnInit {
     this.api.deleteRule(id).subscribe({ next: () => this.load(), error: (e: unknown) => this.toast(e) });
   }
 
-  protected addCost(ch: AcquisitionChannel, from: string, to: string, amount: string): void {
+  protected addCost(ch: AcquisitionChannel, start: Date | null, end: Date | null, amount: string): void {
+    const [from, to] = [toIsoDate(start), toIsoDate(end)];
     if (from === '' || to === '' || amount === '') {
       return;
     }

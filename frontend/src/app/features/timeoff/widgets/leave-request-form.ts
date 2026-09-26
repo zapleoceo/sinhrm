@@ -3,12 +3,14 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
-import { estimateDays, toIso } from '../timeoff.dates';
+import { fromIsoDate, toIsoDate } from '../../../core/date/iso-date';
+import { estimateDays } from '../timeoff.dates';
 import { HALF_DAYS, HalfDay, LeavePreview, LeaveRequest, LeaveType, NewLeaveRequest } from '../timeoff.model';
 import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
 
@@ -19,7 +21,7 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
  */
 @Component({
   selector: 'app-leave-request-form',
-  imports: [ReactiveFormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
+  imports: [ReactiveFormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" class="form">
@@ -33,12 +35,14 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
         <mat-error>{{ 'people.required' | transloco }}</mat-error>
       </mat-form-field>
       <mat-form-field>
-        <mat-label>{{ 'timeoff.fields.from' | transloco }}</mat-label>
-        <input matInput type="date" formControlName="starts_on" required />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>{{ 'timeoff.fields.to' | transloco }}</mat-label>
-        <input matInput type="date" formControlName="ends_on" required [min]="form.controls.starts_on.value" />
+        <mat-label>{{ 'timeoff.fields.from' | transloco }} — {{ 'timeoff.fields.to' | transloco }}</mat-label>
+        <mat-date-range-input [rangePicker]="range" required>
+          <input matStartDate formControlName="starts_on" [placeholder]="'timeoff.fields.from' | transloco" required />
+          <input matEndDate formControlName="ends_on" [placeholder]="'timeoff.fields.to' | transloco" required />
+        </mat-date-range-input>
+        <mat-datepicker-toggle matIconSuffix [for]="range" />
+        <mat-date-range-picker #range />
+        <mat-error>{{ 'common.datepicker.invalid' | transloco }}</mat-error>
       </mat-form-field>
       <mat-form-field>
         <mat-label>{{ 'timeoff.fields.halfDay' | transloco }}</mat-label>
@@ -108,11 +112,11 @@ export class LeaveRequestForm implements OnInit {
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  private readonly today = toIso(new Date());
+  private readonly today = fromIsoDate(toIsoDate(new Date()));
   protected readonly form = inject(NonNullableFormBuilder).group({
     leave_type_id: [null as number | null, Validators.required],
     starts_on: [this.today, Validators.required],
-    ends_on: [this.today, Validators.required],
+    ends_on: [this.today as Date | null, Validators.required],
     half_day: ['none' as HalfDay],
     comment: [''],
     override_balance: [false],
@@ -120,7 +124,7 @@ export class LeaveRequestForm implements OnInit {
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   protected readonly estimate = computed(() => {
     const v = this.value();
-    return estimateDays(v.starts_on ?? '', v.ends_on ?? '', v.half_day ?? 'none');
+    return estimateDays(toIsoDate(v.starts_on), toIsoDate(v.ends_on), v.half_day ?? 'none');
   });
   private readonly preview$ = new Subject<NewLeaveRequest | null>();
 
@@ -171,13 +175,14 @@ export class LeaveRequestForm implements OnInit {
   /** The request body, or null while the form is incomplete / the range is reversed. */
   private body(): NewLeaveRequest | null {
     const v = this.form.getRawValue();
-    if (v.leave_type_id === null || !v.starts_on || !v.ends_on || v.ends_on < v.starts_on) {
+    const [startsOn, endsOn] = [toIsoDate(v.starts_on), toIsoDate(v.ends_on)];
+    if (v.leave_type_id === null || !startsOn || !endsOn || endsOn < startsOn) {
       return null;
     }
     return {
       leave_type_id: v.leave_type_id,
-      starts_on: v.starts_on,
-      ends_on: v.ends_on,
+      starts_on: startsOn,
+      ends_on: endsOn,
       half_day: v.half_day,
       comment: v.comment.trim() || null,
       ...(this.employeeId() !== undefined ? { employee_id: this.employeeId() } : {}),

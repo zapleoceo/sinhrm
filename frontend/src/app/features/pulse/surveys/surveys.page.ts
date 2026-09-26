@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -27,6 +28,7 @@ import {
   nextQuestionId,
 } from '../pulse.model';
 import { PulseService, pulseErrorKey } from '../pulse.service';
+import { toIsoDate, today } from '../../../core/date/iso-date';
 
 /**
  * Surveys (/admin/pulse, admins): the builder (from a template or from scratch; questions: scales 1–5 / 1–10,
@@ -35,7 +37,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
  */
 @Component({
   selector: 'app-surveys-page',
-  imports: [DatePipe, FormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, RouterLink, TranslocoPipe],
+  imports: [DatePipe, FormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, RouterLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -137,11 +139,11 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
               <form class="filters" (ngSubmit)="createWave(surveyId)">
                 <mat-form-field subscriptSizing="dynamic">
                   <mat-label>{{ 'pulse.waves.starts' | transloco }}</mat-label>
-                  <input matInput type="date" name="starts" [(ngModel)]="startsAt" required />
+                  <input matInput [matDatepicker]="dp1" name="starts" [(ngModel)]="startsAt" required /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 />
                 </mat-form-field>
                 <mat-form-field subscriptSizing="dynamic">
                   <mat-label>{{ 'pulse.waves.ends' | transloco }}</mat-label>
-                  <input matInput type="date" name="ends" [(ngModel)]="endsAt" required />
+                  <input matInput [matDatepicker]="dp2" name="ends" [(ngModel)]="endsAt" required /><mat-datepicker-toggle matIconSuffix [for]="dp2" /><mat-datepicker #dp2 />
                 </mat-form-field>
                 <mat-form-field subscriptSizing="dynamic">
                   <mat-label>{{ 'pulse.waves.schedule' | transloco }}</mat-label>
@@ -224,8 +226,8 @@ export class SurveysPage implements OnInit {
   protected readonly waves = signal<Wave[]>([]);
   protected readonly editingId = signal<number | null>(null);
   protected readonly draft = signal<{ title: string; type: SurveyType; description: string | null; lifecycle_trigger: LifecycleTrigger | null; active: boolean; questions: Question[] } | null>(null);
-  protected startsAt = new Date().toISOString().slice(0, 10);
-  protected endsAt = '';
+  protected startsAt: Date | null = today();
+  protected endsAt: Date | null = null;
   protected schedule: WaveSchedule = 'once';
   protected departmentIds = '';
   protected branchIds = '';
@@ -289,8 +291,8 @@ export class SurveysPage implements OnInit {
   protected createWave(surveyId: number): void {
     this.api
       .createWave(surveyId, {
-        starts_at: this.startsAt,
-        ends_at: this.endsAt,
+        starts_at: toIsoDate(this.startsAt),
+        ends_at: toIsoDate(this.endsAt),
         schedule: this.schedule,
         audience: { branch_ids: parseIds(this.branchIds), department_ids: parseIds(this.departmentIds) },
         anonymous: this.anonymous,

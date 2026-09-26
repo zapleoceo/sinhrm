@@ -2,16 +2,18 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Employee } from '../people.model';
 import { PeopleService, peopleErrorKey } from '../people.service';
+import { toIsoDate, today } from '../../../core/date/iso-date';
 
 /** Terminate an employee (admin): last working day and an optional reason. Nothing is deleted. */
 @Component({
   selector: 'app-terminate-dialog',
-  imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, TranslocoPipe],
+  imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ 'people.terminate.title' | transloco: { name: employee.full_name } }}</h2>
@@ -20,7 +22,7 @@ import { PeopleService, peopleErrorKey } from '../people.service';
         <p class="muted">{{ 'people.terminate.hint' | transloco }}</p>
         <mat-form-field>
           <mat-label>{{ 'people.fields.firedAt' | transloco }}</mat-label>
-          <input matInput type="date" formControlName="fired_at" required cdkFocusInitial />
+          <input matInput [matDatepicker]="dp1" formControlName="fired_at" required cdkFocusInitial /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 />
           <mat-error>{{ 'people.required' | transloco }}</mat-error>
         </mat-form-field>
         <mat-form-field>
@@ -50,7 +52,7 @@ export class TerminateDialog {
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly form = inject(NonNullableFormBuilder).group({
-    fired_at: [new Date().toISOString().slice(0, 10), Validators.required],
+    fired_at: [today() as Date | null, Validators.required],
     reason: [''],
   });
 
@@ -62,7 +64,7 @@ export class TerminateDialog {
     const v = this.form.getRawValue();
     this.saving.set(true);
     this.error.set(null);
-    this.api.terminate(this.employee.id, v.fired_at, v.reason.trim() || null).subscribe({
+    this.api.terminate(this.employee.id, toIsoDate(v.fired_at), v.reason.trim() || null).subscribe({
       next: (saved) => this.ref.close(saved),
       error: (err: unknown) => {
         this.error.set(peopleErrorKey(err));

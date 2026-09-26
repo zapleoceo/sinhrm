@@ -17,8 +17,11 @@
 (классические статусы `new → in_review → interview → offer → hired | rejected`, но подробнее).
 
 ## Как пользоваться
-Меню слева → раздел «Рекрутинг»: **Кандидати**, **Вакансії**, **Вхідні**, **Звіти**. Везде работает **Ctrl/⌘+K** — быстрый переход
-к кандидату (по имени, телефону, e-mail) или вакансии.
+Меню слева → раздел «Рекрутинг»: **Кандидати**, **Вакансії**, **Вхідні**, **Звіти**. Кандидата ищут полем поиска над списком
+(имя, телефон, e-mail). Палитра быстрого перехода (Ctrl/⌘+K) и горячие клавиши (j/k, «/», Ctrl/⌘+Enter) убраны по решению
+владельца (2026-09-26): всё делается обычными кликами и полями. Каналы, источники и интеграции везде показаны одинаковыми
+иконками Font Awesome в цветах бренда (Telegram, WhatsApp, Viber, LinkedIn, Meta…; у work.ua/robota.ua/Djinni/DOU —
+портфель с буквой), даты выбираются из выпадающего календаря ([core.md](core.md)).
 
 - **Вакансії** — список вакансий своих филиалов (по умолчанию открытые), поиск, фильтр статуса, «Нова вакансія» / ✎ (форма: название,
   филиал, должность, статус, описание). Клик по вакансии открывает **доску**: колонка на этап, карточки кандидатов перетаскиваются
@@ -30,7 +33,7 @@
 - **Кандидати** — слева список (поиск по имени/телефону/e-mail/@telegram, фильтры статуса и источника), справа карточка.
   Клавиши: `j`/`k` или `↓`/`↑` — следующий/предыдущий кандидат, `/` — поиск. Карточка: контакты (кликабельные), источник, UTM и теги;
   **Маршрут** по каждой вакансии (этапы с датой входа и длительностью, текущий подсвечен) и кнопка «Перемістити»; поле записи касания
-  (канал, направление, текст, минуты для звонка/встречи; Ctrl/⌘+Enter — сохранить; кнопка **«Шаблон»** вставляет сообщение из
+  (канал, направление, текст, минуты для звонка/встречи; кнопка **«Шаблон»** вставляет сообщение из
   активного скрипта с подставленными именем, рекрутером и вакансией; для подключённых Telegram/WhatsApp/Viber — кнопка
   **«Надіслати»**: сообщение уходит кандидату через канал, а если канал не подключён — предложение «Записати вручну»,
   [channels.md](channels.md)); **Задачі** по кандидату (напоминания, галочка — выполнено);
@@ -216,15 +219,14 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `recruiting.format.ts`, `recruiting.access.ts` | длительности, группировка по этапам, статус этапа, диапазон дат; `canWriteRecruiting` |
 | `vacancies/` | список + `VacancyDialog` (`/vacancies`) |
 | `board/` | доска CDK drag&drop (`/vacancies/:id`), оптимистичный перенос с откатом, `RejectDialog`; «Створити співробітника» в колонке найма (`features/people/hire.action.ts`) |
-| `candidates/` | split view (`/candidates`, `/candidates/:id`), клавиши j/k/↑/↓//, `CandidateDialog` с обработкой дубля |
+| `candidates/` | split view (`/candidates`, `/candidates/:id`), `CandidateDialog` с обработкой дубля; иконки источников — `core/ui/channel-icon.ts` |
 | `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts` и «Надіслати» через `features/channels/channels.service.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме |
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |
-| `reports/` | `/reports`, таблицы с CSS-полосками, `pivotTouches` |
+| `reports/` | `/reports`, период — `mat-date-range-picker` (в API уходит `YYYY-MM-DD`), таблицы с CSS-полосками, `pivotTouches`, иконки каналов в заголовках |
 | `channels/` | `/admin/acquisition-channels` — справочник каналов, правила UTM с проверкой, расходы; `board/vacancy-sources.ts` — блок «Джерела відгуків» на доске; в карточке — чипы канала и «як додано», в форме — «Канал залучення», в списке — фильтр по каналу |
 | `features/extension/` | `/settings/extension` — токен расширения ([extension.md](extension.md)); источники `linkedin`, `dou` в `recruiting.model.ts` |
-| `palette/` | `CommandPalette` в CDK overlay (`CommandPaletteService`), Ctrl/⌘+K — в оболочке ([shell.md](shell.md)) |
 
-Строки — `recruiting.*` и `palette.*` в `public/i18n/{uk,ru,en}.json`. Общие стили страниц (`.page-head`, `.filters`, `.panel`, `.state`)
+Строки — `recruiting.*` в `public/i18n/{uk,ru,en}.json`. Общие стили страниц (`.page-head`, `.filters`, `.panel`, `.state`)
 и токен `--app-warning` — в `styles.scss`.
 
 ## Как проверить

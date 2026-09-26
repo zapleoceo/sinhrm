@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -12,6 +13,7 @@ import { WorkflowRun, WorkflowTemplate } from '../workflows.model';
 import { WorkflowsService } from '../workflows.service';
 import { RunCard, StepAction } from './run-card';
 import { RunsStore } from './runs.store';
+import { toIsoDate, today } from '../../../core/date/iso-date';
 
 /** Profile tab "Воркфлоу": runs of one employee; admins can start a workflow for them. */
 @Component({
@@ -19,7 +21,7 @@ import { RunsStore } from './runs.store';
   imports: [
     ReactiveFormsModule,
     MatButtonModule,
-    MatFormFieldModule,
+    MatDatepickerModule, MatFormFieldModule,
     MatIconModule,
     MatInputModule,
     MatProgressBarModule,
@@ -42,7 +44,7 @@ import { RunsStore } from './runs.store';
         </mat-form-field>
         <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'workflows.runs.anchor' | transloco }}</mat-label>
-          <input matInput type="date" formControlName="anchor_date" />
+          <input matInput [matDatepicker]="dp1" formControlName="anchor_date" /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 />
         </mat-form-field>
         <button mat-flat-button type="submit" [disabled]="form.invalid"><mat-icon>play_arrow</mat-icon>{{ 'workflows.runs.start' | transloco }}</button>
       </form>
@@ -80,7 +82,7 @@ export class EmployeeRunsTab {
   protected readonly templates = signal<WorkflowTemplate[]>([]);
   protected readonly form = inject(NonNullableFormBuilder).group({
     template_id: [0, [Validators.required, Validators.min(1)]],
-    anchor_date: [new Date().toISOString().slice(0, 10)],
+    anchor_date: [today() as Date | null],
   });
 
   constructor() {
@@ -97,7 +99,7 @@ export class EmployeeRunsTab {
     if (this.form.invalid) {
       return;
     }
-    this.store.start(v.template_id, this.employeeId(), v.anchor_date || undefined, (key) => this.toast(key));
+    this.store.start(v.template_id, this.employeeId(), toIsoDate(v.anchor_date) || undefined, (key) => this.toast(key));
   }
 
   protected act(a: StepAction): void {

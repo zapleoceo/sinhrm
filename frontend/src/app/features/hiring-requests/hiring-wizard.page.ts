@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, nu
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -15,6 +16,7 @@ import { Employee } from '../people/people.model';
 import { PeopleService } from '../people/people.service';
 import { FormField, HIRING_PRIORITIES, HiringPriority, HiringReason, SaveHiringRequest, missingFields } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
+import { fromIsoDate, toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 
 type Extra = Record<string, string | number | boolean>;
 
@@ -24,7 +26,7 @@ type Extra = Record<string, string | number | boolean>;
  */
 @Component({
   selector: 'app-hiring-wizard-page',
-  imports: [DecimalPipe, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, ReactiveFormsModule, RouterLink, TranslocoPipe],
+  imports: [DecimalPipe, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, ReactiveFormsModule, RouterLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -111,7 +113,7 @@ type Extra = Record<string, string | number | boolean>;
             }
             <mat-form-field>
               <mat-label>{{ 'hiring.fields.startDate' | transloco }}</mat-label>
-              <input matInput type="date" formControlName="desired_start_date" />
+              <input matInput [matDatepicker]="dp1" formControlName="desired_start_date" /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 />
             </mat-form-field>
             <mat-form-field>
               <mat-label>{{ 'hiring.fields.salaryMin' | transloco }}</mat-label>
@@ -145,13 +147,21 @@ type Extra = Record<string, string | number | boolean>;
                   </mat-select>
                 </mat-form-field>
               }
+              @case ('date') {
+                <mat-form-field class="wide">
+                  <mat-label>{{ f.label }}</mat-label>
+                  <input matInput [matDatepicker]="fieldDate" [value]="dateOf(f.key)" (dateChange)="setDate(f, $event.value)" [required]="f.required" />
+                  <mat-datepicker-toggle matIconSuffix [for]="fieldDate" />
+                  <mat-datepicker #fieldDate />
+                </mat-form-field>
+              }
               @default {
                 <mat-form-field class="wide">
                   <mat-label>{{ f.label }}</mat-label>
                   @if (f.type === 'textarea') {
                     <textarea matInput rows="3" [value]="text(f.key)" (input)="setText(f, $event)" [required]="f.required"></textarea>
                   } @else {
-                    <input matInput [type]="f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'" [value]="text(f.key)" (input)="setText(f, $event)" [required]="f.required" />
+                    <input matInput [type]="f.type === 'number' ? 'number' : 'text'" [value]="text(f.key)" (input)="setText(f, $event)" [required]="f.required" />
                   }
                 </mat-form-field>
               }
@@ -242,7 +252,7 @@ export class HiringWizardPage implements OnInit {
     priority: ['normal' as HiringPriority],
     reason: ['new_position' as HiringReason],
     replaced_employee_id: [null as number | null],
-    desired_start_date: [''],
+    desired_start_date: [null as Date | null],
     salary_min: [null as number | null],
     salary_max: [null as number | null],
     currency: [''],
@@ -267,7 +277,7 @@ export class HiringWizardPage implements OnInit {
             priority: r.priority,
             reason: r.reason,
             replaced_employee_id: r.replaced_employee?.id ?? null,
-            desired_start_date: r.desired_start_date ?? '',
+            desired_start_date: fromIsoDate(r.desired_start_date),
             salary_min: r.salary_min,
             salary_max: r.salary_max,
             currency: r.currency ?? '',
@@ -308,6 +318,19 @@ export class HiringWizardPage implements OnInit {
     this.setExtra(f.key, f.type === 'number' ? Number(value) : value);
   }
 
+  protected setDate(f: FormField, date: Date | null): void {
+    const iso = toIsoDate(date);
+    if (iso === '') {
+      this.extra.update((e) => Object.fromEntries(Object.entries(e).filter(([k]) => k !== f.key)));
+      return;
+    }
+    this.setExtra(f.key, iso);
+  }
+
+  protected dateOf(key: string): Date | null {
+    return fromIsoDate(this.text(key));
+  }
+
   protected text(key: string): string {
     const v = this.extra()[key];
     return v === undefined ? '' : String(v);
@@ -331,7 +354,7 @@ export class HiringWizardPage implements OnInit {
       priority: v.priority,
       reason: v.reason,
       replaced_employee_id: v.reason === 'replacement' ? v.replaced_employee_id : null,
-      desired_start_date: v.desired_start_date || null,
+      desired_start_date: toIsoDateOrNull(v.desired_start_date),
       salary_min: v.salary_min,
       salary_max: v.salary_max,
       currency: v.currency.trim() || null,

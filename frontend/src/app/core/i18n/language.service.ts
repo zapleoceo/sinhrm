@@ -1,10 +1,12 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
+import { DateAdapter } from '@angular/material/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { AppLang, DEFAULT_LANG, isAppLang } from '../auth/auth.model';
 import { AuthService } from '../auth/auth.service';
+import { DATE_LOCALES } from '../date/app-date-adapter';
 import { safeStorage } from '../storage/safe-storage';
 
 export const LANG_STORAGE_KEY = 'sinhrm.lang';
@@ -19,6 +21,7 @@ export class LanguageService {
   private readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private readonly document = inject(DOCUMENT);
+  private readonly dateAdapter = inject(DateAdapter, { optional: true });
   private readonly lang = signal<AppLang>(DEFAULT_LANG);
 
   readonly current = this.lang.asReadonly();
@@ -49,5 +52,7 @@ export class LanguageService {
     this.lang.set(lang);
     this.transloco.setActiveLang(lang);
     this.document.documentElement.lang = lang;
+    // Datepicker month/weekday names follow the UI language.
+    this.dateAdapter?.setLocale(DATE_LOCALES[lang]);
   }
 }

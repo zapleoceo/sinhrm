@@ -3,11 +3,12 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, signal } fro
 import { TranslocoPipe } from '@jsverse/transloco';
 import { VacancySourceRow } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
+import { ChannelIcon } from '../../../core/ui/channel-icon';
 
 /** Tz3 vacancy block "where applicants came from": channel × how added, count and share (collapsible). */
 @Component({
   selector: 'app-vacancy-sources',
-  imports: [DecimalPipe, TranslocoPipe],
+  imports: [ChannelIcon, DecimalPipe, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <details class="panel">
@@ -25,7 +26,13 @@ import { RecruitingService } from '../recruiting.service';
           @for (r of rows(); track $index) {
             <tr>
               <td>{{ r.name ?? ('recruiting.channels.none' | transloco) }}</td>
-              <td>{{ r.added_via ? ('recruiting.addedVia.' + r.added_via | transloco) : '—' }}</td>
+              <td>
+                @if (r.added_via) {
+                  <app-channel-icon [key]="r.added_via" /> {{ 'recruiting.addedVia.' + r.added_via | transloco }}
+                } @else {
+                  —
+                }
+              </td>
               <td class="num">{{ r.count }}</td>
               <td class="num">{{ r.share_pct | number: '1.0-1' }}%</td>
             </tr>

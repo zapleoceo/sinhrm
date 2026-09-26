@@ -10,6 +10,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { GridRow, TimeWeek, addDays, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
+import { toIsoDate } from '../../core/date/iso-date';
+import { WeekPicker } from './week-picker';
 
 /**
  * The week grid (/time?week=&employee_id=): lines (project / category / note) × Monday…Sunday hours, leave and
@@ -18,7 +20,7 @@ import { TimeService, timeErrorKey } from './time.service';
  */
 @Component({
   selector: 'app-my-week-page',
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule, MatTooltipModule, TranslocoPipe],
+  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule, MatTooltipModule, TranslocoPipe, WeekPicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -35,6 +37,7 @@ import { TimeService, timeErrorKey } from './time.service';
         <button mat-icon-button type="button" (click)="go(-1)" [attr.aria-label]="'time.week.prev' | transloco"><mat-icon>chevron_left</mat-icon></button>
         <button mat-button type="button" (click)="goToday()">{{ 'time.week.today' | transloco }}</button>
         <button mat-icon-button type="button" (click)="go(1)" [attr.aria-label]="'time.week.next' | transloco"><mat-icon>chevron_right</mat-icon></button>
+        <app-week-picker [weekStart]="weekStart()" (weekChange)="goTo($event)" />
       </div>
     </header>
     @if (busy()) {
@@ -174,7 +177,7 @@ export class MyWeekPage {
   protected readonly data = signal<TimeWeek | null>(null);
   protected readonly rows = signal<GridRow[]>([]);
   protected readonly busy = signal(false);
-  protected readonly weekStart = computed(() => mondayOf(this.week() ?? new Date().toISOString().slice(0, 10)));
+  protected readonly weekStart = computed(() => mondayOf(this.week() ?? toIsoDate(new Date())));
   protected readonly weekEnd = computed(() => addDays(this.weekStart(), 6));
   protected readonly editable = computed(() => this.data()?.can.edit ?? false);
   protected readonly totalsByDay = computed(() => dayTotals(this.rows()));
@@ -190,6 +193,10 @@ export class MyWeekPage {
 
   protected go(delta: number): void {
     void this.router.navigate([], { queryParams: { week: addWeeks(this.weekStart(), delta) }, queryParamsHandling: 'merge' });
+  }
+
+  protected goTo(week: string): void {
+    void this.router.navigate([], { queryParams: { week }, queryParamsHandling: 'merge' });
   }
 
   protected goToday(): void {

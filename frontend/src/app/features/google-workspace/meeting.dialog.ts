@@ -3,15 +3,18 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTimepickerModule } from '@angular/material/timepicker';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MEETING_DURATIONS, MEETING_TYPES, MeetingType, ScheduledMeeting, toIsoWithOffset } from './google.model';
 import { GoogleService, googleErrorKey } from './google.service';
+import { fromTimeString, toIsoDate, toTimeString, today } from '../../core/date/iso-date';
 
 export interface MeetingDialogData {
   candidateId: number;
@@ -30,11 +33,13 @@ export interface MeetingDialogData {
     ReactiveFormsModule,
     MatButtonModule,
     MatCheckboxModule,
+    MatDatepickerModule,
     MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
     MatSelectModule,
+    MatTimepickerModule,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,11 +75,15 @@ export interface MeetingDialogData {
           <div class="row">
             <mat-form-field>
               <mat-label>{{ 'google.meeting.fields.date' | transloco }}</mat-label>
-              <input matInput type="date" formControlName="date" required />
+              <input matInput [matDatepicker]="meetingDay" formControlName="date" required />
+              <mat-datepicker-toggle matIconSuffix [for]="meetingDay" />
+              <mat-datepicker #meetingDay />
             </mat-form-field>
             <mat-form-field>
               <mat-label>{{ 'google.meeting.fields.time' | transloco }}</mat-label>
-              <input matInput type="time" formControlName="time" required />
+              <input matInput [matTimepicker]="meetingTime" formControlName="time" required />
+              <mat-timepicker-toggle matIconSuffix [for]="meetingTime" [attr.aria-label]="'common.datepicker.openTime' | transloco" />
+              <mat-timepicker #meetingTime interval="15m" />
             </mat-form-field>
             <mat-form-field>
               <mat-label>{{ 'google.meeting.fields.duration' | transloco }}</mat-label>
@@ -138,8 +147,8 @@ export class MeetingDialog {
   protected readonly created = signal<ScheduledMeeting | null>(null);
   protected readonly form = inject(NonNullableFormBuilder).group({
     title: [this.i18n.translate('google.meeting.eventTitle', { name: this.data.candidateName }), Validators.required],
-    date: [tomorrow(), Validators.required],
-    time: ['10:00', Validators.required],
+    date: [tomorrow() as Date | null, Validators.required],
+    time: [fromTimeString('10:00'), Validators.required],
     duration: [30],
     type: ['online' as MeetingType],
     location: [''],
@@ -163,7 +172,7 @@ export class MeetingDialog {
     this.api
       .scheduleMeeting(this.data.candidateId, {
         title: v.title.trim(),
-        start: toIsoWithOffset(v.date, v.time),
+        start: toIsoWithOffset(toIsoDate(v.date), toTimeString(v.time)),
         duration_minutes: v.duration,
         type: v.type,
         invite_candidate: v.invite && this.data.candidateEmail !== null,
@@ -188,9 +197,8 @@ export class MeetingDialog {
   }
 }
 
-function tomorrow(): string {
-  const d = new Date();
+function tomorrow(): Date {
+  const d = today();
   d.setDate(d.getDate() + 1);
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return d;
 }

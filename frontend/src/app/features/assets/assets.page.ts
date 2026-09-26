@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -15,11 +16,12 @@ import { Employee } from '../people/people.model';
 import { PeopleService } from '../people/people.service';
 import { ASSET_STATUSES, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
 import { AssetsService, assetsErrorKey } from './assets.service';
+import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 
 /** Inventory (/admin/assets): table with search and status, new asset, hand out / take back with history. */
 @Component({
   selector: 'app-assets-page',
-  imports: [DatePipe, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, RouterLink, TranslocoPipe],
+  imports: [DatePipe, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, RouterLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -45,7 +47,7 @@ import { AssetsService, assetsErrorKey } from './assets.service';
           </mat-select>
         </mat-form-field>
         <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'assets.cost' | transloco }}</mat-label><input matInput #cost type="number" min="0" step="0.01" /></mat-form-field>
-        <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'assets.purchasedAt' | transloco }}</mat-label><input matInput #bought type="date" /></mat-form-field>
+        <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'assets.purchasedAt' | transloco }}</mat-label><input matInput [matDatepicker]="dp1" #bought="matDatepickerInput" /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 /></mat-form-field>
         <button mat-flat-button type="submit">{{ 'common.save' | transloco }}</button>
         <span class="grow"></span>
         <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'assets.newType' | transloco }}</mat-label><input matInput #tp maxlength="120" /></mat-form-field>
@@ -133,7 +135,7 @@ import { AssetsService, assetsErrorKey } from './assets.service';
                         </mat-select>
                       </mat-form-field>
                     }
-                    <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'assets.date' | transloco }}</mat-label><input matInput #date type="date" /></mat-form-field>
+                    <mat-form-field subscriptSizing="dynamic"><mat-label>{{ 'assets.date' | transloco }}</mat-label><input matInput [matDatepicker]="dp2" #date="matDatepickerInput" /><mat-datepicker-toggle matIconSuffix [for]="dp2" /><mat-datepicker #dp2 /></mat-form-field>
                     <mat-form-field subscriptSizing="dynamic" class="grow"><mat-label>{{ 'assets.condition' | transloco }}</mat-label><input matInput #cond maxlength="255" /></mat-form-field>
                     <button mat-flat-button type="submit" [disabled]="moving()?.kind === 'assign' && employeeId() === null">{{ 'common.save' | transloco }}</button>
                     <button mat-button type="button" (click)="moving.set(null)">{{ 'common.cancel' | transloco }}</button>
@@ -246,7 +248,7 @@ export class AssetsPage implements OnInit {
     }
   }
 
-  protected create(inventory: string, name: string, serial: string, cost: string, purchasedAt: string): void {
+  protected create(inventory: string, name: string, serial: string, cost: string, purchasedAt: Date | null): void {
     this.apply(
       this.api.save(null, {
         inventory_number: inventory.trim(),
@@ -254,7 +256,7 @@ export class AssetsPage implements OnInit {
         serial: serial.trim() || null,
         type_id: this.newType(),
         cost: cost === '' ? null : Number(cost),
-        purchased_at: purchasedAt || null,
+        purchased_at: toIsoDateOrNull(purchasedAt),
       }),
     );
   }
@@ -266,8 +268,9 @@ export class AssetsPage implements OnInit {
     this.moving.set({ asset, kind });
   }
 
-  protected move(date: string, condition: string): void {
+  protected move(day: Date | null, condition: string): void {
     const m = this.moving();
+    const date = toIsoDate(day);
     if (m === null) {
       return;
     }

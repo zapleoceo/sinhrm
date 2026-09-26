@@ -14,6 +14,7 @@ import { ChannelPanel } from '../channels/channel-panel';
 import { Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
 import { IntegrationsStore } from './integrations.store';
+import { ChannelIcon } from '../../core/ui/channel-icon';
 
 const URL_PATTERN = /^https:\/\/\S+$/i;
 
@@ -21,6 +22,7 @@ const URL_PATTERN = /^https:\/\/\S+$/i;
 @Component({
   selector: 'app-integration-card',
   imports: [
+    ChannelIcon,
     DatePipe,
     ReactiveFormsModule,
     MatButtonModule,

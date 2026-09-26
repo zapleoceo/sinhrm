@@ -2,7 +2,7 @@
 <article class="card" [class.open]="expanded()">
   <header class="head">
     <div class="title">
-      <h3>{{ 'integrations.items.' + it.key + '.name' | transloco }}</h3>
+      <h3><app-channel-icon [key]="it.key" /> {{ 'integrations.items.' + it.key + '.name' | transloco }}</h3>
       <p class="muted">{{ 'integrations.items.' + it.key + '.description' | transloco }}</p>
     </div>
     <mat-chip-set>

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -10,6 +11,7 @@ import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
 import { EMPLOYMENT_TYPES, Employee, EmploymentType, SaveEmployee } from '../people.model';
 import { PeopleService, peopleErrorKey } from '../people.service';
+import { fromIsoDate, toIsoDate, toIsoDateOrNull, today } from '../../../core/date/iso-date';
 
 export interface EmployeeDialogData {
   employee: Employee | null;
@@ -20,7 +22,7 @@ type EditableStatus = 'active' | 'on_leave';
 /** Create / edit an employee (admin). Dictionaries: active items; manager: any working employee except self. */
 @Component({
   selector: 'app-employee-dialog',
-  imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
+  imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ (data.employee ? 'people.edit.title' : 'people.directory.add') | transloco }}</h2>
@@ -34,7 +36,7 @@ type EditableStatus = 'active' | 'on_leave';
           </mat-form-field>
           <mat-form-field>
             <mat-label>{{ 'people.fields.hiredAt' | transloco }}</mat-label>
-            <input matInput type="date" formControlName="hired_at" required />
+            <input matInput [matDatepicker]="dp1" formControlName="hired_at" required /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 />
             <mat-error>{{ 'people.required' | transloco }}</mat-error>
           </mat-form-field>
           <mat-form-field>
@@ -102,7 +104,7 @@ type EditableStatus = 'active' | 'on_leave';
           <p class="full section">{{ 'people.tabs.personal' | transloco }}</p>
           <mat-form-field>
             <mat-label>{{ 'people.fields.birthDate' | transloco }}</mat-label>
-            <input matInput type="date" formControlName="birth_date" />
+            <input matInput [matDatepicker]="dp2" formControlName="birth_date" /><mat-datepicker-toggle matIconSuffix [for]="dp2" /><mat-datepicker #dp2 />
           </mat-form-field>
           <mat-form-field>
             <mat-label>{{ 'people.fields.personalEmail' | transloco }}</mat-label>
@@ -153,7 +155,7 @@ export class EmployeeDialog implements OnInit {
   private readonly e = this.data.employee;
   protected readonly form = inject(NonNullableFormBuilder).group({
     full_name: [this.e?.full_name ?? '', [Validators.required, Validators.maxLength(255)]],
-    hired_at: [this.e?.hired_at ?? new Date().toISOString().slice(0, 10), Validators.required],
+    hired_at: [this.e ? fromIsoDate(this.e.hired_at) : today(), Validators.required],
     employment_type: [this.e?.employment_type ?? ('full_time' as EmploymentType)],
     status: [(this.e?.status === 'on_leave' ? 'on_leave' : 'active') as EditableStatus],
     work_email: [this.e?.work_email ?? '', Validators.email],
@@ -162,7 +164,7 @@ export class EmployeeDialog implements OnInit {
     department_id: [this.e?.department_id ?? this.e?.department?.id ?? (null as number | null)],
     position_id: [this.e?.position_id ?? this.e?.position?.id ?? (null as number | null)],
     manager_id: [this.e?.manager_id ?? this.e?.manager?.id ?? (null as number | null)],
-    birth_date: [this.e?.birth_date ?? ''],
+    birth_date: [fromIsoDate(this.e?.birth_date)],
     personal_email: [this.e?.personal_email ?? '', Validators.email],
     address: [this.e?.address ?? ''],
     emergency_contact: [this.e?.emergency_contact ?? ''],
@@ -187,7 +189,7 @@ export class EmployeeDialog implements OnInit {
     const text = (s: string): string | null => (s.trim() === '' ? null : s.trim());
     const body: SaveEmployee = {
       full_name: v.full_name.trim(),
-      hired_at: v.hired_at,
+      hired_at: toIsoDate(v.hired_at),
       employment_type: v.employment_type,
       work_email: text(v.work_email),
       phone: text(v.phone),
@@ -195,7 +197,7 @@ export class EmployeeDialog implements OnInit {
       department_id: v.department_id,
       position_id: v.position_id,
       manager_id: v.manager_id,
-      birth_date: text(v.birth_date),
+      birth_date: toIsoDateOrNull(v.birth_date),
       personal_email: text(v.personal_email),
       address: text(v.address),
       emergency_contact: text(v.emergency_contact),

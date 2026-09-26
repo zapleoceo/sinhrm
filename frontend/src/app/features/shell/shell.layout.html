@@ -200,11 +200,6 @@
 
   <div class="main">
     <header class="topbar">
-      <button mat-stroked-button type="button" class="palette" (click)="palette.toggle()" [attr.aria-label]="'palette.title' | transloco">
-        <mat-icon>search</mat-icon>
-        <span class="palette-label">{{ 'palette.open' | transloco }}</span>
-        <kbd>{{ paletteKey }}</kbd>
-      </button>
       <span class="spacer"></span>
       <button mat-icon-button type="button" (click)="theme.toggle()" [matTooltip]="themeLabel() | transloco" [attr.aria-label]="themeLabel() | transloco">
         <mat-icon>{{ themeIcon() }}</mat-icon>
