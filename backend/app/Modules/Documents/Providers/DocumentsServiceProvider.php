@@ -6,10 +6,12 @@ namespace App\Modules\Documents\Providers;
 
 use App\Models\User;
 use App\Modules\Core\Contracts\NavBadgeProvider;
+use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Documents\Contracts\DocumentRepository;
 use App\Modules\Documents\Contracts\DocumentStorage;
 use App\Modules\Documents\Contracts\DocumentTemplateRepository;
+use App\Modules\Documents\Privacy\DocumentsPersonalData;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
 use App\Modules\Documents\Repositories\EloquentDocumentRepository;
 use App\Modules\Documents\Repositories\EloquentDocumentTemplateRepository;
@@ -29,6 +31,8 @@ final class DocumentsServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->app->tag([DocumentNavBadges::class], NavBadgeProvider::class);
+        // Personal-data export/erase (Privacy module, docs/architecture/secrets.md).
+        $this->app->tag([DocumentsPersonalData::class], PersonalDataProvider::class);
         $this->app->bind(DocumentRepository::class, EloquentDocumentRepository::class);
         $this->app->bind(DocumentTemplateRepository::class, EloquentDocumentTemplateRepository::class);
         // Object storage later = another implementation here.

@@ -7,6 +7,7 @@ namespace App\Modules\Scripts\Providers;
 use App\Models\User;
 use App\Modules\Ai\Providers\AiServiceProvider;
 use App\Modules\Core\Contracts\NavBadgeProvider;
+use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
@@ -21,6 +22,7 @@ use App\Modules\Scripts\Contracts\TaskRepository;
 use App\Modules\Scripts\Listeners\EvaluateRecordedTouch;
 use App\Modules\Scripts\Models\Task;
 use App\Modules\Scripts\Policies\TaskPolicy;
+use App\Modules\Scripts\Privacy\ScriptsPersonalData;
 use App\Modules\Scripts\Repositories\EloquentEvaluationRepository;
 use App\Modules\Scripts\Repositories\EloquentScriptRepository;
 use App\Modules\Scripts\Repositories\EloquentTaskRepository;
@@ -43,6 +45,8 @@ final class ScriptsServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->app->tag([TaskNavBadges::class], NavBadgeProvider::class);
+        // Personal-data export/erase (Privacy module, docs/architecture/secrets.md).
+        $this->app->tag([ScriptsPersonalData::class], PersonalDataProvider::class);
         $this->app->bind(ScriptRepository::class, EloquentScriptRepository::class);
         $this->app->bind(EvaluationRepository::class, EloquentEvaluationRepository::class);
         $this->app->bind(TaskRepository::class, EloquentTaskRepository::class);

@@ -18,6 +18,7 @@ use App\Modules\MailAgent\Providers\MailAgentServiceProvider;
 use App\Modules\Overview\Providers\OverviewServiceProvider;
 use App\Modules\People\Providers\PeopleServiceProvider;
 use App\Modules\Perform\Providers\PerformServiceProvider;
+use App\Modules\Privacy\Providers\PrivacyServiceProvider;
 use App\Modules\Pulse\Providers\PulseServiceProvider;
 use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
 use App\Modules\Reports\Providers\ReportsServiceProvider;
@@ -57,4 +58,5 @@ return [
     TimeServiceProvider::class,
     ReportsServiceProvider::class,
     OverviewServiceProvider::class,
+    PrivacyServiceProvider::class,
 ];
