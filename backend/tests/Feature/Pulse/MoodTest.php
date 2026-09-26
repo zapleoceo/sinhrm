@@ -22,7 +22,7 @@ final class MoodTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Carbon::setTestNow('2026-10-07 12:00:00'); // a Wednesday
+        Carbon::setTestNow('2026-10-14 12:00:00'); // a Wednesday; the week of 5 Oct is the last completed one
     }
 
     protected function tearDown(): void
@@ -78,10 +78,13 @@ final class MoodTest extends TestCase
         $more = $this->people(3, ['manager_id' => $lead->id]);
         $this->moods($more, '2026-10-06', 5);
         MoodCheckin::query()->where('employee_id', $worker->id)->update(['comment' => 'Too many meetings']);
+        // The running week is never aggregated (it would change with every new check-in).
+        $this->moods([$worker, $peer, ...$more], '2026-10-13', 1);
         $data = $this->actingAs($this->userOf($lead))->getJson('/api/pulse/mood/team?weeks=2')->assertOk()->json('data');
         $this->assertSame(5, $data['team_size']);
         $this->assertEquals(['answered' => 5, 'total' => 5], $data['coverage']);
         $this->assertEquals(['week_start' => '2026-10-05', 'respondents' => 5, 'average' => 3.4, 'distribution' => [1 => 2, 2 => 0, 3 => 0, 4 => 0, 5 => 3], 'suppressed' => false], $data['weeks'][1]);
+        $this->assertCount(2, $data['weeks'], 'completed weeks only');
         $this->assertSame(['Too many meetings'], $data['comments']);
         $this->assertStringNotContainsString($worker->full_name, (string) json_encode($data));
 

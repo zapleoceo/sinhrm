@@ -36,6 +36,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         Route::get('surveys/{id}/waves', [SurveyController::class, 'waves'])->whereNumber('id')->name('pulse.waves.index');
         Route::post('surveys/{id}/waves', [SurveyController::class, 'storeWave'])->whereNumber('id')->name('pulse.waves.store');
         Route::get('waves/{waveId}', [SurveyController::class, 'showWave'])->whereNumber('waveId')->name('pulse.waves.show');
+        Route::put('waves/{waveId}', [SurveyController::class, 'updateWave'])->whereNumber('waveId')->name('pulse.waves.update');
         Route::post('waves/{waveId}/close', [SurveyController::class, 'closeWave'])->whereNumber('waveId')->name('pulse.waves.close');
         Route::get('waves/{waveId}/responses', [SurveyController::class, 'responses'])->whereNumber('waveId')->name('pulse.waves.responses');
     });

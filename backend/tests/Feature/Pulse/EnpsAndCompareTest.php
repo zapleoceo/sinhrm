@@ -36,6 +36,7 @@ final class EnpsAndCompareTest extends TestCase
         foreach ($this->people(6) as $i => $p) {
             $this->answer($wave, $p, ['enps' => $scores[$i], 'q1' => $i % 5 + 1, 'pick' => $i % 2, 'tags' => [0, 1], 'txt' => 'zeta'.($i === 0 ? '' : $i)]);
         }
+        $wave->update(['status' => 'closed', 'salt' => null]);
         $data = $this->actingAs($this->login(UserRole::Admin))->getJson("/api/pulse/waves/{$wave->id}/results")->assertOk()->json('data');
 
         $this->assertEquals(['score' => 0, 'promoters' => 2, 'passives' => 2, 'detractors' => 2, 'total' => 6], $data['questions'][0]['enps']);
@@ -54,7 +55,7 @@ final class EnpsAndCompareTest extends TestCase
         $first = $this->wave($survey, ['starts_at' => '2026-09-01', 'ends_at' => '2026-09-07', 'status' => 'closed', 'salt' => 'synthetic-salt-first']);
         $second = $this->wave($survey, ['starts_at' => '2026-10-01', 'ends_at' => '2026-10-07']);
         $salesPeople = $this->people(5, ['department_id' => $sales->id]);
-        $opsPeople = $this->people(2, ['department_id' => $ops->id]);
+        $opsPeople = $this->people(5, ['department_id' => $ops->id]);
 
         // First wave answered while open: Sales detractors, the ops pair passives.
         $first->update(['status' => 'open']);
@@ -71,8 +72,13 @@ final class EnpsAndCompareTest extends TestCase
         foreach ($opsPeople as $p) {
             $this->answer($second, $p, ['enps' => 9, 'q1' => 5]);
         }
+        $admin = $this->login(UserRole::Admin);
+        // Still open: nothing to compare yet.
+        $this->actingAs($admin)->getJson("/api/pulse/waves/{$second->id}/compare")->assertOk()
+            ->assertJsonPath('data.state', 'open')->assertJsonMissingPath('data.rows');
+        $second->update(['status' => 'closed', 'salt' => null]);
 
-        $data = $this->actingAs($this->login(UserRole::Admin))->getJson("/api/pulse/waves/{$second->id}/compare?segment=department")->assertOk()->json('data');
+        $data = $this->actingAs($admin)->getJson("/api/pulse/waves/{$second->id}/compare?segment=department")->assertOk()->json('data');
         $this->assertSame($first->id, $data['previous']['id']);
         $this->assertSame(['enps', 'q1'], array_column($data['questions'], 'id'));
         $this->assertIsArray($data['rows']);
@@ -81,11 +87,11 @@ final class EnpsAndCompareTest extends TestCase
             $rows[$row['name'] ?? 'all'] = $row;
         }
 
-        // Overall: eNPS −71 → 100 (5 detractors / 2 passives → all promoters); q1 average 2.29 → 4.29.
-        $this->assertEquals(['id' => 'enps', 'current' => 100.0, 'previous' => -71.0, 'delta' => 171.0], $rows['all']['questions'][0]);
-        $this->assertEqualsWithDelta(2.0, $rows['all']['questions'][1]['delta'], 0.01);
-        // Sales (5) is shown; Ops (2) is below the minimum group in both waves.
+        // Overall: eNPS −50 → 100 (5 detractors + 5 passives → all promoters); q1 average 2.5 → 4.5.
+        $this->assertEquals(['id' => 'enps', 'current' => 100.0, 'previous' => -50.0, 'delta' => 150.0], $rows['all']['questions'][0]);
+        $this->assertEquals(['id' => 'q1', 'current' => 4.5, 'previous' => 2.5, 'delta' => 2.0], $rows['all']['questions'][1]);
+        // Both departments have 5 answers and a complement of 5: shown.
         $this->assertEquals(['id' => 'q1', 'current' => 4.0, 'previous' => 2.0, 'delta' => 2.0], $rows['Sales']['questions'][1]);
-        $this->assertEquals(['id' => 'q1', 'current' => null, 'previous' => null, 'delta' => null], $rows['Ops']['questions'][1]);
+        $this->assertEquals(['id' => 'q1', 'current' => 5.0, 'previous' => 3.0, 'delta' => 2.0], $rows['Ops']['questions'][1]);
     }
 }

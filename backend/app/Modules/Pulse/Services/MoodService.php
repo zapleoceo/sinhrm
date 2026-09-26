@@ -20,8 +20,8 @@ use Illuminate\Support\Carbon;
 /**
  * Mood monitoring. An employee answers "how is your mood today" (1–5 + optional comment) once a day on the
  * configured weekdays (a second answer the same day replaces the first). Personal history — to the employee only.
- * Team trend — managers (their subtree) and admins (everyone, or a branch / department): weekly aggregates,
- * suppressed below the minimum group; comments without names or dates, only from shown weeks.
+ * Team trend — managers (their subtree) and admins (everyone, or a branch / department): aggregates of completed
+ * weeks only (never the running week), suppressed below the minimum group; coverage is of the last completed week; comments without names or dates, only from shown weeks.
  */
 final readonly class MoodService
 {
@@ -92,8 +92,10 @@ final readonly class MoodService
         $weeks = max(1, min(self::MAX_WEEKS, $weeks));
         $ids = $this->teamIds($user, $branchId, $departmentId);
         $minGroup = max(1, $this->mood->settings()->min_group);
-        $from = $now->copy()->startOfWeek()->subWeeks($weeks - 1);
-        $checkins = $this->mood->between($ids, $from, $now);
+        // Completed weeks only: the running week would change with every new check-in (diffing reveals it).
+        $currentWeek = $now->copy()->startOfWeek();
+        $from = $currentWeek->copy()->subWeeks($weeks);
+        $checkins = $this->mood->between($ids, $from, $currentWeek->copy()->subDay());
 
         $buckets = [];
         foreach ($checkins as $c) {
@@ -101,7 +103,7 @@ final readonly class MoodService
         }
         $out = [];
         $comments = [];
-        for ($week = $from->copy(); $week->lte($now); $week->addWeek()) {
+        for ($week = $from->copy(); $week->lt($currentWeek); $week->addWeek()) {
             $rows = $buckets[$week->toDateString()] ?? [];
             $stats = MoodStats::bucket($rows, $minGroup);
             $out[] = ['week_start' => $week->toDateString()] + $stats;
@@ -115,12 +117,12 @@ final readonly class MoodService
         }
         sort($comments, SORT_STRING);
         $teamSize = count($ids);
-        $thisWeek = array_unique(array_column($buckets[$now->copy()->startOfWeek()->toDateString()] ?? [], 'employee_id'));
+        $lastWeek = array_unique(array_column($buckets[$currentWeek->copy()->subWeek()->toDateString()] ?? [], 'employee_id'));
 
         return [
             'team_size' => $teamSize >= $minGroup ? $teamSize : null,
             'min_group' => $minGroup,
-            'coverage' => $teamSize >= $minGroup ? ['answered' => count($thisWeek), 'total' => $teamSize] : null,
+            'coverage' => $teamSize >= $minGroup ? ['answered' => count($lastWeek), 'total' => $teamSize] : null,
             'weeks' => $out,
             'comments' => array_slice($comments, 0, self::MAX_COMMENTS),
         ];

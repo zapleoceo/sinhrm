@@ -36,7 +36,12 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
         </mat-button-toggle-group>
       </header>
 
-      @if (d.suppressed) {
+      @if (d.participation; as p) {
+        <p class="panel suppressed">
+          <mat-icon inline>hourglass_top</mat-icon> {{ 'pulse.results.notClosed' | transloco }}
+          {{ 'pulse.results.participation' | transloco: { bucket: p.responded_bucket, percent: p.responded_percent ?? '—' } }}
+        </p>
+      } @else if (d.suppressed) {
         <p class="panel suppressed"><mat-icon inline>shield</mat-icon> {{ 'pulse.results.suppressed' | transloco: { n: d.wave.min_group_size } }}</p>
       } @else {
         <p class="muted">{{ 'pulse.results.responses' | transloco: { n: d.responses } }}</p>
@@ -44,6 +49,9 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
           @for (q of d.questions; track q.id) {
             <section class="panel card">
               <h2>{{ q.text }}</h2>
+              @if (q.suppressed) {
+                <p class="muted"><mat-icon inline>shield</mat-icon> {{ 'pulse.results.hidden' | transloco }}</p>
+              }
               @if (q.enps; as e) {
                 <div class="gauge" [attr.data-tone]="tone(e.score)" role="img" [attr.aria-label]="'eNPS ' + (e.score ?? '—')">
                   <div class="arc"></div>
@@ -103,11 +111,12 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
       }
 
       @if (compare(); as c) {
+        @if (c.rows) {
         <h2>{{ 'pulse.results.compare' | transloco }}</h2>
         @if (!c.previous) {
           <p class="muted">{{ 'pulse.results.noPrevious' | transloco }}</p>
         } @else {
-          <p class="muted">{{ c.previous.starts_at | date: 'dd.MM.yyyy' }} → {{ c.current.starts_at | date: 'dd.MM.yyyy' }}</p>
+          <p class="muted">{{ c.previous.starts_at | date: 'dd.MM.yyyy' }} → {{ c.current?.starts_at | date: 'dd.MM.yyyy' }}</p>
           <div class="panel">
             <table class="table">
               <thead>
@@ -137,6 +146,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
               </tbody>
             </table>
           </div>
+        }
         }
       }
     } @else if (!error()) {

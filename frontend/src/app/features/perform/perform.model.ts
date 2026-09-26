@@ -216,7 +216,8 @@ export interface ReviewResult {
   cycle: { id: number; name: string; status: CycleStatus; anonymous: boolean };
   subject_employee_id: number;
   min_reviewers: number;
-  groups: Partial<Record<ReviewType, { reviewers: number | null; suppressed: boolean }>>;
+  /** submitted: coarse completion range of peer/upward groups while the cycle is active. */
+  groups: Partial<Record<ReviewType, { reviewers: number | null; suppressed: boolean; submitted?: string }>>;
   competencies: { id: number; name: string; max: number; scores: Partial<Record<ReviewType, number | null>>; average: number | null }[];
   comments: { type: ReviewType; competency_id: number; text: string; author: string | null }[];
 }

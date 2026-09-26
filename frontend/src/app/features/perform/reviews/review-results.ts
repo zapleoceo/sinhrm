@@ -17,7 +17,9 @@ import { REVIEW_TYPES, ReviewResult, ReviewType, scoreWidth } from '../perform.m
       @for (t of types(); track t) {
         <span class="key" [attr.data-type]="t">
           {{ 'perform.reviewType.' + t | transloco }}
-          @if (r.groups[t]?.suppressed) {
+          @if (r.groups[t]?.submitted; as s) {
+            <em class="muted">({{ 'perform.reviews.inProgress' | transloco: { n: s } }})</em>
+          } @else if (r.groups[t]?.suppressed) {
             <em class="muted">({{ 'perform.reviews.suppressed' | transloco: { n: r.min_reviewers } }})</em>
           } @else if (r.groups[t]?.reviewers !== null && r.groups[t]?.reviewers !== undefined) {
             <span class="muted">({{ r.groups[t]?.reviewers }})</span>

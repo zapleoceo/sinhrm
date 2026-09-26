@@ -77,7 +77,26 @@ final readonly class SurveyService
         return $this->findWave($wave->id);
     }
 
-    /** @throws PulseException wave_not_open (already closed) */
+    /**
+     * Raises the minimum group of a scheduled/open wave. Never lowers it (groups hidden so far would appear) and
+     * never changes a closed wave (its results are final).
+     *
+     * @throws PulseException wave_not_open | min_group_lower
+     */
+    public function raiseMinGroup(SurveyWave $wave, int $minGroup): SurveyWave
+    {
+        if ($wave->status === WaveStatus::Closed) {
+            throw PulseException::waveNotOpen();
+        }
+        if ($minGroup < $wave->min_group_size) {
+            throw PulseException::minGroupLower();
+        }
+        $this->surveys->updateWave($wave, ['min_group_size' => $minGroup]);
+
+        return $this->findWave($wave->id);
+    }
+
+    /** @throws PulseException wave_not_open (already closed; closing is final, there is no reopen) */
     public function closeWave(SurveyWave $wave, ?Carbon $now = null): SurveyWave
     {
         if ($wave->status === WaveStatus::Closed) {

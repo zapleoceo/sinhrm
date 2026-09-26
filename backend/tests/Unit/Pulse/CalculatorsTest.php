@@ -48,7 +48,9 @@ final class CalculatorsTest extends TestCase
         $this->assertSame(7.0, $summary['questions'][0]['average']);
         $this->assertSame(1, $summary['questions'][0]['distribution']['10']);
         $this->assertSame(33, $summary['questions'][1]['enps']['score']);
-        $this->assertSame(['a', 'b'], $summary['questions'][2]['texts']);
+        $this->assertTrue($summary['questions'][2]['suppressed'], 'text answered by 2 < 3 is hidden');
+        $this->assertArrayNotHasKey('texts', $summary['questions'][2]);
+        $this->assertSame(['a', 'b'], WaveResults::summary($questions, $answers, 2)['questions'][2]['texts']);
         $this->assertSame(7.0, WaveResults::headline($questions[0], $answers));
         $this->assertSame(33.0, WaveResults::headline($questions[1], $answers));
         $this->assertNull(WaveResults::headline($questions[2], $answers));

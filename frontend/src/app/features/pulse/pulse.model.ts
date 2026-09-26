@@ -90,7 +90,8 @@ export interface QuestionResult {
   id: string;
   type: QuestionType;
   text: string;
-  answered: number;
+  answered: number | null;
+  suppressed?: boolean;
   average?: number | null;
   distribution?: Record<string, number>;
   enps?: EnpsStats;
@@ -104,9 +105,17 @@ export interface ResultBlock {
   questions: QuestionResult[];
 }
 
+/** Coarse participation of a wave that is not closed yet (no scores, no texts). */
+export interface ParticipationInfo {
+  responded_bucket: string;
+  responded_percent: number | null;
+}
+
 export interface WaveResults extends ResultBlock {
   wave: { id: number; survey: { id: number; title: string; type: SurveyType }; anonymous: boolean; min_group_size: number; starts_at: string; ends_at: string; status: WaveStatus };
   scope: 'all' | 'department';
+  state: WaveStatus;
+  participation?: ParticipationInfo;
   segments?: (ResultBlock & { segment: number | null; name: string | null })[];
 }
 
@@ -117,13 +126,16 @@ export interface CompareCell {
   delta: number | null;
 }
 
+/** Comparison; only rows/questions once the wave is closed (while open: participation only). */
 export interface WaveCompare {
   scope: 'all' | 'department';
-  segment: 'branch' | 'department';
-  current: { id: number; starts_at: string };
-  previous: { id: number; starts_at: string } | null;
+  state: WaveStatus;
+  segment?: 'branch' | 'department';
+  current?: { id: number; starts_at: string };
+  previous?: { id: number; starts_at: string } | null;
   questions: { id: string; type: QuestionType; text: string }[];
-  rows: { segment: number | null; name: string | null; questions: CompareCell[] }[];
+  rows?: { segment: number | null; name: string | null; questions: CompareCell[] }[];
+  participation?: ParticipationInfo;
 }
 
 export interface MoodEntry {

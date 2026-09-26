@@ -19,7 +19,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 /**
  * Reviewer side and results. A reviewer sees and fills only their own forms (anyone else → 404).
  * Results of a subject: admins and managers above the subject — any time; the subject — after the cycle is closed.
- * Peer/upward answers are aggregated by ReviewResults (minimum group, no names in anonymous cycles);
+ * Peer/upward answers are aggregated by ReviewResults (only after the cycle is closed, minimum group, no names in
+ * anonymous cycles; while active only a completion range);
  * no endpoint returns who gave which rating.
  */
 final readonly class ReviewService
@@ -111,7 +112,7 @@ final readonly class ReviewService
             'cycle' => ['id' => $cycle->id, 'name' => $cycle->name, 'status' => $cycle->status->value, 'anonymous' => $cycle->anonymous],
             'subject_employee_id' => $subjectId,
             'min_reviewers' => ReviewResults::MIN_REVIEWERS,
-        ] + ReviewResults::aggregate($cycle->reviewTypes(), $competencies, $this->reviews->submittedRows($cycle->id, $subjectId), $cycle->anonymous);
+        ] + ReviewResults::aggregate($cycle->reviewTypes(), $competencies, $this->reviews->submittedRows($cycle->id, $subjectId), $cycle->anonymous, $cycle->status === CycleStatus::Closed);
     }
 
     /**

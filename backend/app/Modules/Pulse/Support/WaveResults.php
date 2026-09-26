@@ -29,7 +29,11 @@ final class WaveResults
         }
         $out = [];
         foreach ($questions as $q) {
-            $out[] = self::question($q, $answers);
+            $result = self::question($q, $answers);
+            // An optional question answered by fewer people than the minimum is hidden on its own.
+            $out[] = $result['answered'] < max(1, $minGroup)
+                ? ['id' => $result['id'], 'type' => $result['type'], 'text' => $result['text'], 'answered' => null, 'suppressed' => true]
+                : $result + ['suppressed' => false];
         }
 
         return ['responses' => $count, 'suppressed' => false, 'questions' => $out];

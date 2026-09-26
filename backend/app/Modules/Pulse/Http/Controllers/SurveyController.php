@@ -7,6 +7,7 @@ namespace App\Modules\Pulse\Http\Controllers;
 use App\Models\User;
 use App\Modules\Pulse\Http\Requests\CreateWaveRequest;
 use App\Modules\Pulse\Http\Requests\SaveSurveyRequest;
+use App\Modules\Pulse\Http\Requests\UpdateWaveRequest;
 use App\Modules\Pulse\Http\Resources\SurveyResource;
 use App\Modules\Pulse\Http\Resources\WaveResource;
 use App\Modules\Pulse\Models\SurveyResponse;
@@ -69,6 +70,12 @@ final class SurveyController
     public function showWave(int $waveId): WaveResource
     {
         return new WaveResource($this->surveys->findWave($waveId));
+    }
+
+    /** PUT /api/pulse/waves/{id} {min_group_size}: raise only, not for closed waves. */
+    public function updateWave(UpdateWaveRequest $request, int $waveId): WaveResource
+    {
+        return new WaveResource($this->surveys->raiseMinGroup($this->surveys->findWave($waveId), $request->minGroup()));
     }
 
     public function closeWave(int $waveId): WaveResource

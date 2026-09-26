@@ -55,6 +55,12 @@ final class PulseException extends RuntimeException
         return new self('has_responses', 409);
     }
 
+    /** The minimum group of a wave can only be raised (lowering would reveal groups hidden so far). */
+    public static function minGroupLower(): self
+    {
+        return new self('min_group_lower', 422);
+    }
+
     public function render(): JsonResponse
     {
         return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);

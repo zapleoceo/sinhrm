@@ -139,13 +139,21 @@ final class ReviewsTest extends TestCase
 
         $url = "/api/perform/review/cycles/{$cycle}/results/{$worker->id}";
         $two = $this->actingAs($this->userOf($lead))->getJson($url)->assertOk()
-            ->assertJsonPath('data.groups.peer', ['reviewers' => null, 'suppressed' => true])
+            ->assertJsonPath('data.groups.peer', ['reviewers' => null, 'suppressed' => true, 'submitted' => '0–2'])
             ->assertJsonPath('data.competencies.0.scores.peer', null)
             ->assertJsonPath('data.competencies.0.scores.self', 5)
             ->assertJsonPath('data.competencies.0.scores.manager', 3);
         $this->assertStringNotContainsString('Peer comment', (string) $two->getContent());
 
         $this->submit($this->assignment($cycle, $worker, $p3, 'peer'), $p3, 5);
+        // Active cycle: three peers submitted, still only a completion range — live results would reveal the newest.
+        $live = $this->actingAs($this->userOf($lead))->getJson($url)->assertOk()
+            ->assertJsonPath('data.groups.peer', ['reviewers' => null, 'suppressed' => true, 'submitted' => '3–4'])
+            ->assertJsonPath('data.competencies.0.scores.peer', null);
+        $this->assertStringNotContainsString('Peer comment', (string) $live->getContent());
+        $this->actingAs($this->userOf($worker))->getJson($url)->assertNotFound();
+        $this->actingAs($this->admin)->postJson("/api/perform/review/cycles/{$cycle}/close")->assertOk()->assertJsonPath('data.status', 'closed');
+
         $three = $this->actingAs($this->userOf($head))->getJson($url)->assertOk()
             ->assertJsonPath('data.groups.peer', ['reviewers' => 3, 'suppressed' => false])
             ->assertJsonPath('data.competencies.0.scores.peer', 3)
@@ -161,10 +169,8 @@ final class ReviewsTest extends TestCase
         $this->assertSame([null, null], $comments->where('type', 'peer')->pluck('author')->all());
         $this->assertSame([$lead->full_name], $comments->where('type', 'manager')->pluck('author')->all());
 
-        // The subject: only after the cycle is closed; strangers never.
-        $this->actingAs($this->userOf($worker))->getJson($url)->assertNotFound();
+        // The subject: after closing; strangers never.
         $this->actingAs($this->userOf($peer))->getJson($url)->assertNotFound();
-        $this->actingAs($this->admin)->postJson("/api/perform/review/cycles/{$cycle}/close")->assertOk()->assertJsonPath('data.status', 'closed');
         $this->actingAs($this->userOf($worker))->getJson($url)->assertOk();
         $this->actingAs($this->userOf($worker))->getJson("/api/perform/review/employees/{$worker->id}/results")->assertOk()->assertJsonCount(1, 'data');
         $this->actingAs($this->userOf($peer))->getJson("/api/perform/review/employees/{$worker->id}/results")->assertOk()->assertJsonCount(0, 'data');
