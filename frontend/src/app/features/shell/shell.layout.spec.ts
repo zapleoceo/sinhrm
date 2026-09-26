@@ -59,6 +59,15 @@ describe('ShellLayout collapsible nav', () => {
     expect(header(el, 'recruiting').getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('lets the user fold the group of the active route', async () => {
+    const { el, router, detect } = await setup();
+    await router.navigateByUrl('/perform/objectives');
+    await detect();
+    header(el, 'perform').click();
+    await detect();
+    expect(header(el, 'perform').getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('restores remembered groups for the user', async () => {
     localStorage.setItem('sinhrm.nav.expanded.7', '["services"]');
     const { el } = await setup();

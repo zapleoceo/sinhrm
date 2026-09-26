@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -65,7 +65,8 @@ export class ShellLayout {
     // Navigating into a group opens it (and keeps it open afterwards).
     effect(() => {
       const group = this.activeGroup();
-      if (group && !this.expanded().has(group)) this.setExpanded(group, true);
+      // untracked: only navigation re-runs this, so the user can still fold the current group.
+      if (group && !untracked(this.expanded).has(group)) this.setExpanded(group, true);
     });
   }
 
