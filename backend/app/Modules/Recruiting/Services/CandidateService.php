@@ -12,6 +12,7 @@ use App\Modules\Recruiting\DTO\CandidateData;
 use App\Modules\Recruiting\DTO\CandidateFilter;
 use App\Modules\Recruiting\DTO\CandidateMatch;
 use App\Modules\Recruiting\DTO\ContactKeys;
+use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Application;
@@ -36,6 +37,7 @@ final readonly class CandidateService
         private RecruitingScope $scope,
         private ContactNormalizer $normalizer,
         private LoggerInterface $log,
+        private AcquisitionChannelService $channels,
     ) {}
 
     /** @return LengthAwarePaginator<int, Candidate> */
@@ -104,6 +106,8 @@ final readonly class CandidateService
             if ($data->fullName === null) {
                 throw RecruitingException::fullNameRequired();
             }
+            $source = $data->source ?? CandidateSource::Import;
+            $channelId = $this->channels->resolve($data->channelId, $source, $data->utm);
             try {
                 $candidate = $this->candidates->create([
                     'full_name' => $data->fullName,
@@ -111,7 +115,9 @@ final readonly class CandidateService
                     'email' => $keys->email,
                     'telegram_username' => $keys->telegram,
                     'city_id' => $data->cityId,
-                    'source' => ($data->source ?? CandidateSource::Import)->value,
+                    'source' => $source->value,
+                    'channel_id' => $channelId,
+                    'added_via' => ($data->addedVia ?? AddedVia::Import)->value,
                     'utm' => $data->utm,
                     'tags' => $data->tags,
                     'owner_id' => $data->ownerId ?? $actor?->id,
@@ -137,14 +143,19 @@ final readonly class CandidateService
 
     private function insert(User $actor, CandidateData $data, ContactKeys $keys, ?Vacancy $vacancy): Candidate
     {
-        return $this->applications->transaction(function () use ($actor, $data, $keys, $vacancy): Candidate {
+        $source = $data->source ?? CandidateSource::Manual;
+        $channelId = $this->channels->resolve($data->channelId, $source, $data->utm);
+
+        return $this->applications->transaction(function () use ($actor, $data, $keys, $vacancy, $source, $channelId): Candidate {
             $candidate = $this->candidates->create([
                 'full_name' => (string) $data->fullName,
                 'phone' => $keys->phone,
                 'email' => $keys->email,
                 'telegram_username' => $keys->telegram,
                 'city_id' => $data->cityId,
-                'source' => ($data->source ?? CandidateSource::Manual)->value,
+                'source' => $source->value,
+                'channel_id' => $channelId,
+                'added_via' => ($data->addedVia ?? AddedVia::Manual)->value,
                 'utm' => $data->utm,
                 'tags' => $data->tags,
                 'owner_id' => $data->ownerId ?? $actor->id,
@@ -173,6 +184,8 @@ final readonly class CandidateService
             'utm' => $data->utm,
             'tags' => $data->tags,
             'owner_id' => $data->ownerId,
+            // An explicit channel only (a recruiter corrects it); editing UTM does not re-map the channel.
+            'channel_id' => $data->channelId === null ? null : $this->channels->resolve($data->channelId, null, null),
         ], static fn (mixed $v): bool => $v !== null);
         $keys = $this->keys($data);
         $contactAttrs = array_filter([

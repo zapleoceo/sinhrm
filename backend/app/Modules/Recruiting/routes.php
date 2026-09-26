@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Auth\Http\Middleware\EnsureUserIsActive;
+use App\Modules\Recruiting\Http\Controllers\AcquisitionChannelController;
 use App\Modules\Recruiting\Http\Controllers\ApplicationController;
 use App\Modules\Recruiting\Http\Controllers\CandidateController;
 use App\Modules\Recruiting\Http\Controllers\ExtensionController;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 
 // /api/* of the Recruiting module. Reading: any active user, limited to their scope (RecruitingScope);
-// writing: FormRequest::authorize() → entity policies (Policies/*). No DELETE anywhere.
+// writing: FormRequest::authorize() → entity policies (Policies/*). DELETE only for UTM rules and channel costs (managers).
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('pipelines', [PipelineController::class, 'index'])->name('recruiting.pipelines.index');
     Route::post('pipelines', [PipelineController::class, 'store'])
@@ -28,11 +29,24 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             ->whereNumber('rejectReason')->name('recruiting.reject-reasons.update');
     });
 
+    // Acquisition channels (tz3): read by everyone (candidate form, filters); the dictionary, UTM rules and costs — managers.
+    Route::get('acquisition-channels', [AcquisitionChannelController::class, 'index'])->name('recruiting.channels.index');
+    Route::middleware('can:'.RecruitingServiceProvider::MANAGE)->prefix('acquisition-channels')->group(function (): void {
+        Route::post('/', [AcquisitionChannelController::class, 'store'])->name('recruiting.channels.store');
+        Route::post('resolve', [AcquisitionChannelController::class, 'preview'])->name('recruiting.channels.preview');
+        Route::patch('{channel}', [AcquisitionChannelController::class, 'update'])->whereNumber('channel')->name('recruiting.channels.update');
+        Route::post('{channel}/utm-rules', [AcquisitionChannelController::class, 'addRule'])->whereNumber('channel')->name('recruiting.channels.rules.store');
+        Route::delete('utm-rules/{rule}', [AcquisitionChannelController::class, 'deleteRule'])->whereNumber('rule')->name('recruiting.channels.rules.destroy');
+        Route::post('{channel}/costs', [AcquisitionChannelController::class, 'addCost'])->whereNumber('channel')->name('recruiting.channels.costs.store');
+        Route::delete('costs/{cost}', [AcquisitionChannelController::class, 'deleteCost'])->whereNumber('cost')->name('recruiting.channels.costs.destroy');
+    });
+
     Route::get('vacancies', [VacancyController::class, 'index'])->name('recruiting.vacancies.index');
     Route::post('vacancies', [VacancyController::class, 'store'])->name('recruiting.vacancies.store');
     Route::get('vacancies/{vacancy}', [VacancyController::class, 'show'])->whereNumber('vacancy')->name('recruiting.vacancies.show');
     Route::patch('vacancies/{vacancy}', [VacancyController::class, 'update'])->whereNumber('vacancy')->name('recruiting.vacancies.update');
     Route::get('vacancies/{vacancy}/board', [VacancyController::class, 'board'])->whereNumber('vacancy')->name('recruiting.vacancies.board');
+    Route::get('vacancies/{vacancy}/sources', [VacancyController::class, 'sources'])->whereNumber('vacancy')->name('recruiting.vacancies.sources');
     Route::post('vacancies/{vacancy}/applications', [VacancyController::class, 'apply'])
         ->whereNumber('vacancy')->name('recruiting.vacancies.apply');
 

@@ -75,6 +75,24 @@ final class RecruitingException extends RuntimeException
         return new self('full_name_required', 422);
     }
 
+    /** The channel code (technical name) is used by another channel. */
+    public static function channelCodeTaken(): self
+    {
+        return new self('channel_code_taken', 422);
+    }
+
+    /** An explicit channel_id must point at an active channel. */
+    public static function channelInactive(): self
+    {
+        return new self('channel_inactive', 422);
+    }
+
+    /** A UTM rule needs at least one of utm_source / utm_medium / utm_campaign. */
+    public static function emptyUtmRule(): self
+    {
+        return new self('empty_utm_rule', 422);
+    }
+
     public static function alreadyLinked(): self
     {
         return new self('already_linked', 409);

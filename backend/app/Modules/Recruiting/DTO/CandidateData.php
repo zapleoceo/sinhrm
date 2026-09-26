@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\DTO;
 
+use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Enums\CandidateSource;
 
 /**
@@ -27,7 +28,18 @@ final readonly class CandidateData
         public ?array $tags = null,
         public ?int $ownerId = null,
         public ?int $vacancyId = null,
+        public ?int $channelId = null,
+        public ?AddedVia $addedVia = null,
     ) {}
+
+    /** The same data with "how added" set (the caller knows the path: mail agent, sheets import, …). */
+    public function withAddedVia(AddedVia $addedVia): self
+    {
+        return new self(
+            $this->fullName, $this->phone, $this->email, $this->telegram, $this->cityId, $this->source, $this->utm,
+            $this->tags, $this->ownerId, $this->vacancyId, $this->channelId, $addedVia,
+        );
+    }
 
     /**
      * Import-ready: a loose row (e.g. a spreadsheet line or a job-board payload) → DTO. Unknown source → "import".
@@ -67,6 +79,7 @@ final readonly class CandidateData
             tags: $tags,
             ownerId: $int('owner_id'),
             vacancyId: $int('vacancy_id'),
+            channelId: $int('channel_id'),
         );
     }
 }

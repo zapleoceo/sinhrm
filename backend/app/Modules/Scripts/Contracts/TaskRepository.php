@@ -48,6 +48,9 @@ interface TaskRepository
 
     public function findByRule(int $employeeId, string $ruleKey): ?Task;
 
+    /** Marks every open task whose rule key starts with the prefix as done (any employee). Returns the count. */
+    public function closeByRulePrefix(string $prefix, Carbon $at): int;
+
     /** @return list<ApplicationActivity> every active application with the moments the follow-up rules need */
     public function activities(): array;
 }

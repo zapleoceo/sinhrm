@@ -19,6 +19,10 @@ enum TaskType: string
     case MoodAlert = 'mood_alert';
     /** "A helpdesk case breached its SLA" for the assignee / HR (Desk module, job desk.sla). */
     case DeskSla = 'desk_sla';
+    /** "Approve the hiring request" for the approver of the current route step / SLA escalation to HR (HiringRequests). */
+    case HiringApproval = 'hiring_approval';
+    /** "Fill in / submit your timesheet for the week" for the employee (Time, job time.reminders). */
+    case TimesheetReminder = 'timesheet_reminder';
 
     /** Source group of the "Мої задачі" filter. */
     public function source(): TaskSource
@@ -28,6 +32,8 @@ enum TaskType: string
             self::Document => TaskSource::Documents,
             self::MoodAlert => TaskSource::Pulse,
             self::DeskSla => TaskSource::Desk,
+            self::HiringApproval => TaskSource::Hiring,
+            self::TimesheetReminder => TaskSource::Time,
             self::Followup, self::Manual, self::NewApplicant => TaskSource::Recruiting,
         };
     }

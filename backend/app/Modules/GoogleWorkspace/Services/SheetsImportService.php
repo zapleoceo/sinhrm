@@ -15,6 +15,7 @@ use App\Modules\GoogleWorkspace\Support\SheetRange;
 use App\Modules\Integrations\Enums\LogLevel;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\DTO\CandidateData;
+use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Services\CandidateService;
 use Illuminate\Support\Carbon;
@@ -216,7 +217,7 @@ final readonly class SheetsImportService
             'telegram' => $cell(SheetField::Telegram),
             'source' => mb_strtolower((string) $cell(SheetField::Source)),
             'utm' => $utm === [] ? null : $utm,
-        ]);
+        ])->withAddedVia(AddedVia::Sheets);
         $vacancy = null;
         $title = $cell(SheetField::Vacancy);
         if ($title !== null) {

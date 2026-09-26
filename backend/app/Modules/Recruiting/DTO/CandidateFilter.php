@@ -16,6 +16,7 @@ final readonly class CandidateFilter
         public ?ApplicationStatus $status = null,
         public ?CandidateSource $source = null,
         public ?int $ownerId = null,
+        public ?int $channelId = null,
         public int $perPage = 50,
     ) {}
 }

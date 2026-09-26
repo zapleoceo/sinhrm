@@ -156,7 +156,53 @@ export interface Application {
   route?: RouteStep[];
 }
 
+/** Acquisition channel (tz3; backend Recruiting AcquisitionChannel). utm_rules/costs — managers only. */
+export type ChannelType = 'job_board' | 'ads' | 'referral' | 'social' | 'site' | 'event' | 'agency' | 'other';
+export const CHANNEL_TYPES: readonly ChannelType[] = ['job_board', 'ads', 'referral', 'social', 'site', 'event', 'agency', 'other'];
+
+/** HOW the record got into SinHRM — separate from the channel (WHERE FROM). */
+export type AddedVia = 'manual' | 'import' | 'mail' | 'extension' | 'webhook' | 'sheets';
+
+export interface UtmRule {
+  id: number;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  priority: number;
+}
+
+export interface ChannelCost {
+  id: number;
+  period_start: string;
+  period_end: string;
+  amount: number;
+  currency: string;
+  note: string | null;
+}
+
+export interface AcquisitionChannel {
+  id: number;
+  code: string;
+  name: string;
+  type: ChannelType;
+  active: boolean;
+  utm_rules?: UtmRule[];
+  costs?: ChannelCost[];
+}
+
+/** GET /api/vacancies/{id}/sources — the vacancy card block "where applicants came from". */
+export interface VacancySourceRow {
+  channel_id: number | null;
+  name: string | null;
+  added_via: AddedVia | null;
+  count: number;
+  share_pct: number;
+}
+
 export interface Candidate extends CandidateBrief {
+  channel_id: number | null;
+  channel: { id: number; code: string; name: string; type: ChannelType } | null;
+  added_via: AddedVia | null;
   city_id: number | null;
   city: Ref | null;
   utm: Record<string, string>;
@@ -174,6 +220,7 @@ export interface SaveCandidate {
   email?: string | null;
   telegram_username?: string | null;
   source?: CandidateSource;
+  channel_id?: number | null;
   tags?: string[];
   vacancy_id?: number | null;
 }
@@ -289,6 +336,7 @@ export interface CandidateQuery {
   vacancy_id?: number;
   status?: ApplicationStatus;
   source?: CandidateSource;
+  channel_id?: number;
   page?: number;
   perPage?: number;
 }
@@ -350,6 +398,7 @@ export const RECRUITING_ERROR_CODES = [
   'no_default_pipeline',
   'vacancy_out_of_scope',
   'already_linked',
+  'channel_inactive',
 ] as const;
 
 /** Body of 409 duplicate_candidate: the existing candidate to open instead. */

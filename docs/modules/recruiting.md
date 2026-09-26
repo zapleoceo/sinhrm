@@ -6,6 +6,10 @@
 - **все касания** — звонки, Telegram, WhatsApp, Viber, почта, заметки, встречи. И сделанные из SinHRM, и «перехваченные» снаружи
   (когда подключат интеграции): у каждого касания видно, откуда оно — «з SinHRM» или «зовні».
 
+У кандидата два отдельных факта: **канал привлечения** (откуда пришёл, в т. ч. по UTM-меткам) и **способ добавления**
+(вручную, импорт, почта, расширение, Google Sheets) — [acquisition-channels.md](acquisition-channels.md). Заявки на подбор,
+из которых после согласования открываются вакансии, — [hiring-requests.md](hiring-requests.md).
+
 Руководитель видит **зависших кандидатов** (никто не связывался 3+ дня) и отчёты: кто из рекрутеров сколько касаний сделал и по каким
 каналам, воронку по вакансиям, источники и причины отказов.
 
@@ -50,7 +54,8 @@
 | `pipeline_stages` | `pipeline_id, name, kind (attract\|select\|hire\|closed), position, is_terminal` | `unique(pipeline_id, position)` |
 | `reject_reasons` | `name, active` | справочник; не удаляется, выключается; 6 общих причин в data-миграции |
 | `vacancies` | `title, branch_id, department_id?, position_id?, recruiter_id, pipeline_id, status (open\|paused\|closed), description, opened_at, closed_at` | воронка вакансии после создания не меняется |
-| `candidates` | `full_name, phone (E.164), email (lowercase), telegram_username (lowercase, без @), city_id?, source, utm (jsonb), tags (jsonb), owner_id, created_by` | индексы на трёх контактах — ключи дедупликации |
+| `candidates` | `full_name, phone (E.164), email (lowercase), telegram_username (lowercase, без @), city_id?, source, channel_id?, added_via?, utm (jsonb), tags (jsonb), owner_id, created_by` | индексы на трёх контактах — ключи дедупликации; `channel_id` / `added_via` — канал привлечения и способ добавления ([acquisition-channels.md](acquisition-channels.md), миграция `2026_10_06_200001`) |
+| `acquisition_channels`, `channel_utm_rules`, `acquisition_channel_costs` | справочник каналов привлечения, правила UTM, расходы | [acquisition-channels.md](acquisition-channels.md); data-миграция `…200002_seed_channels_from_sources` |
 | `applications` | `candidate_id, vacancy_id, stage_id, status (active\|hired\|rejected), reject_reason_id?, rejected_note, stage_entered_at, last_touch_at, closed_at` | `unique(candidate_id, vacancy_id)` |
 | `stage_changes` | `application_id, from_stage_id? (null = создание), to_stage_id, by_user_id?, reason, at` | маршрут кандидата |
 | `candidate_profile_urls` | `candidate_id, site (linkedin\|work_ua\|djinni\|dou), url (unique)` | ссылки на профили из браузерного расширения; нормализованный URL — ещё один ключ дедупликации (миграция `2026_10_01_100001`) |
@@ -58,7 +63,7 @@
 | view `unmatched_messages` | `SELECT * FROM touchpoints WHERE candidate_id IS NULL` | для SQL/BI; API читает саму таблицу. ⚠ `SELECT *` фиксирует колонки при создании: изменение `touchpoints` потребует пересоздать view в той же миграции |
 
 Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MANUAL` — каналы ручной записи, `isTouch()` = не `system`),
-`Direction`, `CandidateSource` (`manual, work_ua, robota_ua, djinni, linkedin, dou, meta_ads, site, referral, telegram, import, inbox, other`), `TimelineItemType`, `ClipperSite` (сайты расширения: допустимые хосты, нормализация URL, соответствие `CandidateSource`).
+`Direction`, `CandidateSource` (`manual, work_ua, robota_ua, djinni, linkedin, dou, meta_ads, site, referral, telegram, import, inbox, other`), `TimelineItemType`, `ClipperSite` (сайты расширения: допустимые хосты, нормализация URL, соответствие `CandidateSource`), `AcquisitionChannelType`, `AddedVia` (`manual, import, mail, extension, webhook, sheets`). Поле `source` оставлено для совместимости API; аналитика — по каналу.
 
 ### Правила
 - **Статус заявки = тип этапа.** Терминальный `closed` → `rejected` (нужен `reject_reason_id`, иначе 422 `reject_reason_required`),
@@ -122,9 +127,11 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 | `POST /api/vacancies` | `{title, branch_id, department_id?, position_id?, recruiter_id? (по умолч. автор), pipeline_id? (по умолч. default), status?, description?}` | 201 |
 | `GET /api/vacancies/{id}`, `PATCH /api/vacancies/{id}` | PATCH частичный, `pipeline_id` запрещён | вакансия со `stages` |
 | `GET /api/vacancies/{id}/board` | — | `{vacancy, applications[]}` (с кандидатом, `is_stale`) |
+| `GET /api/vacancies/{id}/sources` | — | заявки вакансии по каналу × способу добавления: `[{channel_id, name, added_via, count, share_pct}]` (ТЗ 3) |
 | `POST /api/vacancies/{id}/applications` | `{candidate_id}` | 201; повтор → 409 `already_applied` |
-| `GET /api/candidates` | `q` (имя/e-mail/@telegram/цифры телефона), `vacancy_id, stage_id, status, source, owner_id, perPage, page` | с краткими заявками |
-| `POST /api/candidates` | `{full_name, phone?, email?, telegram_username?, city_id?, source?, utm?, tags?, owner_id?, vacancy_id?}` | 201 / 409 дубль (см. «Правила») |
+| `GET /api/candidates` | `q` (имя/e-mail/@telegram/цифры телефона), `vacancy_id, stage_id, status, source, channel_id, owner_id, perPage, page` | с краткими заявками |
+| `POST /api/candidates` | `{full_name, phone?, email?, telegram_username?, city_id?, source?, channel_id?, utm?, tags?, owner_id?, vacancy_id?}` | 201 / 409 дубль (см. «Правила»); канал — явный, иначе по UTM, иначе по источнику; `added_via = manual`; выключенный канал → 422 `channel_inactive` |
+| `GET/POST/PATCH /api/acquisition-channels…` | справочник каналов, UTM-правила, расходы, проверка UTM | см. [acquisition-channels.md](acquisition-channels.md) |
 | `GET /api/candidates/{id}` | — | карточка + `applications[]` с `route[]` (`stage_name, entered_at, left_at, duration_sec, by, reason`) и `stages` |
 | `PATCH /api/candidates/{id}` | частично; `vacancy_id` запрещён; занятый контакт → 409 | 200 / 409 |
 | `GET /api/candidates/{id}/timeline` | `channel=call,telegram,stage` (или массив; `stage` = шаги), `perPage, page` | новые сверху: `{type: touchpoint\|stage_change, at, touchpoint\|stage_change}`; у касания `touchpoint.evaluation` — `{id, score, engine, next_step_fixed, script_version_id}` или `null` (оценка по скрипту, см. ниже) |
@@ -213,6 +220,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts` и «Надіслати» через `features/channels/channels.service.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме |
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |
 | `reports/` | `/reports`, таблицы с CSS-полосками, `pivotTouches` |
+| `channels/` | `/admin/acquisition-channels` — справочник каналов, правила UTM с проверкой, расходы; `board/vacancy-sources.ts` — блок «Джерела відгуків» на доске; в карточке — чипы канала и «як додано», в форме — «Канал залучення», в списке — фильтр по каналу |
 | `features/extension/` | `/settings/extension` — токен расширения ([extension.md](extension.md)); источники `linkedin`, `dou` в `recruiting.model.ts` |
 | `palette/` | `CommandPalette` в CDK overlay (`CommandPaletteService`), Ctrl/⌘+K — в оболочке ([shell.md](shell.md)) |
 
@@ -231,6 +239,7 @@ ingestor (сопоставление, дедуп, «Вхідні»), `CandidateS
 `tests/Feature/Recruiting/ExtensionApiTest.php` — токен (выдача, ротация, отзыв, срок), изоляция токена от остального API,
 импорт (создание с заметкой, совпадение по ссылке/телефону/e-mail, хост ссылки → 422, филиалы, viewer, лимит 30/мин, CORS);
 `tests/Unit/Recruiting/ClipperSiteTest.php` — нормализация ссылок.
+Каналы привлечения: `AcquisitionChannelsApiTest` (права, приоритет UTM, способ добавления, миграция источников, математика отчёта), `ChannelSupportTest`; фронт — `channels/channels.spec.ts`.
 Фронт: `features/extension/extension.spec.ts`, `recruiting.service.spec.ts`, `recruiting.format.spec.ts`, `recruiting.stores.spec.ts`.
 
 Вручную на preview (нужна сессия; демо-данные уже в БД):

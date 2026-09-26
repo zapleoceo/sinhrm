@@ -39,7 +39,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Shell (оболочка фронтенда) | ✅ | [modules/shell.md](../modules/shell.md) |
 | Integrations (секреты и внешние сервисы) | ✅ | [modules/integrations.md](../modules/integrations.md) |
 | Directory (справочники, филиалы пользователей, импорт из Sintegrum) | ✅ | [modules/directory.md](../modules/directory.md) |
-| Recruiting (вакансии, воронки, кандидаты, касания, «Вхідні», отчёты) | ✅ | [modules/recruiting.md](../modules/recruiting.md) |
+| Recruiting (вакансии, воронки, кандидаты, касания, «Вхідні», отчёты, каналы привлечения с UTM — [acquisition-channels.md](../modules/acquisition-channels.md)) | ✅ | [modules/recruiting.md](../modules/recruiting.md) |
 | Scripts (версии скриптов, оценка касаний, шаблоны, задачи-напоминания) | ✅ | [modules/scripts.md](../modules/scripts.md) |
 | Overview (главная страница — дашборд) | ✅ | [modules/overview.md](../modules/overview.md) |
 | GoogleWorkspace (OAuth-подключение Gmail/Calendar/Sheets, встречи, импорт из таблиц) | ✅ | [modules/google-workspace.md](../modules/google-workspace.md) |
@@ -54,6 +54,8 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | SafeSpeak (анонимные сообщения: код доступа, без пользователя/IP/времени, обработчики по флагу) | ✅ | [modules/safe-speak.md](../modules/safe-speak.md) |
 | Knowledge (база знаний: Markdown → очищенный HTML, аудитория, поиск, версии, голоса) | ✅ | [modules/knowledge.md](../modules/knowledge.md) |
 | Assets (активы, история выдач, шаг воркфлоу `collect_assets`) | ✅ | [modules/assets.md](../modules/assets.md) |
+| HiringRequests (заявки на подбор: маршрут согласования с SLA, настраиваемая форма, автосоздание вакансии, `hiring.sla`) | ✅ | [modules/hiring-requests.md](../modules/hiring-requests.md) |
+| Time (табели по неделям, сверхурочные по графику, отпуска TimeOff как отсутствие, согласование, `time.reminders`) | ✅ | [modules/time.md](../modules/time.md) |
 | Reports (каталог отчётов по всем модулям, конструктор по белому списку, CSV) | ✅ | [modules/reports.md](../modules/reports.md) |
 | Extension (браузерное расширение `extension/`: кандидат с открытой страницы профиля; API — в Recruiting, токен только для `/api/clipper/*`) | ✅ код, установка вручную | [modules/extension.md](../modules/extension.md) |
 | Channels (вебхуки мессенджеров и телефонии → лента кандидата, отправка из карточки, демо-события) | ✅ код, включается токенами | [modules/channels.md](../modules/channels.md) |
@@ -78,6 +80,9 @@ Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн �
   CSRF, лимиты — по HMAC-хэшу адреса в кэше ([safe-speak.md](../modules/safe-speak.md)).
 - Отчёты считаются на лету в запросе (без хранилища/материализации): группировки по месяцам и корзинам — в PHP
   (одинаково на Postgres и SQLite), конструктор — до 5000 строк, CSV — потоком ([reports.md](../modules/reports.md)).
+- Заявки на подбор и табели (`hiring.sla`, `time.reminders` тем же cron): уведомления согласующим — задачи при активации
+  шага (сразу), эскалация просрочки SLA и автозакрытие заявок, пятничные напоминания о табеле — с задержкой до ~30 мин
+  ([hiring-requests.md](../modules/hiring-requests.md), [time.md](../modules/time.md)).
 - Работа «после ответа» (оценка разговора по скрипту) — `dispatchAfterResponse()` в том же запросе, без очереди.
 - Постоянные соединения (Telegram userbot, WebSocket) невозможны — только вебхуки: Telegram Business, WhatsApp Cloud, Viber и
   телефония присылают события на `POST /api/webhooks/{key}` ([channels.md](../modules/channels.md)); все каналы пишут касания

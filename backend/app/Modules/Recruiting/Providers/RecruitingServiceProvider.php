@@ -7,6 +7,7 @@ namespace App\Modules\Recruiting\Providers;
 use App\Models\User;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Recruiting\Console\RecruitingDemoCommand;
+use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\ExtensionTokenRepository;
@@ -26,6 +27,7 @@ use App\Modules\Recruiting\Policies\ApplicationPolicy;
 use App\Modules\Recruiting\Policies\CandidatePolicy;
 use App\Modules\Recruiting\Policies\TouchpointPolicy;
 use App\Modules\Recruiting\Policies\VacancyPolicy;
+use App\Modules\Recruiting\Repositories\EloquentAcquisitionChannelRepository;
 use App\Modules\Recruiting\Repositories\EloquentApplicationRepository;
 use App\Modules\Recruiting\Repositories\EloquentCandidateRepository;
 use App\Modules\Recruiting\Repositories\EloquentPipelineRepository;
@@ -57,6 +59,7 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->app->bind(PipelineRepository::class, EloquentPipelineRepository::class);
+        $this->app->bind(AcquisitionChannelRepository::class, EloquentAcquisitionChannelRepository::class);
         $this->app->bind(VacancyRepository::class, EloquentVacancyRepository::class);
         $this->app->bind(CandidateRepository::class, EloquentCandidateRepository::class);
         $this->app->bind(ApplicationRepository::class, EloquentApplicationRepository::class);

@@ -143,7 +143,7 @@ final class WorkflowRunsTest extends TestCase
 
         $this->travel(5)->days();
         $this->assertSame(1, $this->tick()['executed']);
-        $second = Task::query()->where('id', '!=', $task->id)->sole();
+        $second = Task::query()->where('type', 'workflow')->where('id', '!=', $task->id)->sole(); // time.reminders may add a timesheet task on a weekend
         $this->assertSame('Bring documents: Passport copy', $second->title);
         $this->assertSame('/people/'.$employee->id.'?tab=documents', $second->link);
 

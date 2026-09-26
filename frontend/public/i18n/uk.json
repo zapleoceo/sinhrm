@@ -1,6 +1,6 @@
 {
   "app": { "name": "SinHRM", "tagline": "Рекрутинг без зайвого шуму" },
-  "common": { "confirm": "Підтвердити", "cancel": "Скасувати", "retry": "Спробувати ще", "loading": "Завантаження…", "error": "Щось пішло не так", "all": "Усі", "close": "Закрити", "save": "Зберегти" },
+  "common": { "confirm": "Підтвердити", "cancel": "Скасувати", "retry": "Спробувати ще", "loading": "Завантаження…", "error": "Щось пішло не так", "all": "Усі", "close": "Закрити", "save": "Зберегти", "delete": "Видалити" },
   "roles": { "superadmin": "Суперадмін", "admin": "Адміністратор", "recruiter": "Рекрутер", "viewer": "Спостерігач" },
   "statuses": { "active": "Активний", "blocked": "Заблокований" },
   "langs": { "uk": "Українська", "ru": "Русский", "en": "English" },
@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "recruiting": "Рекрутинг", "candidates": "Кандидати", "vacancies": "Вакансії", "inbox": "Вхідні", "reports": "Звіти", "label": "Головне меню", "overview": "Огляд", "admin": "Адміністрування", "users": "Користувачі", "integrations": "Інтеграції", "directory": "Довідники", "scripts": "Скрипти", "status": "Стан системи", "mail": "Пошта", "sheetsImport": "Імпорт з Google Sheets", "people": "Люди", "peopleList": "Співробітники", "orgChart": "Оргструктура", "timeoff": "Мої відсутності", "teamCalendar": "Календар команди", "approvals": "Погодження", "timeoffSettings": "Налаштування відсутностей", "tasks": "Мої задачі", "myDocuments": "Мої документи", "workflowRuns": "Воркфлоу", "workflows": "Воркфлоу", "documentTemplates": "Шаблони документів", "perform": "Продуктивність", "objectives": "Цілі (OKR)", "oneOnOnes": "Зустрічі 1:1", "feedback": "Фідбек", "reviews": "Мої оцінювання", "surveys": "Опитування", "mood": "Настрій", "reviewSetup": "Цикли оцінювання", "surveyBuilder": "Опитування", "services": "Сервіси", "desk": "Мої звернення", "knowledge": "База знань", "safeSpeak": "Safe Speak", "reportCatalog": "Каталог звітів", "reportBuilder": "Конструктор звітів", "deskQueue": "Черга звернень", "safeSpeakInbox": "Вхідні Safe Speak", "assets": "Активи" },
+    "nav": { "recruiting": "Рекрутинг", "candidates": "Кандидати", "vacancies": "Вакансії", "inbox": "Вхідні", "reports": "Звіти", "label": "Головне меню", "overview": "Огляд", "admin": "Адміністрування", "users": "Користувачі", "integrations": "Інтеграції", "directory": "Довідники", "scripts": "Скрипти", "status": "Стан системи", "mail": "Пошта", "sheetsImport": "Імпорт з Google Sheets", "people": "Люди", "peopleList": "Співробітники", "orgChart": "Оргструктура", "timeoff": "Мої відсутності", "teamCalendar": "Календар команди", "approvals": "Погодження", "timeoffSettings": "Налаштування відсутностей", "tasks": "Мої задачі", "myDocuments": "Мої документи", "workflowRuns": "Воркфлоу", "workflows": "Воркфлоу", "documentTemplates": "Шаблони документів", "perform": "Продуктивність", "objectives": "Цілі (OKR)", "oneOnOnes": "Зустрічі 1:1", "feedback": "Фідбек", "reviews": "Мої оцінювання", "surveys": "Опитування", "mood": "Настрій", "reviewSetup": "Цикли оцінювання", "surveyBuilder": "Опитування", "services": "Сервіси", "desk": "Мої звернення", "knowledge": "База знань", "safeSpeak": "Safe Speak", "reportCatalog": "Каталог звітів", "reportBuilder": "Конструктор звітів", "deskQueue": "Черга звернень", "safeSpeakInbox": "Вхідні Safe Speak", "assets": "Активи", "hiringRequests": "Заявки на підбір", "time": "Мій табель", "timeApprovals": "Погодження табелів", "timeTeam": "Табелі команди", "hiringSettings": "Налаштування заявок", "acquisitionChannels": "Канали залучення", "timeSchedules": "Графіки роботи" },
     "menu": { "open": "Меню користувача", "language": "Мова", "extension": "Розширення браузера", "logout": "Вийти", "myProfile": "Мій профіль" },
     "theme": { "toDark": "Темна тема", "toLight": "Світла тема" }
   },
@@ -473,7 +473,42 @@
       "already_linked": "Повідомлення вже привʼязане",
       "forbidden": "Недостатньо прав",
       "validation": "Перевірте поля",
-      "generic": "Не вдалося виконати дію"
+      "generic": "Не вдалося виконати дію",
+      "channel_inactive": "Канал вимкнено або не існує"
+    },
+    "addedVia": { "manual": "Вручну", "import": "Імпорт", "mail": "Пошта (відгук)", "extension": "Розширення браузера", "webhook": "Вебхук / форма", "sheets": "Google Sheets" },
+    "channels": {
+      "title": "Канали залучення",
+      "subtitle": "Звідки приходять кандидати: довідник каналів, правила UTM-міток і витрати для аналітики.",
+      "channel": "Канал залучення",
+      "addedVia": "Як додано",
+      "auto": "Автоматично (за UTM / джерелом)",
+      "autoHint": "Без вибору канал визначиться за UTM-мітками або джерелом.",
+      "vacancySources": "Джерела відгуків ({{n}})",
+      "count": "Відгуків",
+      "share": "Частка",
+      "none": "Без каналу",
+      "noApplicants": "Відгуків ще немає",
+      "test": "Перевірити UTM",
+      "check": "Перевірити",
+      "noMatch": "жодне правило не підходить",
+      "active": "Активний",
+      "rules": "Правила UTM (точніше правило перемагає)",
+      "priority": "Пріоритет",
+      "noRules": "Правил немає",
+      "addRule": "Додати правило",
+      "costs": "Витрати за періоди",
+      "noCosts": "Витрат немає",
+      "from": "З",
+      "to": "По",
+      "amount": "Сума",
+      "addCost": "Додати витрату",
+      "add": "Новий канал",
+      "code": "Технічна назва (код)",
+      "name": "Назва",
+      "type": "Тип",
+      "types": { "job_board": "Job-сайт", "ads": "Реклама", "referral": "Рекомендація", "social": "Соцмережі", "site": "Сайт", "event": "Подія", "agency": "Агентство", "other": "Інше" },
+      "errors": { "channel_code_taken": "Така технічна назва вже є", "channel_inactive": "Канал вимкнено", "empty_utm_rule": "Вкажіть хоча б одну UTM-мітку", "forbidden": "Недостатньо прав", "not_found": "Не знайдено", "validation": "Перевірте поля", "rate_limited": "Забагато запитів" }
     }
   },
   "channels": {
@@ -484,7 +519,7 @@
     "errors": {"channel_not_connected": "Канал не підключено", "no_conversation": "Кандидат ще не писав у цей канал — відповісти поки нікуди", "template_required": "WhatsApp: минуло понад 24 години від останнього повідомлення кандидата — потрібен затверджений шаблон", "invalid_recipient": "Невірний отримувач", "send_failed": "Сервіс не прийняв повідомлення, спробуйте пізніше", "telephony_not_connected": "Телефонію не підключено", "click_to_call_unsupported": "Ця телефонія не підтримує дзвінок з картки", "no_phone": "У кандидата немає телефону", "not_demo": "Демо-події доступні лише в режимі «Демо»", "channel_off": "Спершу увімкніть інтеграцію (режим «Демо»)", "unsupported": "Для цієї інтеграції дія недоступна", "application_mismatch": "Заявка належить іншому кандидату", "generic": "Не вдалося виконати дію"}
   },
   "extension": {"title": "Розширення браузера", "explain": "SinHRM Clipper додає кандидата зі сторінки профілю, яку ви переглядаєте (LinkedIn, Work.ua, Djinni, DOU), одним кліком. Воно працює з персональним токеном, а не з вашою сесією.", "active": "Токен активний", "inactive": "Активного токена немає. Створіть його та вставте в налаштування розширення.", "createdAt": "Створено", "lastUsedAt": "Востаннє використано", "expiresAt": "Діє до", "never": "ще ні", "create": "Створити токен", "regenerate": "Створити новий токен", "revoke": "Відкликати", "onceTitle": "Скопіюйте токен зараз", "onceHint": "Він показується лише один раз. Новий токен відкликає цей.", "copy": "Копіювати", "copied": "Скопійовано", "error": "Не вдалося оновити токен. Спробуйте ще раз.", "installTitle": "Як встановити", "docs": "Повна інструкція", "install": {"step1": "Завантажте sinhrm-clipper.zip (збирає CI або npm run package у extension/) і розпакуйте.", "step2": "Відкрийте chrome://extensions і ввімкніть «Режим розробника».", "step3": "Натисніть «Завантажити розпаковане» та оберіть розпаковану папку.", "step4": "Відкрийте налаштування розширення, вставте токен і натисніть «Перевірити з’єднання»."}, "privacy": "Розширення читає лише сторінку, яку ви переглядаєте, і лише після натискання кнопки. Жодного обходу сторінок чи збору у фоні."},
-  "titles": { "extension": "Розширення браузера", "login": "Вхід", "overview": "Огляд", "vacancies": "Вакансії", "board": "Дошка вакансії", "candidates": "Кандидати", "inbox": "Вхідні", "reports": "Звіти", "status": "Стан системи", "scripts": "Скрипти", "scriptEditor": "Редактор скрипта", "users": "Користувачі", "directory": "Довідники", "integrations": "Інтеграції", "mail": "Пошта", "sheetsImport": "Імпорт з Google Sheets", "people": "Співробітники", "orgChart": "Оргструктура", "profile": "Профіль співробітника", "myProfile": "Мій профіль", "timeoff": "Мої відсутності", "teamCalendar": "Календар команди", "approvals": "Погодження", "timeoffSettings": "Налаштування відсутностей", "tasks": "Мої задачі", "myDocuments": "Мої документи", "workflowRuns": "Воркфлоу", "workflows": "Шаблони воркфлоу", "workflowEditor": "Редактор воркфлоу", "documentTemplates": "Шаблони документів", "oneOnOnes": "Зустрічі 1:1", "objectives": "Цілі", "feedback": "Фідбек", "myReviews": "Мої оцінювання", "mySurveys": "Опитування", "mood": "Настрій", "respond": "Опитування", "surveyResults": "Результати опитування", "reviewSetup": "Оцінювання", "surveys": "Конструктор опитувань", "desk": "Мої звернення", "deskCase": "Звернення", "deskQueue": "Черга звернень", "safeSpeak": "Safe Speak", "safeSpeakInbox": "Вхідні Safe Speak", "knowledge": "База знань", "article": "Стаття", "articleEditor": "Редактор статті", "assets": "Активи", "reportCatalog": "Каталог звітів", "reportBuilder": "Конструктор звітів" },
+  "titles": { "extension": "Розширення браузера", "login": "Вхід", "overview": "Огляд", "vacancies": "Вакансії", "board": "Дошка вакансії", "candidates": "Кандидати", "inbox": "Вхідні", "reports": "Звіти", "status": "Стан системи", "scripts": "Скрипти", "scriptEditor": "Редактор скрипта", "users": "Користувачі", "directory": "Довідники", "integrations": "Інтеграції", "mail": "Пошта", "sheetsImport": "Імпорт з Google Sheets", "people": "Співробітники", "orgChart": "Оргструктура", "profile": "Профіль співробітника", "myProfile": "Мій профіль", "timeoff": "Мої відсутності", "teamCalendar": "Календар команди", "approvals": "Погодження", "timeoffSettings": "Налаштування відсутностей", "tasks": "Мої задачі", "myDocuments": "Мої документи", "workflowRuns": "Воркфлоу", "workflows": "Шаблони воркфлоу", "workflowEditor": "Редактор воркфлоу", "documentTemplates": "Шаблони документів", "oneOnOnes": "Зустрічі 1:1", "objectives": "Цілі", "feedback": "Фідбек", "myReviews": "Мої оцінювання", "mySurveys": "Опитування", "mood": "Настрій", "respond": "Опитування", "surveyResults": "Результати опитування", "reviewSetup": "Оцінювання", "surveys": "Конструктор опитувань", "desk": "Мої звернення", "deskCase": "Звернення", "deskQueue": "Черга звернень", "safeSpeak": "Safe Speak", "safeSpeakInbox": "Вхідні Safe Speak", "knowledge": "База знань", "article": "Стаття", "articleEditor": "Редактор статті", "assets": "Активи", "reportCatalog": "Каталог звітів", "reportBuilder": "Конструктор звітів", "hiringRequests": "Заявки на підбір", "hiringInbox": "Погодження заявок", "hiringNew": "Заявка на підбір", "hiringRequest": "Заявка на підбір", "hiringSettings": "Налаштування заявок", "acquisitionChannels": "Канали залучення", "time": "Мій табель", "timeApprovals": "Погодження табелів", "timeTeam": "Табелі команди", "timeSchedules": "Графіки роботи" },
   "overview": {
     "warnings": { "google_reconnect_required": "Google ({{service}}) потребує перепідключення: доступ закінчився або відкликаний.", "open": "Відкрити інтеграції" },
     "greeting": "Вітаю, {{name}}!",
@@ -508,7 +543,17 @@
     "until": "до {{date}}",
     "toCalendar": "Календар команди",
     "myApprovals": "Чекають мого погодження: {{n}}",
-    "toApprovals": "До погоджень"
+    "toApprovals": "До погоджень",
+    "hiringApprovals": "Заявки на підбір чекають мого рішення: {{n}}",
+    "overdueStep": "прострочено",
+    "toHiringInbox": "До погоджень заявок",
+    "myWeek": "Мій тиждень",
+    "weekHours": "{{worked}} з {{expected}} год",
+    "weekMissing": "Не заповнено {{n}} год",
+    "toTime": "До табеля",
+    "timesheetApprovals": "Табелі чекають мого погодження: {{n}}",
+    "weekWorked": "{{n}} год, понаднормово {{o}}",
+    "toTimeApprovals": "До погоджень табелів"
   },
   "scripts": {
     "title": "Скрипти",
@@ -642,7 +687,7 @@
     "dueToday": "Сьогодні",
     "dueOverdue": "Прострочені",
     "showDone": "Показати виконані",
-    "sources": { "recruiting": "Рекрутинг", "workflows": "Воркфлоу", "documents": "Документи", "pulse": "Опитування", "desk": "Звернення" }
+    "sources": { "recruiting": "Рекрутинг", "workflows": "Воркфлоу", "documents": "Документи", "pulse": "Опитування", "desk": "Звернення", "hiring": "Заявки на підбір", "time": "Табель" }
   },
   "workflows": {
     "templates": { "title": "Воркфлоу", "subtitle": "Шаблони онбордингу, офбордингу та інших процесів: кроки, строки, відповідальні.", "create": "Створити", "delete": "Видалити шаблон", "empty": "Шаблонів ще немає", "confirmDelete": "Видалити шаблон «{{name}}»?" },
@@ -965,7 +1010,12 @@
       "okr_progress": "Прогрес OKR",
       "review_completion": "Завершеність циклів оцінки",
       "enps_trend": "Динаміка eNPS",
-      "mood_trend": "Динаміка настрою"
+      "mood_trend": "Динаміка настрою",
+      "channel_effectiveness": "Ефективність каналів залучення",
+      "time_by_employee": "Години за співробітниками",
+      "time_by_department": "Години за відділами",
+      "time_overtime": "Понаднормові",
+      "time_missing": "Незаповнені табелі"
     },
     "descriptions": {
       "headcount": "Працюючі на дату (за замовчуванням — сьогодні).",
@@ -987,7 +1037,12 @@
       "okr_progress": "Цілі за рівнем: середній прогрес і досягнуті.",
       "review_completion": "Призначені та заповнені форми по циклах.",
       "enps_trend": "Лише закриті хвилі; малі групи приховано.",
-      "mood_trend": "Лише завершені тижні; малі групи приховано."
+      "mood_trend": "Лише завершені тижні; малі групи приховано.",
+      "channel_effectiveness": "Кандидати періоду за каналом → доходять до відбору → найм; конверсія, витрати та ціна найму (витрати бачать адміністратори).",
+      "time_by_employee": "Цілі тижні періоду: очікувано (графік − відсутності − свята), відпрацьовано, понаднормово, бракує.",
+      "time_by_department": "Ті самі показники, згруповані за відділами.",
+      "time_overtime": "Тижні, де відпрацьовано більше за графік.",
+      "time_missing": "Не надіслані тижні з недопрацюванням (відпустки й свята не рахуються)."
     },
     "filters": {
       "from": "З",
@@ -1083,7 +1138,16 @@
       "name": "Назва",
       "serial": "Серійний номер",
       "purchased_at": "Куплено",
-      "holder": "У кого"
+      "holder": "У кого",
+      "advanced": "Дійшли до відбору",
+      "conversion_pct": "Конверсія в найм, %",
+      "cost_per_hire": "Ціна найму",
+      "expected": "Очікувано, год",
+      "worked": "Відпрацьовано, год",
+      "overtime": "Понаднормово, год",
+      "missing": "Бракує, год",
+      "absence": "Відсутності, год",
+      "week_start": "Тиждень"
     },
     "saved": {
       "title": "Збережені звіти",
@@ -1136,5 +1200,31 @@
       "validation": "Перевірте поля форми",
       "rate_limited": "Забагато спроб, спробуйте пізніше"
     }
+  },
+  "hiring": {
+    "list": { "title": "Заявки на підбір", "subtitle": "Керівник створює заявку, вона проходить погодження і стає вакансією.", "new": "Нова заявка", "all": "Усі доступні", "mine": "Мої", "empty": "Заявок немає" },
+    "inbox": { "title": "Чекають мого рішення", "subtitle": "Заявки, у яких поточний крок маршруту — ваш.", "tab": "На погодження" },
+    "status": { "draft": "Чернетка", "pending": "На розгляді", "approved": "Погоджена", "rejected": "Відхилена", "cancelled": "Скасована", "in_progress": "Є вакансія", "closed": "Закрита" },
+    "priority": { "low": "Низький", "normal": "Звичайний", "high": "Високий", "urgent": "Терміново" },
+    "reason": { "new_position": "Нова позиція", "replacement": "Заміна співробітника" },
+    "approval": { "waiting": "очікує", "pending": "на розгляді", "approved": "погоджено", "rejected": "відхилено", "skipped": "пропущено" },
+    "kind": { "manager": "Керівник автора", "role": "Роль", "user": "Конкретний користувач" },
+    "fieldType": { "text": "Рядок", "textarea": "Текст", "number": "Число", "date": "Дата", "select": "Список", "checkbox": "Прапорець" },
+    "overdue": "Прострочено",
+    "fields": { "title": "Посада / назва", "requester": "Автор", "status": "Статус", "step": "Поточний крок", "progress": "Найнято", "created": "Створена", "branch": "Філія", "department": "Відділ", "position": "Посада (довідник)", "headcount": "Кількість позицій", "priority": "Пріоритет", "reason": "Причина", "searchEmployee": "Пошук співробітника (Enter)", "replaced": "Кого замінюємо", "startDate": "Бажана дата виходу", "salaryMin": "Зарплата від", "salaryMax": "Зарплата до", "currency": "Валюта", "requirements": "Вимоги", "salary": "Зарплата", "recruiter": "Рекрутер" },
+    "wizard": { "title": "Нова заявка на підбір", "editTitle": "Редагування чернетки", "steps": "Кроки заявки", "step0": "Позиція", "step1": "Деталі", "step2": "Перевірка", "back": "Назад", "next": "Далі", "saveDraft": "Зберегти чернетку", "submit": "Надіслати на погодження", "missing": "Заповніть обов'язкові поля: {{fields}}" },
+    "detail": { "edit": "Редагувати", "cancel": "Скасувати заявку", "close": "Закрити заявку", "details": "Деталі", "route": "Маршрут погодження", "due": "Термін: {{date}}", "noRoute": "Маршрут з'явиться після надсилання", "comment": "Коментар (обов'язковий при відхиленні)", "recruiter": "Рекрутер вакансії", "approve": "Погодити", "reject": "Відхилити", "vacancy": "Вакансія", "hired": "Найнято {{hired}} з {{headcount}}", "noVacancy": "Заявку погоджено, вакансію ще не відкрито.", "openVacancy": "Відкрити вакансію", "linkVacancy": "Або прив'язати наявну вакансію", "vacancyAfterApproval": "Вакансія з'явиться після погодження" },
+    "settings": { "title": "Налаштування заявок на підбір", "subtitle": "Маршрут погодження, поля форми, хто може створювати. Зміни діють на нові заявки.", "route": "Маршрут погодження", "stepName": "Назва кроку", "kind": "Хто погоджує", "role": "Роль", "user": "Користувач", "sla": "SLA, днів", "up": "Вище", "down": "Нижче", "addStep": "Додати крок", "fields": "Додаткові поля форми", "fieldsHint": "Порядок полів — порядок у формі; обовʼязкові перевіряються при надсиланні.", "key": "Ключ", "label": "Підпис", "type": "Тип", "options": "Варіанти через кому", "required": "Обов'язкове", "addField": "Додати поле", "access": "Права та вакансія", "creatorsHint": "Створювати заявки можуть адміністратори й керівники; тут — додаткові користувачі.", "creators": "Додаткові автори заявок", "autoVacancy": "Відкривати вакансію автоматично після погодження", "saved": "Збережено" },
+    "errors": { "invalid_status": "Дію недоступно в поточному статусі", "replaced_employee_required": "Вкажіть співробітника, якого замінюємо", "required_fields": "Заповніть обов'язкові поля", "invalid_field": "Некоректне значення поля", "salary_range": "Мінімальна зарплата більша за максимальну", "vacancy_taken": "Вакансію вже прив'язано до іншої заявки", "invalid_recruiter": "Оберіть активного рекрутера", "invalid_route": "Перевірте кроки маршруту", "no_default_pipeline": "Немає воронки за замовчуванням", "forbidden": "Недостатньо прав", "not_found": "Заявку не знайдено", "validation": "Перевірте поля", "rate_limited": "Забагато запитів" }
+  },
+  "time": {
+    "week": { "title": "Мій табель", "titleOf": "Табель: {{name}}", "range": "Тиждень {{from}} – {{to}}", "prev": "Попередній тиждень", "today": "Поточний", "next": "Наступний тиждень", "comment": "Коментар керівника", "project": "Проєкт", "category": "Категорія", "holiday": "Свято", "worked": "Відпрацьовано", "expected": "Очікувано", "overtime": "Понаднормово", "missing": "Бракує", "absence": "Відсутності", "schedule": "Графік {{hours}} год/день", "addRow": "Додати рядок", "fill": "Заповнити за графіком", "submit": "Надіслати на погодження", "saved": "Табель збережено" },
+    "status": { "draft": "Чернетка", "submitted": "На погодженні", "approved": "Погоджено", "rejected": "Повернуто" },
+    "weekday": { "1": "Пн", "2": "Вт", "3": "Ср", "4": "Чт", "5": "Пт", "6": "Сб", "7": "Нд" },
+    "scheduleSource": { "employee": "особистий", "branch": "філії", "company": "компанії", "default": "за замовчуванням" },
+    "approvals": { "title": "Погодження табелів", "subtitle": "Надіслані табелі вашої команди.", "employee": "Співробітник", "week": "Тиждень", "approve": "Погодити", "reject": "Повернути", "reason": "Що виправити?", "empty": "Немає табелів на погодження" },
+    "team": { "title": "Табелі команди", "subtitle": "Тиждень з {{date}}", "missingCount": "не заповнили: {{n}}", "status": "Статус", "empty": "Немає співробітників у вашій команді" },
+    "schedules": { "title": "Графіки роботи", "subtitle": "Графік компанії та філій; особистий графік співробітника (профіль) має пріоритет.", "company": "Компанія (за замовчуванням)", "hours": "Годин на день", "add": "Графік філії", "branch": "Філія", "saved": "Графік збережено" },
+    "errors": { "no_employee": "Немає картки співробітника", "not_editable": "Табель надіслано — редагування недоступне", "invalid_status": "Дію недоступно в поточному статусі", "outside_week": "Дата поза тижнем", "day_overflow": "Більше 24 годин за день", "forbidden": "Недостатньо прав", "not_found": "Не знайдено", "validation": "Перевірте поля", "rate_limited": "Забагато запитів" }
   }
 }

@@ -48,6 +48,7 @@ final class SaveCandidateRequest extends FormRequest
             'telegram_username' => ['sometimes', 'nullable', 'string', 'max:80', $contact('telegram')],
             'city_id' => ['sometimes', 'nullable', 'integer', Rule::exists(City::class, 'id')],
             'source' => ['sometimes', 'required', Rule::enum(CandidateSource::class)],
+            'channel_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'utm' => ['sometimes', 'nullable', 'array', 'max:10'],
             'utm.*' => ['nullable', 'string', 'max:255'],
             'tags' => ['sometimes', 'nullable', 'array', 'max:20'],
@@ -76,6 +77,7 @@ final class SaveCandidateRequest extends FormRequest
             tags: $data->tags,
             ownerId: $data->ownerId,
             vacancyId: $data->vacancyId,
+            channelId: $data->channelId,
         );
     }
 }

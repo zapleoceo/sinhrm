@@ -92,6 +92,14 @@ final class EloquentTaskRepository implements TaskRepository
         return $task;
     }
 
+    public function closeByRulePrefix(string $prefix, Carbon $at): int
+    {
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $prefix);
+
+        return Task::query()->whereNull('done_at')->whereRaw("rule_key like ? escape '!'", [$escaped.'%'])
+            ->update(['done_at' => $at, 'updated_at' => Carbon::now()]);
+    }
+
     public function findByRule(int $employeeId, string $ruleKey): ?Task
     {
         return Task::query()->where('employee_id', $employeeId)->where('rule_key', $ruleKey)->first();

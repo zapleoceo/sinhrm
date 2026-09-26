@@ -1,3 +1,4 @@
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -55,6 +56,16 @@ export interface CandidateDialogData {
             </mat-select>
           </mat-form-field>
         </div>
+        <mat-form-field>
+          <mat-label>{{ 'recruiting.channels.channel' | transloco }}</mat-label>
+          <mat-select formControlName="channel_id">
+            <mat-option [value]="null">{{ 'recruiting.channels.auto' | transloco }}</mat-option>
+            @for (ch of channels(); track ch.id) {
+              <mat-option [value]="ch.id">{{ ch.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>{{ 'recruiting.channels.autoHint' | transloco }}</mat-hint>
+        </mat-form-field>
         @if (duplicate(); as dup) {
           <div class="dup" role="alert">
             <p>{{ 'recruiting.candidates.duplicate' | transloco: { by: ('recruiting.matchedBy.' + dup.matched_by | transloco) } }}</p>
@@ -96,7 +107,9 @@ export class CandidateDialog {
     email: ['', Validators.email],
     telegram_username: [''],
     source: ['manual' as CandidateSource],
+    channel_id: [null as number | null],
   });
+  protected readonly channels = toSignal(this.api.channels(), { initialValue: [] });
 
   protected submit(): void {
     if (this.form.invalid) {
@@ -110,6 +123,7 @@ export class CandidateDialog {
       email: v.email.trim() || null,
       telegram_username: v.telegram_username.trim() || null,
       source: v.source,
+      channel_id: v.channel_id,
       vacancy_id: this.data?.vacancyId ?? null,
     };
     this.saving.set(true);

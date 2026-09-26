@@ -16,6 +16,7 @@ use App\Modules\Reports\Datasets\TouchpointsDataset;
 use App\Modules\Reports\Definitions\AbsencesSummaryReport;
 use App\Modules\Reports\Definitions\AgeReport;
 use App\Modules\Reports\Definitions\AssetsByStatusReport;
+use App\Modules\Reports\Definitions\ChannelEffectivenessReport;
 use App\Modules\Reports\Definitions\DeskSlaReport;
 use App\Modules\Reports\Definitions\EnpsTrendReport;
 use App\Modules\Reports\Definitions\HeadcountReport;
@@ -31,6 +32,10 @@ use App\Modules\Reports\Definitions\ReviewCompletionReport;
 use App\Modules\Reports\Definitions\ScriptScoresReport;
 use App\Modules\Reports\Definitions\SourceEffectivenessReport;
 use App\Modules\Reports\Definitions\TenureReport;
+use App\Modules\Reports\Definitions\TimeByDepartmentReport;
+use App\Modules\Reports\Definitions\TimeByEmployeeReport;
+use App\Modules\Reports\Definitions\TimeMissingReport;
+use App\Modules\Reports\Definitions\TimeOvertimeReport;
 use App\Modules\Reports\Definitions\TimeToHireReport;
 use App\Modules\Reports\Definitions\TurnoverReport;
 use App\Modules\Reports\Repositories\EloquentSavedReportRepository;
@@ -72,6 +77,7 @@ final class ReportsServiceProvider extends ModuleServiceProvider
             RecruitingFunnelReport::class,
             TimeToHireReport::class,
             SourceEffectivenessReport::class,
+            ChannelEffectivenessReport::class,
             RejectReasonsReport::class,
             RecruiterTouchesReport::class,
             ScriptScoresReport::class,
@@ -79,6 +85,10 @@ final class ReportsServiceProvider extends ModuleServiceProvider
             ReviewCompletionReport::class,
             EnpsTrendReport::class,
             MoodTrendReport::class,
+            TimeByEmployeeReport::class,
+            TimeByDepartmentReport::class,
+            TimeOvertimeReport::class,
+            TimeMissingReport::class,
         ], self::REPORTS_TAG);
         $this->app->tag([
             EmployeesDataset::class,

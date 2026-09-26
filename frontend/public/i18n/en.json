@@ -1,6 +1,6 @@
 {
   "app": { "name": "SinHRM", "tagline": "Recruiting without the noise" },
-  "common": { "confirm": "Confirm", "cancel": "Cancel", "retry": "Try again", "loading": "Loading…", "error": "Something went wrong", "all": "All", "close": "Close", "save": "Save" },
+  "common": { "confirm": "Confirm", "cancel": "Cancel", "retry": "Try again", "loading": "Loading…", "error": "Something went wrong", "all": "All", "close": "Close", "save": "Save", "delete": "Delete" },
   "roles": { "superadmin": "Superadmin", "admin": "Admin", "recruiter": "Recruiter", "viewer": "Viewer" },
   "statuses": { "active": "Active", "blocked": "Blocked" },
   "langs": { "uk": "Українська", "ru": "Русский", "en": "English" },
@@ -18,7 +18,7 @@
     }
   },
   "shell": {
-    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "People", "peopleList": "Employees", "orgChart": "Org chart", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings", "tasks": "My tasks", "myDocuments": "My documents", "workflowRuns": "Workflows", "workflows": "Workflows", "documentTemplates": "Document templates", "perform": "Performance", "objectives": "Objectives (OKR)", "oneOnOnes": "1:1 meetings", "feedback": "Feedback", "reviews": "My reviews", "surveys": "Surveys", "mood": "Mood", "reviewSetup": "Review cycles", "surveyBuilder": "Surveys", "services": "Services", "desk": "My requests", "knowledge": "Knowledge base", "safeSpeak": "Safe Speak", "reportCatalog": "Report catalog", "reportBuilder": "Report builder", "deskQueue": "Helpdesk queue", "safeSpeakInbox": "Safe Speak inbox", "assets": "Assets" },
+    "nav": { "recruiting": "Recruiting", "candidates": "Candidates", "vacancies": "Vacancies", "inbox": "Inbox", "reports": "Reports", "label": "Main menu", "overview": "Overview", "admin": "Administration", "users": "Users", "integrations": "Integrations", "directory": "Dictionaries", "scripts": "Scripts", "status": "System status", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "People", "peopleList": "Employees", "orgChart": "Org chart", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings", "tasks": "My tasks", "myDocuments": "My documents", "workflowRuns": "Workflows", "workflows": "Workflows", "documentTemplates": "Document templates", "perform": "Performance", "objectives": "Objectives (OKR)", "oneOnOnes": "1:1 meetings", "feedback": "Feedback", "reviews": "My reviews", "surveys": "Surveys", "mood": "Mood", "reviewSetup": "Review cycles", "surveyBuilder": "Surveys", "services": "Services", "desk": "My requests", "knowledge": "Knowledge base", "safeSpeak": "Safe Speak", "reportCatalog": "Report catalog", "reportBuilder": "Report builder", "deskQueue": "Helpdesk queue", "safeSpeakInbox": "Safe Speak inbox", "assets": "Assets", "hiringRequests": "Hiring requests", "time": "My timesheet", "timeApprovals": "Timesheet approvals", "timeTeam": "Team timesheets", "hiringSettings": "Hiring settings", "acquisitionChannels": "Acquisition channels", "timeSchedules": "Work schedules" },
     "menu": { "open": "User menu", "language": "Language", "extension": "Browser extension", "logout": "Sign out", "myProfile": "My profile" },
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
@@ -473,7 +473,42 @@
       "already_linked": "The message is already linked",
       "forbidden": "Not allowed",
       "validation": "Check the fields",
-      "generic": "Action failed"
+      "generic": "Action failed",
+      "channel_inactive": "The channel is inactive or missing"
+    },
+    "addedVia": { "manual": "Manually", "import": "Import", "mail": "Mail (application)", "extension": "Browser extension", "webhook": "Webhook / form", "sheets": "Google Sheets" },
+    "channels": {
+      "title": "Acquisition channels",
+      "subtitle": "Where candidates come from: channels, UTM rules and costs for analytics.",
+      "channel": "Acquisition channel",
+      "addedVia": "How added",
+      "auto": "Automatic (by UTM / source)",
+      "autoHint": "If not chosen, the channel is detected from UTM tags or the source.",
+      "vacancySources": "Where applicants came from ({{n}})",
+      "count": "Applicants",
+      "share": "Share",
+      "none": "No channel",
+      "noApplicants": "No applicants yet",
+      "test": "Test UTM",
+      "check": "Check",
+      "noMatch": "no rule matches",
+      "active": "Active",
+      "rules": "UTM rules (the more specific rule wins)",
+      "priority": "Priority",
+      "noRules": "No rules",
+      "addRule": "Add rule",
+      "costs": "Costs by period",
+      "noCosts": "No costs",
+      "from": "From",
+      "to": "To",
+      "amount": "Amount",
+      "addCost": "Add cost",
+      "add": "New channel",
+      "code": "Technical name (code)",
+      "name": "Name",
+      "type": "Type",
+      "types": { "job_board": "Job board", "ads": "Ads", "referral": "Referral", "social": "Social", "site": "Site", "event": "Event", "agency": "Agency", "other": "Other" },
+      "errors": { "channel_code_taken": "This code is already used", "channel_inactive": "The channel is inactive", "empty_utm_rule": "Fill in at least one UTM tag", "forbidden": "Not allowed", "not_found": "Not found", "validation": "Check the fields", "rate_limited": "Too many requests" }
     }
   },
   "channels": {
@@ -484,7 +519,7 @@
     "errors": {"channel_not_connected": "Channel not connected", "no_conversation": "The candidate has not written in this channel yet — nowhere to reply", "template_required": "WhatsApp: more than 24 hours since the candidate's last message — an approved template is required", "invalid_recipient": "Invalid recipient", "send_failed": "The service did not accept the message, try later", "telephony_not_connected": "Telephony is not connected", "click_to_call_unsupported": "This telephony cannot call from the card", "no_phone": "The candidate has no phone", "not_demo": "Demo events are available only in \"Demo\" mode", "channel_off": "Switch the integration on first (\"Demo\" mode)", "unsupported": "Not available for this integration", "application_mismatch": "The application belongs to another candidate", "generic": "Could not complete the action"}
   },
   "extension": {"title": "Browser extension", "explain": "SinHRM Clipper adds a candidate from the profile page you are viewing (LinkedIn, Work.ua, Djinni, DOU) in one click. It uses a personal token instead of your session.", "active": "Token is active", "inactive": "No active token. Create one and paste it into the extension settings.", "createdAt": "Created", "lastUsedAt": "Last used", "expiresAt": "Expires", "never": "never", "create": "Create token", "regenerate": "Create a new token", "revoke": "Revoke", "onceTitle": "Copy the token now", "onceHint": "It is shown only once. Creating a new token revokes this one.", "copy": "Copy", "copied": "Copied", "error": "Could not update the token. Try again.", "installTitle": "How to install", "docs": "Full instructions", "install": {"step1": "Download sinhrm-clipper.zip (built by CI or with npm run package in extension/) and unzip it.", "step2": "Open chrome://extensions and turn on Developer mode.", "step3": "Click “Load unpacked” and choose the unzipped folder.", "step4": "Open the extension options, paste the token and click “Check connection”."}, "privacy": "The extension reads only the page you are viewing and only when you click its button. It does not crawl or scrape in the background."},
-  "titles": { "extension": "Browser extension", "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "Employees", "orgChart": "Org chart", "profile": "Employee profile", "myProfile": "My profile", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings", "tasks": "My tasks", "myDocuments": "My documents", "workflowRuns": "Workflows", "workflows": "Workflow templates", "workflowEditor": "Workflow editor", "documentTemplates": "Document templates", "oneOnOnes": "1:1 meetings", "objectives": "Objectives", "feedback": "Feedback", "myReviews": "My reviews", "mySurveys": "Surveys", "mood": "Mood", "respond": "Survey", "surveyResults": "Survey results", "reviewSetup": "Performance reviews", "surveys": "Survey builder", "desk": "My requests", "deskCase": "Request", "deskQueue": "Helpdesk queue", "safeSpeak": "Safe Speak", "safeSpeakInbox": "Safe Speak inbox", "knowledge": "Knowledge base", "article": "Article", "articleEditor": "Article editor", "assets": "Assets", "reportCatalog": "Report catalog", "reportBuilder": "Report builder" },
+  "titles": { "extension": "Browser extension", "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import", "people": "Employees", "orgChart": "Org chart", "profile": "Employee profile", "myProfile": "My profile", "timeoff": "My time off", "teamCalendar": "Team calendar", "approvals": "Approvals", "timeoffSettings": "Time off settings", "tasks": "My tasks", "myDocuments": "My documents", "workflowRuns": "Workflows", "workflows": "Workflow templates", "workflowEditor": "Workflow editor", "documentTemplates": "Document templates", "oneOnOnes": "1:1 meetings", "objectives": "Objectives", "feedback": "Feedback", "myReviews": "My reviews", "mySurveys": "Surveys", "mood": "Mood", "respond": "Survey", "surveyResults": "Survey results", "reviewSetup": "Performance reviews", "surveys": "Survey builder", "desk": "My requests", "deskCase": "Request", "deskQueue": "Helpdesk queue", "safeSpeak": "Safe Speak", "safeSpeakInbox": "Safe Speak inbox", "knowledge": "Knowledge base", "article": "Article", "articleEditor": "Article editor", "assets": "Assets", "reportCatalog": "Report catalog", "reportBuilder": "Report builder", "hiringRequests": "Hiring requests", "hiringInbox": "Request approvals", "hiringNew": "Hiring request", "hiringRequest": "Hiring request", "hiringSettings": "Hiring request settings", "acquisitionChannels": "Acquisition channels", "time": "My timesheet", "timeApprovals": "Timesheet approvals", "timeTeam": "Team timesheets", "timeSchedules": "Work schedules" },
   "overview": {
     "warnings": { "google_reconnect_required": "Google ({{service}}) must be reconnected: access expired or was revoked.", "open": "Open integrations" },
     "greeting": "Hello, {{name}}!",
@@ -508,7 +543,17 @@
     "until": "until {{date}}",
     "toCalendar": "Team calendar",
     "myApprovals": "Waiting for my approval: {{n}}",
-    "toApprovals": "To approvals"
+    "toApprovals": "To approvals",
+    "hiringApprovals": "Hiring requests awaiting my decision: {{n}}",
+    "overdueStep": "overdue",
+    "toHiringInbox": "To request approvals",
+    "myWeek": "My week",
+    "weekHours": "{{worked}} of {{expected}} h",
+    "weekMissing": "{{n}} h not filled in",
+    "toTime": "To timesheet",
+    "timesheetApprovals": "Timesheets awaiting my approval: {{n}}",
+    "weekWorked": "{{n}} h, overtime {{o}}",
+    "toTimeApprovals": "To timesheet approvals"
   },
   "scripts": {
     "title": "Scripts",
@@ -642,7 +687,7 @@
     "dueToday": "Today",
     "dueOverdue": "Overdue",
     "showDone": "Show completed",
-    "sources": { "recruiting": "Recruiting", "workflows": "Workflows", "documents": "Documents", "pulse": "Pulse", "desk": "Helpdesk" }
+    "sources": { "recruiting": "Recruiting", "workflows": "Workflows", "documents": "Documents", "pulse": "Pulse", "desk": "Helpdesk", "hiring": "Hiring requests", "time": "Timesheet" }
   },
   "workflows": {
     "templates": { "title": "Workflows", "subtitle": "Onboarding, offboarding and other process templates: steps, due dates, owners.", "create": "Create", "delete": "Delete template", "empty": "No templates yet", "confirmDelete": "Delete template “{{name}}”?" },
@@ -965,7 +1010,12 @@
       "okr_progress": "OKR progress",
       "review_completion": "Review cycle completion",
       "enps_trend": "eNPS trend",
-      "mood_trend": "Mood trend"
+      "mood_trend": "Mood trend",
+      "channel_effectiveness": "Acquisition channel effectiveness",
+      "time_by_employee": "Hours by employee",
+      "time_by_department": "Hours by department",
+      "time_overtime": "Overtime",
+      "time_missing": "Missing timesheets"
     },
     "descriptions": {
       "headcount": "Working employees on the date (default today).",
@@ -987,7 +1037,12 @@
       "okr_progress": "Objectives by level: average progress and achieved.",
       "review_completion": "Forms assigned vs submitted per cycle.",
       "enps_trend": "Closed waves only; small groups are hidden.",
-      "mood_trend": "Completed weeks only; small groups are hidden."
+      "mood_trend": "Completed weeks only; small groups are hidden.",
+      "channel_effectiveness": "Candidates of the period by channel → reach selection → hired; conversion, cost and cost per hire (costs: admins).",
+      "time_by_employee": "Whole weeks: expected (schedule − leave − holidays), worked, overtime, missing.",
+      "time_by_department": "The same figures by department.",
+      "time_overtime": "Weeks worked above the schedule.",
+      "time_missing": "Unsubmitted weeks with missing hours (leave and holidays excluded)."
     },
     "filters": {
       "from": "From",
@@ -1083,7 +1138,16 @@
       "name": "Name",
       "serial": "Serial no.",
       "purchased_at": "Purchased",
-      "holder": "Holder"
+      "holder": "Holder",
+      "advanced": "Reached selection",
+      "conversion_pct": "Hire conversion, %",
+      "cost_per_hire": "Cost per hire",
+      "expected": "Expected, h",
+      "worked": "Worked, h",
+      "overtime": "Overtime, h",
+      "missing": "Missing, h",
+      "absence": "Absence, h",
+      "week_start": "Week"
     },
     "saved": {
       "title": "Saved reports",
@@ -1136,5 +1200,31 @@
       "validation": "Check the form fields",
       "rate_limited": "Too many attempts, try later"
     }
+  },
+  "hiring": {
+    "list": { "title": "Hiring requests", "subtitle": "A manager creates a request; it goes through approval and becomes a vacancy.", "new": "New request", "all": "All visible", "mine": "Mine", "empty": "No requests" },
+    "inbox": { "title": "Awaiting my decision", "subtitle": "Requests whose current route step is yours.", "tab": "To approve" },
+    "status": { "draft": "Draft", "pending": "Pending", "approved": "Approved", "rejected": "Rejected", "cancelled": "Cancelled", "in_progress": "Vacancy open", "closed": "Closed" },
+    "priority": { "low": "Low", "normal": "Normal", "high": "High", "urgent": "Urgent" },
+    "reason": { "new_position": "New position", "replacement": "Replacement" },
+    "approval": { "waiting": "waiting", "pending": "pending", "approved": "approved", "rejected": "rejected", "skipped": "skipped" },
+    "kind": { "manager": "Requester's manager", "role": "Role", "user": "Specific user" },
+    "fieldType": { "text": "Text", "textarea": "Long text", "number": "Number", "date": "Date", "select": "Select", "checkbox": "Checkbox" },
+    "overdue": "Overdue",
+    "fields": { "title": "Position / title", "requester": "Requester", "status": "Status", "step": "Current step", "progress": "Hired", "created": "Created", "branch": "Branch", "department": "Department", "position": "Position (dictionary)", "headcount": "Headcount", "priority": "Priority", "reason": "Reason", "searchEmployee": "Find employee (Enter)", "replaced": "Replaced employee", "startDate": "Desired start date", "salaryMin": "Salary from", "salaryMax": "Salary to", "currency": "Currency", "requirements": "Requirements", "salary": "Salary", "recruiter": "Recruiter" },
+    "wizard": { "title": "New hiring request", "editTitle": "Edit draft", "steps": "Request steps", "step0": "Position", "step1": "Details", "step2": "Review", "back": "Back", "next": "Next", "saveDraft": "Save draft", "submit": "Send for approval", "missing": "Fill in the required fields: {{fields}}" },
+    "detail": { "edit": "Edit", "cancel": "Cancel request", "close": "Close request", "details": "Details", "route": "Approval route", "due": "Due: {{date}}", "noRoute": "The route appears after sending", "comment": "Comment (required to reject)", "recruiter": "Vacancy recruiter", "approve": "Approve", "reject": "Reject", "vacancy": "Vacancy", "hired": "Hired {{hired}} of {{headcount}}", "noVacancy": "Approved; the vacancy is not open yet.", "openVacancy": "Open vacancy", "linkVacancy": "Or link an existing vacancy", "vacancyAfterApproval": "The vacancy appears after approval" },
+    "settings": { "title": "Hiring request settings", "subtitle": "Approval route, form fields, who may create. Changes apply to new requests.", "route": "Approval route", "stepName": "Step name", "kind": "Approver", "role": "Role", "user": "User", "sla": "SLA, days", "up": "Move up", "down": "Move down", "addStep": "Add step", "fields": "Extra form fields", "fieldsHint": "Field order is the form order; required fields are checked on sending.", "key": "Key", "label": "Label", "type": "Type", "options": "Options, comma-separated", "required": "Required", "addField": "Add field", "access": "Access and vacancy", "creatorsHint": "Admins and managers can create requests; add more users here.", "creators": "Extra request creators", "autoVacancy": "Open the vacancy automatically on approval", "saved": "Saved" },
+    "errors": { "invalid_status": "Not available in the current status", "replaced_employee_required": "Choose the replaced employee", "required_fields": "Fill in the required fields", "invalid_field": "Invalid field value", "salary_range": "Minimum salary is above the maximum", "vacancy_taken": "The vacancy is linked to another request", "invalid_recruiter": "Choose an active recruiter", "invalid_route": "Check the route steps", "no_default_pipeline": "No default pipeline", "forbidden": "Not allowed", "not_found": "Request not found", "validation": "Check the fields", "rate_limited": "Too many requests" }
+  },
+  "time": {
+    "week": { "title": "My timesheet", "titleOf": "Timesheet: {{name}}", "range": "Week {{from}} – {{to}}", "prev": "Previous week", "today": "This week", "next": "Next week", "comment": "Manager's comment", "project": "Project", "category": "Category", "holiday": "Holiday", "worked": "Worked", "expected": "Expected", "overtime": "Overtime", "missing": "Missing", "absence": "Absence", "schedule": "Schedule {{hours}} h/day", "addRow": "Add line", "fill": "Fill by schedule", "submit": "Submit for approval", "saved": "Timesheet saved" },
+    "status": { "draft": "Draft", "submitted": "Submitted", "approved": "Approved", "rejected": "Returned" },
+    "weekday": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },
+    "scheduleSource": { "employee": "personal", "branch": "branch", "company": "company", "default": "default" },
+    "approvals": { "title": "Timesheet approvals", "subtitle": "Submitted timesheets of your team.", "employee": "Employee", "week": "Week", "approve": "Approve", "reject": "Return", "reason": "What should be fixed?", "empty": "Nothing to approve" },
+    "team": { "title": "Team timesheets", "subtitle": "Week of {{date}}", "missingCount": "not filled in: {{n}}", "status": "Status", "empty": "No people in your team" },
+    "schedules": { "title": "Work schedules", "subtitle": "Company and branch schedules; an employee’s own schedule (profile) wins.", "company": "Company (default)", "hours": "Hours per day", "add": "Branch schedule", "branch": "Branch", "saved": "Schedule saved" },
+    "errors": { "no_employee": "No employee record", "not_editable": "Submitted — editing is closed", "invalid_status": "Not available in the current status", "outside_week": "Date outside the week", "day_overflow": "More than 24 hours a day", "forbidden": "Not allowed", "not_found": "Not found", "validation": "Check the fields", "rate_limited": "Too many requests" }
   }
 }

@@ -12,6 +12,7 @@ use App\Modules\Recruiting\Http\Resources\VacancyResource;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\ApplicationService;
+use App\Modules\Recruiting\Services\ReportService;
 use App\Modules\Recruiting\Services\VacancyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,14 @@ final class VacancyController
         Gate::forUser($this->actor($request))->authorize('view', $vacancy);
 
         return new VacancyResource($this->service->find($vacancy->id));
+    }
+
+    /** Vacancy card block "where applicants came from" (tz3): channel × how added, count and share. */
+    public function sources(Request $request, Vacancy $vacancy, ReportService $reports): JsonResponse
+    {
+        Gate::forUser($this->actor($request))->authorize('view', $vacancy);
+
+        return new JsonResponse(['data' => $reports->vacancySources($vacancy->id)]);
     }
 
     public function update(SaveVacancyRequest $request, Vacancy $vacancy): VacancyResource

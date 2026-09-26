@@ -23,6 +23,11 @@ final class CandidateResource extends JsonResource
             'city_id' => $this->city_id,
             'city' => $this->relationLoaded('city') && $this->city !== null ? ['id' => $this->city->id, 'name' => $this->city->name] : null,
             'source' => $this->source->value,
+            'channel_id' => $this->channel_id,
+            'channel' => $this->relationLoaded('channel') && $this->channel !== null
+                ? ['id' => $this->channel->id, 'code' => $this->channel->code, 'name' => $this->channel->name, 'type' => $this->channel->type->value]
+                : null,
+            'added_via' => $this->added_via?->value,
             'utm' => $this->utm ?? (object) [],
             'tags' => $this->tags ?? [],
             'owner_id' => $this->owner_id,

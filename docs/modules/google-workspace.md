@@ -117,7 +117,8 @@ start, end, meeting_type, title`). Ошибка Google → касание не �
 | `GET /api/google/sheets/imports` | список |
 
 Строка → `Recruiting\DTO\CandidateData` (источник — значение колонки, если это известный источник, иначе `import`;
-`utm_*` → `utm`) → `Recruiting\Services\CandidateService::createOrMatch()`: совпадение по нормализованному телефону /
+`utm_*` → `utm`; способ добавления `added_via = sheets`, канал привлечения — по UTM-колонкам или источнику,
+[acquisition-channels.md](acquisition-channels.md)) → `Recruiting\Services\CandidateService::createOrMatch()`: совпадение по нормализованному телефону /
 e-mail / Telegram (глобально) — **matched**, иначе **created** (нет ФИО → ошибка `full_name_required`); колонка
 «вакансия» → открытая вакансия с таким же названием без учёта регистра (одна; иначе `vacancy_unmatched`) → заявка на
 первом этапе с датой из «дата заявки» (если это дата не из будущего). Пустые строки и строки без контактов — **skipped**.

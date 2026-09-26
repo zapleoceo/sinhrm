@@ -8,8 +8,9 @@ use App\Modules\Scripts\Enums\TaskType;
 use Illuminate\Support\Carbon;
 
 /**
- * A task another module asks to create once (Workflows, Documents). $ruleKey is the idempotency key together with
- * the employee: the same (employee, rule key) never produces a second task.
+ * A task another module asks to create once (Workflows, Documents, Desk, HiringRequests, Time). $ruleKey is the
+ * idempotency key together with the employee: the same (employee, rule key) never produces a second task. Without an
+ * employee (a hiring-request approval has no subject employee) the calling module guarantees "once" itself.
  */
 final readonly class NewTask
 {
@@ -19,7 +20,7 @@ final readonly class NewTask
         public string $title,
         public Carbon $dueAt,
         public string $ruleKey,
-        public int $employeeId,
+        public ?int $employeeId,
         public ?string $link = null,
     ) {}
 

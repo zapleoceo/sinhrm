@@ -23,6 +23,7 @@ use App\Modules\Recruiting\Contracts\TouchpointIngestor;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\DTO\CandidateData;
 use App\Modules\Recruiting\DTO\IncomingMessage;
+use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
@@ -180,6 +181,7 @@ final readonly class MailMessageProcessor
             phone: $parsed->phone,
             email: $parsed->email,
             source: $parser->source(),
+            addedVia: AddedVia::Mail,
         );
     }
 }

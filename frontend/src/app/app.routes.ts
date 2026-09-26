@@ -22,6 +22,21 @@ export const routes: Routes = [
       { path: 'candidates/:id', title: 'titles.candidates', loadComponent: () => import('./features/recruiting/candidates/candidates.page').then((m) => m.CandidatesPage) },
       { path: 'inbox', title: 'titles.inbox', loadComponent: () => import('./features/recruiting/inbox/inbox.page').then((m) => m.InboxPage) },
       { path: 'settings/extension', title: 'titles.extension', loadComponent: () => import('./features/extension/extension.page').then((m) => m.ExtensionPage) },
+      // Hiring requests (tz2): every active role; the API decides who creates, sees and approves.
+      { path: 'hiring-requests', title: 'titles.hiringRequests', loadComponent: () => import('./features/hiring-requests/hiring-list.page').then((m) => m.HiringListPage) },
+      {
+        path: 'hiring-requests/inbox',
+        title: 'titles.hiringInbox',
+        data: { view: 'inbox' },
+        loadComponent: () => import('./features/hiring-requests/hiring-list.page').then((m) => m.HiringListPage),
+      },
+      { path: 'hiring-requests/new', title: 'titles.hiringNew', loadComponent: () => import('./features/hiring-requests/hiring-wizard.page').then((m) => m.HiringWizardPage) },
+      { path: 'hiring-requests/:id', title: 'titles.hiringRequest', loadComponent: () => import('./features/hiring-requests/hiring-detail.page').then((m) => m.HiringDetailPage) },
+      { path: 'hiring-requests/:id/edit', title: 'titles.hiringNew', loadComponent: () => import('./features/hiring-requests/hiring-wizard.page').then((m) => m.HiringWizardPage) },
+      // Time: own week for everyone; approvals and team for managers (the API scopes by People).
+      { path: 'time', title: 'titles.time', loadComponent: () => import('./features/time/my-week.page').then((m) => m.MyWeekPage) },
+      { path: 'time/approvals', title: 'titles.timeApprovals', loadComponent: () => import('./features/time/time-approvals.page').then((m) => m.TimeApprovalsPage) },
+      { path: 'time/team', title: 'titles.timeTeam', loadComponent: () => import('./features/time/time-team.page').then((m) => m.TimeTeamPage) },
       { path: 'reports', title: 'titles.reports', loadComponent: () => import('./features/recruiting/reports/reports.page').then((m) => m.ReportsPage) },
       // People and time off: every active role; the API decides what each user sees (directory / job / PII tiers).
       { path: 'people', title: 'titles.people', loadComponent: () => import('./features/people/directory/people.page').then((m) => m.PeoplePage) },
@@ -100,6 +115,24 @@ export const routes: Routes = [
         title: 'titles.documentTemplates',
         canActivate: [roleGuard('superadmin', 'admin')],
         loadComponent: () => import('./features/documents/templates/document-templates.page').then((m) => m.DocumentTemplatesPage),
+      },
+      {
+        path: 'admin/hiring-requests',
+        title: 'titles.hiringSettings',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/hiring-requests/hiring-settings.page').then((m) => m.HiringSettingsPage),
+      },
+      {
+        path: 'admin/acquisition-channels',
+        title: 'titles.acquisitionChannels',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/recruiting/channels/acquisition-channels.page').then((m) => m.AcquisitionChannelsPage),
+      },
+      {
+        path: 'admin/time',
+        title: 'titles.timeSchedules',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/time/time-schedules.page').then((m) => m.TimeSchedulesPage),
       },
       {
         path: 'desk/queue',

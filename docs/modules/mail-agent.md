@@ -78,7 +78,8 @@
 cvUrl}`; нет ни телефона, ни e-mail → `parse_failed`. Вакансия ищется по названию: открытая вакансия с **точно таким же
 названием без учёта регистра**, ровно одна (`VacancyRepository::findOpenByTitle`).
 - Нашлась → `CandidateService::createOrMatch()` (совпадение по телефону/e-mail/Telegram — тот же кандидат; иначе новый,
-  источник по парсеру: `work_ua | robota_ua | djinni | other`) → заявка на первом этапе с датой письма (если ещё нет) →
+  источник по парсеру: `work_ua | robota_ua | djinni | other`, способ добавления `added_via = mail`, канал привлечения — по
+  UTM или источнику, [acquisition-channels.md](acquisition-channels.md)) → заявка на первом этапе с датой письма (если ещё нет) →
   касание e-mail (тема + текст, до 5000 символов; в `meta`: `subject, from, full_name, vacancy_title, cv_url, parser`) →
   если заявка новая — задача `Scripts\Services\TaskService::scheduleNewApplicantCall()` рекрутеру вакансии →
   `application`.

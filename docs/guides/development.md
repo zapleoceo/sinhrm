@@ -25,7 +25,7 @@
 
 ## Документация
 Изменил модуль → обнови `docs/modules/<модуль>.md` (CI проверяет). Имя страницы — имя модуля в kebab-case
-(`GoogleWorkspace` → `google-workspace.md`, `features/mail-agent` → `mail-agent.md`, папка `extension/` → `extension.md`; исключение-синоним: `TimeOff` и `features/timeoff` → `timeoff.md`; `scripts/docs-check.sh`). Структура страницы:
+(`GoogleWorkspace` → `google-workspace.md`, `HiringRequests` и `features/hiring-requests` → `hiring-requests.md`, `Time` и `features/time` → `time.md`, `features/mail-agent` → `mail-agent.md`, папка `extension/` → `extension.md`; исключение-синоним: `TimeOff` и `features/timeoff` → `timeoff.md`; `scripts/docs-check.sh`). Структура страницы:
 «Что это и зачем» (просто) → «Как пользоваться» → «Как устроено» (техника) → «Как проверить».
 Архитектурные решения — `docs/adr/NNNN-название.md`.
 
