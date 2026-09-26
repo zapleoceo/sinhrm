@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
+import { LanguageService } from '../../core/i18n/language.service';
 import { ShellLayout } from './shell.layout';
 
 @Component({ template: '' })
@@ -10,12 +11,18 @@ class Blank {}
 
 const USER = { id: 7, name: 'U', email: 'u@example.com', avatar_url: null, locale: 'uk', roles: ['employee'], status: 'active' };
 
+const logout = vi.fn().mockResolvedValue(undefined);
+const langUse = vi.fn().mockResolvedValue(undefined);
+
 async function setup(): Promise<{ el: HTMLElement; router: Router; detect: () => Promise<void> }> {
+  logout.mockClear();
+  langUse.mockClear();
   TestBed.configureTestingModule({
     imports: [ShellLayout, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     providers: [
       provideRouter([{ path: '**', component: Blank }]),
-      { provide: AuthService, useValue: { user: signal(USER), logout: async () => undefined } },
+      { provide: AuthService, useValue: { user: signal(USER), logout } },
+      { provide: LanguageService, useValue: { current: signal('uk'), use: langUse } },
     ],
   });
   const fixture = TestBed.createComponent(ShellLayout);
@@ -72,5 +79,54 @@ describe('ShellLayout collapsible nav', () => {
     localStorage.setItem('sinhrm.nav.expanded.7', '["services"]');
     const { el } = await setup();
     expect(header(el, 'services').getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('ShellLayout user menu in sidebar footer', () => {
+  beforeEach(() => localStorage.clear());
+
+  const openMenu = async (el: HTMLElement, detect: () => Promise<void>): Promise<HTMLElement> => {
+    (el.querySelector('.sidebar-footer button.user') as HTMLButtonElement).click();
+    await detect();
+    return document.querySelector('.mat-mdc-menu-panel') as HTMLElement;
+  };
+
+  it('renders the user button in the sidebar footer, next to the help link, and no top bar', async () => {
+    const { el } = await setup();
+    const footer = el.querySelector('.sidebar .sidebar-footer') as HTMLElement;
+    expect(footer).toBeTruthy();
+    expect(footer.querySelector('a[href="/docs"]')).toBeTruthy();
+    expect(footer.querySelector('button.user .name')?.textContent).toContain('U');
+    expect(footer.querySelector('button.user .email')?.textContent).toContain('u@example.com');
+    expect(el.querySelector('.topbar')).toBeNull();
+  });
+
+  it('opens the menu with language, theme, profile, extension and logout items', async () => {
+    const { el, detect } = await setup();
+    const panel = await openMenu(el, detect);
+    expect(panel.querySelector('app-language-switcher')).toBeTruthy();
+    expect(panel.querySelector('.theme-toggle')).toBeTruthy();
+    expect(panel.querySelector('a[href="/me"]')).toBeTruthy();
+    expect(panel.querySelector('a[href="/settings/extension"]')).toBeTruthy();
+    expect(panel.querySelector('button.logout')).toBeTruthy();
+  });
+
+  it('switches the language from the footer menu', async () => {
+    const { el, detect } = await setup();
+    const panel = await openMenu(el, detect);
+    const ru = Array.from(panel.querySelectorAll('mat-button-toggle button')).find((b) => b.textContent?.trim() === 'ru') as HTMLButtonElement;
+    ru.click();
+    await detect();
+    expect(langUse).toHaveBeenCalledWith('ru');
+  });
+
+  it('logs out and goes to /login', async () => {
+    const { el, router, detect } = await setup();
+    const nav = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const panel = await openMenu(el, detect);
+    (panel.querySelector('button.logout') as HTMLButtonElement).click();
+    await detect();
+    expect(logout).toHaveBeenCalled();
+    expect(nav).toHaveBeenCalledWith('/login');
   });
 });
