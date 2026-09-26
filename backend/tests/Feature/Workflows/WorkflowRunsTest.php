@@ -32,7 +32,7 @@ final class WorkflowRunsTest extends TestCase
 
     private const string HOOK = 'https://hooks.example.test/in';
 
-    private const string SECRET = 'synthetic-signing-key-0042';
+    private const string SECRET = 'synthetic-signing-key-0042'; // gitleaks:allow (test fixture, not a real key)
 
     protected function setUp(): void
     {
@@ -298,7 +298,8 @@ final class WorkflowRunsTest extends TestCase
         $this->assertSame('sent', $document->status->value);
         $this->assertStringContainsString('Dear Olena, welcome.', (string) $document->content_md);
         $step = WorkflowRunStep::query()->sole();
-        $this->assertSame(['document_id' => $document->id, 'sent' => true], $step->result);
+        // jsonb does not preserve key order on Postgres — compare as a map.
+        $this->assertEquals(['document_id' => $document->id, 'sent' => true], $step->result);
         $this->assertSame($user->id, Task::query()->where('type', 'document')->sole()->assignee_id);
     }
 

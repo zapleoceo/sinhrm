@@ -119,7 +119,7 @@ final class WorkflowTemplatesApiTest extends TestCase
     {
         $admin = $this->login(UserRole::Admin);
         $template = $this->workflow([['webhook', 0, 'hr_admin', ['url' => 'https://hooks.example.test/in']]]);
-        $secret = 'synthetic-signing-key-0042';
+        $secret = 'synthetic-signing-key-0042'; // gitleaks:allow (test fixture, not a real key)
 
         $response = $this->actingAs($admin)->putJson("/api/workflows/templates/{$template->id}/webhook-secret", ['secret' => $secret])
             ->assertOk()->assertJsonPath('data.webhook_secret.is_set', true);
