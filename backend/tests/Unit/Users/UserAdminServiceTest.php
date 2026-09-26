@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Users;
 
 use App\Models\User;
+use App\Modules\Audit\Contracts\AuditLogger;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Users\Contracts\UserAdminRepository;
@@ -26,7 +27,7 @@ final class UserAdminServiceTest extends TestCase
     {
         $this->repo = $this->createMock(UserAdminRepository::class);
         $this->repo->method('transaction')->willReturnCallback(fn (callable $cb): mixed => $cb());
-        $this->service = new UserAdminService($this->repo, new NullLogger);
+        $this->service = new UserAdminService($this->repo, new NullLogger, $this->createStub(AuditLogger::class));
     }
 
     public function test_list_delegates_filter(): void

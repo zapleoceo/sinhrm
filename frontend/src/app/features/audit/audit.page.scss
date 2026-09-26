@@ -1,0 +1,32 @@
+.head {
+  margin-bottom: var(--app-gap);
+
+  h1 { font: var(--mat-sys-headline-small); margin: 0; }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.panel {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+  overflow-x: auto;
+}
+
+table { width: 100%; }
+
+.nowrap { white-space: nowrap; }
+
+.changes {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.state { padding: 2.5rem 1rem; text-align: center; }

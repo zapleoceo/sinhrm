@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Ai\Providers\AiServiceProvider;
 use App\Modules\Assets\Providers\AssetsServiceProvider;
+use App\Modules\Audit\Providers\AuditServiceProvider;
 use App\Modules\Auth\Providers\AuthServiceProvider;
 use App\Modules\Channels\Providers\ChannelsServiceProvider;
 use App\Modules\Core\Providers\CoreServiceProvider;
@@ -57,4 +58,5 @@ return [
     TimeServiceProvider::class,
     ReportsServiceProvider::class,
     OverviewServiceProvider::class,
+    AuditServiceProvider::class,
 ];

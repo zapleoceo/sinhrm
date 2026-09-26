@@ -18,6 +18,11 @@ import { EmployeeDocumentsTab } from '../../documents/profile/employee-documents
 import { EmployeeRunsTab } from '../../workflows/runs/employee-runs.tab';
 import { PerformanceTab } from '../../perform/profile/performance.tab';
 import { EmployeeAssetsTab } from '../../assets/employee-assets.tab';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuditHistory } from '../../audit/audit-history';
+import { AuditLoader } from '../../audit/audit.model';
+import { AuditService } from '../../audit/audit.service';
+import { canManagePeople } from '../people.access';
 import { ChangeRequestDialog } from './change-request.dialog';
 import { EmployeeDialog, EmployeeDialogData } from './employee.dialog';
 import { ProfileStore, ProfileTab } from './profile.store';
@@ -46,6 +51,7 @@ import { TerminateDialog } from './terminate.dialog';
     EmployeeRunsTab,
     PerformanceTab,
     EmployeeAssetsTab,
+    AuditHistory,
   ],
   providers: [ProfileStore, LeaveRequestsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -215,6 +221,14 @@ import { TerminateDialog } from './terminate.dialog';
             </ng-template>
           </mat-tab>
         }
+
+        @if (historyLoader(); as loader) {
+          <mat-tab [label]="'audit.history' | transloco">
+            <ng-template matTabContent>
+              <app-audit-history [loader]="loader" />
+            </ng-template>
+          </mat-tab>
+        }
       </mat-tab-group>
     }
   `,
@@ -256,6 +270,14 @@ export class ProfilePage {
     const wanted = this.tab();
     const index = wanted === undefined ? -1 : this.store.tabs().indexOf(wanted as ProfileTab);
     return Math.max(0, index);
+  });
+  private readonly auth = inject(AuthService);
+  private readonly audit = inject(AuditService);
+  /** History tab: HR staff only (the API answers 403 to everyone else). */
+  protected readonly historyLoader = computed<AuditLoader | null>(() => {
+    const id = this.store.employee()?.id;
+    if (id === undefined || !canManagePeople(this.auth.user()?.roles ?? [])) return null;
+    return (paging) => this.audit.employeeHistory(id, paging);
   });
   protected readonly customFields = computed(() => Object.entries(this.store.employee()?.custom_fields ?? {}));
 
