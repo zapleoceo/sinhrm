@@ -25,7 +25,9 @@
   Клавиши: `j`/`k` или `↓`/`↑` — следующий/предыдущий кандидат, `/` — поиск. Карточка: контакты (кликабельные), источник, UTM и теги;
   **Маршрут** по каждой вакансии (этапы с датой входа и длительностью, текущий подсвечен) и кнопка «Перемістити»; поле записи касания
   (канал, направление, текст, минуты для звонка/встречи; Ctrl/⌘+Enter — сохранить; кнопка **«Шаблон»** вставляет сообщение из
-  активного скрипта с подставленными именем, рекрутером и вакансией); **Задачі** по кандидату (напоминания, галочка — выполнено);
+  активного скрипта с подставленными именем, рекрутером и вакансией; для подключённых Telegram/WhatsApp/Viber — кнопка
+  **«Надіслати»**: сообщение уходит кандидату через канал, а если канал не подключён — предложение «Записати вручну»,
+  [channels.md](channels.md)); **Задачі** по кандидату (напоминания, галочка — выполнено);
   **Касання** — лента новых сверху, фильтр-чипы по каналам и «Етапи». У оценённого звонка/сообщения — значок «Скрипт N · правила»,
   клик раскрывает шаги с цитатами и рекомендации ([scripts.md](scripts.md)).
   При создании кандидата с уже известным телефоном/e-mail/Telegram система предложит открыть существующую карточку (если он в
@@ -147,13 +149,18 @@ Recruiting не знает, как оцениваются разговоры: `T
 ```php
 interface TouchpointIngestor { public function ingest(IncomingMessage $message): Touchpoint; }
 // DTO/IncomingMessage: channel, direction, occurredAt, contact (телефон | e-mail | @username | t.me/…),
-//                      body?, externalId?, integrationKey?, branchId?, authorId?, viaProduct=false, meta[]
+//                      body?, externalId?, integrationKey?, branchId?, authorId?, viaProduct=false, meta[],
+//                      thread? (id разговора в источнике), candidateId? / applicationId? (явная цель — отправка из карточки)
 ```
 Реализация `Services/MatchingTouchpointIngestor`: (1) есть `externalId` и такое касание в этом канале уже есть — вернуть его
-(повторная доставка вебхука безопасна); (2) `ContactNormalizer::guess(contact)` → поиск кандидата по телефону/e-mail/Telegram;
-(3) нашли — привязка к последней активной заявке, событие `TouchpointRecorded` (обновит «зависание»); не нашли — касание остаётся в
-«Вхідних» (`candidate_id = null`), `branchId` линии/аккаунта определяет, каким рекрутерам его видно. Сейчас используется тестами и
-демо-данными; вебхуки Binotel/Ringostat/Telegram/WhatsApp/Viber/Gmail будут вызывать его же (модуль Integrations).
+(повторная доставка вебхука безопасна; одновременная вставка того же id ловится уникальным индексом и тоже возвращает сохранённое);
+(2) кандидат: явный `candidateId`, иначе кандидат, уже привязанный к той же ветке (`meta.thread`) в этом канале
+(`TouchpointRepository::candidateIdByThread`), иначе `ContactNormalizer::guess(contact)` → поиск по телефону/e-mail/Telegram;
+(3) нашли — привязка к указанной (`applicationId`) или последней активной заявке, событие `TouchpointRecorded` (обновит «зависание»); не нашли — касание остаётся в
+«Вхідних» (`candidate_id = null`), `branchId` линии/аккаунта определяет, каким рекрутерам его видно. Его вызывают почтовый агент
+([mail-agent.md](mail-agent.md)) и модуль Channels ([channels.md](channels.md)) — вебхуки Telegram/WhatsApp/Viber/телефонии,
+демо-события и сообщения, отправленные из карточки. Для каналов есть ещё `TouchpointRepository::latestThreadOf` (куда отвечать)
+и `lastInboundAt` (окно 24 ч WhatsApp). В `TouchpointResource` добавлены публичные ключи meta `sender_name, call_status, edited, demo`.
 
 ### Демо-данные
 Логика — сервис `Services/RecruitingDemoData::generate(): DTO/DemoReport` (`skipped`, `counts`, `seconds`). В production бросает
@@ -185,7 +192,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `vacancies/` | список + `VacancyDialog` (`/vacancies`) |
 | `board/` | доска CDK drag&drop (`/vacancies/:id`), оптимистичный перенос с откатом, `RejectDialog` |
 | `candidates/` | split view (`/candidates`, `/candidates/:id`), клавиши j/k/↑/↓//, `CandidateDialog` с обработкой дубля |
-| `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме |
+| `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts` и «Надіслати» через `features/channels/channels.service.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме |
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |
 | `reports/` | `/reports`, таблицы с CSS-полосками, `pivotTouches` |
 | `palette/` | `CommandPalette` в CDK overlay (`CommandPaletteService`), Ctrl/⌘+K — в оболочке ([shell.md](shell.md)) |

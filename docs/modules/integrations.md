@@ -64,7 +64,9 @@
 | `ai_broker` | `GET {base_url}/v1/health` (публичный, **без ключа**), таймаут 10 с | да. Эндпоинты chat/jobs не вызываются: AI-вызовы запрещены до решения владельца |
 | `telegram_business` | `GET https://api.telegram.org/bot<token>/getMe` (только чтение), таймаут 10 с | да. URL содержит токен. До запроса токен проверяется по формату `^\d+:[A-Za-z0-9_-]+$` (иначе `invalid_token`, без запроса), вокруг вызова ловится **любой** `Throwable`: в ответ и лог попадают только коды `unauthorized`, `http_<код>`, `connection_failed` |
 | `sintegrum_api` | проверка URL через `OutboundUrlGuard` и наличия токена → статус `demo`, `last_error = not_verified` | только DNS-резолв хоста, HTTP-запроса **нет**. TODO: схема авторизации Sintegrum API не подтверждена. Реальные запросы к Sintegrum делает импорт справочников (ниже) |
-| остальные (`openrouter`, `deepgram`, `google_*`, `whatsapp_cloud`, `viber`, `wazzup`, `phonet`, `ringostat`, `binotel`, `work_ua`, `robota_ua`, `djinni`, `meta_lead_ads`) | нет (`supports_check: false`) | нет. OpenRouter и Deepgram — AI/платные вызовы; Google подключается OAuth-согласием (модуль GoogleWorkspace), у его карточек нет полей |
+| `whatsapp_cloud` | `GET https://graph.facebook.com/v21.0/{phone_number_id}?fields=id` (только чтение), токен в заголовке `Authorization`, таймаут 10 с; `phone_number_id` должен быть числом (иначе `invalid_url` без запроса) | да. 401 или ошибка Graph 190 → `unauthorized` |
+| `viber` | `POST https://chatapi.viber.com/pa/get_account_info` (только чтение), токен в заголовке `X-Viber-Auth-Token` | да. Viber `status: 2` → `unauthorized` |
+| остальные (`openrouter`, `deepgram`, `google_*`, `wazzup`, `phonet`, `ringostat`, `binotel`, `work_ua`, `robota_ua`, `djinni`, `meta_lead_ads`) | нет (`supports_check: false`) | нет. OpenRouter и Deepgram — AI/платные вызовы; Google подключается OAuth-согласием (модуль GoogleWorkspace), у его карточек нет полей |
 
 Защита в глубину: перед записью `last_error` и лога `IntegrationService` заменяет любые значения секретов в тексте
 на `***` и обрезает до 255 символов. Если обязательный ключ не задан, проверка не выполняется
@@ -86,6 +88,7 @@
 | Интеграция | Потребитель | Что берёт |
 |---|---|---|
 | `google_gmail`, `google_calendar`, `google_sheets` | модуль GoogleWorkspace ([google-workspace.md](google-workspace.md)): OAuth-подключение пишет `refresh_token`/`access_token` в `SecretVault`, статус `connected` и несекретные `settings` (`account_email, scopes, connected_by, connected_at, access_expires_at`); отзыв доступа → `error` + `last_error = reconnect_required`. Потребители: почтовый агент ([mail-agent.md](mail-agent.md)), встречи из карточки, импорт из Google Sheets | токены только через `GoogleTokenProvider` (кэш + refresh); журнал `google_connected`, `reconnect_required`, `sheets_imported` (без значений). Полей у карточек нет: подключение — кнопка «Підключити Google» над группой Google (`features/google-workspace/google-connect.panel.ts`); ручной статус `off`/`demo` выключает использование до нового подключения |
+| `telegram_business`, `whatsapp_cloud`, `viber`, `phonet`, `ringostat`, `binotel` | модуль Channels ([channels.md](channels.md)): вебхуки → лента кандидата, отправка из карточки, регистрация вебхука, тест, демо-события | конфиг через `Services/IntegrationConfigLoader` (настройки + секреты из `SecretVault`, только в памяти). Секреты вебхуков: `telegram_business.webhook_secret` (создаёт «Зареєструвати вебхук»), `whatsapp_cloud.app_secret` + `verify_token`, `viber.token`, у телефонии `webhook_token` (`?token=`, временная схема) и у Ringostat `callback_extension`. Журнал: `webhook_received/rejected/registered/register_failed`, `test_sent/failed`, `send_failed`, `simulated`, `delivery_failed`, `business_connected/disconnected`, `call_requested/failed` — только коды и счётчики. Режим канала = статус интеграции (`off` → вебхуки 404; `demo` → принимаются, отправка без провайдера; `connected`/`error` → реально) |
 | `sintegrum_api` | импорт справочников — `Directory\Services\SintegrumDirectoryImporter` ([directory.md](directory.md)) | `base_url` (настройка), `token` (через `SecretVault`); запросы `GET {base_url}/{cities,branches,departments,jobs}/list` с `Authorization: Bearer`, через `OutboundUrlGuard`; журнал `directory_imported` / `directory_import_failed` в `integration_logs` (только счётчики/код ошибки) |
 
 ### Вычистка секретов из логов (`Support/SecretScrubber`)
@@ -126,7 +129,9 @@ last_error, updated_at, fields[]`. Поле: `name, type, required, options, def
 ### Слои
 `Http/Controllers/IntegrationsController` → `Http/Requests/*` → `Services/IntegrationService`,
 `Services/AiPolicyService` → `Contracts/IntegrationRepository` (`Repositories/EloquentIntegrationRepository`),
-`Contracts/SecretVault` (`Repositories/EloquentSecretVault`). `Contracts/AiPolicy::enabled()` — для других модулей:
+`Contracts/SecretVault` (`Repositories/EloquentSecretVault`). `Services/IntegrationConfigLoader` — единая сборка
+`IntegrationConfig` (настройки с умолчаниями + расшифрованные секреты) и статуса для проверок и других модулей.
+`Contracts/AiPolicy::enabled()` — для других модулей:
 любой код, который вызывает AI, обязан сначала спросить его.
 
 ### Фронтенд (`features/integrations`)
@@ -135,6 +140,8 @@ last_error, updated_at, fields[]`. Поле: `name, type, required, options, def
 меняются оптимистично с откатом. `integration-card.ts` — форма из `FieldSpec` (секреты — `type=password`, в
 placeholder маска или «не задано», кнопка «Очистити»), «Зберегти», «Перевірити з'єднання», последние события.
 `integrations.service.ts` — HTTP, `buildUpdate()` (тело PUT из формы), перевод кодов ошибок в ключи i18n.
+У карточек групп «Месенджери» и «Телефонія» в раскрытом виде — блок «Вебхук» (`features/channels/channel-panel.ts`:
+адрес с копированием, регистрация, тест, демо-событие — [channels.md](channels.md)).
 В группе Google над карточками — панель подключения Google (`features/google-workspace/google-connect.panel.ts`,
 [google-workspace.md](google-workspace.md)).
 Маршрут `/admin/integrations` — `roleGuard('superadmin')`.

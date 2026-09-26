@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace Tests\Unit\Recruiting;
 
 use App\Modules\Directory\Models\Branch;
+use App\Modules\Recruiting\Contracts\TouchpointIngestor;
+use App\Modules\Recruiting\Contracts\TouchpointRepository;
+use App\Modules\Recruiting\DTO\IncomingMessage;
 use App\Modules\Recruiting\Enums\Channel;
+use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Touchpoint;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use RuntimeException;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
 
@@ -69,5 +75,37 @@ final class TouchpointIngestorTest extends TestCase
 
         $this->assertSame($candidate->id, $touch->candidate_id);
         $this->assertNull($touch->application_id);
+    }
+
+    public function test_thread_continuity_and_explicit_target(): void
+    {
+        $application = $this->applied($this->vacancyIn(Branch::factory()->create()), ['phone' => '+380671234567']);
+        $ingestor = $this->app->make(TouchpointIngestor::class);
+        $message = fn (?string $contact, string $id, ?int $candidateId = null): IncomingMessage => new IncomingMessage(
+            Channel::Viber, Direction::In, Carbon::now(), $contact, 'hi', $id, 'viber', thread: 'viber-user-1', candidateId: $candidateId,
+        );
+
+        // Explicit target wins; the thread is remembered in meta.
+        $first = $ingestor->ingest($message(null, 'v1', $application->candidate_id));
+        $this->assertSame($application->candidate_id, $first->candidate_id);
+        $this->assertSame('viber-user-1', $first->meta['thread'] ?? null);
+        // No contact, same thread → the same candidate.
+        $this->assertSame($application->candidate_id, $ingestor->ingest($message(null, 'v2'))->candidate_id);
+        // The thread is per channel.
+        $other = $ingestor->ingest(new IncomingMessage(Channel::Telegram, Direction::In, Carbon::now(), null, 'x', 't1', thread: 'viber-user-1'));
+        $this->assertNull($other->candidate_id);
+    }
+
+    public function test_concurrent_duplicate_returns_the_stored_touchpoint(): void
+    {
+        $stored = $this->ingest(Channel::Call, '+380501112233', ['external_id' => 'race-1']);
+        $repository = $this->createMock(TouchpointRepository::class);
+        // The first lookup misses (the other request has not committed yet), the insert then hits the unique index.
+        $repository->method('findByExternalId')->willReturnOnConsecutiveCalls(null, $stored);
+        $repository->method('create')->willThrowException(new UniqueConstraintViolationException('pgsql', 'insert', [], new RuntimeException('dup')));
+        $this->app->instance(TouchpointRepository::class, $repository);
+
+        $again = $this->ingest(Channel::Call, '+380501112233', ['external_id' => 'race-1']);
+        $this->assertSame($stored->id, $again->id);
     }
 }

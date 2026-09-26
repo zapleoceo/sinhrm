@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -7,6 +8,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { SEND_CHANNELS, SendChannel, SendMessage } from '../../channels/channels.model';
+import { ChannelsService } from '../../channels/channels.service';
 import { TemplateMenu } from '../../scripts/templates/template-menu';
 import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '../recruiting.model';
 
@@ -14,6 +17,8 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
  * Logs a touch by hand: note (text required), call (minutes), meeting, or a messenger/e-mail contact made outside.
  * Ctrl/Cmd+Enter submits. Emits the body; the parent sends it and calls reset() on success.
  * "Шаблон" inserts a filled message template of the active scripts (Scripts module) into the text.
+ * Messengers (Telegram / WhatsApp / Viber) that are connected (demo or live) also get "Надіслати": the message goes
+ * out through the channel (Channels module). If the channel turns out not connected, the composer offers to log it.
  */
 @Component({
   selector: 'app-touch-composer',
@@ -58,10 +63,25 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
         <mat-label>{{ 'recruiting.composer.body' | transloco }}</mat-label>
         <textarea matInput formControlName="body" rows="2" maxlength="10000"></textarea>
       </mat-form-field>
+      @if (notConnected()) {
+        <p class="fallback" role="status">
+          <mat-icon>link_off</mat-icon>
+          <span class="grow">{{ 'channels.composer.notConnected' | transloco }}</span>
+          <button mat-button type="button" (click)="submit()">{{ 'channels.composer.logManually' | transloco }}</button>
+        </p>
+      }
       <div class="actions">
         <app-template-menu [candidateId]="candidateId()" (picked)="insertTemplate($event)" />
         <span class="muted hint grow">{{ 'recruiting.composer.hint' | transloco }}</span>
-        <button mat-flat-button type="submit" [disabled]="busy() || !valid()">{{ 'recruiting.composer.submit' | transloco }}</button>
+        @if (canSend()) {
+          <button mat-stroked-button type="submit" [disabled]="busy() || !valid()">{{ 'recruiting.composer.submit' | transloco }}</button>
+          <button mat-flat-button type="button" [disabled]="busy() || !sendable()" (click)="send()">
+            <mat-icon>send</mat-icon>
+            {{ (sendMode() === 'demo' ? 'channels.composer.sendDemo' : 'channels.composer.send') | transloco }}
+          </button>
+        } @else {
+          <button mat-flat-button type="submit" [disabled]="busy() || !valid()">{{ 'recruiting.composer.submit' | transloco }}</button>
+        }
       </div>
     </form>
   `,
@@ -73,11 +93,16 @@ import { CHANNEL_ICONS, Channel, Direction, LogTouch, MANUAL_CHANNELS } from '..
     .actions { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
     .hint { font-size: 0.8rem; }
     .grow { flex: 1; }
+    .fallback { display: flex; align-items: center; gap: 0.5rem; margin: 0; font-size: 0.9rem; color: var(--mat-sys-error); }
   `,
 })
-export class TouchComposer {
+export class TouchComposer implements OnInit {
+  private readonly channelsApi = inject(ChannelsService);
+
   readonly candidateId = input.required<number>();
   readonly logged = output<LogTouch>();
+  /** "Надіслати": the parent sends it through the channel and calls reset() / offerManual(). */
+  readonly sent = output<SendMessage>();
 
   protected readonly channels = MANUAL_CHANNELS;
   protected readonly icons = CHANNEL_ICONS;
@@ -88,6 +113,28 @@ export class TouchComposer {
     body: [''],
     minutes: [null as number | null],
   });
+  /** The last send failed with channel_not_connected: offer to log the touch by hand. */
+  protected readonly notConnected = signal(false);
+  private readonly channel = toSignal(this.form.controls.channel.valueChanges, { initialValue: this.form.controls.channel.value });
+
+  ngOnInit(): void {
+    this.channelsApi.ensureAvailability();
+    this.form.controls.channel.valueChanges.subscribe(() => this.notConnected.set(false));
+  }
+
+  /** Mode of the selected channel when it is a messenger that can send; off otherwise. */
+  protected sendMode(): 'off' | 'demo' | 'live' {
+    const channel = this.channel();
+    return SEND_CHANNELS.includes(channel) ? this.channelsApi.modeOf(channel) : 'off';
+  }
+
+  protected canSend(): boolean {
+    return this.sendMode() !== 'off';
+  }
+
+  protected sendable(): boolean {
+    return this.form.controls.body.value.trim() !== '';
+  }
 
   /** A note needs text; other channels are meaningful as a fact. */
   protected valid(): boolean {
@@ -102,6 +149,21 @@ export class TouchComposer {
   reset(): void {
     this.form.patchValue({ body: '', minutes: null });
     this.busy.set(false);
+    this.notConnected.set(false);
+  }
+
+  /** The channel is not connected after all: keep the text and offer "log manually". */
+  offerManual(): void {
+    this.busy.set(false);
+    this.notConnected.set(true);
+  }
+
+  protected send(): void {
+    if (!this.sendable() || this.busy() || !this.canSend()) {
+      return;
+    }
+    this.busy.set(true);
+    this.sent.emit({ channel: this.channel() as SendChannel, text: this.form.controls.body.value.trim() });
   }
 
   /** Appends the template to the text (a blank line between it and what was typed before). */

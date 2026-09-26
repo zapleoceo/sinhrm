@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Auth\Providers\AuthServiceProvider;
+use App\Modules\Channels\Providers\ChannelsServiceProvider;
 use App\Modules\Core\Providers\CoreServiceProvider;
 use App\Modules\Directory\Providers\DirectoryServiceProvider;
 use App\Modules\GoogleWorkspace\Providers\GoogleWorkspaceServiceProvider;
@@ -26,5 +27,6 @@ return [
     ScriptsServiceProvider::class,
     GoogleWorkspaceServiceProvider::class,
     MailAgentServiceProvider::class,
+    ChannelsServiceProvider::class,
     OverviewServiceProvider::class,
 ];

@@ -1,6 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { Application, Candidate, LogTouch, MoveApplication, RejectReason, TimelineFilter, TimelineItem, Touchpoint } from '../recruiting.model';
+import { SendMessage } from '../../channels/channels.model';
+import { ChannelsService } from '../../channels/channels.service';
 import { RecruitingService } from '../recruiting.service';
 
 const PER_PAGE = 30;
@@ -9,6 +11,7 @@ const PER_PAGE = 30;
 @Injectable()
 export class CandidateCardStore {
   private readonly api = inject(RecruitingService);
+  private readonly channels = inject(ChannelsService);
   private candidateSeq = 0;
   private timelineSeq = 0;
 
@@ -70,6 +73,14 @@ export class CandidateCardStore {
       throw new Error('no candidate open');
     }
     return this.api.logTouch(c.id, body).pipe(tap(() => this.refresh()));
+  }
+
+  sendMessage(body: SendMessage): Observable<Touchpoint> {
+    const c = this.candidate();
+    if (!c) {
+      throw new Error('no candidate open');
+    }
+    return this.channels.send(c.id, body).pipe(tap(() => this.refresh()));
   }
 
   move(application: Application, body: MoveApplication): Observable<Application> {

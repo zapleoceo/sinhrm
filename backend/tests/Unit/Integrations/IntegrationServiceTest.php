@@ -17,6 +17,7 @@ use App\Modules\Integrations\Enums\IntegrationStatus;
 use App\Modules\Integrations\Enums\LogLevel;
 use App\Modules\Integrations\Exceptions\IntegrationException;
 use App\Modules\Integrations\Models\Integration;
+use App\Modules\Integrations\Services\IntegrationConfigLoader;
 use App\Modules\Integrations\Services\IntegrationService;
 use App\Modules\Integrations\Support\IntegrationRegistry;
 use LogicException;
@@ -126,7 +127,7 @@ final class IntegrationServiceTest extends TestCase
 
     private function service(AbstractDefinition $definition): IntegrationService
     {
-        return new IntegrationService(new IntegrationRegistry([$definition]), $this->repo, $this->vault);
+        return new IntegrationService(new IntegrationRegistry([$definition]), $this->repo, $this->vault, new IntegrationConfigLoader($this->repo, $this->vault));
     }
 
     private function checkable(CheckResult $result, bool $mustNotRun = false): AbstractDefinition
