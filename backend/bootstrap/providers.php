@@ -15,6 +15,7 @@ use App\Modules\HiringRequests\Providers\HiringRequestsServiceProvider;
 use App\Modules\Integrations\Providers\IntegrationsServiceProvider;
 use App\Modules\Knowledge\Providers\KnowledgeServiceProvider;
 use App\Modules\MailAgent\Providers\MailAgentServiceProvider;
+use App\Modules\Observability\Providers\ObservabilityServiceProvider;
 use App\Modules\Overview\Providers\OverviewServiceProvider;
 use App\Modules\People\Providers\PeopleServiceProvider;
 use App\Modules\Perform\Providers\PerformServiceProvider;
@@ -57,4 +58,5 @@ return [
     TimeServiceProvider::class,
     ReportsServiceProvider::class,
     OverviewServiceProvider::class,
+    ObservabilityServiceProvider::class,
 ];

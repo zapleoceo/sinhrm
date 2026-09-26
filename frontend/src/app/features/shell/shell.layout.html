@@ -205,6 +205,10 @@
           <mat-icon>table_chart</mat-icon>
           <span>{{ 'shell.nav.sheetsImport' | transloco }}</span>
         </a>
+        <a class="nav-link" routerLink="/admin/errors" routerLinkActive="active">
+          <mat-icon>bug_report</mat-icon>
+          <span>{{ 'shell.nav.errors' | transloco }}</span>
+        </a>
       }
       @if (isHr()) {
         <a class="nav-link" routerLink="/admin/timeoff" routerLinkActive="active">
