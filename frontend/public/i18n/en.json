@@ -10,6 +10,7 @@
     "subtitle": "Use your work Google account",
     "google": "Continue with Google",
     "hint": "Access is by administrator invitation only.",
+    "tagline": "HR and recruiting in one place",
     "errors": {
       "not_invited": "This account has not been invited yet. Please contact your administrator.",
       "blocked": "Access for this account is blocked.",
