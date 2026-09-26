@@ -18,7 +18,9 @@
 
 - **Вакансії** — список вакансий своих филиалов (по умолчанию открытые), поиск, фильтр статуса, «Нова вакансія» / ✎ (форма: название,
   филиал, должность, статус, описание). Клик по вакансии открывает **доску**: колонка на этап, карточки кандидатов перетаскиваются
-  мышью между колонками. Перетащили в «Відмова» — система спросит причину (обязательно) и комментарий. Если перемещение не прошло —
+  мышью между колонками. Перетащили в «Відмова» — система спросит причину (обязательно) и комментарий. На карточках колонки найма (и в карточке кандидата у
+  принятой заявки) — кнопка **«Створити співробітника»**: запись сотрудника из кандидата и вакансии ([people.md](people.md)); повторное
+  нажатие откроет того же сотрудника. Если перемещение не прошло —
   карточка вернётся и появится сообщение. Карточки без контакта 3+ дня отмечены значком ⏱ и текстом «N дн. без контакту».
   «Додати кандидата» — новый кандидат сразу на первый этап этой вакансии.
 - **Кандидати** — слева список (поиск по имени/телефону/e-mail/@telegram, фильтры статуса и источника), справа карточка.
@@ -136,6 +138,7 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 | `GET /api/reports/funnel` | `from, to, vacancy_id?` | заявки, созданные в периоде, по вакансии × текущему этапу |
 | `GET /api/reports/sources` | `from, to` | кандидаты периода по источнику + сколько из них `hired` |
 | `GET /api/reports/reject-reasons` | `from, to` | отказы (по `closed_at`) по причинам |
+| `POST /api/applications/{id}/hire` | `{hired_at?}` — маршрут модуля People, право как у `move` | сотрудник из принятой заявки: 201 / 200 (уже есть) / 422 `not_hired` ([people.md](people.md)) |
 
 Ошибки бизнес-правил — `Exceptions/RecruitingException` → `{message, code, …}`.
 
@@ -205,7 +208,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `recruiting.model.ts`, `recruiting.service.ts` | типы API, HTTP-клиент, `recruitingErrorKey`, `duplicateOf` |
 | `recruiting.format.ts`, `recruiting.access.ts` | длительности, группировка по этапам, статус этапа, диапазон дат; `canWriteRecruiting` |
 | `vacancies/` | список + `VacancyDialog` (`/vacancies`) |
-| `board/` | доска CDK drag&drop (`/vacancies/:id`), оптимистичный перенос с откатом, `RejectDialog` |
+| `board/` | доска CDK drag&drop (`/vacancies/:id`), оптимистичный перенос с откатом, `RejectDialog`; «Створити співробітника» в колонке найма (`features/people/hire.action.ts`) |
 | `candidates/` | split view (`/candidates`, `/candidates/:id`), клавиши j/k/↑/↓//, `CandidateDialog` с обработкой дубля |
 | `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts` и «Надіслати» через `features/channels/channels.service.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме |
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |

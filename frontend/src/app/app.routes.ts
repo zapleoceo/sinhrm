@@ -23,6 +23,14 @@ export const routes: Routes = [
       { path: 'inbox', title: 'titles.inbox', loadComponent: () => import('./features/recruiting/inbox/inbox.page').then((m) => m.InboxPage) },
       { path: 'settings/extension', title: 'titles.extension', loadComponent: () => import('./features/extension/extension.page').then((m) => m.ExtensionPage) },
       { path: 'reports', title: 'titles.reports', loadComponent: () => import('./features/recruiting/reports/reports.page').then((m) => m.ReportsPage) },
+      // People and time off: every active role; the API decides what each user sees (directory / job / PII tiers).
+      { path: 'people', title: 'titles.people', loadComponent: () => import('./features/people/directory/people.page').then((m) => m.PeoplePage) },
+      { path: 'people/org-chart', title: 'titles.orgChart', loadComponent: () => import('./features/people/org-chart/org-chart.page').then((m) => m.OrgChartPage) },
+      { path: 'people/:id', title: 'titles.profile', loadComponent: () => import('./features/people/profile/profile.page').then((m) => m.ProfilePage) },
+      { path: 'me', title: 'titles.myProfile', loadComponent: () => import('./features/people/profile/profile.page').then((m) => m.ProfilePage) },
+      { path: 'timeoff', title: 'titles.timeoff', loadComponent: () => import('./features/timeoff/my/my-timeoff.page').then((m) => m.MyTimeOffPage) },
+      { path: 'timeoff/calendar', title: 'titles.teamCalendar', loadComponent: () => import('./features/timeoff/calendar/calendar.page').then((m) => m.CalendarPage) },
+      { path: 'timeoff/approvals', title: 'titles.approvals', loadComponent: () => import('./features/timeoff/approvals/approvals.page').then((m) => m.ApprovalsPage) },
       {
         path: 'status',
         title: 'titles.status',
@@ -46,6 +54,12 @@ export const routes: Routes = [
         title: 'titles.users',
         canActivate: [roleGuard('superadmin')],
         loadComponent: () => import('./features/users/users.page').then((m) => m.UsersPage),
+      },
+      {
+        path: 'admin/timeoff',
+        title: 'titles.timeoffSettings',
+        canActivate: [roleGuard('superadmin', 'admin')],
+        loadComponent: () => import('./features/timeoff/settings/timeoff-settings.page').then((m) => m.TimeOffSettingsPage),
       },
       {
         path: 'admin/directory',

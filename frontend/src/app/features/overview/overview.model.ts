@@ -21,6 +21,30 @@ export interface Dashboard {
   touches: { days: number; by_channel: { channel: Channel; count: number }[] };
   /** Notices of other modules (e.g. Google needs reconnecting); may be absent on older API versions. */
   warnings?: DashboardWarning[];
+  /** TimeOff block (DashboardSection "timeoff"): who is out today and my pending approvals, in the user's scope. */
+  timeoff?: TimeOffDashboard;
+}
+
+export interface TimeOffDashboard {
+  out_today: {
+    id: number;
+    employee: { id: number; full_name: string };
+    leave_type: { id: number; name: string; color: string };
+    starts_on: string;
+    ends_on: string;
+    half_day: 'none' | 'start' | 'end';
+  }[];
+  my_approvals: {
+    count: number;
+    items: {
+      id: number;
+      employee: { id: number; full_name: string };
+      leave_type: { id: number; name: string; color: string };
+      starts_on: string;
+      ends_on: string;
+      days: number;
+    }[];
+  };
 }
 
 /** backend Overview DashboardNotices item. */

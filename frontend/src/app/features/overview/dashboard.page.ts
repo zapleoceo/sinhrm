@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,7 +17,7 @@ import { OverviewStore } from './overview.store';
  */
 @Component({
   selector: 'app-dashboard-page',
-  imports: [MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TasksWidget],
+  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TasksWidget],
   providers: [OverviewStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.page.html',

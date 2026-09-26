@@ -72,7 +72,7 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 `$this->app->tag([MyJob::class], ScheduledJob::class)`; интерфейс — `name()` и `run(Carbon $now): array` (счётчики, без
 персональных данных). Задача **обязана быть идемпотентной** (повтор или наложение запусков ничего не дублируют).
 `Http/Controllers/OpsJobsController` запускает все задачи по очереди; упавшая не останавливает остальные, ответ тогда
-`ok: false` (шаг cron краснеет), исключение уходит в `report()`. Сейчас зарегистрирована `followups` (модуль Scripts —
+`ok: false` (шаг cron краснеет), исключение уходит в `report()`. Сейчас зарегистрированы `timeoff.accrue` (начисление отпусков, [timeoff.md](timeoff.md)) и `followups` (модуль Scripts —
 задачи-напоминания, [scripts.md](scripts.md)).
 
 ## Логи

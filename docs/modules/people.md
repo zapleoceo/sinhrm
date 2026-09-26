@@ -1,0 +1,115 @@
+# Модуль People (сотрудники, оргструктура, самообслуживание)
+
+## Что это и зачем
+Справочник сотрудников компании — «кто у нас работает, кем, где и кому подчиняется». Здесь же профиль человека,
+оргструктура (дерево подчинения) и **самообслуживание**: сотрудник сам просит поменять свой телефон, личный e-mail,
+адрес или экстренный контакт, а руководитель или HR подтверждает. Когда кандидата взяли на работу, в карточке
+кандидата и на доске вакансии появляется кнопка **«Створити співробітника»** — запись сотрудника заполняется из
+кандидата и вакансии, ничего не нужно перепечатывать.
+
+Сотрудник не обязан иметь вход в SinHRM: запись может существовать без пользователя (`user_id = null`). Если связать
+запись с пользователем, этот человек видит свой профиль, свои отпуска и (если у него есть подчинённые) данные команды.
+
+**Кто что видит** (разные уровни данных):
+
+| Кто | Справочник (имя, должность, филиал, отдел, рабочие e-mail/телефон, руководитель) | Работа (дата приёма, тип занятости, график, отпуска) | Личное (дата рождения, личный e-mail, адрес, экстренный контакт, доп. поля) | Менять запись |
+|---|---|---|---|---|
+| суперадмин, админ (они же HR) | все | все | все | да |
+| сам сотрудник | все | своё | своё | через запрос на изменение |
+| руководитель (у его записи есть подчинённые, прямые или ниже по дереву) | все | всех ниже себя | нет | нет |
+| остальные активные пользователи (в т.ч. viewer без записи сотрудника) | все | нет | нет | нет |
+
+Отдельной роли «HR» пока нет: её обязанности выполняет роль `admin` (решение фазы 5a; добавить роль — отдельная задача,
+см. «Вопросы» ниже).
+
+## Как пользоваться
+Меню слева → раздел **«Люди»**:
+- **Співробітники** (`/people`) — поиск по имени/e-mail/телефону, фильтры: филиал, отдел, должность, статус (по умолчанию
+  «Працюючі» — без уволенных). Переключатель «таблица / карточки» запоминается в браузере. Админ: «Додати співробітника».
+- **Оргструктура** (`/people/org-chart`) — дерево «руководитель → подчинённые», ветки сворачиваются; поиск оставляет
+  совпадения вместе с их руководителями; «Моя команда» — только своя ветка; из профиля — «Показати в оргструктурі».
+- **Профиль** (`/people/:id`) — вкладки: *Огляд* (контакты, руководитель; личные поля — только себе и админу),
+  *Робота* и *Відсутності* (себе, руководителям выше и админу), *Запити на зміни*. Админ: «Редагувати», «Звільнити»
+  (дата последнего дня и причина; запись остаётся, человек пропадает из справочника и оргструктуры).
+- **Мій профіль** (меню пользователя → «Мій профіль», `/me`) — свой профиль и кнопка «Запит на зміну даних».
+  Без связанной записи — сообщение «обліковий запис ще не повʼязаний… зверніться до HR».
+- **Погодження** (`/timeoff/approvals`) — руководитель/админ видит там запросы на изменения своих людей и отпуска.
+- **Найм из рекрутинга**: перевели кандидата на этап найма → на карточке кандидата и на доске вакансии кнопка
+  «Створити співробітника». Повторное нажатие не создаёт дубль — откроется тот же сотрудник.
+
+## Как устроено
+Бэкенд — `backend/app/Modules/People`. Маршруты под `/api` (`routes.php`), все за `auth:sanctum` + `EnsureUserIsActive`.
+
+### Таблицы (миграция `Database/Migrations/2026_10_02_100001_create_people_tables.php`)
+| Таблица | Колонки | Заметки |
+|---|---|---|
+| `employees` | `user_id?` (unique, fk users), `full_name`, `work_email?`, `phone?`, `avatar_url?`, `birth_date?`, `personal_email?`, `address?`, `emergency_contact?`, `custom_fields jsonb?`, `hired_at`, `fired_at?`, `termination_reason?`, `status` (`active\|on_leave\|terminated`), `employment_type` (`full_time\|part_time\|contractor`), `work_schedule jsonb?` (`{days:[1..7], hours_per_day}`), `branch_id?`, `department_id?`, `position_id?`, `manager_id?` (fk employees), `candidate_id?` (unique), `application_id?` (unique) | уникальные `candidate_id`/`application_id` — ключи идемпотентности найма |
+| `employee_change_requests` | `employee_id`, `requested_by?`, `changes jsonb`, `status` (`pending\|approved\|rejected`), `decided_by?`, `decided_at?`, `comment?`, `decision_comment?` | только поля из белого списка `Enums/ChangeableField`: `phone, personal_email, address, emergency_contact` |
+
+### Доступ (`Services/PeopleScope` → `DTO/PeopleContext`)
+`PeopleScope::for(User)` один раз на запрос строит контекст: `admin` (активный superadmin/admin), `selfId` (запись,
+связанная с пользователем), `subtreeIds` — все сотрудники ниже по `manager_id` (обход в `Support/ReportingTree`,
+устойчив к циклам в данных). Флаги по сотруднику: `job` (admin, сам, руководитель выше), `pii` (admin, сам),
+`decide` (admin или руководитель выше; своё не решает никто, кроме админа), `manage` (admin). Ответ профиля
+(`Http/Resources/EmployeeResource`) **не содержит** скрытых уровней вовсе (ключей нет), а `access` говорит интерфейсу,
+какие вкладки показывать. Gate `people-manage` (`Providers/PeopleServiceProvider::MANAGE`) — запись сотрудников.
+Эти же правила использует модуль TimeOff ([timeoff.md](timeoff.md)).
+
+### Эндпоинты
+| Метод и путь | Кто | Параметры / тело | Ответ |
+|---|---|---|---|
+| `GET /api/people` | любой активный | `q, branch_id, department_id, position_id, manager_id, status, perPage` 1..200 (строка `"20"` ок), `page` | пагинация, только уровень «справочник»; без `status` — все, кроме уволенных; `status=terminated` — админу все, руководителю только его бывшие подчинённые, остальным пусто |
+| `GET /api/people/{id}` | любой активный | — | профиль по уровням + `access`; **уволенный** — только админу и руководителям выше него, остальным 404 |
+| `POST /api/people` | admin | `full_name, hired_at` (обязательны), остальные поля; `status` только `active\|on_leave` | 201 |
+| `PATCH /api/people/{id}` | admin | частично; `manager_id` на себя или на подчинённого → 422 `manager_cycle`; занятый `user_id` → 422 | 200 |
+| `POST /api/people/{id}/terminate` | admin | `{fired_at, reason?}` | 200; повтор → 409 `already_terminated` |
+| `GET /api/people/org-chart` | любой активный | `branch_id?`, `root_id?`, `mine=1` (своя ветка) | лес `{id, full_name, avatar_url, position, department, branch, reports_count, reports[]}` без уволенных; только уровень «справочник» |
+| `GET /api/me/employee` | любой активный | — | свой профиль; нет связи → 404 `no_employee` |
+| `POST /api/me/employee/change-requests` | сам | `{changes: {phone?, personal_email?, address?, emergency_contact?}, comment?}`; другой ключ → 422 | 201 |
+| `GET /api/people/change-requests` | любой активный | `status?, employee_id?, perPage` | admin — все; остальные — свои и людей ниже себя; `can_decide` в строке |
+| `POST /api/people/change-requests/{id}/approve\|reject` | admin или руководитель выше | `{comment?}` | 200; чужой → 403; уже решён → 409 `already_decided`. Одобрение применяет значения (белый список проверяется ещё раз при применении) |
+| `POST /api/applications/{id}/hire` | кто может двигать заявку (`ApplicationPolicy::move`: admin, recruiter своего филиала) | `{hired_at?}` (`Y-m-d`, по умолч. сегодня) | 201 `{data: employee, meta: {created: true}}`; уже есть сотрудник для заявки/кандидата → 200 `created: false`; заявка не на этапе найма → 422 `not_hired` |
+
+Найм (`Services/HireService`): ФИО и телефон — из кандидата, e-mail кандидата → `personal_email` (рабочий задаёт админ),
+филиал/отдел/должность — из вакансии, `employment_type = full_time`. Гонка двух кликов ловится уникальным индексом и
+возвращает существующего. `create()` тоже проверяет цикл руководителя (сейчас он невозможен у новой записи, проверка —
+на случай будущего переноса поддерева). Создание сотрудника (вручную или наймом) шлёт событие `Events/EmployeeHired` — TimeOff сразу
+начисляет отпуск текущего периода. Удаления нет (405): людей увольняют.
+
+### Слои
+`Http/Controllers` (`PeopleController`, `MyEmployeeController`, `ChangeRequestController`, `HireController`) →
+`Http/Requests` → `Services` (`EmployeeService`, `ChangeRequestService`, `HireService`, `PeopleScope`) →
+`Contracts/EmployeeRepository`, `ChangeRequestRepository` (`Repositories/Eloquent*`). Ошибки — `Exceptions/PeopleException`
+(`{message, code}`). Фабрика `Database/Factories/EmployeeFactory` — синтетика на `example.test`.
+
+### Фронтенд (`frontend/src/app/features/people`)
+| Файл | Что |
+|---|---|
+| `people.model.ts`, `people.service.ts` | типы, HTTP, `peopleErrorKey`, `diffChanges` (в запрос уходят только изменённые поля) |
+| `people.access.ts`, `org-tree.ts` | `canManagePeople`; раскрытие/поиск/подсчёт узлов оргструктуры, инициалы |
+| `directory/` | `/people` — таблица/карточки, фильтры (`PeopleStore`) |
+| `profile/` | `/people/:id`, `/me` — вкладки по `access` (`ProfileStore`, `profileTabs`), диалоги: сотрудник, увольнение, запрос на изменение |
+| `org-chart/` | `/people/org-chart` — сворачиваемое дерево на вложенных списках и CSS, без библиотек |
+| `hire.action.ts` | «Створити співробітника» с доски и карточки кандидата, снекбар «Відкрити» |
+
+Строки — `people.*` в `public/i18n/{uk,ru,en}.json`.
+
+## Как проверить
+Бэкенд: `tests/Feature/People/PeopleApiTest` (401/403, справочник без PII и `perPage` строкой, фильтры, матрица видимости
+admin / сам / руководитель прямой и через уровень / коллега / посторонний / viewer, создание-правка-увольнение, запрет
+записи не-админам, цикл руководителя, оргструктура и `mine`, уволенные видны только админу и руководителям выше, `/me/employee`), `ChangeRequestApiTest` (белый список,
+область списка, одобрение руководителем через уровень, запрет себе/коллеге, 409, отклонение),
+`HireFromApplicationTest` (не на этапе найма → 422, создание из кандидата и вакансии, повтор → 200 тот же id, начисление
+отпуска при найме, права). Unit: `tests/Unit/People/PeopleScopeTest` (дерево, циклы, флаги), `PeopleServicesTest`.
+Фронт: `people.spec.ts`.
+
+Вручную (нужна сессия): `curl -i "https://sinhrm.vercel.app/api/people?perPage=20"` → без сессии 401.
+
+## Следующие шаги и вопросы
+- **Импорт сотрудников из Sintegrum** (`POST /api/people/import/sintegrum`) не сделан: эндпоинт списка пользователей
+  Sintegrum неизвестен. План — по образцу `Directory\Services\SintegrumDirectoryImporter` (токен из `SecretVault`,
+  `OutboundUrlGuard`, терпимый маппер `hired_at/fired_at`, `branch/department/job` → справочники по `external_id`),
+  пометка «не проверено на живом API», данные в репозиторий не попадают.
+- Роль `hr` (отдельно от `admin`) — нужно решение владельца.
+- Нет загрузки аватара (только `avatar_url`), нет истории должностей, нет конструктора доп. полей (`custom_fields` —
+  свободные пары ключ/значение, правятся через API).

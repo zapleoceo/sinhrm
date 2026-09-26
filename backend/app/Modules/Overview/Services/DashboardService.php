@@ -7,6 +7,7 @@ namespace App\Modules\Overview\Services;
 use App\Models\User;
 use App\Modules\Overview\Contracts\DashboardNotices;
 use App\Modules\Overview\Contracts\DashboardRepository;
+use App\Modules\Overview\Contracts\DashboardSection;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Services\RecruitingScope;
@@ -20,6 +21,7 @@ use Illuminate\Support\Carbon;
 /**
  * The home page in one request: counters, my tasks for today (overdue included), the 10 most stale applications,
  * the funnel of active applications and touches of the last 7 days by channel — all within the user's scope.
+ * Other modules add blocks through the DashboardSection tag (TimeOff: data.timeoff).
  */
 final readonly class DashboardService
 {
@@ -36,6 +38,8 @@ final readonly class DashboardService
         private TaskService $tasks,
         /** @var iterable<DashboardNotices> */
         private iterable $notices = [],
+        /** @var iterable<DashboardSection> */
+        private iterable $sections = [],
     ) {}
 
     /** @return array<string, mixed> */
@@ -48,7 +52,7 @@ final readonly class DashboardService
         $tasks = $this->tasks->list($actor, new TaskFilter(mine: true, due: TaskDue::Today), $now);
         $stale = $this->applications->stale($scope, $staleBefore, self::STALE_LIST);
 
-        return [
+        $data = [
             'counts' => $this->dashboard->counts($scope, $staleBefore, $now->copy()->startOfDay()),
             'stale_days' => StalenessService::DEFAULT_DAYS,
             'my_tasks' => [
@@ -77,6 +81,11 @@ final readonly class DashboardService
                 'by_channel' => $this->dashboard->touchesByChannel($scope, $now->copy()->subDays(self::TOUCH_DAYS)),
             ],
         ];
+        foreach ($this->sections as $section) {
+            $data[$section->key()] = $section->data($actor, $now);
+        }
+
+        return $data;
     }
 
     /** @return list<array<string, mixed>> notices of other modules (DashboardNotices tag) */

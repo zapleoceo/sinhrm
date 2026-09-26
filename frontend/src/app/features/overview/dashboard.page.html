@@ -49,6 +49,39 @@
       <app-tasks-widget [query]="myTasks" />
     </section>
 
+    @if (d.timeoff; as t) {
+      <section class="panel card">
+        <h2>{{ 'overview.outToday' | transloco: { n: t.out_today.length } }}</h2>
+        <ul class="rows">
+          @for (a of t.out_today; track a.id) {
+            <li>
+              <span class="dot" [style.background]="a.leave_type.color" aria-hidden="true"></span>
+              <a [routerLink]="['/people', a.employee.id]">{{ a.employee.full_name }}</a>
+              <span class="muted">{{ a.leave_type.name }} · {{ 'overview.until' | transloco: { date: (a.ends_on | date: 'dd.MM') } }}</span>
+            </li>
+          } @empty {
+            <li class="muted">{{ 'overview.nobodyOut' | transloco }}</li>
+          }
+        </ul>
+        <a mat-button routerLink="/timeoff/calendar">{{ 'overview.toCalendar' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+      </section>
+      @if (t.my_approvals.count > 0) {
+        <section class="panel card">
+          <h2>{{ 'overview.myApprovals' | transloco: { n: t.my_approvals.count } }}</h2>
+          <ul class="rows">
+            @for (r of t.my_approvals.items; track r.id) {
+              <li>
+                <span class="dot" [style.background]="r.leave_type.color" aria-hidden="true"></span>
+                <a [routerLink]="['/people', r.employee.id]">{{ r.employee.full_name }}</a>
+                <span class="muted">{{ r.leave_type.name }} · {{ r.starts_on | date: 'dd.MM' }}–{{ r.ends_on | date: 'dd.MM' }} · {{ 'timeoff.daysCount' | transloco: { n: r.days } }}</span>
+              </li>
+            }
+          </ul>
+          <a mat-button routerLink="/timeoff/approvals">{{ 'overview.toApprovals' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+        </section>
+      }
+    }
+
     <section class="panel card">
       <h2>{{ 'overview.stale' | transloco: { days: d.stale_days } }}</h2>
       <ul class="rows">
