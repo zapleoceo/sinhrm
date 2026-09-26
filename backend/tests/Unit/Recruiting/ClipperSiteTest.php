@@ -20,6 +20,8 @@ final class ClipperSiteTest extends TestCase
         yield 'work.ua language prefix' => [ClipperSite::WorkUa, 'https://www.work.ua/ru/resumes/123/', 'https://work.ua/resumes/123'];
         yield 'djinni' => [ClipperSite::Djinni, 'https://djinni.co/q/abc/', 'https://djinni.co/q/abc'];
         yield 'dou' => [ClipperSite::Dou, 'https://dou.ua/users/test-person/', 'https://dou.ua/users/test-person'];
+        yield 'robota.ua candidate' => [ClipperSite::RobotaUa, 'https://www.robota.ua/ru/candidates/123/?x=1', 'https://robota.ua/candidates/123'];
+        yield 'robota.ua cv' => [ClipperSite::RobotaUa, 'https://robota.ua/ua/cv/abc', 'https://robota.ua/cv/abc'];
         yield 'http refused' => [ClipperSite::Dou, 'http://dou.ua/users/test-person/', null];
         yield 'other host' => [ClipperSite::Dou, 'https://dou.ua.example.com/users/x', null];
         yield 'subdomain refused' => [ClipperSite::Linkedin, 'https://ua.linkedin.com/in/x', null];

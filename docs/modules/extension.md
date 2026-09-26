@@ -1,7 +1,7 @@
 # Модуль Extension (браузерное расширение «SinHRM Clipper»)
 
 ## Что это и зачем
-Рекрутер смотрит профиль кандидата на LinkedIn, Work.ua, Djinni или DOU и хочет добавить его в SinHRM, не перепечатывая
+Рекрутер смотрит профиль кандидата на LinkedIn, Work.ua, Djinni, DOU или Robota.ua и хочет добавить его в SinHRM, не перепечатывая
 данные. Он нажимает кнопку расширения на панели Chrome — открывается окошко с тем, что расширение нашло **на этой
 странице** (имя, должность/заголовок, город, видимые контакты, ссылка на профиль, текст «о себе» до 2000 символов).
 Можно поправить поля, выбрать вакансию (необязательно) и нажать «Додати в SinHRM». Если такой кандидат уже есть
@@ -41,9 +41,11 @@
 | Work.ua | `https://www.work.ua/resumes/<id>/` (также `/ru/…`, `/en/…`) |
 | Djinni | `https://djinni.co/q/<id>/…` |
 | DOU | `https://dou.ua/users/<slug>/` |
+| Robota.ua | `https://robota.ua/candidates/<id>`, `https://robota.ua/cv/<id>` (также `/ua/…`, `/ru/…`, `/en/…`, `www.`) — страницы резюме видны работодателю после входа |
 
-**Robota.ua пока не поддерживается** (пробел): её кандидаты попадают в систему только через письма-отклики
-([mail-agent.md](mail-agent.md)). API у сайтов вакансий нет, поэтому интеграций с ними тоже нет ([integrations.md](integrations.md)).
+**Robota.ua:** шаблоны адресов и селекторы не проверены на живом сайте (публичные страницы отдают ботам 403) — по
+аналогии с остальными сайтами не калибровались на реальных страницах под входом; поля, которых нет, остаются пустыми.
+Кандидаты Robota.ua также приходят через письма-отклики ([mail-agent.md](mail-agent.md)); источник тот же — `robota_ua`. API у сайтов вакансий нет, поэтому интеграций с ними тоже нет ([integrations.md](integrations.md)).
 
 На остальных страницах окошко сообщает, что страница не поддерживается, и ничего не читает.
 
@@ -51,7 +53,7 @@
 - **LinkedIn запрещает автоматический сбор данных** (User Agreement, раздел про scraping/automation) и активно блокирует
   аккаунты за него. Расширение сделано так, чтобы оставаться ручным инструментом: одна открытая страница, явный клик,
   никаких фоновых запросов, обхода, открытия вкладок. Тем не менее риск остаётся на стороне пользователя: решение
-  использовать расширение на LinkedIn — за владельцем процесса. Work.ua, Djinni и DOU также ограничивают массовый сбор.
+  использовать расширение на LinkedIn — за владельцем процесса. Work.ua, Djinni, DOU и Robota.ua также ограничивают массовый сбор.
 - Расширение передаёт в SinHRM только то, что человек видит на странице и подтверждает кнопкой. Персональные данные
   кандидата обрабатываются по правилам [secrets.md](../architecture/secrets.md) (Закон Украины №2297-VI).
 - Токен хранится в `chrome.storage.local` этого браузера. Он даёт доступ **только** к `/api/clipper/*`
@@ -71,11 +73,11 @@
 TypeScript без фреймворка, сборка esbuild, тесты Vitest + jsdom, линт ESLint (typescript-eslint).
 | Файл | Что |
 |---|---|
-| `static/manifest.json` | MV3: `permissions: activeTab, scripting, storage`; `host_permissions` — только четыре сайта и `https://sinhrm.vercel.app/*`; без content scripts и service worker |
+| `static/manifest.json` | MV3: `permissions: activeTab, scripting, storage`; `host_permissions` — только пять сайтов (для Robota.ua — `robota.ua` и `www.robota.ua`) и `https://sinhrm.vercel.app/*`; без content scripts и service worker |
 | `src/popup.ts`, `static/popup.html` | окошко: определение сайта по адресу вкладки, извлечение, форма, отправка |
-| `src/detect.ts` | адрес вкладки → `linkedin \| work_ua \| djinni \| dou` или «не поддерживается» |
+| `src/detect.ts` | адрес вкладки → `linkedin \| work_ua \| djinni \| dou \| robota_ua` или «не поддерживается» |
 | `src/extract.ts` | точка входа внедряемого скрипта: собирается в один самодостаточный `extract.js`, последняя строка — вызов `run()`; popup вызывает `chrome.scripting.executeScript({files: ['extract.js']})` и получает результат последнего выражения (вариант с `func:` не подходит — функция сериализуется без импортов) |
-| `src/extractors/{common,linkedin,workua,djinni,dou}.ts` | извлечение: JSON-LD → `og:` → DOM; `profile_url` — `<link rel=canonical>` → `og:url` → адрес вкладки, без query/hash; `summary` ≤ 2000 символов |
+| `src/extractors/{common,linkedin,workua,djinni,dou,robotaua}.ts` | извлечение: JSON-LD → `og:` → DOM; `profile_url` — `<link rel=canonical>` → `og:url` → адрес вкладки, без query/hash; `summary` ≤ 2000 символов |
 | `src/api.ts` | `GET /api/clipper/me`, `POST /api/clipper/candidates`, `Authorization: Bearer`, `credentials: 'omit'` |
 | `src/settings.ts`, `src/options.ts`, `static/options.html` | адрес API (только https, по умолчанию `https://sinhrm.vercel.app`) и токен в `chrome.storage.local`, проверка соединения |
 | `src/i18n/{uk,ru,en}.json` | строки интерфейса (язык браузера; uk/ru, иначе en) |
@@ -91,11 +93,11 @@ TypeScript без фреймворка, сборка esbuild, тесты Vitest 
 | `POST /api/me/extension-token` | сессия | 201 + `token` (открытый текст, один раз); предыдущий токен удаляется |
 | `DELETE /api/me/extension-token` | сессия | 204 |
 | `GET /api/clipper/me` | токен `clipper` | `{user: {id, name, email}, vacancies: [{id, title, branch}]}` — открытые вакансии в области видимости |
-| `POST /api/clipper/candidates` | токен `clipper`, роль с правом записи | `{full_name, source_site (linkedin\|work_ua\|djinni\|dou), profile_url, headline?, location?, phone?, email?, telegram?, summary?, vacancy_id?}` → 201 `{candidate_id, url, created: true}` / 200 `{…, created: false}`; 409 `duplicate_candidate {restricted: true}`; 403 `vacancy_out_of_scope`; 422 (в т.ч. `profile_url` не https или не на хосте сайта); 429 |
+| `POST /api/clipper/candidates` | токен `clipper`, роль с правом записи | `{full_name, source_site (linkedin\|work_ua\|djinni\|dou\|robota_ua), profile_url, headline?, location?, phone?, email?, telegram?, summary?, vacancy_id?}` → 201 `{candidate_id, url, created: true}` / 200 `{…, created: false}`; 409 `duplicate_candidate {restricted: true}`; 403 `vacancy_out_of_scope`; 422 (в т.ч. `profile_url` не https или не на хосте сайта); 429 |
 
 Подробности токенов — [auth.md](auth.md#токены-браузерного-расширения), дедупликации и заметки — [recruiting.md](recruiting.md).
 
-**Интерфейс (2026-09-26):** Под описанием — строка «Підтримувані сайти» с иконками LinkedIn, Work.ua, Djinni, DOU (`app-channel-icon`, [core.md](core.md)), тот же набор, что в `extension/src/extractors`.
+**Интерфейс (2026-09-26):** Под описанием — строка «Підтримувані сайти» с иконками LinkedIn, Work.ua, Djinni, DOU, Robota.ua (`app-channel-icon`, [core.md](core.md)), тот же набор, что в `extension/src/extractors`.
 
 ## Как проверить
 - Расширение: `cd extension && npm ci && npm run lint && npm run typecheck && npm test && npm run package`

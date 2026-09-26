@@ -97,3 +97,26 @@ describe('unsupported page', () => {
     expect(extractFromDocument(doc, 'https://example.com/in/x')).toEqual({ ok: false, error: 'unsupported_site' });
   });
 });
+
+describe('robota.ua (DOM, uncalibrated selectors)', () => {
+  it('reads data-id fields, contacts and canonical', () => {
+    const p = profileOf(fixture('robotaua.html'), 'https://robota.ua/ua/candidates/12345678#x');
+    expect(p.full_name).toBe('Mykola Vyhadanenko');
+    expect(p.headline).toBe('Invented Sales Manager');
+    expect(p.location).toBe('Testopil');
+    expect(p.summary).toBe('Invented experience: 3 years in fictional company.');
+    expect(p.email).toBe('mykola.fake@example.com');
+    expect(p.phone).toBe('+380000000002');
+    expect(p.profile_url).toBe('https://robota.ua/candidates/12345678');
+    expect(p.source_site).toBe('robota_ua');
+  });
+
+  it('tolerates a sparse page (only h1): other fields empty', () => {
+    const doc = new DOMParser().parseFromString('<html><body><h1>Test Person</h1></body></html>', 'text/html');
+    const p = profileOf(doc, 'https://robota.ua/cv/abc');
+    expect(p.full_name).toBe('Test Person');
+    expect(p.headline).toBe('');
+    expect(p.location).toBe('');
+    expect(p.email).toBeUndefined();
+  });
+});
