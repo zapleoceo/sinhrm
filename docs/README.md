@@ -11,7 +11,7 @@
 | Кому | Что читать |
 |---|---|
 | Руководитель / рекрутер | [Обзор модулей](modules/README.md) |
-| Разработчик | [Архитектура](architecture/overview.md) → [Правила разработки](guides/development.md) → [Деплой](guides/deploy.md) |
+| Разработчик | [Архитектура](architecture/overview.md) → [Правила разработки](guides/development.md) → [Деплой](guides/deploy.md) → [API: документация и .http-примеры](guides/api.md) |
 | Про безопасность | [Секреты и персональные данные](architecture/secrets.md) |
 | Решения и почему | [ADR](adr/) |
 | Что сделано | [Журнал работ](worklog.md) |
