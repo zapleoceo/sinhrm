@@ -43,6 +43,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Overview (главная страница — дашборд) | ✅ | [modules/overview.md](../modules/overview.md) |
 | GoogleWorkspace (OAuth-подключение Gmail/Calendar/Sheets, встречи, импорт из таблиц) | ✅ | [modules/google-workspace.md](../modules/google-workspace.md) |
 | MailAgent (разбор Gmail: отклики → кандидаты и задачи, письма кандидатов → касания) | ✅ | [modules/mail-agent.md](../modules/mail-agent.md) |
+| Channels (вебхуки мессенджеров и телефонии → лента кандидата, отправка из карточки, демо-события) | ✅ код, включается токенами | [modules/channels.md](../modules/channels.md) |
 
 ## Фронтенд
 `frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.
@@ -53,7 +54,9 @@ Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн �
 - Фоновые задачи выполняются с задержкой до ~30 мин (частота cron): модули регистрируют `Core\Contracts\ScheduledJob`,
   cron вызывает `POST /api/ops/jobs/run` ([core.md](../modules/core.md)).
 - Работа «после ответа» (оценка разговора по скрипту) — `dispatchAfterResponse()` в том же запросе, без очереди.
-- Постоянные соединения (Telegram userbot, WebSocket) невозможны — только вебхуки.
+- Постоянные соединения (Telegram userbot, WebSocket) невозможны — только вебхуки: Telegram Business, WhatsApp Cloud, Viber и
+  телефония присылают события на `POST /api/webhooks/{key}` ([channels.md](../modules/channels.md)); все каналы пишут касания
+  через один `TouchpointIngestor`.
 - Google (Gmail, Calendar v3, Sheets v4, OAuth token endpoint) вызывается REST-запросами Laravel HTTP-клиента, без
   `google/apiclient` (слишком тяжёл для serverless-бандла). Почта читается опросом раз в 30 мин (cron `mail.sync`), без
   push-уведомлений Gmail (Pub/Sub) — [mail-agent.md](../modules/mail-agent.md).

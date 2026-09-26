@@ -17,6 +17,8 @@ final class TouchpointResource extends JsonResource
         // e-mail (mail agent) and meetings (Google Calendar)
         'subject', 'from', 'parser', 'full_name', 'vacancy_title', 'cv_url',
         'event_id', 'meet_link', 'html_link', 'start', 'end', 'meeting_type', 'title',
+        // channels (Channels module): demo = recorded in demo mode without a provider call
+        'sender_name', 'call_status', 'edited', 'demo',
     ];
 
     /** @return array<string, mixed> */

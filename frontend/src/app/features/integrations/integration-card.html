@@ -107,6 +107,10 @@
       }
     </form>
 
+    @if (it.group === 'messengers' || it.group === 'telephony') {
+      <app-channel-panel [key]="it.key" [status]="it.status" (acted)="loadLogs()" />
+    }
+
     <section class="logs" aria-live="polite">
       <h4>{{ 'integrations.logs.title' | transloco }}</h4>
       @if (logsFailed()) {

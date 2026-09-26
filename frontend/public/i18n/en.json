@@ -166,6 +166,19 @@
       "empty": "No events yet",
       "error": "Could not load events",
       "messages": {
+        "webhook_received": "Webhook: new events received",
+        "webhook_rejected": "Webhook rejected: bad signature or token",
+        "webhook_registered": "Webhook registered",
+        "webhook_register_failed": "Webhook registration failed",
+        "test_sent": "Test message sent",
+        "test_failed": "Test message failed",
+        "send_failed": "Message to a candidate not sent",
+        "simulated": "Demo event created",
+        "delivery_failed": "Provider reported an undelivered message",
+        "business_connected": "Telegram Business: bot connected to an account",
+        "business_disconnected": "Telegram Business: bot disconnected from an account",
+        "call_requested": "Call requested from the card",
+        "call_failed": "Call request failed",
         "settings_updated": "Settings changed",
         "status_changed": "Mode changed",
         "check_connected": "Check: connected",
@@ -188,6 +201,11 @@
       "confirm": "Confirm"
     },
     "fields": {
+      "webhook_secret": "Webhook secret (created by \"Register webhook\")",
+      "app_secret": "App secret (webhook signature)",
+      "verify_token": "Verify token (webhook check)",
+      "webhook_token": "Webhook token (?token=…)",
+      "callback_extension": "Extension for calls from the card",
       "base_url": "API address",
       "project_key": "Project key",
       "daily_cap_usd": "Daily cap, $",
@@ -449,6 +467,13 @@
       "validation": "Check the fields",
       "generic": "Action failed"
     }
+  },
+  "channels": {
+    "panel": {"title": "Webhook", "copy": "Copy URL", "copied": "URL copied", "tokenPlaceholder": "YOUR_WEBHOOK_TOKEN", "handshakeHint": "Meta verifies the URL with a GET request: put the same Verify token in the console as here.", "register": "Register webhook", "registered": "Webhook registered", "simulate": "Demo event", "simulated": "Demo event created — see Inbox or the candidate card", "sendTest": "Send test", "testSent": "Test message sent", "testText": "Text (optional)", "testTo": {"telegram_business": "Recipient chat ID", "whatsapp_cloud": "Recipient phone", "viber": "Recipient Viber ID"}},
+    "auth": {"header_secret": "Check: secret header set when the webhook is registered.", "hmac": "Check: HMAC-SHA256 signature of the request body.", "query_token": "Check: shared token in the URL (?token=…) — provisional, the provider format is not confirmed."},
+    "steps": {"telegram_business": "Enter the bot token → Save → mode \"Demo\" → \"Register webhook\". Then in Telegram: Settings → Telegram Business → Chatbots → add the bot with the reply right.", "whatsapp_cloud": "Meta for Developers → your app → WhatsApp → Configuration → Callback URL = this URL, Verify token = the field above; subscribe to the messages field.", "viber": "Enter the bot token (partners.viber.com) → Save → mode \"Demo\" → \"Register webhook\".", "phonet": "Phonet account → API / Webhooks → the URL above with your token (\"Webhook token\" field). Event format not confirmed.", "ringostat": "Ringostat → Integrations → Webhooks → event \"After the call\", the URL above with your token; fields — see the Channels module docs.", "binotel": "Binotel → Settings → API CALL COMPLETED → the URL above with your token. Format not confirmed."},
+    "composer": {"send": "Send", "sendDemo": "Send (demo)", "sent": "Message sent", "sentDemo": "Demo: the message was recorded without sending", "notConnected": "The channel is not connected — the message was not sent.", "logManually": "Log manually"},
+    "errors": {"channel_not_connected": "Channel not connected", "no_conversation": "The candidate has not written in this channel yet — nowhere to reply", "template_required": "WhatsApp: more than 24 hours since the candidate's last message — an approved template is required", "invalid_recipient": "Invalid recipient", "send_failed": "The service did not accept the message, try later", "telephony_not_connected": "Telephony is not connected", "click_to_call_unsupported": "This telephony cannot call from the card", "no_phone": "The candidate has no phone", "not_demo": "Demo events are available only in \"Demo\" mode", "channel_off": "Switch the integration on first (\"Demo\" mode)", "unsupported": "Not available for this integration", "application_mismatch": "The application belongs to another candidate", "generic": "Could not complete the action"}
   },
   "titles": { "login": "Sign in", "overview": "Overview", "vacancies": "Vacancies", "board": "Vacancy board", "candidates": "Candidates", "inbox": "Inbox", "reports": "Reports", "status": "System status", "scripts": "Scripts", "scriptEditor": "Script editor", "users": "Users", "directory": "Dictionaries", "integrations": "Integrations", "mail": "Mail", "sheetsImport": "Google Sheets import" },
   "overview": {

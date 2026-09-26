@@ -25,6 +25,9 @@ final class PhonetDefinition extends AbstractDefinition
         return [
             FieldSpec::text('domain', required: true),
             FieldSpec::secret('api_key'),
+            // Shared secret of the webhook URL (?token=…), compared in constant time. Provisional: the provider's
+            // own signature scheme is not confirmed on a real account.
+            FieldSpec::secret('webhook_token', required: false),
         ];
     }
 }

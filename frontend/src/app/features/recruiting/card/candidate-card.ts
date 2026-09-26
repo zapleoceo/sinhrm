@@ -11,6 +11,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
+import { SendMessage } from '../../channels/channels.model';
+import { channelErrorCode, channelErrorKey } from '../../channels/channels.service';
 import { GoogleService } from '../../google-workspace/google.service';
 import { MeetingDialog, MeetingDialogData } from '../../google-workspace/meeting.dialog';
 import { EvaluationBadge } from '../../scripts/evaluation/evaluation-badge';
@@ -129,6 +131,23 @@ export class CandidateCard {
       error: (e: unknown) => {
         this.composer()?.setBusy(false);
         this.toast(recruitingErrorKey(e));
+      },
+    });
+  }
+
+  protected send(body: SendMessage): void {
+    this.store.sendMessage(body).subscribe({
+      next: (touch) => {
+        this.composer()?.reset();
+        this.toast(touch.meta.demo === true ? 'channels.composer.sentDemo' : 'channels.composer.sent');
+      },
+      error: (e: unknown) => {
+        if (channelErrorCode(e) === 'channel_not_connected') {
+          this.composer()?.offerManual();
+        } else {
+          this.composer()?.setBusy(false);
+        }
+        this.toast(channelErrorKey(e));
       },
     });
   }

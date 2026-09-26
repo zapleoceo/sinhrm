@@ -36,6 +36,7 @@ final class IntegrationService
         private readonly IntegrationRegistry $registry,
         private readonly IntegrationRepository $integrations,
         private readonly SecretVault $vault,
+        private readonly IntegrationConfigLoader $loader,
     ) {}
 
     /** @return list<IntegrationView> */
@@ -176,20 +177,7 @@ final class IntegrationService
 
     private function config(IntegrationDefinition $definition): IntegrationConfig
     {
-        $stored = $this->integrations->find($definition->key())->settings ?? [];
-        $settings = [];
-        foreach ($this->fields($definition, secret: false) as $field) {
-            $settings[$field->name] = $stored[$field->name] ?? $field->default;
-        }
-        $secrets = [];
-        foreach ($this->fields($definition, secret: true) as $field) {
-            $value = $this->vault->get($definition->key(), $field->name);
-            if ($value !== null && $value !== '') {
-                $secrets[$field->name] = $value;
-            }
-        }
-
-        return new IntegrationConfig($definition->key(), $settings, $secrets);
+        return $this->loader->load($definition);
     }
 
     private function missingSecret(IntegrationDefinition $definition, IntegrationConfig $config): ?CheckResult

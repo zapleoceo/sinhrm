@@ -10,6 +10,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { ChannelPanel } from '../channels/channel-panel';
 import { Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
 import { IntegrationsStore } from './integrations.store';
@@ -30,6 +31,7 @@ const URL_PATTERN = /^https:\/\/\S+$/i;
     MatProgressBarModule,
     MatSelectModule,
     TranslocoPipe,
+    ChannelPanel,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './integration-card.html',

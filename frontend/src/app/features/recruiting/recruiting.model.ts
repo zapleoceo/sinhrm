@@ -210,6 +210,11 @@ export interface TouchpointMeta {
   end?: string;
   meeting_type?: 'branch' | 'online';
   title?: string;
+  /** channels (Channels module): sender name, telephony call status, edited message, recorded in demo mode */
+  sender_name?: string;
+  call_status?: string;
+  edited?: boolean;
+  demo?: boolean;
 }
 
 /** Short script evaluation on a timeline touchpoint (backend Scripts ScriptEvaluation::summary). */

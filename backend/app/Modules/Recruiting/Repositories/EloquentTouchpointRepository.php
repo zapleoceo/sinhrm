@@ -29,6 +29,40 @@ final class EloquentTouchpointRepository implements TouchpointRepository
         return Touchpoint::query()->where('channel', $channel->value)->where('external_id', $externalId)->first();
     }
 
+    public function candidateIdByThread(Channel $channel, string $thread): ?int
+    {
+        $id = Touchpoint::query()
+            ->where('channel', $channel->value)
+            ->where('meta->thread', $thread)
+            ->whereNotNull('candidate_id')
+            ->orderByDesc('id')
+            ->value('candidate_id');
+
+        return $id === null ? null : (int) $id;
+    }
+
+    public function latestThreadOf(int $candidateId, Channel $channel): ?Touchpoint
+    {
+        return Touchpoint::query()
+            ->where('candidate_id', $candidateId)
+            ->where('channel', $channel->value)
+            ->whereNotNull('meta->thread')
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    public function lastInboundAt(int $candidateId, Channel $channel): ?Carbon
+    {
+        $at = Touchpoint::query()
+            ->where('candidate_id', $candidateId)
+            ->where('channel', $channel->value)
+            ->where('direction', 'in')
+            ->max('occurred_at');
+
+        return is_string($at) ? Carbon::parse($at) : null;
+    }
+
     public function create(array $attributes): Touchpoint
     {
         return Touchpoint::query()->create($attributes);
