@@ -53,8 +53,9 @@ return new class extends Migration
             // running | completed | cancelled
             $table->string('status', 16)->default('running');
             $table->foreignId('started_by')->nullable()->constrained('users')->nullOnDelete();
-            // Automatic starts: the trigger value — one run per (template, employee, trigger). Manual: null.
-            $table->string('trigger_key', 32)->nullable();
+            // Automatic starts: "<trigger>:<anchor date>" — one run per (template, employee, occurrence); a rehire with a
+            // new hired_at is a new occurrence. Manual: null.
+            $table->string('trigger_key', 64)->nullable();
             $table->foreignId('parent_run_id')->nullable()->constrained('workflow_runs')->nullOnDelete();
             $table->unsignedTinyInteger('depth')->default(0);
             $table->timestamp('completed_at')->nullable();

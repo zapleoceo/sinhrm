@@ -47,7 +47,7 @@ final class WorkflowRunResource extends JsonResource
             'employee' => ['id' => $this->employee->id, 'full_name' => $this->employee->full_name],
             'anchor_date' => $this->anchor_date->toDateString(),
             'status' => $this->status->value,
-            'trigger' => $this->trigger_key ?? 'manual',
+            'trigger' => $this->trigger_key === null ? 'manual' : explode(':', $this->trigger_key, 2)[0],
             'started_by' => $this->starter === null ? null : ['id' => $this->starter->id, 'name' => $this->starter->name],
             'parent_run_id' => $this->parent_run_id,
             'depth' => $this->depth,

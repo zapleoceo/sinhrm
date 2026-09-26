@@ -47,7 +47,7 @@
 |---|---|---|
 | `workflow_templates` | `name, kind (onboarding\|offboarding\|custom), trigger (manual\|employee_hired\|employee_terminated\|probation_end), active, probation_days (по умолч. 90), created_by?` | удаление — только без запусков (иначе 409 `has_runs`, деактивируйте) |
 | `workflow_steps` | `template_id, position, title, action, offset_days (-365..365), assignee_rule (employee\|manager\|hr_admin\|specific_user), assignee_user_id?, config jsonb` | `config` проверяет исполнитель действия; секретов в нём нет |
-| `workflow_runs` | `template_id, employee_id, template_name, anchor_date, status (running\|completed\|cancelled), started_by?, trigger_key?, parent_run_id?, depth, completed_at?` | `unique(template_id, employee_id, trigger_key)` — автозапуск идемпотентен (ручной, `trigger_key = null`, — нет) |
+| `workflow_runs` | `template_id, employee_id, template_name, anchor_date, status (running\|completed\|cancelled), started_by?, trigger_key?, parent_run_id?, depth, completed_at?` | `trigger_key = "<триггер>:<дата-якорь>"` (например `employee_hired:2026-10-05`), `unique(template_id, employee_id, trigger_key)` — автозапуск идемпотентен **на один случай** (повторное событие того же найма игнорируется), а повторный найм с новой `hired_at` / новое увольнение запускает шаблон снова; ручной запуск (`trigger_key = null`) — всегда новый |
 | `workflow_run_steps` | `run_id, step_id? (null on delete), position, snapshot jsonb, assignee_id?, due_at, status (pending\|done\|skipped\|failed), executed_at?, attempts, completed_by?, completed_at?, result jsonb?` | `snapshot` — копия шага при запуске; `result` — только коды и id |
 
 ### Запуск (`Services/WorkflowStarter`)
@@ -59,8 +59,8 @@
 **Триггеры** (`Services/WorkflowTriggers`, слушатели в `Listeners/`): событие People `EmployeeHired` (ручное создание и
 найм из рекрутинга) → активные шаблоны `employee_hired`, якорь `hired_at`; `EmployeeTerminated` → `employee_terminated`,
 якорь `fired_at`; `probation_end` — в тике: неуволенные сотрудники, у которых `hired_at + probation_days` попадает в
-последние 7 дней (`PROBATION_WINDOW_DAYS`, переживает пропуски cron), якорь — эта дата. Повторное событие не создаёт
-второй запуск (уникальный индекс + `insertOrIgnore`, безопасно при гонке). Ошибка одного шаблона пишется в лог
+последние 7 дней (`PROBATION_WINDOW_DAYS`, переживает пропуски cron), якорь — эта дата. Повторное событие того же случая (тот же триггер и та же дата-якорь) не создаёт
+второй запуск; повторный найм с новой датой приёма — создаёт (уникальный индекс + `insertOrIgnore`, безопасно при гонке). Ошибка одного шаблона пишется в лог
 `workflows.trigger_failed` и **не ломает** запрос найма/увольнения.
 
 ### Выполнение (`Services/StepRunner`, задание `workflows.tick`)

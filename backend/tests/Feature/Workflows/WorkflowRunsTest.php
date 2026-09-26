@@ -65,8 +65,23 @@ final class WorkflowRunsTest extends TestCase
         $this->assertNotNull($run);
         $this->assertSame($template->id, $run->template_id);
         $this->assertSame('2026-10-07', $run->anchor_date->toDateString());
-        $this->assertSame('employee_hired', $run->trigger_key);
+        $this->assertSame('employee_hired:2026-10-07', $run->trigger_key);
         $this->assertNull($run->started_by);
+    }
+
+    public function test_rehire_with_a_new_hire_date_starts_onboarding_again(): void
+    {
+        $this->workflow([['create_task']], ['trigger' => 'employee_hired']);
+        $employee = $this->employee(['hired_at' => '2025-01-10']);
+        event(new EmployeeHired($employee));
+        event(new EmployeeHired($employee));
+        $this->assertSame(1, WorkflowRun::query()->count(), 'same occurrence is idempotent');
+
+        $employee->update(['hired_at' => '2026-10-05', 'fired_at' => null, 'status' => 'active']);
+        event(new EmployeeHired($employee->refresh()));
+        event(new EmployeeHired($employee));
+
+        $this->assertSame(['employee_hired:2025-01-10', 'employee_hired:2026-10-05'], WorkflowRun::query()->orderBy('id')->pluck('trigger_key')->all());
     }
 
     public function test_termination_starts_offboarding_anchored_on_the_last_day(): void

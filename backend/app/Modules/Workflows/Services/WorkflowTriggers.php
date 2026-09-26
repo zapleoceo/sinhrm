@@ -61,6 +61,15 @@ final readonly class WorkflowTriggers
         return $started;
     }
 
+    /**
+     * Idempotency key of one occurrence: "<trigger>:<anchor date>". A duplicate event for the same hire/termination
+     * is ignored, a rehire (new hired_at) or a second termination starts the template again.
+     */
+    public static function occurrenceKey(WorkflowTrigger $trigger, Carbon $anchor): string
+    {
+        return $trigger->value.':'.$anchor->toDateString();
+    }
+
     private function startAll(WorkflowTrigger $trigger, Employee $employee, Carbon $anchor): int
     {
         $started = 0;
@@ -74,7 +83,7 @@ final readonly class WorkflowTriggers
     private function startOne(WorkflowTemplate $template, Employee $employee, Carbon $anchor, WorkflowTrigger $trigger): int
     {
         try {
-            return $this->starter->start($template, $employee, $anchor, null, $trigger->value) === null ? 0 : 1;
+            return $this->starter->start($template, $employee, $anchor, null, self::occurrenceKey($trigger, $anchor)) === null ? 0 : 1;
         } catch (Throwable $e) {
             $this->log->error('workflows.trigger_failed', [
                 'template' => $template->id, 'employee' => $employee->id, 'trigger' => $trigger->value, 'exception' => $e::class,
