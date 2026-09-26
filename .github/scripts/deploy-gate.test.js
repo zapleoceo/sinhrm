@@ -10,6 +10,7 @@ const {
   findLastSuccessfulProductionSha,
   getChangedPathsForPush,
   getChangedPathsForPr,
+  computeFlags,
 } = require('./deploy-gate.js');
 
 let passed = 0;
@@ -154,7 +155,9 @@ function makeCompareGithub(expectedBasehead, files) {
       repos: {
         compareCommitsWithBasehead: async ({ basehead }) => {
           assert.equal(basehead, expectedBasehead);
-          return { data: { files: files.map((filename) => ({ filename })) } };
+          return {
+            data: { status: 'ahead', merge_base_commit: { sha: 'mb' }, files: files.map((filename) => ({ filename })) },
+          };
         },
       },
     },
@@ -171,6 +174,140 @@ test('getChangedPathsForPr diffs from the PR base branch to the head sha', async
   const github = makeCompareGithub('main...sha-pr-head', ['docs/guides/deploy.md']);
   const files = await getChangedPathsForPr(github, { owner: 'o', repo: 'r' }, 'main', 'sha-pr-head');
   assert.deepEqual(files, ['docs/guides/deploy.md']);
+});
+
+// --- computeFlags: fail-safe fallbacks -> deploy both ---------------------
+
+const PUSH_RUN = { event: 'push', head_branch: 'main', head_sha: 'sha-new', pull_requests: [] };
+const PR_RUN = {
+  event: 'pull_request',
+  head_branch: 'feat/x',
+  head_sha: 'sha-pr',
+  pull_requests: [{ number: 7, base: { ref: 'main' } }],
+};
+const REPO = { owner: 'o', repo: 'r' };
+const lastDeployOk = {
+  listWorkflowRuns: async () => ({ data: { workflow_runs: [{ id: 1, head_sha: 'sha-old' }] } }),
+  listJobsForWorkflowRun: async () => ({ data: { jobs: [{ name: 'deploy', conclusion: 'success' }] } }),
+};
+function compareGithub(compare) {
+  return { rest: { actions: lastDeployOk, repos: { compareCommitsWithBasehead: compare } } };
+}
+function compareOk(files, extra = {}) {
+  return async () => ({
+    data: { status: 'ahead', merge_base_commit: { sha: 'mb' }, files: files.map((filename) => ({ filename })), ...extra },
+  });
+}
+function httpError(status, message) {
+  const e = new Error(message);
+  e.status = status;
+  return e;
+}
+function collect() {
+  const msgs = [];
+  return { msgs, warn: (m) => msgs.push(m) };
+}
+async function flagsFor(github, run, w) {
+  return computeFlags({ github, repo: REPO, run, warn: w.warn });
+}
+const BOTH = { api: true, web: true };
+
+test('push: normal backend-only diff -> api only, no warning', async () => {
+  const w = collect();
+  assert.deepEqual(await flagsFor(compareGithub(compareOk(['backend/a.php'])), PUSH_RUN, w), { api: true, web: false });
+  assert.equal(w.msgs.length, 0);
+});
+
+test('push: thrown error (rate limit 403) -> both + warning', async () => {
+  const w = collect();
+  const gh = compareGithub(async () => { throw httpError(403, 'API rate limit exceeded'); });
+  assert.deepEqual(await flagsFor(gh, PUSH_RUN, w), BOTH);
+  assert.match(w.msgs[0], /HTTP 403/);
+});
+
+test('push: error while listing workflow runs -> both', async () => {
+  const w = collect();
+  const gh = { rest: { actions: { listWorkflowRuns: async () => { throw new Error('boom'); } } } };
+  assert.deepEqual(await flagsFor(gh, PUSH_RUN, w), BOTH);
+  assert.equal(w.msgs.length, 1);
+});
+
+test('push: compare 404 (base gone after force-push) -> both', async () => {
+  const w = collect();
+  const gh = compareGithub(async () => { throw httpError(404, 'Not Found'); });
+  assert.deepEqual(await flagsFor(gh, PUSH_RUN, w), BOTH);
+  assert.match(w.msgs[0], /HTTP 404/);
+});
+
+test('push: compare status diverged -> both', async () => {
+  const w = collect();
+  assert.deepEqual(await flagsFor(compareGithub(compareOk(['README.md'], { status: 'diverged' })), PUSH_RUN, w), BOTH);
+  assert.equal(w.msgs.length, 1);
+});
+
+test('push: compare status behind -> both', async () => {
+  const w = collect();
+  assert.deepEqual(await flagsFor(compareGithub(compareOk([], { status: 'behind' })), PUSH_RUN, w), BOTH);
+});
+
+test('push: missing merge base -> both', async () => {
+  const w = collect();
+  assert.deepEqual(await flagsFor(compareGithub(compareOk(['README.md'], { merge_base_commit: null })), PUSH_RUN, w), BOTH);
+});
+
+test('push: 300 files (compare cap, list may be truncated) -> both', async () => {
+  const w = collect();
+  const many = Array.from({ length: 300 }, (_, i) => `README-${i}.md`);
+  assert.deepEqual(await flagsFor(compareGithub(compareOk(many)), PUSH_RUN, w), BOTH);
+});
+
+test('push: 299 unrelated files -> neither (cap boundary)', async () => {
+  const w = collect();
+  const many = Array.from({ length: 299 }, (_, i) => `README-${i}.md`);
+  assert.deepEqual(await flagsFor(compareGithub(compareOk(many)), PUSH_RUN, w), { api: false, web: false });
+});
+
+test('push: no previous successful deploy -> both', async () => {
+  const w = collect();
+  const gh = { rest: { actions: { listWorkflowRuns: async () => ({ data: { workflow_runs: [] } }) } } };
+  assert.deepEqual(await flagsFor(gh, PUSH_RUN, w), BOTH);
+});
+
+test('PR: thrown error -> both', async () => {
+  const w = collect();
+  const gh = compareGithub(async () => { throw httpError(500, 'Server Error'); });
+  assert.deepEqual(await flagsFor(gh, PR_RUN, w), BOTH);
+});
+
+test('PR: compare 404 -> both', async () => {
+  const w = collect();
+  const gh = compareGithub(async () => { throw httpError(404, 'Not Found'); });
+  assert.deepEqual(await flagsFor(gh, PR_RUN, w), BOTH);
+});
+
+test('PR: 300 files -> both', async () => {
+  const w = collect();
+  const many = Array.from({ length: 300 }, (_, i) => `extension/f${i}.ts`);
+  assert.deepEqual(await flagsFor(compareGithub(compareOk(many)), PR_RUN, w), BOTH);
+});
+
+test('PR: diverged from main is normal -> classify from merge-base (web forces api)', async () => {
+  const w = collect();
+  const gh = compareGithub(compareOk(['frontend/a.ts'], { status: 'diverged' }));
+  assert.deepEqual(await flagsFor(gh, PR_RUN, w), BOTH);
+  assert.equal(w.msgs.length, 0);
+});
+
+test('PR: diverged, extension-only -> neither', async () => {
+  const w = collect();
+  const gh = compareGithub(compareOk(['extension/a.ts'], { status: 'diverged' }));
+  assert.deepEqual(await flagsFor(gh, PR_RUN, w), { api: false, web: false });
+});
+
+test('PR: missing merge base -> both', async () => {
+  const w = collect();
+  assert.deepEqual(await flagsFor(compareGithub(compareOk(['README.md'], { merge_base_commit: null })), PR_RUN, w), BOTH);
+  assert.equal(w.msgs.length, 1);
 });
 
 (async () => {
