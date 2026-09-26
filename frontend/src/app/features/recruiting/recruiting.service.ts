@@ -16,6 +16,7 @@ import {
   Paged,
   Pipeline,
   RECRUITING_ERROR_CODES,
+  Ref,
   RejectReason,
   RejectReasonsReport,
   SaveCandidate,
@@ -123,6 +124,16 @@ export class RecruitingService {
   /** Starts an AI screening (201 done / 202 still running). */
   screen(applicationId: number): Observable<Screening> {
     return this.http.post<{ data: Screening }>(`/api/applications/${applicationId}/screening`, {}).pipe(map((r) => r.data));
+  }
+
+  /** People for the hiring-team pickers (writers and hiring managers; at most 50). */
+  assignableUsers(q = ''): Observable<Ref[]> {
+    return this.http.get<{ data: Ref[] }>('/api/recruiting/assignable-users', { params: toParams({ q }) }).pipe(map((r) => r.data));
+  }
+
+  /** Replaces the interviewers of an application (an empty list removes everyone). */
+  setInterviewers(applicationId: number, userIds: readonly number[]): Observable<Application> {
+    return this.http.put<{ data: Application }>(`/api/applications/${applicationId}/interviewers`, { user_ids: userIds }).pipe(map((r) => r.data));
   }
 
   move(applicationId: number, body: MoveApplication): Observable<Application> {

@@ -17,4 +17,4 @@
 
 ## Команды (CI)
 Бэкенд: `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `php artisan test --coverage --min=70`.
-Фронт: `npx ng lint`, `npx ng test --watch=false`, `npx ng build`.
+Фронт: `npx ng lint`, `npx ng test --watch=false`, `npm run test:docs`, `npm run build` (собирает справку `/docs` из `docs/` и приложение).

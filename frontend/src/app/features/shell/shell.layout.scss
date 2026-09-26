@@ -154,3 +154,8 @@
   .nav-group-inner { display: contents; }
   .name { display: none; }
 }
+
+/* Help link sits at the bottom of the sidebar, outside the collapsible groups. */
+.nav-help {
+  margin-top: auto;
+}

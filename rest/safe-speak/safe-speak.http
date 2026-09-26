@@ -1,0 +1,82 @@
+# SafeSpeak — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@report = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of SafeSpeak operations: /api/docs (tag "SafeSpeak").
+
+### GET /api/safe-speak/me — GET /api/safe-speak/me — whether the current user handles reports (the UI shows the inbox link)
+GET {{host}}/api/safe-speak/me
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/safe-speak/reports — safe-speak.reports.index
+GET {{host}}/api/safe-speak/reports
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/safe-speak/reports/{report} — safe-speak.reports.show
+GET {{host}}/api/safe-speak/reports/{{report}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/safe-speak/reports/{report} — safe-speak.reports.update
+PATCH {{host}}/api/safe-speak/reports/{{report}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "status": "new"
+}
+
+### POST /api/safe-speak/reports/{report}/messages — safe-speak.reports.reply
+POST {{host}}/api/safe-speak/reports/{{report}}/messages
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "status": "new"
+}
+
+### POST /api/safe-speak/public/reports — safe-speak.public.submit
+POST {{host}}/api/safe-speak/public/reports
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "category": "harassment",
+    "subject": "Example subject",
+    "body": "Example body"
+}
+
+### POST /api/safe-speak/public/follow-up — safe-speak.public.follow-up
+POST {{host}}/api/safe-speak/public/follow-up
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "code": "Example code"
+}
+
+### POST /api/safe-speak/public/reply — safe-speak.public.reply
+POST {{host}}/api/safe-speak/public/reply
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "code": "Example code"
+}

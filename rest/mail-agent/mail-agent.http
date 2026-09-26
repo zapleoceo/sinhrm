@@ -1,0 +1,71 @@
+# MailAgent — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@rule = 1
+@sender = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of MailAgent operations: /api/docs (tag "MailAgent").
+
+### GET /api/mail/status — mail.status
+GET {{host}}/api/mail/status
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/mail/sync — POST /api/mail/sync → {data: counters}; not connected → 422, reconnect_required → 409
+POST {{host}}/api/mail/sync
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/mail/messages — mail.messages
+GET {{host}}/api/mail/messages
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/mail/rules — mail.rules.index
+GET {{host}}/api/mail/rules
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/mail/rules — mail.rules.store
+POST {{host}}/api/mail/rules
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "pattern": "Example pattern",
+    "kind": "job_board"
+}
+
+### PATCH /api/mail/rules/{rule} — mail.rules.update
+PATCH {{host}}/api/mail/rules/{{rule}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "pattern": "Example pattern",
+    "kind": "job_board"
+}
+
+### GET /api/mail/unknown-senders — mail.unknown.index
+GET {{host}}/api/mail/unknown-senders
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/mail/unknown-senders/{sender}/assign — mail.unknown.assign
+POST {{host}}/api/mail/unknown-senders/{{sender}}/assign
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "kind": "job_board"
+}

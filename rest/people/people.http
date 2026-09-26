@@ -1,0 +1,110 @@
+# People — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@changeRequest = 1
+@employee = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of People operations: /api/docs (tag "People").
+
+### GET /api/people — Directory tier only, for every active user
+GET {{host}}/api/people
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/people — people.store
+POST {{host}}/api/people
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "full_name": "Example full name",
+    "hired_at": "2026-10-01"
+}
+
+### GET /api/people/org-chart — ?mine=1 — the caller's own subtree (a manager's team); ?root_id — any subtree; ?branch_id
+GET {{host}}/api/people/org-chart
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/people/change-requests — people.change-requests.index
+GET {{host}}/api/people/change-requests
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/people/change-requests/{changeRequest}/approve — people.change-requests.approve
+POST {{host}}/api/people/change-requests/{{changeRequest}}/approve
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "comment": "Example comment"
+}
+
+### POST /api/people/change-requests/{changeRequest}/reject — people.change-requests.reject
+POST {{host}}/api/people/change-requests/{{changeRequest}}/reject
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "comment": "Example comment"
+}
+
+### GET /api/people/{employee} — people.show
+GET {{host}}/api/people/{{employee}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/people/{employee} — people.update
+PATCH {{host}}/api/people/{{employee}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "full_name": "Example full name",
+    "hired_at": "2026-10-01"
+}
+
+### POST /api/people/{employee}/terminate — people.terminate
+POST {{host}}/api/people/{{employee}}/terminate
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "fired_at": "2026-10-01"
+}
+
+### GET /api/me/employee — people.me
+GET {{host}}/api/me/employee
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/me/employee/change-requests — people.me.change-requests
+POST {{host}}/api/me/employee/change-requests
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "changes": {
+        "phone": "+10000000000",
+        "personal_email": "jane.doe@example.com",
+        "address": "Example address",
+        "emergency_contact": "Example emergency contact"
+    }
+}

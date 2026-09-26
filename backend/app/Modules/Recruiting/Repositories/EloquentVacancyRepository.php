@@ -16,12 +16,14 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class EloquentVacancyRepository implements VacancyRepository
 {
-    private const array RELATIONS = ['branch', 'department', 'position', 'recruiter', 'pipeline.stages'];
+    private const array RELATIONS = ['branch', 'department', 'position', 'recruiter', 'hiringManager', 'pipeline.stages'];
 
     public function paginate(Scope $scope, VacancyFilter $filter): LengthAwarePaginator
     {
         return $this->withCounts(Vacancy::query()->with(self::RELATIONS))
-            ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->whereIn('branch_id', $scope->branchIds ?? []))
+            ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->where(
+                fn (Builder $w) => $w->whereIn('branch_id', $scope->branchIds ?? [])->orWhereIn('id', $scope->managedVacancyIds),
+            ))
             ->when($filter->q, function (Builder $q, string $term): void {
                 $q->whereRaw('lower(title) like ?', ['%'.addcslashes(mb_strtolower($term), '%_\\').'%']);
             })

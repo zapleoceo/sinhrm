@@ -22,7 +22,7 @@ final class EloquentAssigneeDirectory implements AssigneeDirectory
     {
         $id = User::query()
             ->where('status', UserStatus::Active->value)
-            ->role([UserRole::Superadmin->value, UserRole::Admin->value])
+            ->role(UserRole::valuesOf(UserRole::hrStaff()))
             ->orderBy('id')
             ->value('id');
 

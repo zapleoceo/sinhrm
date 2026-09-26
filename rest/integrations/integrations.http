@@ -1,0 +1,53 @@
+# Integrations — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@integration = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Integrations operations: /api/docs (tag "Integrations").
+
+### GET /api/integrations — integrations.index
+GET {{host}}/api/integrations
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/integrations/ai-policy — integrations.ai-policy
+PUT {{host}}/api/integrations/ai-policy
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "enabled": true
+}
+
+### PUT /api/integrations/{integration} — integrations.update
+PUT {{host}}/api/integrations/{{integration}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### GET /api/integrations/{integration}/logs — integrations.logs
+GET {{host}}/api/integrations/{{integration}}/logs
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/integrations/{integration}/check — integrations.check
+POST {{host}}/api/integrations/{{integration}}/check
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/integrations/{integration}/status — integrations.status
+POST {{host}}/api/integrations/{{integration}}/status
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "status": "off"
+}

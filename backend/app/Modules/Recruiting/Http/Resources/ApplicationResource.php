@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Resources;
 
+use App\Models\User;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\StageChange;
 use App\Modules\Recruiting\Services\StalenessService;
@@ -53,6 +54,9 @@ final class ApplicationResource extends JsonResource
             if ($this->vacancy->relationLoaded('pipeline')) {
                 $data['stages'] = StageResource::collection($this->vacancy->pipeline->stages);
             }
+        }
+        if ($this->relationLoaded('interviewers')) {
+            $data['interviewers'] = $this->interviewers->map(static fn (User $u): array => ['id' => $u->id, 'name' => $u->name])->values()->all();
         }
         if ($this->relationLoaded('stage')) {
             $data['stage'] = new StageResource($this->stage);

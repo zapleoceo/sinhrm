@@ -1,0 +1,41 @@
+# Users — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@user = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Users operations: /api/docs (tag "Users").
+
+### GET /api/users — users.index
+GET {{host}}/api/users
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/users — users.store
+POST {{host}}/api/users
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "email": "jane.doe@example.com",
+    "name": "Example name",
+    "role": "admin"
+}
+
+### PATCH /api/users/{user} — users.update
+PATCH {{host}}/api/users/{{user}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "role": "admin",
+    "status": "active",
+    "branch_ids": [
+        1
+    ],
+    "safe_speak_handler": true
+}

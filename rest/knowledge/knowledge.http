@@ -1,0 +1,88 @@
+# Knowledge — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@article = 1
+@category = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Knowledge operations: /api/docs (tag "Knowledge").
+
+### GET /api/knowledge/categories — knowledge.categories.index
+GET {{host}}/api/knowledge/categories
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/knowledge/categories — knowledge.categories.store
+POST {{host}}/api/knowledge/categories
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
+
+### GET /api/knowledge/articles — knowledge.articles.index
+GET {{host}}/api/knowledge/articles
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/knowledge/articles — knowledge.articles.store
+POST {{host}}/api/knowledge/articles
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "title": "Example title",
+    "body_md": "Example body md"
+}
+
+### GET /api/knowledge/articles/{article} — knowledge.articles.show
+GET {{host}}/api/knowledge/articles/{{article}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/knowledge/articles/{article} — knowledge.articles.update
+PATCH {{host}}/api/knowledge/articles/{{article}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "title": "Example title",
+    "body_md": "Example body md"
+}
+
+### POST /api/knowledge/articles/{article}/vote — knowledge.articles.vote
+POST {{host}}/api/knowledge/articles/{{article}}/vote
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "helpful": true
+}
+
+### PATCH /api/knowledge/categories/{category} — knowledge.categories.update
+PATCH {{host}}/api/knowledge/categories/{{category}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "name": "Example name"
+}
+
+### GET /api/knowledge/articles/{article}/versions — knowledge.articles.versions
+GET {{host}}/api/knowledge/articles/{{article}}/versions
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

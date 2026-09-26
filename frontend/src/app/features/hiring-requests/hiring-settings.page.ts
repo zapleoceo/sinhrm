@@ -1,3 +1,4 @@
+import { USER_ROLES } from '../../core/auth/auth.model';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -11,7 +12,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { FORM_FIELD_TYPES, FormField, FormFieldType, ROUTE_STEP_KINDS, RouteStep, RouteStepKind } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 
-const ROLES = ['superadmin', 'admin', 'recruiter', 'viewer'] as const;
+const ROLES = USER_ROLES;
 
 /** Moves an item one position up (-1) or down (+1) — the "drag" of tz2 done with buttons (keyboard-friendly). */
 export function moveItem<T>(list: readonly T[], index: number, delta: -1 | 1): T[] {

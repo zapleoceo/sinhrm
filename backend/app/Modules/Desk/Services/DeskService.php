@@ -21,7 +21,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * HR helpdesk. The employee opens cases and sees only their own (public replies, never internal notes);
- * superadmin/admin act as HR: the queue, assignment, statuses, internal notes, knowledge links.
+ * HR staff (superadmin/admin/hr_manager): the queue, assignment, statuses, internal notes, knowledge links.
  * Invisible cases answer 404 (no existence leak).
  */
 final readonly class DeskService

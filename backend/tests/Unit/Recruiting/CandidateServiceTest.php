@@ -9,6 +9,7 @@ use App\Modules\Directory\Contracts\AccessibleBranches;
 use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
+use App\Modules\Recruiting\Contracts\HiringTeamRepository;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
 use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
@@ -41,12 +42,14 @@ final class CandidateServiceTest extends TestCase
         $this->applications = $this->createMock(ApplicationRepository::class);
         $this->applications->method('transaction')->willReturnCallback(fn (callable $cb): mixed => $cb());
         $touchpoints = $this->createMock(TouchpointRepository::class);
+        $branches = $this->createMock(AccessibleBranches::class);
+        $branches->method('for')->willReturn([]);
         $this->service = new CandidateService(
             $this->candidates,
             $this->applications,
             $this->createMock(VacancyRepository::class),
             new ApplicationService($this->applications, $this->createMock(PipelineRepository::class), $touchpoints, new NullLogger),
-            new RecruitingScope($this->createMock(AccessibleBranches::class), $this->candidates, $touchpoints),
+            new RecruitingScope($branches, $this->candidates, $touchpoints, $this->createMock(HiringTeamRepository::class)),
             new ContactNormalizer,
             new NullLogger,
             new AcquisitionChannelService($this->createMock(AcquisitionChannelRepository::class)),

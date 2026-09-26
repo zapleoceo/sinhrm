@@ -18,8 +18,6 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class EloquentDeskRepository implements DeskRepository
 {
-    private const array HR_ROLES = [UserRole::Superadmin->value, UserRole::Admin->value];
-
     public function categories(bool $withInactive): Collection
     {
         return DeskCategory::query()
@@ -104,12 +102,12 @@ final class EloquentDeskRepository implements DeskRepository
 
     public function isHrUser(int $userId): bool
     {
-        return User::query()->whereKey($userId)->where('status', UserStatus::Active->value)->role(self::HR_ROLES)->exists();
+        return User::query()->whereKey($userId)->where('status', UserStatus::Active->value)->role(UserRole::valuesOf(UserRole::hrStaff()))->exists();
     }
 
     public function fallbackHrUserId(): ?int
     {
-        $id = User::query()->where('status', UserStatus::Active->value)->role(self::HR_ROLES)->orderBy('id')->value('id');
+        $id = User::query()->where('status', UserStatus::Active->value)->role(UserRole::valuesOf(UserRole::hrStaff()))->orderBy('id')->value('id');
 
         return is_numeric($id) ? (int) $id : null;
     }

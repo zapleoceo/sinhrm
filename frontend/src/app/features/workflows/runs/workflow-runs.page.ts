@@ -1,3 +1,4 @@
+import { isHrStaff } from '../../../core/auth/auth.model';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -90,7 +91,7 @@ export class WorkflowRunsPage implements OnInit {
   protected readonly templateId = signal<number | null>(null);
   protected readonly employeeId = signal<number | null>(null);
   protected readonly templates = signal<WorkflowTemplate[]>([]);
-  protected readonly isAdmin = computed(() => (this.auth.user()?.roles ?? []).some((r) => r === 'superadmin' || r === 'admin'));
+  protected readonly isAdmin = computed(() => isHrStaff(this.auth.user()?.roles ?? []));
 
   ngOnInit(): void {
     if (this.isAdmin()) {

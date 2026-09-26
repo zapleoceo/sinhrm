@@ -46,6 +46,13 @@ jobs:
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
       - name: Tests + coverage (min 70%)
         run: php artisan test --coverage --min=70
+      - name: OpenAPI spec (Scramble) — must build without errors
+        run: |
+          php artisan migrate --force --quiet
+          php -d memory_limit=1G artisan scramble:export --path=openapi.json
+          php -r '$s=json_decode(file_get_contents("openapi.json"),true); $n=0; foreach($s["paths"] as $p){foreach($p as $o){if(is_array($o)&&isset($o["operationId"])){$n++;}}} echo "paths: ".count($s["paths"]).", operations: $n\n"; exit($n>0?0:1);'
+      - uses: actions/upload-artifact@v4
+        with: { name: openapi, path: backend/openapi.json, retention-days: 30 }
       - name: Production bundle size (< 200 MB)
         run: |
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --quiet
@@ -61,7 +68,8 @@ jobs:
       - run: npm ci
       - run: npx ng lint
       - run: npx ng test --watch=false
-      - run: npx ng build
+      - run: npm run test:docs
+      - run: npm run build
 
   extension:
     runs-on: ubuntu-latest

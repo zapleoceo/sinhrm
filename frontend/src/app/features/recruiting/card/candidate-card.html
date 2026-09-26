@@ -82,6 +82,7 @@
             </mat-menu>
           }
         </div>
+        <app-interviewers-panel [application]="app" [canEdit]="canWrite()" (changed)="store.refresh()" />
         <ol class="steps">
           @for (step of app.route ?? []; track step.stage_change_id; let last = $last) {
             <li [class.current]="last" [attr.data-kind]="step.kind">

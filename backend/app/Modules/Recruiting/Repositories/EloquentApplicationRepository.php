@@ -39,7 +39,7 @@ final class EloquentApplicationRepository implements ApplicationRepository
     public function forCandidate(int $candidateId): Collection
     {
         return Application::query()
-            ->with(['vacancy.branch', 'vacancy.pipeline.stages', 'stage', 'rejectReason', 'stageChanges.toStage', 'stageChanges.byUser'])
+            ->with(['vacancy.branch', 'vacancy.pipeline.stages', 'stage', 'rejectReason', 'stageChanges.toStage', 'stageChanges.byUser', 'interviewers'])
             ->where('candidate_id', $candidateId)
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
@@ -81,10 +81,10 @@ final class EloquentApplicationRepository implements ApplicationRepository
         return Application::query()
             ->with(['candidate', 'vacancy', 'stage'])
             ->where('status', ApplicationStatus::Active->value)
-            ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->whereHas(
-                'vacancy',
-                fn (Builder $v) => $v->whereIn('branch_id', $scope->branchIds ?? []),
-            ))
+            ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->where(fn (Builder $w) => $w
+                ->whereHas('vacancy', fn (Builder $v) => $v->whereIn('branch_id', $scope->branchIds ?? []))
+                ->orWhereIn('vacancy_id', $scope->managedVacancyIds)
+                ->orWhereIn('id', $scope->interviewApplicationIds)))
             ->whereRaw('coalesce(last_touch_at, created_at) < ?', [$before])
             ->orderByRaw('coalesce(last_touch_at, created_at) asc')
             ->orderBy('id')

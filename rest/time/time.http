@@ -1,0 +1,83 @@
+# Time — main endpoints. Generated skeleton, synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call.
+@timesheet = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Time operations: /api/docs (tag "Time").
+
+### GET /api/time/week — time.week
+GET {{host}}/api/time/week
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/time/week — time.week.save
+PUT {{host}}/api/time/week
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "entries": [
+        {
+            "date": "2026-10-01",
+            "hours": 1.5
+        }
+    ]
+}
+
+### POST /api/time/week/submit — time.week.submit
+POST {{host}}/api/time/week/submit
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "week": "2026-10-01",
+    "employee_id": 1,
+    "branch_id": 1
+}
+
+### POST /api/time/timesheets/{timesheet}/decision — time.decide
+POST {{host}}/api/time/timesheets/{{timesheet}}/decision
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "decision": "approve"
+}
+
+### GET /api/time/approvals — time.approvals
+GET {{host}}/api/time/approvals
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/time/team — time.team
+GET {{host}}/api/time/team
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/time/schedules — time.schedules
+GET {{host}}/api/time/schedules
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/time/schedules — time.schedules.save
+PUT {{host}}/api/time/schedules
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "days": [
+        1
+    ],
+    "hours_per_day": 1.5
+}
