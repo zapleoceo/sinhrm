@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 final class SendMessageRequest extends FormRequest
 {
     /** Channels that can be sent from the card. */
-    public const array CHANNELS = [Channel::Telegram, Channel::Whatsapp, Channel::Viber];
+    public const array CHANNELS = [Channel::Telegram, Channel::Whatsapp, Channel::Viber, Channel::Email];
 
     /** Longest text all three messengers accept in one message (Telegram: 4096). */
     public const int MAX_TEXT = 4096;
@@ -29,6 +29,8 @@ final class SendMessageRequest extends FormRequest
             'channel' => ['required', Rule::in(array_map(static fn (Channel $c): string => $c->value, self::CHANNELS))],
             'text' => ['required', 'string', 'max:'.self::MAX_TEXT],
             'application_id' => ['nullable', 'integer', 'min:1'],
+            // E-mail only; empty → "Re: <subject of the candidate's last mail>" or the app name.
+            'subject' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -40,6 +42,11 @@ final class SendMessageRequest extends FormRequest
     public function text(): string
     {
         return $this->string('text')->trim()->toString();
+    }
+
+    public function subject(): ?string
+    {
+        return $this->filled('subject') ? $this->string('subject')->trim()->toString() : null;
     }
 
     public function applicationId(): ?int

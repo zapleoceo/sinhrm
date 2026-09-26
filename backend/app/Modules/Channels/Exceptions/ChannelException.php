@@ -44,6 +44,12 @@ final class ChannelException extends RuntimeException
         return new self('send_failed', 502);
     }
 
+    /** Too many e-mails from the company mailbox in the last hour. */
+    public static function rateLimited(): self
+    {
+        return new self('rate_limited', 429);
+    }
+
     public static function telephonyNotConnected(): self
     {
         return new self('telephony_not_connected', 422);
