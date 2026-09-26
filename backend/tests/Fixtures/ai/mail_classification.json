@@ -1,0 +1,60 @@
+{
+  "purpose": "mail_classification",
+  "note": "Synthetic letters only (example.test domains, invented names and numbers). auto_apply = confidence >= 0.85 expected.",
+  "cases": [
+    {
+      "name": "job_board_work_ua_application",
+      "input": {
+        "from": "noreply@jobs.example.test",
+        "subject": "Новий відгук на вакансію «Оператор call-центру»",
+        "body": "Work.ua: на вашу вакансію «Оператор call-центру» відгукнувся кандидат.\nІм'я: Тестенко Оксана\nТелефон: +380 00 000 0001\nE-mail: oksana.test@example.test\nПереглянути резюме на сайті.\n--\nWork.ua — сайт пошуку роботи"
+      },
+      "expected": {"kind": "job_board", "parser": "work_ua", "auto_apply": true, "extracted": {"full_name": "Тестенко Оксана", "vacancy_title": "Оператор call-центру"}}
+    },
+    {
+      "name": "candidate_direct_cv",
+      "input": {
+        "from": "ivan.probnyi@example.test",
+        "subject": "Резюме на вакансію менеджера з продажу",
+        "body": "Добрий день! Мене звати Іван Пробний, хочу подати резюме на вакансію менеджера з продажу. Маю 3 роки досвіду в B2B продажах. Мій телефон +380 00 000 0002. Резюме у вкладенні.\n\nЗ повагою,\nІван"
+      },
+      "expected": {"kind": "candidate", "extracted": {"full_name": "Іван Пробний", "vacancy_title": "менеджера з продажу"}}
+    },
+    {
+      "name": "newsletter_digest",
+      "input": {
+        "from": "digest@news.example.test",
+        "subject": "HR-дайджест тижня: 10 трендів найму",
+        "body": "Найцікавіше за тиждень: тренди найму, нові закони про працю, вебінар у четвер. Щоб відписатися від розсилки, натисніть тут."
+      },
+      "expected": {"kind": "newsletter", "auto_apply": true}
+    },
+    {
+      "name": "colleague_internal",
+      "input": {
+        "from": "buhgalteria@company.example.test",
+        "subject": "Акт звірки за вересень",
+        "body": "Колеги, надсилаю акт звірки за вересень з постачальником. Прошу перевірити до п'ятниці.\n\n> From: recruiting@company.example.test\n> Нагадайте, будь ласка, про акт."
+      },
+      "expected": {"kind": "colleague"}
+    },
+    {
+      "name": "spam_ignore",
+      "input": {
+        "from": "prize@lottery.example.test",
+        "subject": "Ви виграли iPhone!!!",
+        "body": "Вітаємо! Ви виграли iPhone. Щоб отримати приз, введіть дані картки за посиланням протягом 24 годин."
+      },
+      "expected": {"kind": "ignore", "auto_apply": true}
+    },
+    {
+      "name": "ambiguous_short_question",
+      "input": {
+        "from": "someone@mail.example.test",
+        "subject": "Питання",
+        "body": "Добрий день, а ви ще працюєте?"
+      },
+      "expected": {"kind": "candidate", "auto_apply": false}
+    }
+  ]
+}

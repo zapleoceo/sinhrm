@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\MailAgent\Providers;
 
+use App\Modules\Ai\Providers\AiServiceProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
+use App\Modules\MailAgent\Ai\MailClassificationAiHandler;
+use App\Modules\MailAgent\Ai\MailClassificationPrompt;
 use App\Modules\MailAgent\Contracts\MailClassifier;
 use App\Modules\MailAgent\Contracts\MailLogRepository;
 use App\Modules\MailAgent\Contracts\SenderRuleRepository;
@@ -23,7 +26,7 @@ use App\Modules\MailAgent\Support\ParserRegistry;
 use Illuminate\Contracts\Foundation\Application;
 
 /**
- * Mail agent: reads the connected Gmail box (GoogleWorkspace), classifies mail by sender rules (no AI), turns
+ * Mail agent: reads the connected Gmail box (GoogleWorkspace), classifies mail by sender rules (AI only suggests), turns
  * job-board mail into candidates/applications/tasks, candidate mail into touchpoints. Routes under /api/mail.
  */
 final class MailAgentServiceProvider extends ModuleServiceProvider
@@ -41,9 +44,11 @@ final class MailAgentServiceProvider extends ModuleServiceProvider
         $this->app->bind(SenderRuleRepository::class, EloquentSenderRuleRepository::class);
         $this->app->bind(UnknownSenderRepository::class, EloquentUnknownSenderRepository::class);
         $this->app->bind(MailLogRepository::class, EloquentMailLogRepository::class);
-        // Rules only; AiMailClassifier is asked by the processor behind AiPolicy (never calls a provider).
+        // Rules decide; AiMailClassifier only adds a suggestion to the unknown-senders queue (Ai module).
         $this->app->bind(MailClassifier::class, RulesMailClassifier::class);
 
         $this->app->tag([MailSyncJob::class], ScheduledJob::class);
+        $this->app->tag([MailClassificationAiHandler::class], AiServiceProvider::HANDLERS_TAG);
+        $this->app->tag([MailClassificationPrompt::class], AiServiceProvider::PROMPTS_TAG);
     }
 }

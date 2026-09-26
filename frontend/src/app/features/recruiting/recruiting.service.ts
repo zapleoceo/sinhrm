@@ -20,6 +20,7 @@ import {
   RejectReasonsReport,
   SaveCandidate,
   SaveVacancy,
+  Screening,
   SourcesReport,
   TimelineFilter,
   TimelineItem,
@@ -112,6 +113,16 @@ export class RecruitingService {
 
   logTouch(candidateId: number, body: LogTouch): Observable<Touchpoint> {
     return this.http.post<{ data: Touchpoint }>(`/api/candidates/${candidateId}/touchpoints`, body).pipe(map((r) => r.data));
+  }
+
+  /** Latest AI screening of each application of the candidate (pending ones are polled once by the API). */
+  screenings(candidateId: number): Observable<Screening[]> {
+    return this.http.get<{ data: Screening[] }>(`/api/candidates/${candidateId}/screenings`).pipe(map((r) => r.data));
+  }
+
+  /** Starts an AI screening (201 done / 202 still running). */
+  screen(applicationId: number): Observable<Screening> {
+    return this.http.post<{ data: Screening }>(`/api/applications/${applicationId}/screening`, {}).pipe(map((r) => r.data));
   }
 
   move(applicationId: number, body: MoveApplication): Observable<Application> {

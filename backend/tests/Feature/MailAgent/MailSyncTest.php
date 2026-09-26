@@ -213,7 +213,7 @@ final class MailSyncTest extends TestCase
         $this->actingAs($this->superadmin)->getJson('/api/dashboard')->assertJsonPath('data.warnings.0.code', 'google_reconnect_required');
     }
 
-    public function test_enabled_ai_still_calls_no_provider(): void
+    public function test_enabled_ai_without_a_configured_provider_calls_no_provider(): void
     {
         $this->app->instance(AiPolicy::class, new class implements AiPolicy
         {

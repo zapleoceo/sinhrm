@@ -8,8 +8,10 @@
 никому не показывается, даже суперадмину. На странице видно только «задан / не задан», дату изменения
 и последние символы (`••••1234`), чтобы понять, какой ключ стоит.
 
-Там же **общий выключатель AI**. По умолчанию AI выключен («AI вимкнено до погодження власником»):
-пока владелец не утвердил модели и промпты, система не обращается к AI-провайдерам.
+Там же **общий выключатель AI**. По умолчанию AI выключен. Владелец утвердил AI (AI Broker, возможность `chat:sales`):
+после включения переключателя и ввода ключа проекта AI Broker система оценивает звонки по скриптам, сортирует почту
+незнакомых отправителей и делает ШІ-скринінг кандидатов — подробно в [ai.md](ai.md). Над карточками группы AI —
+панель «ШІ: стан, використання і перевірка» (использование за сегодня против лимитов и «Тестовий запит»).
 
 ## Как пользоваться
 Меню слева → «Адміністрування → Інтеграції» (видно только суперадмину).
@@ -32,6 +34,13 @@
 | `integration_logs` | `id, integration_id (fk, cascade), level (info\|warning\|error), message, context jsonb, created_at` | аудит: id пользователя, имена полей, статусы. Значений нет |
 
 Глобальный флаг AI — строка `integrations` с `key = 'ai_policy'` и `settings = {"enabled": false}`.
+
+Поля `ai_broker` (все — настройки AI, читает `Ai/Support/AiSettingsReader`): `base_url`, секрет `project_key`,
+селекты `capability` и `capability_{script_evaluation,mail_classification,candidate_screening}`
+(`chat:fast|chat:smart|chat:sales|structured`, по умолчанию `chat:sales`), `model` (без значения по умолчанию: пусто =
+модель выбирает брокер), `max_requests_per_day` (200), `daily_cap_usd` (2), выключатели `ai_script_evaluation`,
+`ai_mail_classification`, `ai_candidate_screening` (`on`) и `ai_screening_auto` (`off`). Подписи вариантов селектов —
+`integrations.options.<значение>`.
 
 ### Шифрование и хранилище секретов
 - `Models/IntegrationSecret` — каст `encrypted` (Laravel `Crypt`, AES-256 с `APP_KEY`), поле `value` скрыто
@@ -61,7 +70,7 @@
 ### Какие проверки ходят в сеть и почему
 | Интеграция | Проверка | Сеть |
 |---|---|---|
-| `ai_broker` | `GET {base_url}/v1/health` (публичный, **без ключа**), таймаут 10 с | да. Эндпоинты chat/jobs не вызываются: AI-вызовы запрещены до решения владельца |
+| `ai_broker` | `GET {base_url}/v1/health` (публичный, **без ключа**), таймаут 10 с | да. Сами AI-запросы (`/v1/jobs`) шлёт модуль Ai ([ai.md](ai.md)) и только при включённом выключателе |
 | `telegram_business` | `GET https://api.telegram.org/bot<token>/getMe` (только чтение), таймаут 10 с | да. URL содержит токен. До запроса токен проверяется по формату `^\d+:[A-Za-z0-9_-]+$` (иначе `invalid_token`, без запроса), вокруг вызова ловится **любой** `Throwable`: в ответ и лог попадают только коды `unauthorized`, `http_<код>`, `connection_failed` |
 | `whatsapp_cloud` | `GET https://graph.facebook.com/v21.0/{phone_number_id}?fields=id` (только чтение), токен в заголовке `Authorization`, таймаут 10 с; `phone_number_id` должен быть числом (иначе `invalid_url` без запроса) | да. 401 или ошибка Graph 190 → `unauthorized` |
 | `viber` | `POST https://chatapi.viber.com/pa/get_account_info` (только чтение), токен в заголовке `X-Viber-Auth-Token` | да. Viber `status: 2` → `unauthorized` |
@@ -131,14 +140,15 @@ last_error, updated_at, fields[]`. Поле: `name, type, required, options, def
 `Services/AiPolicyService` → `Contracts/IntegrationRepository` (`Repositories/EloquentIntegrationRepository`),
 `Contracts/SecretVault` (`Repositories/EloquentSecretVault`). `Services/IntegrationConfigLoader` — единая сборка
 `IntegrationConfig` (настройки с умолчаниями + расшифрованные секреты) и статуса для проверок и других модулей.
-`Contracts/AiPolicy::enabled()` — для других модулей:
-любой код, который вызывает AI, обязан сначала спросить его.
+`Contracts/AiPolicy::enabled()` — для других модулей: любой код, который вызывает AI, обязан сначала спросить его;
+на практике AI вызывается только через `Ai/Services/AiService`, который проверяет флаг сам.
 
 ### Фронтенд (`features/integrations`)
 `integrations.page.ts` — баннер AI (переключатель + диалог `confirm-ai.dialog.ts`), группы карточек, состояния
 «загрузка / пусто / ошибка с повтором». `integrations.store.ts` — состояние страницы на signals; режим и AI
 меняются оптимистично с откатом. `integration-card.ts` — форма из `FieldSpec` (секреты — `type=password`, в
-placeholder маска или «не задано», кнопка «Очистити»), «Зберегти», «Перевірити з'єднання», последние события.
+placeholder маска или «не задано», кнопка «Очистити»; варианты селектов — `integrations.options.*`), «Зберегти»,
+«Перевірити з'єднання», последние события. В группе AI над карточками — `features/ai/ai-panel.ts` ([ai.md](ai.md)).
 `integrations.service.ts` — HTTP, `buildUpdate()` (тело PUT из формы), перевод кодов ошибок в ключи i18n.
 У карточек групп «Месенджери» и «Телефонія» в раскрытом виде — блок «Вебхук» (`features/channels/channel-panel.ts`:
 адрес с копированием, регистрация, тест, демо-событие — [channels.md](channels.md)).

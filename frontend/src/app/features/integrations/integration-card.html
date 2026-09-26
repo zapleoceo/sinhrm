@@ -82,7 +82,7 @@
             <mat-label>{{ 'integrations.fields.' + field.name | transloco }}</mat-label>
             <mat-select [formControlName]="field.name">
               @for (opt of field.options; track opt) {
-                <mat-option [value]="opt">{{ opt }}</mat-option>
+                <mat-option [value]="opt">{{ 'integrations.options.' + opt | transloco }}</mat-option>
               }
             </mat-select>
           </mat-form-field>

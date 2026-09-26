@@ -79,6 +79,25 @@
           <div class="who">
             <strong>{{ u.email }}</strong>
             <span class="muted">{{ u.sample_subject }} · {{ 'mail.unknown.count' | transloco: { n: u.count } }}</span>
+            @if (u.ai; as ai) {
+              <span class="ai" [attr.data-status]="ai.status">
+                <mat-icon inline aria-hidden="true">smart_toy</mat-icon>
+                @switch (ai.status) {
+                  @case ('done') {
+                    {{ 'mail.ai.suggestion' | transloco: { kind: ('mail.kinds.' + ai.kind | transloco), confidence: confidence(ai.confidence) } }}
+                    @if (ai.extracted; as x) {
+                      · {{ 'mail.ai.extracted' | transloco }}: {{ x.full_name ?? '—' }} {{ x.phone ?? '' }} {{ x.email ?? '' }} {{ x.vacancy_title ?? '' }}
+                    }
+                  }
+                  @case ('pending') {
+                    {{ 'mail.ai.pending' | transloco }}
+                  }
+                  @default {
+                    {{ 'mail.ai.failed' | transloco }}
+                  }
+                }
+              </span>
+            }
           </div>
           <mat-form-field subscriptSizing="dynamic" class="narrow">
             <mat-label>{{ 'mail.rules.kind' | transloco }}</mat-label>
@@ -143,9 +162,16 @@
         </button>
       </form>
 
-      @for (r of store.rules(); track r.id) {
+      <mat-checkbox [checked]="aiOnly()" (change)="aiOnly.set($event.checked)">{{ 'mail.rules.aiOnly' | transloco }}</mat-checkbox>
+      @for (r of visibleRules(); track r.id) {
         <div class="row">
           <code class="pattern">{{ r.pattern }}</code>
+          @if (r.source === 'ai') {
+            <span class="ai-rule" [attr.title]="r.prompt_version">
+              <mat-icon inline aria-hidden="true">smart_toy</mat-icon>
+              {{ 'mail.rules.byAi' | transloco: { confidence: confidence(r.ai_confidence) } }}
+            </span>
+          }
           <mat-form-field subscriptSizing="dynamic" class="narrow">
             <mat-select [value]="r.kind" (valueChange)="changeKind(r, $event)" [attr.aria-label]="'mail.rules.kind' | transloco">
               @for (k of kinds; track k) {

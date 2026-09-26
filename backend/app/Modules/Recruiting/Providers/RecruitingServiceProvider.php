@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Providers;
 
 use App\Models\User;
+use App\Modules\Ai\Providers\AiServiceProvider;
+use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
+use App\Modules\Recruiting\Ai\ScreeningAiHandler;
+use App\Modules\Recruiting\Ai\ScreeningPrompt;
 use App\Modules\Recruiting\Console\RecruitingDemoCommand;
 use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
@@ -13,6 +17,7 @@ use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\ExtensionTokenRepository;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
 use App\Modules\Recruiting\Contracts\ReportRepository;
+use App\Modules\Recruiting\Contracts\ScreeningRepository;
 use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
 use App\Modules\Recruiting\Contracts\TouchpointIngestor;
 use App\Modules\Recruiting\Contracts\TouchpointRepository;
@@ -31,10 +36,12 @@ use App\Modules\Recruiting\Repositories\EloquentAcquisitionChannelRepository;
 use App\Modules\Recruiting\Repositories\EloquentApplicationRepository;
 use App\Modules\Recruiting\Repositories\EloquentCandidateRepository;
 use App\Modules\Recruiting\Repositories\EloquentPipelineRepository;
+use App\Modules\Recruiting\Repositories\EloquentScreeningRepository;
 use App\Modules\Recruiting\Repositories\EloquentTouchpointRepository;
 use App\Modules\Recruiting\Repositories\EloquentVacancyRepository;
 use App\Modules\Recruiting\Repositories\QueryReportRepository;
 use App\Modules\Recruiting\Repositories\SanctumExtensionTokenRepository;
+use App\Modules\Recruiting\Services\AutoScreeningJob;
 use App\Modules\Recruiting\Services\ExtensionTokenService;
 use App\Modules\Recruiting\Services\MatchingTouchpointIngestor;
 use App\Modules\Recruiting\Services\RecruitingScope;
@@ -69,6 +76,11 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         $this->app->bind(ExtensionTokenRepository::class, SanctumExtensionTokenRepository::class);
         // Replaced by the Scripts module (script evaluations on timeline items).
         $this->app->bindIf(TouchpointEvaluations::class, NullTouchpointEvaluations::class);
+        // AI screening (tz6): result handler for the Ai module + the optional auto-screening job.
+        $this->app->bind(ScreeningRepository::class, EloquentScreeningRepository::class);
+        $this->app->tag([ScreeningAiHandler::class], AiServiceProvider::HANDLERS_TAG);
+        $this->app->tag([ScreeningPrompt::class], AiServiceProvider::PROMPTS_TAG);
+        $this->app->tag([AutoScreeningJob::class], ScheduledJob::class);
     }
 
     public function boot(): void

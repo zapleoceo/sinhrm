@@ -23,6 +23,14 @@ final class UnknownSenderResource extends JsonResource
             'last_seen_at' => $this->last_seen_at->toIso8601String(),
             'suggested_kind' => $this->suggested_kind?->value,
             'suggested_parser' => $this->suggested_parser?->value,
+            // AI suggestion (label "ШІ" in the queue): never applied without the superadmin confirming.
+            'ai' => $this->ai_status === null ? null : [
+                'status' => $this->ai_status,
+                'kind' => $this->ai_kind?->value,
+                'parser' => $this->ai_parser?->value,
+                'confidence' => $this->ai_confidence,
+                'extracted' => $this->ai_extracted,
+            ],
         ];
     }
 }

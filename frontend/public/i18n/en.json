@@ -1,4 +1,5 @@
 {
+  "ai": {"panel":{"title":"AI: status, usage and check","explain":"AI runs only when the global switch is on, the AI Broker key is set and the integration is not off. Daily caps reset at 00:00 UTC. Settings are in the AI Broker card below.","test":"Test prompt","testOk":"Answer received: “{{reply}}”","testDeferred":"The answer is still being prepared — check later","tokens":"tokens: {{in}} → {{out}}, cached {{cached}}","available":"AI is available","model":"Model","modelAuto":"chosen by the broker","on":"on","requests":"Requests today: {{used}} of {{limit}}","cost":"Spent today: ${{used}} of ${{limit}}","cached":"Prompt-cache tokens: {{cached}} of {{input}} input"},"purposes":{"script_evaluation":"Script evaluation","mail_classification":"Mail sorting","candidate_screening":"Candidate screening"},"errors":{"ai_disabled":"AI is switched off globally","ai_not_configured":"AI Broker is not configured: key or integration mode","ai_purpose_disabled":"This AI feature is off in the settings","ai_budget_exceeded":"Daily AI cap reached — try tomorrow","ai_invalid_output":"AI answered in a wrong format","ai_timeout":"AI did not answer in time","ai_provider":"AI provider error","throttled":"Too many requests, wait a minute","generic":"The AI request failed"}},
   "app": { "name": "SinHRM", "tagline": "Recruiting without the noise" },
   "common": { "confirm": "Confirm", "cancel": "Cancel", "retry": "Try again", "loading": "Loading…", "error": "Something went wrong", "all": "All", "close": "Close", "save": "Save", "delete": "Delete" },
   "roles": { "superadmin": "Superadmin", "admin": "Admin", "recruiter": "Recruiter", "viewer": "Viewer" },
@@ -96,6 +97,7 @@
     }
   },
   "integrations": {
+    "options": {"on":"On","off":"Off","chat:fast":"chat:fast — fast","chat:smart":"chat:smart — smart","chat:sales":"chat:sales — sales","structured":"structured — structured","diia_signature":"Diia.Signature","vchasno":"Vchasno"},
     "title": "Integrations",
     "subtitle": "Keys and settings of external services. Secrets are stored encrypted and never shown again.",
     "loadError": "Could not load integrations",
@@ -195,7 +197,17 @@
       "callback_extension": "Extension for calls from the card",
       "base_url": "API address",
       "project_key": "Project key",
-      "daily_cap_usd": "Daily cap, $",
+      "daily_cap_usd": "Daily spending cap, $",
+      "capability": "Broker capability (test prompt)",
+      "capability_script_evaluation": "Capability: script evaluation",
+      "capability_mail_classification": "Capability: mail sorting",
+      "capability_candidate_screening": "Capability: screening",
+      "model": "Model (empty — the broker chooses)",
+      "max_requests_per_day": "Requests per day, at most",
+      "ai_script_evaluation": "AI: script evaluation",
+      "ai_mail_classification": "AI: mail sorting",
+      "ai_candidate_screening": "AI: candidate screening",
+      "ai_screening_auto": "Auto-screen new applications",
       "api_key": "API key",
       "mailbox": "Mailbox",
       "sheet_url": "Sheet link",
@@ -214,7 +226,7 @@
     "items": {
       "ai_broker": {
         "name": "AI Broker",
-        "description": "Own gateway to AI models with a spending cap"
+        "description": "Own gateway to AI models: a capability per feature, daily request and spending caps"
       },
       "openrouter": {
         "name": "OpenRouter",
@@ -291,6 +303,7 @@
     "keys": "↑↓ select · Enter open · Esc close"
   },
   "recruiting": {
+    "screening": {"title":"AI screening","label":"AI assessment, a person decides","run":"AI screening","again":"Assess again","pending":"AI is still assessing — refresh a bit later.","strengths":"Strengths","gaps":"Gaps","questions":"Interview questions","verdict":{"fit":"fits","maybe":"maybe","no":"does not fit"}},
     "search": "Search",
     "save": "Save",
     "required": "Required",
@@ -599,6 +612,7 @@
     "errors": { "google_gmail_not_connected": "Gmail is not connected", "google_calendar_not_connected": "Google Calendar is not connected", "google_sheets_not_connected": "Google Sheets is not connected", "reconnect_required": "Google must be reconnected", "google_oauth_not_configured": "The Google OAuth client is not configured on the server", "google_unauthorized": "Google refused access", "google_forbidden": "No access (check permissions or sheet sharing)", "google_not_found": "Not found (check the link and access)", "google_unreachable": "Google is unreachable, try later", "invalid_sheet_url": "A link like https://docs.google.com/spreadsheets/d/… is required", "consent_denied": "Access was not granted", "invalid_state": "The connection session expired — try again", "invalid_services": "Unknown Google services", "validation": "Check the fields", "generic": "The Google action failed" }
   },
   "mail": {
+    "ai": {"suggestion":"AI suggests: {{kind}} ({{confidence}}%)","extracted":"data from the letter","pending":"AI is reading the letter…","failed":"AI could not tell"},
     "title": "Mail",
     "subtitle": "The agent reads the connected Gmail box every 30 minutes: job-board applications become candidates and tasks, candidate e-mails become touches on the card.",
     "syncNow": "Sync now",
@@ -611,7 +625,7 @@
     "tabs": { "unknown": "Unknown senders", "rules": "Rules", "log": "Log" },
     "kinds": { "job_board": "Job board", "candidate": "Candidate", "colleague": "Colleague", "newsletter": "Newsletter", "ignore": "Ignore" },
     "parsers": { "work_ua": "Work.ua", "robota_ua": "Robota.ua", "djinni": "Djinni", "generic": "Generic" },
-    "rules": { "pattern": "Address or @domain", "hint": "hr@site.com — one address, @site.com — the whole domain", "kind": "Kind", "parser": "Parser", "hits": "Hits: {{n}}", "add": "Add", "delete": "Delete rule", "empty": "No rules yet", "created": "Rule added" },
+    "rules": { "pattern": "Address or @domain", "hint": "hr@site.com — one address, @site.com — the whole domain", "kind": "Kind", "parser": "Parser", "hits": "Hits: {{n}}", "add": "Add", "delete": "Delete rule", "empty": "No rules yet", "created": "Rule added", "aiOnly": "Created by AI only", "byAi": "created by AI, {{confidence}}%" },
     "unknown": { "count": "e-mails: {{n}}", "domain": "Whole domain", "assign": "Apply", "dismiss": "Remove from queue", "empty": "The queue is empty", "assigned": "Rule created" },
     "log": { "received": "Received", "sender": "Sender", "subject": "Subject", "outcome": "Outcome", "empty": "Nothing processed yet" },
     "outcomes": { "application": "Application → candidate", "touchpoint": "Candidate e-mail", "inbox": "To Inbox", "skipped": "Skipped", "unknown": "Unknown", "parse_failed": "Not recognized" },

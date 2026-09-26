@@ -4,7 +4,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { EvaluationDetails, scoreBand } from '../scripts.model';
 
 /**
- * Details of a script evaluation: score + engine ("правила" / "AI"), steps ✓/✗ with the quote that matched,
+ * Details of a script evaluation: score + engine ("правила" / "ШІ"), steps (AI: with a short comment each) ✓/✗ with the quote that matched,
  * whether the next step was fixed, raised objections and recommendations. Used by the timeline badge and the
  * editor's "test on text" panel.
  */
@@ -38,6 +38,9 @@ import { EvaluationDetails, scoreBand } from '../scripts.model';
           @if (s.quote) {
             <q>{{ s.quote }}</q>
           }
+          @if (s.comment) {
+            <span class="comment">{{ s.comment }}</span>
+          }
         </li>
       } @empty {
         <li class="muted">{{ 'scripts.evaluation.noSteps' | transloco }}</li>
@@ -56,6 +59,9 @@ import { EvaluationDetails, scoreBand } from '../scripts.model';
               }
               @case ('negative_phrase') {
                 {{ 'scripts.evaluation.rec.negative_phrase' | transloco: { quote: r.quote } }}
+              }
+              @case ('ai_tip') {
+                <span class="ai">{{ 'scripts.evaluation.engine.ai' | transloco }}:</span> {{ r.text }}
               }
               @default {
                 {{ 'scripts.evaluation.rec.' + r.type | transloco }}
@@ -84,6 +90,8 @@ import { EvaluationDetails, scoreBand } from '../scripts.model';
     .title { font-weight: 500; }
     .req { font-size: 0.7rem; color: var(--app-muted); }
     q { color: var(--app-muted); font-style: italic; overflow-wrap: anywhere; }
+    .comment { flex-basis: 100%; font-size: 0.8rem; color: var(--app-muted); padding-left: 1.5rem; }
+    .ai { font-size: 0.75rem; color: var(--app-muted); }
     .recs { margin: 0.5rem 0 0; padding-left: 1.25rem; }
     .small { font-size: 0.8rem; margin: 0.25rem 0 0; }
   `,

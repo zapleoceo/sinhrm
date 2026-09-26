@@ -39,6 +39,9 @@ interface ScriptRepository
 
     public function findVersion(int $scriptId, int $version): ?ScriptVersion;
 
+    /** A version by its row id (AI evaluation results refer to the version they were made for). */
+    public function findVersionById(int $id): ?ScriptVersion;
+
     /** @return Collection<int, ScriptVersion> newest first, with author */
     public function versions(int $scriptId): Collection;
 

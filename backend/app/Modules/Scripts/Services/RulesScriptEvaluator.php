@@ -8,6 +8,7 @@ use App\Modules\Scripts\Contracts\ScriptEvaluator;
 use App\Modules\Scripts\DTO\EvaluationResult;
 use App\Modules\Scripts\DTO\ScriptContent;
 use App\Modules\Scripts\Enums\EvaluationEngine;
+use App\Modules\Scripts\Support\ScriptScore;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -35,9 +36,6 @@ final class RulesScriptEvaluator implements ScriptEvaluator
 
         $steps = [];
         $recommendations = [];
-        $totalWeight = 0;
-        $doneWeight = 0;
-        $doneCount = 0;
         foreach ($script->steps as $step) {
             $index = self::findAny($lower, $step->keywords);
             $done = $index !== null;
@@ -49,19 +47,11 @@ final class RulesScriptEvaluator implements ScriptEvaluator
                 'done' => $done,
                 'quote' => $done ? self::quote($sentences[$index]) : null,
             ];
-            $totalWeight += $step->weight;
-            if ($done) {
-                $doneWeight += $step->weight;
-                $doneCount++;
-            } elseif ($step->required) {
+            if (! $done && $step->required) {
                 $recommendations[] = ['type' => 'missed_step', 'step_id' => $step->id, 'title' => $step->title];
             }
         }
-        $score = match (true) {
-            $totalWeight > 0 => (int) round($doneWeight / $totalWeight * 100),
-            $steps !== [] => (int) round($doneCount / count($steps) * 100),
-            default => 0,
-        };
+        $score = ScriptScore::compute($steps);
 
         $positive = self::lastMatch($sentences, $script->nextStepPatterns['positive']);
         $negative = self::lastMatch($sentences, $script->nextStepPatterns['negative']);
@@ -87,7 +77,7 @@ final class RulesScriptEvaluator implements ScriptEvaluator
 
         return new EvaluationResult(
             engine: EvaluationEngine::Rules,
-            score: max(0, min(100, $score)),
+            score: $score,
             steps: $steps,
             nextStep: [
                 'fixed' => $fixed,

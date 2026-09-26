@@ -132,7 +132,7 @@ final class IntegrationsApiTest extends TestCase
             ->putJson('/api/integrations/ai_broker', ['settings' => ['base_url' => 'https://broker.example.test', 'daily_cap_usd' => '5']])
             ->assertOk()
             ->assertJsonPath('data.fields.0.value', 'https://broker.example.test')
-            ->assertJsonPath('data.fields.2.value', '5');
+            ->assertJsonPath('data.fields.8.value', '5');
 
         // bad URL, required field emptied, unknown settings key, unknown secret, non-string secret
         $this->actingAs($this->superadmin)

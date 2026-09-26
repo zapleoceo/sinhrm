@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Scripts\Services;
 
-use App\Modules\Integrations\Contracts\AiPolicy;
 use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\Models\Touchpoint;
 use App\Modules\Scripts\Contracts\EvaluationRepository;
@@ -17,8 +16,10 @@ use App\Modules\Scripts\Exceptions\ScriptException;
 use App\Modules\Scripts\Models\ScriptEvaluation;
 
 /**
- * Picks the engine and stores evaluations. AI is tried only when the global switch is on; any refusal of the AI
- * evaluator (switched off, not configured) falls back to the rules, so an evaluation is always produced.
+ * Picks the engine and stores evaluations. AI is tried when it is available for script evaluation (global switch,
+ * provider configured, purpose on); any refusal or failure (over the cap, provider error, invalid answer) falls back
+ * to the rules, so an evaluation is always produced. A touch whose AI answer is not ready within the wait gets the
+ * rules evaluation now; the ai.poll job later replaces it with the AI one (ScriptEvaluationAiHandler).
  */
 final readonly class EvaluationService
 {
@@ -26,7 +27,6 @@ final readonly class EvaluationService
     public const int LAZY_LIMIT = 5;
 
     public function __construct(
-        private AiPolicy $policy,
         private AiScriptEvaluator $ai,
         /** The rules engine (bound in ScriptsServiceProvider). */
         private ScriptEvaluator $rules,
@@ -37,11 +37,11 @@ final readonly class EvaluationService
 
     public function evaluate(ScriptContent $script, string $text): EvaluationResult
     {
-        if ($this->policy->enabled()) {
+        if ($this->ai->available()) {
             try {
                 return $this->ai->evaluate($script, $text);
             } catch (ScriptException) {
-                // AI switched on but not wired yet: fall through to the rules.
+                // AI refused, failed or is still thinking: the rules answer now.
             }
         }
 
@@ -51,8 +51,9 @@ final readonly class EvaluationService
     /**
      * Evaluates a touch against the active script of its channel (call transcript / long outbound chat message) and
      * stores the result once. null = the touch is not evaluated (wrong kind, no active script).
+     * $aiWaitSeconds: how long to wait for the AI answer (0 = submit only; timeline requests must stay fast).
      */
-    public function evaluateTouchpoint(int $touchpointId): ?ScriptEvaluation
+    public function evaluateTouchpoint(int $touchpointId, int $aiWaitSeconds = 0): ?ScriptEvaluation
     {
         $touch = $this->touchpoints->find($touchpointId);
         if ($touch === null) {
@@ -70,7 +71,19 @@ final readonly class EvaluationService
         if ($version === null) {
             return null;
         }
-        $result = $this->evaluate($version->content(), (string) $touch->body);
+        if ($this->ai->available()) {
+            try {
+                if ($this->ai->evaluateTouch($version, $touch, $aiWaitSeconds)->isDone()) {
+                    $stored = $this->evaluations->findByTouchpoint($touch->id);
+                    if ($stored !== null) {
+                        return $stored;
+                    }
+                }
+            } catch (ScriptException) {
+                // Over the cap or switched off meanwhile: rules below.
+            }
+        }
+        $result = $this->rules->evaluate($version->content(), (string) $touch->body);
 
         return $this->evaluations->createOnce($touch->id, [
             'script_version_id' => $version->id,

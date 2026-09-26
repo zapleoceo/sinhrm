@@ -39,16 +39,13 @@ final class ScriptException extends RuntimeException
         return new self('script_archived', 422);
     }
 
-    /** The AI evaluator refuses to work while the global AI switch is off (it never calls a provider then). */
-    public static function aiDisabled(): self
+    /**
+     * The AI evaluator cannot give a result now: AI off/not configured/over the cap, provider error, invalid output
+     * or still pending (code = the Ai module code, e.g. ai_disabled). EvaluationService falls back to the rules.
+     */
+    public static function aiUnavailable(string $code): self
     {
-        return new self('ai_disabled', 422);
-    }
-
-    /** AI is switched on, but no provider/model/prompt is approved and wired yet. */
-    public static function aiNotConfigured(): self
-    {
-        return new self('ai_not_configured', 422);
+        return new self($code, 422);
     }
 
     public static function notEvaluated(): self

@@ -33,8 +33,11 @@
   (канал, направление, текст, минуты для звонка/встречи; Ctrl/⌘+Enter — сохранить; кнопка **«Шаблон»** вставляет сообщение из
   активного скрипта с подставленными именем, рекрутером и вакансией; для подключённых Telegram/WhatsApp/Viber — кнопка
   **«Надіслати»**: сообщение уходит кандидату через канал, а если канал не подключён — предложение «Записати вручну»,
-  [channels.md](channels.md)); **Задачі** по кандидату (напоминания, галочка — выполнено);
-  **Касання** — лента новых сверху, фильтр-чипы по каналам и «Етапи». У оценённого звонка/сообщения — значок «Скрипт N · правила»,
+  [channels.md](channels.md)); **Скринінг ШІ** — по каждой заявке кнопка «ШІ-скринінг»: балл 0–100, вердикт
+  (підходить / можливо / не підходить), саммари, сильные стороны, пробелы и вопросы на собеседование с подписью
+  **«Оцінка ШІ, рішення за людиною»** (ТЗ 6; только подсказка, заявка никуда не двигается; если ответ не успел — «ШІ ще
+  оцінює», результат подтянется при следующем открытии; [ai.md](ai.md)); **Задачі** по кандидату (напоминания, галочка — выполнено);
+  **Касання** — лента новых сверху, фильтр-чипы по каналам и «Етапи». У оценённого звонка/сообщения — значок «Скрипт N · правила» (или «· ШІ»),
   клик раскрывает шаги с цитатами и рекомендации ([scripts.md](scripts.md)).
   При создании кандидата с уже известным телефоном/e-mail/Telegram система предложит открыть существующую карточку (если он в
   ваших филиалах) или сообщит, что он есть в другом филиале. Второго кандидата с тем же контактом создать нельзя.
@@ -60,6 +63,7 @@
 | `stage_changes` | `application_id, from_stage_id? (null = создание), to_stage_id, by_user_id?, reason, at` | маршрут кандидата |
 | `candidate_profile_urls` | `candidate_id, site (linkedin\|work_ua\|djinni\|dou), url (unique)` | ссылки на профили из браузерного расширения; нормализованный URL — ещё один ключ дедупликации (миграция `2026_10_01_100001`) |
 | `touchpoints` | `candidate_id?, application_id?, branch_id?, stage_change_id?, channel, direction (in\|out), author_id?, occurred_at, body, meta (jsonb: duration_sec, recording_url, contact), external_id, via_product, integration_key` | `unique(channel, external_id)` — дедуп повторной доставки (NULL не конфликтуют) |
+| `candidate_screenings` | `application_id, candidate_id, vacancy_id, status (pending\|done\|failed), trigger (manual\|auto), score?, verdict? (fit\|maybe\|no), summary?, strengths/gaps/questions (jsonb), prompt_version, ai_request_id?, error?, requested_by?, completed_at` | ШІ-скринінг (миграция `2026_10_08_100005`); вердикт считает сервер по баллу (≥ 70 / ≥ 40) |
 | view `unmatched_messages` | `SELECT * FROM touchpoints WHERE candidate_id IS NULL` | для SQL/BI; API читает саму таблицу. ⚠ `SELECT *` фиксирует колонки при создании: изменение `touchpoints` потребует пересоздать view в той же миграции |
 
 Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MANUAL` — каналы ручной записи, `isTouch()` = не `system`),
@@ -170,6 +174,22 @@ Recruiting не знает, как оцениваются разговоры: `T
 подменяет его своей реализацией ([scripts.md](scripts.md)). Сама оценка запускается модулем Scripts по событию
 `TouchpointRecorded`.
 
+### ШІ-скринінг (ТЗ 6: `Services/ScreeningService`, `Ai/*`, `Http/Controllers/ScreeningController`)
+- `POST /api/applications/{id}/screening` — право `CandidatePolicy::update` (FormRequest `ScreenApplicationRequest`), лимит
+  20/мин. Незавершённый скрининг заявки возвращается повторно (без нового запроса и расходов). Ждёт ответ ≤ 40 с:
+  201 `done` / 202 `pending` (его завершит `ai.poll` или следующий `GET`). Отказ AI → `{code}`: `ai_disabled`,
+  `ai_not_configured`, `ai_purpose_disabled` (422, строка не создаётся), `ai_budget_exceeded` (429, строка `failed`).
+- `GET /api/candidates/{id}/screenings` — право просмотра кандидата; последняя оценка по каждой заявке; до 3 незавершённых
+  опрашиваются у брокера один раз.
+- Промпт `Ai/ScreeningPrompt` (`screening.v2`) из `Ai/ScreeningInput`, который собирает `Ai/ScreeningPromptFactory`:
+  название/должность/отдел/описание вакансии, город и теги кандидата, 20 последних касаний-материалов (заметки — в т.ч.
+  текст резюме из клиппера — и входящие сообщения/расшифровки кандидата) через `PiiRedactor` (без ФИО, телефонов,
+  e-mail, ссылок, @ников). Авторы заметок и данные сотрудников не отправляются. `Ai/ScreeningAiHandler` пишет ответ
+  (`pending → done|failed` один раз).
+- **Автоскрининг** (настройка `ai_screening_auto`, по умолчанию выкл.): задача `ai.screen` (cron) отправляет до 5 новых
+  активных заявок за 48 ч без скрининга, без ожидания. Ранжирование откликов по баллу на доске/в списке — **не сделано**
+  (следующий шаг ТЗ 6).
+
 ### Контракт для интеграций (приём касаний)
 ```php
 interface TouchpointIngestor { public function ingest(IncomingMessage $message): Touchpoint; }
@@ -217,7 +237,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `vacancies/` | список + `VacancyDialog` (`/vacancies`) |
 | `board/` | доска CDK drag&drop (`/vacancies/:id`), оптимистичный перенос с откатом, `RejectDialog`; «Створити співробітника» в колонке найма (`features/people/hire.action.ts`) |
 | `candidates/` | split view (`/candidates`, `/candidates/:id`), клавиши j/k/↑/↓//, `CandidateDialog` с обработкой дубля |
-| `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts` и «Надіслати» через `features/channels/channels.service.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме |
+| `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts` и «Надіслати» через `features/channels/channels.service.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме; `screening-panel.ts` — ШІ-скринінг по заявкам (`RecruitingService.screenings/screen`, коды ошибок — `features/ai/ai.service.ts`) |
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |
 | `reports/` | `/reports`, таблицы с CSS-полосками, `pivotTouches` |
 | `channels/` | `/admin/acquisition-channels` — справочник каналов, правила UTM с проверкой, расходы; `board/vacancy-sources.ts` — блок «Джерела відгуків» на доске; в карточке — чипы канала и «як додано», в форме — «Канал залучення», в списке — фильтр по каналу |
@@ -239,6 +259,8 @@ ingestor (сопоставление, дедуп, «Вхідні»), `CandidateS
 `tests/Feature/Recruiting/ExtensionApiTest.php` — токен (выдача, ротация, отзыв, срок), изоляция токена от остального API,
 импорт (создание с заметкой, совпадение по ссылке/телефону/e-mail, хост ссылки → 422, филиалы, viewer, лимит 30/мин, CORS);
 `tests/Unit/Recruiting/ClipperSiteTest.php` — нормализация ссылок.
+ШІ-скринінг: `ScreeningApiTest` (результат и подпись, в запросе нет ФИО и контактов, медленный ответ → 202 → готово при
+открытии, повторный клик не создаёт второй запрос, права по `CandidatePolicy`, отказы с кодами, автоскрининг выкл./вкл.).
 Каналы привлечения: `AcquisitionChannelsApiTest` (права, приоритет UTM, способ добавления, миграция источников, математика отчёта), `ChannelSupportTest`; фронт — `channels/channels.spec.ts`.
 Фронт: `features/extension/extension.spec.ts`, `recruiting.service.spec.ts`, `recruiting.format.spec.ts`, `recruiting.stores.spec.ts`.
 

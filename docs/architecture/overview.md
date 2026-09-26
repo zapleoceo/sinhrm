@@ -38,6 +38,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Users (админка пользователей) | ✅ | [modules/users.md](../modules/users.md) |
 | Shell (оболочка фронтенда) | ✅ | [modules/shell.md](../modules/shell.md) |
 | Integrations (секреты и внешние сервисы) | ✅ | [modules/integrations.md](../modules/integrations.md) |
+| Ai (AI Broker: ворота, дневные лимиты, `ai_requests`, отложенные ответы `ai.poll`, промпты-классы; функции живут в Scripts, MailAgent, Recruiting) | ✅ | [modules/ai.md](../modules/ai.md) |
 | Directory (справочники, филиалы пользователей) | ✅ | [modules/directory.md](../modules/directory.md) |
 | Recruiting (вакансии, воронки, кандидаты, касания, «Вхідні», отчёты, каналы привлечения с UTM — [acquisition-channels.md](../modules/acquisition-channels.md)) | ✅ | [modules/recruiting.md](../modules/recruiting.md) |
 | Scripts (версии скриптов, оценка касаний, шаблоны, задачи-напоминания) | ✅ | [modules/scripts.md](../modules/scripts.md) |

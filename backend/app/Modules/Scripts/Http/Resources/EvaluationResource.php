@@ -25,6 +25,7 @@ final class EvaluationResource extends JsonResource
             'touchpoint_id' => $this->touchpoint_id,
             'engine' => $this->engine->value,
             'score' => $this->score,
+            'prompt_version' => $this->prompt_version,
             'script' => $version === null ? null : [
                 'id' => $version->script_id,
                 'name' => $version->relationLoaded('script') ? $version->script->name : null,

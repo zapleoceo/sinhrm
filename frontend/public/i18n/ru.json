@@ -1,4 +1,5 @@
 {
+  "ai": {"panel":{"title":"ИИ: состояние, использование и проверка","explain":"ИИ работает только когда включён общий переключатель, задан ключ AI Broker и интеграция не выключена. Дневные лимиты считаются с 00:00 UTC. Настройки — в карточке AI Broker ниже.","test":"Тестовый запрос","testOk":"Ответ получен: «{{reply}}»","testDeferred":"Ответ ещё готовится — проверьте позже","tokens":"токены: {{in}} → {{out}}, из кеша {{cached}}","available":"ИИ доступен","model":"Модель","modelAuto":"выбирает брокер","on":"включено","requests":"Запросы сегодня: {{used}} из {{limit}}","cost":"Расходы сегодня: ${{used}} из ${{limit}}","cached":"Токенов из кеша промпта: {{cached}} из {{input}} входных"},"purposes":{"script_evaluation":"Оценка по скрипту","mail_classification":"Сортировка почты","candidate_screening":"Скрининг кандидатов"},"errors":{"ai_disabled":"ИИ выключен общим переключателем","ai_not_configured":"AI Broker не настроен: ключ или режим интеграции","ai_purpose_disabled":"Эта функция ИИ выключена в настройках","ai_budget_exceeded":"Дневной лимит ИИ исчерпан — попробуйте завтра","ai_invalid_output":"ИИ ответил в неверном формате","ai_timeout":"ИИ не ответил вовремя","ai_provider":"Ошибка на стороне AI-провайдера","throttled":"Слишком много запросов, подождите минуту","generic":"Не удалось выполнить запрос к ИИ"}},
   "app": { "name": "SinHRM", "tagline": "Рекрутинг без лишнего шума" },
   "common": { "confirm": "Подтвердить", "cancel": "Отмена", "retry": "Повторить", "loading": "Загрузка…", "error": "Что-то пошло не так", "all": "Все", "close": "Закрыть", "save": "Сохранить", "delete": "Удалить" },
   "roles": { "superadmin": "Суперадмин", "admin": "Администратор", "recruiter": "Рекрутер", "viewer": "Наблюдатель" },
@@ -96,6 +97,7 @@
     }
   },
   "integrations": {
+    "options": {"on":"Включено","off":"Выключено","chat:fast":"chat:fast — быстро","chat:smart":"chat:smart — умно","chat:sales":"chat:sales — продажи","structured":"structured — структурировано","diia_signature":"Дія.Підпис","vchasno":"Вчасно"},
     "title": "Интеграции",
     "subtitle": "Ключи и настройки внешних сервисов. Секреты хранятся зашифрованными и повторно не показываются.",
     "loadError": "Не удалось загрузить интеграции",
@@ -195,7 +197,17 @@
       "callback_extension": "Внутренний номер для звонка из карточки",
       "base_url": "Адрес API",
       "project_key": "Ключ проекта",
-      "daily_cap_usd": "Дневной лимит, $",
+      "daily_cap_usd": "Дневной лимит расходов, $",
+      "capability": "Возможность брокера (тестовый запрос)",
+      "capability_script_evaluation": "Возможность: оценка по скрипту",
+      "capability_mail_classification": "Возможность: сортировка почты",
+      "capability_candidate_screening": "Возможность: скрининг",
+      "model": "Модель (пусто — выбирает брокер)",
+      "max_requests_per_day": "Запросов в день, не больше",
+      "ai_script_evaluation": "ИИ: оценка по скрипту",
+      "ai_mail_classification": "ИИ: сортировка почты",
+      "ai_candidate_screening": "ИИ: скрининг кандидатов",
+      "ai_screening_auto": "Автоскрининг новых откликов",
       "api_key": "API-ключ",
       "mailbox": "Почтовый ящик",
       "sheet_url": "Ссылка на таблицу",
@@ -214,7 +226,7 @@
     "items": {
       "ai_broker": {
         "name": "AI Broker",
-        "description": "Собственный шлюз к AI-моделям с лимитом расходов"
+        "description": "Собственный шлюз к AI-моделям: возможность на каждую функцию, дневные лимиты запросов и расходов"
       },
       "openrouter": {
         "name": "OpenRouter",
@@ -291,6 +303,7 @@
     "keys": "↑↓ — выбор · Enter — открыть · Esc — закрыть"
   },
   "recruiting": {
+    "screening": {"title":"Скрининг ИИ","label":"Оценка ИИ, решение за человеком","run":"ИИ-скрининг","again":"Оценить ещё раз","pending":"ИИ ещё оценивает — обновите чуть позже.","strengths":"Сильные стороны","gaps":"Пробелы","questions":"Вопросы на собеседование","verdict":{"fit":"подходит","maybe":"возможно","no":"не подходит"}},
     "search": "Поиск",
     "save": "Сохранить",
     "required": "Обязательное поле",
@@ -569,7 +582,7 @@
     "evaluation": {
       "badge": "Скрипт {{score}}",
       "score": "Балл {{score}}/100",
-      "engine": { "rules": "правила", "ai": "AI" },
+      "engine": { "rules": "правила", "ai": "ИИ" },
       "nextFixed": "Следующий шаг зафиксирован",
       "nextNotFixed": "Следующий шаг не зафиксирован",
       "done": "выполнено",
@@ -599,6 +612,7 @@
     "errors": { "google_gmail_not_connected": "Gmail не подключён", "google_calendar_not_connected": "Google Календарь не подключён", "google_sheets_not_connected": "Google Таблицы не подключены", "reconnect_required": "Google нужно переподключить", "google_oauth_not_configured": "OAuth-клиент Google не настроен на сервере", "google_unauthorized": "Google отклонил доступ", "google_forbidden": "Нет доступа (проверьте разрешения или доступ к таблице)", "google_not_found": "Не найдено (проверьте ссылку и доступ)", "google_unreachable": "Google недоступен, попробуйте позже", "invalid_sheet_url": "Нужна ссылка вида https://docs.google.com/spreadsheets/d/…", "consent_denied": "Доступ не выдан", "invalid_state": "Сессия подключения устарела — попробуйте ещё раз", "invalid_services": "Неизвестные сервисы Google", "validation": "Проверьте поля", "generic": "Не удалось выполнить действие с Google" }
   },
   "mail": {
+    "ai": {"suggestion":"ИИ предлагает: {{kind}} ({{confidence}}%)","extracted":"данные из письма","pending":"ИИ анализирует письмо…","failed":"ИИ не смог определить"},
     "title": "Почта",
     "subtitle": "Агент читает подключённый ящик Gmail каждые 30 минут: отклики с сайтов вакансий становятся кандидатами и задачами, письма кандидатов — касаниями в карточке.",
     "syncNow": "Синхронизировать сейчас",
@@ -611,7 +625,7 @@
     "tabs": { "unknown": "Неизвестные отправители", "rules": "Правила", "log": "Журнал" },
     "kinds": { "job_board": "Сайт вакансий", "candidate": "Кандидат", "colleague": "Коллега", "newsletter": "Рассылка", "ignore": "Игнорировать" },
     "parsers": { "work_ua": "Work.ua", "robota_ua": "Robota.ua", "djinni": "Djinni", "generic": "Общий" },
-    "rules": { "pattern": "Адрес или @домен", "hint": "hr@site.ua — один адрес, @site.ua — весь домен", "kind": "Тип", "parser": "Разбор", "hits": "Срабатываний: {{n}}", "add": "Добавить", "delete": "Удалить правило", "empty": "Правил ещё нет", "created": "Правило добавлено" },
+    "rules": { "pattern": "Адрес или @домен", "hint": "hr@site.ua — один адрес, @site.ua — весь домен", "kind": "Тип", "parser": "Разбор", "hits": "Срабатываний: {{n}}", "add": "Добавить", "delete": "Удалить правило", "empty": "Правил ещё нет", "created": "Правило добавлено", "aiOnly": "Только созданные ИИ", "byAi": "создано ИИ, {{confidence}}%" },
     "unknown": { "count": "писем: {{n}}", "domain": "Для всего домена", "assign": "Применить", "dismiss": "Убрать из очереди", "empty": "Очередь пуста", "assigned": "Правило создано" },
     "log": { "received": "Получено", "sender": "Отправитель", "subject": "Тема", "outcome": "Результат", "empty": "Ещё ничего не обработано" },
     "outcomes": { "application": "Отклик → кандидат", "touchpoint": "Письмо кандидата", "inbox": "Во «Входящие»", "skipped": "Пропущено", "unknown": "Неизвестный", "parse_failed": "Не распознано" },

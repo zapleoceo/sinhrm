@@ -16,6 +16,7 @@ use App\Modules\MailAgent\Exceptions\MailAgentException;
 use App\Modules\MailAgent\Models\SenderRule;
 use App\Modules\MailAgent\Models\UnknownSender;
 use App\Modules\MailAgent\Support\SenderPattern;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 
@@ -112,6 +113,38 @@ final readonly class MailAgentService
             : $this->updateRule($actor, $existing, null, $kind, $parser, true);
         $this->dropCovered($pattern);
         $this->unknown->delete($sender);
+
+        return $rule;
+    }
+
+    /**
+     * Auto-applied AI classification (confidence ≥ threshold, owner decision): an exact-address rule with source "ai",
+     * no author, the confidence and the prompt version; the sender leaves the queue. null = not applied because a rule
+     * for the address already exists (a person decided first) or the sender is gone from the queue.
+     */
+    public function createAiRule(int $unknownSenderId, SenderKind $kind, ?ParserKey $parser, float $confidence, string $promptVersion, int $requestId): ?SenderRule
+    {
+        $sender = $this->unknown->find($unknownSenderId);
+        $pattern = $sender === null ? null : SenderPattern::normalize($sender->email);
+        if ($sender === null || $pattern === null || $this->rules->findByPattern($pattern) !== null) {
+            return null;
+        }
+        try {
+            $rule = $this->rules->create([
+                'pattern' => $pattern,
+                'kind' => $kind->value,
+                'parser' => self::parserFor($kind, $parser)?->value,
+                'created_by' => null,
+                'source' => SenderRule::SOURCE_AI,
+                'ai_confidence' => round($confidence, 3),
+                'prompt_version' => $promptVersion,
+                'ai_request_id' => $requestId,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return null;
+        }
+        $this->unknown->delete($sender);
+        $this->logger->info('mail.rule_created', ['id' => $rule->id, 'by' => 'ai', 'ai_request_id' => $requestId]);
 
         return $rule;
     }

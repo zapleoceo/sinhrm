@@ -7,6 +7,7 @@ namespace App\Modules\Scripts\Repositories;
 use App\Modules\Recruiting\DTO\DateRange;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Scripts\Contracts\EvaluationRepository;
+use App\Modules\Scripts\Enums\EvaluationEngine;
 use App\Modules\Scripts\Models\ScriptEvaluation;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -31,6 +32,19 @@ final class EloquentEvaluationRepository implements EvaluationRepository
             // Two evaluations of the same touch raced: the first one wins.
             return ScriptEvaluation::query()->where('touchpoint_id', $touchpointId)->firstOrFail();
         }
+    }
+
+    public function storeAi(int $touchpointId, int $scriptVersionId, array $attributes): ScriptEvaluation
+    {
+        $existing = ScriptEvaluation::query()->where('touchpoint_id', $touchpointId)->first();
+        if ($existing === null) {
+            return $this->createOnce($touchpointId, ['script_version_id' => $scriptVersionId, 'engine' => EvaluationEngine::Ai->value] + $attributes);
+        }
+        if ($existing->engine === EvaluationEngine::Rules && $existing->script_version_id === $scriptVersionId) {
+            $existing->fill(['engine' => EvaluationEngine::Ai->value] + $attributes)->save();
+        }
+
+        return $existing;
     }
 
     public function forTouchpoints(array $touchpointIds): array

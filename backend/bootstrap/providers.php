@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Ai\Providers\AiServiceProvider;
 use App\Modules\Assets\Providers\AssetsServiceProvider;
 use App\Modules\Auth\Providers\AuthServiceProvider;
 use App\Modules\Channels\Providers\ChannelsServiceProvider;
@@ -35,6 +36,7 @@ return [
     AuthServiceProvider::class,
     UsersServiceProvider::class,
     IntegrationsServiceProvider::class,
+    AiServiceProvider::class,
     DirectoryServiceProvider::class,
     RecruitingServiceProvider::class,
     ScriptsServiceProvider::class,

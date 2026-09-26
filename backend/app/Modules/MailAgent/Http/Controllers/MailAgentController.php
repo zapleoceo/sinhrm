@@ -10,6 +10,7 @@ use App\Modules\MailAgent\Contracts\SenderRuleRepository;
 use App\Modules\MailAgent\Contracts\UnknownSenderRepository;
 use App\Modules\MailAgent\Enums\SenderKind;
 use App\Modules\MailAgent\Http\Requests\AssignSenderRequest;
+use App\Modules\MailAgent\Http\Requests\ListSenderRulesRequest;
 use App\Modules\MailAgent\Http\Requests\SaveSenderRuleRequest;
 use App\Modules\MailAgent\Http\Resources\MailMessageResource;
 use App\Modules\MailAgent\Http\Resources\SenderRuleResource;
@@ -46,9 +47,9 @@ final readonly class MailAgentController
         return new JsonResponse(['data' => $this->sync->sync('manual', $this->actor($request))]);
     }
 
-    public function rules(): AnonymousResourceCollection
+    public function rules(ListSenderRulesRequest $request): AnonymousResourceCollection
     {
-        return SenderRuleResource::collection($this->rules->all());
+        return SenderRuleResource::collection($this->rules->all($request->source()));
     }
 
     public function storeRule(SaveSenderRuleRequest $request): JsonResponse

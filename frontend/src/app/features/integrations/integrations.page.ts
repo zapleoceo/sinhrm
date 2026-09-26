@@ -6,6 +6,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { AiPanel } from '../ai/ai-panel';
 import { GoogleConnectPanel } from '../google-workspace/google-connect.panel';
 import { ConfirmAiDialog } from './confirm-ai.dialog';
 import { IntegrationCard } from './integration-card';
@@ -14,7 +15,7 @@ import { IntegrationsStore } from './integrations.store';
 /** Superadmin: integrations grouped by kind + the global AI policy switch (confirmed, optimistic). */
 @Component({
   selector: 'app-integrations-page',
-  imports: [MatButtonModule, MatIconModule, MatProgressBarModule, MatSlideToggleModule, TranslocoPipe, IntegrationCard, GoogleConnectPanel],
+  imports: [MatButtonModule, MatIconModule, MatProgressBarModule, MatSlideToggleModule, TranslocoPipe, IntegrationCard, GoogleConnectPanel, AiPanel],
   providers: [IntegrationsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './integrations.page.html',

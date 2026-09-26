@@ -152,7 +152,7 @@ final class EvaluationApiTest extends TestCase
             ->assertJsonPath('data.0.touchpoint.evaluation', null);
     }
 
-    public function test_ai_switched_on_still_never_calls_a_provider_and_falls_back_to_rules(): void
+    public function test_ai_switched_on_without_a_configured_provider_falls_back_to_rules(): void
     {
         Http::preventStrayRequests();
         $this->app->instance(AiPolicy::class, new class implements AiPolicy

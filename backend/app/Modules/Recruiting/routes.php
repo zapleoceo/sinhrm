@@ -10,6 +10,7 @@ use App\Modules\Recruiting\Http\Controllers\ExtensionController;
 use App\Modules\Recruiting\Http\Controllers\InboxController;
 use App\Modules\Recruiting\Http\Controllers\PipelineController;
 use App\Modules\Recruiting\Http\Controllers\ReportController;
+use App\Modules\Recruiting\Http\Controllers\ScreeningController;
 use App\Modules\Recruiting\Http\Controllers\VacancyController;
 use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
 use App\Modules\Recruiting\Services\ExtensionTokenService;
@@ -58,6 +59,12 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         ->whereNumber('candidate')->name('recruiting.candidates.timeline');
     Route::post('candidates/{candidate}/touchpoints', [CandidateController::class, 'logTouch'])
         ->whereNumber('candidate')->name('recruiting.candidates.touchpoints');
+
+    // AI screening (tz6): advisory score of the candidate against the vacancy; a person decides.
+    Route::get('candidates/{candidate}/screenings', [ScreeningController::class, 'index'])
+        ->whereNumber('candidate')->name('recruiting.candidates.screenings');
+    Route::post('applications/{application}/screening', [ScreeningController::class, 'store'])
+        ->whereNumber('application')->middleware('throttle:20,1')->name('recruiting.applications.screening');
 
     Route::post('applications/{application}/move', [ApplicationController::class, 'move'])
         ->whereNumber('application')->name('recruiting.applications.move');

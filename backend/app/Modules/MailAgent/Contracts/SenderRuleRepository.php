@@ -10,8 +10,8 @@ use Illuminate\Support\Carbon;
 
 interface SenderRuleRepository
 {
-    /** @return Collection<int, SenderRule> by pattern */
-    public function all(): Collection;
+    /** @return Collection<int, SenderRule> by pattern; $source = manual|ai filters by who created the rule */
+    public function all(?string $source = null): Collection;
 
     public function find(int $id): ?SenderRule;
 

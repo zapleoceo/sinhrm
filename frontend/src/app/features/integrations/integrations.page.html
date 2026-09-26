@@ -32,6 +32,9 @@
       @if (g.group === 'google') {
         <app-google-connect-panel />
       }
+      @if (g.group === 'ai') {
+        <app-ai-panel />
+      }
       <div class="grid">
         @for (item of g.items; track item.key) {
           <app-integration-card [item]="item" />

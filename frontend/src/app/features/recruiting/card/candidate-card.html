@@ -108,6 +108,13 @@
     </section>
   }
 
+  @if (c.applications.length) {
+    <section class="screening" [attr.aria-label]="'recruiting.screening.title' | transloco">
+      <h3>{{ 'recruiting.screening.title' | transloco }}</h3>
+      <app-screening-panel [candidateId]="c.id" [applications]="c.applications" [canWrite]="canWrite()" />
+    </section>
+  }
+
   <section class="tasks" [attr.aria-label]="'scripts.tasks.title' | transloco">
     <h3>{{ 'scripts.tasks.title' | transloco }}</h3>
     <app-tasks-widget [query]="{ candidate_id: c.id }" />

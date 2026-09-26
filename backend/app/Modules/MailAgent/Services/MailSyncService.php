@@ -12,6 +12,7 @@ use App\Modules\GoogleWorkspace\Exceptions\GoogleException;
 use App\Modules\GoogleWorkspace\Services\GoogleConnectionStore;
 use App\Modules\MailAgent\Contracts\MailLogRepository;
 use App\Modules\MailAgent\Enums\MailOutcome;
+use App\Modules\MailAgent\Support\MailRecord;
 use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -151,18 +152,7 @@ final readonly class MailSyncService
             return null;
         }
 
-        $this->log->record([
-            'gmail_id' => $message->id,
-            'received_at' => $message->receivedAt,
-            'sender' => $message->fromEmail,
-            'subject' => mb_substr($message->subject, 0, 255),
-            'kind' => $result->classification?->kind->value,
-            'parser' => $result->classification?->parser?->value,
-            'outcome' => $result->outcome->value,
-            'error' => $result->error,
-            'candidate_id' => $result->candidateId,
-            'touchpoint_id' => $result->touchpointId,
-        ]);
+        $this->log->record(MailRecord::attributes($message, $result));
         $counts['processed']++;
         $counts[$result->outcome->value]++;
         if ($result->taskCreated) {
@@ -173,7 +163,7 @@ final readonly class MailSyncService
     }
 
     /** Background runs act as the superadmin who connected Gmail (owner/creator of new candidates), if still active. */
-    private function backgroundActor(): ?User
+    public function backgroundActor(): ?User
     {
         $id = $this->connections->connectedBy(GoogleService::Gmail);
         $user = $id === null ? null : $this->users->find($id);

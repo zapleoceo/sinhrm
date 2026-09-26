@@ -4,55 +4,89 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Scripts;
 
-use App\Modules\Integrations\Contracts\AiPolicy;
-use App\Modules\Recruiting\Contracts\TouchpointRepository;
-use App\Modules\Scripts\Contracts\EvaluationRepository;
-use App\Modules\Scripts\Contracts\ScriptRepository;
+use App\Modules\Ai\Exceptions\InvalidAiOutput;
+use App\Modules\Scripts\Ai\AiEvaluationMapper;
+use App\Modules\Scripts\Ai\ScriptEvaluationPrompt;
 use App\Modules\Scripts\DTO\ScriptContent;
 use App\Modules\Scripts\Enums\EvaluationEngine;
-use App\Modules\Scripts\Exceptions\ScriptException;
-use App\Modules\Scripts\Services\AiScriptEvaluator;
-use App\Modules\Scripts\Services\EvaluationService;
-use App\Modules\Scripts\Services\RulesScriptEvaluator;
+use App\Modules\Scripts\Support\ScriptScore;
 use PHPUnit\Framework\TestCase;
 
+/** The AI side of the evaluation that does not need the container: score, mapping and parsing (script_eval.v1). */
 final class EvaluationServiceTest extends TestCase
 {
-    public function test_ai_evaluator_refuses_while_the_switch_is_off(): void
+    public function test_score_uses_weights_then_share_of_done_steps(): void
     {
-        $this->expectException(ScriptException::class);
-        $this->expectExceptionMessage('ai_disabled');
-        (new AiScriptEvaluator($this->policy(false)))->evaluate(ScriptContent::empty(), 'text');
+        $this->assertSame(75, ScriptScore::compute([['weight' => 30, 'done' => true], ['weight' => 10, 'done' => false], ['weight' => 0, 'done' => true], ['weight' => 0, 'done' => false]]));
+        $this->assertSame(50, ScriptScore::compute([['weight' => 0, 'done' => true], ['weight' => 0, 'done' => false]]));
+        $this->assertSame(0, ScriptScore::compute([]));
     }
 
-    public function test_ai_evaluator_is_not_wired_even_when_switched_on(): void
+    public function test_ai_answer_is_mapped_with_a_server_side_score_and_ignores_unknown_ids(): void
     {
-        $this->expectExceptionMessage('ai_not_configured');
-        (new AiScriptEvaluator($this->policy(true)))->evaluate(ScriptContent::empty(), 'text');
+        $data = AiEvaluationMapper::parse([
+            'steps' => [
+                ['id' => 'greet', 'done' => true, 'quote' => 'Добрий день', 'note' => 'Представився.'],
+                ['id' => 'invite', 'done' => false, 'quote' => 'ignored', 'note' => 'Не запросив.'],
+                ['id' => 'ghost', 'done' => true, 'quote' => 'x', 'note' => 'нема в скрипті'],
+            ],
+            'handled' => ['far', 'unknown'],
+            'next' => false,
+            'next_quote' => null,
+            'tips' => ['Назвіть дату співбесіди.', ''],
+            // The model must not score; a score in the answer is ignored.
+            'score' => 100,
+        ]);
+        $result = AiEvaluationMapper::toResult($this->script(), $data);
+
+        $this->assertSame(EvaluationEngine::Ai, $result->engine);
+        $this->assertSame(40, $result->score);
+        $this->assertSame(['greet', 'invite'], array_column($result->steps, 'id'));
+        $this->assertNull($result->steps[1]['quote']);
+        $this->assertSame('Не запросив.', $result->steps[1]['comment']);
+        $this->assertTrue($result->objections[0]['handled'] ?? false);
+        $this->assertSame(['missed_step', 'next_step_not_fixed', 'ai_tip'], array_column($result->recommendations, 'type'));
+        $this->assertSame('Назвіть дату співбесіди.', $result->recommendations[2]['text'] ?? null);
     }
 
-    public function test_service_uses_rules_when_ai_is_off_or_refuses(): void
+    public function test_invalid_shapes_are_rejected(): void
     {
-        foreach ([false, true] as $enabled) {
-            $policy = $this->policy($enabled);
-            $service = new EvaluationService(
-                $policy,
-                new AiScriptEvaluator($policy),
-                new RulesScriptEvaluator,
-                $this->createStub(ScriptRepository::class),
-                $this->createStub(EvaluationRepository::class),
-                $this->createStub(TouchpointRepository::class),
-            );
-
-            $this->assertSame(EvaluationEngine::Rules, $service->evaluate(ScriptContent::empty(), 'hello')->engine);
+        foreach ([
+            [],
+            ['steps' => 'x', 'handled' => [], 'next' => true, 'next_quote' => null, 'tips' => []],
+            ['steps' => [['id' => 'a', 'done' => 'yes']], 'handled' => [], 'next' => true, 'next_quote' => null, 'tips' => []],
+            ['steps' => [], 'handled' => [], 'next' => 'true', 'next_quote' => null, 'tips' => []],
+        ] as $json) {
+            try {
+                AiEvaluationMapper::parse($json);
+                $this->fail('Expected InvalidAiOutput');
+            } catch (InvalidAiOutput) {
+                $this->addToAssertionCount(1);
+            }
         }
     }
 
-    private function policy(bool $enabled): AiPolicy
+    public function test_system_prompt_is_stable_and_the_transcript_goes_last(): void
     {
-        $policy = $this->createStub(AiPolicy::class);
-        $policy->method('enabled')->willReturn($enabled);
+        $first = ScriptEvaluationPrompt::build($this->script(), 'Розмова один, 2026-10-08 10:00, кандидат #512');
+        $second = ScriptEvaluationPrompt::build($this->script(), 'Зовсім інша розмова');
 
-        return $policy;
+        $this->assertSame($first->system, $second->system);
+        $this->assertStringStartsWith('ROLE: '.ScriptEvaluationPrompt::ROLE, $first->system);
+        $this->assertStringContainsString('SCRIPT: {"steps":[{"id":"greet"', $first->system);
+        $this->assertStringNotContainsString('2026', $first->system);
+        $this->assertStringContainsString('#512', $first->user);
+        $this->assertSame(['system', 'user'], array_column($first->messages(), 'role'));
+    }
+
+    private function script(): ScriptContent
+    {
+        return ScriptContent::fromArray([
+            'steps' => [
+                ['id' => 'greet', 'title' => 'Привітання', 'goal' => 'Представитися', 'sample' => 'Добрий день', 'required' => true, 'weight' => 40],
+                ['id' => 'invite', 'title' => 'Запрошення', 'goal' => 'Запросити', 'sample' => 'Запрошую', 'required' => true, 'weight' => 60],
+            ],
+            'objections' => [['id' => 'far', 'trigger' => 'далеко', 'answer' => 'Компенсуємо проїзд']],
+        ]);
     }
 }

@@ -17,3 +17,5 @@
 .log th, .log td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--app-border); }
 td[data-outcome='parse_failed'], td[data-outcome='unknown'] { color: var(--app-warning); }
 .state { padding: 1rem 0; }
+.ai, .ai-rule { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; color: var(--app-muted); }
+.ai[data-status='failed'] { color: var(--app-warning); }
