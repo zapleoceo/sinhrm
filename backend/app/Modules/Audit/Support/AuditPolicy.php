@@ -29,6 +29,8 @@ final class AuditPolicy
             'user_id', 'hired_at', 'fired_at', 'status', 'employment_type', 'branch_id', 'department_id',
             'position_id', 'manager_id', 'candidate_id', 'application_id',
         ],
+        // Amount and reason are masked on purpose (salary is personal data).
+        'employee_compensation' => ['employee_id', 'currency', 'period', 'effective_on', 'created_by'],
         'vacancy' => [
             'title', 'branch_id', 'department_id', 'position_id', 'recruiter_id', 'hiring_manager_id', 'pipeline_id',
             'status', 'opened_at', 'closed_at',

@@ -433,3 +433,22 @@ export interface Screening {
   created_at: string | null;
   completed_at: string | null;
 }
+
+/** POST /api/candidates/bulk — one result per id (the same rules as the single action). */
+export type CandidateBulkAction = 'move' | 'reject' | 'tag' | 'assign';
+
+export interface CandidateBulkBody {
+  action: CandidateBulkAction;
+  ids: number[];
+  vacancy_id?: number;
+  stage_id?: number;
+  reject_reason_id?: number;
+  tag?: string;
+  owner_id?: number;
+}
+
+export interface BulkResult {
+  id: number;
+  ok: boolean;
+  error: string | null;
+}

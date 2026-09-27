@@ -294,6 +294,13 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 Код: `Privacy\CandidatePersonalData` (провайдер Recruiting), колонка `candidates.anonymized_at` (есть в `CandidateResource`).
 Всё остальное — [privacy.md](privacy.md).
 
+### Массовые действия над кандидатами (2026-09-27)
+Список кандидатов: чекбоксы (у кого есть право записи) → «Масові дії»: переместить на этап / отказать с причиной (в пределах
+одной вакансии), добавить тег, назначить рекрутера (`owner_id`). `POST /api/candidates/bulk {action: move|reject|tag|assign, ids[≤200],
+vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data: [{id, ok, error}]}`. Каждый элемент проходит ту же
+политику (`move` для заявки, `update` для кандидата) и тот же сервис (`ApplicationService::move`, `CandidateService::update`), что и
+одиночное действие; ошибки по элементу: `not_found`, `no_application`, `forbidden`, коды `RecruitingException` (`same_stage`, …).
+
 ## Страница вакансий и офферы
 
 **Страница вакансий (`/jobs`, `/jobs/:slug`)** — публичная, без входа и без сайдбара, логотип + переключатель uk/ru/en.

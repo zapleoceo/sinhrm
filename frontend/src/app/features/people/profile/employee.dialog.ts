@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
-import { EMPLOYMENT_TYPES, Employee, EmploymentType, SaveEmployee } from '../people.model';
+import { EMPLOYMENT_TYPES, Employee, EmploymentType, GENDERS, SaveEmployee } from '../people.model';
 import { PeopleService, peopleErrorKey } from '../people.service';
 import { fromIsoDate, toIsoDate, toIsoDateOrNull, today } from '../../../core/date/iso-date';
 
@@ -46,6 +46,16 @@ type EditableStatus = 'active' | 'on_leave';
                 <mat-option [value]="t">{{ 'people.employmentType.' + t | transloco }}</mat-option>
               }
             </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ 'people.fields.gender' | transloco }}</mat-label>
+            <mat-select formControlName="gender">
+              <mat-option [value]="null">—</mat-option>
+              @for (g of genders; track g) {
+                <mat-option [value]="g">{{ 'people.gender.' + g | transloco }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>{{ 'people.gender.hint' | transloco }}</mat-hint>
           </mat-form-field>
           @if (data.employee) {
             <mat-form-field>
@@ -152,11 +162,13 @@ export class EmployeeDialog implements OnInit {
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
 
+  protected readonly genders = GENDERS;
   private readonly e = this.data.employee;
   protected readonly form = inject(NonNullableFormBuilder).group({
     full_name: [this.e?.full_name ?? '', [Validators.required, Validators.maxLength(255)]],
     hired_at: [this.e ? fromIsoDate(this.e.hired_at) : today(), Validators.required],
     employment_type: [this.e?.employment_type ?? ('full_time' as EmploymentType)],
+    gender: [(this.e?.gender ?? null) as string | null],
     status: [(this.e?.status === 'on_leave' ? 'on_leave' : 'active') as EditableStatus],
     work_email: [this.e?.work_email ?? '', Validators.email],
     phone: [this.e?.phone ?? ''],
@@ -191,6 +203,7 @@ export class EmployeeDialog implements OnInit {
       full_name: v.full_name.trim(),
       hired_at: toIsoDate(v.hired_at),
       employment_type: v.employment_type,
+      gender: v.gender,
       work_email: text(v.work_email),
       phone: text(v.phone),
       branch_id: v.branch_id,

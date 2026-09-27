@@ -62,6 +62,7 @@ final readonly class EmployeePersonalData implements PersonalDataProvider
                 'emergency_contact' => $employee->emergency_contact,
                 'avatar_url' => $employee->avatar_url,
                 'custom_fields' => $employee->custom_fields,
+                'gender' => $employee->gender,
                 'branch' => $employee->branch?->name,
                 'department' => $employee->department?->name,
                 'position' => $employee->position?->name,
@@ -99,6 +100,7 @@ final readonly class EmployeePersonalData implements PersonalDataProvider
             'emergency_contact' => null,
             'avatar_url' => null,
             'custom_fields' => null,
+            'gender' => null,
             'termination_reason' => null,
             'anonymized_at' => $employee->anonymized_at ?? Carbon::now(),
         ])->save();

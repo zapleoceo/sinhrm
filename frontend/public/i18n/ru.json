@@ -617,17 +617,20 @@
     "outcomes": { "application": "Отклик → кандидат", "touchpoint": "Письмо кандидата", "inbox": "Во «Входящие»", "skipped": "Пропущено", "unknown": "Неизвестный", "parse_failed": "Не распознано" },
     "errors": { "duplicate_rule": "Такое правило уже есть", "google_gmail_not_connected": "Gmail не подключён", "reconnect_required": "Google нужно переподключить", "google_unreachable": "Gmail недоступен, попробуйте позже", "google_unauthorized": "Google отклонил доступ", "validation": "Проверьте поля", "generic": "Не удалось выполнить действие" }
   },
+  "bulk": {"title": "Массовое действие: {{n}}", "selected": "Выбрано: {{n}}", "actions": "Массовые действия", "clear": "Снять выбор", "action": "Действие", "apply": "Применить", "value": "Значение", "vacancy": "Вакансия", "stage": "Этап", "rejectReason": "Причина отказа", "tag": "Тег", "recruiter": "Рекрутер", "done": "Выполнено {{ok}} из {{total}}", "candidates": {"move": "Переместить на этап", "reject": "Отказать", "tag": "Добавить тег", "assign": "Назначить рекрутера"}, "people": {"department": "Сменить отдел", "position": "Сменить должность", "manager": "Сменить руководителя", "export": "Экспорт CSV"}},
   "people": {
+    "compensation": {"current": "Текущая", "empty": "Записей нет", "amount": "Сумма", "currency": "Валюта", "periodLabel": "Период", "period": {"month": "мес.", "hour": "час"}, "effectiveOn": "Действует с", "reason": "Причина", "add": "Добавить"},
+    "gender": {"female": "Женский", "male": "Мужской", "hint": "Видит только HR; для отчёта о разрыве в оплате"},
     "loadError": "Не удалось загрузить сотрудников",
     "required": "Обязательное поле",
     "invalidEmail": "Неверный e-mail",
     "save": "Сохранить",
     "directory": { "title": "Сотрудники", "subtitle": "{{n}} чел.", "search": "Имя, e-mail или телефон", "add": "Добавить сотрудника", "working": "Работающие", "empty": "Никого не найдено", "view": "Вид", "table": "Таблица", "cards": "Карточки" },
-    "fields": { "fullName": "ФИО", "position": "Должность", "department": "Отдел", "branch": "Филиал", "manager": "Руководитель", "status": "Статус", "contacts": "Контакты", "workEmail": "Рабочий e-mail", "phone": "Телефон", "hiredAt": "Дата приёма", "firedAt": "Последний рабочий день", "employmentType": "Тип занятости", "birthDate": "Дата рождения", "personalEmail": "Личный e-mail", "address": "Адрес", "emergencyContact": "Экстренный контакт", "reports": "Прямые подчинённые", "schedule": "График работы" },
+    "fields": { "fullName": "ФИО", "position": "Должность", "department": "Отдел", "branch": "Филиал", "manager": "Руководитель", "status": "Статус", "contacts": "Контакты", "workEmail": "Рабочий e-mail", "phone": "Телефон", "hiredAt": "Дата приёма", "firedAt": "Последний рабочий день", "employmentType": "Тип занятости", "birthDate": "Дата рождения", "personalEmail": "Личный e-mail", "address": "Адрес", "emergencyContact": "Экстренный контакт", "reports": "Прямые подчинённые", "gender": "Пол", "schedule": "График работы" },
     "status": { "active": "Работает", "on_leave": "В отпуске", "terminated": "Уволен" },
     "employmentType": { "full_time": "Полная занятость", "part_time": "Частичная занятость", "contractor": "Подрядчик" },
     "weekday": { "1": "Пн", "2": "Вт", "3": "Ср", "4": "Чт", "5": "Пт", "6": "Сб", "7": "Вс" },
-    "tabs": { "overview": "Обзор", "job": "Работа", "timeoff": "Отсутствия", "changes": "Запросы на изменения", "personal": "Личное", "documents": "Документы", "workflows": "Воркфлоу", "performance": "Эффективность", "assets": "Активы" },
+    "tabs": { "overview": "Обзор", "job": "Работа", "timeoff": "Отсутствия", "changes": "Запросы на изменения", "personal": "Личное", "documents": "Документы", "workflows": "Воркфлоу", "performance": "Эффективность", "assets": "Активы", "compensation": "Компенсация" },
     "edit": { "title": "Редактировать" },
     "terminate": { "action": "Уволить", "title": "Увольнение: {{name}}", "hint": "Запись остаётся в истории; человек исчезнет из справочника и оргструктуры.", "reason": "Причина", "confirm": "Уволить" },
     "approvalEmails": "Письма о согласованиях на почту",
@@ -963,7 +966,7 @@
     "chart": "Диаграмма",
     "suppressed": "Скрыто: группа меньше минимума",
     "noRows": "Нет данных",
-    "payGapNote": "Отчёта о гендерном разрыве в оплате нет: SinHRM не хранит данных о зарплатах и поле.",
+    "payGapNote": "Отчёт о разрыве в оплате учитывает только сотрудников с указанным полом и компенсацией; группы меньше 5 человек скрыты.",
     "groups": {
       "general": "Общие",
       "hr": "Core HR",
@@ -971,6 +974,7 @@
       "recruiting": "Рекрутинг"
     },
     "names": {
+      "gender_pay_gap": "Разрыв в оплате (гендерный)",
       "headcount": "Численность по филиалам и отделам",
       "hires_terminations": "Приёмы и увольнения по месяцам",
       "turnover": "Текучесть",
@@ -998,6 +1002,7 @@
       "time_missing": "Незаполненные табели"
     },
     "descriptions": {
+      "gender_pay_gap": "Только администраторы: медиана текущей оплаты по полу в пределах валюты и периода; группы меньше 5 человек скрыты.",
       "headcount": "Работающие на дату (по умолчанию — сегодня).",
       "hires_terminations": "По датам приёма и увольнения.",
       "turnover": "Увольнения ÷ средняя численность за месяц; последняя строка — весь период.",
@@ -1032,6 +1037,11 @@
       "period": "Период (напр. 2026-Q4)"
     },
     "columns": {
+      "currency": "Валюта",
+      "period": "Период",
+      "gender": "Пол",
+      "median": "Медиана",
+      "gap_pct": "Разрыв, %",
       "branch": "Филиал",
       "department": "Отдел",
       "headcount": "Численность",

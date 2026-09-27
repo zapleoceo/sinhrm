@@ -617,17 +617,20 @@
     "outcomes": { "application": "Відгук → кандидат", "touchpoint": "Лист кандидата", "inbox": "У «Вхідні»", "skipped": "Пропущено", "unknown": "Невідомий", "parse_failed": "Не розпізнано" },
     "errors": { "duplicate_rule": "Таке правило вже є", "google_gmail_not_connected": "Gmail не підключено", "reconnect_required": "Google потребує перепідключення", "google_unreachable": "Gmail недоступний, спробуйте пізніше", "google_unauthorized": "Google відхилив доступ", "validation": "Перевірте поля", "generic": "Не вдалося виконати дію" }
   },
+  "bulk": {"title": "Масова дія: {{n}}", "selected": "Вибрано: {{n}}", "actions": "Масові дії", "clear": "Зняти вибір", "action": "Дія", "apply": "Застосувати", "value": "Значення", "vacancy": "Вакансія", "stage": "Етап", "rejectReason": "Причина відмови", "tag": "Тег", "recruiter": "Рекрутер", "done": "Виконано {{ok}} з {{total}}", "candidates": {"move": "Перемістити на етап", "reject": "Відмовити", "tag": "Додати тег", "assign": "Призначити рекрутера"}, "people": {"department": "Змінити відділ", "position": "Змінити посаду", "manager": "Змінити керівника", "export": "Експорт CSV"}},
   "people": {
+    "compensation": {"current": "Поточна", "empty": "Записів немає", "amount": "Сума", "currency": "Валюта", "periodLabel": "Період", "period": {"month": "міс.", "hour": "год."}, "effectiveOn": "Діє з", "reason": "Причина", "add": "Додати"},
+    "gender": {"female": "Жіноча", "male": "Чоловіча", "hint": "Бачить лише HR; для звіту про розрив в оплаті"},
     "loadError": "Не вдалося завантажити співробітників",
     "required": "Обовʼязкове поле",
     "invalidEmail": "Невірний e-mail",
     "save": "Зберегти",
     "directory": { "title": "Співробітники", "subtitle": "{{n}} осіб", "search": "Імʼя, e-mail або телефон", "add": "Додати співробітника", "working": "Працюючі", "empty": "Нікого не знайдено", "view": "Вигляд", "table": "Таблиця", "cards": "Картки" },
-    "fields": { "fullName": "ПІБ", "position": "Посада", "department": "Відділ", "branch": "Філія", "manager": "Керівник", "status": "Статус", "contacts": "Контакти", "workEmail": "Робочий e-mail", "phone": "Телефон", "hiredAt": "Дата прийому", "firedAt": "Останній робочий день", "employmentType": "Тип зайнятості", "birthDate": "Дата народження", "personalEmail": "Особистий e-mail", "address": "Адреса", "emergencyContact": "Екстрений контакт", "reports": "Прямі підлеглі", "schedule": "Графік роботи" },
+    "fields": { "fullName": "ПІБ", "position": "Посада", "department": "Відділ", "branch": "Філія", "manager": "Керівник", "status": "Статус", "contacts": "Контакти", "workEmail": "Робочий e-mail", "phone": "Телефон", "hiredAt": "Дата прийому", "firedAt": "Останній робочий день", "employmentType": "Тип зайнятості", "birthDate": "Дата народження", "personalEmail": "Особистий e-mail", "address": "Адреса", "emergencyContact": "Екстрений контакт", "reports": "Прямі підлеглі", "gender": "Стать", "schedule": "Графік роботи" },
     "status": { "active": "Працює", "on_leave": "У відпустці", "terminated": "Звільнений" },
     "employmentType": { "full_time": "Повна зайнятість", "part_time": "Часткова зайнятість", "contractor": "Підрядник" },
     "weekday": { "1": "Пн", "2": "Вт", "3": "Ср", "4": "Чт", "5": "Пт", "6": "Сб", "7": "Нд" },
-    "tabs": { "overview": "Огляд", "job": "Робота", "timeoff": "Відсутності", "changes": "Запити на зміни", "personal": "Особисте", "documents": "Документи", "workflows": "Воркфлоу", "performance": "Продуктивність", "assets": "Активи" },
+    "tabs": { "overview": "Огляд", "job": "Робота", "timeoff": "Відсутності", "changes": "Запити на зміни", "personal": "Особисте", "documents": "Документи", "workflows": "Воркфлоу", "performance": "Продуктивність", "assets": "Активи", "compensation": "Компенсація" },
     "edit": { "title": "Редагувати" },
     "terminate": { "action": "Звільнити", "title": "Звільнення: {{name}}", "hint": "Запис лишається в історії; людина зникне з довідника та оргструктури.", "reason": "Причина", "confirm": "Звільнити" },
     "approvalEmails": "Листи про погодження на пошту",
@@ -963,7 +966,7 @@
     "chart": "Діаграма",
     "suppressed": "Приховано: група менша за мінімум",
     "noRows": "Немає даних",
-    "payGapNote": "Звіту про гендерний розрив в оплаті немає: SinHRM не зберігає даних про зарплати й стать.",
+    "payGapNote": "Звіт про розрив в оплаті рахує лише співробітників із зазначеною статтю та компенсацією; групи менше 5 осіб приховано.",
     "groups": {
       "general": "Загальні",
       "hr": "Core HR",
@@ -971,6 +974,7 @@
       "recruiting": "Рекрутинг"
     },
     "names": {
+      "gender_pay_gap": "Розрив в оплаті (гендерний)",
       "headcount": "Чисельність за філіями та відділами",
       "hires_terminations": "Прийоми та звільнення по місяцях",
       "turnover": "Плинність",
@@ -998,6 +1002,7 @@
       "time_missing": "Незаповнені табелі"
     },
     "descriptions": {
+      "gender_pay_gap": "Лише адміністратори: медіана поточної оплати за статтю в межах валюти й періоду; групи менше 5 осіб приховано.",
       "headcount": "Працюючі на дату (за замовчуванням — сьогодні).",
       "hires_terminations": "За датами прийому та звільнення.",
       "turnover": "Звільнення ÷ середня чисельність за місяць; останній рядок — весь період.",
@@ -1032,6 +1037,11 @@
       "period": "Період (напр. 2026-Q4)"
     },
     "columns": {
+      "currency": "Валюта",
+      "period": "Період",
+      "gender": "Стать",
+      "median": "Медіана",
+      "gap_pct": "Розрив, %",
       "branch": "Філія",
       "department": "Відділ",
       "headcount": "Чисельність",

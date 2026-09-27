@@ -617,17 +617,20 @@
     "outcomes": { "application": "Application → candidate", "touchpoint": "Candidate e-mail", "inbox": "To Inbox", "skipped": "Skipped", "unknown": "Unknown", "parse_failed": "Not recognized" },
     "errors": { "duplicate_rule": "This rule already exists", "google_gmail_not_connected": "Gmail is not connected", "reconnect_required": "Google must be reconnected", "google_unreachable": "Gmail is unreachable, try later", "google_unauthorized": "Google refused access", "validation": "Check the fields", "generic": "The action failed" }
   },
+  "bulk": {"title": "Bulk action: {{n}}", "selected": "Selected: {{n}}", "actions": "Bulk actions", "clear": "Clear selection", "action": "Action", "apply": "Apply", "value": "Value", "vacancy": "Vacancy", "stage": "Stage", "rejectReason": "Reject reason", "tag": "Tag", "recruiter": "Recruiter", "done": "Done {{ok}} of {{total}}", "candidates": {"move": "Move to stage", "reject": "Reject", "tag": "Add tag", "assign": "Assign recruiter"}, "people": {"department": "Change department", "position": "Change position", "manager": "Change manager", "export": "Export CSV"}},
   "people": {
+    "compensation": {"current": "Current", "empty": "No records", "amount": "Amount", "currency": "Currency", "periodLabel": "Period", "period": {"month": "month", "hour": "hour"}, "effectiveOn": "Effective from", "reason": "Reason", "add": "Add"},
+    "gender": {"female": "Female", "male": "Male", "hint": "HR only; used for the pay gap report"},
     "loadError": "Could not load people",
     "required": "Required",
     "invalidEmail": "Invalid email",
     "save": "Save",
     "directory": { "title": "Employees", "subtitle": "{{n}} people", "search": "Name, e-mail or phone", "add": "Add employee", "working": "Working", "empty": "Nobody found", "view": "View", "table": "Table", "cards": "Cards" },
-    "fields": { "fullName": "Full name", "position": "Position", "department": "Department", "branch": "Branch", "manager": "Manager", "status": "Status", "contacts": "Contacts", "workEmail": "Work e-mail", "phone": "Phone", "hiredAt": "Hire date", "firedAt": "Last working day", "employmentType": "Employment type", "birthDate": "Birth date", "personalEmail": "Personal e-mail", "address": "Address", "emergencyContact": "Emergency contact", "reports": "Direct reports", "schedule": "Work schedule" },
+    "fields": { "fullName": "Full name", "position": "Position", "department": "Department", "branch": "Branch", "manager": "Manager", "status": "Status", "contacts": "Contacts", "workEmail": "Work e-mail", "phone": "Phone", "hiredAt": "Hire date", "firedAt": "Last working day", "employmentType": "Employment type", "birthDate": "Birth date", "personalEmail": "Personal e-mail", "address": "Address", "emergencyContact": "Emergency contact", "reports": "Direct reports", "gender": "Gender", "schedule": "Work schedule" },
     "status": { "active": "Working", "on_leave": "On leave", "terminated": "Terminated" },
     "employmentType": { "full_time": "Full time", "part_time": "Part time", "contractor": "Contractor" },
     "weekday": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },
-    "tabs": { "overview": "Overview", "job": "Job", "timeoff": "Time off", "changes": "Change requests", "personal": "Personal", "documents": "Documents", "workflows": "Workflows", "performance": "Performance", "assets": "Assets" },
+    "tabs": { "overview": "Overview", "job": "Job", "timeoff": "Time off", "changes": "Change requests", "personal": "Personal", "documents": "Documents", "workflows": "Workflows", "performance": "Performance", "assets": "Assets", "compensation": "Compensation" },
     "edit": { "title": "Edit" },
     "terminate": { "action": "Terminate", "title": "Terminate {{name}}", "hint": "The record stays in the history; the person disappears from the directory and the org chart.", "reason": "Reason", "confirm": "Terminate" },
     "approvalEmails": "E-mail me about approvals",
@@ -963,7 +966,7 @@
     "chart": "Chart",
     "suppressed": "Hidden: the group is smaller than the minimum",
     "noRows": "No data",
-    "payGapNote": "The gender pay gap report is not available: SinHRM stores no salary or gender data.",
+    "payGapNote": "The pay gap report counts only employees with gender and compensation set; groups under 5 people are hidden.",
     "groups": {
       "general": "General",
       "hr": "Core HR",
@@ -971,6 +974,7 @@
       "recruiting": "Recruiting"
     },
     "names": {
+      "gender_pay_gap": "Gender pay gap",
       "headcount": "Headcount by branch and department",
       "hires_terminations": "Hires and terminations by month",
       "turnover": "Turnover rate",
@@ -998,6 +1002,7 @@
       "time_missing": "Missing timesheets"
     },
     "descriptions": {
+      "gender_pay_gap": "Admins only: median current pay by gender within currency and period; groups under 5 people are hidden.",
       "headcount": "Working employees on the date (default today).",
       "hires_terminations": "By hire and termination dates.",
       "turnover": "Terminations ÷ average headcount per month; the last row is the whole period.",
@@ -1032,6 +1037,11 @@
       "period": "Period (e.g. 2026-Q4)"
     },
     "columns": {
+      "currency": "Currency",
+      "period": "Period",
+      "gender": "Gender",
+      "median": "Median",
+      "gap_pct": "Gap, %",
       "branch": "Branch",
       "department": "Department",
       "headcount": "Headcount",

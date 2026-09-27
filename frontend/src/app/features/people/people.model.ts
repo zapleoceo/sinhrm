@@ -61,6 +61,8 @@ export interface Employee {
   hired_at?: string;
   fired_at?: string | null;
   termination_reason?: string | null;
+  /** HR-only, optional (pay-gap report). */
+  gender?: string | null;
   employment_type?: EmploymentType;
   work_schedule?: WorkSchedule | null;
   reports_count?: number;
@@ -106,6 +108,7 @@ export interface SaveEmployee {
   position_id?: number | null;
   manager_id?: number | null;
   user_id?: number | null;
+  gender?: string | null;
 }
 
 export interface OrgNode {
@@ -147,3 +150,40 @@ export const PEOPLE_ERROR_CODES = [
   'not_hired',
   'forbidden',
 ] as const;
+
+/** POST /api/people/bulk (HR staff). export → CSV. */
+export type BulkEmployeeAction = 'department' | 'position' | 'manager' | 'export';
+
+export interface EmployeeBulkResult {
+  id: number;
+  ok: boolean;
+  error: string | null;
+}
+
+export const CURRENCIES = ['UAH', 'USD', 'EUR'] as const;
+export const PAY_PERIODS = ['month', 'hour'] as const;
+export const GENDERS = ['female', 'male'] as const;
+
+export interface CompensationRecord {
+  id: number;
+  amount: string;
+  currency: (typeof CURRENCIES)[number];
+  period: (typeof PAY_PERIODS)[number];
+  effective_on: string;
+  reason: string | null;
+  current: boolean;
+}
+
+/** GET /api/people/{id}/compensation (HR staff) and /api/me/employee/compensation (own, read-only). */
+export interface Compensation {
+  current: CompensationRecord | null;
+  history: CompensationRecord[];
+}
+
+export interface SaveCompensation {
+  amount: number;
+  currency: string;
+  period: string;
+  effective_on: string;
+  reason: string | null;
+}

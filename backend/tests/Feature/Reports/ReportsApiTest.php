@@ -6,6 +6,7 @@ namespace Tests\Feature\Reports;
 
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
+use App\Modules\People\Models\EmployeeCompensation;
 use App\Modules\Pulse\Models\SurveyWave;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\JsonResponse;
@@ -50,13 +51,13 @@ final class ReportsApiTest extends TestCase
         $admin = $this->login(UserRole::Admin);
 
         $all = $this->keys($this->actingAs($admin)->getJson('/api/reports/catalog')->assertOk());
-        $this->assertCount(25, $all);
-        $this->assertNotContains('gender_pay_gap', $all, 'no salary data → no pay gap report');
+        $this->assertCount(26, $all);
+        $this->assertContains('gender_pay_gap', $all);
 
         $manager = $this->keys($this->actingAs($this->userOf($org['lead']))->getJson('/api/reports/catalog'));
         $this->assertContains('headcount', $manager);
         $this->assertContains('mood_trend', $manager);
-        foreach (['age', 'desk_sla', 'assets_by_status', 'enps_trend'] as $adminOnly) {
+        foreach (['age', 'gender_pay_gap', 'desk_sla', 'assets_by_status', 'enps_trend'] as $adminOnly) {
             $this->assertNotContains($adminOnly, $manager);
         }
         $worker = $this->keys($this->actingAs($this->userOf($org['worker']))->getJson('/api/reports/catalog'));
@@ -87,6 +88,32 @@ final class ReportsApiTest extends TestCase
         $this->actingAs($admin)->getJson('/api/reports/catalog/hires_terminations?from=2026-12-01&to=2026-01-01')->assertUnprocessable();
         $this->actingAs($admin)->getJson('/api/reports/catalog/turnover?from=2026-06-01&to=2026-06-30')->assertOk()
             ->assertJsonPath('data.rows.0.terminations', 1)->assertJsonPath('data.rows.1.month', 'total');
+    }
+
+    public function test_gender_pay_gap_hides_small_groups(): void
+    {
+        Carbon::setTestNow('2026-10-05 10:00:00');
+        $admin = $this->login(UserRole::Admin);
+        $pay = function (string $gender, int $amount, string $currency = 'UAH'): void {
+            $e = $this->employee(['gender' => $gender, 'hired_at' => '2025-01-01']);
+            EmployeeCompensation::query()->create(['employee_id' => $e->id, 'amount' => 1, 'currency' => $currency, 'period' => 'month', 'effective_on' => '2025-01-01']);
+            EmployeeCompensation::query()->create(['employee_id' => $e->id, 'amount' => $amount, 'currency' => $currency, 'period' => 'month', 'effective_on' => '2026-01-01']);
+            EmployeeCompensation::query()->create(['employee_id' => $e->id, 'amount' => 999999, 'currency' => $currency, 'period' => 'month', 'effective_on' => '2027-01-01']);
+        };
+        foreach ([100, 100, 100, 100, 100] as $a) {
+            $pay('male', $a);
+        }
+        foreach ([80, 80, 90, 90, 90] as $a) {
+            $pay('female', $a);
+        }
+        foreach ([1, 2, 3, 4] as $a) {
+            $pay('female', $a, 'USD');
+        }
+
+        $rows = (array) $this->actingAs($admin)->getJson('/api/reports/catalog/gender_pay_gap')->assertOk()->json('data.rows');
+        $this->assertCount(2, $rows, 'USD group of 4 is hidden');
+        $this->assertEquals(['currency' => 'UAH', 'period' => 'month', 'gender' => 'female', 'employees' => 5, 'median' => 90, 'gap_pct' => 10], $rows[0]);
+        $this->assertEquals(100, $rows[1]['median']);
     }
 
     public function test_age_report_is_pii_and_admin_only(): void

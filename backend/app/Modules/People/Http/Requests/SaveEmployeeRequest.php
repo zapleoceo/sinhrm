@@ -21,7 +21,7 @@ final class SaveEmployeeRequest extends FormRequest
     private const array FIELDS = [
         'user_id', 'full_name', 'work_email', 'phone', 'avatar_url', 'birth_date', 'personal_email', 'address',
         'emergency_contact', 'custom_fields', 'hired_at', 'status', 'employment_type', 'work_schedule', 'branch_id',
-        'department_id', 'position_id', 'manager_id',
+        'department_id', 'position_id', 'manager_id', 'gender',
     ];
 
     private const array IDS = ['user_id', 'branch_id', 'department_id', 'position_id', 'manager_id'];
@@ -47,6 +47,7 @@ final class SaveEmployeeRequest extends FormRequest
             'address' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'emergency_contact' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'custom_fields' => ['sometimes', 'nullable', 'array', 'max:50'],
+            'gender' => ['sometimes', 'nullable', Rule::in(Employee::GENDERS)],
             'custom_fields.*' => ['nullable', 'string', 'max:1000'],
             // Termination goes through POST /people/{id}/terminate.
             'status' => ['sometimes', 'required', Rule::in([EmployeeStatus::Active->value, EmployeeStatus::OnLeave->value])],

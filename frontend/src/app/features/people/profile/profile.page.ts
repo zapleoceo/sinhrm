@@ -24,6 +24,7 @@ import { AuditHistory } from '../../audit/audit-history';
 import { AuditLoader } from '../../audit/audit.model';
 import { AuditService } from '../../audit/audit.service';
 import { canManagePeople } from '../people.access';
+import { CompensationTab } from './compensation.tab';
 import { ChangeRequestDialog } from './change-request.dialog';
 import { EmployeeDialog, EmployeeDialogData } from './employee.dialog';
 import { ProfileStore, ProfileTab } from './profile.store';
@@ -39,6 +40,7 @@ import { PrivacyActions } from '../../privacy/privacy-actions';
 @Component({
   selector: 'app-profile-page',
   imports: [
+    CompensationTab,
     DatePipe,
     MatButtonModule,
     MatIconModule,
@@ -216,6 +218,14 @@ import { PrivacyActions } from '../../privacy/privacy-actions';
           <mat-tab [label]="'people.tabs.performance' | transloco">
             <ng-template matTabContent>
               <app-performance-tab [employeeId]="e.id" [canManage]="!!e.access?.decide" />
+            </ng-template>
+          </mat-tab>
+        }
+
+        @if (e.access?.manage || e.access?.self) {
+          <mat-tab [label]="'people.tabs.compensation' | transloco">
+            <ng-template matTabContent>
+              <app-compensation-tab [employeeId]="e.id" [canManage]="!!e.access?.manage" [self]="!!e.access?.self" />
             </ng-template>
           </mat-tab>
         }

@@ -6,7 +6,9 @@ import {
   VacancySourceRow,
   Application,
   Board,
+  BulkResult,
   Candidate,
+  CandidateBulkBody,
   CandidateQuery,
   DateRange,
   DuplicateCandidate,
@@ -93,6 +95,10 @@ export class RecruitingService {
 
   candidates(query: CandidateQuery): Observable<Paged<Candidate>> {
     return this.http.get<Paged<Candidate>>('/api/candidates', { params: toParams({ ...query }) });
+  }
+
+  bulkCandidates(body: CandidateBulkBody): Observable<BulkResult[]> {
+    return this.http.post<{ data: BulkResult[] }>('/api/candidates/bulk', body).pipe(map((r) => r.data));
   }
 
   candidate(id: number): Observable<Candidate> {

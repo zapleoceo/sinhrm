@@ -25,6 +25,7 @@ use App\Modules\HiringRequests\Models\HiringRequest;
 use App\Modules\Integrations\Models\Integration;
 use App\Modules\Integrations\Models\IntegrationSecret;
 use App\Modules\People\Models\Employee;
+use App\Modules\People\Models\EmployeeCompensation;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Vacancy;
@@ -50,6 +51,7 @@ final class AuditServiceProvider extends ModuleServiceProvider
         Integration::class => 'integration',
         AiPromptVersion::class => 'ai_prompt_version',
         Employee::class => 'employee',
+        EmployeeCompensation::class => 'employee_compensation',
         Vacancy::class => 'vacancy',
         Candidate::class => 'candidate',
         Application::class => 'application',

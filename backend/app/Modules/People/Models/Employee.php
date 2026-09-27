@@ -45,6 +45,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $manager_id
  * @property int|null $candidate_id
  * @property int|null $application_id
+ * @property string|null $gender HR-only, optional
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property int|null $reports_count
@@ -60,10 +61,13 @@ final class Employee extends Model
     /** @use HasFactory<EmployeeFactory> */
     use HasFactory;
 
+    /** Optional, HR-only (never in the directory): used only for the aggregated pay-gap report. */
+    public const array GENDERS = ['female', 'male'];
+
     protected $fillable = [
         'user_id', 'full_name', 'work_email', 'phone', 'avatar_url', 'birth_date', 'personal_email', 'address',
         'emergency_contact', 'custom_fields', 'hired_at', 'fired_at', 'termination_reason', 'status', 'employment_type',
-        'work_schedule', 'branch_id', 'department_id', 'position_id', 'manager_id', 'candidate_id', 'application_id',
+        'work_schedule', 'branch_id', 'department_id', 'position_id', 'manager_id', 'candidate_id', 'application_id', 'gender',
     ];
 
     /** @var array<string, mixed> */
