@@ -27,6 +27,8 @@ final class EmployeeCompensation extends Model
 
     public const array PERIODS = ['month', 'hour'];
 
+    protected $table = 'employee_compensations';
+
     protected $fillable = ['employee_id', 'amount', 'currency', 'period', 'effective_on', 'reason', 'created_by'];
 
     /** @return array<string, string> */
