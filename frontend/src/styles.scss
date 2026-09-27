@@ -92,3 +92,9 @@ body {
 
 /* Week picker (features/time/week-picker.ts): days of the selected week inside the datepicker overlay. */
 .app-week-day { background: color-mix(in srgb, var(--mat-sys-primary) 14%, transparent); }
+
+/* Mobile drawer (features/shell) locks page scroll while open. */
+body.app-scroll-locked { overflow: hidden; }
+
+/* Wide tables scroll inside their container, never the page. */
+.table-scroll { max-width: 100%; overflow-x: auto; }

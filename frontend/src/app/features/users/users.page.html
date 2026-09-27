@@ -45,7 +45,7 @@
   } @else if (!loading() && users().length === 0) {
     <p class="state muted">{{ 'users.empty' | transloco }}</p>
   } @else {
-    <table mat-table [dataSource]="users()">
+    <div class="table-scroll"><table mat-table [dataSource]="users()">
       <ng-container matColumnDef="user">
         <th mat-header-cell *matHeaderCellDef>{{ 'users.columns.user' | transloco }}</th>
         <td mat-cell *matCellDef="let u">
@@ -145,7 +145,7 @@
 
       <tr mat-header-row *matHeaderRowDef="columns"></tr>
       <tr mat-row *matRowDef="let row; columns: columns"></tr>
-    </table>
+    </table></div>
   }
 
   <mat-paginator

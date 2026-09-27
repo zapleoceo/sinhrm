@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Time\Services;
 
 use App\Models\User;
+use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
@@ -35,6 +36,7 @@ final readonly class TimesheetService
         private PeopleScope $scope,
         private EmployeeRepository $employees,
         private TaskService $tasks,
+        private UserNotifier $notifier,
     ) {}
 
     /**
@@ -105,6 +107,12 @@ final readonly class TimesheetService
         }
         // The Friday reminder for this week is no longer needed.
         $this->tasks->closeByRule($employee->id, TimeReminderJob::ruleKey($start));
+        $managerUser = $employee->manager?->user_id;
+        if ($managerUser !== null && $managerUser !== $user->id) {
+            $this->notifier->notify($managerUser, 'time', 'Погодити табель: '.$employee->full_name,
+                sprintf('%s надіслав(ла) табель за тиждень з %s. Потрібне ваше рішення.', $employee->full_name, $start->format('d.m.Y')),
+                '/time/approvals');
+        }
 
         return $this->view($ctx, $employee, $start, $this->time->findWeek($employee->id, $start));
     }
@@ -131,6 +139,13 @@ final readonly class TimesheetService
             'decision_comment' => $comment,
         ])) {
             throw TimeException::invalidStatus($sheet->status->value);
+        }
+        $employeeUser = $sheet->employee->user_id;
+        if ($employeeUser !== null && $employeeUser !== $user->id) {
+            $this->notifier->notify($employeeUser, 'time', $approve ? 'Табель погоджено' : 'Табель відхилено',
+                sprintf('Табель за тиждень з %s %s.', $sheet->week_start->format('d.m.Y'), $approve ? 'погоджено' : 'відхилено')
+                .($comment !== null ? "\nКоментар: ".$comment : ''),
+                '/time');
         }
 
         return $this->view($ctx, $sheet->employee, $sheet->week_start, $this->time->find($timesheetId));

@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
@@ -44,6 +45,7 @@ import { PrivacyActions } from '../../privacy/privacy-actions';
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
+    MatSlideToggleModule,
     MatTabsModule,
     RouterLink,
     TranslocoPipe,
@@ -85,6 +87,7 @@ import { PrivacyActions } from '../../privacy/privacy-actions';
         </div>
         <div class="actions">
           @if (e.access?.self) {
+            <mat-slide-toggle [checked]="approvalEmails()" (change)="toggleApprovalEmails($event.checked)">{{ 'people.approvalEmails' | transloco }}</mat-slide-toggle>
             <button mat-stroked-button type="button" (click)="requestChange(e)"><mat-icon>edit_note</mat-icon>{{ 'people.changes.new' | transloco }}</button>
           }
           @if (e.access?.manage) {
@@ -286,6 +289,7 @@ export class ProfilePage {
   });
   private readonly auth = inject(AuthService);
   private readonly audit = inject(AuditService);
+  protected readonly approvalEmails = computed(() => this.auth.user()?.approval_emails ?? true);
   /** History tab: HR staff only (the API answers 403 to everyone else). */
   protected readonly historyLoader = computed<AuditLoader | null>(() => {
     const id = this.store.employee()?.id;
@@ -349,6 +353,14 @@ export class ProfilePage {
       .open<TerminateDialog, Employee, Employee>(TerminateDialog, { data: e })
       .afterClosed()
       .subscribe((saved) => saved && this.store.replace(saved));
+  }
+
+  protected async toggleApprovalEmails(on: boolean): Promise<void> {
+    try {
+      await this.auth.setApprovalEmails(on);
+    } catch {
+      this.toast('common.error');
+    }
   }
 
   private toast(key: string): void {

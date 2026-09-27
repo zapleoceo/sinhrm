@@ -160,6 +160,7 @@ final readonly class HiringRequestService
         if (! $approve) {
             $this->requests->transition($request, HiringRequestStatus::Pending, ['status' => HiringRequestStatus::Rejected->value, 'decided_at' => $now]);
             $this->requests->skipOpenApprovals($request);
+            $this->notifier->decided($request, false);
 
             return $this->reload($request);
         }
@@ -305,6 +306,7 @@ final readonly class HiringRequestService
             return $this->reload($request);
         }
         $this->log->info('hiring.request_approved', ['id' => $request->id]);
+        $this->notifier->decided($request, true);
         if ($this->requests->settings()->auto_vacancy) {
             $recruiter = $recruiterId ?? $request->requester_id;
             if ($recruiter !== null && $this->requests->isActiveUser($recruiter)) {

@@ -43,6 +43,9 @@ final class DocumentVariables
             DocumentVariable::FiredAt->value => $today->copy()->addYear()->format('d.m.Y'),
             DocumentVariable::Manager->value => 'Ірина Керівник',
             DocumentVariable::Today->value => $today->format('d.m.Y'),
+            DocumentVariable::Salary->value => '25 000 грн',
+            DocumentVariable::StartDate->value => $today->copy()->addWeeks(2)->format('d.m.Y'),
+            DocumentVariable::Conditions->value => 'Повний день, офіційне працевлаштування',
         ];
     }
 }

@@ -29,6 +29,7 @@ import { AuditHistory } from '../../audit/audit-history';
 import { AuditLoader } from '../../audit/audit.model';
 import { AuditService } from '../../audit/audit.service';
 import { InterviewersPanel } from './interviewers-panel';
+import { OfferPanel } from './offer-panel';
 import { TouchComposer } from './touch-composer';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { PrivacyActions } from '../../privacy/privacy-actions';
@@ -42,7 +43,7 @@ import { hasChannelIcon } from '../../../core/ui/channel-icons';
  */
 @Component({
   selector: 'app-candidate-card',
-  imports: [InterviewersPanel,
+  imports: [InterviewersPanel, OfferPanel,
     DatePipe,
     MatButtonModule,
     ChannelIcon,

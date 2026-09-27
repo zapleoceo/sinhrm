@@ -22,4 +22,6 @@ enum AddedVia: string
     case Webhook = 'webhook';
     /** Google Sheets import. */
     case Sheets = 'sheets';
+    /** The public career page (/jobs). */
+    case CareerSite = 'career_site';
 }

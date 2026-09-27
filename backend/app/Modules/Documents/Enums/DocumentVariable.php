@@ -16,6 +16,10 @@ enum DocumentVariable: string
     case FiredAt = 'Дата звільнення';
     case Manager = 'Керівник';
     case Today = 'Сьогодні';
+    /** Offer variables (Recruiting offers; empty for employee documents). */
+    case Salary = 'Зарплата';
+    case StartDate = 'Дата виходу';
+    case Conditions = 'Умови';
 
     /** @return list<string> */
     public static function values(): array

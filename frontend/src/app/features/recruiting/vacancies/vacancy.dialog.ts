@@ -5,6 +5,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
@@ -23,7 +24,7 @@ export interface VacancyDialogData {
 /** Create / edit a vacancy. Branch and position lists come from the directory (active items only). */
 @Component({
   selector: 'app-vacancy-dialog',
-  imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
+  imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatSlideToggleModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ (data.vacancy ? 'recruiting.vacancies.edit' : 'recruiting.vacancies.new') | transloco }}</h2>
@@ -76,6 +77,13 @@ export interface VacancyDialogData {
           <mat-label>{{ 'recruiting.vacancies.fields.description' | transloco }}</mat-label>
           <textarea matInput formControlName="description" rows="4" maxlength="10000"></textarea>
         </mat-form-field>
+        <mat-slide-toggle formControlName="published">{{ 'careers.published' | transloco }}</mat-slide-toggle>
+        @if (form.controls.published.value) {
+          <mat-form-field>
+            <mat-label>{{ 'careers.publicDescription' | transloco }}</mat-label>
+            <textarea matInput formControlName="public_description" rows="4" maxlength="10000"></textarea>
+          </mat-form-field>
+        }
         @if (error(); as key) {
           <p class="error" role="alert">{{ key | transloco }}</p>
         }
@@ -113,6 +121,8 @@ export class VacancyDialog implements OnInit {
     position_id: [this.data.vacancy?.position_id ?? (null as number | null)],
     status: [this.data.vacancy?.status ?? ('open' as VacancyStatus)],
     description: [this.data.vacancy?.description ?? ''],
+    published: [this.data.vacancy?.published ?? false],
+    public_description: [this.data.vacancy?.public_description ?? ''],
     hiring_manager_id: [this.data.vacancy?.hiring_manager_id ?? (null as number | null)],
   });
 
@@ -136,6 +146,8 @@ export class VacancyDialog implements OnInit {
       position_id: v.position_id,
       status: v.status,
       description: v.description.trim() || null,
+      published: v.published,
+      public_description: v.public_description.trim() || null,
       ...(this.canAssign() ? { hiring_manager_id: v.hiring_manager_id } : {}),
     };
     this.saving.set(true);

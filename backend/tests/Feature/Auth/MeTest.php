@@ -35,6 +35,7 @@ final class MeTest extends TestCase
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'approval_emails' => true,
                 'avatar_url' => null,
                 'locale' => 'en',
                 'roles' => ['viewer'],

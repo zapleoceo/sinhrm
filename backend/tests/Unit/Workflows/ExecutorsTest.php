@@ -79,6 +79,13 @@ final class ExecutorsTest extends TestCase
 
                 return ['event_id' => 'evt-1', 'html_link' => null, 'meet_link' => null];
             }
+
+            public function insertAllDayEvent(string $title, Carbon $startsOn, Carbon $endsOn): string
+            {
+                return 'evt-day';
+            }
+
+            public function deleteEvent(string $eventId): void {}
         };
         $this->app->instance(CalendarClient::class, $calendar);
         $context = $this->context(new StepSnapshot('Intro', StepAction::AddCalendarEvent, 0, AssigneeRule::HrAdmin, null, ['time' => '14:30', 'duration_minutes' => 30, 'online' => true]), $admin->id, ['work_email' => 'New.Person@Example.test']);

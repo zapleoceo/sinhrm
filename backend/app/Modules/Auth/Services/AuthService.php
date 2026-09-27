@@ -51,6 +51,11 @@ final class AuthService
         return $this->users->updateLocale($user, $locale);
     }
 
+    public function changeApprovalEmails(User $user, bool $on): User
+    {
+        return $this->users->updateApprovalEmails($user, $on);
+    }
+
     private function isSuperadminEmail(string $email): bool
     {
         $configured = mb_strtolower(trim((string) $this->superadminEmail));

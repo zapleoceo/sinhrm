@@ -28,6 +28,9 @@ use Illuminate\Support\Carbon;
  * @property int $pipeline_id
  * @property VacancyStatus $status
  * @property string|null $description
+ * @property bool $published
+ * @property string|null $slug
+ * @property string|null $public_description
  * @property Carbon|null $opened_at
  * @property Carbon|null $closed_at
  * @property Carbon|null $created_at
@@ -49,11 +52,11 @@ final class Vacancy extends Model
 
     protected $fillable = [
         'title', 'branch_id', 'department_id', 'position_id', 'recruiter_id', 'hiring_manager_id', 'pipeline_id',
-        'status', 'description', 'opened_at', 'closed_at',
+        'status', 'description', 'opened_at', 'closed_at', 'published', 'slug', 'public_description',
     ];
 
     /** @var array<string, mixed> */
-    protected $attributes = ['status' => 'open'];
+    protected $attributes = ['status' => 'open', 'published' => false];
 
     /** @return BelongsTo<Branch, $this> */
     public function branch(): BelongsTo
@@ -104,7 +107,7 @@ final class Vacancy extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['status' => VacancyStatus::class, 'opened_at' => 'datetime', 'closed_at' => 'datetime'];
+        return ['status' => VacancyStatus::class, 'published' => 'boolean', 'opened_at' => 'datetime', 'closed_at' => 'datetime'];
     }
 
     protected static function newFactory(): VacancyFactory
