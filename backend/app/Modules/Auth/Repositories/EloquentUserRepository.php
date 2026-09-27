@@ -66,4 +66,11 @@ final class EloquentUserRepository implements UserRepository
 
         return $user;
     }
+
+    public function updateApprovalEmails(User $user, bool $on): User
+    {
+        $user->forceFill(['approval_emails' => $on])->save();
+
+        return $user;
+    }
 }

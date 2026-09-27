@@ -60,6 +60,8 @@ interface LeaveRequestRepository
      */
     public function transition(LeaveRequest $request, LeaveRequestStatus $from, array $attributes): bool;
 
+    public function setCalendarEvent(LeaveRequest $request, ?string $eventId): void;
+
     /**
      * @template T
      *

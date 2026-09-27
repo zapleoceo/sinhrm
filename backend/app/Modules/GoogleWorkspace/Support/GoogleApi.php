@@ -49,6 +49,22 @@ final readonly class GoogleApi
     }
 
     /**
+     * DELETE; an already missing resource (404/410) counts as deleted.
+     *
+     * @throws GoogleException
+     */
+    public function delete(GoogleService $service, string $url): void
+    {
+        try {
+            $this->send($service, 'DELETE', $url, [], null);
+        } catch (GoogleException $e) {
+            if (! in_array($e->errorCode, ['google_not_found', 'google_http_410'], true)) {
+                throw $e;
+            }
+        }
+    }
+
+    /**
      * @param  array<string, string|int>  $query
      * @param  array<string, mixed>|null  $body
      * @return array<string, mixed>
@@ -63,7 +79,11 @@ final readonly class GoogleApi
             $request = $this->http->withToken($token)->acceptJson()
                 ->timeout(self::TIMEOUT_SECONDS)->connectTimeout(self::CONNECT_TIMEOUT_SECONDS)
                 ->withOptions(['allow_redirects' => false]);
-            $response = $method === 'GET' ? $request->get($url) : $request->post($url, $body ?? []);
+            $response = match ($method) {
+                'GET' => $request->get($url),
+                'DELETE' => $request->delete($url),
+                default => $request->post($url, $body ?? []),
+            };
         } catch (Throwable) {
             throw GoogleException::unreachable();
         }
@@ -72,6 +92,10 @@ final readonly class GoogleApi
             $this->tokens->invalidate($service);
 
             return $this->send($service, $method, $url, [], $body, true);
+        }
+
+        if ($method === 'DELETE' && $response->successful()) {
+            return [];
         }
 
         return self::decode($response);

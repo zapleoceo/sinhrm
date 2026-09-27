@@ -29,10 +29,11 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $locale
  * @property Carbon|null $last_login_at
  * @property int|null $invited_by
+ * @property bool $approval_emails e-mail me about approvals and decisions ("Мій профіль", default on)
  * @property bool $safe_speak_handler Safe Speak: may read and answer anonymous reports (admins only)
  * @property-read Collection<int, Branch> $branches
  */
-#[Fillable(['name', 'email', 'password', 'google_id', 'avatar_url', 'status', 'locale', 'last_login_at', 'invited_by'])]
+#[Fillable(['name', 'email', 'password', 'google_id', 'avatar_url', 'status', 'locale', 'last_login_at', 'invited_by', 'approval_emails'])]
 #[Hidden(['password', 'remember_token', 'google_id'])]
 class User extends Authenticatable
 {
@@ -78,6 +79,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'status' => UserStatus::class,
             'safe_speak_handler' => 'boolean',
+            'approval_emails' => 'boolean',
         ];
     }
 }

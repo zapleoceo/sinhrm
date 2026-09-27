@@ -92,3 +92,5 @@ HR-страницы (`admin/workflows*`, `admin/perform/reviews`, `admin/pulse`,
 ## Выключенные модули
 
 Меню показывает только пункты модулей из `modules` в `GET /api/auth/me`; группа без доступных модулей скрыта целиком. Прямой переход на страницу выключенного модуля ведёт на «Розділ вимкнено» (`/module-off`, `moduleGuard`, карта URL → модуль в `core/auth/module-map.ts`). У суперадмина в группе «Адміністрування» есть пункт «Модулі». Подробнее — [modules-access.md](modules-access.md).
+
+«Мій профіль» (/me): перемикач «Листи про погодження на пошту» → `PATCH /api/auth/me/notifications {approval_emails}`.

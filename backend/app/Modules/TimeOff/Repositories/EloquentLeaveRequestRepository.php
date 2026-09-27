@@ -121,6 +121,12 @@ final class EloquentLeaveRequestRepository implements LeaveRequestRepository
             ->update($attributes + ['updated_at' => Carbon::now()]) === 1;
     }
 
+    public function setCalendarEvent(LeaveRequest $request, ?string $eventId): void
+    {
+        LeaveRequest::query()->whereKey($request->id)->update(['calendar_event_id' => $eventId]);
+        $request->calendar_event_id = $eventId;
+    }
+
     public function transaction(callable $callback): mixed
     {
         return DB::transaction(fn (): mixed => $callback());

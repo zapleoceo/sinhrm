@@ -630,6 +630,7 @@
     "tabs": { "overview": "Overview", "job": "Job", "timeoff": "Time off", "changes": "Change requests", "personal": "Personal", "documents": "Documents", "workflows": "Workflows", "performance": "Performance", "assets": "Assets" },
     "edit": { "title": "Edit" },
     "terminate": { "action": "Terminate", "title": "Terminate {{name}}", "hint": "The record stays in the history; the person disappears from the directory and the org chart.", "reason": "Reason", "confirm": "Terminate" },
+    "approvalEmails": "E-mail me about approvals",
     "changes": { "new": "Request a change", "hint": "Your manager or HR will review the change; the profile updates after approval.", "comment": "Comment", "send": "Send", "sent": "Request sent", "nothing": "Nothing has changed", "empty": "No change requests" },
     "changeStatus": { "pending": "Pending", "approved": "Approved", "rejected": "Rejected" },
     "orgChart": { "title": "Org chart", "subtitle": "{{n}} people", "myTeam": "My team", "expand": "Expand all", "collapse": "Collapse all", "all": "Whole company", "empty": "Nobody here yet", "toggle": "Show or hide reports", "showTeam": "Show in the org chart" },

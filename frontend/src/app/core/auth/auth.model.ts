@@ -30,6 +30,8 @@ export interface CurrentUser {
   email: string;
   avatar_url: string | null;
   locale: AppLang;
+  /** E-mails about approvals and decisions ("Мій профіль"); absent on old API responses = on. */
+  approval_emails?: boolean;
   roles: UserRole[];
   status: UserStatus;
   /** Module keys the user may open (switched on + role allowed); absent on old API responses = everything. */

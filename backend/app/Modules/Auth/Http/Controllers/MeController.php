@@ -24,6 +24,14 @@ final class MeController
         return new MeResource($auth->changeLocale($this->user($request), $request->locale()));
     }
 
+    /** "Мій профіль": e-mails about approvals and decisions on/off. */
+    public function updateNotifications(Request $request, AuthService $auth): MeResource
+    {
+        $data = $request->validate(['approval_emails' => ['required', 'boolean']]);
+
+        return new MeResource($auth->changeApprovalEmails($this->user($request), (bool) $data['approval_emails']));
+    }
+
     public function logout(Request $request): Response
     {
         Auth::guard('web')->logout();

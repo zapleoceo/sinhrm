@@ -6,6 +6,7 @@ namespace App\Modules\GoogleWorkspace\Contracts;
 
 use App\Modules\GoogleWorkspace\DTO\MeetingData;
 use App\Modules\GoogleWorkspace\Exceptions\GoogleException;
+use Illuminate\Support\Carbon;
 
 /** Google Calendar v3 on the connected account's primary calendar. */
 interface CalendarClient
@@ -20,4 +21,14 @@ interface CalendarClient
      * @throws GoogleException
      */
     public function insertEvent(MeetingData $meeting, array $attendees, string $requestId): array;
+
+    /**
+     * All-day event from $startsOn to $endsOn inclusive (no attendees, sendUpdates=none).
+     *
+     * @throws GoogleException
+     */
+    public function insertAllDayEvent(string $title, Carbon $startsOn, Carbon $endsOn): string;
+
+    /** @throws GoogleException (an already deleted event is not an error) */
+    public function deleteEvent(string $eventId): void;
 }

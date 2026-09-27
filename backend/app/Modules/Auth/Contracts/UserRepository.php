@@ -24,4 +24,6 @@ interface UserRepository
     public function recordGoogleLogin(User $user, GoogleProfile $profile): User;
 
     public function updateLocale(User $user, AppLocale $locale): User;
+
+    public function updateApprovalEmails(User $user, bool $on): User;
 }

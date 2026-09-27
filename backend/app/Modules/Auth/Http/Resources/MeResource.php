@@ -23,6 +23,7 @@ final class MeResource extends JsonResource
             'email' => $this->email,
             'avatar_url' => $this->avatar_url,
             'locale' => $this->locale,
+            'approval_emails' => (bool) ($this->approval_emails ?? true),
             'roles' => $this->getRoleNames()->values()->all(),
             'status' => $this->status->value,
             // Modules this user may open (switched on + role allowed); the SPA hides the rest (modules-access.md).

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\HiringRequests\Services;
 
+use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\HiringRequests\Contracts\HiringRequestRepository;
 use App\Modules\HiringRequests\Models\HiringApproval;
 use App\Modules\HiringRequests\Models\HiringRequest;
@@ -30,10 +31,13 @@ final readonly class ApproverNotifier
 
     public const string SLA_RULE = 'hrq-sla:';
 
+    public const string MODULE = 'hiring-requests';
+
     public function __construct(
         private HiringRequestRepository $requests,
         private TaskService $tasks,
         private EmployeeRepository $employees,
+        private UserNotifier $mail,
     ) {}
 
     /** @return list<int> users who can act on the step (never the requester) */
@@ -62,10 +66,24 @@ final readonly class ApproverNotifier
                 employeeId: $this->requesterEmployeeId($request),
                 link: '/hiring-requests/'.$request->id,
             ));
+            $this->mail->notify($userId, self::MODULE, 'Погодити заявку на підбір: '.$request->title,
+                sprintf('Крок «%s» заявки «%s» чекає на ваше рішення.', $step->name, $request->title),
+                '/hiring-requests/'.$request->id);
             $created++;
         }
 
         return $created;
+    }
+
+    /** The final result (approved / rejected) → e-mail to the requester. */
+    public function decided(HiringRequest $request, bool $approved): void
+    {
+        if ($request->requester_id === null) {
+            return;
+        }
+        $this->mail->notify($request->requester_id, self::MODULE, ($approved ? 'Заявку погоджено: ' : 'Заявку відхилено: ').$request->title,
+            sprintf('Заявку на підбір «%s» %s.', $request->title, $approved ? 'погоджено' : 'відхилено'),
+            '/hiring-requests/'.$request->id);
     }
 
     public function closeStep(HiringApproval $step, Carbon $now): void

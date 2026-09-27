@@ -41,6 +41,12 @@ export class AuthService {
     this.state.update((u) => (u ? { ...u, locale } : u));
   }
 
+  /** PATCH /api/auth/me/notifications; the state follows the server's answer. */
+  async setApprovalEmails(on: boolean): Promise<void> {
+    const me = await firstValueFrom(this.http.patch<CurrentUser>('/api/auth/me/notifications', { approval_emails: on }));
+    this.state.update((u) => (u ? { ...u, approval_emails: me.approval_emails } : u));
+  }
+
   async logout(): Promise<void> {
     try {
       await firstValueFrom(this.http.post<void>('/api/auth/logout', {}));

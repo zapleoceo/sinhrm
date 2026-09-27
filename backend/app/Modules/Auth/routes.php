@@ -10,5 +10,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('me', [MeController::class, 'show'])->name('auth.me');
     Route::patch('me/locale', [MeController::class, 'updateLocale'])->name('auth.me.locale');
+    Route::patch('me/notifications', [MeController::class, 'updateNotifications'])->name('auth.me.notifications');
     Route::post('logout', [MeController::class, 'logout'])->name('auth.logout');
 });
