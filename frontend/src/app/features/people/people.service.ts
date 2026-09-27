@@ -3,7 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { toParams } from '../recruiting/recruiting.service';
 import {
+  BulkEmployeeAction,
   ChangeRequest,
+  Compensation,
+  EmployeeBulkResult,
+  SaveCompensation,
   ChangeRequestStatus,
   ChangeableField,
   Employee,
@@ -34,6 +38,28 @@ export class PeopleService {
 
   create(body: SaveEmployee): Observable<Employee> {
     return this.http.post<{ data: Employee }>('/api/people', body).pipe(map((r) => r.data));
+  }
+
+  bulk(action: Exclude<BulkEmployeeAction, 'export'>, ids: number[], value: number): Observable<EmployeeBulkResult[]> {
+    return this.http
+      .post<{ data: EmployeeBulkResult[] }>('/api/people/bulk', { action, ids, [`${action}_id`]: value })
+      .pipe(map((r) => r.data));
+  }
+
+  exportCsv(ids: number[]): Observable<Blob> {
+    return this.http.post('/api/people/bulk', { action: 'export', ids }, { responseType: 'blob' });
+  }
+
+  compensation(id: number): Observable<Compensation> {
+    return this.http.get<{ data: Compensation }>(`/api/people/${id}/compensation`).pipe(map((r) => r.data));
+  }
+
+  myCompensation(): Observable<Compensation> {
+    return this.http.get<{ data: Compensation }>('/api/me/employee/compensation').pipe(map((r) => r.data));
+  }
+
+  addCompensation(id: number, body: SaveCompensation): Observable<Compensation> {
+    return this.http.post<{ data: Compensation }>(`/api/people/${id}/compensation`, body).pipe(map((r) => r.data));
   }
 
   update(id: number, body: SaveEmployee): Observable<Employee> {

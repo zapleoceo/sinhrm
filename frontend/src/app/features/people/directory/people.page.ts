@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, injec
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,7 +12,11 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { saveBlob } from '../../../core/http/api-error';
+import { EmployeeBulkData, EmployeeBulkDialog } from './employee-bulk.dialog';
+import { EmployeeBulkResult } from '../people.model';
+import { PeopleService } from '../people.service';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DictionaryItem } from '../../directory/directory.model';
@@ -27,6 +33,7 @@ import { PeopleStore, PeopleView } from './people.store';
   imports: [
     MatButtonModule,
     MatButtonToggleModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -117,9 +124,20 @@ import { PeopleStore, PeopleView } from './people.store';
       } @else if (!store.loading() && store.items().length === 0) {
         <p class="state muted">{{ 'people.directory.empty' | transloco }}</p>
       } @else if (store.view() === 'table') {
+        @if (canManage() && selected().size > 0) {
+          <div class="bulk-bar">
+            <span>{{ 'bulk.selected' | transloco: { n: selected().size } }}</span>
+            <button mat-stroked-button type="button" (click)="bulk()">{{ 'bulk.actions' | transloco }}</button>
+            <button mat-stroked-button type="button" (click)="exportCsv()">{{ 'bulk.people.export' | transloco }}</button>
+            <button mat-button type="button" (click)="clear()">{{ 'bulk.clear' | transloco }}</button>
+          </div>
+        }
         <table class="people">
           <thead>
             <tr>
+              @if (canManage()) {
+                <th scope="col"></th>
+              }
               <th scope="col">{{ 'people.fields.fullName' | transloco }}</th>
               <th scope="col">{{ 'people.fields.position' | transloco }}</th>
               <th scope="col" class="wide">{{ 'people.fields.department' | transloco }}</th>
@@ -131,6 +149,9 @@ import { PeopleStore, PeopleView } from './people.store';
           <tbody>
             @for (e of store.items(); track e.id) {
               <tr>
+                @if (canManage()) {
+                  <td><mat-checkbox [checked]="selected().has(e.id)" (change)="toggle(e.id)" [attr.aria-label]="e.full_name" /></td>
+                }
                 <td>
                   <a class="person" [routerLink]="['/people', e.id]">
                     <span class="avatar" aria-hidden="true">{{ initialsOf(e) }}</span>
@@ -186,6 +207,7 @@ import { PeopleStore, PeopleView } from './people.store';
     </section>
   `,
   styles: `
+    .bulk-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; }
     .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .people { width: 100%; border-collapse: collapse; }
     .people th, .people td { text-align: left; padding: 0.5rem 1rem; border-bottom: 1px solid var(--app-border); }
@@ -223,6 +245,10 @@ export class PeoplePage implements OnInit {
   protected readonly branches = signal<DictionaryItem[]>([]);
   protected readonly departments = signal<DictionaryItem[]>([]);
   protected readonly positions = signal<DictionaryItem[]>([]);
+  private readonly people = inject(PeopleService);
+  private readonly snack = inject(MatSnackBar);
+  private readonly i18n = inject(TranslocoService);
+  protected readonly selected = signal(new Set<number>());
   protected readonly canManage = computed(() => canManagePeople(this.auth.user()?.roles ?? []));
 
   ngOnInit(): void {
@@ -245,6 +271,39 @@ export class PeoplePage implements OnInit {
 
   protected onPage(e: PageEvent): void {
     this.store.setPage(e.pageIndex + 1, e.pageSize);
+  }
+
+  protected toggle(id: number): void {
+    const next = new Set(this.selected());
+    if (!next.delete(id)) next.add(id);
+    this.selected.set(next);
+  }
+
+  protected clear(): void {
+    this.selected.set(new Set<number>());
+  }
+
+  protected bulk(): void {
+    const data: EmployeeBulkData = {
+      ids: [...this.selected()],
+      departments: this.departments(),
+      positions: this.positions(),
+      managers: this.store.items().map((e) => ({ id: e.id, name: e.full_name })),
+    };
+    this.dialog
+      .open(EmployeeBulkDialog, { data })
+      .afterClosed()
+      .subscribe((results: EmployeeBulkResult[] | undefined) => {
+        if (!results) return;
+        const ok = results.filter((r) => r.ok).length;
+        this.snack.open(this.i18n.translate('bulk.done', { ok, total: results.length }), undefined, { duration: 5000 });
+        this.clear();
+        this.store.load();
+      });
+  }
+
+  protected exportCsv(): void {
+    this.people.exportCsv([...this.selected()]).subscribe({ next: (b) => saveBlob(b, 'employees.csv'), error: () => undefined });
   }
 
   protected add(): void {

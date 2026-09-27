@@ -20,6 +20,13 @@ interface ReportDataRepository
     public function employees(?array $employeeIds, ?int $branchId): array;
 
     /**
+     * Current compensation (latest effective_on <= $on) of employees working on $on that have a gender set.
+     *
+     * @return list<array{gender: string, currency: string, period: string, amount: float}>
+     */
+    public function currentPayByGender(?int $branchId, Carbon $on): array;
+
+    /**
      * Approved leave requests overlapping [from, to].
      *
      * @param  list<int>|null  $employeeIds

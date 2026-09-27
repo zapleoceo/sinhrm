@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,13 +11,14 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { CandidateCard } from '../card/candidate-card';
 import { canWriteRecruiting } from '../recruiting.access';
-import { APPLICATION_STATUSES, CANDIDATE_SOURCES, Candidate } from '../recruiting.model';
+import { APPLICATION_STATUSES, BulkResult, CANDIDATE_SOURCES, Candidate } from '../recruiting.model';
 import { CandidateDialog } from './candidate.dialog';
+import { CandidateBulkDialog } from './candidate-bulk.dialog';
 import { RecruitingService } from '../recruiting.service';
 import { CandidatesStore } from './candidates.store';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
@@ -29,6 +32,7 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
     ChannelIcon,
     CandidateCard,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -85,6 +89,13 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
             </mat-select>
           </mat-form-field>
         </div>
+        @if (canWrite() && selected().size > 0) {
+          <div class="bulk-bar">
+            <span>{{ 'bulk.selected' | transloco: { n: selected().size } }}</span>
+            <button mat-stroked-button type="button" (click)="bulk()">{{ 'bulk.actions' | transloco }}</button>
+            <button mat-button type="button" (click)="selected.set(emptySet())">{{ 'bulk.clear' | transloco }}</button>
+          </div>
+        }
         @if (store.loading()) {
           <mat-progress-bar mode="indeterminate" />
         }
@@ -96,7 +107,10 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
         }
         <ul class="items" role="listbox" [attr.aria-label]="'recruiting.candidates.title' | transloco">
           @for (c of store.items(); track c.id) {
-            <li role="option" [attr.aria-selected]="c.id === id()">
+            <li role="option" [attr.aria-selected]="c.id === id()" class="row">
+              @if (canWrite()) {
+                <mat-checkbox [checked]="selected().has(c.id)" (change)="toggle(c.id)" [attr.aria-label]="c.full_name" />
+              }
               <a [routerLink]="['/candidates', c.id]" [class.active]="c.id === id()">
                 <span class="name">{{ c.full_name }}</span>
                 <span class="muted sub">{{ summary(c) }}</span>
@@ -142,6 +156,9 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
     .items a:hover { background: var(--mat-sys-surface-container-high); }
     .items a.active { background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container); }
     .name { font-weight: 500; }
+    .row { display: flex; align-items: center; }
+    .row a { flex: 1; }
+    .bulk-bar { display: flex; align-items: center; gap: 0.5rem; }
     .sub { grid-column: 1; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .stale { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--app-warning); }
     @media (max-width: 900px) {
@@ -166,6 +183,10 @@ export class CandidatesPage implements OnInit {
   protected readonly statuses = APPLICATION_STATUSES;
   protected readonly sources = CANDIDATE_SOURCES;
   protected readonly channels = toSignal(inject(RecruitingService).channels(), { initialValue: [] });
+  private readonly snack = inject(MatSnackBar);
+  private readonly i18n = inject(TranslocoService);
+  protected readonly selected = signal(new Set<number>());
+  protected readonly emptySet = (): Set<number> => new Set<number>();
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
 
   ngOnInit(): void {
@@ -186,6 +207,26 @@ export class CandidatesPage implements OnInit {
 
   protected onPage(e: PageEvent): void {
     this.store.setPage(e.pageIndex + 1, e.pageSize);
+  }
+
+  protected toggle(id: number): void {
+    const next = new Set(this.selected());
+    if (!next.delete(id)) next.add(id);
+    this.selected.set(next);
+  }
+
+  protected bulk(): void {
+    const picked = this.store.items().filter((c) => this.selected().has(c.id));
+    this.dialog
+      .open(CandidateBulkDialog, { data: picked })
+      .afterClosed()
+      .subscribe((results: BulkResult[] | undefined) => {
+        if (!results) return;
+        const ok = results.filter((r) => r.ok).length;
+        this.snack.open(this.i18n.translate('bulk.done', { ok, total: results.length }), undefined, { duration: 5000 });
+        this.selected.set(new Set());
+        this.store.load();
+      });
   }
 
   protected create(): void {

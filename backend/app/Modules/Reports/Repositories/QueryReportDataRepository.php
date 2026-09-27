@@ -41,6 +41,30 @@ final class QueryReportDataRepository implements ReportDataRepository
             ])->values()->all();
     }
 
+    public function currentPayByGender(?int $branchId, Carbon $on): array
+    {
+        $day = $on->toDateString();
+        $latest = DB::table('employee_compensations')->where('effective_on', '<=', $day)
+            ->groupBy('employee_id')->selectRaw('employee_id, max(effective_on) as eff');
+
+        return DB::table('employees as e')
+            ->joinSub($latest, 'l', 'l.employee_id', '=', 'e.id')
+            ->join('employee_compensations as c', static fn ($j) => $j->on('c.employee_id', '=', 'e.id')->on('c.effective_on', '=', 'l.eff'))
+            ->whereNotNull('e.gender')
+            ->where('e.hired_at', '<=', $day)
+            ->where(static fn (Builder $q) => $q->whereNull('e.fired_at')->orWhere('e.fired_at', '>', $day))
+            ->when($branchId !== null, static fn (Builder $q) => $q->where('e.branch_id', $branchId))
+            ->orderBy('e.id')->orderByDesc('c.id')
+            ->get(['e.id', 'e.gender', 'c.currency', 'c.period', 'c.amount'])
+            ->unique('id')
+            ->map(static fn (object $r): array => [
+                'gender' => (string) $r->gender,
+                'currency' => (string) $r->currency,
+                'period' => (string) $r->period,
+                'amount' => (float) $r->amount,
+            ])->values()->all();
+    }
+
     public function approvedLeave(?array $employeeIds, Carbon $from, Carbon $to): array
     {
         return DB::table('leave_requests as r')

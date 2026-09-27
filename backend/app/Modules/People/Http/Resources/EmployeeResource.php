@@ -58,6 +58,7 @@ final class EmployeeResource extends JsonResource
                 'hired_at' => $this->hired_at->toDateString(),
                 'fired_at' => $this->fired_at?->toDateString(),
                 'termination_reason' => $flags['manage'] ? $this->termination_reason : null,
+                'gender' => $flags['manage'] ? $this->gender : null,
                 'employment_type' => $this->employment_type->value,
                 'work_schedule' => $this->work_schedule,
                 'reports_count' => (int) ($this->reports_count ?? 0),

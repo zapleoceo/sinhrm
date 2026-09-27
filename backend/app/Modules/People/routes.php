@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Modules\Auth\Http\Middleware\EnsureUserIsActive;
 use App\Modules\People\Http\Controllers\ChangeRequestController;
+use App\Modules\People\Http\Controllers\CompensationController;
+use App\Modules\People\Http\Controllers\EmployeeBulkController;
 use App\Modules\People\Http\Controllers\EmployeeHistoryController;
 use App\Modules\People\Http\Controllers\HireController;
 use App\Modules\People\Http\Controllers\MyEmployeeController;
@@ -25,6 +27,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
     Route::middleware('can:'.PeopleServiceProvider::MANAGE)->group(function (): void {
         Route::post('people', [PeopleController::class, 'store'])->name('people.store');
+        Route::post('people/bulk', EmployeeBulkController::class)->name('people.bulk');
+        Route::get('people/{employee}/compensation', [CompensationController::class, 'index'])->whereNumber('employee')->name('people.compensation.index');
+        Route::post('people/{employee}/compensation', [CompensationController::class, 'store'])->whereNumber('employee')->name('people.compensation.store');
         Route::patch('people/{employee}', [PeopleController::class, 'update'])->whereNumber('employee')->name('people.update');
         Route::get('people/{employee}/history', EmployeeHistoryController::class)->whereNumber('employee')->name('people.history');
         Route::post('people/{employee}/terminate', [PeopleController::class, 'terminate'])
@@ -32,6 +37,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     });
 
     Route::get('me/employee', [MyEmployeeController::class, 'show'])->name('people.me');
+    Route::get('me/employee/compensation', [CompensationController::class, 'mine'])->name('people.me.compensation');
     Route::post('me/employee/change-requests', [MyEmployeeController::class, 'submitChange'])->name('people.me.change-requests');
 
     // Recruiting → People: create the employee from a hired application (idempotent).

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Auth\Http\Middleware\EnsureUserIsActive;
 use App\Modules\Recruiting\Http\Controllers\AcquisitionChannelController;
 use App\Modules\Recruiting\Http\Controllers\ApplicationController;
+use App\Modules\Recruiting\Http\Controllers\CandidateBulkController;
 use App\Modules\Recruiting\Http\Controllers\CandidateController;
 use App\Modules\Recruiting\Http\Controllers\CandidateHistoryController;
 use App\Modules\Recruiting\Http\Controllers\ExtensionController;
@@ -54,6 +55,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
     Route::get('candidates', [CandidateController::class, 'index'])->name('recruiting.candidates.index');
     Route::post('candidates', [CandidateController::class, 'store'])->name('recruiting.candidates.store');
+    Route::post('candidates/bulk', CandidateBulkController::class)->name('recruiting.candidates.bulk');
     Route::get('candidates/{candidate}', [CandidateController::class, 'show'])->whereNumber('candidate')->name('recruiting.candidates.show');
     Route::patch('candidates/{candidate}', [CandidateController::class, 'update'])->whereNumber('candidate')->name('recruiting.candidates.update');
     Route::get('candidates/{candidate}/timeline', [CandidateController::class, 'timeline'])

@@ -19,6 +19,7 @@ use App\Modules\Reports\Definitions\AssetsByStatusReport;
 use App\Modules\Reports\Definitions\ChannelEffectivenessReport;
 use App\Modules\Reports\Definitions\DeskSlaReport;
 use App\Modules\Reports\Definitions\EnpsTrendReport;
+use App\Modules\Reports\Definitions\GenderPayGapReport;
 use App\Modules\Reports\Definitions\HeadcountReport;
 use App\Modules\Reports\Definitions\HiresTerminationsReport;
 use App\Modules\Reports\Definitions\LeaveBalancesReport;
@@ -66,13 +67,14 @@ final class ReportsServiceProvider extends ModuleServiceProvider
         $this->app->bind(BuilderRepository::class, QueryBuilderRepository::class);
         $this->app->bind(SavedReportRepository::class, EloquentSavedReportRepository::class);
 
-        // New report = one class + one line here. Gender pay gap is deliberately absent: there is no salary data.
+        // New report = one class + one line here.
         $this->app->tag([
             HeadcountReport::class,
             HiresTerminationsReport::class,
             TurnoverReport::class,
             TenureReport::class,
             AgeReport::class,
+            GenderPayGapReport::class,
             LeaveUsageReport::class,
             AbsencesSummaryReport::class,
             LeaveBalancesReport::class,

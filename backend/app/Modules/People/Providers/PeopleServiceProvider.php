@@ -9,6 +9,7 @@ use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\People\Contracts\ChangeRequestRepository;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\Privacy\CompensationPersonalData;
 use App\Modules\People\Privacy\EmployeePersonalData;
 use App\Modules\People\Repositories\EloquentChangeRequestRepository;
 use App\Modules\People\Repositories\EloquentEmployeeRepository;
@@ -31,7 +32,7 @@ final class PeopleServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         // Personal-data export/erase (Privacy module, docs/architecture/secrets.md).
-        $this->app->tag([EmployeePersonalData::class], PersonalDataProvider::class);
+        $this->app->tag([EmployeePersonalData::class, CompensationPersonalData::class], PersonalDataProvider::class);
         $this->app->bind(EmployeeRepository::class, EloquentEmployeeRepository::class);
         $this->app->bind(ChangeRequestRepository::class, EloquentChangeRequestRepository::class);
     }
