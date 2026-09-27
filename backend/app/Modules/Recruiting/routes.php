@@ -9,6 +9,7 @@ use App\Modules\Recruiting\Http\Controllers\CandidateController;
 use App\Modules\Recruiting\Http\Controllers\CandidateHistoryController;
 use App\Modules\Recruiting\Http\Controllers\ExtensionController;
 use App\Modules\Recruiting\Http\Controllers\InboxController;
+use App\Modules\Recruiting\Http\Controllers\OfferController;
 use App\Modules\Recruiting\Http\Controllers\PipelineController;
 use App\Modules\Recruiting\Http\Controllers\ReportController;
 use App\Modules\Recruiting\Http\Controllers\ScreeningController;
@@ -71,6 +72,16 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
     Route::post('applications/{application}/move', [ApplicationController::class, 'move'])
         ->whereNumber('application')->name('recruiting.applications.move');
+    // Offers (salary is sensitive: writers in scope + the hiring manager only, see ApplicationPolicy::offer).
+    Route::get('offer-templates', [OfferController::class, 'templates'])->name('recruiting.offer-templates');
+    Route::get('applications/{application}/offer', [OfferController::class, 'show'])
+        ->whereNumber('application')->name('recruiting.applications.offer.show');
+    Route::post('applications/{application}/offer', [OfferController::class, 'store'])
+        ->whereNumber('application')->name('recruiting.applications.offer.store');
+    Route::post('applications/{application}/offer/send', [OfferController::class, 'send'])
+        ->whereNumber('application')->name('recruiting.applications.offer.send');
+    Route::post('applications/{application}/offer/decision', [OfferController::class, 'decision'])
+        ->whereNumber('application')->name('recruiting.applications.offer.decision');
     Route::put('applications/{application}/interviewers', [ApplicationController::class, 'interviewers'])
         ->whereNumber('application')->name('recruiting.applications.interviewers');
     Route::get('recruiting/assignable-users', [ApplicationController::class, 'assignableUsers'])->name('recruiting.assignable-users');

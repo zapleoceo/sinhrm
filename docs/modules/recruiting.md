@@ -294,6 +294,39 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 Код: `Privacy\CandidatePersonalData` (провайдер Recruiting), колонка `candidates.anonymized_at` (есть в `CandidateResource`).
 Всё остальное — [privacy.md](privacy.md).
 
+## Страница вакансий и офферы
+
+**Страница вакансий (`/jobs`, `/jobs/:slug`)** — публичная, без входа и без сайдбара, логотип + переключатель uk/ru/en.
+Рекрутер включает «Опублікувати на сторінці вакансій» и пишет «Опис для кандидатів» в диалоге вакансии
+(`published`, `public_description`; slug `<транслит-названия>-<id>` присваивается при первой публикации). Видны только
+опубликованные **открытые** вакансии; наружу уходят slug, название, филиал, должность, дата, публичное описание.
+
+| Метод | Путь | Ответ |
+|---|---|---|
+| GET | `/api/public/vacancies` | список опубликованных открытых |
+| GET | `/api/public/vacancies/{slug}` | вакансия или 404 |
+| POST | `/api/public/vacancies/{slug}/apply` | multipart `name, email, phone?, message?, cv?, consent, website` → 201 |
+
+Отклик: `consent` обязателен (согласие на обработку ПД, Закон 2297-VI; время согласия хранится), CV — PDF/DOC/DOCX ≤ 2 МБ
+(тип по байтам, как файлы Documents, base64 в `career_submissions`). Кандидат — через `createOrMatch` (дедуп по e-mail/телефону,
+первый этап воронки), `source=site` → канал «Career site», `added_via=career_site`, задача «позвонить новому» рекрутеру
+вакансии. Антиспам: honeypot-поле `website` (заполнено → 201 без записи) и 5 откликов в час на HMAC-хэш IP (429
+`too_many_requests`) + `throttle:30,1`. Модуль Recruiting выключен → публичные API отвечают 404.
+
+**Офферы.** В карточке кандидата на заявке в этапе оффера (kind `hire`, не терминальный) — «Створити оффер»: шаблон
+Documents категории `offer` (переменные `{ПІБ}`, `{Посада}`, `{Зарплата}`, `{Дата виходу}`, `{Умови}`, `{Філія}`,
+`{Сьогодні}`), должность, зарплата, дата выхода, условия → текст в `offers` (один на заявку), статус `draft`.
+«Надіслати» — письмо кандидату через Mailer (Gmail) тем же путём, что сообщения из карточки (исходящий touchpoint на заявке) → `sent`;
+«Прийняв/Відмовився» рекрутер отмечает вручную → `accepted`/`declined`. Зарплата чувствительна: все эндпоинты оффера —
+только `ApplicationPolicy::offer` (пишущие рекрутинг в своём скоупе + нанимающий менеджер вакансии), остальным 403.
+
+| Метод | Путь | |
+|---|---|---|
+| GET | `/api/offer-templates` | шаблоны категории offer (recruiting-write) |
+| GET/POST | `/api/applications/{id}/offer` | оффер заявки / создать (422 `not_in_offer_stage`, `template_not_offer`; 409 `offer_exists`) |
+| POST | `/api/applications/{id}/offer/send` | отправить (422 `offer_status`) |
+| POST | `/api/applications/{id}/offer/decision` | `{status: accepted\|declined}` |
+
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,
 дубль 409 по трём ключам, скрытие id для чужого филиала, уникальные индексы в БД, поиск, карточка с маршрутом и длительностями, права), перемещения (stage_change + системное

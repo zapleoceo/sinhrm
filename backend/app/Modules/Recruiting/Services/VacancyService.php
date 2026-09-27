@@ -52,6 +52,7 @@ final readonly class VacancyService
         $attributes['status'] ??= VacancyStatus::Open->value;
         $attributes += $this->statusDates((string) $attributes['status'], null);
         $vacancy = $this->vacancies->create($attributes);
+        $this->ensureSlug($vacancy);
         $this->log->info('recruiting.vacancy_created', ['id' => $vacancy->id, 'by' => $actor->id]);
 
         return $this->find($vacancy->id);
@@ -90,6 +91,7 @@ final readonly class VacancyService
             $attributes += $this->statusDates($attributes['status'], $vacancy);
         }
         $this->vacancies->update($vacancy, $attributes);
+        $this->ensureSlug($vacancy);
         $this->log->info('recruiting.vacancy_updated', ['id' => $vacancy->id, 'by' => $actor->id, 'fields' => array_keys($attributes)]);
 
         return $this->find($vacancy->id);
@@ -118,5 +120,13 @@ final readonly class VacancyService
             VacancyStatus::Closed->value => ['closed_at' => $vacancy->closed_at ?? $now],
             default => [],
         };
+    }
+
+    /** A published vacancy gets a stable public slug once (/jobs/{slug}). */
+    private function ensureSlug(Vacancy $vacancy): void
+    {
+        if ($vacancy->published && $vacancy->slug === null) {
+            $this->vacancies->update($vacancy, ['slug' => CareerSiteService::slugFor($vacancy)]);
+        }
     }
 }

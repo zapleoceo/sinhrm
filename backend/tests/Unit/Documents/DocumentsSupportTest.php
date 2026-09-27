@@ -39,7 +39,7 @@ final class DocumentsSupportTest extends TestCase
         // Known variables only; a brace span longer than 40 chars or across lines is plain text, not a token.
         $this->assertSame([], TemplateFiller::unknown('{ПІБ} {Сьогодні} {'.str_repeat('x', 41)."} {multi\nline}"));
         $this->assertSame(['Імя', 'Name'], TemplateFiller::unknown('{Імя} {Name} {Імя} {ПІБ}'));
-        $this->assertCount(9, DocumentVariable::values());
+        $this->assertCount(12, DocumentVariable::values());
     }
 
     public function test_variables_for_an_employee(): void

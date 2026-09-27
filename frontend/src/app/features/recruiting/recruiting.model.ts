@@ -89,6 +89,10 @@ export interface Vacancy {
   pipeline_id: number;
   stages: Stage[];
   description: string | null;
+  /** Career page (/jobs): shown publicly with public_description. */
+  published: boolean;
+  slug: string | null;
+  public_description: string | null;
   applications_count: number;
   active_applications_count: number;
   opened_at: string | null;
@@ -102,6 +106,8 @@ export interface SaveVacancy {
   position_id?: number | null;
   status?: VacancyStatus;
   description?: string | null;
+  published?: boolean;
+  public_description?: string | null;
   /** Only recruiting writers may send it (the API answers 422 to a hiring manager). */
   hiring_manager_id?: number | null;
 }
