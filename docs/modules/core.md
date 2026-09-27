@@ -130,3 +130,7 @@ Vercel обрезает длинные сообщения, и текст оши�
 ## Доступ к модулю
 
 Ключ модуля `core`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).
+
+`Contracts\UserNotifier` — короткий лист користувачу про погодження/рішення (реалізація GoogleWorkspace, див. google-workspace.md). Колонка `users.approval_emails` (default true).
+
+`Contracts/UserNotifier` — короткий лист користувачу про погодження/рішення (реалізація GoogleWorkspace, див. google-workspace.md). Колонка `users.approval_emails` (default true).
