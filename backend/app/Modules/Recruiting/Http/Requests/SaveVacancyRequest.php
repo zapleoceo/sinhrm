@@ -20,7 +20,7 @@ use Illuminate\Validation\Rule;
 /** POST /vacancies (title + branch required) and PATCH /vacancies/{vacancy} (partial). */
 final class SaveVacancyRequest extends FormRequest
 {
-    private const array FIELDS = ['title', 'branch_id', 'department_id', 'position_id', 'recruiter_id', 'hiring_manager_id', 'pipeline_id', 'status', 'description'];
+    private const array FIELDS = ['title', 'branch_id', 'department_id', 'position_id', 'recruiter_id', 'hiring_manager_id', 'pipeline_id', 'status', 'description', 'published', 'public_description'];
 
     public function authorize(): bool
     {
@@ -51,6 +51,9 @@ final class SaveVacancyRequest extends FormRequest
             'pipeline_id' => $creating ? ['sometimes', 'required', 'integer', Rule::exists(Pipeline::class, 'id')] : ['prohibited'],
             'status' => ['sometimes', 'required', Rule::enum(VacancyStatus::class)],
             'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            // Career page (/jobs): published + the text candidates see (the internal description stays internal).
+            'published' => ['sometimes', 'boolean'],
+            'public_description' => ['sometimes', 'nullable', 'string', 'max:10000'],
         ];
     }
 
@@ -74,6 +77,10 @@ final class SaveVacancyRequest extends FormRequest
             if (isset($attributes[$id]) && is_numeric($attributes[$id])) {
                 $attributes[$id] = (int) $attributes[$id];
             }
+        }
+
+        if (isset($attributes['published'])) {
+            $attributes['published'] = $this->boolean('published');
         }
 
         return new VacancyData($attributes);

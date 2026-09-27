@@ -4,7 +4,7 @@ export type DocumentStatus = 'draft' | 'sent' | 'signed' | 'rejected' | 'archive
 export const DOCUMENT_STATUSES: readonly DocumentStatus[] = ['draft', 'sent', 'signed', 'rejected', 'archived'];
 
 /** Variables of document templates, written as {Name} in the body. */
-export const DOCUMENT_VARIABLES = ['ПІБ', "Ім'я", 'Посада', 'Відділ', 'Філія', 'Дата прийому', 'Дата звільнення', 'Керівник', 'Сьогодні'] as const;
+export const DOCUMENT_VARIABLES = ['ПІБ', "Ім'я", 'Посада', 'Відділ', 'Філія', 'Дата прийому', 'Дата звільнення', 'Керівник', 'Сьогодні', 'Зарплата', 'Дата виходу', 'Умови'] as const;
 
 export interface DocumentTemplate {
   id: number;

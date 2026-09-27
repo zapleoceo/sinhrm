@@ -102,4 +102,38 @@ final class RecruitingException extends RuntimeException
     {
         return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);
     }
+
+    /** Offers are created only on an application in the offer stage (kind "hire", not terminal). */
+    public static function notInOfferStage(): self
+    {
+        return new self('not_in_offer_stage', 422);
+    }
+
+    public static function offerExists(int $offerId): self
+    {
+        return new self('offer_exists', 409, ['offer_id' => $offerId]);
+    }
+
+    /** Wrong offer status for the action (send only a draft, accept/decline only a sent offer). */
+    public static function offerStatus(): self
+    {
+        return new self('offer_status', 422);
+    }
+
+    public static function templateNotOffer(): self
+    {
+        return new self('template_not_offer', 422);
+    }
+
+    /** Public apply: too many submissions from the same client. */
+    public static function tooManySubmissions(): self
+    {
+        return new self('too_many_requests', 429);
+    }
+
+    /** CV must be PDF, DOC or DOCX up to 2 MB (type detected from the bytes). */
+    public static function invalidCv(): self
+    {
+        return new self('invalid_cv', 422);
+    }
 }

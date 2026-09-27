@@ -10,6 +10,9 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/login.page').then((m) => m.LoginPage),
   },
+  // Public career page: no login, no sidebar (Recruiting disabled → the API answers 404, the page says "not found").
+  { path: 'jobs', title: 'careers.title', loadComponent: () => import('./features/recruiting/careers/careers').then((m) => m.JobsPage) },
+  { path: 'jobs/:slug', title: 'careers.title', loadComponent: () => import('./features/recruiting/careers/careers').then((m) => m.JobPage) },
   {
     path: '',
     canActivate: [authGuard],

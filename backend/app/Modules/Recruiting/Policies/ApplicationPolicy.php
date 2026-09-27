@@ -23,4 +23,10 @@ final readonly class ApplicationPolicy
     {
         return $this->scope->canWorkVacancy($user, $application->vacancy);
     }
+
+    /** Offers (salary is sensitive): recruiting writers in scope and the vacancy's hiring manager only. */
+    public function offer(User $user, Application $application): bool
+    {
+        return $this->scope->canWorkVacancy($user, $application->vacancy);
+    }
 }

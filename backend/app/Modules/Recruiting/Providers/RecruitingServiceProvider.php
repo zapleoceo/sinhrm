@@ -53,11 +53,13 @@ use App\Modules\Recruiting\Services\InboxNavBadges;
 use App\Modules\Recruiting\Services\MatchingTouchpointIngestor;
 use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Recruiting\Support\NullTouchpointEvaluations;
+use App\Modules\SafeSpeak\Http\Middleware\ForceJson;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 
@@ -113,6 +115,12 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         Event::listen(TouchpointRecorded::class, UpdateLastTouch::class);
 
         $this->bootExtensionTokens();
+
+        // /api/public/* (career page): anonymous, no session; a disabled module answers 404 to guests.
+        if (! $this->app->routesAreCached()) {
+            Route::prefix('api/public')->middleware([ForceJson::class, ...$this->accessMiddleware()])
+                ->group($this->moduleDir().'/routes.public.php');
+        }
 
         if ($this->app->runningInConsole()) {
             $this->commands([RecruitingDemoCommand::class]);
