@@ -1,5 +1,18 @@
-<div class="shell">
-  <aside class="sidebar">
+<div class="shell" [class.narrow]="narrow()">
+  @if (narrow()) {
+    <header class="topbar">
+      <a class="topbar-brand" routerLink="/" [attr.aria-label]="'shell.nav.overview' | transloco"><app-logo /></a>
+      <span class="topbar-title">{{ pageTitleKey() ? (pageTitleKey()! | transloco) : 'SinHRM' }}</span>
+      <button mat-icon-button type="button" class="burger" [attr.aria-label]="'shell.nav.label' | transloco" aria-controls="app-sidebar" [attr.aria-expanded]="drawerOpen()" (click)="openDrawer()">
+        <mat-icon>menu</mat-icon>
+        <app-nav-badge class="burger-badge" [count]="totalBadge()" />
+      </button>
+    </header>
+    @if (drawerOpen()) {
+      <div class="backdrop" aria-hidden="true" (click)="closeDrawer()"></div>
+    }
+  }
+  <aside class="sidebar" id="app-sidebar" [class.open]="drawerOpen()" [attr.inert]="narrow() && !drawerOpen() ? '' : null" [cdkTrapFocus]="narrow() && drawerOpen()" [cdkTrapFocusAutoCapture]="true">
   <nav class="sidebar-nav" [attr.aria-label]="'shell.nav.label' | transloco">
     <a class="brand" routerLink="/"><app-logo /></a>
     <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">

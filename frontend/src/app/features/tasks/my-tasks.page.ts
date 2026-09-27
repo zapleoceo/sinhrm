@@ -36,13 +36,13 @@ export function myTasksQuery(source: SourceFilter, due: DueFilter, done: boolean
       </div>
     </header>
     <div class="filters">
-      <mat-button-toggle-group [value]="source()" (change)="source.set($event.value)" [attr.aria-label]="'tasks.source' | transloco" hideSingleSelectionIndicator>
+      <mat-button-toggle-group class="toggle-scroll" [value]="source()" (change)="source.set($event.value)" [attr.aria-label]="'tasks.source' | transloco" hideSingleSelectionIndicator>
         <mat-button-toggle value="all">{{ 'common.all' | transloco }}</mat-button-toggle>
         @for (s of sources; track s) {
           <mat-button-toggle [value]="s">{{ 'tasks.sources.' + s | transloco }}</mat-button-toggle>
         }
       </mat-button-toggle-group>
-      <mat-button-toggle-group [value]="due()" (change)="due.set($event.value)" [attr.aria-label]="'tasks.due' | transloco" hideSingleSelectionIndicator>
+      <mat-button-toggle-group class="toggle-scroll" [value]="due()" (change)="due.set($event.value)" [attr.aria-label]="'tasks.due' | transloco" hideSingleSelectionIndicator>
         <mat-button-toggle value="all">{{ 'tasks.dueAll' | transloco }}</mat-button-toggle>
         <mat-button-toggle value="today">{{ 'tasks.dueToday' | transloco }}</mat-button-toggle>
         <mat-button-toggle value="overdue">{{ 'tasks.dueOverdue' | transloco }}</mat-button-toggle>
@@ -54,6 +54,7 @@ export function myTasksQuery(source: SourceFilter, due: DueFilter, done: boolean
     </div>
   `,
   styles: `
+    .toggle-scroll { max-width: 100%; overflow-x: auto; }
     .list { padding: 0 0.75rem; }
   `,
 })

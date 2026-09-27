@@ -4,6 +4,8 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { ShellLayout } from './shell.layout';
@@ -16,7 +18,7 @@ const USER = { id: 7, name: 'U', email: 'u@example.com', avatar_url: null, local
 const logout = vi.fn().mockResolvedValue(undefined);
 const langUse = vi.fn().mockResolvedValue(undefined);
 
-async function setup(modules?: string[]): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void> }> {
+async function setup(modules?: string[], narrow = false): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void> }> {
   logout.mockClear();
   langUse.mockClear();
   TestBed.configureTestingModule({
@@ -26,6 +28,7 @@ async function setup(modules?: string[]): Promise<{ el: HTMLElement; router: Rou
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: AuthService, useValue: { user: signal(USER), logout, hasModule: (k: string) => modules === undefined || modules.includes(k) } },
+      { provide: BreakpointObserver, useValue: { observe: () => of({ matches: narrow, breakpoints: {} }) } },
       { provide: LanguageService, useValue: { current: signal('uk'), use: langUse } },
     ],
   });
@@ -190,5 +193,49 @@ describe('ShellLayout module access', () => {
     const { el } = await setup();
     expect(header(el, 'recruiting')).not.toBeNull();
     expect(el.querySelector('a[href="/candidates"]')).not.toBeNull();
+  });
+});
+
+describe('ShellLayout mobile drawer', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('desktop has no top bar', async () => {
+    const { el } = await setup(undefined, false);
+    expect(el.querySelector('.topbar')).toBeNull();
+    expect(el.querySelector('.sidebar')?.hasAttribute('inert')).toBe(false);
+  });
+
+  it('opens from the burger, locks scroll, closes on backdrop and Esc', async () => {
+    const { el, detect } = await setup(undefined, true);
+    const sidebar = el.querySelector('.sidebar') as HTMLElement;
+    expect(el.querySelector('.topbar')).not.toBeNull();
+    expect(sidebar.classList.contains('open')).toBe(false);
+    expect(sidebar.hasAttribute('inert')).toBe(true);
+
+    (el.querySelector('.burger') as HTMLButtonElement).click();
+    await detect();
+    expect(sidebar.classList.contains('open')).toBe(true);
+    expect(document.body.classList.contains('app-scroll-locked')).toBe(true);
+    expect(el.querySelector('#nav-group-people')).not.toBeNull();
+
+    (el.querySelector('.backdrop') as HTMLElement).click();
+    await detect();
+    expect(sidebar.classList.contains('open')).toBe(false);
+    expect(document.body.classList.contains('app-scroll-locked')).toBe(false);
+
+    (el.querySelector('.burger') as HTMLButtonElement).click();
+    await detect();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await detect();
+    expect(sidebar.classList.contains('open')).toBe(false);
+  });
+
+  it('closes on navigation', async () => {
+    const { el, router, detect } = await setup(undefined, true);
+    (el.querySelector('.burger') as HTMLButtonElement).click();
+    await detect();
+    await router.navigateByUrl('/tasks');
+    await detect();
+    expect(el.querySelector('.sidebar')?.classList.contains('open')).toBe(false);
   });
 });
