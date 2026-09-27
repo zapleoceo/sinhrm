@@ -147,3 +147,5 @@ CORS (`config/cors.php`) открыт только для `api/clipper/*`, то�
 ## Доступ к модулю
 
 Ключ модуля `auth`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).
+
+`PATCH /api/auth/me/notifications {approval_emails: bool}` — вимикач листів про погодження («Мій профіль»); `GET /me` повертає `approval_emails`.

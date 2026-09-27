@@ -9,6 +9,7 @@ use App\Modules\GoogleWorkspace\DTO\MeetingData;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
 use App\Modules\GoogleWorkspace\Exceptions\GoogleException;
 use App\Modules\GoogleWorkspace\Support\GoogleApi;
+use Illuminate\Support\Carbon;
 
 final readonly class GoogleCalendarClient implements CalendarClient
 {
@@ -50,6 +51,24 @@ final readonly class GoogleCalendarClient implements CalendarClient
             'html_link' => self::httpsOrNull($json['htmlLink'] ?? null),
             'meet_link' => self::httpsOrNull($json['hangoutLink'] ?? null) ?? self::videoEntryPoint($json),
         ];
+    }
+
+    public function insertAllDayEvent(string $title, Carbon $startsOn, Carbon $endsOn): string
+    {
+        $json = $this->api->post(GoogleService::Calendar, self::EVENTS_URL, ['sendUpdates' => 'none'], [
+            'summary' => $title,
+            'start' => ['date' => $startsOn->toDateString()],
+            // Google's all-day end date is exclusive.
+            'end' => ['date' => $endsOn->copy()->addDay()->toDateString()],
+            'transparency' => 'transparent',
+        ]);
+
+        return is_string($json['id'] ?? null) ? $json['id'] : throw GoogleException::badResponse();
+    }
+
+    public function deleteEvent(string $eventId): void
+    {
+        $this->api->delete(GoogleService::Calendar, self::EVENTS_URL.'/'.rawurlencode($eventId).'?sendUpdates=none');
     }
 
     /** @param  array<string, mixed>  $json */

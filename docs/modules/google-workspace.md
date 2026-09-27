@@ -201,3 +201,7 @@ curl -i https://sinhrm.vercel.app/api/google/connect         # без сесси
 ## Доступ к модулю
 
 Ключ модуля `google-workspace`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
+
+## Листи про погодження (UserNotifier)
+
+`MailUserNotifier` реалізує `Core\Contracts\UserNotifier`: тема + 2 рядки + посилання (`app.frontend_url` + шлях) на e-mail користувача. Мовчки пропускає, якщо користувач вимкнув «Листи про погодження» у «Мій профіль» (`users.approval_emails`, за замовчуванням увімкнено), модуль закритий для нього, або Mailer не готовий (`not_connected` / `reconnect_to_send` → лог `notify.mail_skipped`; помилка Gmail → `notify.mail_failed`). `CalendarClient` має також `insertAllDayEvent` / `deleteEvent` (TimeOff).

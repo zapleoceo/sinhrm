@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\GoogleWorkspace\Providers;
 
 use App\Modules\Core\Contracts\ScheduledJob;
+use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\GoogleWorkspace\Contracts\CalendarClient;
 use App\Modules\GoogleWorkspace\Contracts\GmailClient;
@@ -19,6 +20,7 @@ use App\Modules\GoogleWorkspace\Services\GoogleDashboardNotices;
 use App\Modules\GoogleWorkspace\Services\GoogleGmailClient;
 use App\Modules\GoogleWorkspace\Services\GoogleSheetsClient;
 use App\Modules\GoogleWorkspace\Services\GoogleTokenService;
+use App\Modules\GoogleWorkspace\Services\MailUserNotifier;
 use App\Modules\GoogleWorkspace\Services\SheetsSyncJob;
 use App\Modules\GoogleWorkspace\Support\GoogleOAuthConfig;
 use App\Modules\Overview\Contracts\DashboardNotices;
@@ -46,6 +48,9 @@ final class GoogleWorkspaceServiceProvider extends ModuleServiceProvider
         $this->app->bind(GmailClient::class, GoogleGmailClient::class);
         $this->app->bind(Mailer::class, GmailMailer::class);
         $this->app->bind(CalendarClient::class, GoogleCalendarClient::class);
+        $this->app->bind(UserNotifier::class, fn (Application $app): UserNotifier => $app->make(MailUserNotifier::class, [
+            'frontendUrl' => (string) $app->make('config')->get('app.frontend_url'),
+        ]));
         $this->app->bind(SheetsClient::class, GoogleSheetsClient::class);
         $this->app->bind(SheetImportRepository::class, EloquentSheetImportRepository::class);
 

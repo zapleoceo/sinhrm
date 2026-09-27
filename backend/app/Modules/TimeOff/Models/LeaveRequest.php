@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $decided_at
  * @property string|null $decision_comment
  * @property int|null $created_by
+ * @property string|null $calendar_event_id Google Calendar event of the approved request
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
@@ -37,7 +38,7 @@ final class LeaveRequest extends Model
 {
     protected $fillable = [
         'employee_id', 'leave_type_id', 'starts_on', 'ends_on', 'half_day', 'days', 'comment', 'status',
-        'balance_override', 'approver_id', 'decided_at', 'decision_comment', 'created_by',
+        'balance_override', 'approver_id', 'decided_at', 'decision_comment', 'created_by', 'calendar_event_id',
     ];
 
     /** @var array<string, mixed> */
