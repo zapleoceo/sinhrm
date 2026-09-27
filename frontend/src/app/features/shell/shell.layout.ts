@@ -1,9 +1,12 @@
 import { Logo } from '../../core/ui/logo';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { isHrStaff } from '../../core/auth/auth.model';
+import { A11yModule } from '@angular/cdk/a11y';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,7 +33,9 @@ import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded 
     TranslocoPipe,
     LanguageSwitcher,
     NavBadge,
+    A11yModule,
   ],
+  host: { '(document:keydown.escape)': 'closeDrawer()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.layout.html',
   styleUrl: './shell.layout.scss',
@@ -65,7 +70,37 @@ export class ShellLayout {
   /** Group of the current page — always shown open. */
   protected readonly activeGroup = computed(() => groupForUrl(this.url()));
 
+  /** Below 768px the sidebar is an off-canvas drawer behind a compact top bar. */
+  protected readonly narrow = toSignal(
+    inject(BreakpointObserver).observe('(max-width: 767.98px)').pipe(map((s) => s.matches)),
+    { initialValue: false },
+  );
+  protected readonly drawerOpen = signal(false);
+  /** Sum of all counters, shown on the burger button. */
+  protected readonly totalBadge = computed(() => Object.values(this.badges()).reduce<number>((a, n) => a + (n ?? 0), 0));
+  /** i18n key of the current route title (top bar on narrow screens). */
+  protected readonly pageTitleKey = computed(() => {
+    this.url();
+    let route: ActivatedRouteSnapshot | null = this.router.routerState.snapshot.root;
+    let key: string | undefined;
+    while (route) {
+      key = route.title ?? key;
+      route = route.firstChild;
+    }
+    return key;
+  });
+
   constructor() {
+    const body = inject(DOCUMENT).body;
+    // Lock page scroll while the drawer is open.
+    effect(() => body.classList.toggle('app-scroll-locked', this.narrow() && this.drawerOpen()));
+    // Any navigation (and leaving the narrow layout) closes the drawer.
+    effect(() => {
+      if (!this.narrow()) untracked(() => this.drawerOpen.set(false));
+    });
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed())
+      .subscribe(() => this.drawerOpen.set(false));
     const watching = this.navBadges.watch(this.router.events.pipe(filter((e) => e instanceof NavigationEnd)));
     inject(DestroyRef).onDestroy(() => watching.unsubscribe());
     effect(() => {
@@ -110,6 +145,14 @@ export class ShellLayout {
     this.expanded.set(next);
     const id = this.user()?.id;
     if (id !== undefined) saveExpanded(id, next);
+  }
+
+  protected openDrawer(): void {
+    this.drawerOpen.set(true);
+  }
+
+  protected closeDrawer(): void {
+    this.drawerOpen.set(false);
   }
 
   protected async logout(): Promise<void> {
