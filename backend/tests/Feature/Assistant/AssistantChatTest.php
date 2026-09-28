@@ -157,7 +157,7 @@ final class AssistantChatTest extends TestCase
     public function test_emulated_final_answer_is_the_say_text_and_broken_json_fails_closed(): void
     {
         $this->enableAi();
-        $this->fakeBroker([[self::doneAnswer(['say' => 'Привіт! Я Стік.', 'calls' => []])], [self::doneAnswer('not json')], [self::doneAnswer('still not json')]]);
+        $this->fakeBroker([[self::doneAnswer(['say' => 'Привіт! Я Стік.', 'calls' => []])], [self::doneAnswer('{"say": "обрізано')], [self::doneAnswer('{"say": "знову')]]);
         $user = User::factory()->withRole(UserRole::Employee)->create();
 
         $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'hi']]])
@@ -165,7 +165,7 @@ final class AssistantChatTest extends TestCase
         $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'hi']]])
             ->assertOk()->assertJsonPath('data.state', 'failed')->assertJsonPath('data.error', 'ai_invalid_output')
             // Diagnosable without platform logs: the reason code and finish_reason, never the answer text.
-            ->assertJsonPath('data.detail.invalid_reason', 'not_tool_json')
+            ->assertJsonPath('data.detail.invalid_reason', 'not_json')
             ->assertJsonPath('data.detail.finish_reason', 'stop');
     }
 

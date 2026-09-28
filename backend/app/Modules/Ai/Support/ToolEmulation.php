@@ -60,34 +60,67 @@ TXT;
 
     /**
      * The JSON answer → text + tool calls with fresh ids (the result of a native-tools answer passes through).
+     * Tolerant, because some providers of the free lanes ignore json_schema (measured on prod 28.09: finish_reason
+     * "stop" but not the protocol's JSON): plain text = the final answer; missing "say"/"calls" = empty; common
+     * synonyms (text/answer/reply, tool_calls, tool/args/parameters) are accepted.
      *
-     * @throws InvalidAiOutput when the answer is not the protocol's JSON
+     * @throws InvalidAiOutput not_json (broken JSON object) | bad_shape (JSON with neither text nor calls) | bad_tool_call
      */
     public static function unwrap(AiResult $result): AiResult
     {
         if (! $result->isDone() || $result->toolCalls !== []) {
             return $result;
         }
-        $json = JsonOutput::decode((string) $result->text);
-        if (! is_array($json) || ! is_string($json['say'] ?? null) || ! is_array($json['calls'] ?? null)) {
-            throw InvalidAiOutput::because('not_tool_json');
+        $text = trim((string) $result->text);
+        $json = JsonOutput::decode($text);
+        if (! is_array($json)) {
+            if ($text === '' || str_starts_with($text, '{')) {
+                throw InvalidAiOutput::because('not_json');
+            }
+
+            // The model answered in prose without tools: that is a final answer.
+            return AiResult::done($text, $result->model, $result->tokensIn, $result->tokensOut, $result->tokensCached, $result->costUsd, $result->finishReason);
+        }
+        $say = self::firstString($json, ['say', 'text', 'answer', 'reply', 'message']);
+        $rawCalls = is_array($json['calls'] ?? null) ? $json['calls'] : (is_array($json['tool_calls'] ?? null) ? $json['tool_calls'] : []);
+        if ($rawCalls === [] && isset($json['name']) && is_string($json['name'])) {
+            $rawCalls = [$json]; // a single call object at the top level
+        }
+        if ($say === '' && $rawCalls === []) {
+            throw InvalidAiOutput::because('bad_shape');
         }
         $calls = [];
-        foreach ($json['calls'] as $i => $call) {
-            if (! is_array($call) || ! is_string($call['name'] ?? null)) {
+        foreach (array_values($rawCalls) as $i => $call) {
+            $name = is_array($call) ? self::firstString($call, ['name', 'tool']) : '';
+            if ($name === '') {
                 throw InvalidAiOutput::because('bad_tool_call');
             }
-            $arguments = $call['arguments'] ?? '{}';
+            $arguments = $call['arguments'] ?? $call['args'] ?? $call['parameters'] ?? '{}';
             // Ids only need to be unique within this answer ($i guarantees it); the next turn maps results back by
             // the ids the SPA echoes, so no cross-request determinism is required.
             $calls[] = [
-                'id' => 'call_'.substr(hash('sha256', $call['name'].$i.microtime()), 0, 12),
-                'name' => $call['name'],
-                'arguments' => is_string($arguments) ? $arguments : (string) json_encode($arguments, JSON_UNESCAPED_UNICODE),
+                'id' => 'call_'.substr(hash('sha256', $name.$i.microtime()), 0, 12),
+                'name' => $name,
+                'arguments' => is_string($arguments) ? $arguments : (string) json_encode((object) $arguments, JSON_UNESCAPED_UNICODE),
             ];
         }
 
-        return AiResult::done($json['say'], $result->model, $result->tokensIn, $result->tokensOut, $result->tokensCached, $result->costUsd, $result->finishReason, $calls);
+        return AiResult::done($say, $result->model, $result->tokensIn, $result->tokensOut, $result->tokensCached, $result->costUsd, $result->finishReason, $calls);
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $data
+     * @param  list<string>  $keys
+     */
+    private static function firstString(array $data, array $keys): string
+    {
+        foreach ($keys as $key) {
+            if (is_string($data[$key] ?? null)) {
+                return $data[$key];
+            }
+        }
+
+        return '';
     }
 
     /**
