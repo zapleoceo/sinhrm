@@ -116,6 +116,35 @@ describe('MascotBrain', () => {
     expect(h.brain.state).toBe('docked');
   });
 
+  it('never falls asleep while the chat waits for an answer or the mic is busy; a new request wakes him', () => {
+    const commands: BrainCommand[] = [];
+    let busy = true;
+    const brain = new MascotBrain((c) => commands.push(c), { rng: () => 0.5, width: () => 1200, isBusy: () => busy });
+    const plays = (): string[] => commands.filter((c): c is Extract<BrainCommand, { type: 'play' }> => c.type === 'play').map((c) => c.action);
+    brain.start(true, false);
+    brain.chatOpened();
+    brain.mood('think');
+    // A 90 s+ wait several times over: no zZ, the think pose stays.
+    vi.advanceTimersByTime(TIMING.sleepAfter * 4);
+    expect(brain.state).toBe('docked');
+    expect(plays()).not.toContain('sleep');
+    expect(commands.filter((c) => c.type === 'gesture').at(-1)).toEqual({ type: 'gesture', name: 'think' });
+    // Answer arrived, nobody around: now he may doze off.
+    busy = false;
+    brain.mood('talk', 1000);
+    vi.advanceTimersByTime(TIMING.sleepAfter);
+    expect(brain.state).toBe('asleep');
+    // The user asks again: he wakes up to think.
+    busy = true;
+    brain.mood('think');
+    expect(brain.state).toBe('waking');
+    expect(plays().at(-1)).toBe('wake');
+    brain.clipDone('wake');
+    expect(brain.state).toBe('docked');
+    vi.advanceTimersByTime(TIMING.sleepAfter * 2);
+    expect(brain.state).toBe('docked');
+  });
+
   it('chat: docks on open, leaves on close; moods become gestures', () => {
     const h = setup();
     h.brain.start(true, false);

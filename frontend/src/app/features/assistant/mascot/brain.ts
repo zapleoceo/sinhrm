@@ -1,6 +1,7 @@
 import { AssistantMood } from '../assistant.model';
 import { pickGreeting, pickQuip } from '../quips';
 import type { EngineEvent } from './mascot-engine';
+import { FallCause, Joke, JokeSituation, situationFor } from '../jokes';
 import { ActionName, ENTRANCES, EXITS, EntranceAction, ExitAction, GestureName, IDLE_WEIGHTS } from './animations';
 
 export type BrainState =
@@ -23,7 +24,8 @@ export type BrainState =
 export type BrainCommand =
   | { type: 'play'; action: ActionName; side?: 'left' | 'right'; targetX?: number; blend?: number; variant?: 'full' | 'sit' }
   | { type: 'gesture'; name: GestureName | null }
-  | { type: 'say'; key: string | null }
+  /** A line in the bubble: an i18n key, or ready text (AI joke) when `text` is set. */
+  | { type: 'say'; key: string | null; text?: string }
   | { type: 'visible'; value: boolean };
 
 /** Timer source (fake timers in tests). */
@@ -40,7 +42,17 @@ export interface BrainOptions {
   isTyping?: () => boolean;
   /** Viewport width (for where he lands). */
   width?: () => number;
+  /** A joke for the situation after getting up (AI pool or a built-in one). */
+  joke?: (situation: JokeSituation) => Joke | null;
+  /** Is it OK to joke now (the chat is not answering, nobody is typing)? */
+  canJoke?: () => boolean;
+  /** Chance to tell a joke after getting up (0..1). */
+  jokeChance?: number;
+  /** The conversation or voice dictation is in progress — he must stay awake. */
+  isBusy?: () => boolean;
 }
+
+export const JOKE_CHANCE = 0.7;
 
 /** Timings in ms. */
 export const TIMING = {
@@ -125,6 +137,12 @@ export class MascotBrain {
   private readonly scheduler: Scheduler;
   private readonly isTyping: () => boolean;
   private readonly width: () => number;
+  private readonly joke: (situation: JokeSituation) => Joke | null;
+  private readonly canJoke: () => boolean;
+  private readonly jokeChance: number;
+  private readonly isBusy: () => boolean;
+  /** Why the current fall happened (null — not falling). */
+  private fallSituation: JokeSituation | null = null;
 
   constructor(
     private readonly emit: (command: BrainCommand) => void,
@@ -134,6 +152,10 @@ export class MascotBrain {
     this.scheduler = options.scheduler ?? defaultScheduler;
     this.isTyping = options.isTyping ?? (() => false);
     this.width = options.width ?? (() => 1280);
+    this.joke = options.joke ?? (() => null);
+    this.canJoke = options.canJoke ?? (() => true);
+    this.jokeChance = options.jokeChance ?? JOKE_CHANCE;
+    this.isBusy = options.isBusy ?? (() => false);
   }
 
   get state(): BrainState {
@@ -292,6 +314,14 @@ export class MascotBrain {
       return;
     }
     this.clear('talk');
+    if (mood !== 'idle') {
+      // Something is happening in the chat: wake up if asleep, and the inactivity clock starts over.
+      if (this.current === 'asleep') {
+        this.current = 'waking';
+        this.play('wake');
+      }
+      this.resetSleep();
+    }
     const map: Record<AssistantMood, GestureName | null> = { idle: null, think: 'think', talk: 'talk', celebrate: 'celebrate', shrug: 'shrug', point: 'point', listen: 'listen' };
     this.emit({ type: 'gesture', name: map[mood] });
     if (mood === 'talk') {
@@ -319,10 +349,11 @@ export class MascotBrain {
   }
 
   /** The ragdoll took over (throw, slip, trip, faint): no exits or fidgets until he is up again. */
-  fell(): void {
+  fell(cause: FallCause = 'trip'): void {
     if (this.reduced) {
       return;
     }
+    this.fallSituation = situationFor(cause);
     this.current = 'fallen';
     this.clear('stay');
     this.clear('getup');
@@ -449,8 +480,24 @@ export class MascotBrain {
         break;
       default:
         this.toIdle();
+        this.tellJoke();
         break;
     }
+  }
+
+  /** Standing again after a fall: sometimes a joke about it (never while the chat answers or the user types). */
+  private tellJoke(): void {
+    const situation = this.fallSituation;
+    this.fallSituation = null;
+    if (!situation || this.reduced || this.rng() >= this.jokeChance || !this.canJoke()) {
+      return;
+    }
+    const joke = this.joke(situation);
+    if (!joke) {
+      return;
+    }
+    this.emit('text' in joke ? { type: 'say', key: null, text: joke.text } : { type: 'say', key: joke.key });
+    this.schedule('say', TIMING.quipShown, () => this.emit({ type: 'say', key: null }));
   }
 
   private toIdle(): void {
@@ -539,6 +586,11 @@ export class MascotBrain {
 
   private resetSleep(): void {
     this.schedule('sleep', TIMING.sleepAfter, () => {
+      if (this.isBusy()) {
+        // Never doze off while an answer is pending, tools run, a confirmation waits or the mic records.
+        this.resetSleep();
+        return;
+      }
       if (this.current === 'idle' || this.current === 'docked' || this.current === 'static') {
         this.beforeSleep = this.current;
         this.clear('stay');
@@ -598,7 +650,7 @@ export function dispatchEngineEvent(brain: MascotBrain, e: EngineEvent): void {
       brain.landed(e.speed);
       break;
     case 'fell':
-      brain.fell();
+      brain.fell(e.cause);
       break;
     case 'rested':
       brain.rested(e.impact);

@@ -18,6 +18,8 @@ enum AiPurpose: string
     case AssistantChat = 'assistant_chat';
     /** Voice dictation in the «Стік» chat: speech → text (Whisper via the broker); switched with the chat. */
     case AssistantVoice = 'assistant_voice';
+    /** One-liners «Стік» says after getting up from a fall (a cached batch per situation and language). */
+    case AssistantQuips = 'assistant_quips';
 
     /** @return list<self> purposes whose prompt can be edited and whose stats are shown per row in the admin */
     public static function editable(): array
@@ -36,7 +38,7 @@ enum AiPurpose: string
     {
         return match ($this) {
             self::Test, self::PromptTrial => null,
-            self::AssistantVoice => 'ai_'.self::AssistantChat->value,
+            self::AssistantVoice, self::AssistantQuips => 'ai_'.self::AssistantChat->value,
             default => 'ai_'.$this->value,
         };
     }

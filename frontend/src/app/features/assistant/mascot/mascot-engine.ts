@@ -32,6 +32,7 @@ import {
   stepEffects,
 } from './effects';
 import { EyeShape, Expression, NEUTRAL, blinkAmount, squintFor } from './face';
+import type { FallCause } from '../jokes';
 import { GetUpVariant, createGetUp, createRubHead, createStandUp, createSulk } from './getup';
 import { normalizeAngle } from './ik';
 import { Body, PHYSICS_DT, World, accumulate, defaultWorld, launchSpeed, physicsStep } from './physics';
@@ -60,8 +61,8 @@ export type EngineEvent =
   | { type: 'clipDone'; action: ActionName }
   | { type: 'landed'; speed: number }
   | { type: 'offscreen' }
-  /** The ragdoll took over (throw, slip, trip, faint). */
-  | { type: 'fell' }
+  /** The ragdoll took over (throw, slip, trip, faint, a dropped hold). */
+  | { type: 'fell'; cause: FallCause }
   /** The ragdoll came to rest: how he lies and the hardest impact (px/s). */
   | { type: 'rested'; orientation: Orientation; impact: number };
 
@@ -182,6 +183,8 @@ export class MascotEngine {
   private landedSent = false;
   /** Re-settling after a resize: do not report `rested` twice. */
   private restedAgain = false;
+  /** A release is a throw unless the hold was lost (then he just drops). */
+  private dropCause: FallCause = 'throw';
   private arrowAcc = 0;
   private lastDragMoveAt = -Infinity;
   /** Drag velocity smoothed over ~0.1 s (body tilt, flailing) — no jerks when the pointer speeds up or stops. */
@@ -429,6 +432,7 @@ export class MascotEngine {
    * then the usual fall → rest → get up (reduced motion: eases to standing where he is).
    */
   dragCancel(): void {
+    this.dropCause = 'drop';
     if (this.rag && this.grab) {
       this.rag.prev.set(this.rag.pos);
     }
@@ -443,6 +447,8 @@ export class MascotEngine {
 
   /** Release: the ragdoll keeps its own point velocities — the swing IS the throw. Then fall → rest → get up. */
   dragEnd(): void {
+    const cause = this.dropCause;
+    this.dropCause = 'throw';
     if (this.reduced) {
       // Reduced motion: no tumble, no choreography — ease quickly to standing at the drop spot.
       this.grab = null;
@@ -469,7 +475,7 @@ export class MascotEngine {
     rag.maxImpact = 0;
     this.mode = 'ragdoll';
     this.landedSent = false;
-    this.events.push({ type: 'fell' });
+    this.events.push({ type: 'fell', cause });
   }
 
   /** Point velocity of the ragdoll (px/s) — for tests and the release. */
@@ -571,7 +577,7 @@ export class MascotEngine {
   }
 
   /** The ragdoll takes over from the current drawing (continuous: same points, velocity from the throw). */
-  private startRagdoll(vx: number, vy: number, spin: number): void {
+  private startRagdoll(vx: number, vy: number, spin: number, cause: FallCause): void {
     if (this.reduced) {
       return;
     }
@@ -586,7 +592,7 @@ export class MascotEngine {
     if (this.gestureState) {
       this.gestureState = null;
     }
-    this.events.push({ type: 'fell' });
+    this.events.push({ type: 'fell', cause });
   }
 
   /** Held by the user: ragdoll + hold constraint + a little struggling. */
@@ -767,7 +773,7 @@ export class MascotEngine {
         }
         break;
       case 'ragdoll':
-        this.startRagdoll(e.vx ?? 0, e.vy ?? 0, e.spin ?? 0);
+        this.startRagdoll(e.vx ?? 0, e.vy ?? 0, e.spin ?? 0, e.cause ?? 'trip');
         break;
       case 'banana':
         if (!this.reduced) {

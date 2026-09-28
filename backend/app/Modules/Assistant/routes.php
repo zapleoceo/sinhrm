@@ -18,6 +18,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         ->middleware('throttle:'.AssistantServiceProvider::VOICE_LIMITER)->name('assistant.transcribe');
     Route::get('transcriptions/{requestId}', [AssistantController::class, 'transcription'])->whereNumber('requestId')->name('assistant.transcriptions.show');
 
+    Route::get('quips', [AssistantController::class, 'quips'])->middleware('throttle:30,1')->name('assistant.quips');
+
     Route::get('mcp-token', [McpTokenController::class, 'show'])->name('assistant.mcp-token.show');
     Route::post('mcp-token', [McpTokenController::class, 'issue'])->name('assistant.mcp-token.issue');
     Route::delete('mcp-token', [McpTokenController::class, 'revoke'])->name('assistant.mcp-token.revoke');

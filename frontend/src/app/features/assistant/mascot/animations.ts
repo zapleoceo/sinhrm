@@ -1,3 +1,4 @@
+import type { FallCause } from '../jokes';
 import { DOODLE_DRAW, DOODLE_SHAPES, DoodleShape, doodlePoint } from './effects';
 import { Expression } from './face';
 import { GRAVITY, launchSpeed } from './physics';
@@ -131,6 +132,8 @@ export interface ClipEvent {
   size?: number;
   point?: Vec;
   rope?: { ax: number; ay: number; len: number; angle: number; av: number };
+  /** ragdoll: what made him fall (picks the joke after getting up). */
+  cause?: FallCause;
 }
 
 /** Live inputs of a clip: velocity of the physics body, pointer position. */
@@ -1067,9 +1070,9 @@ function mishap(action: ActionName, c: ClipContext, kind: 'slip' | 'trip'): Clip
       ? [
           { t: 0.05, type: 'banana', point: { x: x0 + dir * (dist + 8), y: c.stage.ground } },
           // Feet shoot forward, he tips backwards onto his back.
-          { t: fallAt, type: 'ragdoll', vx: dir * 140, vy: -620, spin: -dir * 9 },
+          { t: fallAt, type: 'ragdoll', vx: dir * 140, vy: -620, spin: -dir * 9, cause: 'slip' },
         ]
-      : [{ t: fallAt, type: 'ragdoll', vx: dir * 330, vy: -160, spin: dir * 6.5 }];
+      : [{ t: fallAt, type: 'ragdoll', vx: dir * 330, vy: -160, spin: dir * 6.5, cause: 'trip' }];
   return {
     ...walk,
     duration: fallAt + 0.2,
@@ -1099,7 +1102,7 @@ function idleFaint(c: ClipContext): Clip {
       p.rShoulder = 0.1;
       return { pose: p, expr: t > 0.6 ? { eyes: 'spiral', mouth: 'wobbly', brows: 0.6 } : { eyes: 'sleepy', mouth: 'flat' } };
     },
-    [{ t: 1.8, type: 'ragdoll', vx: side * 40, vy: 0, spin: side * f * 2.6 }],
+    [{ t: 1.8, type: 'ragdoll', vx: side * 40, vy: 0, spin: side * f * 2.6, cause: 'faint' }],
     0.25,
   );
 }
@@ -1537,13 +1540,19 @@ export function createGesture(name: GestureName, target: Vec | null): Gesture {
         duration: Infinity,
         events: [],
         sample: (t, base) => {
-          // Hand on the chin (IK), the other arm folded under the elbow.
-          const chin = armTo(7, -9 + 0.6 * Math.sin(t * 3), base.torso, -1);
+          // Hand on the chin (IK), the other arm folded under the elbow. Long waits cycle through little thinking
+          // beats every few seconds: tapping the chin, looking up and around, a quick "hmm" nod.
+          const beat = Math.floor(t / 4) % 3;
+          const local = t % 4;
+          const tap = beat === 0 ? 1.6 * Math.max(0, Math.sin(local * 9)) * Math.min(1, local) : 0.6 * Math.sin(t * 3);
+          const chin = armTo(7, -9 + tap, base.torso, -1);
           const hold = armTo(10, 8, base.torso, -1);
+          const look = beat === 1 ? { x: base.facing * 0.8 * Math.cos(local * 1.4), y: -0.9 } : { x: base.facing * 0.5, y: -0.85 };
+          const nod = beat === 2 ? 0.12 * Math.sin(Math.min(1, local / 1.2) * Math.PI * 2) : 0;
           return {
-            pose: { rShoulder: chin.shoulder, rElbow: chin.elbow, lShoulder: hold.shoulder, lElbow: hold.elbow, head: -0.18 + 0.04 * Math.sin(t * 1.3) },
-            expr: { mouth: 'flat', brows: 0.55 },
-            eyeDir: { x: base.facing * 0.5, y: -0.85 },
+            pose: { rShoulder: chin.shoulder, rElbow: chin.elbow, lShoulder: hold.shoulder, lElbow: hold.elbow, head: -0.18 + 0.04 * Math.sin(t * 1.3) + nod },
+            expr: { mouth: 'flat', brows: beat === 2 && local < 1.2 ? 0.2 : 0.55 },
+            eyeDir: look,
             thinking: true,
           };
         },
