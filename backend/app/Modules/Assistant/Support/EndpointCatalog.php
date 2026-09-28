@@ -24,7 +24,9 @@ use Throwable;
  */
 final class EndpointCatalog
 {
-    private const int MAX_RESULTS = 20;
+    private const int MAX_RESULTS = 8;
+
+    private const int MAX_SUMMARY = 120;
 
     private const int MAX_RULE_LENGTH = 80;
 
@@ -73,14 +75,17 @@ final class EndpointCatalog
         }
         usort($scored, static fn (array $a, array $b): int => $b[0] <=> $a[0]);
 
+        // Compact on purpose: free-lane models choke on long tool results (prod 28.09: 20 endpoints with full rules
+        // ≈ 8 000 chars per call made turns stall). Field names only; the endpoint validates the values anyway.
         return [
-            'endpoints' => array_map(static function (array $pair): array {
-                $e = $pair[1];
-                unset($e['controller']);
-
-                return $e;
-            }, array_slice($scored, 0, self::MAX_RESULTS)),
+            'endpoints' => array_map(static fn (array $pair): array => array_filter([
+                'method' => $pair[1]['method'],
+                'path' => $pair[1]['path'],
+                'summary' => mb_substr($pair[1]['summary'], 0, self::MAX_SUMMARY),
+                'fields' => array_keys($pair[1]['fields']),
+            ], static fn (mixed $v): bool => $v !== '' && $v !== []), array_slice($scored, 0, self::MAX_RESULTS)),
             'total_matches' => count($scored),
+            'hint' => 'Lists are paginated: for a count call api_get with perPage=1 and read meta.total.',
         ];
     }
 

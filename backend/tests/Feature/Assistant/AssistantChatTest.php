@@ -7,6 +7,7 @@ namespace Tests\Feature\Assistant;
 use App\Models\User;
 use App\Modules\Ai\DTO\AiPrompt;
 use App\Modules\Assistant\Ai\AssistantPrompt;
+use App\Modules\Assistant\Services\AssistantChatService;
 use App\Modules\Auth\Enums\UserRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -76,6 +77,10 @@ final class AssistantChatTest extends TestCase
         $found = json_decode((string) $response->json('data.server_results.0.content'), true);
         $this->assertIsArray($found['endpoints'] ?? null);
         $this->assertContains('candidates', array_column($found['endpoints'], 'path'), 'The live route table is the catalog.');
+        // Compact for the free lanes: ≤ 8 endpoints, field NAMES only, small payload.
+        $this->assertLessThanOrEqual(8, count($found['endpoints']));
+        $this->assertTrue(array_is_list($found['endpoints'][0]['fields'] ?? []));
+        $this->assertLessThan(2500, mb_strlen((string) $response->json('data.server_results.0.content')));
 
         $body = $this->brokerSubmits[0];
         $this->assertSame(['api_get', 'api_write', 'find_endpoints', 'open_page'], array_column(array_column($body['tools'], 'function'), 'name'));
@@ -167,6 +172,27 @@ final class AssistantChatTest extends TestCase
             // Diagnosable without platform logs: the reason code and finish_reason, never the answer text.
             ->assertJsonPath('data.detail.invalid_reason', 'not_json')
             ->assertJsonPath('data.detail.finish_reason', 'stop');
+    }
+
+    public function test_old_tool_results_are_trimmed_and_the_fresh_one_capped(): void
+    {
+        $this->enableAi(self::NATIVE);
+        $this->fakeBroker([[self::doneAnswer('Активних кандидатів: 125.')]]);
+        $user = User::factory()->withRole(UserRole::Recruiter)->create();
+        $call = static fn (string $id): array => ['role' => 'assistant', 'content' => null, 'tool_calls' => [
+            ['id' => $id, 'type' => 'function', 'function' => ['name' => 'api_get', 'arguments' => '{"path":"candidates"}']],
+        ]];
+        $big = str_repeat('x', 9000);
+
+        $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [
+            ['role' => 'user', 'content' => 'Скільки активних кандидатів?'],
+            $call('c1'), ['role' => 'tool', 'tool_call_id' => 'c1', 'content' => $big],
+            $call('c2'), ['role' => 'tool', 'tool_call_id' => 'c2', 'content' => $big],
+        ]])->assertOk()->assertJsonPath('data.assistant.content', 'Активних кандидатів: 125.');
+
+        $messages = $this->brokerSubmits[0]['messages'];
+        $this->assertSame(AssistantChatService::OLD_TOOL_CHARS + mb_strlen('…[trimmed]'), mb_strlen($messages[3]['content']));
+        $this->assertSame(AssistantChatService::FRESH_TOOL_CHARS + mb_strlen('…[trimmed]'), mb_strlen($messages[5]['content']));
     }
 
     public function test_a_text_answer_ends_the_turn_and_tool_history_is_forwarded(): void
