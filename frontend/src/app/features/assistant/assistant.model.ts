@@ -82,6 +82,12 @@ export interface TranscriptionResult {
   error?: string;
 }
 
+/** GET /quips answer: short AI one-liners for a situation ([] with source 'none' when AI is off or failed). */
+export interface QuipsResult {
+  jokes: string[];
+  source: 'ai' | 'none';
+}
+
 export type WriteMethod = 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 /** A write the model proposed; runs only after the user presses «Виконати». */

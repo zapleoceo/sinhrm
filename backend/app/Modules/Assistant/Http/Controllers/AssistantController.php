@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Assistant\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Assistant\Http\Requests\QuipsRequest;
 use App\Modules\Assistant\Http\Requests\TranscribeRequest;
 use App\Modules\Assistant\Http\Requests\TurnRequest;
 use App\Modules\Assistant\Services\AssistantChatService;
+use App\Modules\Assistant\Services\AssistantQuipService;
 use App\Modules\Assistant\Services\AssistantVoiceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +20,7 @@ final readonly class AssistantController
     public function __construct(
         private AssistantChatService $chat,
         private AssistantVoiceService $voice,
+        private AssistantQuipService $quips,
     ) {}
 
     /** Whether the chat works now (AI switched on) and the MCP address for external clients. */
@@ -55,6 +58,12 @@ final readonly class AssistantController
         $result = $this->voice->poll(self::actor($request), $requestId);
 
         return $result === null ? new JsonResponse(['message' => 'Not found.'], 404) : new JsonResponse(['data' => $result]);
+    }
+
+    /** One-liners for after a fall: {jokes: string[], source: ai|none} (shared cached batch; "none" = use built-ins). */
+    public function quips(QuipsRequest $request): JsonResponse
+    {
+        return new JsonResponse(['data' => $this->quips->quips($request->situation(), $request->locale())]);
     }
 
     private static function actor(Request $request): User

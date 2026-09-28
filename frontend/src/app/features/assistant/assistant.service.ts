@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { AssistantStatus, McpTokenCreated, McpTokenInfo, TranscriptionResult, TurnRequest, TurnResult } from './assistant.model';
+import { AssistantStatus, McpTokenCreated, McpTokenInfo, QuipsResult, TranscriptionResult, TurnRequest, TurnResult } from './assistant.model';
 
 const API = '/api/assistant';
 
@@ -31,6 +31,11 @@ export class AssistantService {
 
   transcription(requestId: number): Observable<TranscriptionResult> {
     return this.http.get<{ data: TranscriptionResult }>(`${API}/transcriptions/${requestId}`).pipe(map((r) => r.data));
+  }
+
+  /** AI jokes for the mascot (cached on the server for 6 h). */
+  quips(situation: string, locale: string): Observable<QuipsResult> {
+    return this.http.get<{ data: QuipsResult }>(`${API}/quips`, { params: { situation, locale } }).pipe(map((r) => r.data));
   }
 
   mcpToken(): Observable<McpTokenInfo> {

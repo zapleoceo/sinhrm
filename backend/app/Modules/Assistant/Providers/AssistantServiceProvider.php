@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Ai\Providers\AiServiceProvider;
 use App\Modules\Assistant\Ai\AssistantChatHandler;
 use App\Modules\Assistant\Ai\AssistantVoiceHandler;
+use App\Modules\Assistant\Ai\QuipsHandler;
 use App\Modules\Assistant\Mcp\SinhrmMcpServer;
 use App\Modules\Assistant\Services\McpTokenService;
 use App\Modules\Assistant\Support\ToolRegistry;
@@ -59,7 +60,7 @@ final class AssistantServiceProvider extends ModuleServiceProvider
     {
         $this->app->tag([FindEndpointsTool::class, ApiGetTool::class, ApiWriteTool::class, OpenPageTool::class], self::TOOLS_TAG);
         $this->app->bind(ToolRegistry::class, fn (Application $app): ToolRegistry => new ToolRegistry($app->tagged(self::TOOLS_TAG)));
-        $this->app->tag([AssistantChatHandler::class, AssistantVoiceHandler::class], AiServiceProvider::HANDLERS_TAG);
+        $this->app->tag([AssistantChatHandler::class, AssistantVoiceHandler::class, QuipsHandler::class], AiServiceProvider::HANDLERS_TAG);
     }
 
     public function boot(): void

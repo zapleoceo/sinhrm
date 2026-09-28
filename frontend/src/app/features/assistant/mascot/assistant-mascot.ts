@@ -10,6 +10,8 @@ import { AssistantConversation } from '../assistant-conversation';
 import { AssistantSettings } from '../assistant-settings';
 import { AssistantChat } from '../chat/assistant-chat';
 import { AssistantVoice } from '../voice/assistant-voice';
+import { AssistantJokes } from '../jokes';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { Stage } from './animations';
 import { BrainCommand, MascotBrain, dispatchEngineEvent } from './brain';
 import { EngineEvent, MascotEngine } from './mascot-engine';
@@ -51,6 +53,8 @@ export class AssistantMascot {
   private readonly i18n = inject(TranslocoService);
   private readonly conversation = inject(AssistantConversation);
   private readonly voice = inject(AssistantVoice);
+  private readonly jokes = inject(AssistantJokes);
+  private readonly language = inject(LanguageService);
   private readonly clock = inject(MASCOT_FRAME_CLOCK);
   protected readonly settings = inject(AssistantSettings);
   private readonly stageRef = viewChild.required<ElementRef<HTMLDivElement>>('stage');
@@ -85,6 +89,11 @@ export class AssistantMascot {
         this.brain?.setEnabled(on);
         this.loop?.kick();
       });
+    });
+    // Joke pools for the UI language: fetched in idle time after mounting, again when the language changes.
+    effect(() => {
+      const locale = this.language.current();
+      untracked(() => this.prefetchJokes(locale));
     });
     effect(() => {
       this.settings.lite();
@@ -141,7 +150,15 @@ export class AssistantMascot {
     const stageEl = this.stageRef().nativeElement;
     this.engine = new MascotEngine(this.stage(), Math.random, this.reduced);
     this.renderer = new MascotRenderer(stageEl, this.document);
-    this.brain = new MascotBrain((c) => this.command(c), { isTyping: () => this.isTypingOutsideChat(), width: () => this.viewport.width });
+    this.brain = new MascotBrain((c) => this.command(c), {
+      isTyping: () => this.isTypingOutsideChat(),
+      width: () => this.viewport.width,
+      joke: (situation) => this.jokes.pick(situation, this.language.current(), Math.random),
+      // Not while the chat is answering or anyone is typing (the chat composer included).
+      canJoke: () => !this.conversation.busy() && !this.isTypingAnywhere(),
+      // Stays awake while an answer is pending (turns, polling, tools, a confirmation) or the mic is busy.
+      isBusy: () => this.conversation.busy() || this.voice.state() !== 'idle',
+    });
     this.loop = new MascotLoop(
       this.clock,
       (dt) => this.frame(dt),
@@ -245,7 +262,7 @@ export class AssistantMascot {
         break;
       }
       case 'say': {
-        const text = c.key ? this.i18n.translate(c.key) : null;
+        const text: string | null = c.text ?? (c.key ? this.i18n.translate<string>(c.key) : null) ?? null;
         engine.say(text);
         if (text) {
           this.zone.run(() => this.spoken.set(text));
@@ -497,6 +514,22 @@ export class AssistantMascot {
       this.cleanups.push(() => outer.disconnect());
     }
     this.cleanups.push(() => inner.disconnect());
+  }
+
+  private isTypingAnywhere(): boolean {
+    const el = this.document.activeElement;
+    return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || (el as HTMLElement).isContentEditable === true);
+  }
+
+  /** Jokes are fetched when the browser is idle, never in the way of the animation. */
+  private prefetchJokes(locale: string): void {
+    const win = this.document.defaultView as (Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }) | null;
+    const run = (): void => void this.jokes.prefetch(locale);
+    if (win?.requestIdleCallback) {
+      win.requestIdleCallback(run, { timeout: 5000 });
+    } else {
+      setTimeout(run, 1500);
+    }
   }
 
   /** Typing in any field except the chat composer. */
