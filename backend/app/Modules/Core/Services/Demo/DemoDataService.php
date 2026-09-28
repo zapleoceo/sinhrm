@@ -24,7 +24,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Company-wide synthetic data for the report charts (POST /api/ops/demo-fill?confirm=demo&step=<name>): an IT school
- * network (head office + 3 branches, ~125 people in a 4–6 level org chart, see blueprint()) with pay, recruiting funnel with channel costs and touches, time off, timesheets, OKR, 1:1s, a closed 360
+ * network (head office + 3 branches, ~128 people in a 4–6 level org chart, see blueprint()) with pay, recruiting funnel with channel costs and touches, time off, timesheets, OKR, 1:1s, a closed 360
  * cycle, two closed Pulse waves, mood, Desk, knowledge, assets, hiring requests, script scores — the last 6 months.
  *
  * The fill is split into ordered STEPS; each runs in its own transaction (one HTTP request, well under the 60 s
@@ -290,7 +290,7 @@ final class DemoDataService
     }
 
     /**
-     * Org chart of a private IT school network (~125 people), built on the usual span of control of 5–8: the CEO
+     * Org chart of a private IT school network (~128 people), built on the usual span of control of 5–8: the CEO
      * leads 6 C-level directors; the COO leads 3 branch directors (administrator, head of teaching → senior methodists
      * → teachers, head of sales → managers); head-office functions sit under their C-level. 4–6 levels, every manager
      * has ≤ 9 direct reports. Branch staff belong to their branch, the head office to "Центральний офіс".

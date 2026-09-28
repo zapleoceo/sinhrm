@@ -19,7 +19,7 @@ final class OpsDemoFillTest extends TestCase
 
     private const array HEADERS = ['X-Ops-Secret' => 'test-secret'];
 
-    private const int PEOPLE = 126;
+    private const int PEOPLE = 128;
 
     protected function setUp(): void
     {
