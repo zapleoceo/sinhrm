@@ -132,7 +132,7 @@ is_active, activated_by, activated_at, created_at, updated_at`. Хранится
 | `max_requests_per_day` | 200 | лимит попыток в сутки (UTC) |
 | `daily_cap_usd` | 2 | лимит $ в сутки (по `cost_usd` из ответов брокера) |
 | `ai_script_evaluation`, `ai_mail_classification`, `ai_candidate_screening` | `on` | выключатель функции |
-| `capability_assistant_chat` | `chat:smart` | возможность брокера для помощника «Стік»: нативные tools брокер отдаёт только openai/anthropic/gemini/mistral, в `chat:fast` из них остаётся один gemini; `chat:smart` = gemini → anthropic ([assistant.md](assistant.md)) |
+| `capability_assistant_chat` | `chat:fast` | возможность брокера для помощника «Стік». С эмуляцией tools (`native_tools = off`) подходит любой провайдер, а в `chat:fast` больше всего живых бесплатных; на проде 28.09 ходы в `chat:smart` не выходили из очереди брокера (gemini на охлаждении, anthropic `dead`), `chat:fast` ответил за 11 с ([assistant.md](assistant.md)) |
 | `ai_assistant_chat` | `on` | выключатель помощника «Стік» |
 | `native_tools` | `off` | `off` — инструменты разговора эмулируются строгим JSON (`ToolEmulation`, отвечает любой провайдер); `on` — нативные tools брокера (только openai/anthropic/gemini/mistral) |
 | `ai_screening_auto` | `off` | автоскрининг новых откликов |

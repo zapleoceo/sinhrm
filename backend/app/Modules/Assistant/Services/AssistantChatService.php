@@ -82,7 +82,7 @@ final readonly class AssistantChatService
             return $this->result($user, $this->ai->refresh($request));
         }
         if ($request->status === AiRequestStatus::Failed) {
-            return ['state' => 'failed', 'request_id' => $request->id, 'error' => $request->error ?? 'ai_provider_error'];
+            return ['state' => 'failed', 'request_id' => $request->id, 'error' => $request->error ?? 'ai_provider_error', ...$this->detail($request->id)];
         }
         $data = $this->cache->get(AssistantChatHandler::cacheKey($request->id));
 
@@ -98,7 +98,7 @@ final readonly class AssistantChatService
             return ['state' => 'pending', 'request_id' => $outcome->requestId];
         }
         if (! $outcome->isDone() || $outcome->data === null) {
-            return ['state' => 'failed', 'request_id' => $outcome->requestId, 'error' => $outcome->error ?? 'ai_provider_error'];
+            return ['state' => 'failed', 'request_id' => $outcome->requestId, 'error' => $outcome->error ?? 'ai_provider_error', ...$this->detail($outcome->requestId)];
         }
         /** @var array{text: string, tool_calls: list<array{id: string, name: string, arguments: string, args: array<string, mixed>}>} $data */
         $data = $outcome->data;
@@ -136,6 +136,19 @@ final readonly class AssistantChatService
             'server_results' => $serverResults,
             'client_calls' => $clientCalls,
         ];
+    }
+
+    /**
+     * Why a turn failed, as codes (invalid_reason / finish_reason from ai_requests.meta) — for diagnosis, no text.
+     *
+     * @return array{detail?: array<string, int|string|bool>}
+     */
+    private function detail(int $requestId): array
+    {
+        $meta = $requestId > 0 ? $this->requests->find($requestId)?->meta : null;
+        $detail = array_intersect_key($meta ?? [], array_flip(['invalid_reason', 'finish_reason']));
+
+        return $detail === [] ? [] : ['detail' => $detail];
     }
 
     /** @param  array{path: string, title: string}  $page */

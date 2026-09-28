@@ -25,6 +25,9 @@ interface AiRequestRepository
     /** pending → done; false when another process already finished the request (then do not apply the result). */
     public function markDone(AiRequest $request): bool;
 
+    /** Keeps why the last answer was rejected (reason code + provider finish_reason) in meta — codes only, never text. */
+    public function noteInvalid(AiRequest $request, string $reason, ?string $finishReason): void;
+
     /** pending → failed with an error code; false when it was already finished. */
     public function markFailed(AiRequest $request, string $error): bool;
 

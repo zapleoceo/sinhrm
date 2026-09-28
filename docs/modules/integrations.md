@@ -44,7 +44,8 @@
 
 Поля `ai_broker` (все — настройки AI, читает `Ai/Support/AiSettingsReader`): `base_url`, секрет `project_key`,
 селекты `capability` и `capability_{script_evaluation,mail_classification,candidate_screening,assistant_chat}`
-(`chat:fast|chat:smart|chat:sales|structured`, по умолчанию `chat:sales`), `model` (без значения по умолчанию: пусто =
+(`chat:fast|chat:smart|chat:sales|structured`, по умолчанию `chat:fast` — `AiBrokerDefinition::DEFAULT_CAPABILITY`, у
+помощника — `ASSISTANT_CAPABILITY`, тоже `chat:fast`), `model` (без значения по умолчанию: пусто =
 модель выбирает брокер), `max_requests_per_day` (200), `daily_cap_usd` (2), выключатели `ai_script_evaluation`,
 `ai_mail_classification`, `ai_candidate_screening`, `ai_assistant_chat` (`on`), `ai_screening_auto` и `native_tools`
 (`off`). Подписи вариантов селектов —
