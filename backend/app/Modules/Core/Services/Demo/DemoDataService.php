@@ -13,6 +13,7 @@ use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\RecruitingDemoData;
 use App\Modules\Recruiting\Services\VacancyService;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -209,10 +210,12 @@ final class DemoDataService
         return User::query()->whereIn('id', $this->registry->ids('users'))->where('email', self::ADMIN_EMAIL)->firstOrFail();
     }
 
-    /** @return list<User> */
+    /** @return non-empty-list<User> */
     private function recruiters(): array
     {
-        return array_values(User::query()->whereIn('id', $this->registry->ids('users'))->whereIn('email', ['demo+hr-1@sinhrm.test', 'demo+hr-2@sinhrm.test', 'demo+hr-3@sinhrm.test'])->orderBy('email')->get()->all());
+        $list = array_values(User::query()->whereIn('id', $this->registry->ids('users'))->whereIn('email', ['demo+hr-1@sinhrm.test', 'demo+hr-2@sinhrm.test', 'demo+hr-3@sinhrm.test'])->orderBy('email')->get()->all());
+
+        return $list !== [] ? $list : [$this->admin()]; // a skipped recruiter e-mail (taken by a real user) is covered by the rest
     }
 
     // ---------------------------------------------------------------- org & people
@@ -367,7 +370,7 @@ final class DemoDataService
                 'branch_id' => $org['branches'][$i % 3],
                 'department_id' => $org['departments'][$i % 4],
                 'position_id' => $org['positions'][2 + $i % 2],
-                'recruiter_id' => $recruiters[$i % 3]->id,
+                'recruiter_id' => $recruiters[$i % count($recruiters)]->id,
                 'status' => $i === 7 ? 'paused' : 'open',
                 'description' => 'Тестова вакансія (синтетичні дані).',
             ]));
@@ -419,7 +422,7 @@ final class DemoDataService
         for ($t = 0; $t < $todo && $models !== []; $t++) {
             $n = $have + $t;
             $at = $this->now->copy()->subMinutes($this->rnd->getInt(60, 90 * 24 * 60));
-            $this->recruiting->extraTouch($models[$n % count($models)], $recruiters[$n % 3], $n, $at);
+            $this->recruiting->extraTouch($models[$n % count($models)], $recruiters[$n % count($recruiters)], $n, $at);
             $this->count('touchpoints');
         }
     }
@@ -434,7 +437,10 @@ final class DemoDataService
             'created_at' => $this->now, 'updated_at' => $this->now,
         ]);
         DB::table('scripts')->where('id', $script)->update(['active_version_id' => $version]);
-        $calls = DB::table('touchpoints')->whereIn('candidate_id', $this->registry->ids('candidates'))->where('channel', 'call')->orderBy('id')->limit(80)->pluck('id')->all();
+        $calls = DB::table('touchpoints')->whereIn('candidate_id', $this->registry->ids('candidates'))->where('channel', 'call')
+            // The Scripts module may have evaluated some of them already (EvaluateTouchpoint job): unique touchpoint_id.
+            ->whereNotExists(fn (Builder $q) => $q->from('script_evaluations as e')->whereColumn('e.touchpoint_id', 'touchpoints.id'))
+            ->orderBy('id')->limit(80)->pluck('id')->all();
         $rows = [];
         foreach ($calls as $i => $touchpoint) {
             $score = $this->rnd->getInt(45, 100);
@@ -803,7 +809,7 @@ final class DemoDataService
                 'position_id' => $org['positions'][2], 'headcount' => 1 + $i % 2, 'reason' => $i % 3 === 0 ? 'replacement' : 'new_position',
                 'desired_start_date' => $submitted->copy()->addDays(45)->toDateString(), 'salary_min' => 25000, 'salary_max' => 35000, 'currency' => 'UAH',
                 'requirements' => 'Тестові вимоги.', 'priority' => ['normal', 'high', 'low', 'urgent'][$i % 4], 'extra' => '{}', 'status' => $status,
-                'requester_id' => $admin, 'recruiter_id' => $recruiters[$i % 3]->id,
+                'requester_id' => $admin, 'recruiter_id' => $recruiters[$i % count($recruiters)]->id,
                 'submitted_at' => $submitted, 'decided_at' => $status === 'pending' ? null : $submitted->copy()->addDays(3),
                 'closed_at' => $status === 'closed' ? $submitted->copy()->addDays(40) : null, 'created_at' => $submitted, 'updated_at' => $submitted,
             ]);
@@ -857,10 +863,13 @@ final class DemoDataService
     /** @param  list<array<string, mixed>>  $rows */
     private function bulk(string $table, array $rows): void
     {
+        // insertOrIgnore (ON CONFLICT DO NOTHING): a row whose unique key is already taken is skipped, never updated,
+        // and does not abort the Postgres transaction; ids are registered afterwards by natural keys.
+        $inserted = 0;
         foreach (array_chunk($rows, self::CHUNK) as $chunk) {
-            DB::table($table)->insert($chunk);
+            $inserted += DB::table($table)->insertOrIgnore($chunk);
         }
-        $this->counts[$table] = ($this->counts[$table] ?? 0) + count($rows);
+        $this->counts[$table] = ($this->counts[$table] ?? 0) + $inserted;
     }
 
     /** @param  list<int>  $ids */

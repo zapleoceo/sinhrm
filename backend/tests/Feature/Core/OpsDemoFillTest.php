@@ -105,6 +105,45 @@ final class OpsDemoFillTest extends TestCase
         $this->assertSame($before, $after);
     }
 
+    /**
+     * Reproduces prod: preview seed + real rows exist, the Scripts module evaluates new call touches between requests
+     * (EvaluateTouchpoint), and the whole step sequence runs twice. No errors, no duplicates, reset restores the DB.
+     */
+    public function test_prod_like_state_full_sequence_twice(): void
+    {
+        app(RecruitingDemoData::class)->generate();
+        User::query()->create(['email' => 'demo+hr-2@sinhrm.test', 'name' => 'Real recruiter', 'status' => 'active']);
+        DB::table('candidates')->insert(['full_name' => 'Real candidate', 'email' => 'candidate510@example.test', 'phone' => '+380679999998', 'source' => 'manual', 'created_at' => now(), 'updated_at' => now()]);
+        $script = DB::table('scripts')->insertGetId(['name' => 'Real script', 'channel' => 'call', 'archived' => false, 'created_at' => now(), 'updated_at' => now()]);
+        $version = DB::table('script_versions')->insertGetId(['script_id' => $script, 'version' => 1, 'steps' => '[]', 'objections' => '[]', 'templates' => '[]', 'followups' => '[]', 'next_step_patterns' => '{}', 'created_at' => now(), 'updated_at' => now()]);
+        $before = $this->tableCounts();
+
+        foreach ([1, 2] as $round) {
+            foreach (DemoDataService::STEPS as $step) {
+                if ($step === 'scripts' && $round === 1) {
+                    // What the EvaluateTouchpoint job did on prod before this step: some demo call touches are evaluated.
+                    $calls = DB::table('touchpoints')->join('candidates as c', 'c.id', '=', 'touchpoints.candidate_id')
+                        ->where('c.full_name', 'like', DemoDataService::PREFIX.'%')->where('touchpoints.channel', 'call')->limit(3)->pluck('touchpoints.id');
+                    $this->assertCount(3, $calls);
+                    foreach ($calls as $touchpoint) {
+                        DB::table('script_evaluations')->insert(['touchpoint_id' => $touchpoint, 'script_version_id' => $version, 'engine' => 'rules', 'score' => 50, 'result' => '{}', 'created_at' => now()]);
+                    }
+                }
+                $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk()->assertJsonPath('already', $round === 2);
+            }
+        }
+        foreach (['email', 'phone'] as $column) {
+            $this->assertSame(0, DB::table('candidates')->whereNotNull($column)->groupBy($column)->havingRaw('count(*) > 1')->count($column));
+        }
+        $this->assertSame(1, DB::table('users')->where('email', 'demo+hr-2@sinhrm.test')->count());
+        $this->assertGreaterThan(3, DB::table('script_evaluations')->count());
+
+        $this->postJson('/api/ops/demo-fill?confirm=demo&reset=1', [], self::HEADERS)->assertOk();
+        $after = $this->tableCounts();
+        unset($before['audit_log'], $after['audit_log']);
+        $this->assertSame($before, $after);
+    }
+
     /** @return array<string, int> */
     private function tableCounts(): array
     {
