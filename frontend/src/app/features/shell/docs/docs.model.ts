@@ -1,6 +1,6 @@
 import { UserRole } from '../../../core/auth/auth.model';
 
-/** One page of public/docs/index.json (built by scripts/build-docs.mjs from ../docs). */
+/** One page of public/help/docs.json (built by scripts/build-docs.mjs from ../docs). */
 export interface DocPage {
   slug: string;
   title: string;

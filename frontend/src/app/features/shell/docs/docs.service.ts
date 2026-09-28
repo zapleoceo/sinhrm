@@ -10,7 +10,7 @@ export class DocsService {
   private cache$: Observable<DocPage[]> | null = null;
 
   all(): Observable<DocPage[]> {
-    this.cache$ ??= this.http.get<DocPage[]>('/docs/index.json').pipe(shareReplay(1));
+    this.cache$ ??= this.http.get<DocPage[]>('/help/docs.json').pipe(shareReplay(1));
     return this.cache$;
   }
 }

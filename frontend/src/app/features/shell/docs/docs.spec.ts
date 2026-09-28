@@ -74,7 +74,7 @@ describe('DocsPage', () => {
     const fixture = TestBed.createComponent(DocsPage);
     if (slug) fixture.componentRef.setInput('slug', slug);
     fixture.detectChanges();
-    TestBed.inject(HttpTestingController).expectOne('/docs/index.json').flush(DOCS);
+    TestBed.inject(HttpTestingController).expectOne('/help/docs.json').flush(DOCS);
     fixture.detectChanges();
     await fixture.whenStable();
     return fixture.nativeElement as HTMLElement;

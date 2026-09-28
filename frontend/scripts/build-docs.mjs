@@ -1,4 +1,4 @@
-// Bundles the user-facing parts of ../docs (Markdown, single source) into public/docs/index.json for the in-app /docs page.
+// Bundles the user-facing parts of ../docs (Markdown, single source) into public/help/docs.json for the in-app /docs page.
 // Modules: only the plain-language sections ("Что это и зачем", "Как пользоваться", any "...простыми словами" heading).
 // Guides: whole file, admin-only. Raw HTML in Markdown is escaped, links are limited to http(s)/mailto/in-app/anchors.
 // Run automatically by `npm run build` / `npm start`; the output folder is git-ignored.
@@ -9,7 +9,8 @@ import { Marked } from 'marked';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DOCS = join(here, '..', '..', 'docs');
-const OUT = join(here, '..', 'public', 'docs');
+// Not public/docs: a static /docs folder shadows the SPA route /docs on refresh (Vercel serves the file).
+const OUT = join(here, '..', 'public', 'help');
 const REPO = 'https://github.com/zapleoceo/sinhrm/blob/main/docs/';
 
 /** Group (uk UI label key) and audience per module page. Missing from the map → not published. */
@@ -104,6 +105,6 @@ export function buildIndex() {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const docs = buildIndex();
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, 'index.json'), JSON.stringify(docs));
-  console.log(`docs: ${docs.length} pages → public/docs/index.json`);
+  writeFileSync(join(OUT, 'docs.json'), JSON.stringify(docs));
+  console.log(`docs: ${docs.length} pages → public/help/docs.json`);
 }
