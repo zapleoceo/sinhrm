@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Assistant;
 
 use App\Models\User;
+use App\Modules\Ai\DTO\AiPrompt;
 use App\Modules\Assistant\Ai\AssistantPrompt;
 use App\Modules\Auth\Enums\UserRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -81,8 +82,8 @@ final class AssistantChatTest extends TestCase
         $this->assertSame('auto', $body['tool_choice']);
         $this->assertArrayNotHasKey('response_format', $body);
         $this->assertSame('sinhrm.assistant_chat', $body['workflow']);
-        // chat:fast would leave a single tool-capable provider (gemini) in the broker's chain.
-        $this->assertSame(['chat:smart'], $this->brokerCapabilities);
+        // Default lane chat:fast (tool emulation needs no tool-capable provider; chat:smart stalled on prod).
+        $this->assertSame(['chat:fast'], $this->brokerCapabilities);
         // Cache discipline: the system prompt is byte-stable; per-turn context lives in the last user message.
         $this->assertSame(AssistantPrompt::SYSTEM, $body['messages'][0]['content']);
         $this->assertStringNotContainsString('Synthetic Recruiter', $body['messages'][0]['content']);
@@ -162,7 +163,10 @@ final class AssistantChatTest extends TestCase
         $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'hi']]])
             ->assertOk()->assertJsonPath('data.assistant.content', 'Привіт! Я Стік.')->assertJsonPath('data.client_calls', []);
         $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'hi']]])
-            ->assertOk()->assertJsonPath('data.state', 'failed')->assertJsonPath('data.error', 'ai_invalid_output');
+            ->assertOk()->assertJsonPath('data.state', 'failed')->assertJsonPath('data.error', 'ai_invalid_output')
+            // Diagnosable without platform logs: the reason code and finish_reason, never the answer text.
+            ->assertJsonPath('data.detail.invalid_reason', 'not_tool_json')
+            ->assertJsonPath('data.detail.finish_reason', 'stop');
     }
 
     public function test_a_text_answer_ends_the_turn_and_tool_history_is_forwarded(): void
@@ -198,8 +202,10 @@ final class AssistantChatTest extends TestCase
         $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'hi']]])
             ->assertOk()
             ->assertJsonPath('data.state', 'failed')
-            ->assertJsonPath('data.error', 'ai_invalid_output');
+            ->assertJsonPath('data.error', 'ai_invalid_output')
+            ->assertJsonPath('data.detail.invalid_reason', 'unknown_tool');
         $this->assertCount(2, $this->brokerSubmits);
+        $this->assertSame(AiPrompt::CONVERSATION_MAX_TOKENS, $this->brokerSubmits[0]['max_tokens']);
     }
 
     public function test_a_slow_turn_is_pending_and_only_its_owner_can_poll_it(): void

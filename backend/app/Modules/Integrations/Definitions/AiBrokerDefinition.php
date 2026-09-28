@@ -26,7 +26,7 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
     public const string DEFAULT_CAPABILITY = 'chat:fast';
 
     /** Lane of the helper «Стік» (native tools): see fields(). */
-    public const string ASSISTANT_CAPABILITY = 'chat:smart';
+    public const string ASSISTANT_CAPABILITY = 'chat:fast';
 
     /** Broker capabilities allowed for SinHRM tasks (broker docs/api.md). */
     public const array CAPABILITIES = ['chat:fast', 'chat:smart', 'chat:sales', 'structured'];
@@ -62,8 +62,9 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
             FieldSpec::select('capability_script_evaluation', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_mail_classification', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_candidate_screening', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
-            // Native tools run only on openai/anthropic/gemini/mistral (broker tool_contract.TOOL_PROVIDERS): in chat:fast
-            // that leaves gemini alone; chat:smart = gemini → anthropic, so the helper survives the free quota.
+            // Helper lane: chat:fast — with tool emulation (native_tools off) any provider can serve it, and this lane has the
+            // most live free providers. Measured on prod 28.09: chat:smart turns never left the broker queue (gemini on
+            // cooldown, anthropic dead), chat:fast answered in 11 s.
             FieldSpec::select('capability_assistant_chat', self::CAPABILITIES, default: self::ASSISTANT_CAPABILITY),
             // Empty by default (owner decision): the request then carries no model and the broker picks it for the capability.
             FieldSpec::text('model'),

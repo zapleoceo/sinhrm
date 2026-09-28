@@ -83,9 +83,11 @@
 Текст — `AssistantPrompt::SYSTEM` (ROLE → TASK → RULES → APP MAP → OUTPUT, английский; ответ — на языке пользователя).
 Смена текста = новая версия `VERSION`. В `system` и описаниях инструментов нет дат, имён, id и данных страницы;
 контекст хода (`user <имя>, roles; today <дата>; current page <путь> «<заголовок>»`) дописывается в начало
-**последнего** сообщения пользователя. Стабильный префикс (system + tools) ≈ 6 000 символов ≈ 1 500 токенов. В
-`chat:smart` брокер с tools идёт `gemini/gemini-2.5-flash` → `anthropic/claude-sonnet-5` (брокер,
-`litellm_adapter.DEFAULT_MODEL`): для Sonnet 5 префикс выше минимума кеша (1024), `cache_control` ставит брокер.
+**последнего** сообщения пользователя. Стабильный префикс (system + каталог инструментов) ≈ 6 000 символов ≈ 1 500
+токенов; кешируется ли он, зависит от модели полосы `chat:fast`, которую выбрал брокер (минимумы у провайдеров разные).
+Бюджет ответа хода — `AiPrompt::CONVERSATION_MAX_TOKENS` (3000): рассуждающие модели бесплатных полос (gpt-oss) тратят
+часть `max_tokens` на скрытые рассуждения. Причина отказа хода (`invalid_reason`, `finish_reason`) пишется в
+`ai_requests.meta` и отдаётся в ответе хода как `detail` — только коды, без текста ответа.
 **Проверить кеш по `ai_requests.tokens_cached` сейчас нельзя:** брокер сохраняет `cache_read_tokens` в метаданных
 задачи (`job_queue.py`), но не отдаёт это поле в ответе `GET /v1/jobs/{id}` (`DeepJobResponse`) — у всех целей SinHRM
 там 0 независимо от реального кеша. Нужна правка в брокере. На живом брокере ход с tools не проверялся (нет ключа
@@ -109,14 +111,14 @@ Middleware: `auth:sanctum`, `EnsureUserIsActive`, доступ к модулю `
 | Метод | Ответ |
 |---|---|
 | `GET /api/assistant/status` | `{available, reason, mcp_url}`; `reason`: `ai_disabled` \| `ai_not_configured` \| `ai_purpose_disabled` |
-| `POST /api/assistant/turn` (20/мин) | `{state: done\|pending\|failed, request_id, assistant?, server_results?, client_calls?, error?}` |
+| `POST /api/assistant/turn` (20/мин) | `{state: done\|pending\|failed, request_id, assistant?, server_results?, client_calls?, error?, detail?: {invalid_reason, finish_reason}}` |
 | `GET /api/assistant/turns/{id}` | то же для отложенного хода; чужой — 404 |
 | `POST /api/assistant/transcribe` (multipart `audio`, 10/мин) | `{state: done\|pending\|failed, request_id, text?, error?}` |
 | `GET /api/assistant/transcriptions/{id}` | то же для отложенной расшифровки; чужая — 404 |
 | `GET` / `POST` / `DELETE /api/assistant/mcp-token` | статус; 201 с `token` (один раз); 204 |
 | `POST /api/mcp` | MCP (JSON-RPC), только `Authorization: Bearer <mcp-токен>` |
 
-Настройки в интеграции AI Broker: `capability_assistant_chat` (по умолчанию `chat:smart`: нативные tools в брокере есть только у openai/anthropic/gemini/mistral — в `chat:fast` остался бы один бесплатный gemini, в `chat:smart` — gemini, затем anthropic) и выключатель
+Настройки в интеграции AI Broker: `capability_assistant_chat` (по умолчанию `chat:fast`: с эмуляцией tools подходит любой провайдер, а `chat:smart` на проде не выходил из очереди брокера) и выключатель
 `ai_assistant_chat` (`on`) — [ai.md](ai.md). Каждый ход — одна попытка в дневном лимите `max_requests_per_day`.
 
 ### Фронтенд

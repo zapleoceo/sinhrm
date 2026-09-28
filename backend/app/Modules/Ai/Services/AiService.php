@@ -245,6 +245,8 @@ final readonly class AiService
                 'reason' => $e->getMessage(),
                 'finish_reason' => $result->finishReason,
             ]);
+            // Also on the row (codes only): diagnosable without the platform logs.
+            $this->requests->noteInvalid($request, $e->getMessage(), $result->finishReason);
 
             return $this->retry($request, $prompt) ?? $this->fail($request, 'ai_invalid_output');
         }

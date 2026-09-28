@@ -42,6 +42,15 @@ final class EloquentAiRequestRepository implements AiRequestRepository
         $request->save();
     }
 
+    public function noteInvalid(AiRequest $request, string $reason, ?string $finishReason): void
+    {
+        $request->meta = array_merge($request->meta ?? [], array_filter([
+            'invalid_reason' => mb_substr($reason, 0, 64),
+            'finish_reason' => $finishReason === null ? null : mb_substr($finishReason, 0, 32),
+        ], static fn (?string $v): bool => $v !== null));
+        $request->save();
+    }
+
     public function markDone(AiRequest $request): bool
     {
         return $this->finish($request, AiRequestStatus::Done, null);
