@@ -247,6 +247,8 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 длительность и счётчики пишутся в лог `recruiting.demo_generated`. На SQLite `generate()` занимает ~0.4 с (тест
 `DemoCommandTest` требует < 40 с: сид идёт внутри HTTP-запроса с лимитом функции 60 с).
 
+`populate()` / `extraTouch()` — те же истории кандидатов с префиксом имени, сроком до 180 дней, шагами воронки в днях и каналами привлечения; их вызывает общий демо-заполнитель `Core/Services/Demo/DemoDataService` (`POST /api/ops/demo-fill`, работает и в production, данные помечены `[ТЕСТ]`).
+
 Вызывают его:
 - **seeder** `Database/Seeders/RecruitingDemoSeeder` — из `DatabaseSeeder`, если `APP_ENV != production`. Именно сидер, а не
   `Artisan::call('recruiting:demo')`: preview пересоздаёт БД через `POST /api/ops/migrate?fresh=1` (`migrate:fresh --seed` внутри
