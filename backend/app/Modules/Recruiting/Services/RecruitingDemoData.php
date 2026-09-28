@@ -65,6 +65,18 @@ final class RecruitingDemoData
 
     private int $nameSeq = 0;
 
+    /** Candidate number offset, name prefix, story span and step pace (see populate()). */
+    private int $offset = 0;
+
+    private string $prefix = '';
+
+    private int $spanDays = 25;
+
+    private int $stepHours = 6;
+
+    /** @var list<int> */
+    private array $channelIds = [];
+
     public function __construct(
         private readonly CandidateService $candidates,
         private readonly ApplicationService $applications,
@@ -118,7 +130,7 @@ final class RecruitingDemoData
             for ($i = 0; $i < self::CANDIDATES; $i++) {
                 $vacancy = $vacancies[$i % count($vacancies)];
                 $recruiter = $recruiters[$i % count($recruiters)];
-                $touches += $this->candidateStory($i, $recruiter, $vacancy, $stages, $reasons);
+                $touches += $this->candidateStory($i, $recruiter, $vacancy, $stages, $reasons)['touches'];
             }
             for ($i = 0; $i < self::UNMATCHED; $i++) {
                 $this->unmatched($i, $branches[$i % count($branches)], $recruiters[$i % count($recruiters)]);
@@ -133,6 +145,38 @@ final class RecruitingDemoData
                 'unmatched' => self::UNMATCHED,
             ];
         });
+    }
+
+    /**
+     * Candidate stories for a caller that owns the surrounding data (the company-wide demo fill, DemoDataService):
+     * the same route as generate() — real services, stage moves, captured touches — but with a name prefix, a longer
+     * span (created up to $spanDays ago), stage moves days apart and acquisition channels. Deterministic.
+     * Numbers are offset so the contacts never collide with the preview set of generate().
+     *
+     * @param  list<User>  $recruiters
+     * @param  list<Vacancy>  $vacancies
+     * @param  list<int>  $channelIds
+     * @return list<array{candidate: int, touches: int}>
+     */
+    public function populate(array $recruiters, array $vacancies, int $count, int $spanDays, string $prefix, array $channelIds, int $offset = 500): array
+    {
+        [$this->offset, $this->prefix, $this->spanDays, $this->stepHours, $this->channelIds] = [$offset, $prefix, $spanDays, 60, $channelIds];
+        $stages = $this->pipelines->defaultPipeline()?->stages->values()->all() ?? [];
+        $reasons = $this->pipelines->rejectReasons(true)->pluck('id')->all();
+        $out = [];
+        for ($i = 0; $i < $count; $i++) {
+            $out[] = $this->candidateStory($i, $recruiters[$i % count($recruiters)], $vacancies[$i % count($vacancies)], $stages, $reasons);
+        }
+        [$this->offset, $this->prefix, $this->spanDays, $this->stepHours, $this->channelIds] = [0, '', 25, 6, []];
+
+        return $out;
+    }
+
+    /** One extra captured/manual touch of a demo candidate (spreads the channel mix over the last weeks). */
+    public function extraTouch(Candidate $candidate, User $author, int $n, Carbon $at): void
+    {
+        $channels = [Channel::Call, Channel::Telegram, Channel::Whatsapp, Channel::Viber, Channel::Email, Channel::Meeting, Channel::Note, Channel::Call];
+        $this->touch($candidate, $author, $channels[$n % count($channels)], $at, $candidate->telegram_username);
     }
 
     /** @return list<Branch> */
@@ -212,18 +256,20 @@ final class RecruitingDemoData
      *
      * @param  list<PipelineStage>  $stages
      * @param  list<int>  $reasons
+     * @return array{candidate: int, touches: int}
      */
-    private function candidateStory(int $i, User $recruiter, Vacancy $vacancy, array $stages, array $reasons): int
+    private function candidateStory(int $i, User $recruiter, Vacancy $vacancy, array $stages, array $reasons): array
     {
+        $n = $i + $this->offset;
         $sources = [CandidateSource::WorkUa, CandidateSource::RobotaUa, CandidateSource::MetaAds, CandidateSource::Site, CandidateSource::Referral, CandidateSource::Telegram, CandidateSource::Manual];
         $source = $sources[$i % count($sources)];
-        $phone = sprintf('+38067%07d', 1000000 + $i * 7919);
-        $email = sprintf('candidate%02d@example.test', $i + 1);
-        $telegram = $i % 3 === 0 ? sprintf('demo_cand_%02d', $i + 1) : null;
-        $start = Carbon::now()->subDays(28 - ($i % 25))->setTime(9 + $i % 8, ($i * 7) % 60);
+        $phone = sprintf('+38067%07d', 1000000 + $n * 7919);
+        $email = sprintf('candidate%02d@example.test', $n + 1);
+        $telegram = $i % 3 === 0 ? sprintf('demo_cand_%02d', $n + 1) : null;
+        $start = Carbon::now()->subDays($this->spanDays + 3 - ($i * 37) % $this->spanDays)->setTime(9 + $i % 8, ($i * 7) % 60);
 
         $candidate = $this->candidates->create($recruiter, new CandidateData(
-            fullName: $this->nextName(),
+            fullName: $this->prefix.$this->nextName(),
             phone: $phone,
             email: $email,
             telegram: $telegram,
@@ -231,6 +277,7 @@ final class RecruitingDemoData
             utm: $source === CandidateSource::MetaAds ? ['utm_source' => 'facebook', 'utm_medium' => 'paid', 'utm_campaign' => 'demo-autumn'] : null,
             tags: $i % 4 === 0 ? ['демо', 'вечірня зміна'] : ['демо'],
             ownerId: $recruiter->id,
+            channelId: $this->channelIds === [] ? null : $this->channelIds[$i % count($this->channelIds)],
         ));
         $this->backdate($candidate, $start);
         $application = $this->applications->apply($recruiter, $candidate, $vacancy, $start);
@@ -243,7 +290,7 @@ final class RecruitingDemoData
         $stale = $i % 7 === 3; // no contact for the last days
         $channels = [Channel::Call, Channel::Telegram, Channel::Whatsapp, Channel::Viber, Channel::Email, Channel::Meeting, Channel::Note];
         for ($s = 1; $s <= $steps && $s < count($stages) - 2; $s++) {
-            $at = $at->copy()->addHours(6 + ($i * $s) % 30);
+            $at = $at->copy()->addHours($this->stepHours + ($i * $s * 7) % ($this->stepHours * 5));
             if ($at->isFuture()) {
                 break;
             }
@@ -263,7 +310,7 @@ final class RecruitingDemoData
             $touches += $this->touch($candidate, $recruiter, $channels[$i % count($channels)], $recent->gt($at) ? $recent : $at->copy()->addHour(), $telegram);
         }
 
-        return $touches;
+        return ['candidate' => $candidate->id, 'touches' => $touches];
     }
 
     /** A touch on the given channel: messengers/calls/e-mail are "captured" (ingestor), notes/meetings are manual. */
