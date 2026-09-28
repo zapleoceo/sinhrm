@@ -23,6 +23,7 @@ use App\Modules\Ai\Support\AiHandlerRegistry;
 use App\Modules\Ai\Support\AiSettingsReader;
 use App\Modules\Ai\Support\JsonOutput;
 use App\Modules\Ai\Support\PromptOverrides;
+use App\Modules\Ai\Support\ToolEmulation;
 use App\Modules\Integrations\Contracts\AiPolicy;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -100,6 +101,11 @@ final readonly class AiService
         // Active edited version from the admin prompt editor (instruction part only; OUTPUT stays code-owned).
         $prompt = $this->overrides->apply($prompt);
         $prompt = $prompt->withCapability($prompt->capability ?? $this->settings->read()->capabilityFor($prompt->purpose));
+        // Tools without native tool support in the broker: emulate them through strict JSON (ToolEmulation).
+        if ($prompt->tools !== null && ! $this->settings->read()->nativeTools) {
+            $prompt = ToolEmulation::wrap($prompt);
+            $meta[ToolEmulation::META_FLAG] = true;
+        }
 
         $request = $this->requests->create([
             'purpose' => $prompt->purpose->value,
@@ -224,6 +230,9 @@ final readonly class AiService
         $this->requests->addUsage($request, $result);
         $handler = $this->handlers->get($request->purpose);
         try {
+            if (($request->meta[ToolEmulation::META_FLAG] ?? false) === true) {
+                $result = ToolEmulation::unwrap($result);
+            }
             $json = $handler instanceof AiConversationHandler
                 ? ['text' => (string) $result->text, 'tool_calls' => $result->toolCalls]
                 : JsonOutput::decode($result->text) ?? throw InvalidAiOutput::because('not_json');

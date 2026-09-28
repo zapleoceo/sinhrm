@@ -212,6 +212,7 @@
       "ai_mail_classification": "ШІ: сортування пошти",
       "ai_candidate_screening": "ШІ: скринінг кандидатів",
       "ai_assistant_chat": "ШІ: помічник Стік",
+      "native_tools": "Нативні tools брокера (лише openai/anthropic/gemini/mistral)",
       "ai_screening_auto": "Автоскринінг нових відгуків",
       "api_key": "API-ключ",
       "mailbox": "Поштова скринька",

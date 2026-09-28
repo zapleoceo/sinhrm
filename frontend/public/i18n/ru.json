@@ -212,6 +212,7 @@
       "ai_mail_classification": "ИИ: сортировка почты",
       "ai_candidate_screening": "ИИ: скрининг кандидатов",
       "ai_assistant_chat": "ИИ: помощник Стик",
+      "native_tools": "Нативные tools брокера (только openai/anthropic/gemini/mistral)",
       "ai_screening_auto": "Автоскрининг новых откликов",
       "api_key": "API-ключ",
       "mailbox": "Почтовый ящик",

@@ -21,6 +21,9 @@ final class AssistantChatTest extends TestCase
     use AiFixtures;
     use RefreshDatabase;
 
+    /** Broker native tools on (the default "off" emulates tools through strict JSON — see the emulation tests). */
+    private const array NATIVE = ['native_tools' => 'on'];
+
     /** The faked broker answers "done" from now on (slow-turn test). */
     private bool $brokerDone = false;
 
@@ -48,7 +51,7 @@ final class AssistantChatTest extends TestCase
 
     public function test_turn_runs_server_tools_and_returns_client_calls(): void
     {
-        $this->enableAi();
+        $this->enableAi(self::NATIVE);
         $this->fakeBroker([[self::toolAnswer([
             ['id' => 'call_1', 'name' => 'find_endpoints', 'arguments' => '{"query":"candidate list"}'],
             ['id' => 'call_2', 'name' => 'api_get', 'arguments' => '{"path":"candidates","query":{"search":"Олена"}}'],
@@ -88,9 +91,59 @@ final class AssistantChatTest extends TestCase
         $this->assertStringEndsWith('Знайди Олену', $body['messages'][1]['content']);
     }
 
-    public function test_a_text_answer_ends_the_turn_and_tool_history_is_forwarded(): void
+    public function test_by_default_tools_are_emulated_through_strict_json_for_any_provider(): void
     {
         $this->enableAi();
+        $this->fakeBroker([[self::doneAnswer(['say' => '', 'calls' => [
+            ['name' => 'find_endpoints', 'arguments' => '{"query":"candidate list"}'],
+            ['name' => 'api_get', 'arguments' => '{"path":"candidates"}'],
+        ]])]]);
+        $user = User::factory()->withRole(UserRole::Recruiter)->create();
+
+        $response = $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [
+            ['role' => 'user', 'content' => 'Знайди Олену'],
+            ['role' => 'assistant', 'content' => null, 'tool_calls' => [
+                ['id' => 'call_1', 'type' => 'function', 'function' => ['name' => 'api_get', 'arguments' => '{"path":"vacancies"}']],
+            ]],
+            ['role' => 'tool', 'tool_call_id' => 'call_1', 'content' => '{"status":200,"data":[]}'],
+        ]])->assertOk();
+
+        // The caller sees native-looking tool calls, exactly as with broker native tools.
+        $response->assertJsonPath('data.state', 'done')
+            ->assertJsonPath('data.assistant.tool_calls.0.function.name', 'find_endpoints')
+            ->assertJsonPath('data.client_calls.0.name', 'api_get')
+            ->assertJsonPath('data.client_calls.0.arguments.path', 'candidates');
+        $this->assertCount(1, $response->json('data.server_results'));
+        $this->assertNotSame($response->json('data.assistant.tool_calls.0.id'), $response->json('data.assistant.tool_calls.1.id'));
+
+        $body = $this->brokerSubmits[0];
+        $this->assertArrayNotHasKey('tools', $body, 'No native tools: any provider of the lane can answer.');
+        $this->assertSame('json_schema', $body['response_format']['type']);
+        $this->assertSame(['api_get', 'api_write', 'find_endpoints', 'open_page'], $body['response_format']['json_schema']['schema']['properties']['calls']['items']['properties']['name']['enum']);
+        $system = $body['messages'][0]['content'];
+        $this->assertStringStartsWith(AssistantPrompt::SYSTEM, $system);
+        $this->assertStringContainsString('"name":"api_write"', $system);
+        // Tool history as plain messages: the call → assistant JSON, the result → a user message.
+        $this->assertSame(['system', 'user', 'assistant', 'user'], array_column($body['messages'], 'role'));
+        $this->assertStringContainsString('"calls":[{"name":"api_get"', $body['messages'][2]['content']);
+        $this->assertStringStartsWith('TOOL RESULT api_get: ', $body['messages'][3]['content']);
+    }
+
+    public function test_emulated_final_answer_is_the_say_text_and_broken_json_fails_closed(): void
+    {
+        $this->enableAi();
+        $this->fakeBroker([[self::doneAnswer(['say' => 'Привіт! Я Стік.', 'calls' => []])], [self::doneAnswer('not json')], [self::doneAnswer('still not json')]]);
+        $user = User::factory()->withRole(UserRole::Employee)->create();
+
+        $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'hi']]])
+            ->assertOk()->assertJsonPath('data.assistant.content', 'Привіт! Я Стік.')->assertJsonPath('data.client_calls', []);
+        $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'hi']]])
+            ->assertOk()->assertJsonPath('data.state', 'failed')->assertJsonPath('data.error', 'ai_invalid_output');
+    }
+
+    public function test_a_text_answer_ends_the_turn_and_tool_history_is_forwarded(): void
+    {
+        $this->enableAi(self::NATIVE);
         $this->fakeBroker([[self::doneAnswer('Знайшов 2 кандидатки: /candidates/4 і /candidates/9.')]]);
         $user = User::factory()->withRole(UserRole::Recruiter)->create();
 
@@ -113,7 +166,7 @@ final class AssistantChatTest extends TestCase
 
     public function test_unknown_tools_fail_closed_after_one_retry(): void
     {
-        $this->enableAi();
+        $this->enableAi(self::NATIVE);
         $bad = self::toolAnswer([['id' => 'c', 'name' => 'drop_database', 'arguments' => '{}']]);
         $this->fakeBroker([[$bad], [$bad]]);
         $user = User::factory()->withRole(UserRole::Employee)->create();
@@ -127,7 +180,7 @@ final class AssistantChatTest extends TestCase
 
     public function test_a_slow_turn_is_pending_and_only_its_owner_can_poll_it(): void
     {
-        $this->enableAi();
+        $this->enableAi(self::NATIVE);
         Http::fake(fn (Request $r) => $r->method() === 'POST'
             ? Http::response(['job_id' => 1001, 'poll_after_s' => 2], 202)
             : Http::response($this->brokerDone ? self::doneAnswer('Привіт! Я Стік.') : self::pendingAnswer()));
