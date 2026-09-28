@@ -31,7 +31,8 @@ use Spatie\Permission\PermissionRegistrar;
  * created from the registry. Plain data goes in bulk inserts (chunks of 500); Recruiting and Pulse go through their
  * own services (stage history, captured touches, anonymous responses, membership snapshot on close).
  *
- * Rules: every name/title starts with "[ТЕСТ]", e-mails are on the reserved example.test domain; every root row is
+ * Rules: every name/title starts with "[ТЕСТ]", e-mails are demo+<key>@sinhrm.test (reserved .test TLD); a unique value that is already taken by a row that is not
+ * demo-registered is skipped, never reused or changed; every root row is
  * listed in demo_records (DemoRegistry), reset deletes only those. Randomness is a seeded Mt19937 per step (Faker is
  * a dev dependency, absent on deploys).
  */
@@ -70,7 +71,7 @@ final class DemoDataService
     /** position => base monthly pay, UAH (index = level) */
     private const array POSITIONS = ['Керівник відділу' => 62000, 'Старший спеціаліст' => 42000, 'Спеціаліст' => 30000, 'Молодший спеціаліст' => 22000];
 
-    private const string ADMIN_EMAIL = 'demo-admin@example.test';
+    private const string ADMIN_EMAIL = 'demo+admin@sinhrm.test';
 
     private Randomizer $rnd;
 
@@ -205,13 +206,13 @@ final class DemoDataService
 
     private function admin(): User
     {
-        return User::query()->where('email', self::ADMIN_EMAIL)->firstOrFail();
+        return User::query()->whereIn('id', $this->registry->ids('users'))->where('email', self::ADMIN_EMAIL)->firstOrFail();
     }
 
     /** @return list<User> */
     private function recruiters(): array
     {
-        return array_values(User::query()->whereIn('email', ['demo-hr-1@example.test', 'demo-hr-2@example.test', 'demo-hr-3@example.test'])->orderBy('email')->get()->all());
+        return array_values(User::query()->whereIn('id', $this->registry->ids('users'))->whereIn('email', ['demo+hr-1@sinhrm.test', 'demo+hr-2@sinhrm.test', 'demo+hr-3@sinhrm.test'])->orderBy('email')->get()->all());
     }
 
     // ---------------------------------------------------------------- org & people
@@ -243,7 +244,7 @@ final class DemoDataService
         $org = $this->org();
         $users = [['email' => self::ADMIN_EMAIL, 'name' => self::PREFIX.'Адміністратор', 'role' => 'admin', 'branches' => $org['branches']]];
         foreach ([1, 2, 3] as $n) {
-            $users[] = ['email' => "demo-hr-{$n}@example.test", 'name' => self::PREFIX.'Рекрутер '.$n, 'role' => 'recruiter', 'branches' => [$org['branches'][$n - 1]]];
+            $users[] = ['email' => "demo+hr-{$n}@sinhrm.test", 'name' => self::PREFIX.'Рекрутер '.$n, 'role' => 'recruiter', 'branches' => [$org['branches'][$n - 1]]];
         }
         $positionPay = array_values(self::POSITIONS);
         $employees = [];
@@ -252,7 +253,7 @@ final class DemoDataService
             foreach ($org['departments'] as $d => $department) {
                 for ($k = 0; $k < 5; $k++, $n++) {
                     $female = ($n + $d) % 2 === 0;
-                    $email = sprintf('demo-emp-%02d@example.test', $n + 1);
+                    $email = sprintf('demo+emp-%02d@sinhrm.test', $n + 1);
                     $name = self::PREFIX.self::LAST[$n % count(self::LAST)].' '.($female ? self::FIRST_F : self::FIRST_M)[($n * 5) % 12];
                     $users[] = ['email' => $email, 'name' => $name, 'role' => 'employee', 'branches' => [$branch]];
                     $level = $k === 0 ? 0 : min(3, 1 + $this->rnd->getInt(0, 2));
@@ -268,29 +269,46 @@ final class DemoDataService
             }
         }
 
-        $this->bulk('users', array_map(fn (array $u): array => [
+        // Unique e-mails: a taken one is reused only when it is a demo user already, otherwise it is skipped.
+        $demoUsers = $this->registry->ids('users');
+        /** @var array<string, int> $taken */
+        $taken = array_map('intval', DB::table('users')->whereIn('email', array_column($users, 'email'))->pluck('id', 'email')->all());
+        $this->bulk('users', array_values(array_map(fn (array $u): array => [
             'email' => $u['email'], 'name' => $u['name'], 'status' => 'active', 'approval_emails' => false,
             'created_at' => $this->now, 'updated_at' => $this->now,
-        ], $users));
+        ], array_filter($users, static fn (array $u): bool => ! isset($taken[$u['email']])))));
         /** @var array<string, int> $userIds */
         $userIds = array_map('intval', DB::table('users')->whereIn('email', array_column($users, 'email'))->pluck('id', 'email')->all());
-        $this->registerAll('users', array_values($userIds));
+        $userIds = array_filter($userIds, static fn (int $id, string $email): bool => ! isset($taken[$email]) || in_array($id, $demoUsers, true), ARRAY_FILTER_USE_BOTH);
+        $this->registerAll('users', array_values(array_diff($userIds, $demoUsers)));
+        $this->counts['users_skipped'] = count($users) - count($userIds);
         /** @var array<string, int> $roles */
         $roles = array_map('intval', DB::table('roles')->where('guard_name', 'web')->pluck('id', 'name')->all());
         $roleRows = [];
         $branchRows = [];
         foreach ($users as $u) {
+            $id = $userIds[$u['email']] ?? null;
+            if ($id === null) {
+                continue;
+            }
             if (isset($roles[$u['role']])) {
-                $roleRows[] = ['role_id' => $roles[$u['role']], 'model_type' => User::class, 'model_id' => $userIds[$u['email']]];
+                $roleRows[] = ['role_id' => $roles[$u['role']], 'model_type' => User::class, 'model_id' => $id];
             }
             foreach ($u['branches'] as $b) {
-                $branchRows[] = ['user_id' => $userIds[$u['email']], 'branch_id' => $b, 'created_at' => $this->now, 'updated_at' => $this->now];
+                $branchRows[] = ['user_id' => $id, 'branch_id' => $b, 'created_at' => $this->now, 'updated_at' => $this->now];
             }
         }
-        $this->bulk('model_has_roles', $roleRows);
-        $this->bulk('branch_user', $branchRows);
+        foreach (array_chunk($roleRows, self::CHUNK) as $chunk) {
+            DB::table('model_has_roles')->insertOrIgnore($chunk);
+        }
+        foreach (array_chunk($branchRows, self::CHUNK) as $chunk) {
+            DB::table('branch_user')->insertOrIgnore($chunk);
+        }
         $this->permissions->forgetCachedPermissions();
 
+        // A (reused) demo user that already has an employee card keeps it; users that were skipped get none.
+        $withCard = array_map('intval', DB::table('employees')->whereIn('user_id', array_values($userIds))->pluck('user_id')->all());
+        $employees = array_values(array_filter($employees, static fn (array $e): bool => isset($userIds[$e['email']]) && ! in_array($userIds[$e['email']], $withCard, true)));
         $this->bulk('employees', array_map(fn (array $e): array => [
             'user_id' => $userIds[$e['email']], 'full_name' => $e['name'], 'work_email' => $e['email'],
             'phone' => sprintf('+38050%07d', 3000000 + $e['n'] * 7727), 'birth_date' => $e['birth'],
@@ -305,12 +323,19 @@ final class DemoDataService
         $this->registerAll('employees', array_values($employeeIds));
 
         // Managers: the director (#0) leads the heads, each head leads the rest of the cell.
+        if ($employees === []) {
+            return;
+        }
         $director = $employeeIds[$employees[0]['email']];
         $heads = [];
-        foreach (array_chunk($employees, 5) as $cell) {
-            $head = $employeeIds[$cell[0]['email']];
+        $cells = [];
+        foreach ($employees as $e) {
+            $cells[$e['branch'].'-'.$e['department']][] = $employeeIds[$e['email']];
+        }
+        foreach ($cells as $cell) {
+            $head = $cell[0];
             $heads[] = $head;
-            $members = array_map(static fn (array $e): int => $employeeIds[$e['email']], array_slice($cell, 1));
+            $members = array_slice($cell, 1);
             DB::table('employees')->whereIn('id', $members)->update(['manager_id' => $head]);
         }
         DB::table('employees')->whereIn('id', array_values(array_diff($heads, [$director])))->update(['manager_id' => $director]);
@@ -730,15 +755,21 @@ final class DemoDataService
         $names = ['Ноутбук', 'Монітор', 'Телефон'];
         $types = [];
         foreach ($names as $name) {
-            $types[] = $this->insert('asset_types', ['name' => self::PREFIX.$name, 'created_at' => $this->now, 'updated_at' => $this->now]);
+            $types[] = $this->insert('asset_types', ['name' => $this->freeValue('asset_types', 'name', self::PREFIX.$name), 'created_at' => $this->now, 'updated_at' => $this->now]);
         }
+        // Unique inventory numbers: DEMO-0001… skipping any number that already exists (demo or not).
+        $takenNumbers = array_flip(array_map('strval', DB::table('assets')->where('inventory_number', 'like', 'DEMO-%')->pluck('inventory_number')->all()));
+        $number = 0;
         $rows = [];
-        for ($i = 0; $i < 30; $i++) {
-            $e = $employees[$i];
+        for ($i = 0; $i < 30 && $employees !== []; $i++) {
+            $e = $employees[$i % count($employees)];
+            do {
+                $inventory = sprintf('DEMO-%04d', ++$number);
+            } while (isset($takenNumbers[$inventory]));
             $status = $i < 20 && $e['active'] ? 'assigned' : ['in_stock', 'repair', 'written_off'][$i % 3];
             $bought = $this->now->copy()->subDays($this->rnd->getInt(30, 900));
             $rows[] = [
-                'inventory_number' => sprintf('DEMO-%04d', $i + 1), 'serial' => sprintf('SN-DEMO-%05d', $i * 131), 'name' => self::PREFIX.$names[$i % 3],
+                'inventory_number' => $inventory, 'serial' => sprintf('SN-DEMO-%05d', $i * 131), 'name' => self::PREFIX.$names[$i % 3],
                 'type_id' => $types[$i % 3], 'status' => $status, 'cost' => [32000, 8000, 15000][$i % 3], 'purchased_at' => $bought->toDateString(),
                 'notes' => null, 'employee_id' => $status === 'assigned' ? $e['id'] : null, 'created_at' => $bought, 'updated_at' => $bought,
             ];
@@ -796,6 +827,17 @@ final class DemoDataService
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** $value, or "$value (2)", "(3)"… — the first one not taken in $table.$column (unique columns). */
+    private function freeValue(string $table, string $column, string $value): string
+    {
+        $candidate = $value;
+        for ($n = 2; DB::table($table)->where($column, $candidate)->exists(); $n++) {
+            $candidate = $value.' ('.$n.')';
+        }
+
+        return $candidate;
+    }
 
     private function marker(string $step): string
     {
