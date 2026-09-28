@@ -27,6 +27,8 @@ final readonly class AiSettings
         public float $maxCostPerDay,
         public array $purposes,
         public bool $autoScreening,
+        /** Send conversation tools natively (only openai/anthropic/gemini/mistral in the broker); false = ToolEmulation. */
+        public bool $nativeTools = false,
     ) {}
 
     public function configured(): bool

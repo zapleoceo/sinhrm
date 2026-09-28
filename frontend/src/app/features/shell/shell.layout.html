@@ -12,7 +12,7 @@
       <div class="backdrop" aria-hidden="true" (click)="closeDrawer()"></div>
     }
   }
-  <aside class="sidebar" id="app-sidebar" [class.open]="drawerOpen()" [attr.inert]="narrow() && !drawerOpen() ? '' : null" [cdkTrapFocus]="narrow() && drawerOpen()" [cdkTrapFocusAutoCapture]="true">
+  <aside class="sidebar" id="app-sidebar" [class.open]="drawerOpen()" [attr.inert]="narrow() && !drawerOpen() ? '' : null" [cdkTrapFocus]="narrow() && drawerOpen()" [cdkTrapFocusAutoCapture]="narrow() && drawerOpen()">
   <nav class="sidebar-nav" [attr.aria-label]="'shell.nav.label' | transloco">
     <a class="brand" routerLink="/"><app-logo /></a>
     <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">

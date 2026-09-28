@@ -51,6 +51,7 @@ final class AiSettingsReader
             maxCostPerDay: self::positiveFloat($config->setting('daily_cap_usd'), (float) AiBrokerDefinition::DEFAULT_CAP_USD),
             purposes: $purposes,
             autoScreening: $config->setting('ai_screening_auto') === 'on',
+            nativeTools: $config->setting('native_tools') === 'on',
         );
     }
 
