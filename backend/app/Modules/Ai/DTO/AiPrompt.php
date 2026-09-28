@@ -17,6 +17,12 @@ use App\Modules\Ai\Enums\AiPurpose;
 final readonly class AiPrompt
 {
     /**
+     * Answer budget of a conversation turn. Reasoning models of the free lanes (gpt-oss) spend part of max_tokens on
+     * hidden reasoning, so the JSON turn needs headroom (docs/modules/ai.md: ≥ 1500 for reasoning models).
+     */
+    public const int CONVERSATION_MAX_TOKENS = 3000;
+
+    /**
      * @param  array<string, mixed>|null  $schema  JSON schema of the answer (sent as response_format json_schema)
      * @param  list<array<string, mixed>>|null  $history  conversation messages after the system one (user / assistant / tool)
      * @param  list<array<string, mixed>>|null  $tools  native tool definitions [{type: function, function: {name, description, parameters}}]
@@ -40,7 +46,7 @@ final readonly class AiPrompt
      * @param  list<array<string, mixed>>  $history
      * @param  list<array<string, mixed>>  $tools
      */
-    public static function conversation(AiPurpose $purpose, string $version, string $system, array $history, array $tools, int $maxTokens = 1200, float $temperature = 0.4): self
+    public static function conversation(AiPurpose $purpose, string $version, string $system, array $history, array $tools, int $maxTokens = self::CONVERSATION_MAX_TOKENS, float $temperature = 0.4): self
     {
         return new self($purpose, $version, $system, '', $maxTokens, $temperature, history: $history, tools: $tools === [] ? null : $tools);
     }
