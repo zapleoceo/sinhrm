@@ -72,14 +72,16 @@ TXT;
             return $result;
         }
         $text = trim((string) $result->text);
-        $json = JsonOutput::decode($text);
-        if (! is_array($json)) {
-            if ($text === '' || str_starts_with($text, '{')) {
-                throw InvalidAiOutput::because('not_json');
-            }
-
+        // Only an answer that IS a JSON object (or a fenced one) is parsed: JsonOutput::decode also digs "{…}" out of
+        // prose, and a sentence quoting {"name": …} must stay a sentence, not become a tool call.
+        $looksJson = str_starts_with($text, '{') || str_starts_with($text, '```');
+        if ($text !== '' && ! $looksJson) {
             // The model answered in prose without tools: that is a final answer.
             return AiResult::done($text, $result->model, $result->tokensIn, $result->tokensOut, $result->tokensCached, $result->costUsd, $result->finishReason);
+        }
+        $json = JsonOutput::decode($text);
+        if (! is_array($json)) {
+            throw InvalidAiOutput::because('not_json');
         }
         $say = self::firstString($json, ['say', 'text', 'answer', 'reply', 'message']);
         $rawCalls = is_array($json['calls'] ?? null) ? $json['calls'] : (is_array($json['tool_calls'] ?? null) ? $json['tool_calls'] : []);

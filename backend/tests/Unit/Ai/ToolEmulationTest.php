@@ -31,6 +31,15 @@ final class ToolEmulationTest extends TestCase
         $this->assertSame([], $out->toolCalls);
     }
 
+    public function test_prose_quoting_json_stays_prose_and_never_becomes_a_tool_call(): void
+    {
+        $answer = 'Кандидат: {"name": "Іван Петров", "stage": "offer"} — на етапі оферу.';
+        $out = ToolEmulation::unwrap(AiResult::done($answer));
+
+        $this->assertSame($answer, $out->text);
+        $this->assertSame([], $out->toolCalls);
+    }
+
     /** @return iterable<string, array{string, string, list<string>}> */
     public static function variants(): iterable
     {
