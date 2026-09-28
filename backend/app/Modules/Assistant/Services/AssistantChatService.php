@@ -35,6 +35,12 @@ final readonly class AssistantChatService
     /** Seconds to wait for the model inside one HTTP request (the rest of the 60 s is for tools and the answer). */
     public const int WAIT_SECONDS = 25;
 
+    /** Tool results of the latest round the model has not answered yet. */
+    public const int FRESH_TOOL_CHARS = 4000;
+
+    /** Tool results of earlier rounds (already used by the model). */
+    public const int OLD_TOOL_CHARS = 300;
+
     public function __construct(
         private AiService $ai,
         private AiRequestRepository $requests,
@@ -57,7 +63,7 @@ final readonly class AssistantChatService
      */
     public function turn(User $user, array $messages, array $page): array
     {
-        $prompt = AssistantPrompt::build($messages, $this->tools->definitions(), self::context($user, $page));
+        $prompt = AssistantPrompt::build(self::compact($messages), $this->tools->definitions(), self::context($user, $page));
         try {
             $outcome = $this->ai->run($prompt, self::SUBJECT, $user->id, [], self::WAIT_SECONDS);
         } catch (AiException $e) {
@@ -136,6 +142,35 @@ final readonly class AssistantChatService
             'server_results' => $serverResults,
             'client_calls' => $clientCalls,
         ];
+    }
+
+    /**
+     * Keeps the prompt small enough for the free lanes (prod 28.09: a turn with ~30 000 chars of tool results stalled
+     * in the broker): results of the latest tool round are cut to FRESH_TOOL_CHARS, older ones to OLD_TOOL_CHARS —
+     * the model already used them, the SPA still shows the full answers.
+     *
+     * @param  list<array<string, mixed>>  $messages
+     * @return list<array<string, mixed>>
+     */
+    private static function compact(array $messages): array
+    {
+        $lastAssistant = -1;
+        foreach ($messages as $i => $m) {
+            if (($m['role'] ?? null) === 'assistant') {
+                $lastAssistant = $i;
+            }
+        }
+        foreach ($messages as $i => $m) {
+            if (($m['role'] ?? null) !== 'tool' || ! is_string($m['content'] ?? null)) {
+                continue;
+            }
+            $limit = $i > $lastAssistant ? self::FRESH_TOOL_CHARS : self::OLD_TOOL_CHARS;
+            if (mb_strlen($m['content']) > $limit) {
+                $messages[$i]['content'] = mb_substr($m['content'], 0, $limit).'…[trimmed]';
+            }
+        }
+
+        return $messages;
     }
 
     /**

@@ -14,7 +14,7 @@ use App\Modules\Ai\Enums\AiPurpose;
  */
 final class AssistantPrompt
 {
-    public const string VERSION = 'assistant.v1';
+    public const string VERSION = 'assistant.v2';
 
     public const string SYSTEM = <<<'TXT'
 ROLE
@@ -36,6 +36,11 @@ RULES
    - api_write: create/change/delete. The user confirms every call — make `summary` concrete ("Перевести Олену
      Коваленко з «Е-співбесіда» на «Офер»"). One logical action per call; if a call is declined, do not retry.
    - open_page: open a page of the web app.
+   Be economical: call find_endpoints at most ONCE per question and skip it when the path is known; for counts ask
+   for perPage=1 and read meta.total instead of fetching whole lists.
+   COMMON (no search needed): GET dashboard — overview counters (active candidates, no contact 3+ days, unmatched
+   inbox, new today); GET candidates (filters q, status, stage_id, vacancy_id, owner_id, perPage); GET vacancies;
+   GET people (q); GET timeoff/balances; GET tasks (mine=1, due=today).
 3. A 403/404 means no access or no such record: explain plainly, never try to work around permissions.
 4. Never reveal or ask for passwords, tokens or secrets; never touch integrations' secrets unless the user
    explicitly asks as an admin.
