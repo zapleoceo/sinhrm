@@ -7,6 +7,8 @@ import {
   Gesture,
   GestureName,
   PropsFrame,
+  GETUP_ACTIONS,
+  GetUpAction,
   Stage,
   airborneClip,
   createClip,
@@ -15,6 +17,8 @@ import {
 } from './animations';
 import {
   Effect,
+  spawnArrow,
+  spawnBanana,
   spawnBang,
   spawnDoodle,
   spawnDust,
@@ -28,12 +32,38 @@ import {
   stepEffects,
 } from './effects';
 import { EyeShape, Expression, NEUTRAL, blinkAmount, squintFor } from './face';
+import { GetUpVariant, createGetUp, createRubHead, createStandUp, createSulk } from './getup';
 import { normalizeAngle } from './ik';
 import { Body, PHYSICS_DT, World, accumulate, defaultWorld, launchSpeed, physicsStep } from './physics';
-import { Joints, Pose, STAND, STAND_HIP, Vec, forwardKinematics, lerpPose } from './skeleton';
+import { ANGLE_KEYS, Joints, Pose, STAND, STAND_HIP, Vec, forwardKinematics, blendTravel, lerpPose, unwrapToward } from './skeleton';
+import {
+  Grab,
+  Orientation,
+  P,
+  Ragdoll,
+  RagdollWorld,
+  anchorOf,
+  applyStruggle,
+  createRagdoll,
+  fitPose,
+  grabAt,
+  orientationOf,
+  ragdollJoints,
+  ragdollWorld,
+  reseat,
+  stepRagdoll,
+  velocity,
+} from './ragdoll';
 import { PoseSprings, applySprings, initPoseSprings, stepPoseSprings } from './springs';
 
-export type EngineEvent = { type: 'clipDone'; action: ActionName } | { type: 'landed'; speed: number } | { type: 'offscreen' };
+export type EngineEvent =
+  | { type: 'clipDone'; action: ActionName }
+  | { type: 'landed'; speed: number }
+  | { type: 'offscreen' }
+  /** The ragdoll took over (throw, slip, trip, faint). */
+  | { type: 'fell' }
+  /** The ragdoll came to rest: how he lies and the hardest impact (px/s). */
+  | { type: 'rested'; orientation: Orientation; impact: number };
 
 export interface ShadowState {
   x: number;
@@ -75,6 +105,8 @@ export interface PlayOptions {
   side?: 'left' | 'right';
   targetX?: number;
   blend?: number;
+  /** getup: stand up fully or only sit up (to sulk). */
+  variant?: GetUpVariant;
 }
 
 interface GestureState {
@@ -86,6 +118,10 @@ interface GestureState {
 
 const NO_PROPS: PropsFrame = { rope: null, book: null, balls: null };
 const TYPE_SPEED = 42;
+/** Average joint speed of a blend between clips (px/s). */
+const BLEND_SPEED = 600;
+/** Reduced motion: the longest blend allowed (e.g. standing up where he was dropped). */
+export const REDUCED_MAX_BLEND = 0.18;
 /** Line boil re-roll interval (~8 Hz). */
 const BOIL_EVERY = 0.125;
 /** Clips that need 60 fps (fast motion); calm idles render at 30, sleep at 10. */
@@ -116,6 +152,10 @@ const FAST_ACTIONS: ReadonlySet<ActionName> = new Set<ActionName>([
   'hold-on',
   'dragged',
   'airborne',
+  'getup',
+  'stand-up',
+  'idle-slip',
+  'idle-trip',
 ]);
 /** Clips that stand still: once settled the loop may stop (render on demand only). */
 const STILL_ACTIONS: ReadonlySet<ActionName> = new Set<ActionName>(['orb', 'static']);
@@ -136,7 +176,16 @@ export class MascotEngine {
   private blendFromMorph = 0;
   private blendT = 0;
   private blendDur = 0;
-  private mode: 'clip' | 'physics' | 'drag' = 'clip';
+  private mode: 'clip' | 'physics' | 'drag' | 'ragdoll' | 'rest' = 'clip';
+  private rag: Ragdoll | null = null;
+  private ragWorld: RagdollWorld | null = null;
+  private landedSent = false;
+  /** Re-settling after a resize: do not report `rested` twice. */
+  private restedAgain = false;
+  private arrowAcc = 0;
+  private lastDragMoveAt = -Infinity;
+  /** Drag velocity smoothed over ~0.1 s (body tilt, flailing) — no jerks when the pointer speeds up or stops. */
+  private dragVel: Vec = { x: 0, y: 0 };
   private physicsKind: 'launch' | 'hop' = 'launch';
   private body: Body = { x: 0, y: 0, vx: 0, vy: 0, rot: 0, spin: 0 };
   private world: World;
@@ -164,8 +213,9 @@ export class MascotEngine {
   private boilT = 0;
   private morph = 0;
   private scale = 1;
-  private dragPos: Vec | null = null;
-  private grab: Vec = { x: 0, y: 0 };
+  private grab: Grab | null = null;
+  private grabOffset: Vec = { x: 0, y: 0 };
+  private heldFor = 0;
   private dragSamples: { x: number; y: number; t: number }[] = [];
   private props: PropsFrame = NO_PROPS;
   private thinking = false;
@@ -199,12 +249,28 @@ export class MascotEngine {
   }
 
   get airborne(): boolean {
-    return this.mode === 'physics' && this.physicsKind === 'launch';
+    return (this.mode === 'physics' && this.physicsKind === 'launch') || this.mode === 'ragdoll';
+  }
+
+  /** The ragdoll is falling or lying (null otherwise) — the drawing is exactly these points. */
+  get ragdoll(): Ragdoll | null {
+    return this.rag;
   }
 
   setStage(stage: Stage): void {
     this.stage = stage;
     this.world = { ...this.world, width: stage.width };
+    if (this.ragWorld && (this.ragWorld.width !== stage.width || this.ragWorld.ground !== stage.ground)) {
+      this.ragWorld = { ...this.ragWorld, width: stage.width, ground: stage.ground };
+      if (this.rag) {
+        reseat(this.rag, this.ragWorld);
+        if (this.mode === 'rest') {
+          // Lies down again on the new floor (rests again, the brain's get-up timer keeps running).
+          this.mode = 'ragdoll';
+          this.restedAgain = true;
+        }
+      }
+    }
   }
 
   setReducedMotion(on: boolean): void {
@@ -222,7 +288,8 @@ export class MascotEngine {
   /** Nothing is moving: a still clip, no blend, no flight, effects, gesture or bubble. The loop may stop. */
   get calm(): boolean {
     const blending = this.blendFrom !== null && this.blendT < this.blendDur;
-    return STILL_ACTIONS.has(this.clip.action) && !blending && this.mode === 'clip' && this.effects.length === 0 && this.gestureState === null && this.bubble === null;
+    const still = this.mode === 'rest' || (STILL_ACTIONS.has(this.clip.action) && !blending && this.mode === 'clip');
+    return still && this.effects.length === 0 && this.gestureState === null && this.bubble === null;
   }
 
   /** Render rate this moment needs: 0 when calm, 10 asleep, 30 calm idle, 60 fast motion (30 max in lite). */
@@ -231,7 +298,7 @@ export class MascotEngine {
       return 0;
     }
     const speed = Math.hypot(this.lastVel.x, this.lastVel.y);
-    const fast = this.mode !== 'clip' || speed > 120 || FAST_ACTIONS.has(this.clip.action) || (this.gestureState !== null && FAST_GESTURES.has(this.gestureState.g.name));
+    const fast = (this.mode !== 'clip' && this.mode !== 'rest') || speed > 120 || FAST_ACTIONS.has(this.clip.action) || (this.gestureState !== null && FAST_GESTURES.has(this.gestureState.g.name));
     const fps = this.clip.action === 'sleep' ? 10 : fast ? 60 : 30;
     return this.lite ? Math.min(30, fps) : fps;
   }
@@ -244,7 +311,15 @@ export class MascotEngine {
 
   play(action: ActionName, options: PlayOptions = {}): void {
     const from: Pose = { ...this.displayed, rot: normalizeAngle(this.displayed.rot) };
-    this.clip = createClip(action, this.context({ ...options, from }));
+    if (this.rag) {
+      // Leaving the ragdoll: springs restart from the exact fitted pose, so nothing jumps.
+      this.rag = null;
+      this.springs = initPoseSprings(from);
+      this.lastRoot = null;
+    }
+    this.clip = (GETUP_ACTIONS as readonly string[]).includes(action)
+      ? this.getUpClip(action as GetUpAction, from, options)
+      : createClip(action as Exclude<ActionName, GetUpAction>, this.context({ ...options, from }));
     this.clipT = 0;
     this.doneSent = false;
     this.ambientT = 0;
@@ -253,7 +328,8 @@ export class MascotEngine {
     } else if (!(this.mode === 'physics' && this.physicsKind === 'hop')) {
       this.mode = 'clip';
     }
-    const blend = this.reduced ? 0 : (options.blend ?? this.clip.blend);
+    // Reduced motion: no blends, except an explicit short one (≤ 0.2 s) so nothing ever teleports.
+    const blend = this.reduced ? Math.min(REDUCED_MAX_BLEND, options.blend ?? 0) : (options.blend ?? this.clip.blend);
     this.startBlend(blend);
   }
 
@@ -308,27 +384,97 @@ export class MascotEngine {
     this.springs.rShoulder.v -= k * 2;
   }
 
+  /**
+   * Grabs him where the user clicked: the whole body becomes the ragdoll and the nearest spot (hand, head, foot,
+   * torso…) is held by a stiff constraint toward the pointer. Everything else swings through the joints.
+   */
   dragStart(x: number, y: number, tMs: number): void {
-    this.grab = { x: this.displayed.x - x, y: this.displayed.y - y };
-    this.dragPos = { x: this.displayed.x, y: this.displayed.y };
+    if (!this.rag) {
+      // Continuous hand-over: the ragdoll starts at the drawn joints with the current body velocity.
+      this.rag = createRagdoll(this.root, this.joints, this.lastVel.x, this.lastVel.y, 0);
+    }
+    this.rag.rested = false;
+    this.rag.stillSteps = 0;
+    this.ragWorld = ragdollWorld(this.stage.width, this.stage.ground);
+    const grab = grabAt(this.rag, x, y);
+    const anchor = anchorOf(this.rag, grab);
+    // Keep the exact spot under the finger: no yank at the moment of the grab.
+    this.grabOffset = { x: anchor.x - x, y: anchor.y - y };
+    this.grab = { ...grab, x: anchor.x, y: anchor.y };
+    this.heldFor = 0;
     this.dragSamples = [{ x, y, t: tMs }];
-    this.play('dragged');
+    this.lastDragMoveAt = this.time;
+    this.mode = 'drag';
+    this.clip = airborneClip(this.displayed);
+    this.clipT = 0;
+    this.doneSent = true;
+    this.blendFrom = null;
+    this.gestureState = null;
   }
 
   dragMove(x: number, y: number, tMs: number): void {
-    this.dragPos = { x: x + this.grab.x, y: y + this.grab.y };
+    if (this.grab) {
+      this.grab.x = x + this.grabOffset.x;
+      this.grab.y = y + this.grabOffset.y;
+    }
+    this.lastDragMoveAt = this.time;
     this.dragSamples.push({ x, y, t: tMs });
     while (this.dragSamples.length > 2 && tMs - this.dragSamples[0].t > 120) {
       this.dragSamples.shift();
     }
   }
 
-  /** Releases the drag: he is thrown with the pointer velocity. */
+  /**
+   * The hold was lost (pointer capture lost, window blur, tab hidden): he just drops — no throw velocity,
+   * then the usual fall → rest → get up (reduced motion: eases to standing where he is).
+   */
+  dragCancel(): void {
+    if (this.rag && this.grab) {
+      this.rag.prev.set(this.rag.pos);
+    }
+    this.dragVel = { x: 0, y: 0 };
+    this.dragSamples = [];
+    this.dragEnd();
+  }
+
+  get held(): boolean {
+    return this.mode === 'drag' && this.grab !== null;
+  }
+
+  /** Release: the ragdoll keeps its own point velocities — the swing IS the throw. Then fall → rest → get up. */
   dragEnd(): void {
-    const v = this.dragVelocity();
-    const pos = this.dragPos ?? this.root;
-    this.dragPos = null;
-    this.launch({ x: pos.x, y: pos.y, vx: v.x, vy: v.y, rot: this.displayed.rot, spin: Math.max(-16, Math.min(16, v.x * 0.008)) }, true, true);
+    if (this.reduced) {
+      // Reduced motion: no tumble, no choreography — ease quickly to standing at the drop spot.
+      this.grab = null;
+      const x = Math.min(this.stage.width - 45, Math.max(45, this.displayed.x));
+      this.play('static', { targetX: x, blend: REDUCED_MAX_BLEND });
+      return;
+    }
+    // The held spot's own velocity is the throw (the arrows follow it).
+    const v = this.rag && this.grab ? velocity(this.rag, this.grab.a) : this.dragVel;
+    const speed = Math.hypot(v.x, v.y);
+    if (speed > 900) {
+      // Final burst of arrows along the pull.
+      const n = this.lite ? 2 : 3 + Math.min(2, Math.round((speed - 900) / 700));
+      for (let i = 0; i < n; i++) {
+        this.addArrow(this.displayed.x, this.displayed.y - 15, v.x / speed, v.y / speed, 1);
+      }
+    }
+    this.grab = null;
+    const rag = this.rag;
+    if (!rag) {
+      return;
+    }
+    rag.age = 0;
+    rag.maxImpact = 0;
+    this.mode = 'ragdoll';
+    this.landedSent = false;
+    this.events.push({ type: 'fell' });
+  }
+
+  /** Point velocity of the ragdoll (px/s) — for tests and the release. */
+  ragdollVelocity(index: number): Vec {
+    return this.rag ? velocity(this.rag, index) : { x: 0, y: 0 };
   }
 
   tick(dt: number): { frame: Frame; events: EngineEvent[] } {
@@ -359,24 +505,37 @@ export class MascotEngine {
     this.blendDur = blend;
     this.blendFromMorph = this.morph;
     if (blend > 0) {
-      this.blendFrom = { ...this.displayed, rot: normalizeAngle(this.displayed.rot) };
+      // Same drawing, angles unwrapped toward the target: the blend takes the short way round,
+      // and lasts longer when limbs have far to travel (no whip-fast frames).
+      const target = this.clip.sample(0, this.env()).pose;
+      const from = unwrapToward(this.displayed, target);
+      this.blendFrom = from;
+      // Springs continue from the same (unwrapped) angles — otherwise they would swing the long way round.
+      for (const k of ANGLE_KEYS) {
+        this.springs[k].x = from[k];
+      }
+      this.blendDur = this.reduced ? blend : Math.max(blend, Math.min(0.7, blendTravel(from, target) / BLEND_SPEED));
     } else {
       this.blendFrom = null;
       const first = this.clip.sample(0, this.env());
       this.springs = initPoseSprings(first.pose);
       this.lastRoot = null;
       this.morph = first.morph ?? 0;
+      // A hard cut: the new clip is what is on screen now (later blends start from it, not from the old pose).
+      this.displayed = first.pose;
+      this.joints = forwardKinematics(first.pose);
     }
   }
 
   private env(): ClipEnv {
-    const v = this.mode === 'drag' ? this.dragVelocity() : { x: this.body.vx, y: this.body.vy };
-    return { vx: v.x, vy: v.y, spin: this.body.spin, pointer: this.mode === 'drag' ? this.dragPos : this.pointerPos };
+    const v = this.mode === 'drag' ? this.dragVel : { x: this.body.vx, y: this.body.vy };
+    return { vx: v.x, vy: v.y, spin: this.body.spin, pointer: this.pointerPos };
   }
 
   private dragVelocity(): Vec {
     const s = this.dragSamples;
-    if (s.length < 2) {
+    // The pointer stopped: no velocity (no arrows, a gentle drop).
+    if (s.length < 2 || this.time - this.lastDragMoveAt > 0.08) {
       return { x: 0, y: 0 };
     }
     const a = s[0];
@@ -396,6 +555,149 @@ export class MascotEngine {
     this.clipT = 0;
     this.doneSent = true;
     this.startBlend(this.reduced ? 0 : 0.12);
+  }
+
+  private getUpClip(action: GetUpAction, from: Pose, options: PlayOptions): Clip {
+    switch (action) {
+      case 'getup':
+        return createGetUp({ stage: this.stage, from, orientation: orientationOf(from), variant: options.variant ?? 'full' });
+      case 'stand-up':
+        return createStandUp(this.stage, from);
+      case 'sulk':
+        return createSulk(this.stage, from);
+      case 'rub-head':
+        return createRubHead(this.stage, from);
+    }
+  }
+
+  /** The ragdoll takes over from the current drawing (continuous: same points, velocity from the throw). */
+  private startRagdoll(vx: number, vy: number, spin: number): void {
+    if (this.reduced) {
+      return;
+    }
+    this.rag = createRagdoll(this.root, this.joints, vx, vy, spin);
+    this.ragWorld = ragdollWorld(this.stage.width, this.stage.ground);
+    this.mode = 'ragdoll';
+    this.landedSent = false;
+    this.clip = airborneClip(this.displayed);
+    this.clipT = 0;
+    this.doneSent = true;
+    this.blendFrom = null;
+    if (this.gestureState) {
+      this.gestureState = null;
+    }
+    this.events.push({ type: 'fell' });
+  }
+
+  /** Held by the user: ragdoll + hold constraint + a little struggling. */
+  private stepHeld(h: number): void {
+    const rag = this.rag;
+    const world = this.ragWorld;
+    if (!rag || !world || !this.grab) {
+      return;
+    }
+    this.heldFor += h;
+    // Pointer velocity (smoothed) is only for the arrows; the body moves by physics alone.
+    const raw = this.dragVelocity();
+    const k = Math.min(1, h / 0.1);
+    this.dragVel = { x: this.dragVel.x + (raw.x - this.dragVel.x) * k, y: this.dragVel.y + (raw.y - this.dragVel.y) * k };
+    if (!this.reduced) {
+      applyStruggle(rag, this.time, this.lite ? 0.25 : 0.45, this.grab);
+    }
+    stepRagdoll(rag, world, h, this.grab);
+    const prevX = this.displayed.x;
+    const prevY = this.displayed.y;
+    this.displayed = fitPose(rag, this.displayed.facing);
+    this.joints = ragdollJoints(rag, this.displayed.facing);
+    this.lastVel = { x: (this.displayed.x - prevX) / h, y: (this.displayed.y - prevY) / h };
+    this.morph = 0;
+    this.scale = 1;
+    this.props = NO_PROPS;
+    this.thinking = false;
+    this.listening = false;
+    this.dragArrows(h);
+    this.stepEffects(h);
+    const annoyed = this.heldFor > 1.6;
+    this.stepFace(
+      h,
+      annoyed ? { eyes: 'dot', brows: -0.8, mouth: 'frown' } : { eyes: 'wide', brows: 1, mouth: Math.sin(this.time * 6) > 0 ? 'o' : 'wobbly' },
+      undefined,
+      {},
+    );
+  }
+
+  private stepRag(h: number): void {
+    const rag = this.rag;
+    const world = this.ragWorld;
+    if (!rag || !world) {
+      return;
+    }
+    if (this.mode === 'ragdoll') {
+      const res = stepRagdoll(rag, world, h);
+      if (res.impact > 250) {
+        const px = rag.pos[P.Pelvis * 2];
+        this.add(...spawnDust(px, world.ground, res.impact / 1600, this.rng));
+        if (!this.landedSent) {
+          this.landedSent = true;
+          this.events.push({ type: 'landed', speed: res.impact });
+        }
+        if (res.impact > 1100) {
+          this.eyeOverride = { shape: 'spiral', until: this.time + Math.min(2.8, res.impact / 800) };
+        } else if (res.impact > 650 && !(this.eyeOverride && this.eyeOverride.shape === 'spiral' && this.time < this.eyeOverride.until)) {
+          this.eyeOverride = { shape: 'x', until: this.time + 0.4 };
+        }
+      }
+      if (res.rested) {
+        this.mode = 'rest';
+        const fitted = fitPose(rag, this.displayed.facing);
+        if (this.restedAgain) {
+          this.restedAgain = false;
+        } else {
+          this.events.push({ type: 'rested', orientation: orientationOf(fitted), impact: rag.maxImpact });
+        }
+        if (rag.maxImpact > 1300) {
+          this.add(...spawnStars());
+        }
+      }
+    }
+    const prevX = this.displayed.x;
+    const prevY = this.displayed.y;
+    this.displayed = fitPose(rag, this.displayed.facing);
+    this.joints = ragdollJoints(rag, this.displayed.facing);
+    this.lastVel = { x: (this.displayed.x - prevX) / h, y: (this.displayed.y - prevY) / h };
+    this.morph = 0;
+    this.scale = 1;
+    this.props = NO_PROPS;
+    this.thinking = false;
+    this.listening = false;
+    this.stepEffects(h);
+    const flying = this.mode === 'ragdoll';
+    this.stepFace(h, flying ? { eyes: 'wide', brows: 1, mouth: 'o' } : { eyes: 'dot', brows: 0.5, mouth: 'wobbly' }, undefined, {});
+  }
+
+  /** Ink arrows fly out of him in the drag direction, more and faster the harder he is pulled. */
+  private dragArrows(h: number): void {
+    const v = this.dragVel;
+    const speed = Math.hypot(v.x, v.y);
+    if (speed < 60 || this.reduced) {
+      this.arrowAcc = 0;
+      return;
+    }
+    const rate = this.lite ? Math.min(5, speed / 400) : Math.min(16, speed / 140);
+    this.arrowAcc += rate * h;
+    const j = this.joints;
+    const parts = [j.head, j.shoulder, j.hip, j.lHand, j.rHand, j.lFoot, j.rFoot];
+    while (this.arrowAcc >= 1) {
+      this.arrowAcc -= 1;
+      const at = parts[Math.floor(this.rng() * parts.length)];
+      this.addArrow(this.displayed.x + at.x, this.displayed.y + at.y, v.x / speed, v.y / speed, speed / 1800);
+    }
+  }
+
+  private addArrow(x: number, y: number, dx: number, dy: number, strength: number): void {
+    if (!this.reduced) {
+      this.effects.push(spawnArrow(x, y, dx, dy, this.lite ? Math.min(0.5, strength) : strength, this.rng));
+    }
   }
 
   private hop(): void {
@@ -464,6 +766,14 @@ export class MascotEngine {
           this.add(spawnDoodle(at.x, at.y, e.shape, e.size ?? 12));
         }
         break;
+      case 'ragdoll':
+        this.startRagdoll(e.vx ?? 0, e.vy ?? 0, e.spin ?? 0);
+        break;
+      case 'banana':
+        if (!this.reduced) {
+          this.effects.push(spawnBanana(at.x, at.y));
+        }
+        break;
       case 'rope':
         if (e.rope) {
           this.add(spawnRope(e.rope.ax, e.rope.ay, e.rope.len, e.rope.angle, e.rope.av));
@@ -486,6 +796,14 @@ export class MascotEngine {
 
   private step(h: number): void {
     this.time += h;
+    if (this.mode === 'drag') {
+      this.stepHeld(h);
+      return;
+    }
+    if (this.mode === 'ragdoll' || this.mode === 'rest') {
+      this.stepRag(h);
+      return;
+    }
     const prevT = this.clipT;
     this.clipT += h;
     let env = this.env();
@@ -498,8 +816,13 @@ export class MascotEngine {
           }
         }
       }
+      if (this.rag) {
+        this.stepRag(h);
+        return;
+      }
       env = this.env();
     }
+    this.dragVel = { x: 0, y: 0 };
 
     let physicsRoot: Body | null = null;
     if (this.mode === 'physics') {
@@ -520,7 +843,7 @@ export class MascotEngine {
         if (this.physicsKind === 'launch') {
           this.displayed = { ...this.displayed, x: this.body.x, y: this.body.y, rot: this.body.rot };
           this.events.push({ type: 'landed', speed: this.maxImpact });
-          this.play('land', { blend: Math.abs(this.body.rot) > 0.3 ? 0.3 : 0.06 });
+          this.play('land', { blend: 0.06 + Math.abs(this.body.rot) * 0.18 });
         }
       }
       env = this.env();
@@ -548,7 +871,9 @@ export class MascotEngine {
     let morph = frame.morph ?? 0;
     if (this.blendFrom && this.blendT < this.blendDur) {
       this.blendT += h;
-      const u = ease.inOut(Math.min(1, this.blendT / this.blendDur));
+      const k = Math.min(1, this.blendT / this.blendDur);
+      // Reduced motion: short blends are linear — the lowest peak speed for the time allowed, no easing flourish.
+      const u = this.reduced ? k : ease.inOut(k);
       target = lerpPose(this.blendFrom, target, u);
       morph = this.blendFromMorph + (morph - this.blendFromMorph) * u;
     }
@@ -572,7 +897,7 @@ export class MascotEngine {
       }
     }
     this.lastRoot = { x: target.x, y: target.y };
-    this.springs = this.reduced ? initPoseSprings(target) : stepPoseSprings(this.springs, target, h, ax * target.facing, ay);
+    this.springs = this.reduced || this.clip.stiff ? initPoseSprings(target) : stepPoseSprings(this.springs, target, h, ax * target.facing, ay);
     this.displayed = applySprings(target, this.springs);
     this.joints = forwardKinematics(this.displayed);
 

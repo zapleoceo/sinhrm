@@ -130,7 +130,7 @@ describe('MascotBrain', () => {
     expect(h.brain.state).toBe('exiting');
   });
 
-  it('drag → thrown → hard landing → dizzy → dusts off → idle', () => {
+  it('drag → thrown → fell → ouch → rests → gets up → dizzy → rubs head → dusts off → idle', () => {
     const h = setup();
     h.brain.start(true, false);
     vi.advanceTimersByTime(TIMING.firstAppearance);
@@ -139,12 +139,45 @@ describe('MascotBrain', () => {
     h.brain.dragStart();
     h.brain.dragEnd();
     expect(h.brain.state).toBe('airborne');
+    h.brain.fell();
+    expect(h.brain.state).toBe('fallen');
     h.brain.landed(1600);
+    expect(h.commands.some((c) => c.type === 'say' && c.key?.startsWith('assistant.ouch.'))).toBe(true);
+    h.brain.rested(1600);
+    // Lies there for a moment (longer after a harder fall), no exit meanwhile.
+    vi.advanceTimersByTime(TIMING.stay);
+    expect(h.lastPlay()).toBe('getup');
+    expect(h.commands).toContainEqual({ type: 'play', action: 'getup', variant: 'full' });
+    h.brain.clipDone('getup');
     expect(h.lastPlay()).toBe('dizzy');
     h.brain.clipDone('dizzy');
+    expect(h.lastPlay()).toBe('rub-head');
+    h.brain.clipDone('rub-head');
     expect(h.lastPlay()).toBe('dust');
     h.brain.clipDone('dust');
     expect(h.brain.state).toBe('idle');
+  });
+
+  it('three throws within 20 s: sits up, sulks with crossed arms, then stands', () => {
+    const h = setup();
+    h.brain.start(true, false);
+    vi.advanceTimersByTime(TIMING.firstAppearance);
+    h.brain.clipDone('enter-walk');
+    for (let i = 0; i < 3; i++) {
+      h.brain.dragStart();
+      h.brain.dragEnd();
+      h.brain.fell();
+      vi.advanceTimersByTime(3000);
+    }
+    h.brain.rested(500);
+    vi.advanceTimersByTime(2000);
+    expect(h.commands).toContainEqual({ type: 'play', action: 'getup', variant: 'sit' });
+    h.brain.clipDone('getup');
+    expect(h.lastPlay()).toBe('sulk');
+    h.brain.clipDone('sulk');
+    expect(h.lastPlay()).toBe('stand-up');
+    h.brain.clipDone('stand-up');
+    expect(h.lastPlay()).toBe('rub-head');
   });
 
   it('switched off: curls into the circle, no appearances, no quips; switched on: unfolds and greets', () => {

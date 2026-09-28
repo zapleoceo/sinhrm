@@ -11,7 +11,7 @@ import { AssistantSettings } from '../assistant-settings';
 import { AssistantChat } from '../chat/assistant-chat';
 import { AssistantVoice } from '../voice/assistant-voice';
 import { Stage } from './animations';
-import { BrainCommand, MascotBrain } from './brain';
+import { BrainCommand, MascotBrain, dispatchEngineEvent } from './brain';
 import { EngineEvent, MascotEngine } from './mascot-engine';
 import { MASCOT_FRAME_CLOCK, MascotLoop } from './mascot-loop';
 import { MascotRenderer } from './mascot-renderer';
@@ -157,12 +157,19 @@ export class AssistantMascot {
       this.listen(win, 'keydown', () => this.brain?.userActivity(), { passive: true });
       this.listen(win, 'resize', () => this.onResize(), { passive: true });
       this.listen(this.document, 'scroll', (e) => this.onScroll(e), { passive: true, capture: true });
-      this.listen(this.document, 'visibilitychange', () => this.syncLoop());
+      this.listen(this.document, 'visibilitychange', () => {
+        if (this.document.visibilityState === 'hidden') {
+          this.cancelHold();
+        }
+        this.syncLoop();
+      });
+      this.listen(win, 'blur', () => this.cancelHold());
+      this.listen(stageEl, 'lostpointercapture', () => this.cancelHold());
       this.listen(this.document, 'focusin', () => this.updatePause());
       this.listen(this.document, 'focusout', () => queueMicrotask(() => this.updatePause()));
       this.listen(stageEl, 'pointerdown', (e) => this.onPointerDown(e as PointerEvent));
       this.listen(stageEl, 'pointerup', (e) => this.onPointerUp(e as PointerEvent));
-      this.listen(stageEl, 'pointercancel', () => this.onPointerUp(null));
+      this.listen(stageEl, 'pointercancel', () => this.cancelHold());
       this.listen(this.renderer!.hit, 'pointerenter', () => this.brain?.hover(true));
       this.listen(this.renderer!.hit, 'pointerleave', () => this.brain?.hover(false));
       if (media) {
@@ -227,7 +234,7 @@ export class AssistantMascot {
     }
     switch (c.type) {
       case 'play':
-        engine.play(c.action, { side: c.side, targetX: c.targetX, blend: c.blend });
+        engine.play(c.action, { side: c.side, targetX: c.targetX, blend: c.blend, variant: c.variant });
         break;
       case 'gesture': {
         const target = c.name === 'point' || c.name === 'listen' ? this.pointTarget() : null;
@@ -324,13 +331,7 @@ export class AssistantMascot {
     if (!brain) {
       return;
     }
-    if (e.type === 'clipDone') {
-      brain.clipDone(e.action);
-    } else if (e.type === 'landed') {
-      brain.landed(e.speed);
-    } else {
-      brain.offscreen();
-    }
+    dispatchEngineEvent(brain, e);
   }
 
   /** While the figure is still (the "off" circle, reduced motion) blinks come from one timer, not a loop. */
@@ -425,6 +426,18 @@ export class AssistantMascot {
     } else if (e) {
       this.zone.run(() => this.settings.openChat());
     }
+  }
+
+  /** The hold can never get stuck: losing the pointer drops him (no throw) like a cancelled pointer. */
+  private cancelHold(): void {
+    const press = this.press;
+    this.press = null;
+    if (!press?.dragging) {
+      return;
+    }
+    this.engine?.dragCancel();
+    this.brain?.dragEnd();
+    this.loop?.kick();
   }
 
   private onScroll(e: Event): void {
