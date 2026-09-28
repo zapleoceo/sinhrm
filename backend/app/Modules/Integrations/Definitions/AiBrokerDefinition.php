@@ -74,6 +74,9 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
             FieldSpec::select('ai_candidate_screening', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_assistant_chat', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_screening_auto', self::SWITCH, default: 'off'),
+            // off = tools of the helper go as strict JSON (any provider can answer); on = broker native tools, served
+            // only by openai/anthropic/gemini/mistral keys — the helper stalls when none of them is alive.
+            FieldSpec::select('native_tools', self::SWITCH, default: 'off'),
         ];
     }
 

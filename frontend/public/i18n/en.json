@@ -212,6 +212,7 @@
       "ai_mail_classification": "AI: mail sorting",
       "ai_candidate_screening": "AI: candidate screening",
       "ai_assistant_chat": "AI: Stick assistant",
+      "native_tools": "Broker native tools (openai/anthropic/gemini/mistral only)",
       "ai_screening_auto": "Auto-screen new applications",
       "api_key": "API key",
       "mailbox": "Mailbox",

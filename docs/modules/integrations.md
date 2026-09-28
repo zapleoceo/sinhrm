@@ -46,7 +46,8 @@
 селекты `capability` и `capability_{script_evaluation,mail_classification,candidate_screening,assistant_chat}`
 (`chat:fast|chat:smart|chat:sales|structured`, по умолчанию `chat:sales`), `model` (без значения по умолчанию: пусто =
 модель выбирает брокер), `max_requests_per_day` (200), `daily_cap_usd` (2), выключатели `ai_script_evaluation`,
-`ai_mail_classification`, `ai_candidate_screening`, `ai_assistant_chat` (`on`) и `ai_screening_auto` (`off`). Подписи вариантов селектов —
+`ai_mail_classification`, `ai_candidate_screening`, `ai_assistant_chat` (`on`), `ai_screening_auto` и `native_tools`
+(`off`). Подписи вариантов селектов —
 `integrations.options.<значение>`.
 
 ### Шифрование и хранилище секретов

@@ -51,6 +51,8 @@
 модели через `AiService` (ворота AI, дневные лимиты, запись в `ai_requests`, без логирования промптов), поэтому каждый
 запрос укладывается в 60 с Vercel (ожидание модели ≤ 25 с).
 1. SPA шлёт `{messages, page: {path, title}}` (формат сообщений OpenAI: user / assistant с `tool_calls` / tool).
+   По умолчанию (`native_tools = off`) инструменты уходят модели не нативно, а через эмуляцию строгим JSON
+   ([ai.md](ai.md), «Эмуляция tools») — ход может обслужить любой живой провайдер брокера; для чата разницы нет.
 2. `Services/AssistantChatService` собирает промпт (`Ai/AssistantPrompt`) и вызывает `AiService::run`
    (цель `AiPurpose::AssistantChat`, subject `assistant_user` + id пользователя).
 3. Ответ модели проверяет `Ai/AssistantChatHandler` (реализует `AiConversationHandler`): только известные инструменты,
