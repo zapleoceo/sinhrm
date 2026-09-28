@@ -11,7 +11,7 @@ import { AssistantSettings } from '../assistant-settings';
 import { AssistantChat } from '../chat/assistant-chat';
 import { AssistantVoice } from '../voice/assistant-voice';
 import { Stage } from './animations';
-import { BrainCommand, MascotBrain } from './brain';
+import { BrainCommand, MascotBrain, dispatchEngineEvent } from './brain';
 import { EngineEvent, MascotEngine } from './mascot-engine';
 import { MASCOT_FRAME_CLOCK, MascotLoop } from './mascot-loop';
 import { MascotRenderer } from './mascot-renderer';
@@ -227,7 +227,7 @@ export class AssistantMascot {
     }
     switch (c.type) {
       case 'play':
-        engine.play(c.action, { side: c.side, targetX: c.targetX, blend: c.blend });
+        engine.play(c.action, { side: c.side, targetX: c.targetX, blend: c.blend, variant: c.variant });
         break;
       case 'gesture': {
         const target = c.name === 'point' || c.name === 'listen' ? this.pointTarget() : null;
@@ -324,13 +324,7 @@ export class AssistantMascot {
     if (!brain) {
       return;
     }
-    if (e.type === 'clipDone') {
-      brain.clipDone(e.action);
-    } else if (e.type === 'landed') {
-      brain.landed(e.speed);
-    } else {
-      brain.offscreen();
-    }
+    dispatchEngineEvent(brain, e);
   }
 
   /** While the figure is still (the "off" circle, reduced motion) blinks come from one timer, not a loop. */

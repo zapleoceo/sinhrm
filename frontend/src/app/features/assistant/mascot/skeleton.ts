@@ -46,6 +46,8 @@ export interface Pose {
   rKnee: number;
   /** 1 neutral, < 1 squashed, > 1 stretched (volume-preserving, anchored at the feet). */
   squash: number;
+  /** While turning around: horizontal scale going from the old facing to the new one through 0 (continuous). */
+  turn?: number;
 }
 
 export type AngleKey = 'torso' | 'head' | 'lShoulder' | 'lElbow' | 'rShoulder' | 'rElbow' | 'lHip' | 'lKnee' | 'rHip' | 'rKnee';
@@ -106,8 +108,8 @@ export const STAND: Readonly<Pose> = {
   squash: 1,
 };
 
-/** Direction of an angle measured from straight down (forward = facing). */
-function down(a: number, facing: 1 | -1): Vec {
+/** Direction of an angle measured from straight down (forward = facing, or the turn scale). */
+function down(a: number, facing: number): Vec {
   return { x: facing * Math.sin(a), y: Math.cos(a) };
 }
 
@@ -117,7 +119,8 @@ function add(p: Vec, d: Vec, len: number): Vec {
 
 /** Forward kinematics: joint positions relative to the hip. Pure. */
 export function forwardKinematics(p: Pose): Joints {
-  const f = p.facing;
+  // Horizontal direction; during a turn it passes smoothly through 0 instead of flipping.
+  const f = p.turn ?? p.facing;
   const hip: Vec = { x: 0, y: 0 };
   const up = { x: f * Math.sin(p.torso), y: -Math.cos(p.torso) };
   const neck = add(hip, up, BONES.spine);
@@ -148,13 +151,17 @@ export function forwardKinematics(p: Pose): Joints {
     const y = anchorY + (q.y - anchorY) * sy;
     out[key] = { x: x * cos - y * sin, y: x * sin + y * cos };
   }
-  return { ...out, headAngle: p.rot + f * headTilt, facing: f };
+  return { ...out, headAngle: p.rot + p.facing * headTilt, facing: p.facing };
 }
 
-/** Linear blend of two poses (facing switches at the midpoint). */
+/** Linear blend of two poses; a change of facing becomes a continuous turn (x-scale through 0). */
 export function lerpPose(a: Pose, b: Pose, t: number): Pose {
   const m = (x: number, y: number): number => x + (y - x) * t;
+  const ta = a.turn ?? a.facing;
+  const tb = b.turn ?? b.facing;
+  const turn = ta === tb || t >= 1 ? {} : { turn: m(ta, tb) };
   return {
+    ...turn,
     x: m(a.x, b.x),
     y: m(a.y, b.y),
     rot: m(a.rot, b.rot),
@@ -182,4 +189,40 @@ export function footReach(p: Pose): number {
 /** Chain end of a leg for tests/animation checks. */
 export function footOffset(hipAngle: number, knee: number): Vec {
   return chainEnd(hipAngle, -knee, BONES.thigh, BONES.shin);
+}
+
+const TRAVEL_KEYS = ['head', 'lHand', 'rHand', 'lFoot', 'rFoot', 'lKnee', 'rKnee', 'lElbow', 'rElbow'] as const;
+
+/** Largest distance any drawn joint moves between two poses (px, world). */
+export function maxJointTravel(a: Pose, b: Pose): number {
+  const ja = forwardKinematics(a);
+  const jb = forwardKinematics(b);
+  let d = 0;
+  for (const k of TRAVEL_KEYS) {
+    d = Math.max(d, Math.hypot(b.x + jb[k].x - a.x - ja[k].x, b.y + jb[k].y - a.y - ja[k].y));
+  }
+  return d;
+}
+
+/** `from` with every angle moved by whole turns to the equivalent nearest to `to` (same drawing, shortest blend). */
+export function unwrapToward(from: Pose, to: Pose): Pose {
+  const out: Pose = { ...from };
+  const near = (a: number, ref: number): number => a + 2 * Math.PI * Math.round((ref - a) / (2 * Math.PI));
+  for (const k of ANGLE_KEYS) {
+    out[k] = near(from[k], to[k]);
+  }
+  out.rot = near(from.rot, to.rot);
+  return out;
+}
+
+/** Longest joint path when blending a → b (sampled, so arcs count, not just the end points). */
+export function blendTravel(a: Pose, b: Pose): number {
+  let total = 0;
+  let prev = a;
+  for (let i = 1; i <= 6; i++) {
+    const cur = lerpPose(a, b, i / 6);
+    total += maxJointTravel(prev, cur);
+    prev = cur;
+  }
+  return total;
 }

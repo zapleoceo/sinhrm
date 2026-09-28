@@ -1,13 +1,13 @@
 import { DOODLE_DRAW, DOODLE_SHAPES, Effect, doodlePoint, effectAlpha } from './effects';
 import { EyeShape, MouthShape, pupilOffset } from './face';
-import { bubblePath, circlePath, jitter, sketchCircle, smoothPath, starPath, taperedPath } from './ink';
+import { bubblePath, circlePath, jitter, noise, sketchCircle, smoothPath, starPath, taperedPath } from './ink';
 import { Frame } from './mascot-engine';
 import { BONES, Vec } from './skeleton';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Size of the moving box and where the hip sits inside it (the drawing overflows it freely). */
 export const BOX = { w: 240, h: 240, hipX: 120, hipY: 150 } as const;
-const PATH_POOL = 12;
+const PATH_POOL = 16;
 const TEXT_POOL = 4;
 const f = (n: number): string => (Math.round(n * 100) / 100).toString();
 
@@ -42,8 +42,8 @@ export class MascotRenderer {
   private readonly bubbleSvg: SVGSVGElement;
   private readonly typed: HTMLSpanElement;
   private readonly rest: HTMLSpanElement;
-  /** Hit area for grabbing/clicking; follows the torso. */
-  readonly hit: SVGCircleElement;
+  /** Hit area for grabbing/clicking: a thick invisible stroke along the whole body (grab him wherever you click). */
+  readonly hit: SVGPathElement;
   private readonly cache = new WeakMap<Element, Map<string, string>>();
   private bubbleText = '';
   private bubbleSize = { w: 0, h: 0 };
@@ -98,7 +98,7 @@ export class MascotRenderer {
     for (let i = 0; i < TEXT_POOL; i++) {
       this.texts.push(this.el('text', { visibility: 'hidden', class: 'fx-text' }, fx));
     }
-    this.hit = this.el('circle', { class: 'hit', r: '34', cx: String(BOX.hipX), cy: String(BOX.hipY - 20) }, this.svg);
+    this.hit = this.el('path', { class: 'hit' }, this.svg);
     host.appendChild(this.svg);
 
     this.bubble = doc.createElement('div');
@@ -173,9 +173,18 @@ export class MascotRenderer {
     this.renderWaves(frame, headC, headR);
     this.renderEffects(frame, origin, headC);
     this.renderBubble(frame, headC, origin, viewport);
-    this.set(this.hit, 'cx', f(m > 0.5 ? headC.x : BOX.hipX + (j.head.x + j.hip.x) / 2));
-    this.set(this.hit, 'cy', f(m > 0.5 ? headC.y : BOX.hipY + (j.head.y + j.hip.y) / 2 + 6));
-    this.set(this.hit, 'r', m > 0.5 ? '20' : '34');
+    if (m > 0.5) {
+      this.set(this.hit, 'd', `M ${f(headC.x)} ${f(headC.y)} l 0.01 0`);
+      this.set(this.hit, 'stroke-width', '40');
+    } else {
+      const L = (q: Vec): string => `${f(BOX.hipX + q.x)} ${f(BOX.hipY + q.y)}`;
+      this.set(
+        this.hit,
+        'd',
+        `M ${L(j.head)} L ${L(j.neck)} L ${L(j.hip)} M ${L(j.shoulder)} L ${L(j.lElbow)} L ${L(j.lHand)} M ${L(j.shoulder)} L ${L(j.rElbow)} L ${L(j.rHand)} M ${L(j.hip)} L ${L(j.lKnee)} L ${L(j.lFoot)} M ${L(j.hip)} L ${L(j.rKnee)} L ${L(j.rFoot)}`,
+      );
+      this.set(this.hit, 'stroke-width', '26');
+    }
   }
 
   /* ───────────── face ───────────── */
@@ -385,6 +394,29 @@ export class MascotRenderer {
         dash = f(1 - Math.min(1, e.age / DOODLE_DRAW));
         break;
       }
+      case 'arrow': {
+        // Hand-drawn arrow: slightly bowed shaft + two-stroke head, shrinking as it flies.
+        const sp = Math.hypot(e.vx, e.vy) || 1;
+        const ux = e.vx / sp;
+        const uy = e.vy / sp;
+        const len = (9 + 9 * e.size) * (1 - 0.55 * p);
+        const tx = x - ux * len;
+        const ty = y - uy * len;
+        const bow = noise(e.rot, 1) * 1.6;
+        const mx = (x + tx) / 2 - uy * bow;
+        const my = (y + ty) / 2 + ux * bow;
+        const hl = 3 + 2.2 * e.size * (1 - 0.5 * p);
+        const a = 0.55;
+        const hx1 = x - (ux * Math.cos(a) - uy * Math.sin(a)) * hl;
+        const hy1 = y - (uy * Math.cos(a) + ux * Math.sin(a)) * hl;
+        const hx2 = x - (ux * Math.cos(-a) - uy * Math.sin(-a)) * hl;
+        const hy2 = y - (uy * Math.cos(-a) + ux * Math.sin(-a)) * hl;
+        d = `M ${f(tx)} ${f(ty)} Q ${f(mx)} ${f(my)} ${f(x)} ${f(y)} M ${f(hx1)} ${f(hy1)} L ${f(x)} ${f(y)} L ${f(hx2)} ${f(hy2)}`;
+        break;
+      }
+      case 'banana':
+        d = `M ${f(x - 7)} ${f(y - 1)} Q ${f(x)} ${f(y - 7)} ${f(x + 7)} ${f(y - 1)} M ${f(x - 3)} ${f(y - 3)} L ${f(x - 8)} ${f(y - 6)} M ${f(x + 3)} ${f(y - 3)} L ${f(x + 7)} ${f(y - 7)} M ${f(x - 7)} ${f(y - 1)} L ${f(x + 7)} ${f(y - 1)}`;
+        break;
       case 'rope': {
         const ex = e.x + Math.sin(e.angle) * e.data - origin.x;
         const ey = e.y + Math.cos(e.angle) * e.data - origin.y;

@@ -1,5 +1,6 @@
 import { AssistantMood } from '../assistant.model';
 import { pickGreeting, pickQuip } from '../quips';
+import type { EngineEvent } from './mascot-engine';
 import { ActionName, ENTRANCES, EXITS, EntranceAction, ExitAction, GestureName, IDLE_WEIGHTS } from './animations';
 
 export type BrainState =
@@ -12,6 +13,7 @@ export type BrainState =
   | 'dragged'
   | 'airborne'
   | 'recovering'
+  | 'fallen'
   | 'docked'
   | 'static'
   | 'orb'
@@ -19,7 +21,7 @@ export type BrainState =
   | 'unfolding';
 
 export type BrainCommand =
-  | { type: 'play'; action: ActionName; side?: 'left' | 'right'; targetX?: number; blend?: number }
+  | { type: 'play'; action: ActionName; side?: 'left' | 'right'; targetX?: number; blend?: number; variant?: 'full' | 'sit' }
   | { type: 'gesture'; name: GestureName | null }
   | { type: 'say'; key: string | null }
   | { type: 'visible'; value: boolean };
@@ -85,7 +87,15 @@ export function pickWeighted<T extends string>(weights: Readonly<Record<T, numbe
   return keys[keys.length - 1];
 }
 
-type TimerName = 'appear' | 'stay' | 'sleep' | 'say' | 'talk';
+type TimerName = 'appear' | 'stay' | 'sleep' | 'say' | 'talk' | 'getup';
+
+/** Throws within this window make him sulk. */
+export const ANNOY_WINDOW_MS = 20_000;
+export const ANNOY_THROWS = 3;
+export const OUCH_COUNT = 5;
+/** Impact (px/s) that deserves an «ouch» and a dizzy spell. */
+export const OUCH_IMPACT = 800;
+export const DIZZY_IMPACT = 1500;
 
 /**
  * Behaviour of «Стік» (framework-free): when he appears and how, what he does meanwhile, when he leaves,
@@ -107,6 +117,9 @@ export class MascotBrain {
   private hovered = false;
   private lite = false;
   private beforeSleep: BrainState = 'idle';
+  private throws: number[] = [];
+  private annoyed = false;
+  private hardFall = false;
   private readonly timers = new Map<TimerName, unknown>();
   private readonly rng: () => number;
   private readonly scheduler: Scheduler;
@@ -133,7 +146,7 @@ export class MascotBrain {
   }
 
   get canDrag(): boolean {
-    return ['entering', 'idle', 'asleep', 'waking', 'docked', 'static', 'recovering'].includes(this.current);
+    return ['entering', 'idle', 'asleep', 'waking', 'docked', 'static', 'recovering', 'fallen', 'airborne'].includes(this.current);
   }
 
   start(enabled: boolean, reducedMotion: boolean): void {
@@ -289,21 +302,50 @@ export class MascotBrain {
   dragStart(): void {
     this.current = 'dragged';
     this.clear('stay');
+    this.clear('getup');
     this.emit({ type: 'say', key: null });
   }
 
+  /** Released: he flies as a ragdoll (the engine reports `fell`, `landed`, `rested`). */
   dragEnd(): void {
+    const now = this.scheduler.now();
+    this.throws = [...this.throws.filter((t) => now - t < ANNOY_WINDOW_MS), now];
     this.current = 'airborne';
   }
 
+  /** The ragdoll took over (throw, slip, trip, faint): no exits or fidgets until he is up again. */
+  fell(): void {
+    this.current = 'fallen';
+    this.clear('stay');
+    this.clear('getup');
+    this.emit({ type: 'gesture', name: null });
+  }
+
   landed(speed: number): void {
-    if (this.current === 'airborne') {
-      this.current = 'recovering';
-      if (speed > 1100) {
-        this.play('dizzy');
-      }
+    if ((this.current === 'fallen' || this.current === 'airborne') && speed > OUCH_IMPACT) {
+      const key = `assistant.ouch.${Math.floor(this.rng() * OUCH_COUNT)}`;
+      this.emit({ type: 'say', key });
+      this.schedule('say', 2500, () => this.emit({ type: 'say', key: null }));
     }
-    // Entrances landing (jump, drop, rope, gopher): the engine plays 'land', clipDone continues.
+    // Entrances landing on their feet (jump, drop, rope, gopher): the engine plays 'land', clipDone continues.
+  }
+
+  /** Lying still: after a pause (longer the harder the fall) he gets up — or sits up to sulk if thrown too often. */
+  rested(impact: number): void {
+    if (this.current !== 'fallen' && this.current !== 'airborne') {
+      return;
+    }
+    this.current = 'fallen';
+    const now = this.scheduler.now();
+    this.annoyed = this.throws.filter((t) => now - t < ANNOY_WINDOW_MS).length >= ANNOY_THROWS;
+    this.hardFall = impact > DIZZY_IMPACT;
+    const delay = 350 + Math.min(1800, impact * 0.7);
+    this.schedule('getup', delay, () => {
+      if (this.current === 'fallen') {
+        this.current = 'recovering';
+        this.play('getup', { variant: this.annoyed ? 'sit' : 'full' });
+      }
+    });
   }
 
   offscreen(): void {
@@ -330,11 +372,7 @@ export class MascotBrain {
         this.nextIdle();
         break;
       case 'recovering':
-        if (action === 'dizzy') {
-          this.play('dust');
-        } else {
-          this.toIdle();
-        }
+        this.recover(action);
         break;
       case 'exiting':
         if ((EXITS as readonly string[]).includes(action) || action === 'exit-peek') {
@@ -377,6 +415,34 @@ export class MascotBrain {
     this.lastAppearance = this.scheduler.now();
     this.emit({ type: 'visible', value: true });
     this.play(entrance, { side: this.rng() < 0.5 ? 'left' : 'right', targetX: this.randomX() });
+  }
+
+  /** getup → (sulk → stand-up) → (dizzy) → rub-head → dust → idle. */
+  private recover(action: ActionName): void {
+    switch (action) {
+      case 'getup':
+        if (this.annoyed) {
+          this.play('sulk');
+        } else {
+          this.play(this.hardFall ? 'dizzy' : 'rub-head');
+        }
+        break;
+      case 'sulk':
+        this.annoyed = false;
+        this.throws = [];
+        this.play('stand-up');
+        break;
+      case 'stand-up':
+      case 'dizzy':
+        this.play('rub-head');
+        break;
+      case 'rub-head':
+        this.play('dust');
+        break;
+      default:
+        this.toIdle();
+        break;
+    }
   }
 
   private toIdle(): void {
@@ -490,7 +556,7 @@ export class MascotBrain {
     return Math.round(w * (0.22 + this.rng() * 0.5));
   }
 
-  private play(action: ActionName, extra: { side?: 'left' | 'right'; targetX?: number; blend?: number } = {}): void {
+  private play(action: ActionName, extra: { side?: 'left' | 'right'; targetX?: number; blend?: number; variant?: 'full' | 'sit' } = {}): void {
     this.emit({ type: 'play', action, ...extra });
   }
 
@@ -511,5 +577,26 @@ export class MascotBrain {
       this.scheduler.clearTimeout(handle);
       this.timers.delete(name);
     }
+  }
+}
+
+/** Feeds an engine event to the brain. */
+export function dispatchEngineEvent(brain: MascotBrain, e: EngineEvent): void {
+  switch (e.type) {
+    case 'clipDone':
+      brain.clipDone(e.action);
+      break;
+    case 'landed':
+      brain.landed(e.speed);
+      break;
+    case 'fell':
+      brain.fell();
+      break;
+    case 'rested':
+      brain.rested(e.impact);
+      break;
+    case 'offscreen':
+      brain.offscreen();
+      break;
   }
 }
