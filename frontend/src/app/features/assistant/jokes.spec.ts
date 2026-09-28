@@ -6,7 +6,7 @@ import ru from '../../../../public/i18n/ru.json';
 import uk from '../../../../public/i18n/uk.json';
 import { QuipsResult } from './assistant.model';
 import { AssistantService } from './assistant.service';
-import { AssistantJokes, JOKE_FALLBACK_COUNT, JOKE_SITUATIONS, pickNoRepeat, situationFor } from './jokes';
+import { AssistantJokes, JOKE_FALLBACK_COUNT, JOKE_MAX_TRIES, JOKE_RETRY_MS, JOKE_SITUATIONS, pickNoRepeat, situationFor } from './jokes';
 import { BrainCommand, MascotBrain, TIMING } from './mascot/brain';
 
 function setup(quips: (situation: string, locale: string) => Observable<QuipsResult>) {
@@ -74,6 +74,34 @@ describe('jokes after a fall', () => {
     expect(jokes.pick('fall', 'uk', () => 0.3)).toEqual({ key: expect.stringMatching(/^assistant\.jokes\.fall\.\d$/) });
     // Another language not fetched yet → built-in.
     expect(jokes.pick('thrown', 'ru', () => 0.3)).toEqual({ key: expect.stringMatching(/^assistant\.jokes\.thrown\.\d$/) });
+  });
+
+  it('asks again for an empty pool after a minute (server still generating), at most 4 times', async () => {
+    vi.useFakeTimers();
+    let ready = false;
+    const { jokes, api } = setup((s) => of(ready && s === 'fall' ? { jokes: ['Приземлився!'], source: 'ai' as const } : { jokes: [], source: 'none' as const }));
+    await jokes.prefetch('uk');
+    const fallCalls = (): number => api.quips.mock.calls.filter((c) => c[0] === 'fall').length;
+    expect(fallCalls()).toBe(1);
+
+    jokes.pick('fall', 'uk', () => 0.3); // < 1 min: no new request
+    expect(fallCalls()).toBe(1);
+
+    ready = true;
+    vi.advanceTimersByTime(JOKE_RETRY_MS);
+    jokes.pick('fall', 'uk', () => 0.3); // built-in now, AI pool fetched in the background
+    await Promise.resolve();
+    expect(fallCalls()).toBe(2);
+    expect(jokes.pick('fall', 'uk', () => 0.3)).toEqual({ text: 'Приземлився!' });
+
+    ready = false;
+    for (let i = 0; i < 10; i++) {
+      vi.advanceTimersByTime(JOKE_RETRY_MS);
+      jokes.pick('slip', 'uk', () => 0.3);
+      await Promise.resolve();
+    }
+    expect(api.quips.mock.calls.filter((c) => c[0] === 'slip').length).toBe(JOKE_MAX_TRIES);
+    vi.useRealTimers();
   });
 
   it.each([
