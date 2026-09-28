@@ -205,6 +205,11 @@ describe('ShellLayout mobile drawer', () => {
     expect(el.querySelector('.sidebar')?.hasAttribute('inert')).toBe(false);
   });
 
+  it('desktop does not move focus into the sidebar on load', async () => {
+    const { el } = await setup(undefined, false);
+    expect(el.contains(document.activeElement)).toBe(false);
+  });
+
   it('opens from the burger, locks scroll, closes on backdrop and Esc', async () => {
     const { el, detect } = await setup(undefined, true);
     const sidebar = el.querySelector('.sidebar') as HTMLElement;
