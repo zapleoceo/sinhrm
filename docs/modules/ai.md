@@ -165,7 +165,7 @@ JSON)}]}` — такой запрос может обслужить любой �
 Разбор ответа терпимый: часть провайдеров бесплатных полос игнорирует `json_schema` (прод 28.09: `finish_reason = stop`, но не JSON протокола), поэтому обычный текст = финальный ответ, отсутствующие `say`/`calls` = пусто, принимаются синонимы (`text/answer/reply`, `tool_calls`, `tool/args/parameters`, один вызов на верхнем уровне). Непригодный ответ → один повтор → `ai_invalid_output` с точным кодом в `ai_requests.meta.invalid_reason`: `not_json` (битый JSON-объект / пусто), `bad_shape` (JSON без текста и вызовов), `bad_tool_call`.
 
 **Брокер и `AiService` инструменты не выполняют** — это делает вызывающий модуль с правами пользователя. Цель
-`AiPurpose::AssistantChat` (`assistant_chat`), промпт `assistant.v1` — [assistant.md](assistant.md); в редакторе
+`AiPurpose::AssistantChat` (`assistant_chat`), промпт `assistant.v2` — [assistant.md](assistant.md); в редакторе
 промптов не участвует.
 
 ### Распознавание речи (`AiService::transcribe`)
