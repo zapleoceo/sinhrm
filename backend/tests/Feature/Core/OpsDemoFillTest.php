@@ -174,7 +174,8 @@ final class OpsDemoFillTest extends TestCase
         $realUser = User::query()->create(['email' => 'real@example.com', 'name' => 'Real', 'status' => 'active']);
         $real = DB::table('employees')->insertGetId(['user_id' => $realUser->id, 'full_name' => 'Real person', 'status' => 'active', 'hired_at' => '2024-01-01',
             'department_id' => $old['departments'], 'manager_id' => $oldEmployee, 'created_at' => now(), 'updated_at' => now()]);
-        $vacancy = DB::table('vacancies')->insertGetId(['title' => 'Real vacancy', 'branch_id' => $old['branches'], 'created_at' => now(), 'updated_at' => now()]);
+        $vacancy = DB::table('vacancies')->insertGetId(['title' => 'Real vacancy', 'branch_id' => $old['branches'], 'recruiter_id' => $realUser->id,
+            'pipeline_id' => DB::table('pipelines')->where('is_default', true)->value('id'), 'created_at' => now(), 'updated_at' => now()]);
 
         $this->postJson('/api/ops/demo-fill?confirm=demo&reset=1', [], self::HEADERS)->assertOk();
         $this->assertSame(0, DB::table('demo_records')->count());
