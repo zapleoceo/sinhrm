@@ -308,6 +308,11 @@ export class MascotBrain {
 
   /** Released: he flies as a ragdoll (the engine reports `fell`, `landed`, `rested`). */
   dragEnd(): void {
+    if (this.reduced) {
+      // Reduced motion: the engine eases him to standing where he was dropped; no fall, no throw counting.
+      this.current = 'static';
+      return;
+    }
     const now = this.scheduler.now();
     this.throws = [...this.throws.filter((t) => now - t < ANNOY_WINDOW_MS), now];
     this.current = 'airborne';
@@ -315,6 +320,9 @@ export class MascotBrain {
 
   /** The ragdoll took over (throw, slip, trip, faint): no exits or fidgets until he is up again. */
   fell(): void {
+    if (this.reduced) {
+      return;
+    }
     this.current = 'fallen';
     this.clear('stay');
     this.clear('getup');

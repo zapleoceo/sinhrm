@@ -1,7 +1,7 @@
-import { createGetUp, keepAboveGround, nearestAngle } from './getup';
+import { createGetUp, keepAboveGround } from './getup';
 import { Stage } from './animations';
 import { Grab, LINKS, P, POINT_COUNT, Ragdoll, RAGDOLL_DT, anchorOf, applyStruggle, centerOfMass, createRagdoll, fitPose, grabAt, kineticEnergy, orientationOf, point, ragdollWorld, stepRagdoll } from './ragdoll';
-import { BONES, STAND, forwardKinematics } from './skeleton';
+import { BONES, STAND, forwardKinematics, nearestAngle } from './skeleton';
 
 const W = ragdollWorld(1200, 800);
 const STAGE: Stage = { width: 1200, height: 800, ground: 800, seat: null, corner: { x: 1166, y: 766 } };

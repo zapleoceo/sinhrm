@@ -236,3 +236,62 @@ describe('AssistantMascot schedules no rAF when there is nothing to animate', ()
     expect(clock.requests - before).toBeLessThanOrEqual(1);
   });
 });
+
+describe('AssistantMascot: a lost hold never gets stuck', () => {
+  interface Internals {
+    engine: MascotEngine;
+    brain: { chatOpened(): void; state: string };
+    renderer: { hit: SVGPathElement };
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  async function mountHeld(): Promise<{ internals: Internals; stage: HTMLElement }> {
+    TestBed.configureTestingModule({
+      imports: [AssistantMascot, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [
+        provideRouter([]),
+        { provide: MASCOT_FRAME_CLOCK, useValue: new FakeClock() },
+        { provide: AuthService, useValue: { user: signal({ id: 1 }) } },
+        { provide: AssistantService, useValue: { status: () => of({ available: true, reason: null, mcp_url: '' }) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(AssistantMascot);
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(10);
+    const internals = fixture.componentInstance as unknown as Internals;
+    // Put him on screen in a draggable state.
+    internals.brain.chatOpened();
+    const stage = (fixture.nativeElement as HTMLElement).querySelector('.mascot-stage') as HTMLElement;
+    const pointer = (type: string, x: number, y: number, target: EventTarget): void => {
+      const ev = new MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true });
+      target.dispatchEvent(ev);
+    };
+    const r = internals.engine.root;
+    pointer('pointerdown', r.x, r.y - 20, internals.renderer.hit);
+    pointer('pointermove', r.x + 40, r.y - 60, window);
+    pointer('pointermove', r.x + 80, r.y - 100, window);
+    return { internals, stage };
+  }
+
+  it('lostpointercapture drops him like a cancel (no throw velocity)', async () => {
+    const { internals, stage } = await mountHeld();
+    expect(internals.engine.held).toBe(true);
+    expect(internals.brain.state).toBe('dragged');
+    stage.dispatchEvent(new Event('lostpointercapture'));
+    expect(internals.engine.held).toBe(false);
+    expect(internals.engine.airborne).toBe(true);
+    expect(internals.engine.ragdollVelocity(0)).toEqual({ x: 0, y: 0 });
+    expect(internals.brain.state).not.toBe('dragged');
+  });
+
+  it('window blur ends the hold too', async () => {
+    const { internals } = await mountHeld();
+    window.dispatchEvent(new Event('blur'));
+    expect(internals.engine.held).toBe(false);
+  });
+});

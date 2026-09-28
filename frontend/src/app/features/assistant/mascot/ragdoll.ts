@@ -443,6 +443,36 @@ function touchingGround(r: Ragdoll, w: RagdollWorld): boolean {
   return false;
 }
 
+/**
+ * The viewport changed (resize): keeps the body inside the new walls and on/above the new floor by moving it rigidly
+ * (positions and previous positions together — no velocity kick), then lets physics settle it again.
+ * A lower floor → he falls onto it; a higher one → lifted with it.
+ */
+export function reseat(r: Ragdoll, w: RagdollWorld): void {
+  let lift = 0;
+  let left = 0;
+  let right = 0;
+  for (let i = 0; i < POINT_COUNT; i++) {
+    const rad = RADIUS[i];
+    lift = Math.max(lift, r.pos[i * 2 + 1] - (w.ground - rad));
+    left = Math.max(left, rad - r.pos[i * 2]);
+    right = Math.max(right, r.pos[i * 2] - (w.width - rad));
+  }
+  const dx = left > 0 ? left : right > 0 ? -Math.min(right, Math.max(0, w.width - 60)) : 0;
+  const dy = lift > 0 ? -lift : 0;
+  if (dx !== 0 || dy !== 0) {
+    for (let i = 0; i < POINT_COUNT; i++) {
+      r.pos[i * 2] += dx;
+      r.prev[i * 2] += dx;
+      r.pos[i * 2 + 1] += dy;
+      r.prev[i * 2 + 1] += dy;
+    }
+  }
+  // Wake up and settle on the new floor.
+  r.rested = false;
+  r.stillSteps = 0;
+}
+
 /** Joints (relative to the pelvis) straight from the ragdoll points — what is drawn is exactly the physics. */
 export function ragdollJoints(r: Ragdoll, facing: 1 | -1): Joints {
   const px = r.pos[P.Pelvis * 2];

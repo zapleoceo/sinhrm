@@ -204,14 +204,18 @@ export function maxJointTravel(a: Pose, b: Pose): number {
   return d;
 }
 
+/** Same angle as `target`, unwrapped by whole turns to the one nearest to `ref` (no spinning the long way round). */
+export function nearestAngle(target: number, ref: number): number {
+  return target + 2 * Math.PI * Math.round((ref - target) / (2 * Math.PI));
+}
+
 /** `from` with every angle moved by whole turns to the equivalent nearest to `to` (same drawing, shortest blend). */
 export function unwrapToward(from: Pose, to: Pose): Pose {
   const out: Pose = { ...from };
-  const near = (a: number, ref: number): number => a + 2 * Math.PI * Math.round((ref - a) / (2 * Math.PI));
   for (const k of ANGLE_KEYS) {
-    out[k] = near(from[k], to[k]);
+    out[k] = nearestAngle(from[k], to[k]);
   }
-  out.rot = near(from.rot, to.rot);
+  out.rot = nearestAngle(from.rot, to.rot);
   return out;
 }
 

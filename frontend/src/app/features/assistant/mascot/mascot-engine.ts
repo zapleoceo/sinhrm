@@ -50,6 +50,7 @@ import {
   orientationOf,
   ragdollJoints,
   ragdollWorld,
+  reseat,
   stepRagdoll,
   velocity,
 } from './ragdoll';
@@ -119,6 +120,8 @@ const NO_PROPS: PropsFrame = { rope: null, book: null, balls: null };
 const TYPE_SPEED = 42;
 /** Average joint speed of a blend between clips (px/s). */
 const BLEND_SPEED = 600;
+/** Reduced motion: the longest blend allowed (e.g. standing up where he was dropped). */
+export const REDUCED_MAX_BLEND = 0.18;
 /** Line boil re-roll interval (~8 Hz). */
 const BOIL_EVERY = 0.125;
 /** Clips that need 60 fps (fast motion); calm idles render at 30, sleep at 10. */
@@ -177,6 +180,8 @@ export class MascotEngine {
   private rag: Ragdoll | null = null;
   private ragWorld: RagdollWorld | null = null;
   private landedSent = false;
+  /** Re-settling after a resize: do not report `rested` twice. */
+  private restedAgain = false;
   private arrowAcc = 0;
   private lastDragMoveAt = -Infinity;
   /** Drag velocity smoothed over ~0.1 s (body tilt, flailing) — no jerks when the pointer speeds up or stops. */
@@ -255,6 +260,17 @@ export class MascotEngine {
   setStage(stage: Stage): void {
     this.stage = stage;
     this.world = { ...this.world, width: stage.width };
+    if (this.ragWorld && (this.ragWorld.width !== stage.width || this.ragWorld.ground !== stage.ground)) {
+      this.ragWorld = { ...this.ragWorld, width: stage.width, ground: stage.ground };
+      if (this.rag) {
+        reseat(this.rag, this.ragWorld);
+        if (this.mode === 'rest') {
+          // Lies down again on the new floor (rests again, the brain's get-up timer keeps running).
+          this.mode = 'ragdoll';
+          this.restedAgain = true;
+        }
+      }
+    }
   }
 
   setReducedMotion(on: boolean): void {
@@ -312,7 +328,8 @@ export class MascotEngine {
     } else if (!(this.mode === 'physics' && this.physicsKind === 'hop')) {
       this.mode = 'clip';
     }
-    const blend = this.reduced ? 0 : (options.blend ?? this.clip.blend);
+    // Reduced motion: no blends, except an explicit short one (≤ 0.2 s) so nothing ever teleports.
+    const blend = this.reduced ? Math.min(REDUCED_MAX_BLEND, options.blend ?? 0) : (options.blend ?? this.clip.blend);
     this.startBlend(blend);
   }
 
@@ -407,8 +424,32 @@ export class MascotEngine {
     }
   }
 
+  /**
+   * The hold was lost (pointer capture lost, window blur, tab hidden): he just drops — no throw velocity,
+   * then the usual fall → rest → get up (reduced motion: eases to standing where he is).
+   */
+  dragCancel(): void {
+    if (this.rag && this.grab) {
+      this.rag.prev.set(this.rag.pos);
+    }
+    this.dragVel = { x: 0, y: 0 };
+    this.dragSamples = [];
+    this.dragEnd();
+  }
+
+  get held(): boolean {
+    return this.mode === 'drag' && this.grab !== null;
+  }
+
   /** Release: the ragdoll keeps its own point velocities — the swing IS the throw. Then fall → rest → get up. */
   dragEnd(): void {
+    if (this.reduced) {
+      // Reduced motion: no tumble, no choreography — ease quickly to standing at the drop spot.
+      this.grab = null;
+      const x = Math.min(this.stage.width - 45, Math.max(45, this.displayed.x));
+      this.play('static', { targetX: x, blend: REDUCED_MAX_BLEND });
+      return;
+    }
     // The held spot's own velocity is the throw (the arrows follow it).
     const v = this.rag && this.grab ? velocity(this.rag, this.grab.a) : this.dragVel;
     const speed = Math.hypot(v.x, v.y);
@@ -473,7 +514,7 @@ export class MascotEngine {
       for (const k of ANGLE_KEYS) {
         this.springs[k].x = from[k];
       }
-      this.blendDur = Math.max(blend, Math.min(0.7, blendTravel(from, target) / BLEND_SPEED));
+      this.blendDur = this.reduced ? blend : Math.max(blend, Math.min(0.7, blendTravel(from, target) / BLEND_SPEED));
     } else {
       this.blendFrom = null;
       const first = this.clip.sample(0, this.env());
@@ -531,6 +572,9 @@ export class MascotEngine {
 
   /** The ragdoll takes over from the current drawing (continuous: same points, velocity from the throw). */
   private startRagdoll(vx: number, vy: number, spin: number): void {
+    if (this.reduced) {
+      return;
+    }
     this.rag = createRagdoll(this.root, this.joints, vx, vy, spin);
     this.ragWorld = ragdollWorld(this.stage.width, this.stage.ground);
     this.mode = 'ragdoll';
@@ -606,7 +650,11 @@ export class MascotEngine {
       if (res.rested) {
         this.mode = 'rest';
         const fitted = fitPose(rag, this.displayed.facing);
-        this.events.push({ type: 'rested', orientation: orientationOf(fitted), impact: rag.maxImpact });
+        if (this.restedAgain) {
+          this.restedAgain = false;
+        } else {
+          this.events.push({ type: 'rested', orientation: orientationOf(fitted), impact: rag.maxImpact });
+        }
         if (rag.maxImpact > 1300) {
           this.add(...spawnStars());
         }
@@ -823,7 +871,9 @@ export class MascotEngine {
     let morph = frame.morph ?? 0;
     if (this.blendFrom && this.blendT < this.blendDur) {
       this.blendT += h;
-      const u = ease.inOut(Math.min(1, this.blendT / this.blendDur));
+      const k = Math.min(1, this.blendT / this.blendDur);
+      // Reduced motion: short blends are linear — the lowest peak speed for the time allowed, no easing flourish.
+      const u = this.reduced ? k : ease.inOut(k);
       target = lerpPose(this.blendFrom, target, u);
       morph = this.blendFromMorph + (morph - this.blendFromMorph) * u;
     }

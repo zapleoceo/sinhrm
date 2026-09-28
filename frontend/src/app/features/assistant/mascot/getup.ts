@@ -9,7 +9,6 @@ import { Orientation } from './ragdoll';
  */
 
 const PI = Math.PI;
-const TWO_PI = 2 * PI;
 
 export type GetUpVariant = 'full' | 'sit';
 
@@ -18,11 +17,6 @@ export interface GetUpContext {
   from: Pose;
   orientation: Orientation;
   variant: GetUpVariant;
-}
-
-/** Same angle as `target`, unwrapped to the turn nearest to `ref` (no spinning the long way round). */
-export function nearestAngle(target: number, ref: number): number {
-  return target + TWO_PI * Math.round((ref - target) / TWO_PI);
 }
 
 /** Lifts the pose so no joint goes below the floor. */

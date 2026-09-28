@@ -291,3 +291,143 @@ describe('real falls: throw → ragdoll → get up, continuously', () => {
     expect(e.fps).toBe(0);
   });
 });
+
+describe('review fixes: resize, reduced motion, lost hold', () => {
+  const ragPoints = (e: MascotEngine): { x: number; y: number }[] => {
+    const r = e.ragdoll!;
+    return Array.from({ length: 12 }, (_, i) => ({ x: r.pos[i * 2], y: r.pos[i * 2 + 1] }));
+  };
+  const throwIt = (e: MascotEngine): void => {
+    e.play('static', { targetX: 600, blend: 0 });
+    e.tick(0.3);
+    const r = e.root;
+    e.dragStart(r.x, r.y - 20, 0);
+    for (let i = 1; i <= 6; i++) {
+      e.dragMove(r.x + i * 20, r.y - 20 - i * 25, (i * 1000) / 60);
+      e.tick(1 / 60);
+    }
+    e.dragEnd();
+  };
+
+  it('resize during a fall: lands on the new floor inside the new width', () => {
+    const e = new MascotEngine(STAGE, seeded(2));
+    throwIt(e);
+    e.tick(0.1);
+    e.setStage({ ...STAGE, width: 500, height: 600, ground: 598 });
+    const events: string[] = [];
+    for (let i = 0; i < 900 && !e.ragdoll?.rested; i++) {
+      events.push(...e.tick(1 / 60).events.map((ev) => ev.type));
+    }
+    expect(e.ragdoll?.rested).toBe(true);
+    for (const p of ragPoints(e)) {
+      expect(p.y).toBeLessThanOrEqual(598 + 1e-9);
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.x).toBeLessThanOrEqual(500);
+    }
+    expect(Math.max(...ragPoints(e).map((p) => p.y))).toBeGreaterThan(590);
+    expect(events.filter((t) => t === 'rested')).toHaveLength(1);
+  });
+
+  it('resize while lying: re-settles on the new floor (lower → falls, higher → lifted), no second «rested»', () => {
+    const e = new MascotEngine(STAGE, seeded(2));
+    throwIt(e);
+    for (let i = 0; i < 900 && !e.ragdoll?.rested; i++) {
+      e.tick(1 / 60);
+    }
+    const before = ragPoints(e);
+    // Lower floor: he drops onto it, continuously (no jump bigger than a physics step).
+    e.setStage({ ...STAGE, height: 900, ground: 898 });
+    const events: string[] = [];
+    let prev = before;
+    for (let i = 0; i < 900 && !e.ragdoll?.rested; i++) {
+      events.push(...e.tick(1 / 60).events.map((ev) => ev.type));
+      const cur = ragPoints(e);
+      for (let k = 0; k < cur.length; k++) {
+        expect(Math.hypot(cur[k].x - prev[k].x, cur[k].y - prev[k].y)).toBeLessThan(40);
+      }
+      prev = cur;
+    }
+    expect(Math.max(...ragPoints(e).map((p) => p.y))).toBeGreaterThan(890);
+    expect(events).not.toContain('rested');
+    // Higher floor and a narrower window: lifted onto it and kept inside.
+    e.setStage({ ...STAGE, width: 400, height: 500, ground: 498 });
+    for (let i = 0; i < 900 && !e.ragdoll?.rested; i++) {
+      e.tick(1 / 60);
+    }
+    for (const p of ragPoints(e)) {
+      expect(p.y).toBeLessThanOrEqual(498 + 1e-9);
+      expect(p.x).toBeLessThanOrEqual(400);
+    }
+  });
+
+  it('reduced motion: drag still moves him, release eases him to standing at the drop spot within 0.2 s — no tumble', () => {
+    const e = new MascotEngine(STAGE, seeded(2), true);
+    e.play('static', { targetX: 600, blend: 0 });
+    e.tick(0.3);
+    const r = e.root;
+    e.dragStart(r.x, r.y - 20, 0);
+    for (let i = 1; i <= 10; i++) {
+      e.dragMove(r.x - i * 15, r.y - 20 - i * 20, (i * 1000) / 60);
+      e.tick(1 / 60);
+    }
+    expect(e.root.y).toBeLessThan(r.y - 100);
+    const dropX = e.root.x;
+    e.dragEnd();
+    expect(e.ragdoll).toBeNull();
+    const events: string[] = [];
+    let prev = e.tick(0).frame;
+    for (let i = 0; i < 12; i++) {
+      const { frame, events: ev } = e.tick(1 / 60);
+      events.push(...ev.map((x) => x.type));
+      for (const k of ['head', 'lFoot', 'rHand'] as const) {
+        const d = Math.hypot(frame.pose.x + frame.joints[k].x - prev.pose.x - prev.joints[k].x, frame.pose.y + frame.joints[k].y - prev.pose.y - prev.joints[k].y);
+        expect(d).toBeLessThan(40);
+      }
+      prev = frame;
+    }
+    expect(events).not.toContain('fell');
+    expect(e.root.y).toBeCloseTo(STAGE.ground - 44, 0);
+    expect(Math.abs(e.root.x - dropX)).toBeLessThan(1);
+    expect(e.calm).toBe(true);
+  });
+
+  it('reduced motion brain: after the drop he is just standing — no get-up, dizzy or sulk', () => {
+    vi.useFakeTimers();
+    try {
+      const commands: BrainCommand[] = [];
+      const brain = new MascotBrain((c) => commands.push(c), { rng: () => 0.5, width: () => 1200 });
+      brain.start(true, true);
+      for (let i = 0; i < 4; i++) {
+        brain.dragStart();
+        brain.dragEnd();
+        brain.fell();
+        brain.rested(3000);
+      }
+      vi.advanceTimersByTime(10_000);
+      expect(brain.state).toBe('static');
+      const plays = commands.filter((c) => c.type === 'play').map((c) => (c as { action: string }).action);
+      for (const a of ['getup', 'sulk', 'dizzy', 'rub-head']) {
+        expect(plays).not.toContain(a);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a cancelled hold drops him without throw velocity', () => {
+    const e = new MascotEngine(STAGE, seeded(2));
+    e.play('static', { targetX: 600, blend: 0 });
+    e.tick(0.3);
+    const r = e.root;
+    e.dragStart(r.x, r.y - 20, 0);
+    for (let i = 1; i <= 8; i++) {
+      e.dragMove(r.x + i * 40, r.y - 20, (i * 1000) / 60);
+      e.tick(1 / 60);
+    }
+    expect(Math.abs(e.ragdollVelocity(P.Pelvis).x)).toBeGreaterThan(200);
+    e.dragCancel();
+    expect(e.held).toBe(false);
+    expect(e.ragdollVelocity(P.Pelvis)).toEqual({ x: 0, y: 0 });
+    expect(e.airborne).toBe(true);
+  });
+});

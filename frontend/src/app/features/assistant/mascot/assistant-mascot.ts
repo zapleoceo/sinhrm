@@ -157,12 +157,19 @@ export class AssistantMascot {
       this.listen(win, 'keydown', () => this.brain?.userActivity(), { passive: true });
       this.listen(win, 'resize', () => this.onResize(), { passive: true });
       this.listen(this.document, 'scroll', (e) => this.onScroll(e), { passive: true, capture: true });
-      this.listen(this.document, 'visibilitychange', () => this.syncLoop());
+      this.listen(this.document, 'visibilitychange', () => {
+        if (this.document.visibilityState === 'hidden') {
+          this.cancelHold();
+        }
+        this.syncLoop();
+      });
+      this.listen(win, 'blur', () => this.cancelHold());
+      this.listen(stageEl, 'lostpointercapture', () => this.cancelHold());
       this.listen(this.document, 'focusin', () => this.updatePause());
       this.listen(this.document, 'focusout', () => queueMicrotask(() => this.updatePause()));
       this.listen(stageEl, 'pointerdown', (e) => this.onPointerDown(e as PointerEvent));
       this.listen(stageEl, 'pointerup', (e) => this.onPointerUp(e as PointerEvent));
-      this.listen(stageEl, 'pointercancel', () => this.onPointerUp(null));
+      this.listen(stageEl, 'pointercancel', () => this.cancelHold());
       this.listen(this.renderer!.hit, 'pointerenter', () => this.brain?.hover(true));
       this.listen(this.renderer!.hit, 'pointerleave', () => this.brain?.hover(false));
       if (media) {
@@ -419,6 +426,18 @@ export class AssistantMascot {
     } else if (e) {
       this.zone.run(() => this.settings.openChat());
     }
+  }
+
+  /** The hold can never get stuck: losing the pointer drops him (no throw) like a cancelled pointer. */
+  private cancelHold(): void {
+    const press = this.press;
+    this.press = null;
+    if (!press?.dragging) {
+      return;
+    }
+    this.engine?.dragCancel();
+    this.brain?.dragEnd();
+    this.loop?.kick();
   }
 
   private onScroll(e: Event): void {
