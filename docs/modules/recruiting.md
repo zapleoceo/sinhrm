@@ -247,7 +247,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 длительность и счётчики пишутся в лог `recruiting.demo_generated`. На SQLite `generate()` занимает ~0.4 с (тест
 `DemoCommandTest` требует < 40 с: сид идёт внутри HTTP-запроса с лимитом функции 60 с).
 
-`populate(…, $from)` / `extraTouch()` — те же истории (порциями: `$from` — номер первой истории; external id касаний — `demo-fill-c<n>-…`/`demo-fill-t<n>-…`, чтобы не совпасть с превью-сидом и между запросами; кандидат с занятым контактом пропускается; касание привязано к кандидату явно, `candidateId`) кандидатов с префиксом имени, сроком до 180 дней, шагами воронки в днях и каналами привлечения; их вызывает общий демо-заполнитель `Core/Services/Demo/DemoDataService` (`POST /api/ops/demo-fill`, работает и в production, данные помечены `[ТЕСТ]`).
+`populate(…, $from)` / `extraTouch()` — те же истории (порциями: `$from` — номер первой истории; external id касаний — `demo-fill-c<n>-…`/`demo-fill-t<n>-…`, чтобы не совпасть с превью-сидом и между запросами; кандидат с занятым контактом пропускается (контакты проверяются заранее, без падающего INSERT — он оборвал бы транзакцию Postgres); касание привязано к кандидату явно, `candidateId`) кандидатов с префиксом имени, сроком до 180 дней, шагами воронки в днях и каналами привлечения; их вызывает общий демо-заполнитель `Core/Services/Demo/DemoDataService` (`POST /api/ops/demo-fill`, работает и в production, данные помечены `[ТЕСТ]`).
 
 Вызывают его:
 - **seeder** `Database/Seeders/RecruitingDemoSeeder` — из `DatabaseSeeder`, если `APP_ENV != production`. Именно сидер, а не
