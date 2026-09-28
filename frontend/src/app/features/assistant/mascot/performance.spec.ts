@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ENABLED_KEY } from '../assistant-settings';
+import { AssistantSettings, ENABLED_KEY } from '../assistant-settings';
 import { AssistantService } from '../assistant.service';
 import { Stage } from './animations';
 import { AssistantMascot, prefersLite } from './assistant-mascot';
@@ -294,4 +294,71 @@ describe('AssistantMascot: a lost hold never gets stuck', () => {
     window.dispatchEvent(new Event('blur'));
     expect(internals.engine.held).toBe(false);
   });
+});
+
+describe('AssistantMascot: jokes with the chat open', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('chat open: throw from the seat → get up → the joke is said (component, real wiring)', async () => {
+    const clock = new FakeClock();
+    TestBed.configureTestingModule({
+      imports: [AssistantMascot, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [
+        provideRouter([]),
+        { provide: MASCOT_FRAME_CLOCK, useValue: clock },
+        { provide: AuthService, useValue: { user: signal({ id: 1 }) } },
+        { provide: AssistantService, useValue: { status: () => of({ available: true, reason: null, mcp_url: '' }), quips: () => of({ jokes: ['AI joke'], source: 'ai' }) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(AssistantMascot);
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(10);
+    TestBed.inject(AssistantSettings).openChat();
+    fixture.detectChanges();
+    await vi.advanceTimersByTimeAsync(3000);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as unknown as { engine: MascotEngine; brain: { state: string; dragStart(): void; dragEnd(): void } };
+    const says: (string | null)[] = [];
+    const orig = cmp.engine.say.bind(cmp.engine);
+    cmp.engine.say = (t: string | null) => {
+      says.push(t);
+      orig(t);
+    };
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    let t = 0;
+    const frames = async (n: number): Promise<void> => {
+      for (let i = 0; i < n; i++) {
+        t += 1000 / 60;
+        await vi.advanceTimersByTimeAsync(1000 / 60);
+        clock.flush(t);
+        if (clock.pending === 0) {
+          (cmp.engine as unknown as { tick(dt: number): unknown }).tick(0);
+        }
+      }
+    };
+    await frames(60);
+    const states: string[] = [cmp.brain.state];
+    const r = cmp.engine.root;
+    cmp.brain.dragStart();
+    cmp.engine.dragStart(r.x, r.y - 20, 0);
+    for (let i = 1; i <= 10; i++) {
+      cmp.engine.dragMove(r.x - i * 25, r.y - 20 - i * 10, (i * 1000) / 60);
+      await frames(1);
+    }
+    cmp.engine.dragEnd();
+    cmp.brain.dragEnd();
+    for (let i = 0; i < 900; i++) {
+      await frames(1);
+      if (states.at(-1) !== cmp.brain.state) {
+        states.push(cmp.brain.state);
+      }
+    }
+    vi.restoreAllMocks();
+    expect({ states, says }).toEqual({ states: expect.arrayContaining(['recovering', 'docked']), says: expect.arrayContaining(['AI joke']) });
+  });
+
 });

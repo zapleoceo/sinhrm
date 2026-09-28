@@ -155,7 +155,7 @@ export class AssistantMascot {
       width: () => this.viewport.width,
       joke: (situation) => this.jokes.pick(situation, this.language.current(), Math.random),
       // Not while the chat is answering or anyone is typing (the chat composer included).
-      canJoke: () => !this.conversation.busy() && !this.isTypingAnywhere(),
+      canJoke: () => this.canJokeNow(),
       // Stays awake while an answer is pending (turns, polling, tools, a confirmation) or the mic is busy.
       isBusy: () => this.conversation.busy() || this.voice.state() !== 'idle',
     });
@@ -514,6 +514,11 @@ export class AssistantMascot {
       this.cleanups.push(() => outer.disconnect());
     }
     this.cleanups.push(() => inner.disconnect());
+  }
+
+  /** Joke only when the chat is not answering and nobody is typing. */
+  private canJokeNow(): boolean {
+    return !this.conversation.busy() && !this.isTypingAnywhere();
   }
 
   private isTypingAnywhere(): boolean {

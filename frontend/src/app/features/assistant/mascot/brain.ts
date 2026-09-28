@@ -148,7 +148,8 @@ export class MascotBrain {
     private readonly emit: (command: BrainCommand) => void,
     options: BrainOptions = {},
   ) {
-    this.rng = options.rng ?? Math.random;
+    // Late-bound so a test can stub Math.random after construction.
+    this.rng = options.rng ?? (() => Math.random());
     this.scheduler = options.scheduler ?? defaultScheduler;
     this.isTyping = options.isTyping ?? (() => false);
     this.width = options.width ?? (() => 1280);
@@ -432,6 +433,11 @@ export class MascotBrain {
       case 'waking':
         this.restoreAfterSleep();
         break;
+      case 'docked':
+        if (action === 'return-seat') {
+          this.play('docked', { blend: 0.12 });
+        }
+        break;
       default:
         break;
     }
@@ -456,13 +462,17 @@ export class MascotBrain {
     this.play(entrance, { side: this.rng() < 0.5 ? 'left' : 'right', targetX: this.randomX() });
   }
 
-  /** getup → (sulk → stand-up) → (dizzy) → rub-head → dust → idle. */
+  /**
+   * getup → (sulk → stand-up) → (dizzy) → rub-head → dust → idle (or a hop back onto the open chat).
+   * The joke comes the moment he is back on his feet, not after the head rub and dust-off.
+   */
   private recover(action: ActionName): void {
     switch (action) {
       case 'getup':
         if (this.annoyed) {
           this.play('sulk');
         } else {
+          this.tellJoke();
           this.play(this.hardFall ? 'dizzy' : 'rub-head');
         }
         break;
@@ -472,6 +482,10 @@ export class MascotBrain {
         this.play('stand-up');
         break;
       case 'stand-up':
+        // Up again after sulking: a (grumpy) joke.
+        this.tellJoke();
+        this.play('rub-head');
+        break;
       case 'dizzy':
         this.play('rub-head');
         break;
@@ -479,8 +493,14 @@ export class MascotBrain {
         this.play('dust');
         break;
       default:
-        this.toIdle();
-        this.tellJoke();
+        if (this.chatOpen && !this.reduced) {
+          // Hop back up onto the chat panel (no teleport), then sit.
+          this.current = 'docked';
+          this.play('return-seat');
+          this.resetSleep();
+        } else {
+          this.toIdle();
+        }
         break;
     }
   }

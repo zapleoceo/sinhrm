@@ -155,6 +155,7 @@ const FAST_ACTIONS: ReadonlySet<ActionName> = new Set<ActionName>([
   'airborne',
   'getup',
   'stand-up',
+  'return-seat',
   'idle-slip',
   'idle-trip',
 ]);

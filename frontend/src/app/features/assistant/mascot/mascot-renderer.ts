@@ -479,6 +479,11 @@ export class MascotRenderer {
     const { w, h } = this.bubbleSize;
     let bx = this.bubbleSide === 'right' ? head.x + 2 : head.x - w - 2;
     let by = head.y - 30 - h;
+    if (origin.y + by < 8) {
+      // No room above (e.g. the chat panel reaches the top edge): beside him, just below the head, tail up.
+      bx = this.bubbleSide === 'right' ? head.x + 18 : head.x - w - 18;
+      by = head.y - 6;
+    }
     // Keep it on screen.
     bx = Math.min(Math.max(bx, 8 - origin.x), viewport.width - 8 - w - origin.x);
     by = Math.max(by, 8 - origin.y);
