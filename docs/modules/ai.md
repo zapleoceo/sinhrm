@@ -162,7 +162,7 @@ is_active, activated_by, activated_at, created_at, updated_at`. Хранится
 JSON)}]}` — такой запрос может обслужить любой провайдер полосы (deepseek, groq, cohere…). В `ai_requests.meta`
 ставится `tool_emulation: true`, версия промпта получает суффикс `+json`; ответ `ToolEmulation::unwrap` превращает
 обратно в текст + `tool_calls` со свежими id, так что обработчик цели и вызывающий модуль разницы не видят.
-Невалидный JSON → один повтор → `ai_invalid_output`.
+Разбор ответа терпимый: часть провайдеров бесплатных полос игнорирует `json_schema` (прод 28.09: `finish_reason = stop`, но не JSON протокола), поэтому обычный текст = финальный ответ, отсутствующие `say`/`calls` = пусто, принимаются синонимы (`text/answer/reply`, `tool_calls`, `tool/args/parameters`, один вызов на верхнем уровне). Непригодный ответ → один повтор → `ai_invalid_output` с точным кодом в `ai_requests.meta.invalid_reason`: `not_json` (битый JSON-объект / пусто), `bad_shape` (JSON без текста и вызовов), `bad_tool_call`.
 
 **Брокер и `AiService` инструменты не выполняют** — это делает вызывающий модуль с правами пользователя. Цель
 `AiPurpose::AssistantChat` (`assistant_chat`), промпт `assistant.v1` — [assistant.md](assistant.md); в редакторе
