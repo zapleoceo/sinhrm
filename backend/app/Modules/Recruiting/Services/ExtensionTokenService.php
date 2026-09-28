@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
-use App\Modules\Recruiting\Contracts\ExtensionTokenRepository;
-use App\Modules\Recruiting\DTO\ExtensionTokenStatus;
-use Illuminate\Support\Carbon;
-use Psr\Log\LoggerInterface;
+use App\Modules\Auth\DTO\PersonalTokenStatus;
+use App\Modules\Auth\DTO\TokenKind;
+use App\Modules\Auth\Services\PersonalTokens;
 
 /**
  * Personal access token of the browser extension: ability "clipper" only, 90 days, one active per user (issuing a
- * new one revokes the previous). Sanctum accepts it on /api/clipper/* only (see RecruitingServiceProvider::boot).
+ * new one revokes the previous). Sanctum accepts it on /api/clipper/* only (TokenScopes, RecruitingServiceProvider::boot).
  */
 final readonly class ExtensionTokenService
 {
@@ -22,34 +21,25 @@ final readonly class ExtensionTokenService
 
     public const int TTL_DAYS = 90;
 
-    public function __construct(
-        private ExtensionTokenRepository $tokens,
-        private LoggerInterface $log,
-    ) {}
+    public function __construct(private PersonalTokens $tokens) {}
 
-    public function issue(User $user): ExtensionTokenStatus
+    public static function kind(): TokenKind
     {
-        $revoked = $this->tokens->deleteAll($user, self::NAME);
-        $new = $this->tokens->create($user, self::NAME, [self::ABILITY], Carbon::now()->addDays(self::TTL_DAYS));
-        $this->log->info('recruiting.extension_token_issued', ['user' => $user->id, 'revoked' => $revoked]);
-        $token = $new->accessToken;
-
-        return new ExtensionTokenStatus(true, $token->created_at, null, $token->expires_at, $new->plainTextToken);
+        return new TokenKind(self::NAME, self::ABILITY, self::TTL_DAYS, 'recruiting.extension_token');
     }
 
-    public function status(User $user): ExtensionTokenStatus
+    public function issue(User $user): PersonalTokenStatus
     {
-        $token = $this->tokens->find($user, self::NAME);
-        if ($token === null || ($token->expires_at !== null && $token->expires_at->isPast())) {
-            return new ExtensionTokenStatus(false, $token?->created_at, $token?->last_used_at, $token?->expires_at);
-        }
+        return $this->tokens->issue($user, self::kind());
+    }
 
-        return new ExtensionTokenStatus(true, $token->created_at, $token->last_used_at, $token->expires_at);
+    public function status(User $user): PersonalTokenStatus
+    {
+        return $this->tokens->status($user, self::kind());
     }
 
     public function revoke(User $user): void
     {
-        $revoked = $this->tokens->deleteAll($user, self::NAME);
-        $this->log->info('recruiting.extension_token_revoked', ['user' => $user->id, 'revoked' => $revoked]);
+        $this->tokens->revoke($user, self::kind());
     }
 }

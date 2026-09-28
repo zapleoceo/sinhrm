@@ -14,6 +14,8 @@ import { MatMenuModule } from '@angular/material/menu';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
+import { AssistantSettings } from '../assistant/assistant-settings';
+import { AssistantMascot } from '../assistant/mascot/assistant-mascot';
 import { LanguageSwitcher } from './language-switcher';
 import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
@@ -34,6 +36,7 @@ import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded 
     LanguageSwitcher,
     NavBadge,
     A11yModule,
+    AssistantMascot,
   ],
   host: { '(document:keydown.escape)': 'closeDrawer()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +47,7 @@ export class ShellLayout {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly navBadges = inject(NavBadgesService);
+  private readonly assistant = inject(AssistantSettings);
   protected readonly theme = inject(ThemeService);
 
   protected readonly user = this.auth.user;
@@ -153,6 +157,11 @@ export class ShellLayout {
 
   protected closeDrawer(): void {
     this.drawerOpen.set(false);
+  }
+
+  /** Opens the chat with «Стік» (keyboard-friendly way to reach him while he is off stage). */
+  protected openAssistant(): void {
+    this.assistant.openChat();
   }
 
   protected async logout(): Promise<void> {

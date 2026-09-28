@@ -132,6 +132,8 @@ is_active, activated_by, activated_at, created_at, updated_at`. Хранится
 | `max_requests_per_day` | 200 | лимит попыток в сутки (UTC) |
 | `daily_cap_usd` | 2 | лимит $ в сутки (по `cost_usd` из ответов брокера) |
 | `ai_script_evaluation`, `ai_mail_classification`, `ai_candidate_screening` | `on` | выключатель функции |
+| `capability_assistant_chat` | `chat:smart` | возможность брокера для помощника «Стік»: нативные tools брокер отдаёт только openai/anthropic/gemini/mistral, в `chat:fast` из них остаётся один gemini; `chat:smart` = gemini → anthropic ([assistant.md](assistant.md)) |
+| `ai_assistant_chat` | `on` | выключатель помощника «Стік» |
 | `ai_screening_auto` | `off` | автоскрининг новых откликов |
 
 ### Как сменить провайдера или модель
@@ -141,6 +143,26 @@ is_active, activated_by, activated_at, created_at, updated_at`. Хранится
   (ключ — интеграция `openrouter`, секрет `api_key`; синхронный вызов ≤ 40 с; модель = настройка без префикса
   `openrouter/`, пусто → `openai/gpt-5.6-luna`). Лимиты, ворота, промпты и обработчики те же. Ограничение: у синхронного
   провайдера отложенных ответов нет — повтор после невалидного ответа в cron не опрашивается (запрос завершится ошибкой).
+
+### Разговор с инструментами (помощник «Стік»)
+Кроме «system + user → строгий JSON» есть второй вид запроса — **разговор**: `AiPrompt::conversation()` несёт всю
+историю после системного сообщения (`history`: user / assistant с `tool_calls` / tool) и нативные инструменты
+(`tools`, формат OpenAI). Провайдеры отправляют `tools` + `tool_choice: auto` (без `response_format`, контракт брокера
+`docs/native-tools.md`), а `tool_calls` ответа кладут в `AiResult::toolCalls`. Обработчик такой цели реализует
+`Contracts/AiConversationHandler`: `AiService` не декодирует JSON, а передаёт в `parse()`
+`{text, tool_calls}`; всё остальное (ворота, лимиты, `ai_requests`, повтор, отложенное завершение) — как у прочих целей.
+**Брокер и `AiService` инструменты не выполняют** — это делает вызывающий модуль с правами пользователя. Цель
+`AiPurpose::AssistantChat` (`assistant_chat`), промпт `assistant.v1` — [assistant.md](assistant.md); в редакторе
+промптов не участвует.
+
+### Распознавание речи (`AiService::transcribe`)
+`Contracts/AiTranscriber` (реализует `AiBrokerProvider`, привязан всегда к брокеру, даже если чат переключён на
+OpenRouter): `POST {base}/v1/transcribe/jobs?workflow=sinhrm.<цель>` multipart `file` → `job_id`, опрос тем же
+`GET /v1/jobs/{id}` (текст расшифровки в `text`). `AiService::transcribe(purpose, AiAudio, …)` проходит те же ворота,
+лимиты, запись в `ai_requests` (`capability` и `prompt_version` = `transcription`, по ним опрос идёт через
+транскрибер), ожидание ≤ 40 с и завершение `ai.poll`; повтора нет (аудио не хранится). Обработчик цели —
+`AiConversationHandler` (получает `{text, tool_calls: []}`). Первая цель — `assistant_voice` (диктовка в чате
+«Стіка», выключатель общий с `ai_assistant_chat`) — [assistant.md](assistant.md).
 
 ### Промпты: общий формат и кеширование
 Правило владельца — минимально и структурно (короче = дешевле). Все системные промпты собирает `PromptBuilder`:
@@ -349,6 +371,8 @@ AIB_PROJECT_KEY=<ключ, только в своей оболочке> php arti
   parse + compare на «идеальных» ответах, `ai:experiment` против фейкового брокера и отказ в production.
 - `tests/Feature/Scripts/AiEvaluationTest`, `tests/Feature/MailAgent/MailAiTest`, `tests/Feature/Recruiting/ScreeningApiTest`,
   `tests/Unit/Ai/AiSupportTest`, `tests/Unit/Scripts/EvaluationServiceTest`.
+- Разговор с инструментами (tools в запросе, `tool_calls` в ответе, отказ неизвестных инструментов) —
+  `tests/Feature/Assistant/AssistantChatTest`.
 - Фронт: `features/ai/ai.spec.ts`. Живой брокер в тестах не вызывается (`Http::fake`, ключ `synthetic-…`).
 
 ## Доступ к модулю

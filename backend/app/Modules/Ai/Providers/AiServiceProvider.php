@@ -7,6 +7,7 @@ namespace App\Modules\Ai\Providers;
 use App\Modules\Ai\Console\AiExperimentCommand;
 use App\Modules\Ai\Contracts\AiProvider;
 use App\Modules\Ai\Contracts\AiRequestRepository;
+use App\Modules\Ai\Contracts\AiTranscriber;
 use App\Modules\Ai\Prompts\PromptTrialHandler;
 use App\Modules\Ai\Prompts\TestPrompt;
 use App\Modules\Ai\Prompts\TestPromptHandler;
@@ -46,6 +47,8 @@ final class AiServiceProvider extends ModuleServiceProvider
     {
         // Switch provider here: OpenRouterProvider::class is the alternative (docs/modules/ai.md).
         $this->app->bind(AiProvider::class, AiBrokerProvider::class);
+        // Speech → text exists only on the broker (Whisper chain), whichever chat provider is bound above.
+        $this->app->bind(AiTranscriber::class, AiBrokerProvider::class);
         $this->app->bind(AiRequestRepository::class, EloquentAiRequestRepository::class);
         $this->app->tag([TestPromptHandler::class, PromptTrialHandler::class], self::HANDLERS_TAG);
         $this->app->tag([TestPrompt::class], self::PROMPTS_TAG);

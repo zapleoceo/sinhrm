@@ -26,9 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Every /api route except the docs routes themselves.
+        // Every /api route except the docs routes themselves and the MCP endpoint (JSON-RPC, not REST: laravel/mcp).
         Scramble::routes(static fn (Route $route): bool => str_starts_with($route->uri(), 'api/')
-            && ! str_starts_with($route->uri(), 'api/docs'));
+            && ! str_starts_with($route->uri(), 'api/docs')
+            && $route->uri() !== 'api/mcp');
 
         // Group operations by module: App\Modules\<Name>\... → tag "<Name>".
         Scramble::resolveTagsUsing(static function (RouteInfo $routeInfo, Operation $operation): array {

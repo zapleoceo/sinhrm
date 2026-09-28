@@ -1,0 +1,27 @@
+<div class="mascot-stage" #stage [class.off]="!onStage()"></div>
+
+@if (onStage() && !settings.enabled() && !settings.chatOpen()) {
+  <button
+    type="button"
+    class="mascot-orb"
+    [matMenuTriggerFor]="orbMenu"
+    [attr.aria-label]="'assistant.orb.label' | transloco"
+    [title]="'assistant.orb.label' | transloco"
+  ></button>
+  <mat-menu #orbMenu="matMenu" yPosition="above" xPosition="before">
+    <button mat-menu-item type="button" (click)="turnOn()">
+      <mat-icon>accessibility_new</mat-icon>
+      <span>{{ 'assistant.menu.turnOn' | transloco }}</span>
+    </button>
+    <button mat-menu-item type="button" (click)="talk()">
+      <mat-icon>chat</mat-icon>
+      <span>{{ 'assistant.menu.talk' | transloco }}</span>
+    </button>
+  </mat-menu>
+}
+
+<div class="visually-hidden" aria-live="polite">{{ spoken() }}</div>
+
+@if (settings.chatOpen()) {
+  <app-assistant-chat />
+}

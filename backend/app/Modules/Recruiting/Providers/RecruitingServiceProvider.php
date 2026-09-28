@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Providers;
 
 use App\Models\User;
 use App\Modules\Ai\Providers\AiServiceProvider;
+use App\Modules\Auth\Support\TokenScopes;
 use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\RetentionSource;
@@ -17,7 +18,6 @@ use App\Modules\Recruiting\Console\RecruitingDemoCommand;
 use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
-use App\Modules\Recruiting\Contracts\ExtensionTokenRepository;
 use App\Modules\Recruiting\Contracts\HiringTeamRepository;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
 use App\Modules\Recruiting\Contracts\ReportRepository;
@@ -46,7 +46,6 @@ use App\Modules\Recruiting\Repositories\EloquentScreeningRepository;
 use App\Modules\Recruiting\Repositories\EloquentTouchpointRepository;
 use App\Modules\Recruiting\Repositories\EloquentVacancyRepository;
 use App\Modules\Recruiting\Repositories\QueryReportRepository;
-use App\Modules\Recruiting\Repositories\SanctumExtensionTokenRepository;
 use App\Modules\Recruiting\Services\AutoScreeningJob;
 use App\Modules\Recruiting\Services\ExtensionTokenService;
 use App\Modules\Recruiting\Services\InboxNavBadges;
@@ -61,7 +60,6 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\PersonalAccessToken;
-use Laravel\Sanctum\Sanctum;
 
 /** Routes live at the /api root (vacancies, candidates, applications, inbox, recruiting, reports, pipelines). */
 final class RecruitingServiceProvider extends ModuleServiceProvider
@@ -91,7 +89,6 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         $this->app->bind(TouchpointRepository::class, EloquentTouchpointRepository::class);
         $this->app->bind(ReportRepository::class, QueryReportRepository::class);
         $this->app->bind(TouchpointIngestor::class, MatchingTouchpointIngestor::class);
-        $this->app->bind(ExtensionTokenRepository::class, SanctumExtensionTokenRepository::class);
         // Replaced by the Scripts module (script evaluations on timeline items).
         $this->app->bindIf(TouchpointEvaluations::class, NullTouchpointEvaluations::class);
         // AI screening (tz6): result handler for the Ai module + the optional auto-screening job.
@@ -128,20 +125,12 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
     }
 
     /**
-     * Bearer tokens are scoped by route, not only by ability middleware: Sanctum's guard would otherwise accept any
-     * valid token on every auth:sanctum route. A token authenticates only on /api/clipper/* (and must carry
-     * "clipper") or elsewhere with the "full" ability (never issued today) — so the extension token gets 401 on
+     * The extension token authenticates only on /api/clipper/* (TokenScopes, Auth module): it gets 401 on
      * /api/candidates, /api/users, /api/me/extension-token, … Session (cookie) auth is untouched.
      */
     private function bootExtensionTokens(): void
     {
-        Sanctum::authenticateAccessTokensUsing(static function (PersonalAccessToken $token, bool $isValid): bool {
-            if (! $isValid) {
-                return false;
-            }
-
-            return request()->is('api/clipper/*') ? $token->can(ExtensionTokenService::ABILITY) : $token->can('full');
-        });
+        $this->app->make(TokenScopes::class)->register('api/clipper/*', ExtensionTokenService::ABILITY);
 
         // 30 requests/min per token (per user for a session, per IP as the last resort).
         RateLimiter::for('clipper', static function (Request $request): Limit {

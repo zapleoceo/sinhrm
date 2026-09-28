@@ -43,10 +43,10 @@
 Глобальный флаг AI — строка `integrations` с `key = 'ai_policy'` и `settings = {"enabled": false}`.
 
 Поля `ai_broker` (все — настройки AI, читает `Ai/Support/AiSettingsReader`): `base_url`, секрет `project_key`,
-селекты `capability` и `capability_{script_evaluation,mail_classification,candidate_screening}`
+селекты `capability` и `capability_{script_evaluation,mail_classification,candidate_screening,assistant_chat}`
 (`chat:fast|chat:smart|chat:sales|structured`, по умолчанию `chat:sales`), `model` (без значения по умолчанию: пусто =
 модель выбирает брокер), `max_requests_per_day` (200), `daily_cap_usd` (2), выключатели `ai_script_evaluation`,
-`ai_mail_classification`, `ai_candidate_screening` (`on`) и `ai_screening_auto` (`off`). Подписи вариантов селектов —
+`ai_mail_classification`, `ai_candidate_screening`, `ai_assistant_chat` (`on`) и `ai_screening_auto` (`off`). Подписи вариантов селектов —
 `integrations.options.<значение>`.
 
 ### Шифрование и хранилище секретов

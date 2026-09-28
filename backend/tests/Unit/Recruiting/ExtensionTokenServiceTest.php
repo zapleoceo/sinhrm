@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit\Recruiting;
 
 use App\Models\User;
-use App\Modules\Recruiting\Contracts\ExtensionTokenRepository;
+use App\Modules\Auth\Contracts\PersonalTokenRepository;
+use App\Modules\Auth\Services\PersonalTokens;
 use App\Modules\Recruiting\Services\ExtensionTokenService;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\NewAccessToken;
@@ -30,13 +31,13 @@ final class ExtensionTokenServiceTest extends TestCase
         $token->created_at = Carbon::now();
         $token->expires_at = Carbon::now()->addDays(90);
 
-        $repo = $this->createMock(ExtensionTokenRepository::class);
+        $repo = $this->createMock(PersonalTokenRepository::class);
         $repo->expects($this->once())->method('deleteAll')->with($user, 'extension')->willReturn(1);
         $repo->expects($this->once())->method('create')
             ->with($user, 'extension', ['clipper'], $this->callback(static fn (Carbon $at): bool => $at->eq(Carbon::parse('2026-12-30 10:00:00'))))
             ->willReturn(new NewAccessToken($token, '5|synthetic'));
 
-        $status = (new ExtensionTokenService($repo, new NullLogger))->issue($user)->toArray();
+        $status = (new ExtensionTokenService(new PersonalTokens($repo, new NullLogger)))->issue($user)->toArray();
 
         $this->assertTrue($status['active']);
         $this->assertSame('5|synthetic', $status['token']);
@@ -47,9 +48,9 @@ final class ExtensionTokenServiceTest extends TestCase
         $expired = new PersonalAccessToken;
         $expired->created_at = Carbon::now()->subDays(100);
         $expired->expires_at = Carbon::now()->subDays(10);
-        $repo = $this->createStub(ExtensionTokenRepository::class);
+        $repo = $this->createStub(PersonalTokenRepository::class);
         $repo->method('find')->willReturnOnConsecutiveCalls($expired, null);
-        $service = new ExtensionTokenService($repo, new NullLogger);
+        $service = new ExtensionTokenService(new PersonalTokens($repo, new NullLogger));
 
         $first = $service->status(new User)->toArray();
         $this->assertFalse($first['active']);

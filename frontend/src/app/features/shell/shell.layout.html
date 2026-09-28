@@ -411,6 +411,12 @@
           <span>{{ 'shell.menu.extension' | transloco }}</span>
         </a>
         }
+        @if (can('assistant')) {
+        <button mat-menu-item type="button" class="assistant-open" (click)="openAssistant()">
+          <mat-icon>sentiment_satisfied</mat-icon>
+          <span>{{ 'shell.menu.assistant' | transloco }}</span>
+        </button>
+        }
         <button mat-menu-item type="button" class="logout" (click)="logout()">
           <mat-icon>logout</mat-icon>
           <span>{{ 'shell.menu.logout' | transloco }}</span>
@@ -425,4 +431,9 @@
       <router-outlet />
     </main>
   </div>
+  @if (can('assistant')) {
+    @defer (on idle) {
+      <app-assistant-mascot />
+    }
+  }
 </div>

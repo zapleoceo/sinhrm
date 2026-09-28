@@ -14,6 +14,10 @@ enum AiPurpose: string
     case Test = 'test';
     /** "Спробувати" in the prompt editor: a draft prompt on a built-in synthetic sample; nothing is applied. */
     case PromptTrial = 'prompt_trial';
+    /** In-app helper «Стік» (Assistant module): conversation with native tools over the SinHRM API. */
+    case AssistantChat = 'assistant_chat';
+    /** Voice dictation in the «Стік» chat: speech → text (Whisper via the broker); switched with the chat. */
+    case AssistantVoice = 'assistant_voice';
 
     /** @return list<self> purposes whose prompt can be edited and whose stats are shown per row in the admin */
     public static function editable(): array
@@ -30,6 +34,10 @@ enum AiPurpose: string
     /** Name of the on/off select in the ai_broker settings; null = cannot be switched off separately. */
     public function settingName(): ?string
     {
-        return $this === self::Test || $this === self::PromptTrial ? null : 'ai_'.$this->value;
+        return match ($this) {
+            self::Test, self::PromptTrial => null,
+            self::AssistantVoice => 'ai_'.self::AssistantChat->value,
+            default => 'ai_'.$this->value,
+        };
     }
 }

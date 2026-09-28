@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Recruiting\DTO;
+namespace App\Modules\Auth\DTO;
 
 use Carbon\CarbonInterface;
 
-/** What the settings page shows about the extension token; the plaintext is returned only once, at issue time. */
-final readonly class ExtensionTokenStatus
+/** What a settings page shows about a personal token; the plaintext is returned only once, at issue time. */
+final readonly class PersonalTokenStatus
 {
     public function __construct(
         public bool $active,

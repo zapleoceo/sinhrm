@@ -124,20 +124,24 @@ curl -i "https://sinhrm.vercel.app/api/auth/google/callback?error=access_denied"
 ```
 Полный вход — в браузере аккаунтом из списка тестовых пользователей Google.
 
-## Токены браузерного расширения
-Кроме cookie-сессии API принимает **персональные токены Sanctum** — сейчас только для расширения «SinHRM Clipper»
-([extension.md](extension.md)). Пользователь создаёт токен в SPA (`POST /api/me/extension-token`, нужна сессия): имя
-`extension`, ability `clipper`, срок 90 дней, один активный (новый удаляет старый), открытый текст — только в ответе на
+## Персональные токены (расширение, MCP)
+Кроме cookie-сессии API принимает **персональные токены Sanctum** с одной ability: расширение «SinHRM Clipper»
+([extension.md](extension.md), ability `clipper`) и MCP-токен помощника ([assistant.md](assistant.md), ability `mcp`).
+Выдачу, статус и отзыв делает общий `Services/PersonalTokens` (+ `Contracts/PersonalTokenRepository`,
+`DTO/TokenKind`, `DTO/PersonalTokenStatus`): модуль описывает вид токена (имя, ability, срок, событие лога), токен
+создаётся в SPA сессией, срок 90 дней, один активный на вид (новый удаляет старый), открытый текст — только в ответе на
 создание (в БД — SHA-256). `last_used_at` обновляет Sanctum.
 
-**Токен работает только на `/api/clipper/*`.** Стандартный guard Sanctum принял бы любой действующий токен на любом
-маршруте `auth:sanctum`, поэтому в `RecruitingServiceProvider::bootExtensionTokens()` задан
-`Sanctum::authenticateAccessTokensUsing`: токен аутентифицирует запрос к `/api/clipper/*` только с ability `clipper`,
-а к любому другому маршруту — только с ability `full` (такие токены не выдаются). Итог: токен расширения на
-`/api/candidates`, `/api/users`, `/api/auth/me`, `/api/me/extension-token` → 401; маршруты clipper дополнительно
-проверяют `CheckAbilities:clipper`. Сессия (cookie SPA) не затронута. У `User` подключён `HasApiTokens`.
+**Токен работает только на своих путях.** Стандартный guard Sanctum принял бы любой действующий токен на любом
+маршруте `auth:sanctum`, поэтому `AuthServiceProvider::boot()` задаёт `Sanctum::authenticateAccessTokensUsing` через
+`Support/TokenScopes`: модули регистрируют «шаблон пути → ability» (`api/clipper/*` → `clipper` в Recruiting,
+`api/mcp` → `mcp` в Assistant); к любому другому маршруту токен допускается только с ability `full` (такие токены не
+выдаются). Итог: токен расширения на `/api/candidates`, `/api/users`, `/api/auth/me`, `/api/me/extension-token`,
+`/api/mcp` → 401, MCP-токен везде, кроме `/api/mcp`, → 401; маршруты clipper дополнительно проверяют
+`CheckAbilities:clipper`. Сессия (cookie SPA) не затронута. У `User` подключён `HasApiTokens`.
 CORS (`config/cors.php`) открыт только для `api/clipper/*`, только для origin `chrome-extension://<id>`, без credentials.
-Тест: `tests/Feature/Recruiting/ExtensionApiTest.php` (без этого колбэка токен получал 200 на `/api/candidates` — проверено).
+Тесты: `tests/Feature/Recruiting/ExtensionApiTest.php` (без этого колбэка токен получал 200 на `/api/candidates` —
+проверено), `tests/Feature/Assistant/McpServerTest.php`, `tests/Unit/Auth/TokenScopesTest.php`.
 
 ## Гость без авторизации
 Любой защищённый эндпоинт отвечает гостю `401 {"message":"Unauthenticated."}` — и для запроса без

@@ -1,0 +1,138 @@
+<section class="assistant-panel" role="dialog" aria-modal="false" [attr.aria-label]="'assistant.name' | transloco">
+  <header class="head">
+    <div class="title">
+      <strong>{{ 'assistant.name' | transloco }}</strong>
+      <span class="subtitle">{{ 'assistant.subtitle' | transloco }}</span>
+    </div>
+    <button mat-icon-button type="button" [matMenuTriggerFor]="menu" [attr.aria-label]="'assistant.menu.label' | transloco">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <button mat-icon-button type="button" (click)="close()" [attr.aria-label]="'assistant.close' | transloco">
+      <mat-icon>close</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu" xPosition="before">
+      <button mat-menu-item type="button" [disabled]="conversation.busy()" (click)="newChat()">
+        <mat-icon>add_comment</mat-icon>
+        <span>{{ 'assistant.menu.newChat' | transloco }}</span>
+      </button>
+      <button mat-menu-item type="button" (click)="showMcp()">
+        <mat-icon>hub</mat-icon>
+        <span>{{ 'assistant.menu.connect' | transloco }}</span>
+      </button>
+      <mat-divider />
+      <button mat-menu-item type="button" role="menuitemcheckbox" [attr.aria-checked]="settings.lite()" (click)="settings.setLite(!settings.lite())">
+        <mat-icon>{{ settings.lite() ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+        <span>{{ 'assistant.menu.lite' | transloco }}</span>
+      </button>
+      <button mat-menu-item type="button" class="toggle" (click)="toggleEnabled()">
+        <mat-icon>{{ settings.enabled() ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+        <span>{{ (settings.enabled() ? 'assistant.menu.turnOff' : 'assistant.menu.turnOn') | transloco }}</span>
+      </button>
+    </mat-menu>
+  </header>
+
+  @if (settings.panel() === 'mcp') {
+    <div class="scroll">
+      <app-assistant-mcp-panel [url]="status()?.mcp_url ?? ''" (back)="settings.showPanel('chat')" />
+    </div>
+  } @else {
+    <div class="scroll messages" #list aria-live="polite">
+      @if (loading()) {
+        <div class="center"><mat-progress-spinner mode="indeterminate" diameter="28" /></div>
+      } @else if (unavailable(); as key) {
+        <div class="notice">
+          <mat-icon aria-hidden="true">sentiment_dissatisfied</mat-icon>
+          <p>{{ key | transloco }}</p>
+        </div>
+      } @else {
+        @if (messages().length === 0) {
+          <p class="hello">{{ 'assistant.empty' | transloco }}</p>
+          <div class="chips">
+            @for (s of suggestions; track s) {
+              <button type="button" class="chip" (click)="ask(s)">{{ s | transloco }}</button>
+            }
+          </div>
+        }
+        @for (m of messages(); track $index) {
+          <div class="msg" [class.user]="m.role === 'user'">
+            <span class="visually-hidden">{{ (m.role === 'user' ? 'assistant.you' : 'assistant.name') | transloco }}:</span>
+            <p class="bubble">@for (s of m.segments; track $index) {@switch (s.kind) {@case ('break') {<br />}@case ('link') {<a [routerLink]="s.route" [queryParams]="s.query">{{ s.text }}</a>}@default {{{ s.text }}}}}</p>
+          </div>
+        }
+        @if (conversation.busy() && !conversation.pendingWrite()) {
+          <div class="msg typing" role="status">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="visually-hidden">{{ 'assistant.typing' | transloco }}</span>
+          </div>
+        }
+        @if (conversation.pendingWrite(); as w) {
+          <app-assistant-confirm [request]="w" (decide)="decide($event)" />
+        }
+        @if (conversation.errorKey(); as e) {
+          <p class="error" role="alert">{{ e | transloco }}</p>
+        }
+      }
+    </div>
+
+    @if (!loading() && !unavailable()) {
+      <form class="composer" (submit)="$event.preventDefault(); send()">
+        @if (recording()) {
+          <div class="rec" role="status">
+            <span class="rec-dot" aria-hidden="true"></span>
+            <span class="rec-time">{{ clock() }}</span>
+            <span class="visually-hidden">{{ 'assistant.voice.recording' | transloco }}</span>
+            <svg #bars class="rec-bars" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+              @for (x of barSlots; track $index) {
+                <line [attr.x1]="x" [attr.x2]="x" y1="10.5" y2="13.5" />
+              }
+            </svg>
+            <button mat-icon-button type="button" class="rec-cancel" (click)="voice.cancel()" [attr.aria-label]="'assistant.voice.cancel' | transloco">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        } @else {
+          <textarea
+            #input
+            name="draft"
+            rows="1"
+            [class.busy]="transcribing()"
+            [readonly]="transcribing()"
+            [ngModel]="draft()"
+            (ngModelChange)="draft.set($event)"
+            (keydown)="onKeydown($event)"
+            [placeholder]="placeholder() | transloco"
+            [attr.aria-label]="'assistant.input.placeholder' | transloco"
+            [attr.aria-describedby]="'assistant-input-hint'"
+            maxlength="4000"
+          ></textarea>
+        }
+        @if (micAvailable()) {
+          <button
+            mat-icon-button
+            type="button"
+            class="mic"
+            [class.on]="recording()"
+            [disabled]="transcribing()"
+            [attr.aria-pressed]="recording()"
+            [attr.aria-label]="(recording() ? 'assistant.voice.stop' : 'assistant.voice.start') | transloco"
+            (click)="toggleMic()"
+          >
+            <mat-icon>{{ recording() ? 'stop' : 'mic' }}</mat-icon>
+          </button>
+        }
+        <button mat-icon-button type="submit" [disabled]="!canSend() || recording() || transcribing()" [attr.aria-label]="'assistant.input.send' | transloco">
+          <mat-icon>send</mat-icon>
+        </button>
+        <span id="assistant-input-hint" class="visually-hidden">{{ 'assistant.input.hint' | transloco }}</span>
+      </form>
+      @if (voice.errorKey(); as ve) {
+        <p class="voice-error" role="alert">
+          <span>{{ ve | transloco }}</span>
+          <button mat-icon-button type="button" (click)="voice.clearError()" [attr.aria-label]="'assistant.close' | transloco">
+            <mat-icon>close</mat-icon>
+          </button>
+        </p>
+      }
+    }
+  }
+</section>
