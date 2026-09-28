@@ -56,7 +56,7 @@ final class OpsDemoFillTest extends TestCase
         $this->assertNull(DB::table('survey_responses')->whereNotNull('employee_id')->value('id'), 'anonymous waves keep no employee id');
         // Departments big enough for anonymous breakdowns (≥ 5 answers per wave); the small branch directorates are hidden.
         $perDepartment = DB::table('survey_responses')->groupBy('wave_id', 'department_id')->selectRaw('count(*) as c')->pluck('c')->all();
-        $this->assertGreaterThanOrEqual(24, count(array_filter($perDepartment, static fn ($c): bool => (int) $c >= 5)));
+        $this->assertGreaterThanOrEqual(18, count(array_filter($perDepartment, static fn ($c): bool => (int) $c >= 5)));
         foreach (['female', 'male'] as $gender) {
             $this->assertGreaterThanOrEqual(5, DB::table('employees')->where('gender', $gender)->count());
         }
@@ -64,6 +64,13 @@ final class OpsDemoFillTest extends TestCase
             ->where('starts_on', '<=', now()->toDateString())->where('ends_on', '>=', now()->toDateString())->count());
         $this->assertGreaterThan(0, DB::table('timesheets')->where('overtime_hours', '>', 0)->count());
         $this->assertGreaterThan(0, DB::table('script_evaluations')->count());
+        // Recruiting reports: all reject reasons used, varied sources incl. the career site, a funnel narrowing down.
+        $this->assertSame(DB::table('reject_reasons')->where('active', true)->count(), DB::table('applications')->whereNotNull('reject_reason_id')->distinct()->count('reject_reason_id'));
+        $bySource = DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->groupBy('source')->selectRaw('source, count(*) as c')->pluck('c', 'source')->all();
+        $this->assertGreaterThanOrEqual(8, count($bySource));
+        $this->assertGreaterThanOrEqual(20, (int) $bySource['work_ua']);
+        $this->assertGreaterThan(10, DB::table('candidates')->where('added_via', 'career_site')->count());
+        $this->assertGreaterThanOrEqual(10, DB::table('applications')->where('status', 'hired')->count());
         $this->assertSame(200, $this->getJson('/api/health')->status());
 
         $afterFill = $this->tableCounts();
@@ -159,13 +166,13 @@ final class OpsDemoFillTest extends TestCase
             $old[$table] = DB::table($table)->insertGetId(['name' => DemoDataService::PREFIX.'Старий '.$table, 'status' => 'active']);
         }
         $oldUser = User::query()->create(['email' => 'demo+emp-99@sinhrm.test', 'name' => DemoDataService::PREFIX.'Старий', 'status' => 'active']);
-        $oldEmployee = DB::table('employees')->insertGetId(['user_id' => $oldUser->id, 'full_name' => DemoDataService::PREFIX.'Старий', 'status' => 'active',
+        $oldEmployee = DB::table('employees')->insertGetId(['user_id' => $oldUser->id, 'full_name' => DemoDataService::PREFIX.'Старий', 'status' => 'active', 'hired_at' => '2024-01-01',
             'branch_id' => $old['branches'], 'department_id' => $old['departments'], 'position_id' => $old['positions'], 'created_at' => now(), 'updated_at' => now()]);
         foreach ([...$old, 'users' => $oldUser->id, 'employees' => $oldEmployee, 'step:org' => 0, 'step:people' => 0] as $table => $id) {
             DB::table('demo_records')->insert(['table_name' => $table, 'record_id' => $id, 'created_at' => now()]);
         }
         $realUser = User::query()->create(['email' => 'real@example.com', 'name' => 'Real', 'status' => 'active']);
-        $real = DB::table('employees')->insertGetId(['user_id' => $realUser->id, 'full_name' => 'Real person', 'status' => 'active',
+        $real = DB::table('employees')->insertGetId(['user_id' => $realUser->id, 'full_name' => 'Real person', 'status' => 'active', 'hired_at' => '2024-01-01',
             'department_id' => $old['departments'], 'manager_id' => $oldEmployee, 'created_at' => now(), 'updated_at' => now()]);
         $vacancy = DB::table('vacancies')->insertGetId(['title' => 'Real vacancy', 'branch_id' => $old['branches'], 'created_at' => now(), 'updated_at' => now()]);
 

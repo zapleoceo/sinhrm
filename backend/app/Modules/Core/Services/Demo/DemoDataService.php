@@ -519,7 +519,7 @@ final class DemoDataService
 
         $note = self::PREFIX.'витрати';
         $costs = [];
-        foreach ($this->channels() as $c => $channel) {
+        foreach (array_values($this->channels()) as $c => $channel) {
             for ($m = 5; $m >= 0; $m--) {
                 $month = $this->now->copy()->startOfMonth()->subMonths($m);
                 $costs[] = ['channel_id' => $channel, 'period_start' => $month->toDateString(), 'period_end' => $month->copy()->endOfMonth()->toDateString(),
@@ -531,10 +531,12 @@ final class DemoDataService
         $this->registerAll('acquisition_channel_costs', array_map('intval', DB::table('acquisition_channel_costs')->where('note', $note)->pluck('id')->all()));
     }
 
-    /** @return list<int> */
+    /** @return array<string, int> acquisition channel id by code (= candidate source) */
     private function channels(): array
     {
-        return array_values(array_map('intval', DB::table('acquisition_channels')->where('active', true)->orderBy('id')->limit(6)->pluck('id')->all()));
+        $codes = ['work_ua', 'robota_ua', 'site', 'meta_ads', 'referral', 'djinni', 'telegram', 'linkedin'];
+
+        return array_map('intval', DB::table('acquisition_channels')->where('active', true)->whereIn('code', $codes)->orderBy('id')->pluck('id', 'code')->all());
     }
 
     /** One slice of 10 candidate stories through the Recruiting services. */
