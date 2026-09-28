@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\DB;
  */
 final class DemoRegistry
 {
+    /** Marker rows "step:<name>" (record_id 0) remember which fill steps are done; they point at no table. */
+    public const string STEP_PREFIX = 'step:';
+
     /**
      * Dependent rows created by module services (not registered one by one): table => [fk column, parent table].
      * Deleted before the parents, so reset never relies on ON DELETE CASCADE.
@@ -21,6 +24,8 @@ final class DemoRegistry
         ['tasks', 'candidate_id', 'candidates'],
         ['tasks', 'assignee_id', 'users'],
         ['tasks', 'employee_id', 'employees'],
+        ['one_on_ones', 'employee_id', 'employees'],
+        ['one_on_ones', 'manager_employee_id', 'employees'],
         ['script_evaluations', 'touchpoint_id', 'touchpoints'],
         ['touchpoints', 'candidate_id', 'candidates'],
         ['stage_changes', 'by_user_id', 'users'],
@@ -62,6 +67,13 @@ final class DemoRegistry
         return $id;
     }
 
+    public function has(string $table): bool
+    {
+        $this->flush();
+
+        return DB::table('demo_records')->where('table_name', $table)->exists();
+    }
+
     public function flush(): void
     {
         foreach (array_chunk($this->pending, 200) as $chunk) {
@@ -73,7 +85,9 @@ final class DemoRegistry
     /** @return list<int> */
     public function ids(string $table): array
     {
-        return array_values(array_map('intval', DB::table('demo_records')->where('table_name', $table)->pluck('record_id')->all()));
+        $this->flush();
+
+        return array_values(array_map('intval', DB::table('demo_records')->where('table_name', $table)->orderBy('record_id')->pluck('record_id')->all()));
     }
 
     /**
@@ -94,7 +108,7 @@ final class DemoRegistry
         foreach (array_chunk($this->ids('users'), 500) as $ids) {
             DB::table('model_has_roles')->where('model_type', 'App\Models\User')->whereIn('model_id', $ids)->delete();
         }
-        $tables = DB::table('demo_records')->select('table_name')->groupBy('table_name')
+        $tables = DB::table('demo_records')->where('table_name', 'not like', self::STEP_PREFIX.'%')->select('table_name')->groupBy('table_name')
             ->orderByRaw('MAX(id) DESC')->pluck('table_name')->all();
         foreach ($tables as $table) {
             $table = (string) $table;
