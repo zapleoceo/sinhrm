@@ -23,8 +23,8 @@ use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Company-wide synthetic data for the report charts (POST /api/ops/demo-fill?confirm=demo&step=<name>): structure,
- * ~60 people with pay, recruiting funnel with channel costs and touches, time off, timesheets, OKR, 1:1s, a closed 360
+ * Company-wide synthetic data for the report charts (POST /api/ops/demo-fill?confirm=demo&step=<name>): an IT school
+ * network (head office + 3 branches, ~128 people in a 4–6 level org chart, see blueprint()) with pay, recruiting funnel with channel costs and touches, time off, timesheets, OKR, 1:1s, a closed 360
  * cycle, two closed Pulse waves, mood, Desk, knowledge, assets, hiring requests, script scores — the last 6 months.
  *
  * The fill is split into ordered STEPS; each runs in its own transaction (one HTTP request, well under the 60 s
@@ -63,14 +63,30 @@ final class DemoDataService
 
     private const array LAST = ['Коваленко', 'Бондаренко', 'Ткаченко', 'Кравченко', 'Олійник', 'Шевчук', 'Поліщук', 'Савченко', 'Руденко', 'Марченко', 'Мороз', 'Лисенко', 'Гончаренко', 'Павленко'];
 
-    private const array CITIES = ['Київ', 'Львів', 'Дніпро'];
+    /** Teaching branches: city, branch name, teachers, sales managers, administrators. The head office is a branch too. */
+    private const array BRANCHES = [
+        ['Київ', 'Київ Центр', 14, 6, 2],
+        ['Львів', 'Львів', 11, 5, 1],
+        ['Дніпро', 'Дніпро', 12, 6, 1],
+    ];
 
-    private const array BRANCHES = ['Київ Центр', 'Львів', 'Дніпро'];
+    private const string CENTRAL = 'Центральний офіс';
 
-    private const array DEPARTMENTS = ['Продажі', 'Навчання', 'Адміністрація', 'Маркетинг'];
+    /** Head-office departments; each teaching branch adds "Дирекція філії", "Навчальний відділ", "Відділ продажів" + city. */
+    private const array CENTRAL_DEPARTMENTS = ['Дирекція', 'Маркетинг', 'Контакт-центр', 'Фінанси та бухгалтерія', 'HR', 'Методичний центр', 'IT'];
 
-    /** position => base monthly pay, UAH (index = level) */
-    private const array POSITIONS = ['Керівник відділу' => 62000, 'Старший спеціаліст' => 42000, 'Спеціаліст' => 30000, 'Молодший спеціаліст' => 22000];
+    /** position => base monthly pay, UAH */
+    private const array POSITIONS = [
+        'Генеральний директор' => 180000, 'Операційний директор' => 140000, 'Комерційний директор' => 130000,
+        'Фінансовий директор' => 130000, 'HR-директор' => 110000, 'Директор з навчання' => 110000, 'IT-директор' => 140000,
+        'Директор філії' => 85000, 'Адміністратор філії' => 26000, 'Керівник навчального відділу' => 58000, 'Старший методист' => 42000,
+        'Викладач' => 32000, 'Керівник відділу продажів' => 55000, 'Менеджер з продажу' => 30000, 'Керівник з маркетингу' => 62000,
+        'Маркетолог' => 36000, 'Керівник контакт-центру' => 45000, 'Оператор контакт-центру' => 22000, 'Головний бухгалтер' => 65000,
+        'Бухгалтер' => 35000, 'Фінансовий аналітик' => 50000, 'Тімлід рекрутингу' => 50000, 'Рекрутер' => 32000,
+        'HR-генераліст' => 38000, 'Спеціаліст з навчання та розвитку' => 40000, 'Керівник методичного центру' => 60000,
+        'Методист' => 36000, 'Спеціаліст з контролю якості' => 36000, 'Тімлід розробки' => 110000, 'Розробник' => 80000,
+        'Керівник служби підтримки' => 60000, 'Системний адміністратор' => 40000,
+    ];
 
     private const string ADMIN_EMAIL = 'demo+admin@sinhrm.test';
 
@@ -205,6 +221,21 @@ final class DemoDataService
         return array_values(array_filter($this->employees(), static fn (array $e): bool => $e['active']));
     }
 
+    /** @return array<int, int> employee id => user id of their manager (only when the manager is a demo employee) */
+    private function managerUsers(): array
+    {
+        $employees = $this->employees();
+        $users = array_column($employees, 'user_id', 'id');
+        $out = [];
+        foreach ($employees as $e) {
+            if ($e['manager'] !== null && isset($users[$e['manager']])) {
+                $out[$e['id']] = $users[$e['manager']];
+            }
+        }
+
+        return $out;
+    }
+
     private function admin(): User
     {
         return User::query()->whereIn('id', $this->registry->ids('users'))->where('email', self::ADMIN_EMAIL)->firstOrFail();
@@ -213,7 +244,7 @@ final class DemoDataService
     /** @return non-empty-list<User> */
     private function recruiters(): array
     {
-        $list = array_values(User::query()->whereIn('id', $this->registry->ids('users'))->whereIn('email', ['demo+hr-1@sinhrm.test', 'demo+hr-2@sinhrm.test', 'demo+hr-3@sinhrm.test'])->orderBy('email')->get()->all());
+        $list = array_values(User::query()->whereIn('id', $this->registry->ids('users'))->whereIn('email', ['demo+hr-1@sinhrm.test', 'demo+hr-2@sinhrm.test', 'demo+hr-3@sinhrm.test', 'demo+hr-4@sinhrm.test'])->orderBy('email')->get()->all());
 
         return $list !== [] ? $list : [$this->admin()]; // a skipped recruiter e-mail (taken by a real user) is covered by the rest
     }
@@ -223,13 +254,12 @@ final class DemoDataService
     private function structure(): void
     {
         $cities = [];
-        foreach (self::CITIES as $name) {
-            $cities[] = $this->insert('cities', ['name' => self::PREFIX.$name, 'status' => 'active']);
+        foreach (self::BRANCHES as [$city, $branch]) {
+            $cities[$city] = $this->insert('cities', ['name' => self::PREFIX.$city, 'status' => 'active']);
+            $this->insert('branches', ['name' => self::PREFIX.$branch, 'status' => 'active', 'city_id' => $cities[$city]]);
         }
-        foreach (self::BRANCHES as $i => $name) {
-            $this->insert('branches', ['name' => self::PREFIX.$name, 'status' => 'active', 'city_id' => $cities[$i]]);
-        }
-        foreach (self::DEPARTMENTS as $name) {
+        $this->insert('branches', ['name' => self::PREFIX.self::CENTRAL, 'status' => 'active', 'city_id' => $cities['Київ']]);
+        foreach ($this->departmentNames() as $name) {
             $this->insert('departments', ['name' => self::PREFIX.$name, 'status' => 'active']);
         }
         foreach (array_keys(self::POSITIONS) as $name) {
@@ -237,39 +267,133 @@ final class DemoDataService
         }
     }
 
+    /** @return list<string> */
+    private function departmentNames(): array
+    {
+        $names = self::CENTRAL_DEPARTMENTS;
+        foreach (self::BRANCHES as [$city]) {
+            array_push($names, 'Дирекція філії '.$city, 'Навчальний відділ '.$city, 'Відділ продажів '.$city);
+        }
+
+        return $names;
+    }
+
+    /** @return array<string, int> demo row name without the prefix => id */
+    private function named(string $table): array
+    {
+        $out = [];
+        foreach (DB::table($table)->whereIn('id', $this->registry->ids($table))->orderBy('id')->get(['id', 'name']) as $row) {
+            $out[substr((string) $row->name, strlen(self::PREFIX))] = (int) $row->id;
+        }
+
+        return $out;
+    }
+
     /**
-     * Users (bulk, roles and branches bulk too) and 3 branches × 4 departments × 5 employees; the first of each cell is
-     * its head (reports to the director = #0), genders alternate so every department has both genders ≥ 5. Six people
-     * left during the last months.
+     * Org chart of a private IT school network (~128 people), built on the usual span of control of 5–8: the CEO
+     * leads 6 C-level directors; the COO leads 3 branch directors (administrator, head of teaching → senior methodists
+     * → teachers, head of sales → managers); head-office functions sit under their C-level. 4–6 levels, every manager
+     * has ≤ 9 direct reports. Branch staff belong to their branch, the head office to "Центральний офіс".
+     *
+     * @return array<string, array{key: string, parent: string|null, position: string, department: string, branch: string, depth: int}>
+     */
+    private function blueprint(): array
+    {
+        $nodes = [];
+        $add = static function (string $key, ?string $parent, string $position, string $department, string $branch = self::CENTRAL) use (&$nodes): string {
+            $depth = $parent === null ? 0 : $nodes[$parent]['depth'] + 1;
+            $nodes[$key] = ['key' => $key, 'parent' => $parent, 'position' => $position, 'department' => $department, 'branch' => $branch, 'depth' => $depth];
+
+            return $key;
+        };
+        $team = static function (string $key, string $parent, string $lead, string $member, int $size, string $department) use ($add): void {
+            $head = $add($key, $parent, $lead, $department);
+            for ($i = 0; $i < $size; $i++) {
+                $add($key.'-'.$i, $head, $member, $department);
+            }
+        };
+        $ceo = $add('ceo', null, 'Генеральний директор', 'Дирекція');
+        $coo = $add('coo', $ceo, 'Операційний директор', 'Дирекція');
+        $cco = $add('cco', $ceo, 'Комерційний директор', 'Дирекція');
+        $cfo = $add('cfo', $ceo, 'Фінансовий директор', 'Дирекція');
+        $hrd = $add('hrd', $ceo, 'HR-директор', 'Дирекція');
+        $clo = $add('clo', $ceo, 'Директор з навчання', 'Дирекція');
+        $cio = $add('cio', $ceo, 'IT-директор', 'Дирекція');
+
+        foreach (self::BRANCHES as $b => [$city, $branch, $teachers, $sales, $admins]) {
+            $dir = $add("b{$b}-dir", $coo, 'Директор філії', 'Дирекція філії '.$city, $branch);
+            for ($i = 0; $i < $admins; $i++) {
+                $add("b{$b}-adm-{$i}", $dir, 'Адміністратор філії', 'Дирекція філії '.$city, $branch);
+            }
+            $edu = $add("b{$b}-edu", $dir, 'Керівник навчального відділу', 'Навчальний відділ '.$city, $branch);
+            $groups = (int) ceil($teachers / 5);
+            for ($g = 0; $g < $groups; $g++) {
+                $lead = $add("b{$b}-met-{$g}", $edu, 'Старший методист', 'Навчальний відділ '.$city, $branch);
+                for ($t = $g; $t < $teachers; $t += $groups) {
+                    $add("b{$b}-t-{$t}", $lead, 'Викладач', 'Навчальний відділ '.$city, $branch);
+                }
+            }
+            $head = $add("b{$b}-sales", $dir, 'Керівник відділу продажів', 'Відділ продажів '.$city, $branch);
+            for ($i = 0; $i < $sales; $i++) {
+                $add("b{$b}-s-{$i}", $head, 'Менеджер з продажу', 'Відділ продажів '.$city, $branch);
+            }
+        }
+        $team('mkt', $cco, 'Керівник з маркетингу', 'Маркетолог', 5, 'Маркетинг');
+        $team('cc', $cco, 'Керівник контакт-центру', 'Оператор контакт-центру', 8, 'Контакт-центр');
+        $team('acc', $cfo, 'Головний бухгалтер', 'Бухгалтер', 3, 'Фінанси та бухгалтерія');
+        $add('fin', $cfo, 'Фінансовий аналітик', 'Фінанси та бухгалтерія');
+        $rec = $add('rec', $hrd, 'Тімлід рекрутингу', 'HR');
+        for ($i = 1; $i <= 4; $i++) {
+            $add("hr-{$i}", $rec, 'Рекрутер', 'HR'); // the demo+hr-N recruiter users
+        }
+        $add('hrg-0', $hrd, 'HR-генераліст', 'HR');
+        $add('hrg-1', $hrd, 'HR-генераліст', 'HR');
+        $add('td', $hrd, 'Спеціаліст з навчання та розвитку', 'HR');
+        $team('mc', $clo, 'Керівник методичного центру', 'Методист', 4, 'Методичний центр');
+        $add('qa-0', $clo, 'Спеціаліст з контролю якості', 'Методичний центр');
+        $add('qa-1', $clo, 'Спеціаліст з контролю якості', 'Методичний центр');
+        $team('dev', $cio, 'Тімлід розробки', 'Розробник', 5, 'IT');
+        $team('sup', $cio, 'Керівник служби підтримки', 'Системний адміністратор', 3, 'IT');
+
+        return $nodes;
+    }
+
+    /**
+     * Users (bulk, roles and branches bulk too) and one employee per blueprint() node. Leaders were hired earlier (the
+     * CEO ~6 years ago, each level below later); genders alternate so both have ≥ 5 people in every pay group; a few
+     * rank-and-file people left during the last months. A skipped person (e-mail taken by a real user) is bypassed:
+     * their reports go to the nearest demo ancestor.
      */
     private function people(): void
     {
         $org = $this->org();
+        $branchIds = $this->named('branches');
+        $departmentIds = $this->named('departments');
+        $positionIds = $this->named('positions');
         $users = [['email' => self::ADMIN_EMAIL, 'name' => self::PREFIX.'Адміністратор', 'role' => 'admin', 'branches' => $org['branches']]];
-        foreach ([1, 2, 3] as $n) {
-            $users[] = ['email' => "demo+hr-{$n}@sinhrm.test", 'name' => self::PREFIX.'Рекрутер '.$n, 'role' => 'recruiter', 'branches' => [$org['branches'][$n - 1]]];
-        }
-        $positionPay = array_values(self::POSITIONS);
+        $blueprint = $this->blueprint();
+        $leaders = array_flip(array_filter(array_column($blueprint, 'parent')));
         $employees = [];
         $n = 0;
-        foreach ($org['branches'] as $branch) {
-            foreach ($org['departments'] as $d => $department) {
-                for ($k = 0; $k < 5; $k++, $n++) {
-                    $female = ($n + $d) % 2 === 0;
-                    $email = sprintf('demo+emp-%02d@sinhrm.test', $n + 1);
-                    $name = self::PREFIX.self::LAST[$n % count(self::LAST)].' '.($female ? self::FIRST_F : self::FIRST_M)[($n * 5) % 12];
-                    $users[] = ['email' => $email, 'name' => $name, 'role' => 'employee', 'branches' => [$branch]];
-                    $level = $k === 0 ? 0 : min(3, 1 + $this->rnd->getInt(0, 2));
-                    $terminated = $n % 10 === 7;
-                    $hired = $this->now->copy()->subDays($n % 6 === 1 ? $this->rnd->getInt(10, 175) : $this->rnd->getInt(200, 1500));
-                    $employees[] = ['n' => $n, 'k' => $k, 'email' => $email, 'name' => $name, 'female' => $female, 'level' => $level,
-                        'terminated' => $terminated, 'hired' => $hired, 'branch' => $branch, 'department' => $department,
-                        'pay' => $positionPay[$level] * ($female ? 0.93 : 1.0) * (0.9 + $this->rnd->getInt(0, 20) / 100),
-                        'birth' => $this->now->copy()->subYears(22 + $this->rnd->getInt(0, 30))->subDays($this->rnd->getInt(0, 364))->toDateString(),
-                        'fired' => $terminated ? $this->now->copy()->subDays($this->rnd->getInt(5, 170))->toDateString() : null,
-                        'raise' => $this->now->copy()->subDays($this->rnd->getInt(10, 150))];
-                }
-            }
+        foreach ($blueprint as $node) {
+            $recruiter = str_starts_with($node['key'], 'hr-');
+            $email = $recruiter ? "demo+{$node['key']}@sinhrm.test" : sprintf('demo+emp-%02d@sinhrm.test', $n + 1);
+            $female = $n % 2 === 0;
+            $name = self::PREFIX.self::LAST[($n * 3 + intdiv($n, 14)) % count(self::LAST)].' '.($female ? self::FIRST_F : self::FIRST_M)[($n * 5 + intdiv($n, 24)) % 12];
+            $branch = $branchIds[$node['branch']];
+            $users[] = ['email' => $email, 'name' => $name, 'role' => $recruiter ? 'recruiter' : 'employee', 'branches' => $recruiter ? $org['branches'] : [$branch]];
+            $leader = isset($leaders[$node['key']]);
+            $terminated = ! $leader && ! $recruiter && $node['depth'] >= 3 && $n % 19 === 9;
+            $days = $leader ? 2200 - 300 * $node['depth'] - $this->rnd->getInt(0, 200) : ($n % 6 === 1 ? $this->rnd->getInt(10, 175) : $this->rnd->getInt(200, 1300));
+            $hired = $this->now->copy()->subDays(max(10, $days));
+            $employees[] = ['n' => $n, 'key' => $node['key'], 'parent' => $node['parent'], 'email' => $email, 'name' => $name, 'female' => $female,
+                'terminated' => $terminated, 'leader' => $leader, 'hired' => $hired, 'branch' => $branch,
+                'department' => $departmentIds[$node['department']], 'position' => $positionIds[$node['position']],
+                'pay' => self::POSITIONS[$node['position']] * ($female ? 0.94 : 1.0) * (0.92 + $this->rnd->getInt(0, 16) / 100),
+                'birth' => $this->now->copy()->subYears(($leader ? 30 : 22) + $this->rnd->getInt(0, 22))->subDays($this->rnd->getInt(0, 364))->toDateString(),
+                'fired' => $terminated ? $this->now->copy()->subDays($this->rnd->getInt(5, 170))->toDateString() : null,
+                'raise' => $this->now->copy()->subDays($this->rnd->getInt(10, 150))];
+            $n++;
         }
 
         // Unique e-mails: a taken one is reused only when it is a demo user already, otherwise it is skipped.
@@ -316,32 +440,37 @@ final class DemoDataService
             'user_id' => $userIds[$e['email']], 'full_name' => $e['name'], 'work_email' => $e['email'],
             'phone' => sprintf('+38050%07d', 3000000 + $e['n'] * 7727), 'birth_date' => $e['birth'],
             'hired_at' => $e['hired']->toDateString(), 'fired_at' => $e['fired'], 'termination_reason' => $e['terminated'] ? 'Власне бажання' : null,
-            'status' => $e['terminated'] ? 'terminated' : ($e['n'] % 17 === 4 ? 'on_leave' : 'active'),
-            'employment_type' => $e['n'] % 9 === 5 ? 'part_time' : 'full_time',
-            'branch_id' => $e['branch'], 'department_id' => $e['department'], 'position_id' => $org['positions'][$e['level']],
+            'status' => $e['terminated'] ? 'terminated' : (! $e['leader'] && $e['n'] % 23 === 4 ? 'on_leave' : 'active'),
+            'employment_type' => ! $e['leader'] && $e['n'] % 9 === 5 ? 'part_time' : 'full_time',
+            'branch_id' => $e['branch'], 'department_id' => $e['department'], 'position_id' => $e['position'],
             'gender' => $e['female'] ? 'female' : 'male', 'created_at' => $e['hired'], 'updated_at' => $this->now,
         ], $employees));
         /** @var array<string, int> $employeeIds */
         $employeeIds = array_map('intval', DB::table('employees')->whereIn('work_email', array_column($employees, 'email'))->pluck('id', 'work_email')->all());
         $this->registerAll('employees', array_values($employeeIds));
-
-        // Managers: the director (#0) leads the heads, each head leads the rest of the cell.
         if ($employees === []) {
             return;
         }
-        $director = $employeeIds[$employees[0]['email']];
-        $heads = [];
-        $cells = [];
+
+        // Managers: the nearest ancestor in the blueprint that got an employee card; bulk by manager.
+        $blueprint = $this->blueprint();
+        $idOf = [];
         foreach ($employees as $e) {
-            $cells[$e['branch'].'-'.$e['department']][] = $employeeIds[$e['email']];
+            $idOf[$e['key']] = $employeeIds[$e['email']];
         }
-        foreach ($cells as $cell) {
-            $head = $cell[0];
-            $heads[] = $head;
-            $members = array_slice($cell, 1);
-            DB::table('employees')->whereIn('id', $members)->update(['manager_id' => $head]);
+        $byManager = [];
+        foreach ($employees as $e) {
+            $parent = $e['parent'];
+            while ($parent !== null && ! isset($idOf[$parent])) {
+                $parent = $blueprint[$parent]['parent'];
+            }
+            if ($parent !== null) {
+                $byManager[$idOf[$parent]][] = $idOf[$e['key']];
+            }
         }
-        DB::table('employees')->whereIn('id', array_values(array_diff($heads, [$director])))->update(['manager_id' => $director]);
+        foreach ($byManager as $manager => $reports) {
+            DB::table('employees')->whereIn('id', $reports)->update(['manager_id' => $manager]);
+        }
 
         $pay = [];
         foreach ($employees as $e) {
@@ -363,13 +492,22 @@ final class DemoDataService
         $org = $this->org();
         $admin = $this->admin();
         $recruiters = $this->recruiters();
-        $titles = ['Менеджер з продажу', 'Викладач англійської', 'Адміністратор філії', 'SMM-менеджер', 'Координатор навчання', 'Бухгалтер', 'Менеджер з продажу (вечірня зміна)', 'Методист'];
-        foreach ($titles as $i => $title) {
+        $departments = $this->named('departments');
+        $positions = $this->named('positions');
+        $central = $this->named('branches')[self::CENTRAL] ?? $org['branches'][0];
+        // title => [position, department ("" + city = a branch unit), branch index or null = head office]
+        $titles = [
+            ['Менеджер з продажу', 'Менеджер з продажу', 'Відділ продажів ', 0], ['Викладач англійської', 'Викладач', 'Навчальний відділ ', 1],
+            ['Адміністратор філії', 'Адміністратор філії', 'Дирекція філії ', 2], ['SMM-менеджер', 'Маркетолог', 'Маркетинг', null],
+            ['Методист', 'Методист', 'Методичний центр', null], ['Бухгалтер', 'Бухгалтер', 'Фінанси та бухгалтерія', null],
+            ['Менеджер з продажу (вечірня зміна)', 'Менеджер з продажу', 'Відділ продажів ', 2], ['Викладач програмування', 'Викладач', 'Навчальний відділ ', 0],
+        ];
+        foreach ($titles as $i => [$title, $position, $unit, $b]) {
             $vacancy = $this->vacancies->create($admin, new VacancyData([
                 'title' => self::PREFIX.$title,
-                'branch_id' => $org['branches'][$i % 3],
-                'department_id' => $org['departments'][$i % 4],
-                'position_id' => $org['positions'][2 + $i % 2],
+                'branch_id' => $b === null ? $central : $org['branches'][$b],
+                'department_id' => $departments[$b === null ? $unit : $unit.self::BRANCHES[$b][0]] ?? null,
+                'position_id' => $positions[$position] ?? null,
                 'recruiter_id' => $recruiters[$i % count($recruiters)]->id,
                 'status' => $i === 7 ? 'paused' : 'open',
                 'description' => 'Тестова вакансія (синтетичні дані).',
@@ -381,7 +519,7 @@ final class DemoDataService
 
         $note = self::PREFIX.'витрати';
         $costs = [];
-        foreach ($this->channels() as $c => $channel) {
+        foreach (array_values($this->channels()) as $c => $channel) {
             for ($m = 5; $m >= 0; $m--) {
                 $month = $this->now->copy()->startOfMonth()->subMonths($m);
                 $costs[] = ['channel_id' => $channel, 'period_start' => $month->toDateString(), 'period_end' => $month->copy()->endOfMonth()->toDateString(),
@@ -393,10 +531,12 @@ final class DemoDataService
         $this->registerAll('acquisition_channel_costs', array_map('intval', DB::table('acquisition_channel_costs')->where('note', $note)->pluck('id')->all()));
     }
 
-    /** @return list<int> */
+    /** @return array<string, int> acquisition channel id by code (= candidate source) */
     private function channels(): array
     {
-        return array_values(array_map('intval', DB::table('acquisition_channels')->where('active', true)->orderBy('id')->limit(6)->pluck('id')->all()));
+        $codes = ['work_ua', 'robota_ua', 'site', 'meta_ads', 'referral', 'djinni', 'telegram', 'linkedin'];
+
+        return array_map('intval', DB::table('acquisition_channels')->where('active', true)->whereIn('code', $codes)->orderBy('id')->pluck('id', 'code')->all());
     }
 
     /** One slice of 10 candidate stories through the Recruiting services. */
@@ -459,8 +599,10 @@ final class DemoDataService
             return;
         }
         $admin = $this->admin()->id;
+        $approvers = $this->managerUsers();
         $rows = [];
         foreach ($this->employees() as $i => $e) {
+            $approver = $approvers[$e['id']] ?? $admin; // the CEO's requests are decided by the admin
             $requests = $i % 3 === 0 ? 2 : 1;
             for ($r = 0; $r < $requests; $r++) {
                 $current = $i % 8 === 2 && $r === 0;
@@ -471,7 +613,7 @@ final class DemoDataService
                     'employee_id' => $e['id'], 'leave_type_id' => $types[($i + $r) % count($types)],
                     'starts_on' => $start->toDateString(), 'ends_on' => $start->copy()->addDays($days - 1)->toDateString(),
                     'half_day' => 'none', 'days' => $days, 'comment' => self::PREFIX.'відпустка', 'status' => $status,
-                    'balance_override' => false, 'approver_id' => $status === 'pending' ? null : $admin,
+                    'balance_override' => false, 'approver_id' => $status === 'pending' ? null : $approver,
                     'decided_at' => $status === 'pending' ? null : $start->copy()->subDays(7),
                     'created_by' => $e['user_id'], 'created_at' => $start->copy()->subDays(10), 'updated_at' => $start->copy()->subDays(7),
                 ];
@@ -483,10 +625,11 @@ final class DemoDataService
     private function timesheets(): void
     {
         $admin = $this->admin()->id;
+        $deciders = $this->managerUsers();
         $projects = ['Набір студентів', 'Навчальний процес', 'Внутрішні задачі', 'Маркетинг'];
         $sheets = [];
         $hoursOf = [];
-        foreach (array_slice($this->employees(), 0, 45) as $i => $e) {
+        foreach (array_values(array_filter($this->employees(), static fn (int $k): bool => $k % 3 === 0, ARRAY_FILTER_USE_KEY)) as $i => $e) {
             if (! $e['active']) {
                 continue;
             }
@@ -502,7 +645,7 @@ final class DemoDataService
                     'employee_id' => $e['id'], 'week_start' => $week->toDateString(),
                     'status' => $w === 1 ? 'submitted' : 'approved', 'expected_hours' => 40, 'worked_hours' => $worked,
                     'overtime_hours' => max(0, $worked - 40), 'submitted_at' => $week->copy()->addDays(4)->setTime(18, 0),
-                    'decided_by' => $w === 1 ? null : $admin, 'decided_at' => $w === 1 ? null : $week->copy()->addDays(7),
+                    'decided_by' => $w === 1 ? null : ($deciders[$e['id']] ?? $admin), 'decided_at' => $w === 1 ? null : $week->copy()->addDays(7),
                     'created_at' => $week, 'updated_at' => $week->copy()->addDays(4),
                 ];
             }
@@ -535,8 +678,8 @@ final class DemoDataService
         $active = $this->active();
         $quarter = $this->now->year.'-Q'.$this->now->quarter;
         $objectives = [];
-        foreach ($org['departments'] as $d => $department) {
-            $objectives[] = $this->objective('team', null, $department, $quarter, self::DEPARTMENTS[$d % count(self::DEPARTMENTS)].': ключова ціль кварталу', $admin->id);
+        foreach ($this->named('departments') as $name => $department) {
+            $objectives[] = $this->objective('team', null, $department, $quarter, $name.': ключова ціль кварталу', $admin->id);
         }
         $objectives[] = $this->objective('company', null, null, $quarter, 'Зростання набору на 20%', $admin->id);
         foreach (array_slice($active, 0, 16) as $e) {
@@ -613,9 +756,20 @@ final class DemoDataService
             'created_at' => $start, 'updated_at' => $start->copy()->addMonths(3)->addDays(14),
         ]);
         $assignments = [];
-        foreach (array_slice($active, 0, 24) as $i => $subject) {
-            $raters = [['self', $subject['id']], ['manager', $subject['manager'] ?? $active[0]['id']],
-                ['peer', $active[($i + 1) % count($active)]['id']], ['peer', $active[($i + 2) % count($active)]['id']]];
+        $teams = [];
+        foreach ($active as $e) {
+            $teams[$e['manager'] ?? 0][] = $e['id'];
+        }
+        // Subjects: every 4th active person with a manager (≤ 30); peers are two teammates (same manager), else anyone.
+        $subjects = array_values(array_filter($active, static fn (array $e): bool => $e['manager'] !== null));
+        $subjects = array_values(array_filter($subjects, static fn (int $k): bool => $k % 4 === 0, ARRAY_FILTER_USE_KEY));
+        foreach (array_slice($subjects, 0, 30) as $i => $subject) {
+            $mates = array_values(array_diff($teams[$subject['manager']] ?? [], [$subject['id']]));
+            if (count($mates) < 2) {
+                $mates = array_values(array_diff(array_column($active, 'id'), [$subject['id'], $subject['manager']]));
+            }
+            $raters = [['self', $subject['id']], ['manager', (int) $subject['manager']],
+                ['peer', $mates[$i % count($mates)]], ['peer', $mates[($i + 1) % count($mates)]]];
             foreach ($raters as [$type, $reviewer]) {
                 $assignments[] = ['cycle_id' => $cycle, 'subject_employee_id' => $subject['id'], 'reviewer_employee_id' => $reviewer, 'type' => $type,
                     'status' => 'submitted', 'submitted_at' => $submitted, 'created_at' => $start, 'updated_at' => $submitted];
@@ -805,8 +959,8 @@ final class DemoDataService
         foreach ($statuses as $i => $status) {
             $submitted = $this->now->copy()->subDays(160 - $i * 22);
             $request = $this->insert('hiring_requests', [
-                'title' => self::PREFIX.'Заявка на підбір №'.($i + 1), 'branch_id' => $org['branches'][$i % 3], 'department_id' => $org['departments'][$i % 4],
-                'position_id' => $org['positions'][2], 'headcount' => 1 + $i % 2, 'reason' => $i % 3 === 0 ? 'replacement' : 'new_position',
+                'title' => self::PREFIX.'Заявка на підбір №'.($i + 1), 'branch_id' => $org['branches'][$i % 3], 'department_id' => $this->named('departments')['Відділ продажів '.self::BRANCHES[$i % 3][0]] ?? null,
+                'position_id' => $this->named('positions')['Менеджер з продажу'] ?? null, 'headcount' => 1 + $i % 2, 'reason' => $i % 3 === 0 ? 'replacement' : 'new_position',
                 'desired_start_date' => $submitted->copy()->addDays(45)->toDateString(), 'salary_min' => 25000, 'salary_max' => 35000, 'currency' => 'UAH',
                 'requirements' => 'Тестові вимоги.', 'priority' => ['normal', 'high', 'low', 'urgent'][$i % 4], 'extra' => '{}', 'status' => $status,
                 'requester_id' => $admin, 'recruiter_id' => $recruiters[$i % count($recruiters)]->id,

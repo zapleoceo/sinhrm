@@ -18,6 +18,7 @@ use App\Modules\Recruiting\DTO\IncomingMessage;
 use App\Modules\Recruiting\DTO\MoveData;
 use App\Modules\Recruiting\DTO\TouchpointData;
 use App\Modules\Recruiting\DTO\VacancyData;
+use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
@@ -78,8 +79,19 @@ final class RecruitingDemoData
 
     private int $stepHours = 6;
 
-    /** @var list<int> */
+    /** @var array<string, int> */
     private array $channelIds = [];
+
+    /** Source mix of the company fill: job boards lead, then the career site, ads, referrals. */
+    private const array FILL_SOURCES = [
+        CandidateSource::WorkUa, CandidateSource::RobotaUa, CandidateSource::Site, CandidateSource::WorkUa, CandidateSource::MetaAds,
+        CandidateSource::Referral, CandidateSource::RobotaUa, CandidateSource::Site, CandidateSource::WorkUa, CandidateSource::Djinni,
+        CandidateSource::Telegram, CandidateSource::RobotaUa, CandidateSource::WorkUa, CandidateSource::Site, CandidateSource::MetaAds,
+        CandidateSource::Linkedin, CandidateSource::Referral, CandidateSource::RobotaUa, CandidateSource::WorkUa, CandidateSource::Manual,
+    ];
+
+    /** Reject reason index by frequency (experience, declined, no answer, conditions, no-show, other). */
+    private const array REASON_MIX = [0, 1, 2, 3, 0, 2, 1, 3, 4, 0, 2, 5, 1, 3];
 
     public function __construct(
         private readonly CandidateService $candidates,
@@ -159,7 +171,7 @@ final class RecruitingDemoData
      *
      * @param  list<User>  $recruiters
      * @param  list<Vacancy>  $vacancies
-     * @param  list<int>  $channelIds
+     * @param  array<string, int>  $channelIds  acquisition channel id by code (= candidate source value)
      * @param  int  $from  first story number (a caller may split the stories into several requests)
      * @return list<array{candidate: int, touches: int}>
      */
@@ -275,7 +287,8 @@ final class RecruitingDemoData
     private function candidateStory(int $i, User $recruiter, Vacancy $vacancy, array $stages, array $reasons): array
     {
         $n = $i + $this->offset;
-        $sources = [CandidateSource::WorkUa, CandidateSource::RobotaUa, CandidateSource::MetaAds, CandidateSource::Site, CandidateSource::Referral, CandidateSource::Telegram, CandidateSource::Manual];
+        $fill = $this->prefix !== ''; // company demo fill: realistic source mix and funnel shape
+        $sources = $fill ? self::FILL_SOURCES : [CandidateSource::WorkUa, CandidateSource::RobotaUa, CandidateSource::MetaAds, CandidateSource::Site, CandidateSource::Referral, CandidateSource::Telegram, CandidateSource::Manual];
         $source = $sources[$i % count($sources)];
         $phone = sprintf('+38067%07d', 1000000 + $n * 7919);
         $email = sprintf('candidate%02d@example.test', $n + 1);
@@ -296,14 +309,23 @@ final class RecruitingDemoData
             utm: $source === CandidateSource::MetaAds ? ['utm_source' => 'facebook', 'utm_medium' => 'paid', 'utm_campaign' => 'demo-autumn'] : null,
             tags: $i % 4 === 0 ? ['демо', 'вечірня зміна'] : ['демо'],
             ownerId: $recruiter->id,
-            channelId: $this->channelIds === [] ? null : $this->channelIds[$i % count($this->channelIds)],
+            channelId: $this->channelIds[$source->value] ?? null,
+            addedVia: $fill && $source === CandidateSource::Site ? AddedVia::CareerSite : null,
         ));
         $this->backdate($candidate, $start);
         $application = $this->applications->apply($recruiter, $candidate, $vacancy, $start);
         $this->backdate($application, $start);
 
-        // How far the candidate got: 0..5 regular steps; every 6th is rejected, every 9th hired.
-        $steps = $i % 6;
+        // How far the candidate got: 0..5 regular steps; every 6th is rejected, every 9th hired. The fill uses a funnel:
+        // most stay early, few reach the offer; every 4th is rejected at the stage reached, every 12th is hired.
+        $slot = ($i * 7) % 20;
+        $hired = $fill ? $i % 12 === 11 : $i % 9 === 8;
+        $rejected = $fill ? ($i % 4 === 2 && ! $hired) : $i % 6 === 5;
+        $steps = match (true) {
+            ! $fill => $i % 6,
+            $hired => 5,
+            default => $slot < 6 ? 0 : ($slot < 11 ? 1 : ($slot < 15 ? 2 : ($slot < 18 ? 3 : 4))),
+        };
         $at = $start->copy();
         $touches = 0;
         $stale = $i % 7 === 3; // no contact for the last days
@@ -317,10 +339,12 @@ final class RecruitingDemoData
             $application = $this->applications->move($recruiter, $application, new MoveData($stages[$s]->id), $at->copy()->addMinutes(20));
         }
         $end = end($stages);
-        if ($i % 6 === 5 && $end instanceof PipelineStage && $reasons !== []) {
+        if ($rejected && $end instanceof PipelineStage && $reasons !== []) {
             $at = $at->copy()->addHours(5);
-            $this->applications->move($recruiter, $application, new MoveData($end->id, 'Демо: відмова', $reasons[$i % count($reasons)]), $this->notFuture($at));
-        } elseif ($i % 9 === 8 && count($stages) >= 2) {
+            // Spread over all reasons, the common ones more often (i ≡ 5 mod 6 used to pick the same reason every time).
+            $reason = $reasons[self::REASON_MIX[intdiv($i, 4) % count(self::REASON_MIX)] % count($reasons)];
+            $this->applications->move($recruiter, $application, new MoveData($end->id, 'Демо: відмова', $reason), $this->notFuture($at));
+        } elseif ($hired && count($stages) >= 2) {
             $at = $at->copy()->addHours(5);
             $this->applications->move($recruiter, $application, new MoveData($stages[count($stages) - 2]->id), $this->notFuture($at));
         }
