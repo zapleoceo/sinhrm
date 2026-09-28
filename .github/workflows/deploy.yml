@@ -125,8 +125,9 @@ jobs:
           vercel pull --yes --environment=$TARGET --token=${{ secrets.VERCEL_TOKEN }}
           # Preview web must talk to the preview API of the same PR, not to prod: rewrite the /api and /sanctum
           # destinations in vercel.json (only in this CI checkout; the committed file keeps the prod URL).
-          [[ "$API_URL" =~ ^https://[a-z0-9-]+\.vercel\.app$ ]] || { echo "bad API url"; exit 1; }
+          # Production web keeps the committed prod API URL, so a web-only deploy (API step skipped) needs no API_URL.
           if [ "$TARGET" = preview ]; then
+            [[ "$API_URL" =~ ^https://[a-z0-9-]+\.vercel\.app$ ]] || { echo "bad API url"; exit 1; }
             node -e '
               const fs = require("fs");
               const api = (process.argv[1] || "").replace(/\/+$/, "");
