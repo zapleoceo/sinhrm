@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /** MCP token lifecycle and POST /api/mcp (laravel/mcp): scoping, tool list, calls through the real API as the user. */
@@ -57,9 +58,12 @@ final class McpServerTest extends TestCase
 
         $this->rpc($token, 'initialize', ['protocolVersion' => '2025-06-18', 'capabilities' => (object) [], 'clientInfo' => ['name' => 'test', 'version' => '1']])
             ->assertOk()->assertJsonPath('result.serverInfo.name', 'SinHRM');
-        $tools = collect($this->rpc($token, 'tools/list')->assertOk()->json('result.tools'))->keyBy('name');
+        $list = $this->rpc($token, 'tools/list')->assertOk()->json('result.tools');
+        $this->assertIsArray($list);
+        /** @var array<string, array<string, mixed>> $tools */
+        $tools = array_column($list, null, 'name');
 
-        $this->assertEqualsCanonicalizing(['api_get', 'api_write', 'find_endpoints'], $tools->keys()->all());
+        $this->assertEqualsCanonicalizing(['api_get', 'api_write', 'find_endpoints'], array_keys($tools));
         $this->assertTrue($tools['api_get']['annotations']['readOnlyHint']);
         $this->assertTrue($tools['api_write']['annotations']['destructiveHint']);
         $this->assertSame(['method', 'path', 'summary'], $tools['api_write']['inputSchema']['required']);
@@ -70,19 +74,19 @@ final class McpServerTest extends TestCase
         $employee = User::factory()->withRole(UserRole::Employee)->create(['name' => 'Synthetic Employee']);
         $token = $this->tokenFor($employee);
 
-        $me = $this->call_tool($token, 'api_get', ['path' => 'auth/me']);
+        $me = $this->callTool($token, 'api_get', ['path' => 'auth/me']);
         $this->assertFalse($me['isError'] ?? false);
         $this->assertStringContainsString('Synthetic Employee', (string) json_encode($me, JSON_UNESCAPED_UNICODE));
 
         // Admin-only endpoint: the policy of the real route answers, not the helper.
-        $users = $this->call_tool($token, 'api_get', ['path' => 'users']);
+        $users = $this->callTool($token, 'api_get', ['path' => 'users']);
         $this->assertTrue($users['isError'] ?? false);
         $this->assertStringContainsString('403', (string) json_encode($users));
 
-        $ops = $this->call_tool($token, 'api_write', ['method' => 'POST', 'path' => 'ops/migrate', 'summary' => 'x']);
+        $ops = $this->callTool($token, 'api_write', ['method' => 'POST', 'path' => 'ops/migrate', 'summary' => 'x']);
         $this->assertStringContainsString('forbidden_path', (string) json_encode($ops));
 
-        $found = $this->call_tool($token, 'find_endpoints', ['query' => 'users']);
+        $found = $this->callTool($token, 'find_endpoints', ['query' => 'users']);
         $this->assertStringNotContainsString('"path":"users"', (string) json_encode($found), 'Modules the user cannot open are not listed.');
     }
 
@@ -95,7 +99,10 @@ final class McpServerTest extends TestCase
         return $token;
     }
 
-    /** @param  array<string, mixed>  $params */
+    /**
+     * @param  array<string, mixed>  $params
+     * @return TestResponse<Response>
+     */
     private function rpc(string $token, string $method, array $params = []): TestResponse
     {
         $this->app['auth']->forgetGuards();
@@ -109,7 +116,7 @@ final class McpServerTest extends TestCase
      * @param  array<string, mixed>  $arguments
      * @return array<string, mixed>
      */
-    private function call_tool(string $token, string $name, array $arguments): array
+    private function callTool(string $token, string $name, array $arguments): array
     {
         $result = $this->rpc($token, 'tools/call', ['name' => $name, 'arguments' => $arguments])->assertOk()->json('result');
         $this->assertIsArray($result);

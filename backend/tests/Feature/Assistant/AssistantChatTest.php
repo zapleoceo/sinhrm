@@ -21,6 +21,9 @@ final class AssistantChatTest extends TestCase
     use AiFixtures;
     use RefreshDatabase;
 
+    /** The faked broker answers "done" from now on (slow-turn test). */
+    private bool $brokerDone = false;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -125,12 +128,9 @@ final class AssistantChatTest extends TestCase
     public function test_a_slow_turn_is_pending_and_only_its_owner_can_poll_it(): void
     {
         $this->enableAi();
-        $done = false;
-        Http::fake(static function (Request $r) use (&$done) {
-            return $r->method() === 'POST'
-                ? Http::response(['job_id' => 1001, 'poll_after_s' => 2], 202)
-                : Http::response($done ? self::doneAnswer('Привіт! Я Стік.') : self::pendingAnswer());
-        });
+        Http::fake(fn (Request $r) => $r->method() === 'POST'
+            ? Http::response(['job_id' => 1001, 'poll_after_s' => 2], 202)
+            : Http::response($this->brokerDone ? self::doneAnswer('Привіт! Я Стік.') : self::pendingAnswer()));
         $user = User::factory()->withRole(UserRole::Employee)->create();
         $other = User::factory()->withRole(UserRole::Employee)->create();
 
@@ -141,7 +141,7 @@ final class AssistantChatTest extends TestCase
         $this->actingAs($other)->getJson("/api/assistant/turns/{$id}")->assertNotFound();
         $this->actingAs($user)->getJson("/api/assistant/turns/{$id}")->assertOk()->assertJsonPath('data.state', 'pending');
 
-        $done = true;
+        $this->brokerDone = true;
         $this->actingAs($user)->getJson("/api/assistant/turns/{$id}")
             ->assertOk()->assertJsonPath('data.state', 'done')->assertJsonPath('data.assistant.content', 'Привіт! Я Стік.');
         // Finished turns stay readable (cache) for the owner.
