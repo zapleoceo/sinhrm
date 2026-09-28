@@ -156,15 +156,17 @@ final class RecruitingDemoData
      * @param  list<User>  $recruiters
      * @param  list<Vacancy>  $vacancies
      * @param  list<int>  $channelIds
+     * @param  int  $from  first story number (a caller may split the stories into several requests)
      * @return list<array{candidate: int, touches: int}>
      */
-    public function populate(array $recruiters, array $vacancies, int $count, int $spanDays, string $prefix, array $channelIds, int $offset = 500): array
+    public function populate(array $recruiters, array $vacancies, int $count, int $spanDays, string $prefix, array $channelIds, int $offset = 500, int $from = 0): array
     {
         [$this->offset, $this->prefix, $this->spanDays, $this->stepHours, $this->channelIds] = [$offset, $prefix, $spanDays, 60, $channelIds];
         $stages = $this->pipelines->defaultPipeline()?->stages->values()->all() ?? [];
         $reasons = $this->pipelines->rejectReasons(true)->pluck('id')->all();
         $out = [];
-        for ($i = 0; $i < $count; $i++) {
+        $this->nameSeq = $from;
+        for ($i = $from; $i < $from + $count; $i++) {
             $out[] = $this->candidateStory($i, $recruiters[$i % count($recruiters)], $vacancies[$i % count($vacancies)], $stages, $reasons);
         }
         [$this->offset, $this->prefix, $this->spanDays, $this->stepHours, $this->channelIds] = [0, '', 25, 6, []];

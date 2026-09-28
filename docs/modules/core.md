@@ -76,7 +76,7 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 | `POST /api/ops/migrate` | применяет новые миграции |
 | `POST /api/ops/migrate?fresh=1` | пересоздаёт БД и заполняет синтетикой; **в production запрещено (403)** |
 | `POST /api/ops/jobs/run` | один проход всех фоновых задач (cron каждые 30 мин, `.github/workflows/cron.yml`) → `{ok, jobs: {<name>: {ok, …счётчики}}}` |
-| `POST /api/ops/demo-fill?confirm=demo` | синтетика «[ТЕСТ]» для графиков отчётов (`Services/Demo/DemoDataService`); повтор — no-op; `&reset=1` удаляет только строки из `demo_records`; без `confirm=demo` → 422. Запуск — вручную `.github/workflows/demo-fill.yml` |
+| `POST /api/ops/demo-fill?confirm=demo&step=<name>` | один шаг синтетики «[ТЕСТ]» для графиков отчётов (`Services/Demo/DemoDataService::STEPS`), в своей транзакции; выполненный шаг — no-op (`already`), не выполнен предыдущий → 409; `GET …&steps=list` → `{steps, done}`; `&reset=1` удаляет только строки из `demo_records`; без `confirm=demo` → 422. Запуск — вручную `.github/workflows/demo-fill.yml` (шаги по очереди, падает на первом не-200) |
 
 Защита: заголовок `X-Ops-Secret` = `OPS_SECRET` (Vercel env + GitHub secret), сравнение `hash_equals`;
 секрет не задан → 404 (эндпоинта «нет»), неверный → 401; после 10 неверных попыток в минуту с одного IP → 429. Считаются **только неудачные** попытки:
@@ -85,7 +85,7 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 `Http/Controllers/OpsMigrateController`, `Contracts/MigrationRunner` → `Services/ArtisanMigrationRunner`.
 Тест: `tests/Feature/Core/OpsMigrateTest.php`, `OpsDemoFillTest.php`.
 
-Демо-данные: ~6 мес., 3 филиала × 4 отдела, 60 сотрудников, 150 кандидатов, ≥600 касаний, отпуска, табели, OKR, 1:1, 360, 2 закрытые волны Pulse (через `ResponseService`/`WaveLifecycle::close`), настроение, Desk, база знаний, активы, заявки на подбор, оценки скриптов. Имена с префиксом `[ТЕСТ]`, e-mail `@example.test`, случайность — `Mt19937` с фиксированным seed (Faker только в dev). Каждая созданная строка записывается в `demo_records` (`DemoRegistry`); reset удаляет их и зависимые строки по внешнему ключу, без опоры на каскады. `APP_ENV` задаётся переменной Vercel: `production` / `preview`.
+Демо-данные: ~6 мес., 3 филиала × 4 отдела, 60 сотрудников, 150 кандидатов, ≥600 касаний, отпуска, табели, OKR, 1:1, 360, 2 закрытые волны Pulse (через `ResponseService`/`WaveLifecycle::close`), настроение, Desk, база знаний, активы, заявки на подбор, оценки скриптов. Имена с префиксом `[ТЕСТ]`, e-mail `@example.test`, случайность — `Mt19937` с фиксированным seed (Faker только в dev). Заполнение разбито на шаги (org → people → recruiting-setup → recruiting-1…15 по 10 кандидатов → touchpoints → scripts → timeoff/time → perform → pulse-1/2 → mood/desk/knowledge/assets/hiring), чтобы каждый запрос укладывался в лимит Vercel 60 с на Neon (первый прогон одним запросом дал 504); простые данные — пакетные insert по 500 строк; шаг отмечается строкой `step:<name>` в `demo_records`. Каждая созданная строка записывается в `demo_records` (`DemoRegistry`); reset удаляет их и зависимые строки по внешнему ключу, без опоры на каскады. `APP_ENV` задаётся переменной Vercel: `production` / `preview`.
 
 ### Рабочие дни (`Contracts/WorkingCalendar`)
 Один общий календарь рабочих дней для сроков согласований (SLA) всех модулей: рабочий день — пн–пт, если это не

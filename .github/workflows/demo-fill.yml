@@ -1,5 +1,6 @@
 # Manual: fill prod with synthetic "[ТЕСТ]" data for the report charts, or remove it (reset).
-# Calls POST /api/ops/demo-fill?confirm=demo[&reset=1] with the X-Ops-Secret from repository secrets —
+# Fill: GET ?confirm=demo&steps=list, then POST ?confirm=demo&step=<name> for each step in order (a done step is a no-op).
+# Reset: POST ?confirm=demo&reset=1. Both use the X-Ops-Secret from repository secrets —
 # the secret never leaves GitHub Actions. Re-running the fill is a no-op; reset deletes only rows listed in demo_records.
 name: Demo data
 
@@ -27,13 +28,25 @@ jobs:
       OPS_SECRET: "${{ secrets.OPS_SECRET }}"
       RESET: "${{ inputs.reset }}"
     steps:
-      - name: POST /api/ops/demo-fill
+      - name: Reset (one call)
+        if: ${{ inputs.reset }}
         run: |
-          if [ -z "$OPS_SECRET" ]; then echo "::error::OPS_SECRET is not set"; exit 1; fi
-          Q="?confirm=demo"
-          if [ "$RESET" = "true" ]; then Q="$Q&reset=1"; fi
-          code=$(curl -sS -m 90 -o out.json -w '%{http_code}' -X POST "$API_URL/api/ops/demo-fill$Q" \
+          [ -n "$OPS_SECRET" ] || { echo "::error::OPS_SECRET is not set"; exit 1; }
+          code=$(curl -sS -m 90 -o out.json -w %{http_code} -X POST "$API_URL/api/ops/demo-fill?confirm=demo&reset=1" \
             -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json" || echo 000)
-          cat out.json || true; echo
-          echo "HTTP $code"
-          [ "$code" = "200" ] && grep -q '"ok":true' out.json
+          cat out.json || true; echo; echo "HTTP $code"
+          [ "$code" = "200" ] || { echo "::error::reset failed (HTTP $code)"; exit 1; }
+      - name: Fill step by step (each step = one request, own transaction)
+        if: ${{ ! inputs.reset }}
+        run: |
+          [ -n "$OPS_SECRET" ] || { echo "::error::OPS_SECRET is not set"; exit 1; }
+          call() { curl -sS -m 90 -o out.json -w %{http_code} -X "$1" "$API_URL/api/ops/demo-fill?confirm=demo&$2" \
+            -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json" || echo 000; }
+          code=$(call GET "steps=list"); cat out.json; echo
+          [ "$code" = "200" ] || { echo "::error::steps=list failed (HTTP $code)"; exit 1; }
+          for step in $(jq -r .steps[] out.json); do
+            start=$(date +%s)
+            code=$(call POST "step=$step")
+            echo "[$step] HTTP $code in $(( $(date +%s) - start ))s: $(cat out.json)"
+            [ "$code" = "200" ] || { echo "::error::step $step failed (HTTP $code); earlier steps are kept, re-run continues from here"; exit 1; }
+          done

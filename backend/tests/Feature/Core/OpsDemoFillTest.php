@@ -28,6 +28,10 @@ final class OpsDemoFillTest extends TestCase
     {
         $this->postJson('/api/ops/demo-fill?confirm=demo')->assertUnauthorized();
         $this->postJson('/api/ops/demo-fill', [], self::HEADERS)->assertStatus(422)->assertJsonPath('error', 'confirm_required');
+        $this->postJson('/api/ops/demo-fill?confirm=demo', [], self::HEADERS)->assertStatus(422)->assertJsonPath('error', 'step_required');
+        $this->postJson('/api/ops/demo-fill?confirm=demo&step=nope', [], self::HEADERS)->assertStatus(422)->assertJsonPath('error', 'unknown_step');
+        $this->postJson('/api/ops/demo-fill?confirm=demo&step=people', [], self::HEADERS)->assertStatus(409)->assertJsonPath('error', 'previous_step_missing:org');
+        $this->getJson('/api/ops/demo-fill?confirm=demo&steps=list', self::HEADERS)->assertOk()->assertJsonPath('steps', DemoDataService::STEPS)->assertJsonPath('done', []);
         $this->assertSame(0, DB::table('demo_records')->count());
     }
 
@@ -37,8 +41,10 @@ final class OpsDemoFillTest extends TestCase
         $realBranch = Branch::query()->create(['name' => 'Real branch', 'status' => 'active']);
         $before = $this->tableCounts();
 
-        $first = $this->postJson('/api/ops/demo-fill?confirm=demo', [], self::HEADERS)->assertOk()->json();
-        $this->assertFalse($first['already']);
+        foreach (DemoDataService::STEPS as $step) {
+            $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk()->assertJsonPath('already', false);
+        }
+        $this->getJson('/api/ops/demo-fill?confirm=demo&steps=list', self::HEADERS)->assertJsonPath('done', DemoDataService::STEPS);
         $this->assertSame(60, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
         $this->assertSame(150, DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
         $this->assertGreaterThanOrEqual(600, DB::table('touchpoints')->count());
@@ -57,8 +63,9 @@ final class OpsDemoFillTest extends TestCase
         $this->assertSame(200, $this->getJson('/api/health')->status());
 
         $afterFill = $this->tableCounts();
-        $second = $this->postJson('/api/ops/demo-fill?confirm=demo', [], self::HEADERS)->assertOk()->json();
-        $this->assertTrue($second['already']);
+        foreach (DemoDataService::STEPS as $step) {
+            $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk()->assertJsonPath('already', true);
+        }
         $this->assertSame($afterFill, $this->tableCounts(), 're-run creates nothing');
 
         $this->postJson('/api/ops/demo-fill?confirm=demo&reset=1', [], self::HEADERS)->assertOk()->assertJsonPath('action', 'reset');

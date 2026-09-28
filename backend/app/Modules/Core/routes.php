@@ -22,7 +22,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])
 Route::middleware(RequireOpsSecret::class)->prefix('ops')->group(function (): void {
     Route::post('migrate', OpsMigrateController::class)->name('core.ops.migrate');
     Route::post('jobs/run', OpsJobsController::class)->name('core.ops.jobs');
-    Route::post('demo-fill', OpsDemoFillController::class)->name('core.ops.demo_fill');
+    Route::match(['GET', 'POST'], 'demo-fill', OpsDemoFillController::class)->name('core.ops.demo_fill');
 });
 
 // "Модулі" admin page: company-wide on/off + roles per module (docs/modules/modules-access.md).
