@@ -19,6 +19,8 @@ final class OpsDemoFillTest extends TestCase
 
     private const array HEADERS = ['X-Ops-Secret' => 'test-secret'];
 
+    private const int PEOPLE = 126;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,14 +48,15 @@ final class OpsDemoFillTest extends TestCase
             $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk()->assertJsonPath('already', false);
         }
         $this->getJson('/api/ops/demo-fill?confirm=demo&steps=list', self::HEADERS)->assertJsonPath('done', DemoDataService::STEPS);
-        $this->assertSame(60, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
+        $this->assertSame(self::PEOPLE, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
         $this->assertSame(150, DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
         $this->assertGreaterThanOrEqual(600, DB::table('touchpoints')->count());
         $this->assertSame(2, DB::table('survey_waves')->where('status', 'closed')->count());
         $this->assertGreaterThan(0, DB::table('survey_wave_members')->count());
         $this->assertNull(DB::table('survey_responses')->whereNotNull('employee_id')->value('id'), 'anonymous waves keep no employee id');
-        $perDepartment = DB::table('survey_responses')->groupBy('department_id')->selectRaw('count(*) as c')->pluck('c')->all();
-        $this->assertGreaterThanOrEqual(5, min($perDepartment));
+        // Departments big enough for anonymous breakdowns (≥ 5 answers per wave); the small branch directorates are hidden.
+        $perDepartment = DB::table('survey_responses')->groupBy('wave_id', 'department_id')->selectRaw('count(*) as c')->pluck('c')->all();
+        $this->assertGreaterThanOrEqual(24, count(array_filter($perDepartment, static fn ($c): bool => (int) $c >= 5)));
         foreach (['female', 'male'] as $gender) {
             $this->assertGreaterThanOrEqual(5, DB::table('employees')->where('gender', $gender)->count());
         }
@@ -90,7 +93,7 @@ final class OpsDemoFillTest extends TestCase
         foreach (DemoDataService::STEPS as $step) {
             $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk();
         }
-        $this->assertSame(59, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
+        $this->assertSame(self::PEOPLE - 1, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
         $this->assertSame('Real person', $real->fresh()?->name);
         $this->assertNull(DB::table('employees')->where('user_id', $real->id)->value('id'));
         $this->assertSame(0, DB::table('model_has_roles')->where('model_id', $real->id)->count());
@@ -142,6 +145,67 @@ final class OpsDemoFillTest extends TestCase
         $after = $this->tableCounts();
         unset($before['audit_log'], $after['audit_log']);
         $this->assertSame($before, $after);
+    }
+
+    /**
+     * Prod has the OLD demo population (flat 3×4 structure, everyone under one director) plus real rows that use it:
+     * reset removes every registered demo row, a demo branch still used by a real vacancy is kept, and the next fill
+     * builds a realistic org chart: depth ≥ 4, ≤ 9 direct reports, CEO ≤ 7, 120–150 people; a second fill is a no-op.
+     */
+    public function test_reset_replaces_old_population_with_org_chart(): void
+    {
+        $old = [];
+        foreach (['branches', 'departments', 'positions'] as $table) {
+            $old[$table] = DB::table($table)->insertGetId(['name' => DemoDataService::PREFIX.'Старий '.$table, 'status' => 'active']);
+        }
+        $oldUser = User::query()->create(['email' => 'demo+emp-99@sinhrm.test', 'name' => DemoDataService::PREFIX.'Старий', 'status' => 'active']);
+        $oldEmployee = DB::table('employees')->insertGetId(['user_id' => $oldUser->id, 'full_name' => DemoDataService::PREFIX.'Старий', 'status' => 'active',
+            'branch_id' => $old['branches'], 'department_id' => $old['departments'], 'position_id' => $old['positions'], 'created_at' => now(), 'updated_at' => now()]);
+        foreach ([...$old, 'users' => $oldUser->id, 'employees' => $oldEmployee, 'step:org' => 0, 'step:people' => 0] as $table => $id) {
+            DB::table('demo_records')->insert(['table_name' => $table, 'record_id' => $id, 'created_at' => now()]);
+        }
+        $realUser = User::query()->create(['email' => 'real@example.com', 'name' => 'Real', 'status' => 'active']);
+        $real = DB::table('employees')->insertGetId(['user_id' => $realUser->id, 'full_name' => 'Real person', 'status' => 'active',
+            'department_id' => $old['departments'], 'manager_id' => $oldEmployee, 'created_at' => now(), 'updated_at' => now()]);
+        $vacancy = DB::table('vacancies')->insertGetId(['title' => 'Real vacancy', 'branch_id' => $old['branches'], 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->postJson('/api/ops/demo-fill?confirm=demo&reset=1', [], self::HEADERS)->assertOk();
+        $this->assertSame(0, DB::table('demo_records')->count());
+        $this->assertNull(DB::table('employees')->find($oldEmployee));
+        $this->assertNull(DB::table('departments')->find($old['departments']));
+        $this->assertNull(DB::table('positions')->find($old['positions']));
+        $this->assertNotNull(DB::table('branches')->find($old['branches']), 'still used by a real vacancy');
+        $this->assertSame($old['branches'], (int) DB::table('vacancies')->where('id', $vacancy)->value('branch_id'));
+        $this->assertSame('Real person', DB::table('employees')->where('id', $real)->value('full_name'));
+
+        foreach ([false, true] as $already) {
+            foreach (DemoDataService::STEPS as $step) {
+                $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk()->assertJsonPath('already', $already);
+            }
+        }
+        $employees = DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->get(['id', 'manager_id']);
+        $this->assertSame(self::PEOPLE, $employees->count());
+        $this->assertGreaterThanOrEqual(120, $employees->count());
+        $this->assertLessThanOrEqual(150, $employees->count());
+        $roots = $employees->whereNull('manager_id');
+        $this->assertCount(1, $roots, 'one CEO');
+        $reports = $employees->whereNotNull('manager_id')->countBy('manager_id');
+        $this->assertLessThanOrEqual(9, $reports->max());
+        $this->assertLessThanOrEqual(7, $reports[$roots->first()->id]);
+        $parent = $employees->pluck('manager_id', 'id')->all();
+        $depth = 0;
+        foreach (array_keys($parent) as $id) {
+            for ($d = 1; $parent[$id] !== null; $d++) {
+                $id = $parent[$id];
+            }
+            $depth = max($depth, $d);
+        }
+        $this->assertGreaterThanOrEqual(4, $depth);
+        $this->assertSame(0, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->whereNull('department_id')->count());
+        $this->assertSame(4, DB::table('employees')->join('users', 'users.id', '=', 'employees.user_id')->where('users.email', 'like', 'demo+hr-%')->count());
+        // Approvals come from the chain of command, not a single admin.
+        $this->assertGreaterThan(5, DB::table('leave_requests')->whereNotNull('approver_id')->distinct()->count('approver_id'));
+        $this->assertGreaterThan(5, DB::table('timesheets')->whereNotNull('decided_by')->distinct()->count('decided_by'));
     }
 
     /** @return array<string, int> */

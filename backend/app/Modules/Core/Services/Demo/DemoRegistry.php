@@ -49,6 +49,14 @@ final class DemoRegistry
         ['branch_user', 'user_id', 'users'],
     ];
 
+    /**
+     * Foreign keys without ON DELETE (RESTRICT) to demo dictionaries from rows people create by hand: a demo branch
+     * that a real vacancy or hiring request still uses is kept (unregistered), so reset never fails or touches real rows.
+     */
+    private const array RESTRICTED = [
+        'branches' => [['vacancies', 'branch_id'], ['hiring_requests', 'branch_id']],
+    ];
+
     /** @var list<array{table_name: string, record_id: int, created_at: Carbon}> */
     private array $pending = [];
 
@@ -113,6 +121,7 @@ final class DemoRegistry
         foreach ($tables as $table) {
             $table = (string) $table;
             foreach (array_chunk($this->ids($table), 500) as $ids) {
+                $ids = $this->unreferenced($table, $ids);
                 $n = DB::table($table)->whereIn('id', $ids)->delete();
                 $deleted[$table] = ($deleted[$table] ?? 0) + $n;
             }
@@ -120,5 +129,19 @@ final class DemoRegistry
         DB::table('demo_records')->delete();
 
         return array_filter($deleted);
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return list<int>
+     */
+    private function unreferenced(string $table, array $ids): array
+    {
+        foreach (self::RESTRICTED[$table] ?? [] as [$child, $column]) {
+            $used = array_map('intval', DB::table($child)->whereIn($column, $ids)->distinct()->pluck($column)->all());
+            $ids = array_values(array_diff($ids, $used));
+        }
+
+        return $ids;
     }
 }
