@@ -282,6 +282,11 @@ final class RecruitingDemoData
         $telegram = $i % 3 === 0 ? sprintf('demo_cand_%02d', $n + 1) : null;
         $start = Carbon::now()->subDays($this->spanDays + 3 - ($i * 37) % $this->spanDays)->setTime(9 + $i % 8, ($i * 7) % 60);
 
+        if ($this->prefix !== '' && Candidate::query()->where('phone', $phone)->orWhere('email', $email)
+            ->when($telegram !== null, fn ($q) => $q->orWhere('telegram_username', $telegram))->exists()) {
+            // Pre-check (no failing INSERT, which would abort the Postgres transaction): a taken contact skips the story.
+            throw RecruitingException::duplicateCandidateRestricted();
+        }
         $candidate = $this->candidates->create($recruiter, new CandidateData(
             fullName: $this->prefix.$this->nextName(),
             phone: $phone,
