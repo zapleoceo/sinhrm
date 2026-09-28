@@ -7,6 +7,7 @@ namespace Tests\Feature\Core;
 use App\Models\User;
 use App\Modules\Core\Services\Demo\DemoDataService;
 use App\Modules\Directory\Models\Branch;
+use App\Modules\Recruiting\Services\RecruitingDemoData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -74,6 +75,34 @@ final class OpsDemoFillTest extends TestCase
         $this->assertSame($before, $after, 'reset returns every table to its pre-fill size');
         $this->assertNotNull(User::query()->find($realUser->id));
         $this->assertNotNull(Branch::query()->find($realBranch->id));
+    }
+
+    /** Prod already had rows with the same unique values (earlier preview seed, real people): they are skipped, never touched. */
+    public function test_fill_skips_values_taken_by_non_demo_rows(): void
+    {
+        app(RecruitingDemoData::class)->generate(); // preview seed: demo-N touch ids, *@example.test users
+        $real = User::query()->create(['email' => 'demo+emp-01@sinhrm.test', 'name' => 'Real person', 'status' => 'active']);
+        $type = DB::table('asset_types')->insertGetId(['name' => DemoDataService::PREFIX.'Ноутбук']);
+        DB::table('assets')->insert(['inventory_number' => 'DEMO-0001', 'name' => 'Real laptop', 'status' => 'in_stock', 'type_id' => $type]);
+        DB::table('candidates')->insert(['full_name' => 'Real candidate', 'email' => 'candidate501@example.test', 'phone' => '+380679999999', 'source' => 'manual', 'created_at' => now(), 'updated_at' => now()]);
+        $before = $this->tableCounts();
+
+        foreach (DemoDataService::STEPS as $step) {
+            $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk();
+        }
+        $this->assertSame(59, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
+        $this->assertSame('Real person', $real->fresh()?->name);
+        $this->assertNull(DB::table('employees')->where('user_id', $real->id)->value('id'));
+        $this->assertSame(0, DB::table('model_has_roles')->where('model_id', $real->id)->count());
+        $this->assertSame('Real laptop', DB::table('assets')->where('inventory_number', 'DEMO-0001')->value('name'));
+        $this->assertSame(149, DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
+        $this->assertGreaterThanOrEqual(600, DB::table('touchpoints')->where('external_id', 'like', 'demo-fill-%')->count()
+            + DB::table('touchpoints')->whereNull('external_id')->whereIn('candidate_id', DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->pluck('id'))->count());
+
+        $this->postJson('/api/ops/demo-fill?confirm=demo&reset=1', [], self::HEADERS)->assertOk();
+        $after = $this->tableCounts();
+        unset($before['audit_log'], $after['audit_log']);
+        $this->assertSame($before, $after);
     }
 
     /** @return array<string, int> */

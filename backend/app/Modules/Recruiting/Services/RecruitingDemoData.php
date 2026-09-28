@@ -21,6 +21,7 @@ use App\Modules\Recruiting\DTO\VacancyData;
 use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
+use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\PipelineStage;
@@ -62,6 +63,9 @@ final class RecruitingDemoData
     ];
 
     private int $externalSeq = 0;
+
+    /** External ids of captured demo touches; populate()/extraTouch() use their own namespace so requests never collide. */
+    private string $externalPrefix = 'demo-';
 
     private int $nameSeq = 0;
 
@@ -167,8 +171,14 @@ final class RecruitingDemoData
         $out = [];
         $this->nameSeq = $from;
         for ($i = $from; $i < $from + $count; $i++) {
-            $out[] = $this->candidateStory($i, $recruiters[$i % count($recruiters)], $vacancies[$i % count($vacancies)], $stages, $reasons);
+            $this->externalPrefix = 'demo-fill-c'.($i + $offset).'-';
+            try {
+                $out[] = $this->candidateStory($i, $recruiters[$i % count($recruiters)], $vacancies[$i % count($vacancies)], $stages, $reasons);
+            } catch (RecruitingException) {
+                // A contact already belongs to someone else (never touch real candidates): skip this story.
+            }
         }
+        $this->externalPrefix = 'demo-';
         [$this->offset, $this->prefix, $this->spanDays, $this->stepHours, $this->channelIds] = [0, '', 25, 6, []];
 
         return $out;
@@ -178,7 +188,9 @@ final class RecruitingDemoData
     public function extraTouch(Candidate $candidate, User $author, int $n, Carbon $at): void
     {
         $channels = [Channel::Call, Channel::Telegram, Channel::Whatsapp, Channel::Viber, Channel::Email, Channel::Meeting, Channel::Note, Channel::Call];
+        $this->externalPrefix = 'demo-fill-t'.$n.'-';
         $this->touch($candidate, $author, $channels[$n % count($channels)], $at, $candidate->telegram_username);
+        $this->externalPrefix = 'demo-';
     }
 
     /** @return list<Branch> */
@@ -342,11 +354,12 @@ final class RecruitingDemoData
             occurredAt: $at,
             contact: $contact,
             body: $channel === Channel::Call ? null : self::PHRASES[$this->externalSeq % count(self::PHRASES)],
-            externalId: 'demo-'.(++$this->externalSeq),
+            externalId: $this->externalPrefix.(++$this->externalSeq),
             integrationKey: 'demo',
             authorId: $author->id,
             viaProduct: $viaProduct,
             meta: $channel === Channel::Call ? ['duration_sec' => 60 + ($this->externalSeq * 37) % 600] : [],
+            candidateId: $candidate->id,
         ));
 
         return 1;
