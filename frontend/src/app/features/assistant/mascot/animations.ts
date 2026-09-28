@@ -27,7 +27,10 @@ export type IdleAction =
   | 'idle-doodle'
   | 'idle-balance'
   | 'idle-pushup'
-  | 'idle-knock';
+  | 'idle-knock'
+  | 'idle-slip'
+  | 'idle-trip'
+  | 'idle-faint';
 export type ExitAction = 'exit-run' | 'exit-jump' | 'exit-slide' | 'exit-wave' | 'exit-peek';
 export type OtherAction =
   | 'peek-out'
@@ -45,7 +48,10 @@ export type OtherAction =
   | 'orb'
   | 'orb-pop'
   | 'unfold';
-export type ActionName = EntranceAction | IdleAction | ExitAction | OtherAction;
+/** Recovery after a real fall; built by getup.ts from the current ragdoll pose. */
+export type GetUpAction = 'getup' | 'sulk' | 'stand-up' | 'rub-head';
+export const GETUP_ACTIONS: readonly GetUpAction[] = ['getup', 'sulk', 'stand-up', 'rub-head'];
+export type ActionName = EntranceAction | IdleAction | ExitAction | OtherAction | GetUpAction;
 
 export const ENTRANCES: readonly EntranceAction[] = [
   'enter-peek',
@@ -72,6 +78,9 @@ export const IDLE_WEIGHTS: Readonly<Record<Exclude<IdleAction, 'idle-breathe'>, 
   'idle-balance': 1.5,
   'idle-pushup': 1,
   'idle-knock': 1.5,
+  'idle-slip': 0.7,
+  'idle-trip': 0.6,
+  'idle-faint': 0.4,
 };
 
 /** Where he lives: the viewport, the ground (bottom edge), the chat seat and the corner of the "off" circle. */
@@ -105,7 +114,7 @@ export interface ClipFrame {
   scale?: number;
 }
 
-export type ClipEventType = 'launch' | 'dust' | 'sparkle' | 'sweat' | 'bang' | 'ring' | 'doodle' | 'stars' | 'rope' | 'hop';
+export type ClipEventType = 'launch' | 'dust' | 'sparkle' | 'sweat' | 'bang' | 'ring' | 'doodle' | 'stars' | 'rope' | 'hop' | 'ragdoll' | 'banana';
 export type EventAnchor = 'feet' | 'hip' | 'head' | 'rHand';
 
 export interface ClipEvent {
@@ -142,6 +151,8 @@ export interface Clip {
   blend: number;
   /** Root comes from the physics body (limbs from the clip). */
   physics: boolean;
+  /** Limbs follow the clip exactly (no spring lag) — big precise moves like getting up off the floor. */
+  stiff?: boolean;
   /** Repeating effect while the clip runs (zZ while asleep). */
   ambient?: { type: 'zz'; every: number };
 }
@@ -191,15 +202,15 @@ function mod1(x: number): number {
   return x - Math.floor(x);
 }
 
-function pose(over: Partial<Pose>): Pose {
+export function pose(over: Partial<Pose>): Pose {
   return { ...STAND, ...over };
 }
 
-function standHip(stage: Stage): number {
+export function standHip(stage: Stage): number {
   return stage.ground - STAND_HIP;
 }
 
-function standAt(stage: Stage, x: number, facing: 1 | -1, over: Partial<Pose> = {}): Pose {
+export function standAt(stage: Stage, x: number, facing: 1 | -1, over: Partial<Pose> = {}): Pose {
   return pose({ x, y: standHip(stage), facing, ...over });
 }
 
@@ -246,14 +257,14 @@ export function plant(p: Pose, leg: 'l' | 'r', target: Vec): void {
   }
 }
 
-interface Key {
+export interface Key {
   t: number;
   p: Pose;
   e?: (u: number) => number;
 }
 
 /** Keyframed pose track (each key's easing shapes the segment that ends at it). */
-function keyed(keys: Key[]): (t: number) => Pose {
+export function keyed(keys: Key[]): (t: number) => Pose {
   return (t: number): Pose => {
     if (t <= keys[0].t) {
       return keys[0].p;
@@ -275,7 +286,7 @@ function breath(t: number, rate = 1): number {
 }
 
 /** Quiet standing with breathing — the base of most idles. */
-function breathing(stage: Stage, x: number, facing: 1 | -1, t: number): Pose {
+export function breathing(stage: Stage, x: number, facing: 1 | -1, t: number): Pose {
   const b = breath(t);
   return standAt(stage, x, facing, {
     y: standHip(stage) + b * 0.6,
@@ -800,7 +811,7 @@ function exitPeek(c: ClipContext): Clip {
 
 /* ───────────────────────── idles ───────────────────────── */
 
-function simple(action: ActionName, duration: number, sample: (t: number) => ClipFrame, events: ClipEvent[] = [], blend = 0.3): Clip {
+export function simple(action: ActionName, duration: number, sample: (t: number) => ClipFrame, events: ClipEvent[] = [], blend = 0.3): Clip {
   return { action, duration, blend, physics: false, events, sample };
 }
 
@@ -1040,6 +1051,56 @@ function idleKnock(c: ClipContext): Clip {
       return { pose: p, expr: t > 1.6 ? { eyes: 'wide', brows: 0.8, mouth: 'o' } : { brows: 0.6, mouth: 'smile' } };
     },
     [0.8, 1.1, 1.4].map((t) => ({ t, type: 'ring' as const, at: 'rHand' as const })),
+  );
+}
+
+/** Walks a few steps, then something goes wrong: the ragdoll takes over (a real fall). */
+function mishap(action: ActionName, c: ClipContext, kind: 'slip' | 'trip'): Clip {
+  const x0 = c.from.x;
+  const dir: 1 | -1 = x0 < c.stage.width / 2 ? 1 : -1;
+  const dist = kind === 'slip' ? 46 : 58;
+  const speed = kind === 'slip' ? 70 : 85;
+  const walk = travel(action, c.stage, x0, x0 + dir * dist, { speed, gait: WALK, expr: { mouth: 'smile' } });
+  const fallAt = walk.duration;
+  const events: ClipEvent[] =
+    kind === 'slip'
+      ? [
+          { t: 0.05, type: 'banana', point: { x: x0 + dir * (dist + 8), y: c.stage.ground } },
+          // Feet shoot forward, he tips backwards onto his back.
+          { t: fallAt, type: 'ragdoll', vx: dir * 140, vy: -620, spin: -dir * 9 },
+        ]
+      : [{ t: fallAt, type: 'ragdoll', vx: dir * 330, vy: -160, spin: dir * 6.5 }];
+  return {
+    ...walk,
+    duration: fallAt + 0.2,
+    events,
+    sample(t: number, env: ClipEnv): ClipFrame {
+      const f = walk.sample(Math.min(t, fallAt), env);
+      return t > fallAt - 0.15 ? { ...f, expr: { eyes: 'wide', brows: 1, mouth: 'o' } } : f;
+    },
+  };
+}
+
+function idleFaint(c: ClipContext): Clip {
+  const x = c.from.x;
+  const f = c.from.facing;
+  const side = c.rng() < 0.5 ? 1 : -1;
+  return simple(
+    'idle-faint',
+    1.9,
+    (t) => {
+      const p = breathing(c.stage, x, f, t);
+      const sway = Math.sin(t * 4) * 0.08 * Math.min(1, t);
+      p.torso += sway;
+      p.head += sway * 2;
+      p.lKnee += 0.15 * Math.min(1, t);
+      p.rKnee += 0.15 * Math.min(1, t);
+      p.lShoulder = -0.1;
+      p.rShoulder = 0.1;
+      return { pose: p, expr: t > 0.6 ? { eyes: 'spiral', mouth: 'wobbly', brows: 0.6 } : { eyes: 'sleepy', mouth: 'flat' } };
+    },
+    [{ t: 1.8, type: 'ragdoll', vx: side * 40, vy: 0, spin: side * f * 2.6 }],
+    0.25,
   );
 }
 
@@ -1354,8 +1415,14 @@ function unfoldClip(c: ClipContext): Clip {
 
 /* ───────────────────────── factory ───────────────────────── */
 
-export function createClip(action: ActionName, c: ClipContext): Clip {
+export function createClip(action: Exclude<ActionName, GetUpAction>, c: ClipContext): Clip {
   switch (action) {
+    case 'idle-slip':
+      return mishap('idle-slip', c, 'slip');
+    case 'idle-trip':
+      return mishap('idle-trip', c, 'trip');
+    case 'idle-faint':
+      return idleFaint(c);
     case 'enter-walk':
       return enterWalk(c);
     case 'enter-sneak':
