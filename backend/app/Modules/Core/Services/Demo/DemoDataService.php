@@ -536,7 +536,7 @@ final class DemoDataService
         $quarter = $this->now->year.'-Q'.$this->now->quarter;
         $objectives = [];
         foreach ($org['departments'] as $d => $department) {
-            $objectives[] = $this->objective('team', null, $department, $quarter, self::DEPARTMENTS[$d].': ключова ціль кварталу', $admin->id);
+            $objectives[] = $this->objective('team', null, $department, $quarter, self::DEPARTMENTS[$d % count(self::DEPARTMENTS)].': ключова ціль кварталу', $admin->id);
         }
         $objectives[] = $this->objective('company', null, null, $quarter, 'Зростання набору на 20%', $admin->id);
         foreach (array_slice($active, 0, 16) as $e) {
