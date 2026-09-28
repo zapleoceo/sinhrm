@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Recruiting\Repositories;
+namespace App\Modules\Auth\Repositories;
 
 use App\Models\User;
-use App\Modules\Recruiting\Contracts\ExtensionTokenRepository;
+use App\Modules\Auth\Contracts\PersonalTokenRepository;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\NewAccessToken;
 use Laravel\Sanctum\PersonalAccessToken;
 
-final class SanctumExtensionTokenRepository implements ExtensionTokenRepository
+final class SanctumPersonalTokenRepository implements PersonalTokenRepository
 {
     public function create(User $user, string $name, array $abilities, Carbon $expiresAt): NewAccessToken
     {

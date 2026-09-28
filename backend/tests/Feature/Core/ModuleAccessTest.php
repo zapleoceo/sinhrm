@@ -23,7 +23,7 @@ final class ModuleAccessTest extends TestCase
     {
         $modules = $this->app->make(ModuleRegistry::class)->all();
 
-        $this->assertCount(28, $modules);
+        $this->assertCount(29, $modules);
         $core = array_keys(array_filter($modules, static fn ($m): bool => $m->core));
         sort($core);
         $this->assertSame(['auth', 'core', 'directory', 'integrations', 'observability', 'overview', 'users'], $core);
@@ -31,7 +31,7 @@ final class ModuleAccessTest extends TestCase
 
     public function test_defaults_are_seeded_and_preserve_todays_access(): void
     {
-        $this->assertSame(21, ModuleSetting::query()->count());
+        $this->assertSame(22, ModuleSetting::query()->count());
         $this->assertSame(['superadmin'], ModuleSetting::query()->where('module', 'audit')->value('roles'));
         $this->assertSame(['superadmin', 'admin'], ModuleSetting::query()->where('module', 'privacy')->value('roles'));
         $this->assertTrue(ModuleSetting::query()->where('enabled', false)->doesntExist());
@@ -163,7 +163,7 @@ final class ModuleAccessTest extends TestCase
 
         $this->actingAs($this->user(UserRole::Superadmin))->getJson('/api/modules')
             ->assertOk()
-            ->assertJsonCount(28, 'data')
+            ->assertJsonCount(29, 'data')
             ->assertJsonFragment(['key' => 'recruiting', 'core' => false, 'enabled' => true, 'name_key' => 'modules.names.recruiting']);
     }
 

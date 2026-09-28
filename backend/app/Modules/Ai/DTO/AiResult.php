@@ -24,6 +24,8 @@ final readonly class AiResult
         public ?string $finishReason = null,
         public ?string $error = null,
         public int $pollAfterSeconds = 2,
+        /** @var list<array{id: string, name: string, arguments: string}> native tool calls of a conversation turn */
+        public array $toolCalls = [],
     ) {}
 
     public static function pending(int $pollAfterSeconds = 2): self
@@ -31,6 +33,7 @@ final readonly class AiResult
         return new self(self::PENDING, pollAfterSeconds: max(1, $pollAfterSeconds));
     }
 
+    /** @param  list<array{id: string, name: string, arguments: string}>  $toolCalls */
     public static function done(
         string $text,
         ?string $model = null,
@@ -39,8 +42,33 @@ final readonly class AiResult
         int $tokensCached = 0,
         float $costUsd = 0.0,
         ?string $finishReason = null,
+        array $toolCalls = [],
     ): self {
-        return new self(self::DONE, $text, $model, max(0, $tokensIn), max(0, $tokensOut), max(0, $tokensCached), max(0.0, $costUsd), $finishReason);
+        return new self(self::DONE, $text, $model, max(0, $tokensIn), max(0, $tokensOut), max(0, $tokensCached), max(0.0, $costUsd), $finishReason, toolCalls: $toolCalls);
+    }
+
+    /**
+     * Normalizes OpenAI-format tool calls ([{id, type, function: {name, arguments}}]) from a provider response;
+     * malformed entries are dropped (the handler validates names and arguments).
+     *
+     * @return list<array{id: string, name: string, arguments: string}>
+     */
+    public static function toolCallsFrom(mixed $raw): array
+    {
+        if (! is_array($raw)) {
+            return [];
+        }
+        $calls = [];
+        foreach ($raw as $call) {
+            $id = is_array($call) ? ($call['id'] ?? null) : null;
+            $name = is_array($call) ? ($call['function']['name'] ?? null) : null;
+            $arguments = is_array($call) ? ($call['function']['arguments'] ?? '{}') : null;
+            if (is_string($id) && is_string($name) && is_string($arguments)) {
+                $calls[] = ['id' => $id, 'name' => $name, 'arguments' => $arguments];
+            }
+        }
+
+        return $calls;
     }
 
     public static function error(string $code): self

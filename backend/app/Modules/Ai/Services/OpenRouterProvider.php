@@ -72,6 +72,10 @@ final readonly class OpenRouterProvider implements AiProvider
         if ($format !== null) {
             $body['response_format'] = $format;
         }
+        if ($prompt->tools !== null) {
+            $body['tools'] = $prompt->tools;
+            $body['tool_choice'] = 'auto';
+        }
 
         try {
             $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)
@@ -83,9 +87,11 @@ final readonly class OpenRouterProvider implements AiProvider
             throw AiException::provider('http_'.$response->status());
         }
         $text = $response->json('choices.0.message.content');
-        $result = is_string($text)
+        $toolCalls = AiResult::toolCallsFrom($response->json('choices.0.message.tool_calls'));
+        $result = is_string($text) || $toolCalls !== []
             ? AiResult::done(
-                text: $text,
+                text: is_string($text) ? $text : '',
+                toolCalls: $toolCalls,
                 model: is_string($response->json('model')) ? $response->json('model') : null,
                 tokensIn: (int) $response->json('usage.prompt_tokens', 0),
                 tokensOut: (int) $response->json('usage.completion_tokens', 0),

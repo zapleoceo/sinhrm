@@ -188,7 +188,8 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
 
 ### Браузерное расширение (`ExtensionController`, `Services/ClipperService`, `Services/ExtensionTokenService`)
 Эндпоинты `/api/me/extension-token` (сессия) и `/api/clipper/*` (только токен с ability `clipper`, `throttle:clipper` —
-30/мин на токен) — [extension.md](extension.md). Импорт одной страницы (`ClipperService::import`):
+30/мин на токен) — [extension.md](extension.md). Выдачу/отзыв делает общий `Auth\Services\PersonalTokens`, путь
+токена регистрируется в `Auth\Support\TokenScopes` (`api/clipper/*` → `clipper`) — [auth.md](auth.md). Импорт одной страницы (`ClipperService::import`):
 1. `profile_url` проверяется в `ClipCandidateRequest`: https, хост сайта из `source_site` (`linkedin.com`, `work.ua`,
    `djinni.co`, `dou.ua`, `robota.ua`, с `www.` или без), без логина/порта → иначе 422; нормализуется (`ClipperSite::normalizeUrl`; для Work.ua и Robota.ua срезается языковой префикс).
 2. Поиск: сначала `candidate_profile_urls.url`, затем телефон → e-mail → Telegram (глобально, как везде).

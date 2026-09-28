@@ -25,6 +25,9 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
 
     public const string DEFAULT_CAPABILITY = 'chat:fast';
 
+    /** Lane of the helper «Стік» (native tools): see fields(). */
+    public const string ASSISTANT_CAPABILITY = 'chat:smart';
+
     /** Broker capabilities allowed for SinHRM tasks (broker docs/api.md). */
     public const array CAPABILITIES = ['chat:fast', 'chat:smart', 'chat:sales', 'structured'];
 
@@ -59,6 +62,9 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
             FieldSpec::select('capability_script_evaluation', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_mail_classification', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_candidate_screening', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
+            // Native tools run only on openai/anthropic/gemini/mistral (broker tool_contract.TOOL_PROVIDERS): in chat:fast
+            // that leaves gemini alone; chat:smart = gemini → anthropic, so the helper survives the free quota.
+            FieldSpec::select('capability_assistant_chat', self::CAPABILITIES, default: self::ASSISTANT_CAPABILITY),
             // Empty by default (owner decision): the request then carries no model and the broker picks it for the capability.
             FieldSpec::text('model'),
             FieldSpec::text('max_requests_per_day', default: (string) self::DEFAULT_MAX_REQUESTS),
@@ -66,6 +72,7 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
             FieldSpec::select('ai_script_evaluation', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_mail_classification', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_candidate_screening', self::SWITCH, default: 'on'),
+            FieldSpec::select('ai_assistant_chat', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_screening_auto', self::SWITCH, default: 'off'),
         ];
     }

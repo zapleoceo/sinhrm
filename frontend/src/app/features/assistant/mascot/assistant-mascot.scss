@@ -1,0 +1,136 @@
+:host {
+  display: contents;
+  --mascot-ink: var(--mat-sys-on-surface);
+  --mascot-paper: var(--mat-sys-surface);
+}
+
+/* The moving box: only its transform changes per frame; the drawing overflows it. */
+.mascot-stage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 950;
+  width: 240px;
+  height: 240px;
+  pointer-events: none;
+  color: var(--mascot-ink);
+  will-change: transform;
+  contain: layout style;
+
+  &.off {
+    display: none;
+  }
+
+  ::ng-deep {
+    .mascot-svg {
+      display: block;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .fill { fill: currentColor; stroke: none; }
+    .far { opacity: 0.8; }
+
+    .stroke {
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.6;
+    }
+
+    .thin { stroke-width: 1.3; }
+    .face-line { stroke-width: 1.5; }
+    .fx-line { stroke-width: 1.3; }
+
+    .head {
+      fill: var(--mascot-paper);
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .eye-white {
+      fill: var(--mascot-paper);
+      stroke: currentColor;
+      stroke-width: 1.2;
+    }
+
+    .shadow { fill: currentColor; }
+
+    .fx-text {
+      fill: currentColor;
+      font: 700 11px/1 var(--mat-sys-body-medium-font, system-ui), system-ui, sans-serif;
+      font-style: italic;
+    }
+
+    .hit {
+      fill: transparent;
+      pointer-events: all;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .mascot-bubble {
+      position: absolute;
+      top: 0;
+      left: 0;
+      max-width: 220px;
+      padding: 8px 12px;
+      font: var(--mat-sys-body-medium);
+      color: var(--mat-sys-on-surface);
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    .bubble-svg {
+      position: absolute;
+      inset: 0;
+      overflow: visible;
+    }
+
+    .bubble-outline {
+      fill: var(--mat-sys-surface-container-high);
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linejoin: round;
+    }
+
+    .bubble-text {
+      position: relative;
+      display: block;
+      white-space: pre-wrap;
+    }
+
+    .bubble-rest { visibility: hidden; }
+  }
+}
+
+/* Keyboard/click target over the "off" circle (the drawing itself is in the stage). */
+.mascot-orb {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 951;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

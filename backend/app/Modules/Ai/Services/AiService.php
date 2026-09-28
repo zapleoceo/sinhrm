@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Ai\Services;
 
+use App\Modules\Ai\Contracts\AiConversationHandler;
 use App\Modules\Ai\Contracts\AiProvider;
 use App\Modules\Ai\Contracts\AiRequestRepository;
+use App\Modules\Ai\Contracts\AiTranscriber;
+use App\Modules\Ai\DTO\AiAudio;
 use App\Modules\Ai\DTO\AiJobRef;
 use App\Modules\Ai\DTO\AiOutcome;
 use App\Modules\Ai\DTO\AiPrompt;
@@ -32,7 +35,8 @@ use Illuminate\Support\Sleep;
  * 2. daily caps from ai_requests (attempts and cost since 00:00 UTC) → ai_budget_exceeded;
  * 3. submit, then poll with backoff within $waitSeconds (≤ 40 s: serverless requests end at 60 s);
  *    still pending → the request stays "pending" with its job id and the ai.poll job finishes it later;
- * 4. answer → strict JSON → purpose handler parse(); invalid → ONE retry, then ai_invalid_output;
+ * 4. answer → strict JSON → purpose handler parse(); invalid → ONE retry, then ai_invalid_output
+ *    (a conversational purpose — AiConversationHandler — gets the raw text + native tool calls instead of JSON);
  * 5. valid → pending→done (guarded) → handler apply() exactly once.
  * Logs carry ids, counters and codes only — never prompts, answers or keys.
  */
@@ -47,9 +51,13 @@ final readonly class AiService
     /** Seconds between polls; the broker's poll_after_s is used when it is longer. */
     private const array BACKOFF = [2, 2, 3, 5, 8, 13];
 
+    /** ai_requests.capability / prompt_version of a speech-to-text request (polled through the transcriber). */
+    public const string TRANSCRIPTION = 'transcription';
+
     public function __construct(
         private AiPolicy $policy,
         private AiProvider $provider,
+        private AiTranscriber $transcriber,
         private AiSettingsReader $settings,
         private AiRequestRepository $requests,
         private AiHandlerRegistry $handlers,
@@ -115,6 +123,36 @@ final readonly class AiService
     }
 
     /**
+     * Speech → text for a purpose whose handler is an AiConversationHandler (it gets {text, tool_calls: []}): same
+     * gate, daily caps, ai_requests row, waiting/deferral and ai.poll completion as run(); no retry (audio is not kept).
+     *
+     * @throws AiException when AI is unavailable for the purpose or the daily cap is reached (nothing is sent then)
+     */
+    public function transcribe(AiPurpose $purpose, AiAudio $audio, ?string $subjectType = null, ?int $subjectId = null, int $waitSeconds = self::WAIT_SECONDS): AiOutcome
+    {
+        $this->assertAvailable($purpose);
+        $this->assertBudget();
+        $request = $this->requests->create([
+            'purpose' => $purpose->value,
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+            'provider' => $this->transcriber->key(),
+            'capability' => self::TRANSCRIPTION,
+            'prompt_version' => self::TRANSCRIPTION,
+            'status' => AiRequestStatus::Pending->value,
+            'attempts' => 1,
+        ]);
+        try {
+            $job = $this->transcriber->submitAudio($audio, 'sinhrm.'.$purpose->value);
+        } catch (AiException $e) {
+            return $this->fail($request, $e->errorCode);
+        }
+        $this->requests->setJob($request, mb_substr($job->jobId, 0, 64), 1);
+
+        return $this->await($request, $job, null, min(self::WAIT_SECONDS, max(0, $waitSeconds)));
+    }
+
+    /**
      * One poll of a pending request (ai.poll job, "refresh" in the UI): done → handler applied, failed, or still
      * deferred. Finished requests are returned as they are (no provider call).
      */
@@ -126,7 +164,7 @@ final readonly class AiService
         if ($request->status === AiRequestStatus::Failed || $request->job_id === null) {
             return AiOutcome::failed($request->id, $request->error ?? 'ai_provider_error');
         }
-        $step = $this->handle($request, $this->provider->poll(new AiJobRef($request->provider, $request->job_id)), null);
+        $step = $this->handle($request, $this->poll($request, new AiJobRef($request->provider, $request->job_id)), null);
 
         return $step instanceof AiOutcome ? $step : AiOutcome::deferred($request->id);
     }
@@ -137,7 +175,8 @@ final readonly class AiService
         $this->fail($request, 'ai_timeout');
     }
 
-    private function await(AiRequest $request, AiJobRef $job, AiPrompt $prompt, int $waitSeconds): AiOutcome
+    /** $prompt null = nothing to resend (a transcription): an invalid answer then fails without a retry. */
+    private function await(AiRequest $request, AiJobRef $job, ?AiPrompt $prompt, int $waitSeconds): AiOutcome
     {
         $deadline = Carbon::now()->addSeconds($waitSeconds);
         $delay = $job->pollAfterSeconds;
@@ -151,7 +190,7 @@ final readonly class AiService
                 Sleep::for(min($remaining, max($delay, self::BACKOFF[min($round, count(self::BACKOFF) - 1)])))->seconds();
                 $round++;
             }
-            $result = $this->provider->poll($job);
+            $result = $this->poll($request, $job);
             $step = $this->handle($request, $result, $prompt);
             if ($step instanceof AiOutcome) {
                 return $step;
@@ -167,6 +206,12 @@ final readonly class AiService
         }
     }
 
+    /** Transcriptions are polled through the transcriber, everything else through the chat provider. */
+    private function poll(AiRequest $request, AiJobRef $job): AiResult
+    {
+        return $request->capability === self::TRANSCRIPTION ? $this->transcriber->poll($job) : $this->provider->poll($job);
+    }
+
     /** @return AiOutcome|AiJobRef|null outcome = finished; job = retry submitted; null = still pending */
     private function handle(AiRequest $request, AiResult $result, ?AiPrompt $prompt): AiOutcome|AiJobRef|null
     {
@@ -179,7 +224,9 @@ final readonly class AiService
         $this->requests->addUsage($request, $result);
         $handler = $this->handlers->get($request->purpose);
         try {
-            $json = JsonOutput::decode($result->text) ?? throw InvalidAiOutput::because('not_json');
+            $json = $handler instanceof AiConversationHandler
+                ? ['text' => (string) $result->text, 'tool_calls' => $result->toolCalls]
+                : JsonOutput::decode($result->text) ?? throw InvalidAiOutput::because('not_json');
             $data = $handler->parse($json, $request);
         } catch (InvalidAiOutput $e) {
             Log::warning('ai.invalid_output', [

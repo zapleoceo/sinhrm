@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Recruiting\Contracts;
+namespace App\Modules\Auth\Contracts;
 
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\NewAccessToken;
 use Laravel\Sanctum\PersonalAccessToken;
 
-/** Sanctum personal access tokens of the browser extension (one named token per user). */
-interface ExtensionTokenRepository
+/** Named Sanctum personal access tokens (one token per name and user): the extension token, the MCP token. */
+interface PersonalTokenRepository
 {
     /** @param  list<string>  $abilities */
     public function create(User $user, string $name, array $abilities, Carbon $expiresAt): NewAccessToken;
