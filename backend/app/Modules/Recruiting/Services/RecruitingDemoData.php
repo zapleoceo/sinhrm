@@ -320,8 +320,12 @@ final class RecruitingDemoData
         // most stay early, few reach the offer; every 4th is rejected at the stage reached, every 12th is hired.
         $slot = ($i * 7) % 20;
         $hired = $fill ? $i % 12 === 11 : $i % 9 === 8;
-        $rejected = $fill ? ! $hired && $i % 4 === 2 : $i % 6 === 5;
-        $steps = ! $fill ? $i % 6 : ($hired ? 5 : match (true) { $slot < 6 => 0, $slot < 11 => 1, $slot < 15 => 2, $slot < 18 => 3, default => 4 });
+        $rejected = $fill ? ($i % 4 === 2 && ! $hired) : $i % 6 === 5;
+        $steps = match (true) {
+            ! $fill => $i % 6,
+            $hired => 5,
+            default => $slot < 6 ? 0 : ($slot < 11 ? 1 : ($slot < 15 ? 2 : ($slot < 18 ? 3 : 4))),
+        };
         $at = $start->copy();
         $touches = 0;
         $stale = $i % 7 === 3; // no contact for the last days
