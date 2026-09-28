@@ -1,0 +1,39 @@
+# Manual: fill prod with synthetic "[ТЕСТ]" data for the report charts, or remove it (reset).
+# Calls POST /api/ops/demo-fill?confirm=demo[&reset=1] with the X-Ops-Secret from repository secrets —
+# the secret never leaves GitHub Actions. Re-running the fill is a no-op; reset deletes only rows listed in demo_records.
+name: Demo data
+
+on:
+  workflow_dispatch:
+    inputs:
+      reset:
+        description: "Remove demo data instead of filling it"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-fill
+  cancel-in-progress: false
+
+jobs:
+  demo-fill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      API_URL: "https://sinhrm-api.vercel.app"
+      OPS_SECRET: "${{ secrets.OPS_SECRET }}"
+      RESET: "${{ inputs.reset }}"
+    steps:
+      - name: POST /api/ops/demo-fill
+        run: |
+          if [ -z "$OPS_SECRET" ]; then echo "::error::OPS_SECRET is not set"; exit 1; fi
+          Q="?confirm=demo"
+          if [ "$RESET" = "true" ]; then Q="$Q&reset=1"; fi
+          code=$(curl -sS -m 90 -o out.json -w '%{http_code}' -X POST "$API_URL/api/ops/demo-fill$Q" \
+            -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json" || echo 000)
+          cat out.json || true; echo
+          echo "HTTP $code"
+          [ "$code" = "200" ] && grep -q '"ok":true' out.json

@@ -6,6 +6,7 @@ use App\Modules\Auth\Http\Middleware\EnsureUserIsActive;
 use App\Modules\Core\Http\Controllers\HealthController;
 use App\Modules\Core\Http\Controllers\ModuleSettingsController;
 use App\Modules\Core\Http\Controllers\NavBadgesController;
+use App\Modules\Core\Http\Controllers\OpsDemoFillController;
 use App\Modules\Core\Http\Controllers\OpsJobsController;
 use App\Modules\Core\Http\Controllers\OpsMigrateController;
 use App\Modules\Core\Http\Middleware\RequireOpsSecret;
@@ -21,6 +22,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])
 Route::middleware(RequireOpsSecret::class)->prefix('ops')->group(function (): void {
     Route::post('migrate', OpsMigrateController::class)->name('core.ops.migrate');
     Route::post('jobs/run', OpsJobsController::class)->name('core.ops.jobs');
+    Route::post('demo-fill', OpsDemoFillController::class)->name('core.ops.demo_fill');
 });
 
 // "Модулі" admin page: company-wide on/off + roles per module (docs/modules/modules-access.md).
