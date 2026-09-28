@@ -17,6 +17,7 @@
 
 | Дата | Что | PR |
 |---|---|---|
+| 2026-09-29 | Assistant (#assistant-quips-refresh): на проде первая пачка шуток не успела за 20 с → `none`, а дочитать её мог только `ai.poll` раз в 30 мин; теперь следующий вызов дочитывает отложенный запрос, SPA переспрашивает пустую пачку раз в минуту (до 4 раз) — [assistant.md](modules/assistant.md) | — |
 | 2026-09-29 | Assistant (#assistant-quips): «Стік» шутит, поднявшись после падения — пачка шуток от ИИ на ситуацию (`fall`/`thrown`/`slip`) и язык, общий кеш 6 ч (`GET /api/assistant/quips`, промпт `assistant_quips.v1`), встроенные фразы как запас; не засыпает, пока чат или голос заняты — [assistant.md](modules/assistant.md) | — |
 | 2026-09-29 | Assistant (#assistant-context): чат на проде заработал (ход 26: `find_endpoints` за 8 с), но слабая модель гоняла `find_endpoints` по кругу и ход с ~30 000 символов истории завис; компактная карта API (≤ 8, имена полей), урезание старых результатов инструментов (300 / 4000), промпт `assistant.v2` со шпаргалкой — [assistant.md](modules/assistant.md) | — |
 | 2026-09-28 | Ai (#assistant-lenient): по `detail` с прода (`finish_reason = stop`, `not_tool_json`) ответ модели не обрезан, а не в форме протокола — провайдеры полосы игнорируют `json_schema`; `ToolEmulation::unwrap` терпимый (текст = ответ, синонимы полей), точные коды `not_json` / `bad_shape` / `bad_tool_call` — [ai.md](modules/ai.md) | — |

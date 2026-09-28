@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Assistant\Ai\QuipsPrompt;
 use App\Modules\Auth\Enums\UserRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
@@ -19,6 +20,9 @@ final class AssistantQuipsTest extends TestCase
 {
     use AiFixtures;
     use RefreshDatabase;
+
+    /** The faked broker finishes the pending job from now on (slow-generation test). */
+    private bool $brokerDone = false;
 
     protected function setUp(): void
     {
@@ -59,6 +63,29 @@ final class AssistantQuipsTest extends TestCase
 
         $this->actingAs($user)->getJson('/api/assistant/quips?situation=explode&locale=de')->assertUnprocessable()
             ->assertJsonValidationErrors(['situation', 'locale']);
+    }
+
+    public function test_a_slow_generation_is_collected_by_the_next_call_without_a_new_request(): void
+    {
+        $this->enableAi();
+        Http::fake(function (Request $r) {
+            if ($r->method() === 'POST') {
+                $this->brokerSubmits[] = $r->data();
+
+                return Http::response(['job_id' => 3001, 'poll_after_s' => 2], 202);
+            }
+
+            return Http::response($this->brokerDone ? self::doneAnswer(['jokes' => ['Приземлення зараховано.']]) : self::pendingAnswer());
+        });
+        $user = User::factory()->withRole(UserRole::Employee)->create();
+
+        $this->actingAs($user)->getJson('/api/assistant/quips?situation=fall&locale=uk')->assertOk()->assertJsonPath('data.source', 'none');
+        $this->brokerDone = true;
+        $this->actingAs($user)->getJson('/api/assistant/quips?situation=fall&locale=uk')->assertOk()
+            ->assertJsonPath('data.source', 'ai')->assertJsonPath('data.jokes', ['Приземлення зараховано.']);
+        $this->actingAs($user)->getJson('/api/assistant/quips?situation=fall&locale=uk')->assertJsonPath('data.source', 'ai');
+
+        $this->assertCount(1, $this->brokerSubmits, 'The pending request is polled, never submitted twice.');
     }
 
     public function test_a_failed_generation_is_not_retried_immediately(): void

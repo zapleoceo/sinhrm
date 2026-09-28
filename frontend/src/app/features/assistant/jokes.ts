@@ -12,6 +12,12 @@ export const JOKE_FALLBACK_COUNT = 6;
 /** Jokes not repeated within the last N shown. */
 export const JOKE_MEMORY = 5;
 
+/** An empty pool ("none": still generating on the server) is asked again after this long… */
+export const JOKE_RETRY_MS = 60_000;
+
+/** …at most this many times per pool and session. */
+export const JOKE_MAX_TRIES = 4;
+
 /** A joke to show: AI text as is, or an i18n key of a built-in one. */
 export type Joke = { text: string } | { key: string };
 
@@ -50,7 +56,9 @@ export function pickNoRepeat<T>(items: readonly T[], recent: T[], rng: () => num
 export class AssistantJokes {
   private readonly api = inject(AssistantService);
   private readonly pools = new Map<string, readonly string[]>();
-  private readonly requested = new Set<string>();
+  private readonly inflight = new Set<string>();
+  /** Attempts per pool: an empty answer ("none" = the server is still generating) may be retried later. */
+  private readonly tries = new Map<string, { count: number; at: number }>();
   private readonly recent = new Map<JokeSituation, string[]>();
 
   /** Loads every situation's pool for the language (each at most once per session). Never throws. */
@@ -66,16 +74,25 @@ export class AssistantJokes {
     if (text !== null) {
       return { text };
     }
+    // No AI pool yet: ask again in the background (the server collects a slow generation on the next call).
+    void this.load(situation, locale);
     const keys = Array.from({ length: JOKE_FALLBACK_COUNT }, (_, i) => `assistant.jokes.${situation}.${i}`);
     return { key: pickNoRepeat(keys, recent, rng) ?? keys[0] };
   }
 
   private async load(situation: JokeSituation, locale: string): Promise<void> {
     const id = `${locale}:${situation}`;
-    if (this.requested.has(id)) {
+    const tried = this.tries.get(id);
+    const now = Date.now();
+    if (
+      (this.pools.get(id)?.length ?? 0) > 0 ||
+      this.inflight.has(id) ||
+      (tried !== undefined && (tried.count >= JOKE_MAX_TRIES || now - tried.at < JOKE_RETRY_MS))
+    ) {
       return;
     }
-    this.requested.add(id);
+    this.tries.set(id, { count: (tried?.count ?? 0) + 1, at: now });
+    this.inflight.add(id);
     try {
       const res = await firstValueFrom(this.api.quips(situation, locale));
       const jokes = res.source === 'ai' ? res.jokes.filter((j) => typeof j === 'string' && j.trim().length > 0).map((j) => j.trim().slice(0, 160)) : [];
@@ -83,6 +100,8 @@ export class AssistantJokes {
     } catch {
       // Throttled (429), AI off or offline → built-in jokes.
       this.pools.set(id, []);
+    } finally {
+      this.inflight.delete(id);
     }
   }
 
