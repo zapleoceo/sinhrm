@@ -82,7 +82,7 @@ final readonly class AssistantChatService
             return $this->result($user, $this->ai->refresh($request));
         }
         if ($request->status === AiRequestStatus::Failed) {
-            return ['state' => 'failed', 'request_id' => $request->id, 'error' => $request->error ?? 'ai_provider_error'];
+            return ['state' => 'failed', 'request_id' => $request->id, 'error' => $request->error ?? 'ai_provider_error', ...$this->detail($request->id)];
         }
         $data = $this->cache->get(AssistantChatHandler::cacheKey($request->id));
 
