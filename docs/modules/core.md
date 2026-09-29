@@ -9,6 +9,7 @@
 Вкладка браузера подписана «SinHRM · <раздел>» на языке интерфейса.
 
 ## Как устроено
+- Включение и роли модулей — таблица `module_settings` (`module`, `enabled`, `roles`), сервис `ModuleAccess`; подробности и правила — [modules-access.md](modules-access.md), решение — [ADR 0009](../adr/0009-module-access.md).
 - `GET /api/health` → `{"version": "...", "ok": true, "checks": {"database": {"ok": true}}}`; код 200 или 503.
 - Каждая зависимость — класс, реализующий `Contracts\HealthCheck`; модули добавляют свои проверки через
   `$app->tag([...], HealthCheck::class)`. Ошибка проверки не раскрывает детали подключения — только класс исключения.
