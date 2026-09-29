@@ -201,11 +201,11 @@ final class HiringRequestApiTest extends TestCase
             ->assertJsonPath('data.approvals.0.due_at', '2026-10-13T10:00:00+00:00');
     }
 
-    /** Makes the "skip the rest of the route" UPDATE fail — the last write of a rejection and of a cancellation. */
+    /** Makes the "skip the rest of the route" UPDATE (table hiring_request_approvals) fail — the last write of a rejection and of a cancellation. */
     private function failWhenSkippingOpenApprovals(): void
     {
         DB::listen(static function (QueryExecuted $query): void {
-            if (str_starts_with($query->sql, 'update "hiring_approvals"') && ($query->bindings[0] ?? null) === 'skipped') {
+            if (str_starts_with($query->sql, 'update "hiring_request_approvals"') && ($query->bindings[0] ?? null) === 'skipped') {
                 throw new RuntimeException('simulated failure while skipping the open approvals');
             }
         });
