@@ -11,5 +11,6 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     Route::get('me', [MeController::class, 'show'])->name('auth.me');
     Route::patch('me/locale', [MeController::class, 'updateLocale'])->name('auth.me.locale');
     Route::patch('me/notifications', [MeController::class, 'updateNotifications'])->name('auth.me.notifications');
+    Route::put('active-role', [MeController::class, 'updateActiveRole'])->middleware('throttle:30,1')->name('auth.active-role');
     Route::post('logout', [MeController::class, 'logout'])->name('auth.logout');
 });

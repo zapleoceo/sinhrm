@@ -28,6 +28,7 @@ table { width: 100%; }
 .who { display: flex; flex-direction: column; }
 
 .role { width: 11rem; }
+.role-cell { display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start; }
 
 .branches { width: 14rem; }
 

@@ -79,12 +79,12 @@ final class UserAdminServiceTest extends TestCase
 
     public function test_last_active_superadmin_cannot_be_blocked_or_demoted(): void
     {
-        $this->repo->method('roleOf')->willReturn(UserRole::Superadmin);
+        $this->repo->method('rolesOf')->willReturn([UserRole::Superadmin]);
         $this->repo->method('countActiveSuperadmins')->willReturn(1);
         $this->repo->expects($this->never())->method('setStatus');
-        $this->repo->expects($this->never())->method('setRole');
+        $this->repo->expects($this->never())->method('setRoles');
 
-        foreach ([[null, UserStatus::Blocked], [UserRole::Admin, null]] as [$role, $status]) {
+        foreach ([[null, UserStatus::Blocked], [[UserRole::Admin], null]] as [$role, $status]) {
             $e = $this->catch(fn () => $this->service->update($this->user(1), $this->user(2), $role, $status));
             $this->assertSame('last_superadmin', $e->errorCode);
             $this->assertSame(422, $e->status);
@@ -94,7 +94,7 @@ final class UserAdminServiceTest extends TestCase
     public function test_superadmin_can_be_blocked_when_another_is_active(): void
     {
         $target = $this->user(2);
-        $this->repo->method('roleOf')->willReturn(UserRole::Superadmin);
+        $this->repo->method('rolesOf')->willReturn([UserRole::Superadmin]);
         $this->repo->method('countActiveSuperadmins')->willReturn(2);
         $this->repo->expects($this->once())->method('setStatus')->with($target, UserStatus::Blocked);
 
@@ -104,19 +104,52 @@ final class UserAdminServiceTest extends TestCase
     public function test_role_and_status_are_applied(): void
     {
         $target = $this->user(2);
-        $this->repo->method('roleOf')->willReturn(UserRole::Viewer);
-        $this->repo->expects($this->once())->method('setRole')->with($target, UserRole::Admin);
+        $this->repo->method('rolesOf')->willReturn([UserRole::Viewer]);
+        $this->repo->expects($this->once())->method('setRoles')->with($target, [UserRole::Admin]);
         $this->repo->expects($this->once())->method('setStatus')->with($target, UserStatus::Active);
 
-        $this->assertSame($target, $this->service->update($this->user(1), $target, UserRole::Admin, UserStatus::Active));
+        $this->assertSame($target, $this->service->update($this->user(1), $target, [UserRole::Admin], UserStatus::Active));
+    }
+
+    public function test_several_roles_are_applied_and_audited_with_names(): void
+    {
+        $target = $this->user(2);
+        $audit = $this->createMock(AuditLogger::class);
+        $service = new UserAdminService($this->repo, new NullLogger, $audit);
+        $this->repo->method('rolesOf')->willReturn([UserRole::Recruiter]);
+        $this->repo->expects($this->once())->method('setRoles')->with($target, [UserRole::HrManager, UserRole::Recruiter]);
+        $audit->expects($this->once())->method('record')
+            ->with('user', 2, $this->anything(), ['role' => ['from' => 'recruiter', 'to' => 'hr_manager, recruiter']], null, 1);
+
+        $service->update($this->user(1), $target, [UserRole::Recruiter, UserRole::HrManager], null);
+    }
+
+    public function test_superadmin_can_be_kept_but_not_given(): void
+    {
+        $this->repo->method('rolesOf')->willReturn([UserRole::Admin]);
+        $this->repo->expects($this->never())->method('setRoles');
+
+        $e = $this->catch(fn () => $this->service->update($this->user(1), $this->user(2), [UserRole::Superadmin, UserRole::Admin], null));
+        $this->assertSame('superadmin_not_assignable', $e->errorCode);
+    }
+
+    public function test_last_superadmin_keeps_superadmin_when_roles_are_added(): void
+    {
+        $target = $this->user(2);
+        $this->repo->method('rolesOf')->willReturn([UserRole::Superadmin]);
+        $this->repo->method('countActiveSuperadmins')->willReturn(1);
+        $this->repo->expects($this->once())->method('setRoles')->with($target, [UserRole::Superadmin, UserRole::Recruiter]);
+
+        $this->service->update($this->user(1), $target, [UserRole::Recruiter, UserRole::Superadmin], null);
+        $this->assertSame('last_superadmin', $this->catch(fn () => $this->service->update($this->user(1), $target, [UserRole::Recruiter], null))->errorCode);
     }
 
     public function test_branches_are_synced_only_when_sent(): void
     {
         $target = $this->user(2);
-        $this->repo->method('roleOf')->willReturn(UserRole::Recruiter);
+        $this->repo->method('rolesOf')->willReturn([UserRole::Recruiter]);
         $this->repo->expects($this->once())->method('syncBranches')->with($target, [3, 5]);
-        $this->repo->expects($this->never())->method('setRole');
+        $this->repo->expects($this->never())->method('setRoles');
 
         $this->assertSame($target, $this->service->update($this->user(1), $target, null, null, [3, 5]));
         $this->service->update($this->user(1), $target, null, null, null);

@@ -23,11 +23,11 @@
   "shell": {
     "badge": { "new": "{{count}} новых" },
     "nav": { "modules": "Модули", "recruiting": "Рекрутинг", "candidates": "Кандидаты", "vacancies": "Вакансии", "inbox": "Входящие", "reports": "Отчёты", "label": "Главное меню", "overview": "Обзор", "admin": "Администрирование", "users": "Пользователи", "integrations": "Интеграции", "audit": "Журнал действий", "directory": "Справочники", "scripts": "Скрипты", "status": "Состояние системы", "mail": "Почта", "sheetsImport": "Импорт из Google Sheets", "people": "Люди", "peopleList": "Сотрудники", "orgChart": "Оргструктура", "timeoff": "Мои отсутствия", "teamCalendar": "Календарь команды", "approvals": "Согласования", "timeoffSettings": "Настройки отсутствий", "tasks": "Мои задачи", "myDocuments": "Мои документы", "workflowRuns": "Воркфлоу", "workflows": "Воркфлоу", "documentTemplates": "Шаблоны документов", "perform": "Эффективность", "objectives": "Цели (OKR)", "oneOnOnes": "Встречи 1:1", "feedback": "Фидбек", "reviews": "Мои оценки", "surveys": "Опросы", "mood": "Настроение", "reviewSetup": "Циклы оценки", "surveyBuilder": "Опросы", "services": "Сервисы", "desk": "Мои обращения", "knowledge": "База знаний", "safeSpeak": "Safe Speak", "reportCatalog": "Каталог отчётов", "reportBuilder": "Конструктор отчётов", "deskQueue": "Очередь обращений", "safeSpeakInbox": "Входящие Safe Speak", "assets": "Активы", "hiringRequests": "Заявки на подбор", "time": "Мой табель", "timeApprovals": "Согласование табелей", "timeTeam": "Табели команды", "hiringSettings": "Настройки заявок", "acquisitionChannels": "Каналы привлечения", "privacy": "Персональные данные", "timeSchedules": "Графики работы", "docs": "Справка", "errors": "Ошибки" },
-    "menu": { "open": "Меню пользователя", "language": "Язык", "extension": "Расширение браузера", "logout": "Выйти", "myProfile": "Мой профиль", "assistant": "Поговорить со Стиком" },
+    "menu": { "open": "Меню пользователя", "language": "Язык", "extension": "Расширение браузера", "logout": "Выйти", "myProfile": "Мой профиль", "assistant": "Поговорить со Стиком", "workAs": "Работать как", "allRoles": "Все роли", "workingAs": "Вы работаете как: {{role}}" },
     "theme": { "toDark": "Тёмная тема", "toLight": "Светлая тема" }
   },
   "status": { "title": "Состояние системы", "apiOk": "API работает", "apiDown": "API недоступен", "checking": "Проверка…", "version": "Версия" },
-  "users": {
+  "users": { "changeRoles": "Изменить роли",
     "title": "Пользователи",
     "search": "Поиск по имени или email",
     "role": "Роль",
@@ -50,6 +50,7 @@
       "email_taken": "Пользователь с таким email уже существует",
       "self_change_forbidden": "Нельзя менять собственную роль или статус",
       "last_superadmin": "Нельзя лишить прав последнего активного суперадмина",
+      "superadmin_not_assignable": "Роль суперадмина не выдаётся через админку",
       "handler_requires_admin": "Обработчиком Safe Speak может быть только суперадмин или админ",
       "generic": "Не удалось сохранить изменения"
     },

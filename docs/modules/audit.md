@@ -64,6 +64,8 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 
 Вручную из другого модуля: `Contracts\AuditLogger::record($entityType, $entityId, AuditAction, $changes, $meta, $actorId)`.
 Значения маскируются там же, `meta` — только неличные данные.
+Если автор записи сейчас работает в одной выбранной роли («Працювати як», [auth.md](auth.md)), в `meta` добавляется
+`acting_role` (например `"recruiter"`); при «Усі ролі» поля нет.
 
 ### Таблица `audit_log`
 `id, user_id (без FK — история переживает удаление пользователя), entity_type, entity_id, action, changes jsonb

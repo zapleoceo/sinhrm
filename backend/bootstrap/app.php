@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Auth\Http\Middleware\ApplyActiveRole;
 use App\Modules\Core\Http\Middleware\SecurityHeaders;
 use App\Modules\Integrations\Support\SecretScrubber;
 use App\Modules\Observability\Services\ErrorRecorder;
@@ -24,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn (Request $request): ?string => null);
         // X-Frame-Options, nosniff, CSP, HSTS, … on every API response (docs/architecture/observability.md).
         $middleware->append(SecurityHeaders::class);
+        // "Працювати як": narrow the session user to the chosen role before any authorization (auth.md).
+        $middleware->appendToGroup('api', ApplyActiveRole::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

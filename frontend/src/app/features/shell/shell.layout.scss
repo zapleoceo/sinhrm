@@ -72,6 +72,23 @@
   color: var(--app-muted);
 }
 
+.role-chip {
+  align-self: flex-start;
+  max-width: 100%;
+  margin-top: 0.125rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  font: var(--mat-sys-label-small);
+  line-height: 1.25rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.work-as { padding-bottom: 0; }
+
 .user-chevron { color: var(--app-muted); flex-shrink: 0; }
 
 .brand {

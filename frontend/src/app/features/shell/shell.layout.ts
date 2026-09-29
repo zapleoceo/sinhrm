@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, injec
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { isHrStaff } from '../../core/auth/auth.model';
+import { UserRole, isHrStaff } from '../../core/auth/auth.model';
 import { A11yModule } from '@angular/cdk/a11y';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { DOCUMENT } from '@angular/common';
@@ -11,7 +11,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { AssistantSettings } from '../assistant/assistant-settings';
@@ -19,6 +20,12 @@ import { AssistantMascot } from '../assistant/mascot/assistant-mascot';
 import { LanguageSwitcher } from './language-switcher';
 import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
+
+/** One radio item of "Працювати як": a role, or null = all roles. */
+interface RoleChoice {
+  role: UserRole | null;
+  label: string;
+}
 
 /** App frame for signed-in users: sidebar navigation with a pinned footer (help link + user menu). */
 @Component({
@@ -49,6 +56,8 @@ export class ShellLayout {
   private readonly navBadges = inject(NavBadgesService);
   private readonly assistant = inject(AssistantSettings);
   protected readonly theme = inject(ThemeService);
+  private readonly snack = inject(MatSnackBar);
+  private readonly i18n = inject(TranslocoService);
 
   protected readonly user = this.auth.user;
   protected readonly isSuperadmin = computed(() => this.user()?.roles.includes('superadmin') ?? false);
@@ -56,6 +65,12 @@ export class ShellLayout {
   protected readonly isAdmin = computed(() => this.isSuperadmin() || (this.user()?.roles.includes('admin') ?? false));
   /** HR settings pages (People, TimeOff, Desk, Pulse, Workflows, …): superadmin, admin, hr_manager. */
   protected readonly isHr = computed(() => isHrStaff(this.user()?.roles ?? []));
+  protected readonly activeRole = computed(() => this.user()?.active_role ?? null);
+  /** "Працювати як" items; empty (section hidden) for single-role accounts. */
+  protected readonly roleChoices = computed<RoleChoice[]>(() => {
+    const assigned = this.user()?.assigned_roles ?? [];
+    return assigned.length < 2 ? [] : [{ role: null, label: 'shell.menu.allRoles' }, ...assigned.map((role) => ({ role, label: `roles.${role}` }))];
+  });
   protected readonly initial = computed(() => (this.user()?.name ?? '?').charAt(0).toUpperCase());
   protected readonly themeLabel = computed(() => (this.theme.theme() === 'dark' ? 'shell.theme.toLight' : 'shell.theme.toDark'));
   protected readonly themeIcon = computed(() => (this.theme.theme() === 'dark' ? 'light_mode' : 'dark_mode'));
@@ -162,6 +177,20 @@ export class ShellLayout {
   /** Opens the chat with «Стік» (keyboard-friendly way to reach him while he is off stage). */
   protected openAssistant(): void {
     this.assistant.openChat();
+  }
+
+  /** "Працювати як": the server narrows every check to the role; the SPA restarts from home with the new menu. */
+  protected async workAs(role: UserRole | null): Promise<void> {
+    if (role === this.activeRole()) return;
+    try {
+      await this.auth.setActiveRole(role);
+    } catch {
+      this.snack.open(this.i18n.translate('common.error'), undefined, { duration: 4000 });
+      return;
+    }
+    await this.router.navigateByUrl('/');
+    const name = this.i18n.translate(role === null ? 'shell.menu.allRoles' : `roles.${role}`);
+    this.snack.open(this.i18n.translate('shell.menu.workingAs', { role: name }), undefined, { duration: 4000 });
   }
 
   protected async logout(): Promise<void> {

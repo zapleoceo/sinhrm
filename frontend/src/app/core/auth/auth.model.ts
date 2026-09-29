@@ -23,7 +23,17 @@ export function isAppLang(value: unknown): value is AppLang {
   return typeof value === 'string' && (APP_LANGS as readonly string[]).includes(value);
 }
 
-/** Response of GET /api/auth/me. */
+/** Response of GET /api/auth/me (and PUT /api/auth/active-role). */
+export interface MeResponse extends Omit<CurrentUser, 'roles' | 'assigned_roles' | 'active_role'> {
+  /** Assigned global roles. */
+  roles: UserRole[];
+  /** "Працювати як": the role the user works in now; null = all roles. Absent on old API responses. */
+  active_role?: UserRole | null;
+  /** Roles the server authorizes with right now (the active role, or all assigned). */
+  effective_roles?: UserRole[];
+}
+
+/** The signed-in user as the SPA keeps it: `roles` are the EFFECTIVE roles, so every UI check follows "Працювати як". */
 export interface CurrentUser {
   id: number;
   name: string;
@@ -32,8 +42,18 @@ export interface CurrentUser {
   locale: AppLang;
   /** E-mails about approvals and decisions ("Мій профіль"); absent on old API responses = on. */
   approval_emails?: boolean;
+  /** Effective roles (what the server authorizes with); use these for every UI permission check. */
   roles: UserRole[];
+  /** Roles the account really has — the "Працювати як" choices. */
+  assigned_roles?: UserRole[];
+  /** "Працювати як" choice; null = all roles. */
+  active_role?: UserRole | null;
   status: UserStatus;
   /** Module keys the user may open (switched on + role allowed); absent on old API responses = everything. */
   modules?: string[];
+}
+
+/** GET /api/auth/me → SPA state: `roles` become the effective roles, the assigned ones are kept aside. */
+export function toCurrentUser(me: MeResponse): CurrentUser {
+  return { ...me, roles: me.effective_roles ?? me.roles, assigned_roles: me.roles, active_role: me.active_role ?? null };
 }

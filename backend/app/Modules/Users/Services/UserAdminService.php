@@ -45,35 +45,41 @@ final class UserAdminService
     }
 
     /**
+     * @param  list<UserRole>|null  $roles  null = unchanged; otherwise the full new set of global roles (at least one).
+     *                                      Superadmin may be kept on a user who has it, never given.
      * @param  list<int>|null  $branchIds  null = unchanged; a list replaces the user's branches
      * @param  bool|null  $safeSpeakHandler  null = unchanged; true only for HR staff — superadmin/admin/hr_manager (may be set on oneself)
      */
-    public function update(User $actor, User $target, ?UserRole $role, ?UserStatus $status, ?array $branchIds = null, ?bool $safeSpeakHandler = null): User
+    public function update(User $actor, User $target, ?array $roles, ?UserStatus $status, ?array $branchIds = null, ?bool $safeSpeakHandler = null): User
     {
-        if ($role === null && $status === null && $branchIds === null && $safeSpeakHandler === null) {
+        if ($roles === null && $status === null && $branchIds === null && $safeSpeakHandler === null) {
             return $target;
         }
-        if ($actor->id === $target->id && ($role !== null || $status !== null || $branchIds !== null)) {
+        if ($actor->id === $target->id && ($roles !== null || $status !== null || $branchIds !== null)) {
             throw UserAdminException::selfChange();
         }
+        if ($roles !== null) {
+            $roles = array_values(array_filter(UserRole::cases(), static fn (UserRole $r): bool => in_array($r, $roles, true)));
+        }
 
-        $losesSuperadmin = ($role !== null && $role !== UserRole::Superadmin)
-            || $status === UserStatus::Blocked;
-
-        return $this->users->transaction(function () use ($actor, $target, $role, $status, $branchIds, $safeSpeakHandler, $losesSuperadmin): User {
+        return $this->users->transaction(function () use ($actor, $target, $roles, $status, $branchIds, $safeSpeakHandler): User {
+            $previous = $this->users->rolesOf($target);
+            $wasSuperadmin = in_array(UserRole::Superadmin, $previous, true);
+            if ($roles !== null && ! $wasSuperadmin && in_array(UserRole::Superadmin, $roles, true)) {
+                throw UserAdminException::superadminNotAssignable();
+            }
+            $losesSuperadmin = ($roles !== null && ! in_array(UserRole::Superadmin, $roles, true))
+                || $status === UserStatus::Blocked;
             if ($losesSuperadmin
+                && $wasSuperadmin
                 && $target->isActive()
-                && $this->users->roleOf($target) === UserRole::Superadmin
                 && $this->users->countActiveSuperadmins() <= 1) {
                 throw UserAdminException::lastSuperadmin();
             }
 
-            if ($role !== null) {
-                $previous = $this->users->roleOf($target);
-                $this->users->setRole($target, $role);
-                if ($previous !== $role) {
-                    $this->audit->record('user', $target->id, AuditAction::RoleChanged, ['role' => ['from' => $previous?->value, 'to' => $role->value]], null, $actor->id);
-                }
+            if ($roles !== null && $roles !== [] && $roles !== $previous) {
+                $this->users->setRoles($target, $roles);
+                $this->audit->record('user', $target->id, AuditAction::RoleChanged, ['role' => ['from' => self::names($previous), 'to' => self::names($roles)]], null, $actor->id);
             }
             if ($status !== null) {
                 $this->users->setStatus($target, $status);
@@ -81,7 +87,7 @@ final class UserAdminService
             if ($branchIds !== null) {
                 $this->users->syncBranches($target, $branchIds);
             }
-            $isAdmin = in_array($role ?? $this->users->roleOf($target), UserRole::hrStaff(), true);
+            $isAdmin = array_intersect(UserRole::valuesOf($roles ?? $previous), UserRole::valuesOf(UserRole::hrStaff())) !== [];
             if ($safeSpeakHandler === true && ! $isAdmin) {
                 throw UserAdminException::handlerRequiresAdmin();
             }
@@ -94,7 +100,7 @@ final class UserAdminService
             $this->log->info('users.updated', [
                 'user_id' => $target->id,
                 'by' => $actor->id,
-                'role' => $role?->value,
+                'roles' => $roles === null ? null : UserRole::valuesOf($roles),
                 'status' => $status?->value,
                 'branch_ids' => $branchIds,
                 'safe_speak_handler' => $safeSpeakHandler,
@@ -102,5 +108,15 @@ final class UserAdminService
 
             return $target;
         });
+    }
+
+    /**
+     * Audit value: "recruiter" or "admin, recruiter" (null = no roles).
+     *
+     * @param  list<UserRole>  $roles
+     */
+    private static function names(array $roles): ?string
+    {
+        return $roles === [] ? null : implode(', ', UserRole::valuesOf($roles));
     }
 }

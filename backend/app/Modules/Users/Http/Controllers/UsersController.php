@@ -36,7 +36,7 @@ final class UsersController
         return new UserResource($this->service->update(
             $this->actor($request),
             $user,
-            $request->role(),
+            $request->roles(),
             $request->status(),
             $request->branchIds(),
             $request->safeSpeakHandler(),

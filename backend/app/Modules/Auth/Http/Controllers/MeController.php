@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Auth\Http\Middleware\ApplyActiveRole;
+use App\Modules\Auth\Http\Requests\UpdateActiveRoleRequest;
 use App\Modules\Auth\Http\Requests\UpdateLocaleRequest;
 use App\Modules\Auth\Http\Resources\MeResource;
 use App\Modules\Auth\Services\AuthService;
@@ -30,6 +32,24 @@ final class MeController
         $data = $request->validate(['approval_emails' => ['required', 'boolean']]);
 
         return new MeResource($auth->changeApprovalEmails($this->user($request), (bool) $data['approval_emails']));
+    }
+
+    /**
+     * "Працювати як": remember the chosen role (null = all roles) in this session only, so a stale choice never
+     * follows the user to another device. Always allowed, whatever role is active — the way back is never closed.
+     */
+    public function updateActiveRole(UpdateActiveRoleRequest $request): MeResource
+    {
+        $role = $request->role();
+        if ($request->hasSession()) {
+            $role === null
+                ? $request->session()->forget(ApplyActiveRole::SESSION_KEY)
+                : $request->session()->put(ApplyActiveRole::SESSION_KEY, $role);
+        }
+        $user = $this->user($request);
+        $user->actAs($role);
+
+        return new MeResource($user);
     }
 
     public function logout(Request $request): Response
