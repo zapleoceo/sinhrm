@@ -72,7 +72,8 @@ jobs:
       - run: composer install --no-interaction --no-progress --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
       - name: Tests + coverage (min 70%)
-        run: php artisan test --coverage --min=70
+        # Parallel (paratest): Laravel gives each process its own DB app_test_test_N (RefreshDatabase).
+        run: php artisan test --parallel --processes=4 --coverage --min=70
 
   api-docs:
     runs-on: ubuntu-latest
