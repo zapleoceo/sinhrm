@@ -146,20 +146,30 @@ final readonly class HiringRequestService
             throw HiringException::invalidStatus($request->status->value);
         }
         abort_unless($this->access->canDecide($user, $request, $step), 403);
-        $decided = $this->requests->transitionApproval($step, ApprovalStatus::Pending, [
-            'status' => ($approve ? ApprovalStatus::Approved : ApprovalStatus::Rejected)->value,
-            'decided_by' => $user->id,
-            'decided_at' => $now,
-            'comment' => $comment,
-        ]);
+        // One transaction: a rejection is the decision of the step, the request status and the skipped rest of the route
+        // together — a failure in between must not leave a Pending request with a rejected step. Mails/tasks go after commit.
+        $decided = $this->requests->transaction(function () use ($user, $request, $step, $approve, $comment, $now): bool {
+            if (! $this->requests->transitionApproval($step, ApprovalStatus::Pending, [
+                'status' => ($approve ? ApprovalStatus::Approved : ApprovalStatus::Rejected)->value,
+                'decided_by' => $user->id,
+                'decided_at' => $now,
+                'comment' => $comment,
+            ])) {
+                return false;
+            }
+            if (! $approve) {
+                $this->requests->transition($request, HiringRequestStatus::Pending, ['status' => HiringRequestStatus::Rejected->value, 'decided_at' => $now]);
+                $this->requests->skipOpenApprovals($request);
+            }
+
+            return true;
+        });
         if (! $decided) {
             throw HiringException::invalidStatus($request->status->value);
         }
         $this->notifier->closeStep($step, $now);
         $this->log->info('hiring.step_decided', ['id' => $request->id, 'step' => $step->position, 'approve' => $approve, 'by' => $user->id]);
         if (! $approve) {
-            $this->requests->transition($request, HiringRequestStatus::Pending, ['status' => HiringRequestStatus::Rejected->value, 'decided_at' => $now]);
-            $this->requests->skipOpenApprovals($request);
             $this->notifier->decided($request, false);
 
             return $this->reload($request);
@@ -172,13 +182,21 @@ final readonly class HiringRequestService
     {
         abort_unless($this->access->canCancel($user, $request), $request->status->isCancellable() ? 403 : 409);
         $now ??= Carbon::now();
-        if (! $this->requests->transition($request, $request->status, ['status' => HiringRequestStatus::Cancelled->value, 'closed_at' => $now])) {
+        // The status change and the skipped route are one transaction; task closing follows the commit.
+        $cancelled = $this->requests->transaction(function () use ($request, $now): bool {
+            if (! $this->requests->transition($request, $request->status, ['status' => HiringRequestStatus::Cancelled->value, 'closed_at' => $now])) {
+                return false;
+            }
+            $this->requests->skipOpenApprovals($request);
+
+            return true;
+        });
+        if (! $cancelled) {
             throw HiringException::invalidStatus($request->status->value);
         }
         foreach ($request->approvals as $a) {
             $this->notifier->closeStep($a, $now);
         }
-        $this->requests->skipOpenApprovals($request);
 
         return $this->reload($request);
     }
@@ -188,7 +206,9 @@ final readonly class HiringRequestService
     {
         abort_unless($this->access->isAdmin($user), 403);
         $this->assertStatus($request, [HiringRequestStatus::Approved, HiringRequestStatus::InProgress]);
-        $this->requests->transition($request, $request->status, ['status' => HiringRequestStatus::Closed->value, 'closed_at' => $now ?? Carbon::now()]);
+        if (! $this->requests->transition($request, $request->status, ['status' => HiringRequestStatus::Closed->value, 'closed_at' => $now ?? Carbon::now()])) {
+            throw HiringException::invalidStatus($request->status->value);
+        }
 
         return $this->reload($request);
     }
