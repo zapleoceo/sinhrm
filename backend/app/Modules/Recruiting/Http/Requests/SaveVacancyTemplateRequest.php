@@ -11,12 +11,13 @@ use App\Modules\Recruiting\Models\Vacancy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/** POST /vacancy-templates: a name and the form values (validated with the vacancy rules; unknown keys dropped). */
+/** POST /vacancy-templates (PATCH: rename and/or replace values): a name and the form values (validated with the vacancy rules; unknown keys dropped). */
 final class SaveVacancyTemplateRequest extends FormRequest
 {
     /** Form keys a template keeps: the content of a vacancy, not its branch, people, status or publication. */
     public const array KEYS = ['title', 'department_id', 'position_id', 'description', 'public_description', ...SaveVacancyRequest::FORM_FIELDS];
 
+    /** PATCH is authorized per template by VacancyTemplatePolicy in the controller. */
     public function authorize(): bool
     {
         return (bool) $this->user()?->can('create', Vacancy::class);
@@ -26,9 +27,10 @@ final class SaveVacancyTemplateRequest extends FormRequest
     public function rules(): array
     {
         $active = static fn (string $model) => Rule::exists($model, 'id')->where('status', DirectoryStatus::Active->value);
+        $creating = $this->isMethod('POST');
         $rules = [
-            'name' => ['required', 'string', 'max:120'],
-            'data' => ['required', 'array'],
+            'name' => [$creating ? 'required' : 'sometimes', 'required', 'string', 'max:120'],
+            'data' => [$creating ? 'required' : 'sometimes', 'required', 'array'],
             'data.title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'data.department_id' => ['sometimes', 'nullable', 'integer', $active(Department::class)],
             'data.position_id' => ['sometimes', 'nullable', 'integer', $active(Position::class)],

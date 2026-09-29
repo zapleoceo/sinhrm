@@ -183,6 +183,10 @@ export interface VacancyTemplate {
   id: number;
   name: string;
   data: SaveVacancy;
+  /** Author (null: legacy row). */
+  created_by?: number | null;
+  /** Rename/delete allowed: the author or an admin (backend VacancyTemplatePolicy). */
+  can_manage?: boolean;
   created_at: string | null;
 }
 

@@ -18,7 +18,7 @@ import { safeStorage } from '../../../core/storage/safe-storage';
 import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
 import { withCurrent } from '../hiring-team';
-import { canWriteRecruiting } from '../recruiting.access';
+import { canWriteRecruiting, isRecruitingAdmin } from '../recruiting.access';
 import {
   ExternalPosting,
   Pipeline,
@@ -97,6 +97,7 @@ export class VacancyFormPage implements OnInit {
   protected readonly sections = VACANCY_SECTIONS;
   protected readonly statuses = VACANCY_STATUSES;
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
+  protected readonly isAdmin = computed(() => isRecruitingAdmin(this.auth.user()?.roles ?? []));
 
   protected readonly vacancyId = signal<number | null>(null);
   protected readonly vacancy = signal<Vacancy | null>(null);

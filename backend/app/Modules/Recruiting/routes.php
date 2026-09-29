@@ -52,6 +52,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     Route::get('vacancy-options', [VacancyController::class, 'options'])->name('recruiting.vacancies.options');
     Route::get('vacancy-templates', [VacancyTemplateController::class, 'index'])->name('recruiting.vacancy-templates.index');
     Route::post('vacancy-templates', [VacancyTemplateController::class, 'store'])->name('recruiting.vacancy-templates.store');
+    Route::patch('vacancy-templates/{template}', [VacancyTemplateController::class, 'update'])
+        ->whereNumber('template')->name('recruiting.vacancy-templates.update');
     Route::delete('vacancy-templates/{template}', [VacancyTemplateController::class, 'destroy'])
         ->whereNumber('template')->name('recruiting.vacancy-templates.destroy');
     Route::post('vacancy-text', [VacancyController::class, 'aiText'])->middleware('throttle:20,1')->name('recruiting.vacancies.ai-text');

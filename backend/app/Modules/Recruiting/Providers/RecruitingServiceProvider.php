@@ -34,10 +34,12 @@ use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Touchpoint;
 use App\Modules\Recruiting\Models\Vacancy;
+use App\Modules\Recruiting\Models\VacancyTemplate;
 use App\Modules\Recruiting\Policies\ApplicationPolicy;
 use App\Modules\Recruiting\Policies\CandidatePolicy;
 use App\Modules\Recruiting\Policies\TouchpointPolicy;
 use App\Modules\Recruiting\Policies\VacancyPolicy;
+use App\Modules\Recruiting\Policies\VacancyTemplatePolicy;
 use App\Modules\Recruiting\Privacy\CandidatePersonalData;
 use App\Modules\Recruiting\Repositories\EloquentAcquisitionChannelRepository;
 use App\Modules\Recruiting\Repositories\EloquentApplicationRepository;
@@ -108,6 +110,7 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         Gate::policy(Candidate::class, CandidatePolicy::class);
         Gate::policy(Application::class, ApplicationPolicy::class);
         Gate::policy(Touchpoint::class, TouchpointPolicy::class);
+        Gate::policy(VacancyTemplate::class, VacancyTemplatePolicy::class);
         Gate::define(self::WRITE, fn (User $user): bool => $this->app->make(RecruitingScope::class)->canWrite($user));
         Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(RecruitingScope::class)->canManage($user));
 

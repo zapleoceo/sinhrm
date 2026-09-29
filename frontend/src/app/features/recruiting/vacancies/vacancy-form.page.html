@@ -54,25 +54,22 @@
     @if (form.controls.title.touched && form.controls.title.invalid) {
       <p class="error" role="alert">{{ (fieldError('title') ?? 'recruiting.required') | transloco }}</p>
     }
-    <div class="grid four">
+    <div class="grid selects">
       <mat-form-field>
         <mat-label>{{ 'recruiting.form.category' | transloco }}</mat-label>
         <mat-select formControlName="category_id">
           <mat-option [value]="null">—</mat-option>
           @for (c of categories(); track c.id) {
-            <mat-option [value]="c.id">{{ c.name }}</mat-option>
+            <mat-option [value]="c.id" [title]="c.name">{{ c.name }}</mat-option>
           }
         </mat-select>
-        @if (categories().length === 0) {
-          <mat-hint>{{ 'recruiting.form.categoriesEmpty' | transloco }}</mat-hint>
-        }
         <mat-error>{{ (fieldError('category_id') ?? 'recruiting.form.errors.invalid') | transloco }}</mat-error>
       </mat-form-field>
       <mat-form-field>
         <mat-label>{{ 'recruiting.form.pipeline' | transloco }}</mat-label>
         <mat-select formControlName="pipeline_id">
           @for (p of pipelines(); track p.id) {
-            <mat-option [value]="p.id">{{ p.name }}</mat-option>
+            <mat-option [value]="p.id" [title]="p.name">{{ p.name }}</mat-option>
           }
         </mat-select>
         @if (vacancyId() !== null) {
@@ -83,7 +80,7 @@
         <mat-label>{{ 'recruiting.vacancies.fields.branch' | transloco }}</mat-label>
         <mat-select formControlName="branch_id" required>
           @for (b of branches(); track b.id) {
-            <mat-option [value]="b.id">{{ b.name }}</mat-option>
+            <mat-option [value]="b.id" [title]="b.name">{{ b.name }}</mat-option>
           }
         </mat-select>
         <mat-error>{{ (fieldError('branch_id') ?? 'recruiting.required') | transloco }}</mat-error>
@@ -93,11 +90,20 @@
         <mat-select formControlName="department_id">
           <mat-option [value]="null">—</mat-option>
           @for (d of departments(); track d.id) {
-            <mat-option [value]="d.id">{{ d.name }}</mat-option>
+            <mat-option [value]="d.id" [title]="d.name">{{ d.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
     </div>
+    @if (categories().length === 0) {
+      <p class="row-hint muted small" data-testid="categories-hint">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <span>{{ 'recruiting.form.categoriesEmpty' | transloco }}</span>
+        @if (isAdmin()) {
+          <a routerLink="/admin/directory">{{ 'recruiting.form.openDirectory' | transloco }}</a>
+        }
+      </p>
+    }
   </section>
 
   <!-- Text sections -->
