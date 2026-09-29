@@ -40,9 +40,9 @@ final class GenderPayGapReport extends AbstractReport
             ['key' => 'currency', 'type' => 'string'],
             ['key' => 'period', 'type' => 'string'],
             ['key' => 'gender', 'type' => 'string'],
-            ['key' => 'employees', 'type' => 'number'],
-            ['key' => 'median', 'type' => 'number'],
-            ['key' => 'gap_pct', 'type' => 'number'],
+            ['key' => 'employees', 'type' => 'number', 'total' => 'none'],
+            ['key' => 'median', 'type' => 'number', 'total' => 'none'],
+            ['key' => 'gap_pct', 'type' => 'number', 'total' => 'none'],
         ];
     }
 

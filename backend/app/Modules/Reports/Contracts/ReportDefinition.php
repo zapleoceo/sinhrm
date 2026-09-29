@@ -32,7 +32,12 @@ interface ReportDefinition
     /** @return list<string> filter keys (FILTER_*) */
     public function filters(): array;
 
-    /** @return list<array{key: string, type: string}> type: string | number | percent | date */
+    /**
+     * total: how the «Total» row adds the column up (Support\Totals): sum | ratio (+ of: [numerator, denominator])
+     * | avg-weighted (+ weight: column) | none (default). Declared deliberately per column.
+     *
+     * @return list<array{key: string, type: string, total?: string, of?: list<string>, weight?: string}> type: string | number | percent | date
+     */
     public function columns(): array;
 
     /** @return array{label: string, value: string}|null columns for the CSS bar chart */

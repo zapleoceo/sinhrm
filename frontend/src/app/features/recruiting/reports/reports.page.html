@@ -62,6 +62,20 @@
           <tr><td class="muted" [attr.colspan]="channels.length + 4">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
         }
       </tbody>
+      @if (store.recruiters().length >= 2) {
+        @let t = store.recruitersTotal();
+        <tfoot>
+          <tr>
+            <th scope="row">{{ 'recruiting.reports.grandTotal' | transloco }}</th>
+            @for (c of channels; track c) {
+              <td class="num">{{ t.byChannel[c] ?? 0 }}</td>
+            }
+            <td class="num">{{ t.viaProduct }}</td>
+            <td class="num">{{ t.captured }}</td>
+            <td class="num">{{ t.total }}</td>
+          </tr>
+        </tfoot>
+      }
     </table>
   </section>
 
@@ -86,6 +100,17 @@
           <tr><td class="muted" colspan="3">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
         }
       </tbody>
+      @if (store.sources(); as s) {
+        @if (s.rows.length >= 2) {
+          <tfoot>
+            <tr>
+              <th scope="row">{{ 'recruiting.reports.grandTotal' | transloco }}</th>
+              <td class="num">{{ s.totals.candidates }}</td>
+              <td class="num">{{ s.totals.hired }}</td>
+            </tr>
+          </tfoot>
+        }
+      }
     </table>
   </section>
 
@@ -102,25 +127,69 @@
           <tr><td class="muted" colspan="2">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
         }
       </tbody>
+      @if (store.rejectReasons(); as rr) {
+        @if (rr.rows.length >= 2) {
+          <tfoot>
+            <tr>
+              <th scope="row">{{ 'recruiting.reports.grandTotal' | transloco }}</th>
+              <td class="num">{{ rr.totals.total }}</td>
+            </tr>
+          </tfoot>
+        }
+      }
     </table>
   </section>
 
-  <section class="panel card wide">
-    <h2>{{ 'recruiting.reports.funnel' | transloco }}</h2>
-    @for (g of store.funnelByVacancy(); track g.title) {
-      <h3>{{ g.title }}</h3>
-      <table>
-        <tbody>
-          @for (r of g.rows; track r.stage_id) {
-            <tr>
-              <th scope="row">{{ r.stage_name }}</th>
-              <td class="barcell"><span class="bar" [attr.data-kind]="r.stage_kind" [style.width.%]="bar(r.count, maxOf(g.rows))"></span><span class="num">{{ r.count }}</span></td>
-            </tr>
+  <section class="funnel wide">
+    <div class="funnel-head">
+      <h2>{{ 'recruiting.reports.funnel' | transloco }}</h2>
+      @if (store.funnelCards().length > filterFrom) {
+        <mat-form-field subscriptSizing="dynamic" class="funnel-filter">
+          <mat-label>{{ 'recruiting.reports.funnelCard.filter' | transloco }}</mat-label>
+          <input matInput type="search" data-testid="funnel-filter" [value]="query()" (input)="onQuery($event)" />
+        </mat-form-field>
+      }
+    </div>
+    <div class="cards">
+      @for (v of cards(); track v.id) {
+        <article class="panel vcard" data-testid="funnel-card">
+          <header>
+            <div class="vtitle">
+              <h3>{{ v.title }}</h3>
+              @if (v.status) {
+                <span class="chip" [attr.data-status]="v.status">{{ 'recruiting.vacancyStatus.' + v.status | transloco }}</span>
+              }
+            </div>
+            @if (v.subtitle) {
+              <p class="muted sub">{{ v.subtitle }}</p>
+            }
+            <p class="active">{{ 'recruiting.reports.funnelCard.active' | transloco: { n: v.active } }}</p>
+          </header>
+          @if (v.max === 0) {
+            <p class="muted empty" data-testid="funnel-empty">{{ 'recruiting.reports.funnelCard.empty' | transloco }}</p>
+          } @else {
+            <ol class="stages">
+              @for (s of v.stages; track s.id) {
+                <li>
+                  <span class="sname">{{ s.name }}</span>
+                  <span class="track"><span class="bar" [attr.data-kind]="s.kind" [style.width.%]="bar(s.count, v.max)"></span></span>
+                  <span class="num">{{ s.count }}</span>
+                  @if (s.share !== null) {
+                    <span class="conv muted" [title]="'recruiting.reports.funnelCard.share' | transloco: { pct: s.share }">{{ s.share }}%</span>
+                  } @else {
+                    <span class="conv"></span>
+                  }
+                </li>
+              }
+            </ol>
           }
-        </tbody>
-      </table>
-    } @empty {
-      <p class="muted">{{ 'recruiting.reports.empty' | transloco }}</p>
-    }
+          @if (v.daysOpen !== null) {
+            <footer class="muted">{{ 'recruiting.reports.funnelCard.daysOpen' | transloco: { n: v.daysOpen } }}</footer>
+          }
+        </article>
+      } @empty {
+        <p class="muted">{{ 'recruiting.reports.empty' | transloco }}</p>
+      }
+    </div>
   </section>
 </div>

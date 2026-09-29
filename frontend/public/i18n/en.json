@@ -439,6 +439,8 @@
       "hired": "Hired",
       "rejectReasons": "Rejection reasons",
       "funnel": "Funnel (current stages)",
+      "grandTotal": "Total",
+      "funnelCard": { "empty": "No candidates", "active": "Active: {{n}}", "filter": "Find a vacancy", "daysOpen": "Open {{n}} d", "share": "{{pct}}% of the vacancy's active candidates" },
       "empty": "No data for the period"
     },
     "errors": {
@@ -973,6 +975,7 @@
     "chart": "Chart",
     "suppressed": "Hidden: the group is smaller than the minimum",
     "noRows": "No data",
+    "total": "Total",
     "payGapNote": "The pay gap report counts only employees with gender and compensation set; groups under 5 people are hidden.",
     "groups": {
       "general": "General",

@@ -36,9 +36,9 @@ final class TurnoverReport extends AbstractReport
     {
         return [
             ['key' => 'month', 'type' => 'string'],
-            ['key' => 'avg_headcount', 'type' => 'number'],
-            ['key' => 'terminations', 'type' => 'number'],
-            ['key' => 'turnover_pct', 'type' => 'percent'],
+            ['key' => 'avg_headcount', 'type' => 'number', 'total' => 'none'],
+            ['key' => 'terminations', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'turnover_pct', 'type' => 'percent', 'total' => 'none'],
         ];
     }
 

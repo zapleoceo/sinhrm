@@ -13,17 +13,18 @@ final class CsvResponse
     /**
      * @param  list<string>  $columns
      * @param  iterable<array<string, scalar|null>>  $rows
+     * @param  array<string, int|float|null>|null  $total
      */
-    public static function make(string $name, array $columns, iterable $rows): StreamedResponse
+    public static function make(string $name, array $columns, iterable $rows, ?array $total = null): StreamedResponse
     {
         $filename = (preg_replace('/[^a-z0-9_-]+/i', '_', $name) ?: 'report').'-'.date('Y-m-d').'.csv';
 
-        return new StreamedResponse(static function () use ($columns, $rows): void {
+        return new StreamedResponse(static function () use ($columns, $rows, $total): void {
             $out = fopen('php://output', 'wb');
             if ($out === false) {
                 return;
             }
-            Csv::write($out, $columns, $rows);
+            Csv::write($out, $columns, $rows, $total);
             fclose($out);
         }, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',

@@ -32,9 +32,9 @@ final class ScriptScoresReport extends AbstractReport
     {
         return [
             ['key' => 'recruiter', 'type' => 'string'],
-            ['key' => 'evaluations', 'type' => 'number'],
-            ['key' => 'avg_score', 'type' => 'number'],
-            ['key' => 'next_step_fixed_pct', 'type' => 'percent'],
+            ['key' => 'evaluations', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'avg_score', 'type' => 'number', 'total' => 'avg-weighted', 'weight' => 'evaluations'],
+            ['key' => 'next_step_fixed_pct', 'type' => 'percent', 'total' => 'avg-weighted', 'weight' => 'evaluations'],
         ];
     }
 

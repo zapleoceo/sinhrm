@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -25,6 +25,14 @@ export class ReportsPage implements OnInit {
   protected readonly bar = barWidth;
   protected readonly maxRecruiter = computed(() => Math.max(0, ...this.store.recruiters().map((r) => r.total)));
   protected readonly maxSource = computed(() => Math.max(0, ...(this.store.sources()?.rows ?? []).map((r) => r.candidates)));
+  /** The vacancy name filter appears only when there are more cards than this. */
+  protected readonly filterFrom = 6;
+  protected readonly query = signal('');
+  protected readonly cards = computed(() => {
+    const q = this.query().trim().toLocaleLowerCase();
+    const all = this.store.funnelCards();
+    return q === '' || all.length <= this.filterFrom ? all : all.filter((c) => c.title.toLocaleLowerCase().includes(q));
+  });
   protected readonly maxReason = computed(() => Math.max(0, ...(this.store.rejectReasons()?.rows ?? []).map((r) => r.count)));
 
   ngOnInit(): void {
@@ -41,7 +49,7 @@ export class ReportsPage implements OnInit {
     }
   }
 
-  protected maxOf(rows: readonly { count: number }[]): number {
-    return Math.max(0, ...rows.map((r) => r.count));
+  protected onQuery(event: Event): void {
+    this.query.set((event.target as HTMLInputElement).value);
   }
 }

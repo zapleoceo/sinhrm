@@ -78,7 +78,7 @@ type Filters = Partial<Record<ReportFilter, string>>;
     }
     @if (result(); as res) {
       <section class="panel card">
-        <app-report-table [columns]="res.report.columns" [rows]="res.rows" [chart]="res.report.chart" />
+        <app-report-table [columns]="res.report.columns" [rows]="res.rows" [chart]="res.report.chart" [totals]="res.totals" />
       </section>
     }
   `,

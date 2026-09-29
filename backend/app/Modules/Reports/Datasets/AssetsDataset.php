@@ -6,6 +6,7 @@ namespace App\Modules\Reports\Datasets;
 
 use App\Modules\Reports\Contracts\Dataset;
 use App\Modules\Reports\DTO\ScopedContext;
+use App\Modules\Reports\Support\Totals;
 
 /** The asset register (admins, like the inventory itself). */
 final class AssetsDataset implements Dataset
@@ -29,7 +30,7 @@ final class AssetsDataset implements Dataset
             'serial' => ['expr' => 'x.serial', 'type' => self::STRING],
             'type' => ['expr' => 'y.name', 'type' => self::STRING],
             'status' => ['expr' => 'x.status', 'type' => self::STRING],
-            'cost' => ['expr' => 'x.cost', 'type' => self::NUMBER],
+            'cost' => ['expr' => 'x.cost', 'type' => self::NUMBER, 'total' => Totals::SUM],
             'purchased_at' => ['expr' => 'x.purchased_at', 'type' => self::DATE],
             'holder' => ['expr' => 'e.full_name', 'type' => self::STRING],
         ];

@@ -6,11 +6,20 @@ export type ColumnType = 'string' | 'number' | 'percent' | 'date';
 export type Cell = string | number | boolean | null;
 export type Row = Record<string, Cell>;
 
+/** How the «Total» row adds a column up (computed by the backend, Support/Totals). */
+export type ColumnTotal = 'sum' | 'ratio' | 'avg-weighted' | 'none';
+
+export interface ReportColumn {
+  key: string;
+  type: ColumnType;
+  total?: ColumnTotal;
+}
+
 export interface ReportInfo {
   key: string;
   group: ReportGroup;
   filters: ReportFilter[];
-  columns: { key: string; type: ColumnType }[];
+  columns: ReportColumn[];
   chart: { label: string; value: string } | null;
 }
 
@@ -23,6 +32,8 @@ export interface ReportResult {
   report: ReportInfo;
   filters: Partial<Record<ReportFilter, string | number>>;
   rows: Row[];
+  /** One value per column (null = «—»); null = no total row (fewer than 2 rows). */
+  totals: Row | null;
 }
 
 export interface DatasetInfo {
@@ -54,6 +65,7 @@ export interface BuilderResult {
   columns: string[];
   rows: Row[];
   truncated: boolean;
+  totals: Row | null;
 }
 
 export type SavedKind = 'builder' | 'catalog';

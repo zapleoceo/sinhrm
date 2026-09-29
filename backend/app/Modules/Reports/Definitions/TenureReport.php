@@ -33,7 +33,7 @@ final class TenureReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'bucket', 'type' => 'string'], ['key' => 'employees', 'type' => 'number']];
+        return [['key' => 'bucket', 'type' => 'string'], ['key' => 'employees', 'type' => 'number', 'total' => 'sum']];
     }
 
     public function chart(): array

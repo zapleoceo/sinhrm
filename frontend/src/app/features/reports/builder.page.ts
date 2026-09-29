@@ -134,7 +134,7 @@ import { ReportsService, reportsErrorKey } from './reports.service';
         @if (res.truncated) {
           <p class="muted">{{ 'reports.builder.truncated' | transloco }}</p>
         }
-        <app-report-table [columns]="resultColumns()" [rows]="res.rows" [chart]="res.spec.group_by ? { label: res.spec.group_by, value: 'value' } : null" />
+        <app-report-table [columns]="resultColumns()" [rows]="res.rows" [totals]="res.totals" [chart]="res.spec.group_by ? { label: res.spec.group_by, value: 'value' } : null" />
       </section>
     }
   `,

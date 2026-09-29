@@ -199,13 +199,14 @@ describe('VacanciesStore', () => {
 });
 
 describe('ReportsStore', () => {
-  it('loads all reports and groups the funnel by vacancy', () => {
+  it('loads all reports and makes one funnel card per vacancy, most active first', () => {
     const { store } = setup(ReportsStore);
     store.load();
-    expect(store.funnelByVacancy().map((g) => [g.title, g.rows.length])).toEqual([
-      ['V1', 2],
-      ['V2', 1],
+    expect(store.funnelCards().map((c) => [c.title, c.stages.length, c.active])).toEqual([
+      ['V2', 1, 4],
+      ['V1', 2, 3],
     ]);
+    expect(store.funnelCards()[1].stages.map((st) => st.share)).toEqual([67, 33]);
     store.setRange({ from: '2026-09-01', to: '2026-09-02' });
     expect(store.range().from).toBe('2026-09-01');
   });

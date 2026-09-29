@@ -36,9 +36,9 @@ final class OkrProgressReport extends AbstractReport
     {
         return [
             ['key' => 'scope', 'type' => 'string'],
-            ['key' => 'objectives', 'type' => 'number'],
-            ['key' => 'avg_progress', 'type' => 'percent'],
-            ['key' => 'achieved', 'type' => 'number'],
+            ['key' => 'objectives', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'avg_progress', 'type' => 'percent', 'total' => 'avg-weighted', 'weight' => 'objectives'],
+            ['key' => 'achieved', 'type' => 'number', 'total' => 'sum'],
         ];
     }
 

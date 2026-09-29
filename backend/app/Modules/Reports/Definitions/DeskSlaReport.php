@@ -34,11 +34,11 @@ final class DeskSlaReport extends AbstractReport
     {
         return [
             ['key' => 'category', 'type' => 'string'],
-            ['key' => 'cases', 'type' => 'number'],
-            ['key' => 'open', 'type' => 'number'],
-            ['key' => 'first_response_breached', 'type' => 'number'],
-            ['key' => 'resolve_breached', 'type' => 'number'],
-            ['key' => 'breached_pct', 'type' => 'percent'],
+            ['key' => 'cases', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'open', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'first_response_breached', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'resolve_breached', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'breached_pct', 'type' => 'percent', 'total' => 'none'],
         ];
     }
 

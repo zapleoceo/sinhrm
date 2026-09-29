@@ -30,7 +30,7 @@ final class HiresTerminationsReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'month', 'type' => 'string'], ['key' => 'hires', 'type' => 'number'], ['key' => 'terminations', 'type' => 'number']];
+        return [['key' => 'month', 'type' => 'string'], ['key' => 'hires', 'type' => 'number', 'total' => 'sum'], ['key' => 'terminations', 'type' => 'number', 'total' => 'sum']];
     }
 
     public function chart(): array

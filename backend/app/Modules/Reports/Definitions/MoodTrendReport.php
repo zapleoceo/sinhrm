@@ -35,7 +35,7 @@ final class MoodTrendReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'week', 'type' => 'date'], ['key' => 'respondents', 'type' => 'number'], ['key' => 'average', 'type' => 'number']];
+        return [['key' => 'week', 'type' => 'date'], ['key' => 'respondents', 'type' => 'number', 'total' => 'none'], ['key' => 'average', 'type' => 'number', 'total' => 'avg-weighted', 'weight' => 'respondents']];
     }
 
     public function chart(): array

@@ -9,6 +9,7 @@ use App\Modules\Reports\Contracts\Dataset;
 use App\Modules\Reports\DTO\BuilderSpec;
 use App\Modules\Reports\DTO\ScopedContext;
 use App\Modules\Reports\Support\ReportRegistry;
+use App\Modules\Reports\Support\Totals;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -118,17 +119,40 @@ final readonly class BuilderService
         return new BuilderSpec($dataset->key(), $columns, $filters, $groupBy, $aggregate, $aggregateColumn);
     }
 
-    /** @return array{columns: list<string>, rows: list<array<string, scalar|null>>, truncated: bool} */
+    /** @return array{columns: list<string>, rows: list<array<string, scalar|null>>, truncated: bool, totals: array<string, int|float|null>|null} */
     public function run(ScopedContext $ctx, BuilderSpec $spec): array
     {
         $dataset = $this->registry->dataset($spec->dataset);
         assert($dataset !== null);
-        $rows = $this->builder->run($spec, $dataset->columns(), $ctx, self::LIMIT);
+        $whitelist = $dataset->columns();
+        $rows = $this->builder->run($spec, $whitelist, $ctx, self::LIMIT);
+        $truncated = count($rows) >= self::LIMIT;
+        $columns = $spec->groupBy !== null ? [$spec->groupBy, 'value'] : $spec->columns;
+        $hints = [];
+        foreach ($columns as $c) {
+            $hints[] = ['key' => $c, 'total' => self::totalHint($spec, $whitelist, $c)];
+        }
 
         return [
-            'columns' => $spec->groupBy !== null ? [$spec->groupBy, 'value'] : $spec->columns,
+            'columns' => $columns,
             'rows' => $rows,
-            'truncated' => count($rows) >= self::LIMIT,
+            'truncated' => $truncated,
+            // A truncated result would give a partial sum: no total row then.
+            'totals' => $truncated ? null : Totals::row($hints, $rows),
         ];
+    }
+
+    /**
+     * count/sum per group add up, an average does not; raw rows add up only the columns the dataset marks additive.
+     *
+     * @param  array<string, array{expr: string, type: string, pii?: bool, total?: string}>  $whitelist
+     */
+    private static function totalHint(BuilderSpec $spec, array $whitelist, string $column): string
+    {
+        if ($spec->groupBy !== null && $column === 'value') {
+            return $spec->aggregate === 'avg' ? Totals::NONE : Totals::SUM;
+        }
+
+        return $whitelist[$column]['total'] ?? Totals::NONE;
     }
 }

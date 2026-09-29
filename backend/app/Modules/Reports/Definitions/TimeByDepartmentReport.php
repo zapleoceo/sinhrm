@@ -18,11 +18,11 @@ final class TimeByDepartmentReport extends AbstractTimeReport
     {
         return [
             ['key' => 'department', 'type' => 'string'],
-            ['key' => 'expected', 'type' => 'number'],
-            ['key' => 'worked', 'type' => 'number'],
-            ['key' => 'overtime', 'type' => 'number'],
-            ['key' => 'missing', 'type' => 'number'],
-            ['key' => 'absence', 'type' => 'number'],
+            ['key' => 'expected', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'worked', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'overtime', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'missing', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'absence', 'type' => 'number', 'total' => 'sum'],
         ];
     }
 

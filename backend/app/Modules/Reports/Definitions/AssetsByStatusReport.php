@@ -25,7 +25,7 @@ final class AssetsByStatusReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'status', 'type' => 'string'], ['key' => 'type', 'type' => 'string'], ['key' => 'assets', 'type' => 'number'], ['key' => 'cost', 'type' => 'number']];
+        return [['key' => 'status', 'type' => 'string'], ['key' => 'type', 'type' => 'string'], ['key' => 'assets', 'type' => 'number', 'total' => 'sum'], ['key' => 'cost', 'type' => 'number', 'total' => 'sum']];
     }
 
     public function chart(): array
