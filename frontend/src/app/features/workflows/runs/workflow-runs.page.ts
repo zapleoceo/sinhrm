@@ -51,7 +51,7 @@ import { RunsStore } from './runs.store';
           </mat-select>
         </mat-form-field>
       }
-      <app-person-picker includeTerminated [ngModel]="employeeId()" (ngModelChange)="setEmployee($event)" />
+      <app-person-picker class="grow" includeTerminated [ngModel]="employeeId()" (ngModelChange)="setEmployee($event)" />
     </div>
 
     @if (store.loading()) {

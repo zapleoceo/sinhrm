@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, booleanAttribute, forwardRef, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, booleanAttribute, computed, forwardRef, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -77,13 +77,6 @@ export function personSubtitle(p: PersonOption): string {
           />
         </mat-chip-grid>
       } @else {
-        @if (selected()[0]; as p) {
-          <span matPrefix class="av sm" aria-hidden="true">
-            @if (p.avatar_url) { <img [src]="p.avatar_url" alt="" /> } @else { {{ initialsOf(p) }} }
-          </span>
-        } @else {
-          <mat-icon matPrefix aria-hidden="true">person_search</mat-icon>
-        }
         <input
           #box
           matInput
@@ -96,19 +89,26 @@ export function personSubtitle(p: PersonOption): string {
           (blur)="blurSingle()"
           autocomplete="off"
         />
-        @if (selected()[0]; as p) {
-          @if (p.terminated) {
-            <span matSuffix class="suffix-badge" [attr.aria-label]="ariaOf(p)" role="note"><ng-container *ngTemplateOutlet="goneBadge; context: { $implicit: p }" /></span>
-          }
-        }
-        @if (selected().length > 0 && !disabled()) {
-          <button mat-icon-button matSuffix type="button" (click)="clear()" [attr.aria-label]="'people.picker.clear' | transloco">
-            <mat-icon>close</mat-icon>
-          </button>
-        }
+      }
+      <!-- Every prefix/suffix is the single root of its own branch: a multi-root @if/@else is projected into the
+           infix as a whole, which drew the icon under the label and made the field ~87px tall. -->
+      @if (single(); as p) {
+        <span matIconPrefix class="av sm" aria-hidden="true">
+          @if (p.avatar_url) { <img [src]="p.avatar_url" alt="" /> } @else { {{ initialsOf(p) }} }
+        </span>
+      } @else if (!multiple()) {
+        <mat-icon matIconPrefix aria-hidden="true">person_search</mat-icon>
+      }
+      @if (single()?.terminated) {
+        <span matTextSuffix class="suffix-badge" [attr.aria-label]="ariaOf(single()!)" role="note"><ng-container *ngTemplateOutlet="goneBadge; context: { $implicit: single() }" /></span>
+      }
+      @if (single() && !disabled()) {
+        <button mat-icon-button matIconSuffix type="button" (click)="clear()" [attr.aria-label]="'people.picker.clear' | transloco">
+          <mat-icon>close</mat-icon>
+        </button>
       }
       @if (state().status === 'loading') {
-        <mat-spinner matSuffix diameter="18" [attr.aria-label]="'common.loading' | transloco" />
+        <mat-spinner matIconSuffix diameter="18" [attr.aria-label]="'common.loading' | transloco" />
       }
       <mat-autocomplete #auto="matAutocomplete" (optionSelected)="pick($event)" [hideSingleSelectionIndicator]="true" class="person-picker-panel">
         @switch (state().status) {
@@ -130,7 +130,7 @@ export function personSubtitle(p: PersonOption): string {
               </span>
               <span class="who">
                 <span class="name"
-                  >{{ p.full_name }}
+                  ><span class="nm">{{ p.full_name }}</span>
                   @if (p.terminated) {
                     <ng-container *ngTemplateOutlet="goneBadge; context: { $implicit: p }" />
                   }
@@ -159,19 +159,22 @@ export function personSubtitle(p: PersonOption): string {
   styles: `
     :host { display: block; min-width: 14rem; }
     .picker { width: 100%; }
+    .picker input { text-overflow: ellipsis; }
     .av {
       display: inline-grid; place-items: center; flex: none; width: 2rem; height: 2rem; border-radius: 50%; overflow: hidden;
       background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container); font-size: 0.75rem; font-weight: 600;
     }
     .av img { width: 100%; height: 100%; object-fit: cover; }
-    .av.sm { width: 1.5rem; height: 1.5rem; font-size: 0.65rem; margin: 0 0.25rem 0 0.75rem; }
+    .av.sm { width: 1.5rem; height: 1.5rem; font-size: 0.65rem; margin: 0 0.25rem 0 0.75rem; vertical-align: middle; }
     .chip-av {
       display: inline-grid; place-items: center; width: 1.25rem; height: 1.25rem; margin-right: 0.35rem; border-radius: 50%;
       background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container); font-size: 0.6rem; font-weight: 600;
     }
     .opt { display: flex; align-items: center; gap: 0.75rem; min-width: 0; padding: 0.25rem 0; }
-    .who { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-    .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .who { display: flex; flex: 1; flex-direction: column; min-width: 0; line-height: 1.25; }
+    .name { display: flex; align-items: center; min-width: 0; font-weight: 500; }
+    .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .name .gone-badge { flex: none; }
     .sub { color: var(--mat-sys-on-surface-variant); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hint { color: var(--mat-sys-on-surface-variant); font-style: italic; }
     .hint.err { color: var(--mat-sys-error); font-style: normal; }
@@ -184,7 +187,9 @@ export function personSubtitle(p: PersonOption): string {
       display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: 0.5rem; vertical-align: middle;
       background: var(--app-warn-bg); color: var(--app-warn-text); font-size: 0.7rem; font-weight: 500; line-height: 1.3rem; white-space: nowrap;
     }
-    .suffix-badge { margin-right: 0.25rem; }
+    .suffix-badge { display: inline-flex; align-items: center; margin-right: 0.25rem; }
+    .suffix-badge .gone-badge { margin-left: 0; }
+    mat-spinner { margin-right: 0.75rem; }
   `,
 })
 export class PersonPicker implements ControlValueAccessor, OnInit {
@@ -201,6 +206,8 @@ export class PersonPicker implements ControlValueAccessor, OnInit {
   protected readonly state = signal<SearchState>({ status: 'idle' });
   protected readonly rows = signal<PersonOption[]>([]);
   protected readonly disabled = signal(false);
+  /** Single mode: the selected person (drives the avatar prefix, badge and clear button). */
+  protected readonly single = computed(() => (this.multiple() ? null : (this.selected()[0] ?? null)));
 
   private readonly api = inject(PeopleService);
   private readonly i18n = inject(TranslocoService);

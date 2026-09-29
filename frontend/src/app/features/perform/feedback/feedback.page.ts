@@ -37,7 +37,7 @@ import { PerformService, performErrorKey } from '../perform.service';
       }
       <div class="filters">
         @if (!answering()) {
-          <app-person-picker class="person" name="to" [(ngModel)]="to" required />
+          <app-person-picker class="person grow" name="to" [(ngModel)]="to" required />
         }
         <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'perform.fields.type' | transloco }}</mat-label>
