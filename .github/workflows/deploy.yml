@@ -98,7 +98,7 @@ jobs:
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: composer-dl-${{ hashFiles('backend/composer.lock') }}
-          restore-keys: composer-dl-
+          # No restore-keys fallback: a production deploy must only reuse a cache saved for the very same composer.lock.
 
       - name: API — build & deploy
         id: api
