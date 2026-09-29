@@ -6,7 +6,7 @@ import { CandidateCardStore } from './card/candidate-card.store';
 import { CandidatesStore } from './candidates/candidates.store';
 import { InboxStore } from './inbox/inbox.store';
 import { ReportsStore, barWidth, pivotTouches } from './reports/reports.store';
-import { Application, Board, Candidate, Paged, Stage, TimelineFilter, TimelineItem, Touchpoint, TouchesReport } from './recruiting.model';
+import { Application, Board, Candidate, Paged, PersonalBoard, PersonalColumn, Stage, TimelineFilter, TimelineItem, Touchpoint, TouchesReport } from './recruiting.model';
 import { RecruitingService } from './recruiting.service';
 import { VacanciesStore } from './vacancies/vacancies.store';
 
@@ -37,6 +37,14 @@ class FakeApi {
   board = () => this.board$;
   rejectReasons = () => of([{ id: 1, name: 'R', active: true }]);
   move = () => this.move$;
+  file$ = new Subject<void>();
+  fileCalls: [number, number | null][] = [];
+  personalBoard = () => of<PersonalBoard>({ columns: [{ id: 7, title: 'Топ', color: null, position: 0, hidden: false }], cards: [] });
+  fileCard = (appId: number, columnId: number | null) => {
+    this.fileCalls.push([appId, columnId]);
+    return this.file$;
+  };
+  addPersonalColumn = (_v: number, body: { title?: string }) => of<PersonalColumn>({ id: 8, title: body.title ?? '', color: null, position: 1, hidden: false });
   vacancies = () => of(page([]));
   candidates = () => this.candidates$;
   candidate = (id: number) => of(candidate(id));
@@ -95,6 +103,31 @@ describe('BoardStore', () => {
     expect(store.board()!.applications[0].stage_id).toBe(1);
     expect(key).toBe('recruiting.errors.reject_reason_required');
     expect(store.needsReason(stage(3, { is_reject: true }))).toBe(true);
+  });
+
+  it('files a card into an own column without touching its stage, and rolls back on error', () => {
+    const { store, api } = setup(BoardStore);
+    store.load(1, true);
+    const app = store.board()!.applications[0];
+    store.file(app, 7, () => undefined);
+    expect(api.fileCalls).toEqual([[10, 7]]);
+    expect(store.personalColumns()[0].items.map((a) => a.id)).toEqual([10]);
+    expect(store.columns()[0].items.length).toBe(0);
+    expect(store.board()!.applications[0].stage_id).toBe(1);
+
+    let key = '';
+    api.file$.error(new HttpErrorResponse({ status: 422, error: { code: 'board_column_mismatch' } }));
+    store.file(app, 7, (k) => (key = k));
+    expect(key).toBe('recruiting.errors.board_column_mismatch');
+    expect(store.personalColumns()[0].items.length).toBe(0);
+    expect(store.columns()[0].items.map((a) => a.id)).toEqual([10]);
+  });
+
+  it('adds an own column after the existing ones', () => {
+    const { store } = setup(BoardStore);
+    store.load(1, true);
+    store.addColumn(1, 'Чекаю резюме', () => undefined);
+    expect(store.personalColumns().map((c) => c.column.title)).toEqual(['Топ', 'Чекаю резюме']);
   });
 
   it('flags a failed load', () => {

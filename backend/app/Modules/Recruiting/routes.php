@@ -11,6 +11,7 @@ use App\Modules\Recruiting\Http\Controllers\CandidateHistoryController;
 use App\Modules\Recruiting\Http\Controllers\ExtensionController;
 use App\Modules\Recruiting\Http\Controllers\InboxController;
 use App\Modules\Recruiting\Http\Controllers\OfferController;
+use App\Modules\Recruiting\Http\Controllers\PersonalBoardController;
 use App\Modules\Recruiting\Http\Controllers\PipelineController;
 use App\Modules\Recruiting\Http\Controllers\ReportController;
 use App\Modules\Recruiting\Http\Controllers\ScreeningController;
@@ -50,6 +51,19 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     Route::get('vacancies/{vacancy}', [VacancyController::class, 'show'])->whereNumber('vacancy')->name('recruiting.vacancies.show');
     Route::patch('vacancies/{vacancy}', [VacancyController::class, 'update'])->whereNumber('vacancy')->name('recruiting.vacancies.update');
     Route::get('vacancies/{vacancy}/board', [VacancyController::class, 'board'])->whereNumber('vacancy')->name('recruiting.vacancies.board');
+    // Personal columns of the /candidates board (own view state; stage moves stay on applications/{id}/move).
+    Route::prefix('vacancies/{vacancy}/personal-board')->whereNumber('vacancy')->group(function (): void {
+        Route::get('/', [PersonalBoardController::class, 'show'])->name('recruiting.personal-board.show');
+        Route::delete('/', [PersonalBoardController::class, 'reset'])->name('recruiting.personal-board.reset');
+        Route::post('columns', [PersonalBoardController::class, 'store'])->name('recruiting.personal-board.columns.store');
+        Route::put('columns/order', [PersonalBoardController::class, 'reorder'])->name('recruiting.personal-board.columns.order');
+    });
+    Route::patch('personal-board/columns/{column}', [PersonalBoardController::class, 'update'])
+        ->whereNumber('column')->name('recruiting.personal-board.columns.update');
+    Route::delete('personal-board/columns/{column}', [PersonalBoardController::class, 'destroy'])
+        ->whereNumber('column')->name('recruiting.personal-board.columns.destroy');
+    Route::put('applications/{application}/personal-column', [PersonalBoardController::class, 'file'])
+        ->whereNumber('application')->name('recruiting.personal-board.file');
     Route::get('vacancies/{vacancy}/sources', [VacancyController::class, 'sources'])->whereNumber('vacancy')->name('recruiting.vacancies.sources');
     Route::post('vacancies/{vacancy}/applications', [VacancyController::class, 'apply'])
         ->whereNumber('vacancy')->name('recruiting.vacancies.apply');

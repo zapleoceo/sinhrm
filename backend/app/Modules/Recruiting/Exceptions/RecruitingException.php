@@ -33,6 +33,18 @@ final class RecruitingException extends RuntimeException
         return new self('already_applied', 409, ['application_id' => $applicationId]);
     }
 
+    /** Personal board (/candidates): at most $max own columns per vacancy. */
+    public static function boardColumnLimit(int $max): self
+    {
+        return new self('board_column_limit', 422, ['max' => $max]);
+    }
+
+    /** Personal board: the column is of another vacancy, or the reorder list is not exactly the own columns. */
+    public static function boardColumnMismatch(): self
+    {
+        return new self('board_column_mismatch', 422);
+    }
+
     public static function stageNotInPipeline(): self
     {
         return new self('stage_not_in_pipeline', 422);

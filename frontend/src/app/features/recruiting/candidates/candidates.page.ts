@@ -1,6 +1,8 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
@@ -14,9 +16,11 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { BoardPage } from '../board/board.page';
 import { CandidateCard } from '../card/candidate-card';
+import { CandidatesView, readViewPref, saveViewPref } from './candidates-view';
 import { canWriteRecruiting } from '../recruiting.access';
-import { APPLICATION_STATUSES, BulkResult, CANDIDATE_SOURCES, Candidate } from '../recruiting.model';
+import { APPLICATION_STATUSES, BulkResult, CANDIDATE_SOURCES, Candidate, Vacancy } from '../recruiting.model';
 import { CandidateDialog } from './candidate.dialog';
 import { CandidateBulkDialog } from './candidate-bulk.dialog';
 import { RecruitingService } from '../recruiting.service';
@@ -29,7 +33,9 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
 @Component({
   selector: 'app-candidates-page',
   imports: [
+    BoardPage,
     ChannelIcon,
+    MatButtonToggleModule,
     CandidateCard,
     MatButtonModule,
     MatCheckboxModule,
@@ -39,16 +45,45 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
     MatPaginatorModule,
     MatProgressBarModule,
     MatSelectModule,
+    NgTemplateOutlet,
     RouterLink,
     TranslocoPipe,
   ],
   providers: [CandidatesStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <ng-template #viewToggle>
+      <mat-button-toggle-group [value]="view()" (change)="setView($event.value)" [attr.aria-label]="'recruiting.personalBoard.view' | transloco" hideSingleSelectionIndicator>
+        <mat-button-toggle value="list">{{ 'recruiting.personalBoard.list' | transloco }}</mat-button-toggle>
+        <mat-button-toggle value="board">{{ 'recruiting.personalBoard.board' | transloco }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </ng-template>
+    @if (view() === 'board') {
+      <section class="board-view">
+        <header class="list-head">
+          <h1>{{ 'recruiting.candidates.title' | transloco }}</h1>
+          <ng-container *ngTemplateOutlet="viewToggle" />
+        </header>
+        <mat-form-field class="vacancy-pick" subscriptSizing="dynamic">
+          <mat-label>{{ 'recruiting.personalBoard.vacancy' | transloco }}</mat-label>
+          <mat-select [value]="vacancyId()" (valueChange)="pickVacancy($event)">
+            @for (v of vacancies(); track v.id) {
+              <mat-option [value]="v.id">{{ v.title }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        @if (vacancyId(); as vid) {
+          <app-board-page [id]="vid" personal />
+        } @else {
+          <p class="state muted">{{ 'recruiting.personalBoard.pickVacancy' | transloco }}</p>
+        }
+      </section>
+    } @else {
     <div class="split" [class.has-card]="id()">
       <aside class="list">
         <header class="list-head">
           <h1>{{ 'recruiting.candidates.title' | transloco }}</h1>
+          <ng-container *ngTemplateOutlet="viewToggle" />
           @if (canWrite()) {
             <button mat-icon-button type="button" (click)="create()" [attr.aria-label]="'recruiting.candidates.new' | transloco">
               <mat-icon>person_add</mat-icon>
@@ -141,11 +176,14 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
         }
       </section>
     </div>
+    }
   `,
   styles: `
     .split { display: grid; grid-template-columns: minmax(16rem, 22rem) 1fr; gap: var(--app-gap); align-items: start; }
     .list { position: sticky; top: 0; display: flex; flex-direction: column; gap: 0.5rem; max-height: calc(100vh - 6rem); }
-    .list-head { display: flex; justify-content: space-between; align-items: center; }
+    .list-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .board-view { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+    .vacancy-pick { max-width: 24rem; }
     .list-head h1 { font: var(--mat-sys-title-large); margin: 0; }
     .filters mat-form-field { flex: 1 1 8rem; }
     .items { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
@@ -188,12 +226,50 @@ export class CandidatesPage implements OnInit {
   protected readonly selected = signal(new Set<number>());
   protected readonly emptySet = (): Set<number> => new Set<number>();
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
+  private readonly api = inject(RecruitingService);
+  private readonly pref = readViewPref();
+  protected readonly view = signal<CandidatesView>(this.pref.view);
+  protected readonly vacancyId = signal<number | null>(this.pref.vacancyId);
+  protected readonly vacancies = signal<Vacancy[]>([]);
 
   ngOnInit(): void {
     this.search$
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe((q) => this.store.patchQuery({ q: q.trim() || undefined }));
     this.store.load();
+    if (this.view() === 'board') {
+      this.loadVacancies();
+    }
+  }
+
+  protected setView(view: CandidatesView): void {
+    this.view.set(view);
+    saveViewPref({ view, vacancyId: this.vacancyId() });
+    if (view === 'board') {
+      this.loadVacancies();
+    }
+  }
+
+  protected pickVacancy(id: number): void {
+    this.vacancyId.set(id);
+    saveViewPref({ view: this.view(), vacancyId: id });
+  }
+
+  /** Same scoped list as /vacancies: the board never shows a vacancy (or candidate) the user cannot see. */
+  private loadVacancies(): void {
+    if (this.vacancies().length > 0) {
+      return;
+    }
+    this.api.vacancies({ perPage: 100 }).subscribe({
+      next: (page) => {
+        this.vacancies.set(page.data);
+        const id = this.vacancyId();
+        if (id !== null && !page.data.some((v) => v.id === id)) {
+          this.vacancyId.set(null);
+        }
+      },
+      error: () => this.vacancies.set([]),
+    });
   }
 
   protected summary(c: Candidate): string {
