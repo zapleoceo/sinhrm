@@ -20,7 +20,7 @@ if (res.ok) {
 } else {
   for (const d of res.missing) console.log(`::error::Код модуля изменён, а ${d} нет (или страницы не существует). Обновите документацию.`);
   for (const d of res.weak) {
-    console.log(`::error::${d} изменён формально: нужна хотя бы одна добавленная строка не короче ${MIN_DOC_LINE_CHARS} значимых символов (пробелы и пустые строки не считаются).`);
+    console.log(`::error::${d} изменён формально: нужна хотя бы одна добавленная строка не короче ${MIN_DOC_LINE_CHARS} букв и цифр (пробелы, пустые строки, точки и разделители таблиц не считаются).`);
   }
   if (res.crossCutting) {
     console.log('::error::Изменены миграции/routes/config/bootstrap — обновите содержательно любую страницу в docs/modules, architecture, guides или adr.');

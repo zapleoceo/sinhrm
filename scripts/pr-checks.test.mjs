@@ -46,6 +46,8 @@ const docsMatrix = [
   ['миграция + содержательная дока architecture', [M('backend/database/migrations/2026_09_29_x.php'), M('docs/architecture/overview.md')], always, true],
   ['миграция + дока только пробелами', [M('backend/database/migrations/2026_09_29_x.php'), M('docs/architecture/overview.md')], never, false],
   ['routes + worklog-фрагмент (не считается докой)', [M('backend/routes/api.php'), A('docs/worklog.d/2026-09-29-x.md')], always, false],
+  ['удаление модуля целиком (код и дока)', [D('backend/app/Modules/Foo/Services/A.php'), D('docs/modules/foo.md')], always, true],
+  ['удаление кода модуля, дока осталась', [D('backend/app/Modules/Foo/Services/A.php')], never, true],
   ['без кода модулей', [M('scripts/x.mjs'), M('.github/workflows/ci.yml')], never, true],
 ];
 for (const [name, changes, isSubstantive, ok] of docsMatrix) {
@@ -63,6 +65,9 @@ test('hasSubstantiveAddition: пробел, точка и короткая ст�
   assert.equal(hasSubstantiveAddition('+.\n+коротко\n-удалено очень длинная строка про модуль\n'), false);
   assert.equal(hasSubstantiveAddition('@@ -1 +1 @@\n+| GET /api/people/search | поиск по имени |\n'), true);
   assert.equal(hasSubstantiveAddition(''), false);
+  // разделители таблиц и линии не считаются правкой
+  assert.equal(hasSubstantiveAddition('+|---|---|---|---|---|---|---|\n+----------------------------\n+| - | - | - |\n'), false);
+  assert.equal(hasSubstantiveAddition('+Новый раздел про поиск людей\n'), true);
 });
 
 const testsMatrix = [

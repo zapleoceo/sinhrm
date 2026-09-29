@@ -4,8 +4,8 @@
 // enforced by the backend/frontend/extension jobs.
 
 export const NO_TESTS_LABEL = 'no-tests-needed';
-/** A doc edit counts only if it adds at least one line with this many non-whitespace characters (a space or a dot does not). */
-export const MIN_DOC_LINE_CHARS = 20;
+/** A doc edit counts only if it adds at least one line with this many letters/digits (a space, a dot or a table rule `|---|` does not). */
+export const MIN_DOC_LINE_CHARS = 12;
 
 const kebab = (name) =>
   name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase().replace(/^time-off$/, 'timeoff');
@@ -14,10 +14,10 @@ const isTestFile = (p) =>
   /\.(spec|test)\.[cm]?[jt]s$/.test(p) || p.startsWith('extension/tests/') || p.startsWith('backend/tests/');
 const isLive = (c) => !c.status.startsWith('D');
 
-/** Doc keys (docs/modules/<key>.md) that the non-test code changes of a PR require. */
+/** Doc keys (docs/modules/<key>.md) that the non-test code changes of a PR require. Deleting a module needs no doc edit. */
 export function requiredModuleDocs(changes) {
   const keys = new Set();
-  for (const { path } of changes) {
+  for (const { path } of changes.filter(isLive)) {
     if (isTestFile(path)) continue;
     let m;
     if ((m = path.match(/^backend\/app\/Modules\/([^/]+)\//))) keys.add(kebab(m[1]));
@@ -32,11 +32,11 @@ export function requiredModuleDocs(changes) {
 export const isCrossCutting = (p) => /^backend\/(database\/migrations|routes|config|bootstrap)\//.test(p);
 const isProductDoc = (p) => /^docs\/(modules|architecture|guides|adr)\/.+\.md$/.test(p);
 
-/** True if a `git diff -U0 -w --ignore-blank-lines` text adds a line with >= MIN_DOC_LINE_CHARS non-whitespace characters. */
+/** True if a `git diff -U0 -w --ignore-blank-lines` text adds a line with >= MIN_DOC_LINE_CHARS letters or digits. */
 export function hasSubstantiveAddition(diffText) {
   return diffText
     .split('\n')
-    .some((l) => l.startsWith('+') && !l.startsWith('+++') && l.slice(1).replace(/\s+/g, '').length >= MIN_DOC_LINE_CHARS);
+    .some((l) => l.startsWith('+') && !l.startsWith('+++') && l.slice(1).replace(/[^\p{L}\p{N}]/gu, '').length >= MIN_DOC_LINE_CHARS);
 }
 
 /**
