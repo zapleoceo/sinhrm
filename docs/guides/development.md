@@ -25,7 +25,7 @@
 
 ## Документация
 Изменил модуль → обнови `docs/modules/<модуль>.md` (CI проверяет). Имя страницы — имя модуля в kebab-case
-(`GoogleWorkspace` → `google-workspace.md`, `HiringRequests` и `features/hiring-requests` → `hiring-requests.md`, `Time` и `features/time` → `time.md`, `features/mail-agent` → `mail-agent.md`, папка `extension/` → `extension.md`; исключение-синоним: `TimeOff` и `features/timeoff` → `timeoff.md`; `scripts/docs-check.sh`). Структура страницы:
+(`GoogleWorkspace` → `google-workspace.md`, `HiringRequests` и `features/hiring-requests` → `hiring-requests.md`, `Time` и `features/time` → `time.md`, `features/mail-agent` → `mail-agent.md`, папка `extension/` → `extension.md`; исключение-синоним: `TimeOff` и `features/timeoff` → `timeoff.md`). Структура страницы:
 «Что это и зачем» (просто) → «Как пользоваться» → «Как устроено» (техника) → «Как проверить».
 Архитектурные решения — `docs/adr/NNNN-название.md`.
 
@@ -38,6 +38,12 @@
 CI job `worklog` падает, если в PR нет валидного фрагмента; исключения — метка `no-worklog` (затем Re-run job),
 PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` может поставить любой с правом triage — ставим только
 для правок без изменения поведения (опечатки в коде, откат); в остальных случаях запись обязательна.
+
+### Что проверяет CI в job `docs`
+Оба правила — нижняя планка, а не доказательство качества (покрытие меряют job `backend` / `frontend` / `extension`). Логика — `scripts/pr-checks-lib.mjs`, тесты — `scripts/pr-checks.test.mjs`.
+- **Документация вместе с кодом** (`scripts/docs-check.mjs`): изменился код модуля (`backend/app/Modules/<M>`, `frontend/src/app/features/<f>`, `core`, `extension/`, кроме тестов) → его `docs/modules/<модуль>.md` изменён **содержательно**: хотя бы одна добавленная строка не короче 12 букв и цифр (правка пробела, пустой строки, точки или разделителя таблицы не считается; удаление модуля доки не требует). Изменились миграции, `backend/routes`, `config` или `bootstrap` → содержательно изменена любая страница в `docs/modules`, `architecture`, `guides` или `adr`. Запись в `docs/worklog.d` докой не считается.
+- **Тесты вместе с кодом** (`scripts/tests-check.mjs`): изменился код модуля/фичи/расширения → добавлен или изменён тест в **том же** модуле (`backend/tests/{Feature,Unit}/<M>/`, `*.spec.ts` той же фичи или `core`, `extension/tests/`). Правка только `.html`/`.scss` теста не требует (доку — требует). Файлы вне модулей (`backend/app/Http`, `Models`, `Providers`) проверками не покрыты. Не требуют теста: `Providers`, `Contracts`, `Enums`, `Models`, `Database`, `DTO`, `Exceptions`, файлы `*.model.ts`, `*.routes.ts`, `types.ts`, чисто удалённый код.
+- **Исключение для тестов:** метка `no-tests-needed` (правка не меняет поведение: переименование, комментарии, откат) — ставит ревьюер, после метки Re-run job; dependabot проходит сам. Исключения для документации нет.
 
 ## Проверка входа и сессий
 Вход через Google работает только на prod-домене `sinhrm.vercel.app`: redirect URI в Google зарегистрирован только
