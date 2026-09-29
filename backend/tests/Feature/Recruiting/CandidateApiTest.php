@@ -11,6 +11,7 @@ use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Services\ApplicationService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
 
@@ -26,6 +27,12 @@ final class CandidateApiTest extends TestCase
     {
         parent::setUp();
         [$this->north, $this->south] = Branch::factory()->count(2)->create()->all();
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
     public function test_create_normalizes_contacts_and_applies_to_vacancy(): void
@@ -154,6 +161,9 @@ final class CandidateApiTest extends TestCase
 
     public function test_show_card_has_route_with_durations_and_update(): void
     {
+        // Frozen clock: the two now() calls below must be exactly one day apart (a second boundary between them made
+        // the duration 86401 — CI on main, run 36526393849).
+        Carbon::setTestNow('2026-10-08 12:00:00');
         $vacancy = $this->vacancyIn($this->north);
         $recruiter = $this->userWith(UserRole::Recruiter, [$this->north]);
         $application = $this->applied($vacancy, [], now()->subDays(2));
