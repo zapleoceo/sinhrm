@@ -97,6 +97,15 @@ describe('ReportTable total row', () => {
     expect(footer(rows, { source: null, candidates: 1234, hire_rate_pct: 12.5, median: null })).toEqual(['reports.total', '1,234', '12.5%', '—']);
   });
 
+  it('keeps the label in the first cell when that column is summable', () => {
+    const rows = [
+      { source: 'a', candidates: 1, hire_rate_pct: 1, median: 1 },
+      { source: 'b', candidates: 2, hire_rate_pct: 1, median: 1 },
+    ];
+    TestBed.resetTestingModule();
+    expect(footer(rows, { source: 'x', candidates: 3, hire_rate_pct: null, median: null })?.[0].replace(/\s+/g, ' ')).toBe('reports.total x');
+  });
+
   it('has no total row for a single row or without totals', () => {
     expect(footer([{ source: 'a', candidates: 1, hire_rate_pct: 1, median: 1 }], { source: null, candidates: 1, hire_rate_pct: 1, median: null })).toBeNull();
     TestBed.resetTestingModule();

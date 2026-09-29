@@ -90,8 +90,9 @@ API: `GET/POST /api/reports/saved`, `PUT/DELETE /saved/{id}`, `GET /saved/{id}/r
 `StreamedResponse` (`fputcsv` в `php://output`), UTF-8 BOM (Excel и кириллица), `Content-Disposition: attachment`,
 `no-store`. **Защита от CSV/formula injection (OWASP):** текстовая ячейка, начинающаяся с `=`, `+`, `-`, `@` (а
 также табуляции и `\r`), получает префикс `'`; числа не трогаются. Эндпоинты: `GET /api/reports/catalog/{key}/csv`,
-`POST /api/reports/builder/csv`, `GET /saved/{id}/run?format=csv`. Последняя строка CSV — итог (`Total`, «—» у
-колонок без итога), если он есть; защита та же.
+`POST /api/reports/builder/csv`, `GET /saved/{id}/run?format=csv`. Последняя строка CSV — итог, если он есть: первая
+ячейка всегда с меткой (`Total` или `Total: <сумма>`, если первая колонка суммируется), «—» у колонок без итога; защита
+та же. В UI метка «Разом» тоже всегда в первой ячейке.
 
 ### Строка «Разом» (`Support/Totals`)
 Итог считает бэкенд и отдаёт в `totals` (`run`, `builder/run`, `saved/{id}/run`; `null` при < 2 строк), UI рисует его

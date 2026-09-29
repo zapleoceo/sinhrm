@@ -440,7 +440,7 @@
       "rejectReasons": "Rejection reasons",
       "funnel": "Funnel (current stages)",
       "grandTotal": "Total",
-      "funnelCard": { "empty": "No candidates", "active": "Active: {{n}}", "filter": "Find a vacancy", "daysOpen": "Open {{n}} d", "conversion": "{{pct}}% of the previous stage" },
+      "funnelCard": { "empty": "No candidates", "active": "Active: {{n}}", "filter": "Find a vacancy", "daysOpen": "Open {{n}} d", "share": "{{pct}}% of the vacancy's active candidates" },
       "empty": "No data for the period"
     },
     "errors": {

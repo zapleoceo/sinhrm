@@ -206,7 +206,7 @@ describe('ReportsStore', () => {
       ['V2', 1, 4],
       ['V1', 2, 3],
     ]);
-    expect(store.funnelCards()[1].stages.map((st) => st.conversion)).toEqual([null, 50]);
+    expect(store.funnelCards()[1].stages.map((st) => st.share)).toEqual([67, 33]);
     store.setRange({ from: '2026-09-01', to: '2026-09-02' });
     expect(store.range().from).toBe('2026-09-01');
   });

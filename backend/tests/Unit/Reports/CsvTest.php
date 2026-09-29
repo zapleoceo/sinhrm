@@ -46,4 +46,15 @@ final class CsvTest extends TestCase
         $this->assertSame("'=a,3,10", $lines[1]);
         $this->assertSame('Total,7,—', $lines[3]);
     }
+
+    public function test_total_label_stays_when_the_first_column_is_summable(): void
+    {
+        $out = fopen('php://memory', 'w+b');
+        $this->assertNotFalse($out);
+        Csv::write($out, ['days', 'name'], [['days' => 2, 'name' => 'a'], ['days' => 3, 'name' => 'b']], ['days' => 5, 'name' => null]);
+        rewind($out);
+        $lines = explode("\n", trim((string) stream_get_contents($out)));
+
+        $this->assertSame('"Total: 5",—', $lines[3]); // fputcsv quotes a cell with a space
+    }
 }

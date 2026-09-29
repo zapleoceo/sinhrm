@@ -34,7 +34,7 @@ final class Csv
 
     /**
      * Writes rows to the stream: a header of the column keys, then one line per row (RFC 4180 quoting by fputcsv),
-     * then the total row if any (a column without a total gets «—», the first one the label).
+     * then the total row if any (a column without a total gets «—»; the first cell always carries the label).
      *
      * @param  resource  $out
      * @param  list<string>  $columns
@@ -51,8 +51,10 @@ final class Csv
         }
         if ($total !== null) {
             $line = array_map(static fn (string $c): string => self::cell($total[$c] ?? self::NO_TOTAL), $columns);
-            if ($columns !== [] && ($total[$columns[0]] ?? null) === null) {
-                $line[0] = self::TOTAL_LABEL;
+            // The label always goes first, so the row never looks like data; a summable first column keeps its value.
+            if ($columns !== []) {
+                $first = $total[$columns[0]] ?? null;
+                $line[0] = $first === null ? self::TOTAL_LABEL : self::TOTAL_LABEL.': '.$first;
             }
             fputcsv($out, $line, ',', '"', '');
         }

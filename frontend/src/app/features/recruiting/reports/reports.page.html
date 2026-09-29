@@ -174,8 +174,8 @@
                   <span class="sname">{{ s.name }}</span>
                   <span class="track"><span class="bar" [attr.data-kind]="s.kind" [style.width.%]="bar(s.count, v.max)"></span></span>
                   <span class="num">{{ s.count }}</span>
-                  @if (s.conversion !== null) {
-                    <span class="conv muted" [title]="'recruiting.reports.funnelCard.conversion' | transloco: { pct: s.conversion }">{{ s.conversion }}%</span>
+                  @if (s.share !== null) {
+                    <span class="conv muted" [title]="'recruiting.reports.funnelCard.share' | transloco: { pct: s.share }">{{ s.share }}%</span>
                   } @else {
                     <span class="conv"></span>
                   }

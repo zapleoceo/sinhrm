@@ -53,10 +53,11 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
             <tr>
               @for (c of columns(); track c.key; let first = $first) {
                 <td [class.num]="numeric(c.type)">
+                  @if (first) {
+                    {{ 'reports.total' | transloco }}
+                  }
                   @if (t[c.key] === null || t[c.key] === undefined) {
-                    @if (first) {
-                      {{ 'reports.total' | transloco }}
-                    } @else {
+                    @if (!first) {
                       <span class="muted">—</span>
                     }
                   } @else if (numeric(c.type)) {

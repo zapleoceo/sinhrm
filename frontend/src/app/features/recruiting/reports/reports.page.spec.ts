@@ -57,8 +57,8 @@ describe('ReportsPage funnel cards', () => {
     const big = el.querySelector('[data-testid="funnel-card"]') as HTMLElement;
     expect(big.querySelectorAll('.stages li').length).toBe(3);
     expect(big.querySelector('.bar[data-kind="closed"]')).not.toBeNull();
-    expect(big.querySelector('.conv')?.textContent?.trim()).toBe('');
-    expect(big.querySelectorAll('.conv')[1].textContent?.trim()).toBe('50%');
+    // share of the 6 active candidates (current counts, never above 100%); the rejection stage has none
+    expect([...big.querySelectorAll('.conv')].map((c) => c.textContent?.trim())).toEqual(['67%', '33%', '']);
   });
 
   it('shows a compact empty state for a vacancy without candidates', () => {
