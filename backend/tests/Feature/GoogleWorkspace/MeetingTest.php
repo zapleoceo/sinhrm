@@ -13,6 +13,7 @@ use App\Modules\Recruiting\Models\Touchpoint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
 use Tests\Support\GoogleFixtures;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
@@ -166,5 +167,13 @@ final class MeetingTest extends TestCase
             'duration_minutes' => 45,
             'type' => 'online',
         ];
+    }
+
+    public function test_scheduling_is_rate_limited(): void
+    {
+        // The company calendar sends the invitations: a card must not be able to spam them (messages 30/min, calls 10/min).
+        $route = Route::getRoutes()->getByName('google.meetings.store');
+        $this->assertNotNull($route);
+        $this->assertContains('throttle:20,1', $route->gatherMiddleware());
     }
 }

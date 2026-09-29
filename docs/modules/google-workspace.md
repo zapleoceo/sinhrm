@@ -124,7 +124,7 @@ google_unreachable | google_bad_response` (`Exceptions/GoogleException`, тел�
   `Message-ID`) — для ответа в ту же ветку (`GoogleGmailClient::get`, `DTO/GmailMessage::threadId|messageId`).
 
 ### Встречи (`Services/MeetingService`, `Http/Controllers/MeetingController`)
-`POST /api/google/candidates/{candidate}/meetings` `{title, start (ISO 8601 с часовым поясом), duration_minutes 15..480,
+`POST /api/google/candidates/{candidate}/meetings` (не чаще 20 в минуту: приглашения уходят с календаря компании) `{title, start (ISO 8601 с часовым поясом), duration_minutes 15..480,
 type: online|branch, invite_candidate?, location?, notes?}` — доступ как на редактирование кандидата
 (`CandidatePolicy::update`: рекрутер в своих филиалах, админ, суперадмин; viewer и чужой филиал → 403). Календарь не
 подключён → 422 `google_calendar_not_connected`. Участники: e-mail рекрутера и (по галочке) кандидата. Ответ 201
