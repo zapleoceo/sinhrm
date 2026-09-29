@@ -41,8 +41,7 @@ final class CsvTest extends TestCase
         Csv::write($out, ['name', 'n', 'pct'], [['name' => '=a', 'n' => 3, 'pct' => 10.0], ['name' => 'b', 'n' => 4, 'pct' => 20.0]],
             ['name' => null, 'n' => 7, 'pct' => null]);
         rewind($out);
-        $lines = explode("
-", trim((string) stream_get_contents($out)));
+        $lines = explode("\n", trim((string) stream_get_contents($out)));
 
         $this->assertSame("'=a,3,10", $lines[1]);
         $this->assertSame('Total,7,—', $lines[3]);

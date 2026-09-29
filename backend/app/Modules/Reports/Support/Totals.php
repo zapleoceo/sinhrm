@@ -16,8 +16,11 @@ namespace App\Modules\Reports\Support;
 final class Totals
 {
     public const string SUM = 'sum';
+
     public const string RATIO = 'ratio';
+
     public const string AVG_WEIGHTED = 'avg-weighted';
+
     public const string NONE = 'none';
 
     /** Fewer rows than this: the table has no total row. */
