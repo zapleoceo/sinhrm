@@ -83,7 +83,22 @@ jobs:
         with: { node-version: 24 }
       - uses: shivammathur/setup-php@v2
         with: { php-version: "8.4", extensions: "intl, sodium" }
-      - run: npm i -g vercel@latest
+      # Pinned CLI (was @latest; 61.0.0 in the last green deploy). Bump deliberately, not on every run.
+      # ~/.npm only caches downloaded tarballs; npm still installs exactly this version.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-vercel-61.0-${{ runner.os }}
+      - run: npm i -g vercel@~61.0.0
+      # Composer *download* cache (not vendor/): `composer install --no-dev` below still resolves from composer.lock.
+      - id: composer-cache
+        working-directory: backend
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-dl-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-dl-
 
       - name: API — build & deploy
         id: api
