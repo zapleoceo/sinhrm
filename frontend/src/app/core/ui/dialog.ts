@@ -5,13 +5,14 @@ import { MAT_DIALOG_DEFAULT_OPTIONS, MatDialogConfig } from '@angular/material/d
 export const WIDE_DIALOG_CLASS = 'app-dialog-wide';
 
 /**
- * App-wide MatDialog defaults: never wider than the viewport, focus the first field (or `cdkFocusInitial`),
- * return focus to the opener on close.
+ * App-wide MatDialog defaults: never wider than the viewport. Material replaces (does not merge) its own defaults with
+ * this object, so it must start from a full MatDialogConfig: a partial object silently drops `role="dialog"`.
+ * Material already focuses the first tabbable element and restores focus, so those stay at their defaults.
  */
 export function provideAppDialogDefaults(): Provider {
   return {
     provide: MAT_DIALOG_DEFAULT_OPTIONS,
-    useValue: { maxWidth: '95vw', autoFocus: 'first-tabbable', restoreFocus: true } satisfies MatDialogConfig,
+    useValue: { ...new MatDialogConfig(), maxWidth: '95vw' } satisfies MatDialogConfig,
   };
 }
 
