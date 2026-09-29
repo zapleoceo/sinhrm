@@ -1,11 +1,13 @@
 // Bundles the user-facing parts of ../docs (Markdown, single source) into public/help/docs.json for the in-app /docs page.
 // Modules: only the plain-language sections ("Что это и зачем", "Как пользоваться", any "...простыми словами" heading).
+// «Журнал работ» (slug worklog, admin): fragments docs/worklog.d/*.md newest first + static history of docs/worklog.md.
 // Guides: whole file, admin-only. Raw HTML in Markdown is escaped, links are limited to http(s)/mailto/in-app/anchors.
 // Run automatically by `npm run build` / `npm start`; the output folder is git-ignored.
 import { readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
+import { buildJournal } from '../../scripts/worklog-build.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const DOCS = join(here, '..', '..', 'docs');
@@ -99,6 +101,9 @@ export function buildIndex() {
     docs.push({ slug: 'guide-' + file.replace(/\.md$/, ''), title: titleOf(md, file), group: 'guides', audience: 'admin',
       html: markedFor('guides').parse(body), text: plainText(body) });
   }
+  const journal = `Что менялось в системе, новые записи сверху. Источник — файлы \`docs/worklog.d/\`.\n\n${buildJournal(join(DOCS, '..'))}`;
+  docs.push({ slug: 'worklog', title: 'Журнал работ', group: 'guides', audience: 'admin',
+    html: markedFor('.').parse(journal), text: plainText(journal) });
   return docs;
 }
 
