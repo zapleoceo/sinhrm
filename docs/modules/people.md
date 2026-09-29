@@ -43,6 +43,10 @@
 - **Мій профіль** (меню пользователя → «Мій профіль», `/me`) — свой профиль и кнопка «Запит на зміну даних».
   Без связанной записи — сообщение «обліковий запис ще не повʼязаний… зверніться до HR».
 - **Погодження** (`/timeoff/approvals`) — руководитель/админ видит там запросы на изменения своих людей и отпуска.
+- **Выбор человека по имени** (везде, где раньше вводили числовой ID): начните печатать имя — через четверть секунды
+  появится список с аватаром/инициалами, должностью и отделом; стрелки ↑↓ и Enter выбирают, крестик очищает. Нужно
+  минимум 2 буквы. Найдутся только те люди, которых вы и так видите в справочнике «Співробітники». Раньше сохранённый
+  выбор показывается именем; если человека больше не видно (например, уволен), остаётся `#ID`, а сохранённые данные не меняются.
 - **Найм из рекрутинга**: перевели кандидата на этап найма → на карточке кандидата и на доске вакансии кнопка
   «Створити співробітника». Повторное нажатие не создаёт дубль — откроется тот же сотрудник.
 
@@ -96,6 +100,47 @@
 [perform.md](perform.md)) и «Активи» (что числится за сотрудником сейчас и раньше — тот же уровень «Робота»:
 админ, сам сотрудник, руководители выше; [assets.md](assets.md)). Perform и Pulse используют `PeopleScope`/`PeopleContext` как единую модель доступа
 (админ = HR, руководитель — поддерево по `manager_id`), `EmployeeRepository::working()` и `managerMap()`.
+
+### Выбор человека (person picker, 2026-09-29)
+Один общий компонент вместо полей «ID співробітника» по всему интерфейсу.
+
+| Метод и путь | Кто | Параметры | Ответ |
+|---|---|---|---|
+| `GET /api/people/search` | любой активный; 60 запросов в минуту | `q` 2..100 символов (обязателен), `scope` = `employees` (по умолчанию) \| `subordinates` \| `users`, `limit` 1..50 (по умолчанию 20, строка `"20"` ок), `include_terminated` (`1`, учитывается только для HR) | `{data: [{id, full_name, position, department, avatar_url}]}` |
+| `GET /api/people/lookup` | так же | `ids[]` 1..100 штук, `scope` | те же строки; неизвестные и невидимые id просто отсутствуют |
+
+- **Какие люди находятся.** `employees` — ровно то, что показывает справочник `GET /api/people` (тот же запрос
+  `EmployeeService::list` + `PeopleScope`, поиск по имени, рабочему e-mail и телефону, `%` и `_` экранируются).
+  Уволенные — только HR (суперадмин, админ, HR-менеджер) и только с `include_terminated=1`. `subordinates` — «моя
+  команда»: все ниже меня по `manager_id`; HR — все. `users` — активные учётные записи системы (ответственные в
+  процессах), **только HR**, остальным 403; `id` здесь — id пользователя.
+- **Что отдаётся.** Только имя, должность, отдел, аватар. Никогда: e-mail, телефон, зарплата, пол, дата рождения.
+- **Lookup** показывает уволенного только HR и руководителям выше него (как профиль `GET /api/people/{id}`).
+- Код: `Http/Controllers/PersonPickerController` → `Http/Requests/SearchPeopleRequest`, `LookupPeopleRequest` →
+  `Services/PersonPicker` (переиспользует `EmployeeService`, `PeopleScope`, поиск пользователей — `Users/Contracts/UserAdminRepository`)
+  → `Contracts/PickerUserRepository` (id → имя пользователя). Строка ответа — `DTO/PersonOption`, `Enums/PickerScope`.
+  `EmployeeFilter::anyStatus` — «все статусы», только для HR-поиска и lookup. Тесты — `tests/Feature/People/PersonPickerApiTest.php`.
+- Фронт: `features/people/picker/person-picker.ts` — `<app-person-picker>`, standalone, Material autocomplete,
+  `ControlValueAccessor` (значение — `id` или `id[]` с `multiple`), работает с `ngModel` и `formControlName`.
+  Входы: `label` (ключ перевода), `scope`, `multiple`, `required`, `includeTerminated`, `subscriptSizing`.
+  Пауза 250 мс, минимум 2 символа, состояния «загрузка / никого не найдено / ошибка», кнопка очистки, фишки (chips)
+  в режиме нескольких людей (Backspace убирает последнюю), `aria-label` на кнопках, цвета из токенов темы (светлая/тёмная),
+  на телефоне на всю ширину. Строки — `people.picker.*`. Спеки — `picker/person-picker.spec.ts`.
+
+**Где используется:**
+
+| Файл | Поле | Что сделано |
+|---|---|---|
+| `perform/one-on-ones/one-on-ones.page.ts` | «ID співробітника» (`employee_id`) | picker, `scope=subordinates` |
+| `perform/feedback/feedback.page.ts` | «ID співробітника» (`to_employee_id`) | picker |
+| `workflows/editor/workflow-editor.page.html` | «ID користувача» (`assignee_user_id`) | picker, `scope=users` |
+| `workflows/runs/workflow-runs.page.ts` | фильтр «ID співробітника» (`employee_id`) | picker с уволенными (для HR) |
+| `assets/assets.page.ts` | «Знайти співробітника» + список (`employee_id`) | один picker вместо двух полей |
+| `hiring-requests/hiring-wizard.page.ts` | поиск + список «Кого замінюємо» (`replaced_employee_id`) | picker с уволенными (для HR) |
+
+Не люди, поэтому не менялись: «ID філій / ID відділів» в цикле оценки и волнах опросов (это оргединицы, нужен
+отдельный выбор), «ID користувача» в журнале ошибок (только показ). Уже выбирались по имени из списка: рекрутер и
+нанимающий менеджер вакансии, шаги маршрута и авторы заявок на найм, ответственный по умолчанию в Desk.
 
 ### Слои
 `Http/Controllers` (`PeopleController`, `MyEmployeeController`, `ChangeRequestController`, `HireController`) →

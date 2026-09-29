@@ -1,5 +1,6 @@
 import { isHrStaff } from '../../../core/auth/auth.model';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,13 +12,14 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { RUN_STATUSES, RunQuery, RunStatus, WorkflowRun, WorkflowTemplate } from '../workflows.model';
 import { WorkflowsService } from '../workflows.service';
+import { PersonPicker, PickerValue } from '../../people/picker/person-picker';
 import { RunCard, StepAction } from './run-card';
 import { RunsStore } from './runs.store';
 
 /** Board of workflow runs (/workflows/runs): admins see all, managers their people; filters by status, template, employee. */
 @Component({
   selector: 'app-workflow-runs-page',
-  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, TranslocoPipe, RunCard],
+  imports: [FormsModule, PersonPicker, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, TranslocoPipe, RunCard],
   providers: [RunsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -49,10 +51,7 @@ import { RunsStore } from './runs.store';
           </mat-select>
         </mat-form-field>
       }
-      <mat-form-field subscriptSizing="dynamic" class="narrow">
-        <mat-label>{{ 'workflows.fields.employeeId' | transloco }}</mat-label>
-        <input matInput type="number" min="1" [value]="employeeId() ?? ''" (change)="setEmployee($event)" />
-      </mat-form-field>
+      <app-person-picker includeTerminated [ngModel]="employeeId()" (ngModelChange)="setEmployee($event)" />
     </div>
 
     @if (store.loading()) {
@@ -110,9 +109,8 @@ export class WorkflowRunsPage implements OnInit {
     this.reload();
   }
 
-  protected setEmployee(event: Event): void {
-    const n = Math.round(Number((event.target as HTMLInputElement).value));
-    this.employeeId.set(Number.isFinite(n) && n > 0 ? n : null);
+  protected setEmployee(id: PickerValue): void {
+    this.employeeId.set(typeof id === 'number' ? id : null);
     this.reload();
   }
 

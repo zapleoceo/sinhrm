@@ -1,6 +1,7 @@
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, numberAttribute, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,6 +14,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ASSIGNEE_RULES, AssigneeRule, EditableStep, WORKFLOW_ACTIONS, WORKFLOW_KINDS, WORKFLOW_TRIGGERS, WorkflowAction, WorkflowKind, WorkflowTrigger } from '../workflows.model';
 import { workflowsErrorKey } from '../workflows.service';
+import { PersonPicker, PickerValue } from '../../people/picker/person-picker';
 import { ConfigChange, StepConfigForm } from './step-config';
 import { WorkflowEditorStore } from './workflow-editor.store';
 
@@ -39,6 +41,8 @@ export function stepConfigErrors(errors: Record<string, string>, index: number):
     CdkDrag,
     CdkDragHandle,
     DatePipe,
+    FormsModule,
+    PersonPicker,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -81,9 +85,8 @@ export class WorkflowEditorPage {
     return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : 0;
   }
 
-  protected userId(event: Event): number | null {
-    const n = Math.round(Number(this.val(event)));
-    return Number.isFinite(n) && n > 0 ? n : null;
+  protected userId(value: PickerValue): number | null {
+    return typeof value === 'number' ? value : null;
   }
 
   protected setKind(kind: WorkflowKind): void {

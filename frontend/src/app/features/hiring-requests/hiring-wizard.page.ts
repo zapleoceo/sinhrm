@@ -12,8 +12,7 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DirectoryService } from '../directory/directory.service';
 import { DictionaryItem } from '../directory/directory.model';
-import { Employee } from '../people/people.model';
-import { PeopleService } from '../people/people.service';
+import { PersonPicker } from '../people/picker/person-picker';
 import { FormField, HIRING_PRIORITIES, HiringPriority, HiringReason, SaveHiringRequest, missingFields } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 import { fromIsoDate, toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
@@ -26,7 +25,7 @@ type Extra = Record<string, string | number | boolean>;
  */
 @Component({
   selector: 'app-hiring-wizard-page',
-  imports: [DecimalPipe, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, ReactiveFormsModule, RouterLink, TranslocoPipe],
+  imports: [DecimalPipe, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, PersonPicker, ReactiveFormsModule, RouterLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -98,18 +97,7 @@ type Extra = Record<string, string | number | boolean>;
               </mat-select>
             </mat-form-field>
             @if (form.controls.reason.value === 'replacement') {
-              <mat-form-field>
-                <mat-label>{{ 'hiring.fields.searchEmployee' | transloco }}</mat-label>
-                <input matInput #q (keyup.enter)="searchPeople(q.value)" (blur)="searchPeople(q.value)" />
-              </mat-form-field>
-              <mat-form-field>
-                <mat-label>{{ 'hiring.fields.replaced' | transloco }}</mat-label>
-                <mat-select formControlName="replaced_employee_id">
-                  @for (e of people(); track e.id) {
-                    <mat-option [value]="e.id">{{ e.full_name }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
+              <app-person-picker formControlName="replaced_employee_id" label="hiring.fields.replaced" subscriptSizing="fixed" includeTerminated />
             }
             <mat-form-field>
               <mat-label>{{ 'hiring.fields.startDate' | transloco }}</mat-label>
@@ -230,7 +218,6 @@ export class HiringWizardPage implements OnInit {
   readonly id = input(undefined, { transform: (v: unknown) => (v === undefined ? undefined : numberAttribute(v)) });
   private readonly api = inject(HiringRequestsService);
   private readonly directory = inject(DirectoryService);
-  private readonly peopleApi = inject(PeopleService);
   private readonly router = inject(Router);
   protected readonly priorities = HIRING_PRIORITIES;
   protected readonly step = signal(0);
@@ -239,7 +226,6 @@ export class HiringWizardPage implements OnInit {
   protected readonly branches = signal<DictionaryItem[]>([]);
   protected readonly departments = signal<DictionaryItem[]>([]);
   protected readonly positions = signal<DictionaryItem[]>([]);
-  protected readonly people = signal<Employee[]>([]);
   protected readonly fields = signal<FormField[]>([]);
   protected readonly extra = signal<Extra>({});
   protected readonly missing = computed(() => missingFields(this.fields(), this.extra()));
@@ -283,9 +269,6 @@ export class HiringWizardPage implements OnInit {
             currency: r.currency ?? '',
             requirements: r.requirements ?? '',
           });
-          if (r.replaced_employee) {
-            this.people.set([{ id: r.replaced_employee.id, full_name: r.replaced_employee.full_name } as Employee]);
-          }
           this.extra.set({ ...r.extra });
         },
         error: (e: unknown) => this.error.set(hiringErrorKey(e)),
@@ -296,13 +279,6 @@ export class HiringWizardPage implements OnInit {
   protected stepOneValid(): boolean {
     const c = this.form.controls;
     return c.title.valid && c.branch_id.valid && c.headcount.valid;
-  }
-
-  protected searchPeople(q: string): void {
-    if (q.trim().length < 2) {
-      return;
-    }
-    this.peopleApi.list({ q: q.trim(), perPage: 20 }).subscribe({ next: (page) => this.people.set(page.data) });
   }
 
   protected setExtra(key: string, value: string | number | boolean): void {

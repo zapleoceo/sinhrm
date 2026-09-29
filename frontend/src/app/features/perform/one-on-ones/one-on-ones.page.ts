@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { PersonPicker } from '../../people/picker/person-picker';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -22,7 +23,7 @@ import { combineDateAndTime, toIsoDateOrNull, toIsoLocalDateTime } from '../../.
  */
 @Component({
   selector: 'app-one-on-ones-page',
-  imports: [DatePipe, FormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, MatTimepickerModule, TranslocoPipe],
+  imports: [DatePipe, FormsModule, PersonPicker, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, MatTimepickerModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -33,10 +34,7 @@ import { combineDateAndTime, toIsoDateOrNull, toIsoLocalDateTime } from '../../.
     </header>
 
     <form class="filters" (ngSubmit)="create()">
-      <mat-form-field subscriptSizing="dynamic" class="narrow">
-        <mat-label>{{ 'perform.fields.employeeId' | transloco }}</mat-label>
-        <input matInput type="number" min="1" name="employee" [(ngModel)]="newEmployee" required />
-      </mat-form-field>
+      <app-person-picker class="person" name="employee" scope="subordinates" [(ngModel)]="newEmployee" required />
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>{{ 'perform.fields.when' | transloco }}</mat-label>
         <input matInput [matDatepicker]="whenDay" name="when" [(ngModel)]="newDay" required />

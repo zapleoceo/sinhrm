@@ -98,11 +98,16 @@
             </mat-select>
           </mat-form-field>
           @if (step.assignee_rule === 'specific_user') {
-            <mat-form-field subscriptSizing="dynamic" class="narrow">
-              <mat-label>{{ 'workflows.fields.userId' | transloco }}</mat-label>
-              <input matInput type="number" min="1" [value]="step.assignee_user_id" (input)="store.updateStep(i, { assignee_user_id: userId($event) })" required />
-              @if (store.error('steps.' + i + '.assignee_user_id'); as e) { <mat-hint class="err">{{ e }}</mat-hint> }
-            </mat-form-field>
+            <div class="assignee-user">
+              <app-person-picker
+                scope="users"
+                label="people.picker.user"
+                required
+                [ngModel]="step.assignee_user_id"
+                (ngModelChange)="store.updateStep(i, { assignee_user_id: userId($event) })"
+              />
+              @if (store.error('steps.' + i + '.assignee_user_id'); as e) { <small class="err" role="alert">{{ e }}</small> }
+            </div>
           }
         </div>
         <app-step-config
