@@ -3,18 +3,16 @@
 // touches only docs/ or .github/, or comes from dependabot. Every added/modified fragment is validated.
 //   node scripts/worklog-check.mjs <base-ref>     env: PR_LABELS="a,b" PR_AUTHOR=<login>
 import { readFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import { TEMPLATE, checkPr, isFragmentPath, parseNameStatus } from './worklog-lib.mjs';
+import { gitChanges, prContextFromEnv } from './git-diff.mjs';
+import { TEMPLATE, checkPr, isFragmentPath } from './worklog-lib.mjs';
 
 const base = process.argv[2] || 'origin/main';
-// -z + quotepath=false: paths with unicode, spaces or tabs come back verbatim instead of quoted octal escapes.
-const diff = execFileSync('git', ['-c', 'core.quotepath=false', 'diff', '-z', '--name-status', '--no-renames', `${base}...HEAD`], { encoding: 'utf8' });
-const changes = parseNameStatus(diff);
+const changes = gitChanges(base);
 const fragments = Object.fromEntries(
   changes.filter((c) => /^[AMR]/.test(c.status) && isFragmentPath(c.path)).map((c) => [c.path, readFileSync(c.path, 'utf8')]),
 );
-const labels = (process.env.PR_LABELS || '').split(',').map((s) => s.trim()).filter(Boolean);
-const res = checkPr({ changes, labels, author: process.env.PR_AUTHOR || '', fragments });
+const { labels, author } = prContextFromEnv();
+const res = checkPr({ changes, labels, author, fragments });
 
 if (res.ok) {
   console.log(`worklog: OK (${res.reason})`);

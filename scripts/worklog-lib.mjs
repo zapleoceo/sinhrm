@@ -21,24 +21,7 @@ const isValidDate = (s) => {
 export const isFragmentPath = (p) =>
   p.startsWith(`${FRAGMENT_DIR}/`) && !p.slice(FRAGMENT_DIR.length + 1).includes('/') && p.endsWith('.md') && !p.endsWith('/README.md');
 
-/**
- * Parses `git diff -z --name-status --no-renames` output (NUL-separated, so unicode, spaces and tabs in paths survive).
- * Returns [{ status, path, oldPath? }]; a rename/copy record (not produced with --no-renames) keeps both paths.
- */
-export function parseNameStatus(raw) {
-  const tokens = raw.split('\0');
-  const changes = [];
-  for (let i = 0; i < tokens.length && tokens[i]; ) {
-    const status = tokens[i++];
-    if (/^[RC]/.test(status)) {
-      changes.push({ status, oldPath: tokens[i], path: tokens[i + 1] });
-      i += 2;
-    } else {
-      changes.push({ status, path: tokens[i++] });
-    }
-  }
-  return changes;
-}
+export { parseNameStatus } from './git-diff.mjs';
 
 /** Parses a fragment. Returns { meta, lines, errors }. */
 export function parseFragment(name, content) {

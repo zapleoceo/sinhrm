@@ -152,13 +152,32 @@ jobs:
       - uses: gitleaks/gitleaks-action@v3
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
 
+  # Required check `docs` (name is fixed by the ruleset). Code of a module changed → its docs/modules page changed for real
+  # (not a whitespace edit) and a test in the same module/feature changed. Rules: scripts/pr-checks-lib.mjs.
+  # Exempt from tests: label no-tests-needed (read live, Re-run after labelling) and dependabot.
   docs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions: { contents: read, pull-requests: read }
     steps:
       - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
-      - run: bash scripts/docs-check.sh origin/${{ github.base_ref }}
+      - name: Tests of the checks
+        run: node --test scripts/pr-checks.test.mjs
+      - name: Docs updated with code
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/docs-check.mjs "origin/$BASE_REF"
+      - name: Tests updated with code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          PR_LABELS=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq '[.labels[].name] | join(",")')
+          export PR_LABELS
+          node scripts/tests-check.mjs "origin/$BASE_REF"
 
   # Journal entry per PR: docs/worklog.d/<YYYY-MM-DD>-<slug>.md (see docs/worklog.d/README.md).
   # Exempt: label no-worklog, docs/ + .github/ only, dependabot. Labels are read live, so Re-run after labelling.
