@@ -49,7 +49,7 @@ export function parseFragment(name, content) {
 
 /**
  * CI verdict for a PR.
- * changes: [{ status: 'A'|'M'|'D'|'R100', path }], labels: string[], author: login,
+ * changes: [{ status: 'A'|'M'|'D'|'R100', path, oldPath? }], labels: string[], author: login,
  * fragments: { [path]: content } for every fragment added/modified in the PR.
  */
 export function checkPr({ changes, labels = [], author = '', fragments = {} }) {
@@ -60,8 +60,10 @@ export function checkPr({ changes, labels = [], author = '', fragments = {} }) {
   if (errors.length) return { ok: false, reason: 'invalid-fragment', errors };
   if (changes.some((c) => c.status.startsWith('A') && isFragmentPath(c.path))) return { ok: true, reason: 'fragment' };
   if (labels.includes('no-worklog')) return { ok: true, reason: 'label' };
-  if (/^dependabot(\[bot\])?$/.test(author)) return { ok: true, reason: 'dependabot' };
-  if (changes.length > 0 && changes.every((c) => /^(docs|\.github)\//.test(c.path))) {
+  if (author === 'dependabot[bot]') return { ok: true, reason: 'dependabot' };
+  // Both sides of a rename count: `git mv backend/x.php docs/x.php` is not a docs-only change.
+  const docsOrCi = (p) => /^(docs|\.github)\//.test(p);
+  if (changes.length > 0 && changes.every((c) => docsOrCi(c.path) && (!c.oldPath || docsOrCi(c.oldPath)))) {
     return { ok: true, reason: 'docs-or-ci-only' };
   }
   return { ok: false, reason: 'missing', errors: [] };

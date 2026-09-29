@@ -7,14 +7,15 @@ import { execFileSync } from 'node:child_process';
 import { TEMPLATE, checkPr, isFragmentPath } from './worklog-lib.mjs';
 
 const base = process.argv[2] || 'origin/main';
-const diff = execFileSync('git', ['diff', '--name-status', `${base}...HEAD`], { encoding: 'utf8' });
+const diff = execFileSync('git', ['diff', '--name-status', '--no-renames', `${base}...HEAD`], { encoding: 'utf8' });
 const changes = diff
   .trim()
   .split('\n')
   .filter(Boolean)
   .map((l) => {
     const parts = l.split('\t');
-    return { status: parts[0], path: parts[parts.length - 1] };
+    // --no-renames: a move is D old + A new; oldPath kept for safety if a rename line ever appears.
+    return { status: parts[0], path: parts[parts.length - 1], oldPath: parts.length > 2 ? parts[1] : undefined };
   });
 const fragments = Object.fromEntries(
   changes.filter((c) => /^[AMR]/.test(c.status) && isFragmentPath(c.path)).map((c) => [c.path, readFileSync(c.path, 'utf8')]),
