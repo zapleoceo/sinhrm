@@ -1,7 +1,7 @@
 // node --test scripts/worklog.test.mjs — pass/fail matrix for the `worklog` CI check and the assembler.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRows, checkPr, historyRows, journalMarkdown, parseFragment } from './worklog-lib.mjs';
+import { buildRows, checkPr, historyRows, isFragmentPath, journalMarkdown, parseFragment, parseNameStatus, prFromGit } from './worklog-lib.mjs';
 
 const OK = '---\ndate: 2026-09-29\narea: CI\n---\nЖурнал работ из фрагментов — [development.md](guides/development.md)\n';
 const F = 'docs/worklog.d/2026-09-29-worklog-fragments.md';
@@ -21,6 +21,7 @@ const matrix = [
   ['docs/ + scripts/', { changes: [{ status: 'M', path: 'docs/a.md' }, { status: 'M', path: 'scripts/x.sh' }] }, false, 'missing'],
   ['код + изменён (не добавлен) фрагмент', { changes: [code, { status: 'M', path: F }], fragments: { [F]: OK } }, false, 'missing'],
   ['код + только README фрагментов', { changes: [code, { status: 'A', path: 'docs/worklog.d/README.md' }] }, false, 'missing'],
+  ['фрагмент в подпапке', { changes: [code, { status: 'A', path: 'docs/worklog.d/sub/2026-09-29-x.md' }] }, false, 'missing'],
   ['фрагмент без date', { changes: [code, { status: 'A', path: F }], fragments: { [F]: '---\narea: CI\n---\nтекст\n' } }, false, 'invalid-fragment'],
   ['фрагмент с date 2026-13-40', { changes: [{ status: 'A', path: F }], fragments: { [F]: OK.replace('2026-09-29', '2026-13-40') } }, false, 'invalid-fragment'],
   ['фрагмент с пустым текстом', { changes: [{ status: 'A', path: F }], fragments: { [F]: '---\ndate: 2026-09-29\narea: CI\n---\n\n' } }, false, 'invalid-fragment'],
@@ -71,3 +72,53 @@ test('journal: фрагменты сверху, затем статичная и
   assert.throws(() => journalMarkdown([{ name: 'bad.md', content: 'x' }], doc));
 });
 
+
+test('isFragmentPath: только прямые файлы папки, не README и не подпапки', () => {
+  assert.equal(isFragmentPath(F), true);
+  assert.equal(isFragmentPath('docs/worklog.d/README.md'), false);
+  assert.equal(isFragmentPath('docs/worklog.d/sub/2026-09-29-x.md'), false);
+  assert.equal(isFragmentPath('docs/worklog.d/2026-09-29-x.txt'), false);
+});
+
+test('parseNameStatus: -z, юникод, пробел и таб в путях; rename хранит обе стороны', () => {
+  const raw = ['A', 'docs/worklog.d/2026-09-29-x.md', 'M', 'docs/а б.md', 'D', 'a\tb.php', 'R100', 'old.php', 'docs/new.md', ''].join('\0');
+  assert.deepEqual(parseNameStatus(raw), [
+    { status: 'A', path: 'docs/worklog.d/2026-09-29-x.md' },
+    { status: 'M', path: 'docs/а б.md' },
+    { status: 'D', path: 'a\tb.php' },
+    { status: 'R100', oldPath: 'old.php', path: 'docs/new.md' },
+  ]);
+  assert.deepEqual(parseNameStatus(''), []);
+  // docs-only с кириллицей в имени — PASS (раньше путь приходил в кавычках и давал ложный FAIL)
+  assert.equal(checkPr({ changes: parseNameStatus('M\0docs/модулі/а.md\0') }).ok, true);
+});
+
+test('build: обратный слэш в тексте не ломает экранирование |', () => {
+  const rows = buildRows([{ name: '2026-09-29-b.md', content: '---\ndate: 2026-09-29\narea: B\n---\nпуть a\\|b и конец\\\n' }]);
+  assert.equal(rows[0], '| 2026-09-29 | B: путь a\\\\\\|b и конец\\\\ | — |');
+});
+
+test('build: нестрогий режим пропускает невалидный фрагмент, строгий — бросает', () => {
+  const items = [
+    { name: '2026-09-29-ok.md', content: OK },
+    { name: 'bad.md', content: 'x' },
+  ];
+  const warn = console.warn;
+  const warned = [];
+  console.warn = (m) => warned.push(m);
+  try {
+    assert.equal(buildRows(items, { strict: false }).length, 1);
+  } finally {
+    console.warn = warn;
+  }
+  assert.equal(warned.length, 1);
+  assert.throws(() => buildRows(items));
+});
+
+test('prFromGit: shallow-клон → undefined; полная история → номер из темы коммита', () => {
+  const git = (shallow, log) => (cmd, args) => (args[0] === 'rev-parse' ? `${shallow}\n` : `${log}\n`);
+  assert.equal(prFromGit(git('true', 'feat: x (#93)'), 'p', '.'), undefined);
+  assert.equal(prFromGit(git('false', 'feat: x (#93)'), 'p', '.'), '93');
+  assert.equal(prFromGit(git('false', 'feat: без номера'), 'p', '.'), undefined);
+  assert.equal(prFromGit(() => { throw new Error('no git'); }, 'p', '.'), undefined);
+});

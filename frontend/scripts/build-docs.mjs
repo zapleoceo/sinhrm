@@ -101,7 +101,7 @@ export function buildIndex() {
     docs.push({ slug: 'guide-' + file.replace(/\.md$/, ''), title: titleOf(md, file), group: 'guides', audience: 'admin',
       html: markedFor('guides').parse(body), text: plainText(body) });
   }
-  const journal = `Что менялось в системе, новые записи сверху. Источник — файлы \`docs/worklog.d/\`.\n\n${buildJournal(join(DOCS, '..'))}`;
+  const journal = `Что менялось в системе, новые записи сверху. Источник — файлы \`docs/worklog.d/\`.\n\n${buildJournal(join(DOCS, '..'), { strict: false })}`;
   docs.push({ slug: 'worklog', title: 'Журнал работ', group: 'guides', audience: 'admin',
     html: markedFor('.').parse(journal), text: plainText(journal) });
   return docs;

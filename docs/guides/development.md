@@ -36,7 +36,8 @@
 хронологию (фрагменты + статичная история «Ранее» из `docs/worklog.md`) собирает сборка справки: «Довідка» → «Журнал работ»
 (`frontend/scripts/build-docs.mjs`); локально — `node scripts/worklog-build.mjs --print`. Никакой workflow в `main` не коммитит.
 CI job `worklog` падает, если в PR нет валидного фрагмента; исключения — метка `no-worklog` (затем Re-run job),
-PR только в `docs/` и `.github/`, dependabot.
+PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` может поставить любой с правом triage — ставим только
+для правок без изменения поведения (опечатки в коде, откат); в остальных случаях запись обязательна.
 
 ## Проверка входа и сессий
 Вход через Google работает только на prod-домене `sinhrm.vercel.app`: redirect URI в Google зарегистрирован только
