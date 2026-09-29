@@ -148,6 +148,7 @@ hidden_reason: "anonymity"}`, без баллов и комментариев. �
 | `reviews/review-results.ts` | результаты: полоски CSS по типам оценщиков, «приховано: менше N оцінювачів» |
 | `profile/performance.tab.ts` | вкладка профиля «Продуктивність» |
 
+В рядах «Зустрічі 1:1» и «Фідбек» пикер той же высоты, что и соседние поля (класс `grow`), — вид описан в [people.md](people.md#выбор-человека-person-picker-2026-09-29).
 Сотрудник в 1:1 и получатель фидбека выбираются общим `<app-person-picker>` (`features/people/picker`), в API уходит
 тот же `employee_id` / `to_employee_id`. Назначение 360 (`POST review/cycles/{id}/assignments`) в интерфейсе пока нет.
 
