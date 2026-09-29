@@ -3,8 +3,8 @@
 Прочитай перед любой задачей: `docs/README.md`, `docs/guides/development.md`, `docs/architecture/secrets.md`.
 
 ## Жёсткие правила
-1. Одна задача = одна ветка от `main` → PR → зелёный CI → ревью Sonnet (approve) → squash-merge. В `main` не пушить.
-2. Код пишет Opus 5.5; ревью — отдельный агент Sonnet: SOLID, DRY, модульность, безопасность, тесты, документация.
+1. Одна задача = одна ветка от `main` → PR → зелёный CI → ревью Sonnet 5.5 (approve) → squash-merge. В `main` не пушить.
+2. Код пишет Opus 5.5; ревью — отдельный агент Sonnet 5.5 (с 29.09.2026, раньше — Sonnet 5): SOLID, DRY, модульность, безопасность, тесты, документация.
 3. Репозиторий ПУБЛИЧНЫЙ: никаких секретов, токенов, реальных персональных данных, справочников компании,
    внутренних URL с токенами. Секреты — только в БД (`integration_secrets`) или Vercel env (DB_URL, APP_KEY, SUPERADMIN_EMAIL).
 4. Изменил модуль → обнови `docs/modules/<модуль>.md` и строку в `docs/worklog.md`. CI проверяет.
