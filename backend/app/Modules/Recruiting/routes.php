@@ -68,7 +68,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         Route::get('/', [PersonalBoardController::class, 'show'])->name('recruiting.personal-board.show');
         Route::delete('/', [PersonalBoardController::class, 'reset'])->name('recruiting.personal-board.reset');
         Route::post('columns', [PersonalBoardController::class, 'store'])->name('recruiting.personal-board.columns.store');
-        Route::put('columns/order', [PersonalBoardController::class, 'reorder'])->name('recruiting.personal-board.columns.order');
+        Route::put('layout', [PersonalBoardController::class, 'layout'])->name('recruiting.personal-board.layout');
     });
     Route::patch('personal-board/columns/{column}', [PersonalBoardController::class, 'update'])
         ->whereNumber('column')->name('recruiting.personal-board.columns.update');
