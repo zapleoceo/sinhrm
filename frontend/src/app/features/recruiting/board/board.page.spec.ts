@@ -1,6 +1,8 @@
-import { CdkDrag, CdkDragStart, CdkDropList } from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragDrop, CdkDragStart, CdkDropList } from '@angular/cdk/drag-drop';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
@@ -15,14 +17,14 @@ import { dropHint } from './drop-hint';
 const stage = (id: number, name: string, kind: Stage['kind']): Stage => ({
   id, name, kind, position: id, is_terminal: false, is_reject: false, is_hire: kind === 'hire',
 });
-const stages = [stage(1, 'New', 'attract'), stage(2, 'Screen', 'select')];
+const stages = [stage(1, 'New', 'attract'), stage(2, 'Screen', 'select'), { ...stage(3, 'Rejected', 'closed'), is_reject: true, is_terminal: true }];
 const app = (id: number, stageId: number): Application =>
   ({ id, candidate_id: id + 100, vacancy_id: 1, stage_id: stageId, status: 'active', is_stale: false, candidate: { id: id + 100, full_name: `C${id}` } }) as Application;
 const board = { vacancy: { id: 1, title: 'V', stages }, applications: [app(1, 1), app(2, 1), app(3, 2)] } as unknown as Board;
 const personal: PersonalBoard = {
   columns: [{ id: 7, title: 'Mine', color: 'blue', position: 0, hidden: false }],
   cards: [],
-  layout: ['stage:1', 'col:7', 'stage:2'],
+  layout: ['stage:1', 'col:7', 'stage:2', 'stage:3'],
 };
 /** Async like real HTTP: a synchronous of() inside the page's load effect would re-trigger it forever. */
 const later = <T>(v: T): Observable<T> => from(Promise.resolve(v));
@@ -30,7 +32,22 @@ const pb = {
   dropStage: 'stage {{name}}', dropBack: 'back {{name}}', dropPersonal: 'file {{name}}', dropDenied: 'denied {{name}}',
 };
 
+/** API/dialog/snackbar doubles with call counters. */
+const api = {
+  board: vi.fn(() => later(board)),
+  personalBoard: vi.fn(() => later(personal)),
+  rejectReasons: vi.fn(() => of([])),
+  vacancySources: vi.fn(() => of([])),
+  move: vi.fn((id: number, body: { stage_id: number }) => later({ ...app(id, body.stage_id) })),
+  fileCard: vi.fn(() => later(undefined)),
+};
+let dialogResult: unknown;
+const dialog = { open: vi.fn(() => ({ afterClosed: () => of(dialogResult) })) };
+const snack = { open: vi.fn() };
+
 async function render(roles: string[]): Promise<ComponentFixture<BoardPage>> {
+  vi.clearAllMocks();
+  dialogResult = undefined;
   TestBed.configureTestingModule({
     imports: [
       BoardPage,
@@ -44,10 +61,9 @@ async function render(roles: string[]): Promise<ComponentFixture<BoardPage>> {
       provideRouter([]),
       { provide: AuthService, useValue: { user: signal({ roles }) } },
       { provide: PeopleService, useValue: {} },
-      {
-        provide: RecruitingService,
-        useValue: { board: () => later(board), personalBoard: () => later(personal), rejectReasons: () => of([]), vacancySources: () => of([]) },
-      },
+      { provide: RecruitingService, useValue: api },
+      { provide: MatDialog, useValue: dialog },
+      { provide: MatSnackBar, useValue: snack },
     ],
   });
   const fixture = TestBed.createComponent(BoardPage);
@@ -109,6 +125,24 @@ describe('BoardPage drag & drop visuals', () => {
     expect(el.querySelector('.drop-caption')?.textContent?.trim()).toBe('denied Screen');
   });
 
+  it('highlight clears when the pointer leaves the lane without entering another', async () => {
+    const f = await render(['recruiter']);
+    const el = dragOver(f, 'stage:2');
+    const target = list(f, 'stage:2');
+    target.exited.emit({ container: target, item: cardDrags(f)[0] });
+    f.detectChanges();
+    expect(el.querySelector('[data-drop]')).toBeNull();
+    expect(el.querySelector('.drop-caption')).toBeNull();
+  });
+
+  it('body drag class is removed when the page is destroyed mid-drag', async () => {
+    const f = await render(['recruiter']);
+    dragOver(f, 'stage:2');
+    expect(document.body.classList.contains('board-dragging')).toBe(true);
+    f.destroy();
+    expect(document.body.classList.contains('board-dragging')).toBe(false);
+  });
+
   it('no caption over the lane the card came from; cleared when the drag ends', async () => {
     const f = await render(['recruiter']);
     const el = dragOver(f, 'stage:1');
@@ -117,6 +151,75 @@ describe('BoardPage drag & drop visuals', () => {
     f.detectChanges();
     expect(el.querySelector('[data-drop]')).toBeNull();
     expect(document.body.classList.contains('board-dragging')).toBe(false);
+  });
+});
+
+/** What CDK emits on the target list when the card is released there. */
+async function drop(f: ComponentFixture<BoardPage>, cardIndex: number, fromKey: string, toKey: string): Promise<void> {
+  const item = cardDrags(f)[cardIndex];
+  const container = list(f, toKey);
+  const event = {
+    item, container, previousContainer: list(f, fromKey), previousIndex: 0, currentIndex: 0,
+    isPointerOverContainer: true, distance: { x: 0, y: 0 }, dropPoint: { x: 0, y: 0 }, event: new MouseEvent('mouseup'),
+  } as CdkDragDrop<unknown, unknown, Application>;
+  container.dropped.emit(event);
+  await f.whenStable();
+  f.detectChanges();
+}
+
+describe('BoardPage drop', () => {
+  it('stage column → one move with the application id and the stage id', async () => {
+    const f = await render(['recruiter']);
+    await drop(f, 0, 'stage:1', 'stage:2');
+    expect(api.move).toHaveBeenCalledTimes(1);
+    expect(api.move).toHaveBeenCalledWith(1, { stage_id: 2 });
+    expect(api.fileCard).not.toHaveBeenCalled();
+  });
+
+  it('reject stage → RejectDialog first; move only after confirm', async () => {
+    const f = await render(['recruiter']);
+    dialogResult = { reject_reason_id: 5 };
+    await drop(f, 0, 'stage:1', 'stage:3');
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    expect(api.move).toHaveBeenCalledTimes(1);
+    expect(api.move).toHaveBeenCalledWith(1, { stage_id: 3, reject_reason_id: 5 });
+  });
+
+  it('reject stage cancelled → no request', async () => {
+    const f = await render(['recruiter']);
+    await drop(f, 0, 'stage:1', 'stage:3');
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    expect(api.move).not.toHaveBeenCalled();
+  });
+
+  it('own column → only filing, never a stage move', async () => {
+    const f = await render(['recruiter']);
+    await drop(f, 0, 'stage:1', 'col:7');
+    expect(api.fileCard).toHaveBeenCalledTimes(1);
+    expect(api.fileCard).toHaveBeenCalledWith(1, 7);
+    expect(api.move).not.toHaveBeenCalled();
+  });
+
+  it('back into the same list → no request', async () => {
+    const f = await render(['recruiter']);
+    await drop(f, 0, 'stage:1', 'stage:1');
+    expect(api.move).not.toHaveBeenCalled();
+    expect(api.fileCard).not.toHaveBeenCalled();
+  });
+
+  it('without write rights → forbidden toast, no request', async () => {
+    const f = await render(['employee']);
+    await drop(f, 0, 'stage:1', 'stage:2');
+    expect(snack.open).toHaveBeenCalledTimes(1);
+    expect(api.move).not.toHaveBeenCalled();
+  });
+
+  it('the board loads exactly once after it settles (no reload loop with an empty reject-reason list)', async () => {
+    const f = await render(['recruiter']);
+    await f.whenStable();
+    f.detectChanges();
+    expect(api.board).toHaveBeenCalledTimes(1);
+    expect(api.rejectReasons).toHaveBeenCalledTimes(1);
   });
 });
 

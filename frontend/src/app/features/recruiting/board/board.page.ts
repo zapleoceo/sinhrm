@@ -1,7 +1,7 @@
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
 import { CdkScrollable } from '@angular/cdk/scrolling';
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, booleanAttribute, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, booleanAttribute, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -155,6 +155,7 @@ import { VacancySources } from './vacancy-sources';
             [cdkDropListDisabled]="!canWrite() && !personal()"
             (cdkDropListDropped)="onDrop($event)"
             (cdkDropListEntered)="dragOver.set(lane.key)"
+            (cdkDropListExited)="leave(lane.key)"
           >
             @for (app of lane.items; track app.id) {
               <article
@@ -373,6 +374,7 @@ export class BoardPage {
       const personal = this.personal();
       untracked(() => this.store.load(id, personal));
     });
+    inject(DestroyRef).onDestroy(() => this.document.body.classList.remove('board-dragging'));
   }
 
   protected load(): void {
@@ -404,6 +406,13 @@ export class BoardPage {
     this.dragFrom.set(key !== null && app ? { key, app } : null);
     this.dragOver.set(key);
     this.document.body.classList.add('board-dragging');
+  }
+
+  /** Pointer left a lane without entering another one: no highlight, no caption. */
+  protected leave(key: string): void {
+    if (this.dragOver() === key) {
+      this.dragOver.set(null);
+    }
   }
 
   protected dragEnd(): void {
