@@ -44,7 +44,8 @@ HR готовит документы сотрудникам — приказ о 
 | `signatures` | `document_id, signer_employee_id?, signer_user_id?, method (manual_ack\|kep_pending), signed_at, ip_hash?, user_agent_hash?` | `unique(document_id, signer_user_id)`; IP и браузер — только HMAC-SHA256 с `APP_KEY` (сырые значения не хранятся, в API хэшей нет) |
 
 Переходы: `draft → sent → signed | rejected`; `rejected` можно исправить и отправить снова (задача та же, открывается
-заново); из любого статуса — `archived`. Править текст и файл можно только в `draft`/`rejected` (иначе 409 `not_editable`).
+заново); из любого статуса — `archived`. Править название, категорию, текст и файл можно только в `draft`/`rejected` (иначе 409 `not_editable`): после отправки сотруднику
+и подписи документ заморожен целиком, разрешено только отправить в архив (`status: archived`).
 
 ### Безопасный показ (`Support/MarkdownRenderer`, `Support/TemplateFiller`)
 Markdown превращается в HTML **на сервере** (league/commonmark): `html_input = escape` — любой HTML (`<script>`,

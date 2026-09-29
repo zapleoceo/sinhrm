@@ -157,7 +157,8 @@ final readonly class DocumentService
             return $this->reload($document);
         }
         unset($data['status']);
-        if (array_key_exists('content_md', $data) && ! $document->status->isEditable()) {
+        // Title, category and content are all part of what the employee was given (or signed): frozen together.
+        if ($data !== [] && ! $document->status->isEditable()) {
             throw DocumentException::notEditable();
         }
         $this->documents->update($document, $data);
