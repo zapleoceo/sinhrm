@@ -135,7 +135,8 @@ final class UsersAdminTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.roles', ['hr_manager', 'recruiter']);
         $entry = AuditEntry::query()->where('entity_type', 'user')->where('entity_id', $user->id)->where('action', 'role_changed')->sole();
-        $this->assertSame(['from' => 'recruiter', 'to' => 'hr_manager, recruiter'], $entry->changes['role'] ?? null);
+        // jsonb (Postgres) does not keep key order: compare as a map.
+        $this->assertEquals(['from' => 'recruiter', 'to' => 'hr_manager, recruiter'], $entry->changes['role'] ?? null);
 
         // The single "role" still works and replaces the whole set.
         $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['role' => 'viewer'])
