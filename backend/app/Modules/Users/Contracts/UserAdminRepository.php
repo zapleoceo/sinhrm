@@ -20,9 +20,11 @@ interface UserAdminRepository
 
     public function invite(string $email, string $name, UserRole $role, User $invitedBy): User;
 
-    public function roleOf(User $user): ?UserRole;
+    /** @return list<UserRole> assigned global roles, in UserRole order */
+    public function rolesOf(User $user): array;
 
-    public function setRole(User $user, UserRole $role): void;
+    /** @param  non-empty-list<UserRole>  $roles  replaces the user's global roles */
+    public function setRoles(User $user, array $roles): void;
 
     public function setStatus(User $user, UserStatus $status): void;
 

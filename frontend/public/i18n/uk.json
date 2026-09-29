@@ -27,7 +27,7 @@
     "theme": { "toDark": "Темна тема", "toLight": "Світла тема" }
   },
   "status": { "title": "Стан системи", "apiOk": "API працює", "apiDown": "API недоступний", "checking": "Перевірка…", "version": "Версія" },
-  "users": {
+  "users": { "changeRoles": "Змінити ролі",
     "title": "Користувачі",
     "search": "Пошук за іменем або email",
     "role": "Роль",
@@ -50,6 +50,7 @@
       "email_taken": "Користувач з таким email уже існує",
       "self_change_forbidden": "Не можна змінювати власну роль чи статус",
       "last_superadmin": "Не можна позбавити прав останнього активного суперадміна",
+      "superadmin_not_assignable": "Роль суперадміна не видається через адмінку",
       "handler_requires_admin": "Обробником Safe Speak може бути лише суперадмін або адмін",
       "generic": "Не вдалося зберегти зміни"
     },

@@ -27,7 +27,7 @@
     "theme": { "toDark": "Dark theme", "toLight": "Light theme" }
   },
   "status": { "title": "System status", "apiOk": "API is up", "apiDown": "API is unreachable", "checking": "Checking…", "version": "Version" },
-  "users": {
+  "users": { "changeRoles": "Change roles",
     "title": "Users",
     "search": "Search by name or email",
     "role": "Role",
@@ -50,6 +50,7 @@
       "email_taken": "A user with this email already exists",
       "self_change_forbidden": "You cannot change your own role or status",
       "last_superadmin": "The last active superadmin cannot lose access",
+      "superadmin_not_assignable": "The superadmin role cannot be given here",
       "handler_requires_admin": "Only superadmins and admins can handle Safe Speak",
       "generic": "Could not save changes"
     },

@@ -26,6 +26,11 @@ final class ApplyActiveRole
             $user = is_string($role) ? Auth::guard('web')->user() : null;
             if ($user instanceof User) {
                 $user->actAs($role);
+                if ($user->activeRole() === null) {
+                    // No longer assigned (or only one role left): forget it, so a later re-assignment does not
+                    // silently narrow the user again.
+                    $request->session()->forget(self::SESSION_KEY);
+                }
             }
         }
 

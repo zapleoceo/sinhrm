@@ -51,16 +51,16 @@ final class EloquentUserAdminRepository implements UserAdminRepository
         return $user;
     }
 
-    public function roleOf(User $user): ?UserRole
+    public function rolesOf(User $user): array
     {
-        $name = $user->getRoleNames()->first();
+        $names = $user->roles()->pluck('name')->all();
 
-        return is_string($name) ? UserRole::tryFrom($name) : null;
+        return array_values(array_filter(UserRole::cases(), static fn (UserRole $r): bool => in_array($r->value, $names, true)));
     }
 
-    public function setRole(User $user, UserRole $role): void
+    public function setRoles(User $user, array $roles): void
     {
-        $user->syncRoles([$role->value]);
+        $user->syncRoles(UserRole::valuesOf($roles));
     }
 
     public function setStatus(User $user, UserStatus $status): void

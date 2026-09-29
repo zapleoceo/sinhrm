@@ -55,6 +55,16 @@ final class GoogleCallbackTest extends TestCase
         $this->assertAuthenticatedAs($invited, 'web');
     }
 
+    public function test_a_new_sign_in_never_inherits_the_previous_work_as_choice(): void
+    {
+        User::factory()->withRole(UserRole::Recruiter)->create(['email' => 'next@example.com', 'password' => null]);
+        $this->fakeGoogle(FakeGoogleIdentityProvider::returning('next@example.com', 'g-7'));
+
+        $this->withSession(['active_role' => 'superadmin'])->get(self::CALLBACK)->assertRedirect('/');
+
+        $this->assertFalse(session()->has('active_role'));
+    }
+
     public function test_known_google_id_logs_in_even_after_email_change(): void
     {
         $user = User::factory()->create(['email' => 'new@example.com', 'google_id' => 'g-7']);

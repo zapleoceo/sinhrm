@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Users;
 
 use App\Models\User;
+use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -124,6 +125,44 @@ final class UsersAdminTest extends TestCase
             ->assertJsonValidationErrors(['role']);
 
         $this->assertFalse($user->fresh()->hasRole(UserRole::Superadmin->value));
+    }
+
+    public function test_several_roles_are_assigned_with_roles_array_and_audited(): void
+    {
+        $user = User::factory()->withRole(UserRole::Recruiter)->create();
+
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['roles' => ['recruiter', 'hr_manager']])
+            ->assertOk()
+            ->assertJsonPath('data.roles', ['hr_manager', 'recruiter']);
+        $entry = AuditEntry::query()->where('entity_type', 'user')->where('entity_id', $user->id)->where('action', 'role_changed')->sole();
+        $this->assertSame(['from' => 'recruiter', 'to' => 'hr_manager, recruiter'], $entry->changes['role'] ?? null);
+
+        // The single "role" still works and replaces the whole set.
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['role' => 'viewer'])
+            ->assertOk()->assertJsonPath('data.roles', ['viewer']);
+    }
+
+    public function test_roles_array_is_validated(): void
+    {
+        $user = User::factory()->withRole(UserRole::Admin)->create();
+
+        foreach ([[], ['god'], ['admin', 'admin'], 'admin', null] as $roles) {
+            $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['roles' => $roles])
+                ->assertUnprocessable();
+        }
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['role' => 'viewer', 'roles' => ['viewer']])
+            ->assertUnprocessable();
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['roles' => ['superadmin', 'admin']])
+            ->assertUnprocessable()->assertJsonPath('code', 'superadmin_not_assignable');
+        $this->assertSame(['admin'], $user->fresh()?->getRoleNames()->all());
+    }
+
+    public function test_a_superadmin_keeps_superadmin_while_getting_more_roles(): void
+    {
+        $other = User::factory()->withRole(UserRole::Superadmin)->create();
+
+        $this->actingAs($this->superadmin)->patchJson("/api/users/{$other->id}", ['roles' => ['recruiter', 'superadmin']])
+            ->assertOk()->assertJsonPath('data.roles', ['superadmin', 'recruiter']);
     }
 
     public function test_cannot_change_own_role_or_status(): void

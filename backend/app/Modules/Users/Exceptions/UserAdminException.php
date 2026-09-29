@@ -25,6 +25,12 @@ final class UserAdminException extends RuntimeException
         return new self('self_change_forbidden', 422);
     }
 
+    /** Superadmin comes only from SUPERADMIN_EMAIL (bootstrap): the API may keep it on a user, never give it. */
+    public static function superadminNotAssignable(): self
+    {
+        return new self('superadmin_not_assignable', 422);
+    }
+
     public static function lastSuperadmin(): self
     {
         return new self('last_superadmin', 422);

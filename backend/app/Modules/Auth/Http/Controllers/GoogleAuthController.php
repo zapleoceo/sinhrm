@@ -8,6 +8,7 @@ use App\Modules\Auth\Contracts\GoogleIdentityProvider;
 use App\Modules\Auth\Enums\LoginDenial;
 use App\Modules\Auth\Exceptions\GoogleAuthFailed;
 use App\Modules\Auth\Exceptions\LoginDenied;
+use App\Modules\Auth\Http\Middleware\ApplyActiveRole;
 use App\Modules\Auth\Services\AuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,6 +49,8 @@ final class GoogleAuthController
 
         Auth::guard('web')->login($user, remember: true);
         $request->session()->regenerate();
+        // "Працювати як" belongs to one person's session: a new sign-in always starts with all roles.
+        $request->session()->forget(ApplyActiveRole::SESSION_KEY);
 
         return new RedirectResponse('/');
     }

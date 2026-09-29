@@ -19,7 +19,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { DictionaryItem } from '../directory/directory.model';
 import { DirectoryService } from '../directory/directory.service';
 import { InviteUserDialog } from './invite-user.dialog';
-import { AdminUser, UpdateUser, UsersQuery } from './users.model';
+import { AdminUser, UpdateUser, UsersQuery, nextRoles } from './users.model';
 import { UsersService, userErrorKey } from './users.service';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -126,8 +126,20 @@ export class UsersPage implements OnInit {
     this.load();
   }
 
-  protected changeRole(user: AdminUser, role: UserRole): void {
-    this.optimistic(user, { roles: [role] }, { role });
+  /**
+   * Saves the ticked roles when the picker closes. Superadmin is not in the picker: it stays on a user who has it.
+   * Nothing ticked (and no superadmin) = no change: a user always keeps at least one role.
+   */
+  protected commitRoles(user: AdminUser, selected: UserRole[]): void {
+    const roles = nextRoles(user.roles, selected);
+    if (roles !== null) {
+      this.optimistic(user, { roles }, { roles });
+    }
+  }
+
+  /** Roles shown in the picker (everything but superadmin). */
+  protected pickable(user: AdminUser): UserRole[] {
+    return user.roles.filter((r) => r !== 'superadmin');
   }
 
   /** Saves the selection when the picker closes; only active branches are sent (disabled ones are dropped). */

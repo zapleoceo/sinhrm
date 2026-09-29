@@ -18,7 +18,11 @@ final class UpdateUserRequest extends FormRequest
     {
         return [
             // Superadmin is never assigned through the API: it comes only from SUPERADMIN_EMAIL (bootstrap).
-            'role' => ['sometimes', 'required', Rule::in(UserRole::invitableValues())],
+            'role' => ['sometimes', 'required', 'prohibits:roles', Rule::in(UserRole::invitableValues())],
+            // Several global roles at once (full replacement, at least one). "superadmin" is accepted only to KEEP it
+            // on a user who already has it — the service refuses to give it (superadmin_not_assignable).
+            'roles' => ['sometimes', 'required', 'array', 'min:1', 'max:'.count(UserRole::cases())],
+            'roles.*' => ['string', 'distinct', Rule::in(UserRole::values())],
             'status' => ['sometimes', 'required', Rule::enum(UserStatus::class)],
             // Full replacement of the user's branches ([] = none). Only existing active branches.
             'branch_ids' => ['sometimes', 'present', 'array', 'max:200'],
@@ -28,9 +32,19 @@ final class UpdateUserRequest extends FormRequest
         ];
     }
 
-    public function role(): ?UserRole
+    /**
+     * New global roles: `roles` (array) or the older single `role`; null = not sent (unchanged).
+     *
+     * @return list<UserRole>|null
+     */
+    public function roles(): ?array
     {
-        return $this->enum('role', UserRole::class);
+        if ($this->has('roles')) {
+            return array_values(array_map(static fn (mixed $r): UserRole => UserRole::from((string) $r), (array) $this->input('roles')));
+        }
+        $role = $this->enum('role', UserRole::class);
+
+        return $role === null ? null : [$role];
     }
 
     public function status(): ?UserStatus

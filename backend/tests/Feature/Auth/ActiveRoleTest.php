@@ -85,6 +85,20 @@ final class ActiveRoleTest extends TestCase
         $this->actingAs($user)->getJson('/api/users')->assertOk();
     }
 
+    public function test_a_stale_choice_is_forgotten_and_not_reapplied_after_reassignment(): void
+    {
+        $user = $this->userWithRoles(UserRole::Superadmin, UserRole::Recruiter);
+        $this->switchTo($user, 'recruiter')->assertOk();
+
+        $user->removeRole('recruiter');
+        $this->actingAs($user)->getJson('/api/auth/me')->assertJsonPath('active_role', null);
+        $user->assignRole('recruiter');
+
+        $this->actingAs($user)->getJson('/api/auth/me')
+            ->assertJsonPath('active_role', null)
+            ->assertJsonPath('effective_roles', ['superadmin', 'recruiter']);
+    }
+
     public function test_contextual_hiring_manager_role_keeps_working_as_employee(): void
     {
         $north = Branch::factory()->create();
