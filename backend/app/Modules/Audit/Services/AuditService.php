@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Audit\Services;
 
+use App\Models\User;
 use App\Modules\Audit\Contracts\AuditLogger;
 use App\Modules\Audit\Contracts\AuditLogRepository;
 use App\Modules\Audit\DTO\AuditFilter;
@@ -37,6 +38,11 @@ final readonly class AuditService implements AuditLogger
             }
         }
         $actor = $actorId ?? $this->auth->guard()->id();
+        // "Працювати як": the signed-in actor narrowed to one role → the entry says in which role it acted.
+        $current = $this->auth->guard()->user();
+        if ($current instanceof User && $current->activeRole() !== null && (int) $actor === $current->id) {
+            $meta = [...($meta ?? []), 'acting_role' => $current->activeRole()];
+        }
 
         $record = new AuditRecord($entityType, $entityId, $action, $changes === [] ? null : $changes, $meta);
         $actorId = is_numeric($actor) ? (int) $actor : null;

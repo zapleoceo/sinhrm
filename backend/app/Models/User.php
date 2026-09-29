@@ -53,6 +53,58 @@ class User extends Authenticatable
         'safe_speak_handler' => false,
     ];
 
+    /** @var list<string>|null assigned global roles while the user "works as" one of them (null = not narrowed) */
+    private ?array $assignedRoleNames = null;
+
+    private ?string $activeRole = null;
+
+    /**
+     * "Працювати як": narrow this user instance to ONE of the assigned global roles for the current request.
+     * Every Spatie check (hasRole, hasAnyRole, getRoleNames, permissions) reads the loaded `roles` relation, so
+     * replacing it with the single active role narrows ALL authorization in one place — it can never grant a role
+     * the user does not have. A role that is not (or no longer) assigned is ignored: the user keeps all roles.
+     * Contextual roles (hiring manager, interviewer, line manager) come from assignments and are not affected.
+     */
+    public function actAs(?string $role): void
+    {
+        $this->setRelation('roles', $this->roles()->get());
+        $this->assignedRoleNames = null;
+        $this->activeRole = null;
+        $assigned = $this->roleNames();
+        if ($role === null || ! in_array($role, $assigned, true) || count($assigned) < 2) {
+            return;
+        }
+        $this->assignedRoleNames = $assigned;
+        $this->activeRole = $role;
+        $this->setRelation('roles', $this->roles->where('name', $role)->values());
+    }
+
+    /** The role chosen in "Працювати як", or null when the user works with all assigned roles. */
+    public function activeRole(): ?string
+    {
+        return $this->activeRole;
+    }
+
+    /**
+     * Global roles the user really has (users admin, last-superadmin guard, the role switcher).
+     *
+     * @return list<string>
+     */
+    public function assignedRoles(): array
+    {
+        return $this->assignedRoleNames ?? $this->roleNames();
+    }
+
+    /**
+     * Roles authorization works with: the active role when set, otherwise all assigned roles.
+     *
+     * @return list<string>
+     */
+    public function effectiveRoles(): array
+    {
+        return $this->roleNames();
+    }
+
     public function isActive(): bool
     {
         return $this->status === UserStatus::Active;
@@ -66,6 +118,12 @@ class User extends Authenticatable
     public function branches(): BelongsToMany
     {
         return $this->belongsToMany(Branch::class, 'branch_user')->withTimestamps();
+    }
+
+    /** @return list<string> */
+    private function roleNames(): array
+    {
+        return array_values(array_map('strval', $this->getRoleNames()->all()));
     }
 
     /**

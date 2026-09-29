@@ -21,7 +21,7 @@
 ### Фронтенд: общие сервисы `frontend/src/app/core`
 | Файл | Что делает |
 |---|---|
-| `auth/auth.service.ts` | состояние сессии (signals `user`, `loading`); `GET /api/auth/me` один раз при старте, 401 → гость; `logout()` |
+| `auth/auth.service.ts` | состояние сессии (signals `user`, `loading`); `GET /api/auth/me` один раз при старте, 401 → гость; `logout()`; `setActiveRole(role\|null)` → `PUT /api/auth/active-role` («Працювати як»). В состоянии `roles` — действующие роли (по ним все проверки в UI), `assigned_roles` — назначенные, `active_role` — выбор |
 | `auth/auth.model.ts` | типы и списки ролей (`USER_ROLES`, `INVITABLE_ROLES`, `HR_STAFF_ROLES`, `isHrStaff`) — зеркало `UserRole` бэкенда |
 | `auth/auth.guards.ts` | `authGuard` (гость → `/login`), `roleGuard(...roles)` (нет ни одной из ролей → `/`; например `roleGuard('superadmin', 'admin')`), `guestGuard` (для `/login`) |
 | `auth/auth.model.ts` | типы и списки ролей/статусов/языков — зеркало enum бэкенда |

@@ -16,10 +16,12 @@ class Blank {}
 const USER = { id: 7, name: 'U', email: 'u@example.com', avatar_url: null, locale: 'uk', roles: ['employee'], status: 'active' };
 
 const logout = vi.fn().mockResolvedValue(undefined);
+const setActiveRole = vi.fn().mockResolvedValue(undefined);
 const langUse = vi.fn().mockResolvedValue(undefined);
 
-async function setup(modules?: string[], narrow = false): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void> }> {
+async function setup(modules?: string[], narrow = false, user: object = USER): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void> }> {
   logout.mockClear();
+  setActiveRole.mockClear();
   langUse.mockClear();
   TestBed.configureTestingModule({
     imports: [ShellLayout, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
@@ -27,7 +29,7 @@ async function setup(modules?: string[], narrow = false): Promise<{ el: HTMLElem
       provideRouter([{ path: '**', component: Blank }]),
       provideHttpClient(),
       provideHttpClientTesting(),
-      { provide: AuthService, useValue: { user: signal(USER), logout, hasModule: (k: string) => modules === undefined || modules.includes(k) } },
+      { provide: AuthService, useValue: { user: signal(user), logout, setActiveRole, hasModule: (k: string) => modules === undefined || modules.includes(k) } },
       { provide: BreakpointObserver, useValue: { observe: () => of({ matches: narrow, breakpoints: {} }) } },
       { provide: LanguageService, useValue: { current: signal('uk'), use: langUse } },
     ],
@@ -171,6 +173,40 @@ describe('ShellLayout user menu in sidebar footer', () => {
     await detect();
     expect(logout).toHaveBeenCalled();
     expect(nav).toHaveBeenCalledWith('/login');
+  });
+
+  it('hides "work as" for a single-role account', async () => {
+    const { el, detect } = await setup(undefined, false, { ...USER, assigned_roles: ['employee'], active_role: null });
+    const panel = await openMenu(el, detect);
+    expect(panel.querySelectorAll('.work-as-item').length).toBe(0);
+    expect(el.querySelector('.role-chip')).toBeNull();
+  });
+
+  it('lists "all roles" + each assigned role, checks the active one and shows it as a chip', async () => {
+    const multi = { ...USER, roles: ['recruiter'], assigned_roles: ['superadmin', 'recruiter'], active_role: 'recruiter' };
+    const { el, detect } = await setup(undefined, false, multi);
+    expect(el.querySelector('.sidebar-footer .role-chip')?.textContent).toContain('roles.recruiter');
+    const panel = await openMenu(el, detect);
+    const items = Array.from(panel.querySelectorAll('.work-as-item'));
+    expect(items.map((b) => b.textContent?.trim())).toEqual([
+      'radio_button_uncheckedshell.menu.allRoles',
+      'radio_button_uncheckedroles.superadmin',
+      'radio_button_checkedroles.recruiter',
+    ]);
+    expect(items.map((b) => b.getAttribute('role'))).toEqual(['menuitemradio', 'menuitemradio', 'menuitemradio']);
+    expect(items[2].getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('switches the role, goes home and says so', async () => {
+    const multi = { ...USER, assigned_roles: ['superadmin', 'recruiter'], active_role: null };
+    const { el, router, detect } = await setup(undefined, false, multi);
+    const nav = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const panel = await openMenu(el, detect);
+    (panel.querySelectorAll('.work-as-item')[2] as HTMLButtonElement).click();
+    await detect();
+    expect(setActiveRole).toHaveBeenCalledWith('recruiter');
+    expect(nav).toHaveBeenCalledWith('/');
+    expect(document.querySelector('.mat-mdc-snack-bar-label')?.textContent).toContain('shell.menu.workingAs');
   });
 });
 

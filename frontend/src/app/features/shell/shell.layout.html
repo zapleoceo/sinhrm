@@ -381,6 +381,9 @@
         <span class="user-text">
           <span class="name">{{ u.name }}</span>
           <span class="email">{{ u.email }}</span>
+          @if (u.active_role) {
+            <span class="role-chip">{{ 'roles.' + u.active_role | transloco }}</span>
+          }
         </span>
         <mat-icon class="user-chevron" aria-hidden="true">unfold_more</mat-icon>
       </button>
@@ -394,6 +397,19 @@
           <span class="muted">{{ 'shell.menu.language' | transloco }}</span>
           <app-language-switcher />
         </div>
+        @if (roleChoices().length) {
+          <mat-divider />
+          <div class="menu-lang work-as" role="presentation">
+            <span class="muted">{{ 'shell.menu.workAs' | transloco }}</span>
+          </div>
+          @for (c of roleChoices(); track c.label) {
+            <button mat-menu-item type="button" role="menuitemradio" class="work-as-item"
+              [attr.aria-checked]="c.role === activeRole()" (click)="workAs(c.role)">
+              <mat-icon>{{ c.role === activeRole() ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+              <span>{{ c.label | transloco }}</span>
+            </button>
+          }
+        }
         <mat-divider />
         <button mat-menu-item type="button" class="theme-toggle" (click)="theme.toggle()">
           <mat-icon>{{ themeIcon() }}</mat-icon>

@@ -39,6 +39,8 @@ final class MeTest extends TestCase
                 'avatar_url' => null,
                 'locale' => 'en',
                 'roles' => ['viewer'],
+                'active_role' => null,
+                'effective_roles' => ['viewer'],
                 'status' => 'active',
                 // Every module a viewer can use today; Ai and MailAgent are superadmin-only (modules-access.md).
                 'modules' => [

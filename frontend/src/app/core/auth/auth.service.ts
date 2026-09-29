@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { AppLang, CurrentUser, UserRole } from './auth.model';
+import { AppLang, CurrentUser, MeResponse, UserRole, toCurrentUser } from './auth.model';
 
 /** Session state of the SPA. Auth itself is a Sanctum session cookie (same origin, no tokens in JS). */
 @Injectable({ providedIn: 'root' })
@@ -43,8 +43,17 @@ export class AuthService {
 
   /** PATCH /api/auth/me/notifications; the state follows the server's answer. */
   async setApprovalEmails(on: boolean): Promise<void> {
-    const me = await firstValueFrom(this.http.patch<CurrentUser>('/api/auth/me/notifications', { approval_emails: on }));
+    const me = await firstValueFrom(this.http.patch<MeResponse>('/api/auth/me/notifications', { approval_emails: on }));
     this.state.update((u) => (u ? { ...u, approval_emails: me.approval_emails } : u));
+  }
+
+  /**
+   * "Працювати як": PUT /api/auth/active-role (null = all roles). The server narrows every check to that role for this
+   * session; the state (roles, modules) follows its answer.
+   */
+  async setActiveRole(role: UserRole | null): Promise<void> {
+    const me = await firstValueFrom(this.http.put<MeResponse>('/api/auth/active-role', { role }));
+    this.state.set(toCurrentUser(me));
   }
 
   async logout(): Promise<void> {
@@ -58,7 +67,7 @@ export class AuthService {
   private async fetchMe(): Promise<void> {
     this.busy.set(true);
     try {
-      this.state.set(await firstValueFrom(this.http.get<CurrentUser>('/api/auth/me')));
+      this.state.set(toCurrentUser(await firstValueFrom(this.http.get<MeResponse>('/api/auth/me'))));
     } catch (e: unknown) {
       if (!(e instanceof HttpErrorResponse)) {
         throw e;

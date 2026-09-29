@@ -24,7 +24,10 @@ final class MeResource extends JsonResource
             'avatar_url' => $this->avatar_url,
             'locale' => $this->locale,
             'approval_emails' => (bool) ($this->approval_emails ?? true),
-            'roles' => $this->getRoleNames()->values()->all(),
+            // Assigned roles; the "Працювати як" choice (null = all) and the roles authorization uses right now.
+            'roles' => $this->assignedRoles(),
+            'active_role' => $this->activeRole(),
+            'effective_roles' => $this->effectiveRoles(),
             'status' => $this->status->value,
             // Modules this user may open (switched on + role allowed); the SPA hides the rest (modules-access.md).
             'modules' => app(ModuleAccess::class)->allowedKeys($this->resource),
