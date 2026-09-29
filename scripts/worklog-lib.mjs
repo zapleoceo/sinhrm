@@ -17,8 +17,28 @@ const isValidDate = (s) => {
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 };
 
+// Only direct children of docs/worklog.d/: the build reads the folder non-recursively, so a nested file would pass CI but never reach the journal.
 export const isFragmentPath = (p) =>
-  p.startsWith(`${FRAGMENT_DIR}/`) && p.endsWith('.md') && !p.endsWith('/README.md');
+  p.startsWith(`${FRAGMENT_DIR}/`) && !p.slice(FRAGMENT_DIR.length + 1).includes('/') && p.endsWith('.md') && !p.endsWith('/README.md');
+
+/**
+ * Parses `git diff -z --name-status --no-renames` output (NUL-separated, so unicode, spaces and tabs in paths survive).
+ * Returns [{ status, path, oldPath? }]; a rename/copy record (not produced with --no-renames) keeps both paths.
+ */
+export function parseNameStatus(raw) {
+  const tokens = raw.split('\0');
+  const changes = [];
+  for (let i = 0; i < tokens.length && tokens[i]; ) {
+    const status = tokens[i++];
+    if (/^[RC]/.test(status)) {
+      changes.push({ status, oldPath: tokens[i], path: tokens[i + 1] });
+      i += 2;
+    } else {
+      changes.push({ status, path: tokens[i++] });
+    }
+  }
+  return changes;
+}
 
 /** Parses a fragment. Returns { meta, lines, errors }. */
 export function parseFragment(name, content) {
@@ -69,15 +89,24 @@ export function checkPr({ changes, labels = [], author = '', fragments = {} }) {
   return { ok: false, reason: 'missing', errors: [] };
 }
 
-const cell = (s) => String(s).replace(/\|/g, '\\|');
+// Backslash first: otherwise a text ending in `\` (or containing `\|`) would swallow the pipe escape and break the GFM table.
+const cell = (s) => String(s).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
 
-/** Table rows (newest first) from [{ name, content, pr? }]. Throws on an invalid fragment. */
-export function buildRows(items) {
-  const parsed = items.map(({ name, content, pr }) => {
+/**
+ * Table rows (newest first) from [{ name, content, pr? }].
+ * strict (default): throws on an invalid fragment. Non-strict (docs build): warns and skips it, so one bad file
+ * that got into `main` past CI never blocks a production build.
+ */
+export function buildRows(items, { strict = true } = {}) {
+  const parsed = items.flatMap(({ name, content, pr }) => {
     const f = parseFragment(name, content);
-    if (f.errors.length) throw new Error(`${name}: ${f.errors.join('; ')}`);
+    if (f.errors.length) {
+      if (strict) throw new Error(`${name}: ${f.errors.join('; ')}`);
+      console.warn(`worklog: fragment ${name} skipped: ${f.errors.join('; ')}`);
+      return [];
+    }
     const num = String(f.meta.pr || pr || '').replace(/^#/, '');
-    return { name, date: f.meta.date, text: `${f.meta.area}: ${f.lines.join(' ')}`, pr: num ? `#${num}` : '—' };
+    return [{ name, date: f.meta.date, text: `${f.meta.area}: ${f.lines.join(' ')}`, pr: num ? `#${num}` : '—' }];
   });
   parsed.sort((a, b) => b.date.localeCompare(a.date) || b.name.localeCompare(a.name));
   return parsed.map((r) => `| ${r.date} | ${cell(r.text)} | ${r.pr} |`);
@@ -94,15 +123,20 @@ export function historyRows(worklogMd) {
 }
 
 /** Chronological journal (Markdown): fragments newest first, then the static history. */
-export function journalMarkdown(items, worklogMd) {
-  const rows = [...buildRows(items), ...historyRows(worklogMd)];
+export function journalMarkdown(items, worklogMd, opts) {
+  const rows = [...buildRows(items, opts), ...historyRows(worklogMd)];
   return ['| Дата | Что | PR |', '|---|---|---|', ...rows].join('\n');
 }
 
-/** PR number from the commit that added the file ("... (#93)" squash subject); undefined without git history. */
+/**
+ * PR number from the commit that added the file ("... (#93)" squash subject); undefined without full git history.
+ * In a shallow clone the boundary commit shows every file as added, which would give every fragment the same wrong number.
+ */
 export function prFromGit(execFileSync, path, cwd) {
   try {
-    const out = execFileSync('git', ['log', '--diff-filter=A', '--format=%s', '--', path], { encoding: 'utf8', cwd, stdio: ['ignore', 'pipe', 'ignore'] });
+    const opts = { encoding: 'utf8', cwd, stdio: ['ignore', 'pipe', 'ignore'] };
+    if (execFileSync('git', ['rev-parse', '--is-shallow-repository'], opts).trim() !== 'false') return undefined;
+    const out = execFileSync('git', ['log', '--diff-filter=A', '--format=%s', '--', path], opts);
     return out.trim().split('\n').pop().match(/\(#(\d+)\)\s*$/)?.[1];
   } catch {
     return undefined;
