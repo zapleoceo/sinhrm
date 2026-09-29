@@ -36,9 +36,19 @@ final class DirectoryApiTest extends TestCase
     public function test_any_active_user_can_read_every_dictionary(): void
     {
         $viewer = User::factory()->withRole(UserRole::Viewer)->create();
-        foreach (['branches', 'cities', 'departments', 'positions'] as $type) {
+        foreach (['branches', 'cities', 'departments', 'positions', 'vacancy_categories'] as $type) {
             $this->actingAs($viewer)->getJson("/api/directory/$type")->assertOk()->assertJsonPath('meta.total', 0);
         }
+    }
+
+    public function test_vacancy_categories_are_empty_by_default_and_managed_in_the_admin(): void
+    {
+        $viewer = User::factory()->withRole(UserRole::Viewer)->create();
+        $this->actingAs($viewer)->postJson('/api/directory/vacancy_categories', ['name' => 'Sales'])->assertForbidden();
+        $id = $this->actingAs($this->superadmin)->postJson('/api/directory/vacancy_categories', ['name' => 'Sales'])
+            ->assertCreated()->json('data.id');
+        $this->actingAs($this->superadmin)->patchJson("/api/directory/vacancy_categories/{$id}", ['status' => 'disabled'])
+            ->assertOk()->assertJsonPath('data.status', 'disabled');
     }
 
     public function test_blocked_user_and_unknown_dictionary(): void

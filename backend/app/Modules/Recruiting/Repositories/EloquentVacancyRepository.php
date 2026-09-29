@@ -16,14 +16,12 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class EloquentVacancyRepository implements VacancyRepository
 {
-    private const array RELATIONS = ['branch', 'department', 'position', 'recruiter', 'hiringManager', 'pipeline.stages'];
+    private const array RELATIONS = ['branch', 'department', 'position', 'recruiter', 'hiringManager', 'pipeline.stages', 'category', 'city'];
 
     public function paginate(Scope $scope, VacancyFilter $filter): LengthAwarePaginator
     {
-        return $this->withCounts(Vacancy::query()->with(self::RELATIONS))
-            ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->where(
-                fn (Builder $w) => $w->whereIn('branch_id', $scope->branchIds ?? [])->orWhereIn('id', $scope->managedVacancyIds),
-            ))
+        return $this->withCounts($this->scoped($scope)->with(self::RELATIONS))
+            ->when($filter->active, fn (Builder $q) => $q->active())
             ->when($filter->q, function (Builder $q, string $term): void {
                 $q->whereRaw('lower(title) like ?', ['%'.addcslashes(mb_strtolower($term), '%_\\').'%']);
             })
@@ -33,6 +31,11 @@ final class EloquentVacancyRepository implements VacancyRepository
             ->orderByRaw("case status when 'open' then 0 when 'paused' then 1 else 2 end")
             ->orderByDesc('id')
             ->paginate($filter->perPage);
+    }
+
+    public function activeCount(Scope $scope): int
+    {
+        return $this->scoped($scope)->active()->count();
     }
 
     public function find(int $id): ?Vacancy
@@ -74,6 +77,14 @@ final class EloquentVacancyRepository implements VacancyRepository
             ->orderByDesc('stage_entered_at')
             ->orderByDesc('id')
             ->get();
+    }
+
+    /** @return Builder<Vacancy> */
+    private function scoped(Scope $scope): Builder
+    {
+        return Vacancy::query()->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->where(
+            fn (Builder $w) => $w->whereIn('branch_id', $scope->branchIds ?? [])->orWhereIn('id', $scope->managedVacancyIds),
+        ));
     }
 
     /**

@@ -8,7 +8,7 @@ use App\Modules\Directory\Http\Controllers\DirectoryController;
 use App\Modules\Directory\Providers\DirectoryServiceProvider;
 use Illuminate\Support\Facades\Route;
 
-// /api/directory/* — {dictionary} = branches|cities|departments|positions. No DELETE: items are disabled.
+// /api/directory/* — {dictionary} = branches|cities|departments|positions|vacancy_categories. No DELETE: items are disabled.
 $dictionaries = array_map(static fn (DictionaryType $t): string => $t->value, DictionaryType::cases());
 
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function () use ($dictionaries): void {

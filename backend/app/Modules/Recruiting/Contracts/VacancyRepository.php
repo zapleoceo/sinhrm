@@ -17,6 +17,9 @@ interface VacancyRepository
     public function paginate(Scope $scope, VacancyFilter $filter): LengthAwarePaginator;
 
     /** With branch, recruiter, pipeline stages and application counts. */
+    /** Active (open AND published) vacancies visible in the scope. */
+    public function activeCount(Scope $scope): int;
+
     public function find(int $id): ?Vacancy;
 
     /** @param  array<string, mixed>  $attributes */

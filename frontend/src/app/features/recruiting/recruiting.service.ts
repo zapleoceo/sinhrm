@@ -33,7 +33,12 @@ import {
   Touchpoint,
   TouchesReport,
   Vacancy,
+  VacancyOptions,
+  VacancyPageMeta,
   VacancyQuery,
+  VacancyTemplate,
+  VacancyTextDraft,
+  VacancyTextSection,
 } from './recruiting.model';
 
 type Params = Record<string, string | number | boolean | undefined | null>;
@@ -62,8 +67,44 @@ export class RecruitingService {
     return this.http.get<{ data: RejectReason[] }>('/api/reject-reasons').pipe(map((r) => r.data));
   }
 
-  vacancies(query: VacancyQuery): Observable<Paged<Vacancy>> {
-    return this.http.get<Paged<Vacancy>>('/api/vacancies', { params: toParams({ ...query }) });
+  vacancies(query: VacancyQuery): Observable<{ data: Vacancy[]; meta: VacancyPageMeta }> {
+    return this.http.get<{ data: Vacancy[]; meta: VacancyPageMeta }>('/api/vacancies', { params: toParams({ ...query, active: query.active ? 1 : undefined }) });
+  }
+
+  vacancy(id: number): Observable<Vacancy> {
+    return this.http.get<{ data: Vacancy }>(`/api/vacancies/${id}`).pipe(map((r) => r.data));
+  }
+
+  vacancyOptions(): Observable<VacancyOptions> {
+    return this.http.get<{ data: VacancyOptions }>('/api/vacancy-options').pipe(map((r) => r.data));
+  }
+
+  vacancyTemplates(): Observable<VacancyTemplate[]> {
+    return this.http.get<{ data: VacancyTemplate[] }>('/api/vacancy-templates').pipe(map((r) => r.data));
+  }
+
+  saveVacancyTemplate(name: string, data: SaveVacancy): Observable<VacancyTemplate> {
+    return this.http.post<{ data: VacancyTemplate }>('/api/vacancy-templates', { name, data }).pipe(map((r) => r.data));
+  }
+
+  deleteVacancyTemplate(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/vacancy-templates/${id}`);
+  }
+
+  /** «Створити з ШІ»: a draft of one section (done, or deferred → vacancyTextResult). */
+  vacancyText(body: {
+    section: VacancyTextSection;
+    title: string;
+    category_id?: number | null;
+    branch_id?: number | null;
+    employment_type?: string | null;
+    experience_level?: string | null;
+  }): Observable<VacancyTextDraft> {
+    return this.http.post<{ data: VacancyTextDraft }>('/api/vacancy-text', body).pipe(map((r) => r.data));
+  }
+
+  vacancyTextResult(requestId: number): Observable<VacancyTextDraft> {
+    return this.http.get<{ data: VacancyTextDraft }>(`/api/vacancy-text/${requestId}`).pipe(map((r) => r.data));
   }
 
   createVacancy(body: SaveVacancy): Observable<Vacancy> {

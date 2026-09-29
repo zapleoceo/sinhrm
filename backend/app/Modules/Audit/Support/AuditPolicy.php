@@ -33,7 +33,9 @@ final class AuditPolicy
         'employee_compensation' => ['employee_id', 'currency', 'period', 'effective_on', 'created_by'],
         'vacancy' => [
             'title', 'branch_id', 'department_id', 'position_id', 'recruiter_id', 'hiring_manager_id', 'pipeline_id',
-            'status', 'opened_at', 'closed_at',
+            'status', 'opened_at', 'closed_at', 'published', 'category_id', 'city_id', 'country', 'employment_type',
+            'work_format', 'experience_level', 'education_level',
+            // Salary fields are masked on purpose (like compensation amounts).
         ],
         'candidate' => ['city_id', 'source', 'channel_id', 'added_via', 'owner_id', 'created_by'],
         'application' => ['candidate_id', 'vacancy_id', 'stage_id', 'status', 'reject_reason_id', 'closed_at'],

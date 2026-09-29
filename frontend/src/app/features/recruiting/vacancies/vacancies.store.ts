@@ -14,6 +14,8 @@ export class VacanciesStore {
   readonly query = signal<VacancyQuery>(DEFAULT_QUERY);
   readonly items = signal<Vacancy[]>([]);
   readonly total = signal(0);
+  /** Active (open AND published) vacancies in scope, regardless of the filters. */
+  readonly activeCount = signal(0);
   readonly loading = signal(false);
   readonly failed = signal(false);
 
@@ -28,6 +30,7 @@ export class VacanciesStore {
         }
         this.items.set(page.data);
         this.total.set(page.meta.total);
+        this.activeCount.set(page.meta.active_count ?? 0);
         this.loading.set(false);
       },
       error: () => {

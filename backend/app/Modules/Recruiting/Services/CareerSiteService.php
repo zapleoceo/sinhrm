@@ -9,7 +9,6 @@ use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
 use App\Modules\Recruiting\DTO\CandidateData;
 use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Enums\CandidateSource;
-use App\Modules\Recruiting\Enums\VacancyStatus;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\CareerSubmission;
 use App\Modules\Recruiting\Models\Vacancy;
@@ -44,15 +43,13 @@ final readonly class CareerSiteService
     /** @return Collection<int, Vacancy> */
     public function published(): Collection
     {
-        return Vacancy::query()->with(['branch', 'position'])
-            ->where('published', true)->where('status', VacancyStatus::Open->value)
+        return Vacancy::query()->with(['branch', 'position', 'city'])->active()
             ->orderByDesc('opened_at')->orderByDesc('id')->get();
     }
 
     public function findPublished(string $slug): Vacancy
     {
-        return Vacancy::query()->with(['branch', 'position'])
-            ->where('slug', $slug)->where('published', true)->where('status', VacancyStatus::Open->value)
+        return Vacancy::query()->with(['branch', 'position', 'city'])->active()->where('slug', $slug)
             ->first() ?? abort(404);
     }
 

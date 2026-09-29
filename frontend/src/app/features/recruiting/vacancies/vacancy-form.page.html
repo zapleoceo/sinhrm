@@ -1,0 +1,309 @@
+<form class="page" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <nav class="back">
+    <a mat-button routerLink="/vacancies"><mat-icon>arrow_back</mat-icon>{{ 'recruiting.vacancies.title' | transloco }}</a>
+  </nav>
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+  @if (draftRestored()) {
+    <div class="notice" role="status">
+      <span>{{ 'recruiting.form.draftRestored' | transloco }}</span>
+      <button mat-button type="button" (click)="discardDraft()">{{ 'recruiting.form.discardDraft' | transloco }}</button>
+    </div>
+  }
+
+  <!-- Header: chip, recruiter, big title -->
+  <section class="card head">
+    <div class="head-row">
+      <span class="chip">{{ 'recruiting.form.chip' | transloco }}</span>
+      @if (vacancy(); as v) {
+        <span class="chip" [class.on]="v.is_active">{{ (v.is_active ? 'recruiting.vacancies.state.active' : 'recruiting.vacancyStatus.' + v.status) | transloco }}</span>
+      }
+      <span class="spacer"></span>
+      @if (canWrite()) {
+        <mat-form-field class="recruiter" subscriptSizing="dynamic">
+          <mat-label>{{ 'recruiting.form.recruiter' | transloco }}</mat-label>
+          <mat-select formControlName="recruiter_id">
+            <mat-option [value]="null">{{ 'recruiting.form.recruiterMe' | transloco }}</mat-option>
+            @for (u of people(); track u.id) {
+              <mat-option [value]="u.id">{{ u.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field class="recruiter" subscriptSizing="dynamic">
+          <mat-label>{{ 'recruiting.vacancies.fields.hiringManager' | transloco }}</mat-label>
+          <mat-select formControlName="hiring_manager_id">
+            <mat-option [value]="null">—</mat-option>
+            @for (u of people(); track u.id) {
+              <mat-option [value]="u.id">{{ u.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+    <label class="sr-only" for="vacancy-title">{{ 'recruiting.vacancies.fields.title' | transloco }}</label>
+    <input
+      id="vacancy-title"
+      class="title-input"
+      formControlName="title"
+      maxlength="255"
+      required
+      [placeholder]="'recruiting.form.titlePlaceholder' | transloco"
+      [attr.aria-invalid]="form.controls.title.touched && form.controls.title.invalid"
+    />
+    @if (form.controls.title.touched && form.controls.title.invalid) {
+      <p class="error" role="alert">{{ (fieldError('title') ?? 'recruiting.required') | transloco }}</p>
+    }
+    <div class="grid four">
+      <mat-form-field>
+        <mat-label>{{ 'recruiting.form.category' | transloco }}</mat-label>
+        <mat-select formControlName="category_id">
+          <mat-option [value]="null">—</mat-option>
+          @for (c of categories(); track c.id) {
+            <mat-option [value]="c.id">{{ c.name }}</mat-option>
+          }
+        </mat-select>
+        @if (categories().length === 0) {
+          <mat-hint>{{ 'recruiting.form.categoriesEmpty' | transloco }}</mat-hint>
+        }
+        <mat-error>{{ (fieldError('category_id') ?? 'recruiting.form.errors.invalid') | transloco }}</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ 'recruiting.form.pipeline' | transloco }}</mat-label>
+        <mat-select formControlName="pipeline_id">
+          @for (p of pipelines(); track p.id) {
+            <mat-option [value]="p.id">{{ p.name }}</mat-option>
+          }
+        </mat-select>
+        @if (vacancyId() !== null) {
+          <mat-hint>{{ 'recruiting.form.pipelineFixed' | transloco }}</mat-hint>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ 'recruiting.vacancies.fields.branch' | transloco }}</mat-label>
+        <mat-select formControlName="branch_id" required>
+          @for (b of branches(); track b.id) {
+            <mat-option [value]="b.id">{{ b.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-error>{{ (fieldError('branch_id') ?? 'recruiting.required') | transloco }}</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>{{ 'recruiting.form.department' | transloco }}</mat-label>
+        <mat-select formControlName="department_id">
+          <mat-option [value]="null">—</mat-option>
+          @for (d of departments(); track d.id) {
+            <mat-option [value]="d.id">{{ d.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </section>
+
+  <!-- Text sections -->
+  @for (s of sections; track s) {
+    <section class="card">
+      <app-markdown-field
+        [control]="sectionControl(s)"
+        [fieldId]="'vacancy-' + s"
+        [label]="'recruiting.form.sections.' + s | transloco"
+        [aiBusy]="aiBusy()[s] === true"
+        [aiReady]="form.controls.title.value.trim() !== ''"
+        [aiHint]="aiHints()[s] ?? null"
+        [error]="fieldError(s)"
+        (ai)="generate(s)"
+      />
+    </section>
+  }
+
+  <!-- Work conditions -->
+  <section class="card" aria-labelledby="conditions-title">
+    <h2 id="conditions-title">{{ 'recruiting.form.conditions' | transloco }}</h2>
+    @if (options(); as o) {
+      <div class="grid two">
+        <mat-form-field>
+          <mat-label>{{ 'recruiting.form.employmentType' | transloco }}</mat-label>
+          <mat-select formControlName="employment_type">
+            <mat-option [value]="null">—</mat-option>
+            @for (x of o.employment_types; track x) {
+              <mat-option [value]="x">{{ 'recruiting.form.options.employment.' + x | transloco }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'recruiting.form.workFormat' | transloco }}</mat-label>
+          <mat-select formControlName="work_format">
+            <mat-option [value]="null">—</mat-option>
+            @for (x of o.work_formats; track x) {
+              <mat-option [value]="x">{{ 'recruiting.form.options.format.' + x | transloco }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'recruiting.form.country' | transloco }}</mat-label>
+          <mat-select formControlName="country">
+            <mat-option [value]="null">—</mat-option>
+            @for (x of o.countries; track x) {
+              <mat-option [value]="x">{{ countryName(x) }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'recruiting.form.city' | transloco }}</mat-label>
+          <mat-select formControlName="city_id">
+            <mat-option [value]="null">—</mat-option>
+            @for (c of cities(); track c.id) {
+              <mat-option [value]="c.id">{{ c.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'recruiting.form.experience' | transloco }}</mat-label>
+          <mat-select formControlName="experience_level">
+            <mat-option [value]="null">—</mat-option>
+            @for (x of o.experience_levels; track x) {
+              <mat-option [value]="x">{{ 'recruiting.form.options.experience.' + x | transloco }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>{{ 'recruiting.form.education' | transloco }}</mat-label>
+          <mat-select formControlName="education_level">
+            <mat-option [value]="null">—</mat-option>
+            @for (x of o.education_levels; track x) {
+              <mat-option [value]="x">{{ 'recruiting.form.options.education.' + x | transloco }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <fieldset class="salary">
+        <legend>{{ 'recruiting.form.salary' | transloco }}</legend>
+        <div class="grid three">
+          <mat-form-field>
+            <mat-label>{{ 'recruiting.form.salaryFrom' | transloco }}</mat-label>
+            <input matInput type="number" min="0" inputmode="numeric" formControlName="salary_min" />
+            <mat-error>{{ (fieldError('salary_min') ?? 'recruiting.form.errors.invalid') | transloco }}</mat-error>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ 'recruiting.form.salaryTo' | transloco }}</mat-label>
+            <input matInput type="number" min="0" inputmode="numeric" formControlName="salary_max" />
+            <mat-error>{{ (fieldError('salary_max') ?? 'recruiting.form.errors.invalid') | transloco }}</mat-error>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>{{ 'recruiting.form.currency' | transloco }}</mat-label>
+            <mat-select formControlName="salary_currency">
+              @for (x of o.currencies; track x) {
+                <mat-option [value]="x">{{ x }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <mat-checkbox formControlName="salary_visible">{{ 'recruiting.form.salaryVisible' | transloco }}</mat-checkbox>
+      </fieldset>
+
+      <fieldset class="languages" formArrayName="languages">
+        <legend>{{ 'recruiting.form.languages' | transloco }}</legend>
+        @for (row of languages.controls; track row; let i = $index) {
+          <div class="row" [formGroupName]="i">
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>{{ 'recruiting.form.language' | transloco }}</mat-label>
+              <mat-select formControlName="lang">
+                @for (x of o.languages; track x) {
+                  <mat-option [value]="x">{{ languageName(x) }}</mat-option>
+                }
+              </mat-select>
+              <mat-error>{{ (fieldError('languages.' + i + '.lang') ?? 'recruiting.required') | transloco }}</mat-error>
+            </mat-form-field>
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>{{ 'recruiting.form.level' | transloco }}</mat-label>
+              <mat-select formControlName="level">
+                @for (x of o.language_levels; track x) {
+                  <mat-option [value]="x">{{ x === 'native' ? ('recruiting.form.native' | transloco) : x }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="removeLanguage(i)" [attr.aria-label]="'recruiting.form.removeLanguage' | transloco">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        }
+        <button mat-button type="button" (click)="addLanguage()"><mat-icon>add</mat-icon>{{ 'recruiting.form.addLanguage' | transloco }}</button>
+      </fieldset>
+    }
+  </section>
+
+  <!-- Publication -->
+  <section class="card" aria-labelledby="publication-title">
+    <h2 id="publication-title">{{ 'recruiting.form.publication' | transloco }}</h2>
+    <mat-form-field>
+      <mat-label>{{ 'recruiting.vacancies.fields.status' | transloco }}</mat-label>
+      <mat-select formControlName="status">
+        @for (s of statuses; track s) {
+          <mat-option [value]="s">{{ 'recruiting.vacancyStatus.' + s | transloco }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-slide-toggle formControlName="published">{{ 'careers.published' | transloco }}</mat-slide-toggle>
+    @if (vacancy()?.slug; as slug) {
+      <p class="muted slug">/jobs/{{ slug }}</p>
+    }
+    @if (form.controls.published.value) {
+      <mat-form-field class="full">
+        <mat-label>{{ 'careers.publicDescription' | transloco }}</mat-label>
+        <textarea matInput formControlName="public_description" rows="4" maxlength="10000"></textarea>
+      </mat-form-field>
+    }
+
+    <fieldset class="postings" formArrayName="external_postings">
+      <legend>{{ 'recruiting.form.external' | transloco }}</legend>
+      <p class="muted small">{{ 'recruiting.form.externalHint' | transloco }}</p>
+      @for (row of postings.controls; track row; let i = $index) {
+        <div class="row" [formGroupName]="i">
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'recruiting.form.site' | transloco }}</mat-label>
+            <mat-select formControlName="site">
+              @for (x of options()?.external_sites ?? []; track x) {
+                <mat-option [value]="x">{{ 'recruiting.form.options.site.' + x | transloco }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field class="grow" subscriptSizing="dynamic">
+            <mat-label>{{ 'recruiting.form.adUrl' | transloco }}</mat-label>
+            <input matInput type="url" formControlName="url" maxlength="500" />
+            <mat-error>{{ (fieldError('external_postings.' + i + '.url') ?? 'recruiting.form.errors.invalid') | transloco }}</mat-error>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'recruiting.form.adDate' | transloco }}</mat-label>
+            <input matInput type="date" formControlName="date" />
+          </mat-form-field>
+          <button mat-icon-button type="button" (click)="removePosting(i)" [attr.aria-label]="'recruiting.form.removePosting' | transloco">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+      <button mat-button type="button" (click)="addPosting()"><mat-icon>add</mat-icon>{{ 'recruiting.form.addPosting' | transloco }}</button>
+    </fieldset>
+  </section>
+
+  <!-- Sticky actions -->
+  <div class="actions" role="group" [attr.aria-label]="'recruiting.form.actions' | transloco">
+    @if (error(); as key) {
+      <p class="error" role="alert">{{ key | transloco }}</p>
+    }
+    @if (templateSaved()) {
+      <p class="ok" role="status">{{ 'recruiting.form.templateSaved' | transloco }}</p>
+    }
+    <span class="spacer"></span>
+    @if (templateName() !== null) {
+      <mat-form-field class="tpl-name" subscriptSizing="dynamic">
+        <mat-label>{{ 'recruiting.form.templateName' | transloco }}</mat-label>
+        <input matInput #tpl [value]="templateName()" (input)="templateName.set(tpl.value)" (keydown.enter)="$event.preventDefault(); saveTemplate()" maxlength="120" />
+      </mat-form-field>
+    }
+    <button mat-stroked-button type="button" (click)="templateName() === null ? templateName.set('') : saveTemplate()">
+      {{ 'recruiting.form.saveTemplate' | transloco }}
+    </button>
+    <button mat-flat-button type="submit" [disabled]="saving()">{{ 'recruiting.save' | transloco }}</button>
+  </div>
+</form>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Documents\Support\MarkdownRenderer;
 use App\Modules\Recruiting\Http\Requests\PublicApplyRequest;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\CareerSiteService;
@@ -54,9 +55,23 @@ final readonly class PublicCareerController
             'branch' => $vacancy->branch->name,
             'position' => $vacancy->position?->name,
             'opened_at' => $vacancy->opened_at?->toDateString(),
+            'city' => $vacancy->city?->name,
+            'employment_type' => $vacancy->employment_type,
+            'work_format' => $vacancy->work_format,
+            // Salary is internal unless the recruiter ticked «Показувати кандидатам».
+            'salary' => $vacancy->salary_visible && ($vacancy->salary_min !== null || $vacancy->salary_max !== null) ? [
+                'min' => $vacancy->salary_min === null ? null : (float) $vacancy->salary_min,
+                'max' => $vacancy->salary_max === null ? null : (float) $vacancy->salary_max,
+                'currency' => $vacancy->salary_currency,
+            ] : null,
         ];
         if ($full) {
             $data['description'] = $vacancy->public_description;
+            // Markdown sections, rendered on the server like Knowledge articles: raw HTML escaped, unsafe links dropped.
+            foreach (['requirements', 'responsibilities', 'additional_info'] as $section) {
+                $text = $vacancy->{$section};
+                $data[$section.'_html'] = is_string($text) && trim($text) !== '' ? MarkdownRenderer::toHtml($text) : null;
+            }
         }
 
         return $data;

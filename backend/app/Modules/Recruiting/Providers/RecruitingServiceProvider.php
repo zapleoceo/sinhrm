@@ -14,6 +14,8 @@ use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Recruiting\Ai\ScreeningAiHandler;
 use App\Modules\Recruiting\Ai\ScreeningPrompt;
+use App\Modules\Recruiting\Ai\VacancyTextHandler;
+use App\Modules\Recruiting\Ai\VacancyTextPrompt;
 use App\Modules\Recruiting\Console\RecruitingDemoCommand;
 use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
@@ -93,8 +95,8 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         $this->app->bindIf(TouchpointEvaluations::class, NullTouchpointEvaluations::class);
         // AI screening (tz6): result handler for the Ai module + the optional auto-screening job.
         $this->app->bind(ScreeningRepository::class, EloquentScreeningRepository::class);
-        $this->app->tag([ScreeningAiHandler::class], AiServiceProvider::HANDLERS_TAG);
-        $this->app->tag([ScreeningPrompt::class], AiServiceProvider::PROMPTS_TAG);
+        $this->app->tag([ScreeningAiHandler::class, VacancyTextHandler::class], AiServiceProvider::HANDLERS_TAG);
+        $this->app->tag([ScreeningPrompt::class, VacancyTextPrompt::class], AiServiceProvider::PROMPTS_TAG);
         $this->app->tag([AutoScreeningJob::class], ScheduledJob::class);
     }
 

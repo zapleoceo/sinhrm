@@ -1,6 +1,6 @@
 /** Mirrors backend App\Modules\Directory\Enums\DictionaryType (URL segment of /api/directory/{type}). */
-export type DictionaryType = 'branches' | 'cities' | 'departments' | 'positions';
-export const DICTIONARY_TYPES: readonly DictionaryType[] = ['branches', 'cities', 'departments', 'positions'];
+export type DictionaryType = 'branches' | 'cities' | 'departments' | 'positions' | 'vacancy_categories';
+export const DICTIONARY_TYPES: readonly DictionaryType[] = ['branches', 'cities', 'departments', 'positions', 'vacancy_categories'];
 
 /** Mirrors backend App\Modules\Directory\Enums\DirectoryStatus. */
 export type DirectoryStatus = 'active' | 'disabled';

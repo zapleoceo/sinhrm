@@ -1,0 +1,12 @@
+{
+  "purpose": "vacancy_text",
+  "note": "Synthetic vacancy facts only (no people, no company data). Expected: a non-empty Markdown draft without HTML.",
+  "cases": [
+    {"name": "description_sales", "input": {"section": "description", "title": "Менеджер з продажу", "category": "Продажі", "branch": "Філія Тест", "employment_type": "full_time", "experience": "1_3"}, "expected": {"min_length": 40}},
+    {"name": "requirements_developer", "input": {"section": "requirements", "title": "PHP-розробник", "category": "IT", "employment_type": "full_time", "experience": "3_5"}, "expected": {"min_length": 40}},
+    {"name": "responsibilities_tutor", "input": {"section": "responsibilities", "title": "Викладач англійської", "category": "Освіта", "employment_type": "part_time"}, "expected": {"min_length": 40}},
+    {"name": "additional_info_intern", "input": {"section": "additional_info", "title": "Стажер-аналітик", "employment_type": "internship", "experience": "none"}, "expected": {"min_length": 20}},
+    {"name": "title_only", "input": {"section": "description", "title": "Адміністратор"}, "expected": {"min_length": 20}},
+    {"name": "unknown_section_falls_back", "input": {"section": "benefits", "title": "Оператор call-центру", "experience": "lt_1"}, "expected": {"min_length": 20}}
+  ]
+}

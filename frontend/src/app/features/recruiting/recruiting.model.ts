@@ -93,6 +93,28 @@ export interface Vacancy {
   published: boolean;
   slug: string | null;
   public_description: string | null;
+  /** Open AND published on /jobs (backend Vacancy::scopeActive). */
+  is_active: boolean;
+  category_id: number | null;
+  category: Ref | null;
+  city_id: number | null;
+  city: Ref | null;
+  country: string | null;
+  employment_type: string | null;
+  work_format: string | null;
+  experience_level: string | null;
+  education_level: string | null;
+  /** Internal; shown on /jobs only when salary_visible. */
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string;
+  salary_visible: boolean;
+  languages: VacancyLanguage[];
+  /** Markdown sections (rendered with raw HTML escaped on the server). */
+  requirements: string | null;
+  responsibilities: string | null;
+  additional_info: string | null;
+  external_postings: ExternalPosting[];
   applications_count: number;
   active_applications_count: number;
   opened_at: string | null;
@@ -110,6 +132,68 @@ export interface SaveVacancy {
   public_description?: string | null;
   /** Only recruiting writers may send it (the API answers 422 to a hiring manager). */
   hiring_manager_id?: number | null;
+  recruiter_id?: number;
+  department_id?: number | null;
+  /** Create only: the pipeline is fixed once the vacancy exists. */
+  pipeline_id?: number;
+  category_id?: number | null;
+  city_id?: number | null;
+  country?: string | null;
+  employment_type?: string | null;
+  work_format?: string | null;
+  experience_level?: string | null;
+  education_level?: string | null;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  salary_currency?: string;
+  salary_visible?: boolean;
+  languages?: VacancyLanguage[];
+  requirements?: string | null;
+  responsibilities?: string | null;
+  additional_info?: string | null;
+  external_postings?: ExternalPosting[];
+}
+
+export interface VacancyLanguage {
+  lang: string;
+  level: string;
+}
+
+/** Manual reference to an ad on a job site (no integration: these sites have no employer API). */
+export interface ExternalPosting {
+  site: string;
+  url: string | null;
+  date: string | null;
+}
+
+/** GET /api/vacancy-options: codes; labels are translated (recruiting.form.options.*) or come from Intl. */
+export interface VacancyOptions {
+  employment_types: string[];
+  work_formats: string[];
+  experience_levels: string[];
+  education_levels: string[];
+  languages: string[];
+  language_levels: string[];
+  countries: string[];
+  currencies: string[];
+  external_sites: string[];
+}
+
+export interface VacancyTemplate {
+  id: number;
+  name: string;
+  data: SaveVacancy;
+  created_at: string | null;
+}
+
+export type VacancyTextSection = 'description' | 'requirements' | 'responsibilities' | 'additional_info';
+
+/** POST /api/vacancy-text and GET /api/vacancy-text/{id}: an AI draft of one section. */
+export interface VacancyTextDraft {
+  status: 'done' | 'deferred' | 'failed';
+  request_id: number;
+  text: string | null;
+  error: string | null;
 }
 
 export interface CandidateBrief {
@@ -316,6 +400,11 @@ export interface PageMeta {
   last_page: number;
 }
 
+/** GET /api/vacancies meta: + active vacancies (open AND published) in the user's scope, for the list header. */
+export interface VacancyPageMeta extends PageMeta {
+  active_count?: number;
+}
+
 export interface Paged<T> {
   data: T[];
   meta: PageMeta;
@@ -329,6 +418,8 @@ export interface Board {
 export interface VacancyQuery {
   q?: string;
   status?: VacancyStatus;
+  /** Only open AND published vacancies. */
+  active?: boolean;
   branch_id?: number;
   page?: number;
   perPage?: number;

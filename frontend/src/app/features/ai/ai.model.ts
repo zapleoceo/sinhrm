@@ -1,9 +1,10 @@
 /** Mirrors backend App\Modules\Ai\Enums\AiPurpose (switchable purposes). */
-export type AiPurpose = 'script_evaluation' | 'mail_classification' | 'candidate_screening';
+export type AiPurpose = 'script_evaluation' | 'mail_classification' | 'candidate_screening' | 'vacancy_text';
 export const AI_PURPOSES: readonly AiPurpose[] = [
   'script_evaluation',
   'mail_classification',
   'candidate_screening',
+  'vacancy_text',
 ];
 
 /** Why AI cannot run for a purpose (null = it can). */

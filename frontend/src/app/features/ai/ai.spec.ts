@@ -30,6 +30,7 @@ const STATUS: AiStatus = {
     script_evaluation: null,
     mail_classification: null,
     candidate_screening: 'ai_purpose_disabled',
+    vacancy_text: null,
   },
   auto_screening: false,
   usage: { requests: 50, cost_usd: 0.5, tokens_in: 10000, tokens_out: 2000, tokens_cached: 6000 },
