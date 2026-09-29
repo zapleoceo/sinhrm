@@ -109,7 +109,6 @@ final class PersonalDataApiTest extends TestCase
         $response = $this->actingAs($admin)->get("/api/privacy/candidate/{$id}/export");
         $response->assertOk()->assertHeader('Content-Disposition', 'attachment; filename="personal-data-candidate-'.$id.'.json"');
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
-        $this->assertStringContainsString('no-store', (string) $this->actingAs($admin)->get("/api/privacy/candidate/{$id}/export?format=html")->headers->get('Cache-Control'));
         $export = json_decode((string) $response->getContent(), true);
         $r = $export['sections']['recruiting'];
         $this->assertSame('Synthetic Person', $r['profile']['full_name']);
@@ -127,6 +126,7 @@ final class PersonalDataApiTest extends TestCase
 
         $html = $this->actingAs($admin)->get("/api/privacy/candidate/{$id}/export?format=html");
         $html->assertOk()->assertHeader('Content-Type', 'text/html; charset=utf-8');
+        $this->assertStringContainsString('no-store', (string) $html->headers->get('Cache-Control'));
         $this->assertStringContainsString('Synthetic Person', (string) $html->getContent());
         $this->assertStringContainsString('Private note', (string) $html->getContent());
 
