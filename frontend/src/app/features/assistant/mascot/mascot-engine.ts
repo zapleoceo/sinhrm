@@ -9,6 +9,10 @@ import {
   PropsFrame,
   GETUP_ACTIONS,
   GetUpAction,
+  InkProp,
+  PanelRect,
+  ROUTE_ACTIONS,
+  RouteAction,
   Stage,
   airborneClip,
   createClip,
@@ -32,7 +36,8 @@ import {
   stepEffects,
 } from './effects';
 import { EyeShape, Expression, NEUTRAL, blinkAmount, squintFor } from './face';
-import type { FallCause } from '../jokes';
+import type { FallCause } from '../joke-situations';
+import { chooseRoute, createRouteClip, panelOf, routeGeometry } from './seat-routes';
 import { GetUpVariant, createGetUp, createRubHead, createStandUp, createSulk } from './getup';
 import { normalizeAngle } from './ik';
 import { Body, PHYSICS_DT, World, accumulate, defaultWorld, launchSpeed, physicsStep } from './physics';
@@ -55,7 +60,7 @@ import {
   stepRagdoll,
   velocity,
 } from './ragdoll';
-import { PoseSprings, applySprings, initPoseSprings, stepPoseSprings } from './springs';
+import { PoseSprings, applySprings, approach, initPoseSprings, stepPoseSprings } from './springs';
 
 export type EngineEvent =
   | { type: 'clipDone'; action: ActionName }
@@ -121,6 +126,10 @@ const NO_PROPS: PropsFrame = { rope: null, book: null, balls: null };
 const TYPE_SPEED = 42;
 /** Average joint speed of a blend between clips (px/s). */
 const BLEND_SPEED = 600;
+/** Seconds route props take to fade out after the route. */
+const INK_FADE = 0.45;
+/** How fast a route follows a moved/resized panel (half-life, s). */
+const RETARGET_HALF_LIFE = 0.35;
 /** Reduced motion: the longest blend allowed (e.g. standing up where he was dropped). */
 export const REDUCED_MAX_BLEND = 0.18;
 /** Line boil re-roll interval (~8 Hz). */
@@ -155,7 +164,7 @@ const FAST_ACTIONS: ReadonlySet<ActionName> = new Set<ActionName>([
   'airborne',
   'getup',
   'stand-up',
-  'return-seat',
+  ...ROUTE_ACTIONS,
   'idle-slip',
   'idle-trip',
 ]);
@@ -182,6 +191,13 @@ export class MascotEngine {
   private rag: Ragdoll | null = null;
   private ragWorld: RagdollWorld | null = null;
   private landedSent = false;
+  private lastRoute: RouteAction | null = null;
+  /** Seat and panel the current route aims at, eased toward the measured ones (smooth re-target on resize). */
+  private liveSeat: Vec | null = null;
+  private livePanel: PanelRect | null = null;
+  /** Props of a finished/aborted route fading out. */
+  private fadingInk: InkProp[] | null = null;
+  private fadeAge = 0;
   /** Re-settling after a resize: do not report `rested` twice. */
   private restedAgain = false;
   /** A release is a throw unless the hold was lost (then he just drops). */
@@ -314,6 +330,17 @@ export class MascotEngine {
   }
 
   play(action: ActionName, options: PlayOptions = {}): void {
+    if (action === 'seat-route') {
+      this.playRoute(options);
+      return;
+    }
+    if (this.inRoute && !this.isRoute(action) && action !== 'docked' && !this.reduced && this.heightAboveGround() > 40) {
+      // The route was aborted up in the air (chat closed): he lets go and drops — the ragdoll takes over.
+      this.retireInk();
+      this.startRagdoll(this.lastVel.x, this.lastVel.y, 0, 'drop');
+      return;
+    }
+    this.retireInk();
     const from: Pose = { ...this.displayed, rot: normalizeAngle(this.displayed.rot) };
     if (this.rag) {
       // Leaving the ragdoll: springs restart from the exact fitted pose, so nothing jumps.
@@ -323,7 +350,9 @@ export class MascotEngine {
     }
     this.clip = (GETUP_ACTIONS as readonly string[]).includes(action)
       ? this.getUpClip(action as GetUpAction, from, options)
-      : createClip(action as Exclude<ActionName, GetUpAction>, this.context({ ...options, from }));
+      : this.isRoute(action)
+        ? createRouteClip(action as RouteAction, this.routeContext(from), this.lite)
+        : createClip(action as Exclude<ActionName, GetUpAction | RouteAction>, this.context({ ...options, from }));
     this.clipT = 0;
     this.doneSent = false;
     this.ambientT = 0;
@@ -393,6 +422,7 @@ export class MascotEngine {
    * torso…) is held by a stiff constraint toward the pointer. Everything else swings through the joints.
    */
   dragStart(x: number, y: number, tMs: number): void {
+    this.retireInk();
     if (!this.rag) {
       // Continuous hand-over: the ragdoll starts at the drawn joints with the current body velocity.
       this.rag = createRagdoll(this.root, this.joints, this.lastVel.x, this.lastVel.y, 0);
@@ -521,7 +551,7 @@ export class MascotEngine {
       for (const k of ANGLE_KEYS) {
         this.springs[k].x = from[k];
       }
-      this.blendDur = this.reduced ? blend : Math.max(blend, Math.min(0.7, blendTravel(from, target) / BLEND_SPEED));
+      this.blendDur = this.reduced ? blend : Math.max(blend, Math.min(1.1, blendTravel(from, target) / BLEND_SPEED));
     } else {
       this.blendFrom = null;
       const first = this.clip.sample(0, this.env());
@@ -564,6 +594,93 @@ export class MascotEngine {
     this.startBlend(this.reduced ? 0 : 0.12);
   }
 
+  /** Onto the chat panel: a route chosen by geometry (reduced motion — a short linear blend to the seat). */
+  private playRoute(options: PlayOptions): void {
+    if (this.reduced || !this.stage.seat) {
+      this.play('docked', { blend: this.reduced ? REDUCED_MAX_BLEND : options.blend });
+      return;
+    }
+    const from: Pose = { ...this.displayed, rot: normalizeAngle(this.displayed.rot) };
+    const route = chooseRoute(routeGeometry(this.stage, from), this.rng, this.lastRoute, this.lite);
+    this.lastRoute = route;
+    this.liveSeat = { ...this.stage.seat };
+    this.livePanel = { ...panelOf(this.stage) };
+    this.play(route);
+  }
+
+  /** The route currently playing (null otherwise). */
+  get route(): RouteAction | null {
+    return this.isRoute(this.clip.action) && !this.doneSent ? (this.clip.action as RouteAction) : null;
+  }
+
+  private get inRoute(): boolean {
+    return this.isRoute(this.clip.action) && !this.doneSent && this.mode === 'clip';
+  }
+
+  private isRoute(action: ActionName): boolean {
+    return (ROUTE_ACTIONS as readonly string[]).includes(action);
+  }
+
+  private routeContext(from: Pose): ClipContext {
+    return {
+      ...this.context({ from }),
+      seatNow: () => this.liveSeat ?? this.stage.seat ?? { x: this.stage.width - 120, y: this.stage.ground - 300 },
+      panelNow: () => this.livePanel ?? panelOf(this.stage),
+    };
+  }
+
+  private heightAboveGround(): number {
+    const j = this.joints;
+    return this.stage.ground - (this.displayed.y + Math.max(j.lFoot.y, j.rFoot.y));
+  }
+
+  /** Current route props start fading out (route finished, aborted, or he was grabbed). */
+  private retireInk(): void {
+    const ink = this.props.ink;
+    if (ink && ink.length > 0) {
+      this.fadingInk = ink.map((p) => ({ ...p }));
+      this.fadeAge = 0;
+    }
+  }
+
+  /** Props for this frame: the clip's own plus the fading ones. */
+  private inkWithFading(own: InkProp[] | null | undefined): InkProp[] | null {
+    if (!this.fadingInk) {
+      return own ?? null;
+    }
+    const k = 1 - this.fadeAge / INK_FADE;
+    const fading = this.fadingInk.map((p) => ({ ...p, alpha: p.alpha * k }));
+    return own && own.length > 0 ? [...own, ...fading] : fading;
+  }
+
+  private stepLive(h: number): void {
+    if (this.fadingInk) {
+      this.fadeAge += h;
+      if (this.fadeAge >= INK_FADE) {
+        this.fadingInk = null;
+      }
+    }
+    const seat = this.stage.seat;
+    if (!seat || !this.inRoute) {
+      // Route over or chat closed: nothing to aim at any more.
+      this.liveSeat = null;
+      this.livePanel = null;
+      return;
+    }
+    const ls = this.liveSeat;
+    const lp = this.livePanel;
+    if (ls && lp) {
+      // Eased in place (no new objects per step).
+      const p = panelOf(this.stage);
+      ls.x = approach(ls.x, seat.x, h, RETARGET_HALF_LIFE);
+      ls.y = approach(ls.y, seat.y, h, RETARGET_HALF_LIFE);
+      lp.left = approach(lp.left, p.left, h, RETARGET_HALF_LIFE);
+      lp.top = approach(lp.top, p.top, h, RETARGET_HALF_LIFE);
+      lp.right = approach(lp.right, p.right, h, RETARGET_HALF_LIFE);
+      lp.bottom = approach(lp.bottom, p.bottom, h, RETARGET_HALF_LIFE);
+    }
+  }
+
   private getUpClip(action: GetUpAction, from: Pose, options: PlayOptions): Clip {
     switch (action) {
       case 'getup':
@@ -582,6 +699,7 @@ export class MascotEngine {
     if (this.reduced) {
       return;
     }
+    this.retireInk();
     this.rag = createRagdoll(this.root, this.joints, vx, vy, spin);
     this.ragWorld = ragdollWorld(this.stage.width, this.stage.ground);
     this.mode = 'ragdoll';
@@ -619,7 +737,7 @@ export class MascotEngine {
     this.lastVel = { x: (this.displayed.x - prevX) / h, y: (this.displayed.y - prevY) / h };
     this.morph = 0;
     this.scale = 1;
-    this.props = NO_PROPS;
+    this.props = { ...NO_PROPS, ink: this.inkWithFading(null) };
     this.thinking = false;
     this.listening = false;
     this.dragArrows(h);
@@ -674,7 +792,7 @@ export class MascotEngine {
     this.lastVel = { x: (this.displayed.x - prevX) / h, y: (this.displayed.y - prevY) / h };
     this.morph = 0;
     this.scale = 1;
-    this.props = NO_PROPS;
+    this.props = { ...NO_PROPS, ink: this.inkWithFading(null) };
     this.thinking = false;
     this.listening = false;
     this.stepEffects(h);
@@ -803,6 +921,7 @@ export class MascotEngine {
 
   private step(h: number): void {
     this.time += h;
+    this.stepLive(h);
     if (this.mode === 'drag') {
       this.stepHeld(h);
       return;
@@ -908,7 +1027,7 @@ export class MascotEngine {
     this.displayed = applySprings(target, this.springs);
     this.joints = forwardKinematics(this.displayed);
 
-    this.props = { ...NO_PROPS, ...frame.props };
+    this.props = { ...NO_PROPS, ...frame.props, ink: this.inkWithFading(frame.props?.ink) };
     this.stepEffects(h);
     this.stepFace(h, frame.expr, frame.eyeDir, gesture);
   }

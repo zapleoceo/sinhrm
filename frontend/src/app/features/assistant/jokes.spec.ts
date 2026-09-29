@@ -257,7 +257,7 @@ describe('joke with the chat panel open (docked)', () => {
     expect(at('say joke:thrown')).toBeLessThan(at('play rub-head'));
     expect(Number(jokeLine.split('s')[0]) - release).toBeLessThan(10);
     // With the chat open he hops back to the seat, then sits.
-    expect(at('play return-seat')).toBeGreaterThan(at('play dust'));
+    expect(at('play seat-route')).toBeGreaterThan(at('play dust'));
     expect(brain.state).toBe('docked');
     expect(says.some((c) => c.text === 'joke:thrown')).toBe(true);
     // The last bubble command is not a clear that wiped the joke immediately.

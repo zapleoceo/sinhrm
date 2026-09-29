@@ -57,6 +57,8 @@
     }
 
     .shadow { fill: currentColor; }
+    /* Route props never take clicks (the chat panel under them stays usable). */
+    .ink, .props { pointer-events: none; }
 
     .fx-text {
       fill: currentColor;
