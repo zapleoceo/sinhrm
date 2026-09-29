@@ -1,7 +1,7 @@
 // node --test scripts/worklog.test.mjs — pass/fail matrix for the `worklog` CI check and the assembler.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRows, checkPr, parseFragment, render, START, END } from './worklog-lib.mjs';
+import { buildRows, checkPr, historyRows, journalMarkdown, parseFragment } from './worklog-lib.mjs';
 
 const OK = '---\ndate: 2026-09-29\narea: CI\n---\nЖурнал работ из фрагментов — [development.md](guides/development.md)\n';
 const F = 'docs/worklog.d/2026-09-29-worklog-fragments.md';
@@ -53,11 +53,17 @@ test('build: новые сверху, PR из front matter или git, экра�
   ]);
 });
 
-test('render: заменяет только область между маркерами, идемпотентно', () => {
-  const doc = `# Журнал\n\n${START}\nстарое\n${END}\n\n### Ранее\n| 2026-09-26 | Фаза 0 | #1 |\n`;
-  const once = render(doc, ['| 2026-09-29 | B: x | #5 |']);
-  assert.equal(render(once, ['| 2026-09-29 | B: x | #5 |']), once);
-  assert.ok(once.includes('| 2026-09-26 | Фаза 0 | #1 |'));
-  assert.ok(!once.includes('старое'));
-  assert.throws(() => render('без маркеров', []));
+test('journal: фрагменты сверху, затем статичная история «Ранее»; невалидный фрагмент — ошибка', () => {
+  const doc = [
+    '# Журнал', '## Блокеры', '| 2026-01-01 | не история | — |', '',
+    '### Ранее', '| Дата | Что | PR |', '|---|---|---|', '| 2026-09-26 | Фаза 0 | #1 |', '',
+  ].join('\n');
+  assert.deepEqual(historyRows(doc), ['| 2026-09-26 | Фаза 0 | #1 |']);
+  const md = journalMarkdown([{ name: '2026-09-29-b.md', content: OK }], doc);
+  assert.deepEqual(md.split('\n').slice(2), [
+    '| 2026-09-29 | CI: Журнал работ из фрагментов — [development.md](guides/development.md) | — |',
+    '| 2026-09-26 | Фаза 0 | #1 |',
+  ]);
+  assert.throws(() => journalMarkdown([{ name: 'bad.md', content: 'x' }], doc));
 });
+

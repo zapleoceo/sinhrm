@@ -32,8 +32,9 @@
 ### Журнал работ
 Каждый PR добавляет **один новый файл** `docs/worklog.d/<YYYY-MM-DD>-<slug>.md`: front matter (`date`, `area`, `pr` — необязательно)
 и 1–3 строки простым текстом — что изменилось и где смотреть. Формат и шаблон — [worklog.d/README.md](../worklog.d/README.md).
-`docs/worklog.md` руками не правим (раньше каждая строка там давала конфликт между параллельными PR): после мержа workflow
-`worklog-build` собирает таблицу из фрагментов (`scripts/worklog-build.mjs`, проверка актуальности — `--check`).
+`docs/worklog.md` руками не правим (раньше каждая строка там давала конфликт между параллельными PR): фрагменты — источник истины,
+хронологию (фрагменты + статичная история «Ранее» из `docs/worklog.md`) собирает сборка справки: «Довідка» → «Журнал работ»
+(`frontend/scripts/build-docs.mjs`); локально — `node scripts/worklog-build.mjs --print`. Никакой workflow в `main` не коммитит.
 CI job `worklog` падает, если в PR нет валидного фрагмента; исключения — метка `no-worklog` (затем Re-run job),
 PR только в `docs/` и `.github/`, dependabot.
 

@@ -1,44 +1,37 @@
 #!/usr/bin/env node
-// Regenerates the table in docs/worklog.md (between <!-- worklog:start --> / <!-- worklog:end -->)
-// from fragments docs/worklog.d/*.md, newest first. No dependencies.
-//   node scripts/worklog-build.mjs          # write docs/worklog.md
-//   node scripts/worklog-build.mjs --check  # exit 1 if docs/worklog.md is out of date
-// PR number: front matter `pr`, otherwise the squash-commit subject "... (#93)" that added the file.
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+// Prints the chronological journal (Markdown table, newest first): fragments docs/worklog.d/*.md
+// followed by the static history in docs/worklog.md («Ранее»). Nothing is written or committed:
+// the same journal is built into the in-app «Довідка» by frontend/scripts/build-docs.mjs.
+//   node scripts/worklog-build.mjs --print   # print the table (exit 1 on an invalid fragment)
+import { readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
-import { FRAGMENT_DIR, buildRows, render } from './worklog-lib.mjs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { FRAGMENT_DIR, journalMarkdown, prFromGit } from './worklog-lib.mjs';
 
-const WORKLOG = 'docs/worklog.md';
-const check = process.argv.includes('--check');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-const prFromGit = (path) => {
+/** Reads all fragments: [{ name, content, pr }]. */
+export function readFragments(repoRoot = root) {
+  const dir = join(repoRoot, FRAGMENT_DIR);
+  return readdirSync(dir)
+    .filter((n) => n.endsWith('.md') && n !== 'README.md')
+    .map((name) => ({
+      name,
+      content: readFileSync(join(dir, name), 'utf8'),
+      pr: prFromGit(execFileSync, `${FRAGMENT_DIR}/${name}`, repoRoot),
+    }));
+}
+
+export function buildJournal(repoRoot = root) {
+  return journalMarkdown(readFragments(repoRoot), readFileSync(join(repoRoot, 'docs', 'worklog.md'), 'utf8'));
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   try {
-    const out = execFileSync('git', ['log', '--diff-filter=A', '--format=%s', '--', path], { encoding: 'utf8' });
-    return out.trim().split('\n').pop().match(/\(#(\d+)\)\s*$/)?.[1];
-  } catch {
-    return undefined;
-  }
-};
-
-const items = readdirSync(FRAGMENT_DIR)
-  .filter((n) => n.endsWith('.md') && n !== 'README.md')
-  .map((name) => {
-    const path = join(FRAGMENT_DIR, name);
-    return { name, content: readFileSync(path, 'utf8'), pr: prFromGit(path) };
-  });
-
-const current = readFileSync(WORKLOG, 'utf8');
-const next = render(current, buildRows(items));
-if (check) {
-  if (next !== current) {
-    console.error(`${WORKLOG} устарел: node scripts/worklog-build.mjs (на main это делает workflow worklog-build).`);
+    console.log(buildJournal());
+  } catch (e) {
+    console.error(`worklog: ${e.message}`);
     process.exit(1);
   }
-  console.log(`${WORKLOG} актуален (фрагментов: ${items.length})`);
-} else if (next !== current) {
-  writeFileSync(WORKLOG, next);
-  console.log(`${WORKLOG} обновлён (фрагментов: ${items.length})`);
-} else {
-  console.log(`${WORKLOG} без изменений (фрагментов: ${items.length})`);
 }

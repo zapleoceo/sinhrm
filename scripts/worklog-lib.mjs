@@ -1,14 +1,13 @@
 // Shared logic for worklog fragments (docs/worklog.d/*.md). No dependencies.
-// Used by scripts/worklog-build.mjs (assembler) and scripts/worklog-check.mjs (CI job `worklog`).
+// Used by scripts/worklog-build.mjs (local print), frontend/scripts/build-docs.mjs (in-app «Журнал работ» page)
+// and scripts/worklog-check.mjs (CI job `worklog`). Fragments are the source of truth; nothing is committed back.
 
 export const FRAGMENT_DIR = 'docs/worklog.d';
 export const NAME_RE = /^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
-export const START = '<!-- worklog:start -->';
-export const END = '<!-- worklog:end -->';
 export const TEMPLATE = `---
 date: 2026-09-29        # YYYY-MM-DD, обязательно
 area: Recruiting        # модуль/область, обязательно
-pr: 93                  # номер PR, необязательно (бот возьмёт из squash-коммита)
+pr: 93                  # номер PR, необязательно (иначе из squash-коммита «… (#93)»)
 ---
 Что изменилось, 1–3 строки простым текстом — [recruiting.md](modules/recruiting.md)`;
 
@@ -82,14 +81,28 @@ export function buildRows(items) {
   return parsed.map((r) => `| ${r.date} | ${cell(r.text)} | ${r.pr} |`);
 }
 
-/** Replaces the generated region of worklog.md with a fresh table. */
-export function render(worklog, rows) {
-  const s = worklog.indexOf(START);
-  const e = worklog.indexOf(END);
-  if (s < 0 || e < s) throw new Error(`в docs/worklog.md нет маркеров ${START} / ${END}`);
-  const body = rows.length
-    ? ['| Дата | Что | PR |', '|---|---|---|', ...rows].join('\n')
-    : '_Пока нет записей из docs/worklog.d/._';
-  const note = '<!-- Генерируется scripts/worklog-build.mjs из docs/worklog.d/ — руками не править. -->';
-  return `${worklog.slice(0, s)}${START}\n${note}\n${body}\n${worklog.slice(e)}`;
+/** Static pre-fragment rows: table rows of docs/worklog.md below the "### Ранее" heading. */
+export function historyRows(worklogMd) {
+  const at = worklogMd.search(/^### Ранее/m);
+  if (at < 0) return [];
+  return worklogMd
+    .slice(at)
+    .split(/\r?\n/)
+    .filter((l) => /^\| \d{4}-\d{2}-\d{2} \|/.test(l));
+}
+
+/** Chronological journal (Markdown): fragments newest first, then the static history. */
+export function journalMarkdown(items, worklogMd) {
+  const rows = [...buildRows(items), ...historyRows(worklogMd)];
+  return ['| Дата | Что | PR |', '|---|---|---|', ...rows].join('\n');
+}
+
+/** PR number from the commit that added the file ("... (#93)" squash subject); undefined without git history. */
+export function prFromGit(execFileSync, path, cwd) {
+  try {
+    const out = execFileSync('git', ['log', '--diff-filter=A', '--format=%s', '--', path], { encoding: 'utf8', cwd, stdio: ['ignore', 'pipe', 'ignore'] });
+    return out.trim().split('\n').pop().match(/\(#(\d+)\)\s*$/)?.[1];
+  } catch {
+    return undefined;
+  }
 }

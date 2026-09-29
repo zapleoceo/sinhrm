@@ -32,4 +32,8 @@ test('builds the real docs: sanitized, tagged, no internals', () => {
   assert.equal(docs.find((d) => d.slug === 'pulse')?.audience, 'all');
   assert.equal(docs.find((d) => d.slug === 'integrations')?.audience, 'admin');
   assert.ok(docs.filter((d) => d.group === 'guides').every((d) => d.audience === 'admin'));
+  const journal = docs.find((d) => d.slug === 'worklog');
+  assert.equal(journal?.audience, 'admin');
+  assert.match(journal.html, /<table>[\s\S]*2026-09-29[\s\S]*2026-09-26/); // fragments first, then static history
+  assert.match(journal.html, /Фаза 0/);
 });

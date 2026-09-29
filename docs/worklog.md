@@ -13,16 +13,10 @@
 - [x] Google-интеграции (#goog): redirect URI, Gmail/Calendar/Sheets API и scopes настроены (подключение работает); остаётся по ходу: откалибровать парсеры писем на реальных (обезличенных) письмах; если OAuth-приложение в режиме Testing — «Перепідключити» раз в 7 дней — [google-workspace.md](modules/google-workspace.md), [mail-agent.md](modules/mail-agent.md)
 - [ ] Каналы (#chan): токены и адреса вебхуков по шагам из [modules/channels.md](modules/channels.md) (Telegram: bot_token → «Зареєструвати вебхук» → бот в Telegram Business с правом отвечать; WhatsApp: access_token, app_secret, verify_token; Viber: token; телефония: webhook_token + пример реального вебхука, чтобы подтвердить формат).
 
-Короткие записи: что сделано, где искать. Подробности — в PR. Новые записи — файлы `docs/worklog.d/*.md` (формат — [worklog.d/README.md](worklog.d/README.md)); таблица ниже собирается ботом после мержа.
+Новые записи — отдельные файлы `docs/worklog.d/<YYYY-MM-DD>-<slug>.md` (формат — [worklog.d/README.md](worklog.d/README.md)), этот файл в PR не правим.
+Полная хронология (фрагменты + история ниже) собирается при сборке: «Довідка» → «Журнал работ», локально — `node scripts/worklog-build.mjs --print`.
 
-<!-- worklog:start -->
-<!-- Генерируется scripts/worklog-build.mjs из docs/worklog.d/ — руками не править. -->
-| Дата | Что | PR |
-|---|---|---|
-| 2026-09-29 | CI: Журнал работ из фрагментов `docs/worklog.d/` — без конфликтов между параллельными PR; бот собирает таблицу после мержа, job `worklog` требует запись (или метку `no-worklog`) — [worklog.d/README.md](worklog.d/README.md) | — |
-<!-- worklog:end -->
-
-### Ранее (до перехода на фрагменты, 29.09.2026)
+### Ранее (до перехода на фрагменты, 29.09.2026; не дополняется)
 
 | Дата | Что | PR |
 |---|---|---|
