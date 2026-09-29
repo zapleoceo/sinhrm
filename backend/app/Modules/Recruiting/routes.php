@@ -16,6 +16,7 @@ use App\Modules\Recruiting\Http\Controllers\PipelineController;
 use App\Modules\Recruiting\Http\Controllers\ReportController;
 use App\Modules\Recruiting\Http\Controllers\ScreeningController;
 use App\Modules\Recruiting\Http\Controllers\VacancyController;
+use App\Modules\Recruiting\Http\Controllers\VacancyTemplateController;
 use App\Modules\Recruiting\Providers\RecruitingServiceProvider;
 use App\Modules\Recruiting\Services\ExtensionTokenService;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,15 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     });
 
     Route::get('vacancies', [VacancyController::class, 'index'])->name('recruiting.vacancies.index');
+    // Full vacancy form: option lists, templates, AI drafts of the text sections.
+    Route::get('vacancy-options', [VacancyController::class, 'options'])->name('recruiting.vacancies.options');
+    Route::get('vacancy-templates', [VacancyTemplateController::class, 'index'])->name('recruiting.vacancy-templates.index');
+    Route::post('vacancy-templates', [VacancyTemplateController::class, 'store'])->name('recruiting.vacancy-templates.store');
+    Route::delete('vacancy-templates/{template}', [VacancyTemplateController::class, 'destroy'])
+        ->whereNumber('template')->name('recruiting.vacancy-templates.destroy');
+    Route::post('vacancy-text', [VacancyController::class, 'aiText'])->middleware('throttle:20,1')->name('recruiting.vacancies.ai-text');
+    Route::get('vacancy-text/{aiRequest}', [VacancyController::class, 'aiTextResult'])
+        ->whereNumber('aiRequest')->name('recruiting.vacancies.ai-text.result');
     Route::post('vacancies', [VacancyController::class, 'store'])->name('recruiting.vacancies.store');
     Route::get('vacancies/{vacancy}', [VacancyController::class, 'show'])->whereNumber('vacancy')->name('recruiting.vacancies.show');
     Route::patch('vacancies/{vacancy}', [VacancyController::class, 'update'])->whereNumber('vacancy')->name('recruiting.vacancies.update');

@@ -36,6 +36,12 @@ final readonly class VacancyService
         return $this->vacancies->paginate($this->scope->for($actor), $filter);
     }
 
+    /** Active (open AND published) vacancies in the actor's scope — the count in the list header. */
+    public function activeCount(User $actor): int
+    {
+        return $this->vacancies->activeCount($this->scope->for($actor));
+    }
+
     /** @throws ModelNotFoundException<Vacancy> */
     public function find(int $id): Vacancy
     {

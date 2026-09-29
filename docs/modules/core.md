@@ -138,3 +138,7 @@ Vercel обрезает длинные сообщения, и текст оши�
 `Contracts\UserNotifier` — короткий лист користувачу про погодження/рішення (реалізація GoogleWorkspace, див. google-workspace.md). Колонка `users.approval_emails` (default true).
 
 `Contracts/UserNotifier` — короткий лист користувачу про погодження/рішення (реалізація GoogleWorkspace, див. google-workspace.md). Колонка `users.approval_emails` (default true).
+
+## safeStorage.remove (2026-10-25)
+`core/storage/safe-storage.ts` умеет удалять ключ (`remove`), тоже без исключений. Нужно форме вакансии: черновик
+формы хранится в браузере и стирается после сохранения.

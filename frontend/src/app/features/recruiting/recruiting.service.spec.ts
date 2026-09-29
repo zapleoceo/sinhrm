@@ -30,6 +30,21 @@ describe('RecruitingService', () => {
     expect(v.request.params.get('status')).toBe('open');
     v.flush(EMPTY);
 
+    api.vacancies({ active: true }).subscribe();
+    const active = http.expectOne((r) => r.url === '/api/vacancies');
+    expect(active.request.params.get('active')).toBe('1');
+    active.flush(EMPTY);
+
+    api.vacancyText({ section: 'requirements', title: 'Tutor' }).subscribe();
+    const text = http.expectOne('/api/vacancy-text');
+    expect(text.request.method).toBe('POST');
+    text.flush({ data: { status: 'done', request_id: 1, text: 'x', error: null } });
+
+    api.saveVacancyTemplate('Base', { work_format: 'remote' }).subscribe();
+    const tpl = http.expectOne('/api/vacancy-templates');
+    expect(tpl.request.body).toEqual({ name: 'Base', data: { work_format: 'remote' } });
+    tpl.flush({ data: { id: 1, name: 'Base', data: {}, created_at: null } });
+
     api.candidates({ q: 'ann', source: 'work_ua' }).subscribe();
     const c = http.expectOne((r) => r.url === '/api/candidates');
     expect(c.request.params.get('source')).toBe('work_ua');

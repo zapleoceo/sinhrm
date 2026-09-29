@@ -62,6 +62,7 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
             FieldSpec::select('capability_script_evaluation', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_mail_classification', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             FieldSpec::select('capability_candidate_screening', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
+            FieldSpec::select('capability_vacancy_text', self::CAPABILITIES, default: self::DEFAULT_CAPABILITY),
             // Helper lane: chat:fast — with tool emulation (native_tools off) any provider can serve it, and this lane has the
             // most live free providers. Measured on prod 28.09: chat:smart turns never left the broker queue (gemini on
             // cooldown, anthropic dead), chat:fast answered in 11 s.
@@ -73,6 +74,7 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
             FieldSpec::select('ai_script_evaluation', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_mail_classification', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_candidate_screening', self::SWITCH, default: 'on'),
+            FieldSpec::select('ai_vacancy_text', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_assistant_chat', self::SWITCH, default: 'on'),
             FieldSpec::select('ai_screening_auto', self::SWITCH, default: 'off'),
             // off = tools of the helper go as strict JSON (any provider can answer); on = broker native tools, served

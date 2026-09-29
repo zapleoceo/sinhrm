@@ -7,6 +7,7 @@ namespace App\Modules\Recruiting\Http\Controllers;
 use App\Modules\Recruiting\Http\Requests\ApplyCandidateRequest;
 use App\Modules\Recruiting\Http\Requests\ListVacanciesRequest;
 use App\Modules\Recruiting\Http\Requests\SaveVacancyRequest;
+use App\Modules\Recruiting\Http\Requests\VacancyTextRequest;
 use App\Modules\Recruiting\Http\Resources\ApplicationResource;
 use App\Modules\Recruiting\Http\Resources\VacancyResource;
 use App\Modules\Recruiting\Models\Candidate;
@@ -14,6 +15,8 @@ use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\ApplicationService;
 use App\Modules\Recruiting\Services\ReportService;
 use App\Modules\Recruiting\Services\VacancyService;
+use App\Modules\Recruiting\Services\VacancyTextService;
+use App\Modules\Recruiting\Support\VacancyOptions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -27,7 +30,27 @@ final class VacancyController
 
     public function index(ListVacanciesRequest $request): AnonymousResourceCollection
     {
-        return VacancyResource::collection($this->service->list($this->actor($request), $request->filter()));
+        $actor = $this->actor($request);
+
+        return VacancyResource::collection($this->service->list($actor, $request->filter()))
+            ->additional(['meta' => ['active_count' => $this->service->activeCount($actor)]]);
+    }
+
+    /** Generic option lists of the vacancy form (codes; labels are translated in the UI). */
+    public function options(): JsonResponse
+    {
+        return new JsonResponse(['data' => VacancyOptions::all()]);
+    }
+
+    /** «Створити з ШІ»: an AI draft of one section (done now, or deferred → poll aiTextResult). */
+    public function aiText(VacancyTextRequest $request, VacancyTextService $texts): JsonResponse
+    {
+        return new JsonResponse(['data' => $texts->generate($this->actor($request), $request->facts())]);
+    }
+
+    public function aiTextResult(Request $request, int $aiRequest, VacancyTextService $texts): JsonResponse
+    {
+        return new JsonResponse(['data' => $texts->poll($this->actor($request), $aiRequest)]);
     }
 
     public function store(SaveVacancyRequest $request): JsonResponse

@@ -10,6 +10,8 @@ enum AiPurpose: string
     case ScriptEvaluation = 'script_evaluation';
     case MailClassification = 'mail_classification';
     case CandidateScreening = 'candidate_screening';
+    /** «Створити з ШІ» in the vacancy form: a draft of one section from the vacancy facts (no personal data). */
+    case VacancyText = 'vacancy_text';
     /** "Test prompt" button in the admin: a tiny fixed prompt, no personal data. */
     case Test = 'test';
     /** "Спробувати" in the prompt editor: a draft prompt on a built-in synthetic sample; nothing is applied. */
@@ -24,7 +26,7 @@ enum AiPurpose: string
     /** @return list<self> purposes whose prompt can be edited and whose stats are shown per row in the admin */
     public static function editable(): array
     {
-        return [self::ScriptEvaluation, self::MailClassification, self::CandidateScreening];
+        return [self::ScriptEvaluation, self::MailClassification, self::CandidateScreening, self::VacancyText];
     }
 
     /** Name of the capability select in the ai_broker settings (the test prompt uses the default "capability"). */

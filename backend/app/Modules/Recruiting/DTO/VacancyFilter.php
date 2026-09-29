@@ -14,5 +14,7 @@ final readonly class VacancyFilter
         public ?int $branchId = null,
         public ?int $recruiterId = null,
         public int $perPage = 50,
+        /** Only active vacancies (open AND published). */
+        public bool $active = false,
     ) {}
 }

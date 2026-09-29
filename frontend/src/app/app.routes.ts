@@ -23,6 +23,19 @@ export const routes: Routes = [
       { path: '', title: 'titles.overview', loadComponent: () => import('./features/overview/dashboard.page').then((m) => m.DashboardPage) },
       // Recruiting: every active role; the API scopes data by branch and blocks viewers from writing.
       { path: 'vacancies', title: 'titles.vacancies', loadComponent: () => import('./features/recruiting/vacancies/vacancies.page').then((m) => m.VacanciesPage) },
+      // Full vacancy form (create/edit); the unsaved-changes guard asks before leaving with edits.
+      {
+        path: 'vacancies/create',
+        title: 'titles.vacancyForm',
+        loadComponent: () => import('./features/recruiting/vacancies/vacancy-form.page').then((m) => m.VacancyFormPage),
+        canDeactivate: [(page: { canLeave(): boolean }) => page.canLeave()],
+      },
+      {
+        path: 'vacancies/:id/edit',
+        title: 'titles.vacancyForm',
+        loadComponent: () => import('./features/recruiting/vacancies/vacancy-form.page').then((m) => m.VacancyFormPage),
+        canDeactivate: [(page: { canLeave(): boolean }) => page.canLeave()],
+      },
       { path: 'vacancies/:id', title: 'titles.board', loadComponent: () => import('./features/recruiting/board/board.page').then((m) => m.BoardPage) },
       { path: 'candidates', title: 'titles.candidates', loadComponent: () => import('./features/recruiting/candidates/candidates.page').then((m) => m.CandidatesPage) },
       { path: 'candidates/:id', title: 'titles.candidates', loadComponent: () => import('./features/recruiting/candidates/candidates.page').then((m) => m.CandidatesPage) },

@@ -9,6 +9,7 @@ use App\Modules\Directory\Models\City;
 use App\Modules\Directory\Models\Department;
 use App\Modules\Directory\Models\DictionaryItem;
 use App\Modules\Directory\Models\Position;
+use App\Modules\Directory\Models\VacancyCategory;
 
 /** The company dictionaries, as they appear in the URL (/api/directory/{type}). */
 enum DictionaryType: string
@@ -17,6 +18,7 @@ enum DictionaryType: string
     case Cities = 'cities';
     case Departments = 'departments';
     case Positions = 'positions';
+    case VacancyCategories = 'vacancy_categories';
 
     /** @return class-string<DictionaryItem> */
     public function modelClass(): string
@@ -26,6 +28,7 @@ enum DictionaryType: string
             self::Cities => City::class,
             self::Departments => Department::class,
             self::Positions => Position::class,
+            self::VacancyCategories => VacancyCategory::class,
         };
     }
 }

@@ -1,0 +1,6 @@
+{
+  "purpose": "vacancy_text",
+  "note": "Synthetic sample for the prompt editor \"Спробувати\" (copied from tests/Fixtures/ai). No real data.",
+  "name": "requirements_developer",
+  "input": {"section": "requirements", "title": "PHP-розробник", "category": "IT", "employment_type": "full_time", "experience": "3_5"}
+}

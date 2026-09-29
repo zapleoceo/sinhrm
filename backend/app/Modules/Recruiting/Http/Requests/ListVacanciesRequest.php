@@ -21,6 +21,8 @@ final class ListVacanciesRequest extends FormRequest
             'branch_id' => ['nullable', 'integer', 'min:1'],
             'recruiter_id' => ['nullable', 'integer', 'min:1'],
             'perPage' => ['nullable', 'integer', 'between:1,200'],
+            // "1"/"0"/"true"/"false" from the query string.
+            'active' => ['nullable', 'in:0,1,true,false'],
         ];
     }
 
@@ -32,6 +34,7 @@ final class ListVacanciesRequest extends FormRequest
             branchId: $this->filled('branch_id') ? $this->integer('branch_id') : null,
             recruiterId: $this->filled('recruiter_id') ? $this->integer('recruiter_id') : null,
             perPage: $this->integer('perPage', 50),
+            active: $this->boolean('active'),
         );
     }
 }
