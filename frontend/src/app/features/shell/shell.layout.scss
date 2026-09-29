@@ -12,7 +12,7 @@
   flex-direction: column;
   height: 100vh;
   border-right: 1px solid var(--app-border);
-  background: var(--mat-sys-surface-container-low);
+  background: var(--app-sidebar-bg);
 }
 
 .sidebar-nav {
@@ -50,8 +50,8 @@
   text-align: left;
   cursor: pointer;
 
-  &:hover { background: var(--mat-sys-surface-container-high); }
-  &:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+  &:hover { background: var(--app-nav-hover); }
+  &:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
 }
 
 .user-text {
@@ -90,7 +90,7 @@
   font: var(--mat-sys-label-small);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--app-muted);
+  color: var(--app-nav-heading);
   margin: 1rem 0 0.125rem 0.75rem;
   padding: 0.25rem 0.5rem 0.25rem 0;
   border: 0;
@@ -100,7 +100,7 @@
   text-align: left;
 
   &:hover { color: var(--mat-sys-on-surface); }
-  &:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+  &:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
 
   .chevron {
     font-size: 18px;
@@ -147,10 +147,13 @@
   color: inherit;
   text-decoration: none;
 
-  &:hover { background: var(--mat-sys-surface-container-high); }
+  mat-icon { color: var(--app-muted); }
+
+  &:hover { background: var(--app-nav-hover); }
   &.active {
-    background: var(--mat-sys-secondary-container);
-    color: var(--mat-sys-on-secondary-container);
+    background: var(--app-nav-active-bg);
+    color: var(--app-nav-active-text);
+    mat-icon { color: inherit; }
   }
 }
 
@@ -213,7 +216,7 @@
   min-width: 0;
   padding: 0.25rem 0.25rem 0.25rem 0.75rem;
   border-bottom: 1px solid var(--app-border);
-  background: var(--mat-sys-surface-container-low);
+  background: var(--app-sidebar-bg);
 }
 
 .topbar-brand { display: flex; --app-logo-size: 24px; }
