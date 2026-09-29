@@ -236,9 +236,9 @@ describe('joke with the chat panel open (docked)', () => {
     expect(brain.state).toBe('docked');
     const r = engine.root;
     brain.dragStart();
-    engine.dragStart(r.x, r.y - 20, 0);
+    engine.dragStart(r.x, r.y - 20);
     for (let i = 1; i <= 10; i++) {
-      engine.dragMove(r.x - i * 25, r.y - 20 - i * 10, (i * 1000) / 60);
+      engine.dragMove(r.x - i * 25, r.y - 20 - i * 10);
       frames(1);
     }
     engine.dragEnd();

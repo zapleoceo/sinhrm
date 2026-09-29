@@ -263,7 +263,7 @@ export class AssistantMascot {
     }
     switch (c.type) {
       case 'play':
-        engine.play(c.action, { side: c.side, targetX: c.targetX, blend: c.blend, variant: c.variant });
+        engine.play(c.action, { side: c.side, targetX: c.targetX, blend: c.blend, variant: c.variant, fromX: c.fromX });
         break;
       case 'gesture': {
         const target = c.name === 'point' || c.name === 'listen' ? this.pointTarget() : null;
@@ -413,10 +413,10 @@ export class AssistantMascot {
       if (!this.press.dragging && Math.hypot(e.clientX - this.press.x, e.clientY - this.press.y) > DRAG_THRESHOLD && this.brain.canDrag) {
         this.press.dragging = true;
         this.brain.dragStart();
-        engine.dragStart(this.press.x, this.press.y, e.timeStamp);
+        engine.dragStart(this.press.x, this.press.y);
       }
       if (this.press.dragging) {
-        engine.dragMove(e.clientX, e.clientY, e.timeStamp);
+        engine.dragMove(e.clientX, e.clientY);
       }
       this.loop?.kick();
       return;

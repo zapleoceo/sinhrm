@@ -493,7 +493,7 @@ describe('interruptions mid-route', () => {
       f = e.tick(1 / 60).frame;
     }
     const before = world(f.pose, f.joints);
-    e.dragStart(f.pose.x, f.pose.y - 20, 0);
+    e.dragStart(f.pose.x, f.pose.y - 20);
     const after = e.tick(1 / 60).frame;
     expect(maxJump(world(after.pose, after.joints), before)).toBeLessThan(40);
     expect(e.held).toBe(true);

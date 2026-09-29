@@ -13,6 +13,8 @@ import {
   PanelRect,
   ROUTE_ACTIONS,
   RouteAction,
+  MoveAction,
+  ActivityAction,
   Stage,
   airborneClip,
   createClip,
@@ -21,7 +23,6 @@ import {
 } from './animations';
 import {
   Effect,
-  spawnArrow,
   spawnBanana,
   spawnBang,
   spawnDoodle,
@@ -38,6 +39,8 @@ import {
 import { EyeShape, Expression, NEUTRAL, blinkAmount, squintFor } from './face';
 import type { FallCause } from '../joke-situations';
 import { chooseRoute, createRouteClip, panelOf, routeGeometry } from './seat-routes';
+import { MOVE_ACTIONS, createMoveClip, isMove } from './moves';
+import { createActivityClip, isActivity } from './activities';
 import { GetUpVariant, createGetUp, createRubHead, createStandUp, createSulk } from './getup';
 import { normalizeAngle } from './ik';
 import { Body, PHYSICS_DT, World, accumulate, defaultWorld, launchSpeed, physicsStep } from './physics';
@@ -113,6 +116,8 @@ export interface PlayOptions {
   blend?: number;
   /** getup: stand up fully or only sit up (to sulk). */
   variant?: GetUpVariant;
+  /** Moves entering from off screen: where they start (x). */
+  fromX?: number;
 }
 
 interface GestureState {
@@ -123,6 +128,7 @@ interface GestureState {
 }
 
 const NO_PROPS: PropsFrame = { rope: null, book: null, balls: null };
+const NO_EVENTS: EngineEvent[] = [];
 const TYPE_SPEED = 42;
 /** Average joint speed of a blend between clips (px/s). */
 const BLEND_SPEED = 600;
@@ -165,6 +171,11 @@ const FAST_ACTIONS: ReadonlySet<ActionName> = new Set<ActionName>([
   'getup',
   'stand-up',
   ...ROUTE_ACTIONS,
+  ...MOVE_ACTIONS,
+  'act-keepyuppy',
+  'act-rope',
+  'act-dance',
+  'act-plane',
   'idle-slip',
   'idle-trip',
 ]);
@@ -202,10 +213,6 @@ export class MascotEngine {
   private restedAgain = false;
   /** A release is a throw unless the hold was lost (then he just drops). */
   private dropCause: FallCause = 'throw';
-  private arrowAcc = 0;
-  private lastDragMoveAt = -Infinity;
-  /** Drag velocity smoothed over ~0.1 s (body tilt, flailing) — no jerks when the pointer speeds up or stops. */
-  private dragVel: Vec = { x: 0, y: 0 };
   private physicsKind: 'launch' | 'hop' = 'launch';
   private body: Body = { x: 0, y: 0, vx: 0, vy: 0, rot: 0, spin: 0 };
   private world: World;
@@ -236,7 +243,6 @@ export class MascotEngine {
   private grab: Grab | null = null;
   private grabOffset: Vec = { x: 0, y: 0 };
   private heldFor = 0;
-  private dragSamples: { x: number; y: number; t: number }[] = [];
   private props: PropsFrame = NO_PROPS;
   private thinking = false;
   private listening = false;
@@ -352,7 +358,19 @@ export class MascotEngine {
       ? this.getUpClip(action as GetUpAction, from, options)
       : this.isRoute(action)
         ? createRouteClip(action as RouteAction, this.routeContext(from), this.lite)
-        : createClip(action as Exclude<ActionName, GetUpAction | RouteAction>, this.context({ ...options, from }));
+        : isMove(action)
+          ? createMoveClip(action, {
+              stage: this.stage,
+              from,
+              x0: options.fromX ?? from.x,
+              x1: options.targetX ?? from.x,
+              lite: this.lite,
+              rng: this.rng,
+              cut: options.fromX !== undefined,
+            })
+          : isActivity(action)
+            ? createActivityClip(action, { stage: this.stage, from, lite: this.lite, rng: this.rng, seat: this.stage.seat, pointer: this.pointerPos })
+            : createClip(action as Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction>, this.context({ ...options, from }));
     this.clipT = 0;
     this.doneSent = false;
     this.ambientT = 0;
@@ -421,7 +439,7 @@ export class MascotEngine {
    * Grabs him where the user clicked: the whole body becomes the ragdoll and the nearest spot (hand, head, foot,
    * torso…) is held by a stiff constraint toward the pointer. Everything else swings through the joints.
    */
-  dragStart(x: number, y: number, tMs: number): void {
+  dragStart(x: number, y: number): void {
     this.retireInk();
     if (!this.rag) {
       // Continuous hand-over: the ragdoll starts at the drawn joints with the current body velocity.
@@ -436,8 +454,6 @@ export class MascotEngine {
     this.grabOffset = { x: anchor.x - x, y: anchor.y - y };
     this.grab = { ...grab, x: anchor.x, y: anchor.y };
     this.heldFor = 0;
-    this.dragSamples = [{ x, y, t: tMs }];
-    this.lastDragMoveAt = this.time;
     this.mode = 'drag';
     this.clip = airborneClip(this.displayed);
     this.clipT = 0;
@@ -446,15 +462,10 @@ export class MascotEngine {
     this.gestureState = null;
   }
 
-  dragMove(x: number, y: number, tMs: number): void {
+  dragMove(x: number, y: number): void {
     if (this.grab) {
       this.grab.x = x + this.grabOffset.x;
       this.grab.y = y + this.grabOffset.y;
-    }
-    this.lastDragMoveAt = this.time;
-    this.dragSamples.push({ x, y, t: tMs });
-    while (this.dragSamples.length > 2 && tMs - this.dragSamples[0].t > 120) {
-      this.dragSamples.shift();
     }
   }
 
@@ -467,8 +478,6 @@ export class MascotEngine {
     if (this.rag && this.grab) {
       this.rag.prev.set(this.rag.pos);
     }
-    this.dragVel = { x: 0, y: 0 };
-    this.dragSamples = [];
     this.dragEnd();
   }
 
@@ -486,16 +495,6 @@ export class MascotEngine {
       const x = Math.min(this.stage.width - 45, Math.max(45, this.displayed.x));
       this.play('static', { targetX: x, blend: REDUCED_MAX_BLEND });
       return;
-    }
-    // The held spot's own velocity is the throw (the arrows follow it).
-    const v = this.rag && this.grab ? velocity(this.rag, this.grab.a) : this.dragVel;
-    const speed = Math.hypot(v.x, v.y);
-    if (speed > 900) {
-      // Final burst of arrows along the pull.
-      const n = this.lite ? 2 : 3 + Math.min(2, Math.round((speed - 900) / 700));
-      for (let i = 0; i < n; i++) {
-        this.addArrow(this.displayed.x, this.displayed.y - 15, v.x / speed, v.y / speed, 1);
-      }
     }
     this.grab = null;
     const rag = this.rag;
@@ -520,7 +519,7 @@ export class MascotEngine {
     for (let i = 0; i < r.steps; i++) {
       this.step(PHYSICS_DT);
     }
-    const events = this.events.splice(0, this.events.length);
+    const events = this.events.length === 0 ? NO_EVENTS : this.events.splice(0, this.events.length);
     return { frame: this.frame(), events };
   }
 
@@ -565,21 +564,8 @@ export class MascotEngine {
   }
 
   private env(): ClipEnv {
-    const v = this.mode === 'drag' ? this.dragVel : { x: this.body.vx, y: this.body.vy };
+    const v = this.mode === 'drag' ? { x: 0, y: 0 } : { x: this.body.vx, y: this.body.vy };
     return { vx: v.x, vy: v.y, spin: this.body.spin, pointer: this.pointerPos };
-  }
-
-  private dragVelocity(): Vec {
-    const s = this.dragSamples;
-    // The pointer stopped: no velocity (no arrows, a gentle drop).
-    if (s.length < 2 || this.time - this.lastDragMoveAt > 0.08) {
-      return { x: 0, y: 0 };
-    }
-    const a = s[0];
-    const b = s[s.length - 1];
-    const dt = Math.max(16, b.t - a.t) / 1000;
-    const clamp = (v: number): number => Math.max(-2600, Math.min(2600, v));
-    return { x: clamp((b.x - a.x) / dt), y: clamp((b.y - a.y) / dt) };
   }
 
   private launch(body: Body, walls: boolean, floor: boolean): void {
@@ -722,10 +708,6 @@ export class MascotEngine {
       return;
     }
     this.heldFor += h;
-    // Pointer velocity (smoothed) is only for the arrows; the body moves by physics alone.
-    const raw = this.dragVelocity();
-    const k = Math.min(1, h / 0.1);
-    this.dragVel = { x: this.dragVel.x + (raw.x - this.dragVel.x) * k, y: this.dragVel.y + (raw.y - this.dragVel.y) * k };
     if (!this.reduced) {
       applyStruggle(rag, this.time, this.lite ? 0.25 : 0.45, this.grab);
     }
@@ -740,7 +722,6 @@ export class MascotEngine {
     this.props = { ...NO_PROPS, ink: this.inkWithFading(null) };
     this.thinking = false;
     this.listening = false;
-    this.dragArrows(h);
     this.stepEffects(h);
     const annoyed = this.heldFor > 1.6;
     this.stepFace(
@@ -800,31 +781,6 @@ export class MascotEngine {
     this.stepFace(h, flying ? { eyes: 'wide', brows: 1, mouth: 'o' } : { eyes: 'dot', brows: 0.5, mouth: 'wobbly' }, undefined, {});
   }
 
-  /** Ink arrows fly out of him in the drag direction, more and faster the harder he is pulled. */
-  private dragArrows(h: number): void {
-    const v = this.dragVel;
-    const speed = Math.hypot(v.x, v.y);
-    if (speed < 60 || this.reduced) {
-      this.arrowAcc = 0;
-      return;
-    }
-    const rate = this.lite ? Math.min(5, speed / 400) : Math.min(16, speed / 140);
-    this.arrowAcc += rate * h;
-    const j = this.joints;
-    const parts = [j.head, j.shoulder, j.hip, j.lHand, j.rHand, j.lFoot, j.rFoot];
-    while (this.arrowAcc >= 1) {
-      this.arrowAcc -= 1;
-      const at = parts[Math.floor(this.rng() * parts.length)];
-      this.addArrow(this.displayed.x + at.x, this.displayed.y + at.y, v.x / speed, v.y / speed, speed / 1800);
-    }
-  }
-
-  private addArrow(x: number, y: number, dx: number, dy: number, strength: number): void {
-    if (!this.reduced) {
-      this.effects.push(spawnArrow(x, y, dx, dy, this.lite ? Math.min(0.5, strength) : strength, this.rng));
-    }
-  }
-
   private hop(): void {
     if (this.mode !== 'clip' || this.reduced) {
       return;
@@ -854,7 +810,8 @@ export class MascotEngine {
     if (this.reduced || this.lite) {
       return;
     }
-    this.effects.push(...list);
+    // (The empty list may be the shared frozen one: always build a new array when adding.)
+    this.effects = this.effects.concat(list);
   }
 
   private handleEvent(e: ClipEvent, env: ClipEnv): void {
@@ -896,7 +853,7 @@ export class MascotEngine {
         break;
       case 'banana':
         if (!this.reduced) {
-          this.effects.push(spawnBanana(at.x, at.y));
+          this.effects = this.effects.concat(spawnBanana(at.x, at.y));
         }
         break;
       case 'rope':
@@ -948,7 +905,6 @@ export class MascotEngine {
       }
       env = this.env();
     }
-    this.dragVel = { x: 0, y: 0 };
 
     let physicsRoot: Body | null = null;
     if (this.mode === 'physics') {
@@ -1116,7 +1072,8 @@ export class MascotEngine {
       }
     }
     const k = Math.min(1, h / 0.07);
-    this.eyeDir = { x: this.eyeDir.x + (goal.x - this.eyeDir.x) * k, y: this.eyeDir.y + (goal.y - this.eyeDir.y) * k };
+    this.eyeDir.x += (goal.x - this.eyeDir.x) * k;
+    this.eyeDir.y += (goal.y - this.eyeDir.y) * k;
 
     if (this.time >= this.blinkNext) {
       this.blinkStart = this.time;

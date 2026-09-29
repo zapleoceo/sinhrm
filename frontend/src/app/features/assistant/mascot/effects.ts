@@ -1,7 +1,7 @@
 import { Vec } from './skeleton';
 
 /** Little drawn extras around «Стік». Pure data + pure update; the renderer draws them from a pool. */
-export type EffectKind = 'puff' | 'spark' | 'streak' | 'drop' | 'bang' | 'zz' | 'star' | 'ring' | 'doodle' | 'rope' | 'arrow' | 'banana';
+export type EffectKind = 'puff' | 'spark' | 'streak' | 'drop' | 'bang' | 'zz' | 'star' | 'ring' | 'doodle' | 'rope' | 'banana';
 
 export type DoodleShape = 'heart' | 'star' | 'spiral' | 'smile';
 export const DOODLE_SHAPES: readonly DoodleShape[] = ['heart', 'star', 'spiral', 'smile'];
@@ -94,20 +94,6 @@ export function spawnRope(ax: number, ay: number, length: number, angle: number,
   return make('rope', ax, ay, 1.4, { data: length, angle, av });
 }
 
-/**
- * Ink arrow flying out of his body in the drag direction (dx, dy normalised). `strength` 0..1 scales size and speed.
- */
-export function spawnArrow(x: number, y: number, dx: number, dy: number, strength: number, rng: () => number): Effect {
-  const s = Math.min(1, Math.max(0.2, strength));
-  const spread = (rng() - 0.5) * 0.35;
-  const c = Math.cos(spread);
-  const sn = Math.sin(spread);
-  const ux = dx * c - dy * sn;
-  const uy = dx * sn + dy * c;
-  const speed = 260 + 620 * s;
-  return make('arrow', x + ux * 8, y + uy * 8, 0.42 + rng() * 0.12, { vx: ux * speed, vy: uy * speed, size: 0.7 + 0.6 * s, rot: rng() * 10, data: rng() < 0.5 ? 0 : 1 });
-}
-
 /** Banana-peel doodle on the floor (the slip gag). */
 export function spawnBanana(x: number, y: number): Effect {
   return make('banana', x, y, 3.2, { size: 1 });
@@ -156,7 +142,13 @@ export function doodlePoint(shape: DoodleShape, u: number): Vec {
 }
 
 /** Ages, moves and drops expired effects. Pure. */
+const NO_EFFECTS: Effect[] = Object.freeze([]) as unknown as Effect[];
+
 export function stepEffects(list: readonly Effect[], dt: number): Effect[] {
+  if (list.length === 0) {
+    // Nothing alive: no new array every step.
+    return NO_EFFECTS;
+  }
   const out: Effect[] = [];
   for (const e of list) {
     const age = e.age + dt;
@@ -186,10 +178,6 @@ export function stepEffects(list: readonly Effect[], dt: number): Effect[] {
         break;
       case 'ring':
         n.size = e.size + dt * 38;
-        break;
-      case 'arrow':
-        n.vx = e.vx * Math.exp(-2.2 * dt);
-        n.vy = e.vy * Math.exp(-2.2 * dt);
         break;
       case 'rope': {
         const alpha = -(2600 / Math.max(80, e.data)) * Math.sin(e.angle);

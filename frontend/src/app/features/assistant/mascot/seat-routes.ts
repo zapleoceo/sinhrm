@@ -18,6 +18,7 @@ import {
   standHip,
 } from './animations';
 import { pickWeighted } from './brain';
+import { Phase, buildPhases, endOf, holdPhase, ink, n } from './phases';
 import { BONES, Pose, Vec, blendTravel, forwardKinematics, lerpPose, unwrapToward } from './skeleton';
 
 /**
@@ -98,9 +99,6 @@ export function routeRoom(route: RouteAction, g: RouteGeometry): number {
     }
   }
 }
-const BLEND_IN = 0.25;
-/** Cross-fade at every phase seam (s). */
-const CROSS = 0.14;
 const LAND = 0.45;
 const CLIMB_STEP = 18;
 const TRAMP_GRAVITY = 1800;
@@ -186,15 +184,6 @@ export function chooseRoute(g: RouteGeometry, rng: () => number, last: RouteActi
 
 /* ───────────── building blocks ───────────── */
 
-interface Phase {
-  dur: number;
-  /** Stretched when the route must fit ROUTE_MIN..ROUTE_MAX. */
-  flexible: boolean;
-  /** Never squeezed below this (speed cap), even if the route then runs longer than ROUTE_MAX. */
-  minDur?: number;
-  at(u: number): ClipFrame;
-}
-
 interface Ctx {
   stage: Stage;
   from: Pose;
@@ -219,12 +208,6 @@ function seated(c: Ctx): Pose {
   return sitting(s.x, s.y, -1, 0);
 }
 
-function ink(d: string, draw: number, lite: boolean, alpha = 1): InkProp {
-  return { d, draw: lite ? 1 : Math.max(0, Math.min(1, draw)), alpha };
-}
-
-const n = (v: number): string => (Math.round(v * 10) / 10).toString();
-
 /** Walk (or run) along the floor from x0 to x1. */
 function walkPhase(c: Ctx, x0: number, x1: number, targetDur = 1.1): Phase {
   const dist = Math.abs(x1 - x0);
@@ -238,11 +221,6 @@ function walkPhase(c: Ctx, x0: number, x1: number, targetDur = 1.1): Phase {
     flexible: false,
     at: (u) => ({ pose: gaitPose(c.stage, x0 + (x1 - x0) * u, dist * u, dist < 2 ? c.toward : dir, gait), expr: { mouth: 'smile' } }),
   };
-}
-
-/** Standing still for a moment (drawing a prop, looking up). */
-function holdPhase(dur: number, at: (u: number) => ClipFrame): Phase {
-  return { dur, flexible: false, at };
 }
 
 /**
@@ -333,92 +311,9 @@ function topWalk(c: Ctx, from: () => Pose, props?: () => InkProp[]): Phase[] {
   return [standUp, walk, props ? { ...sit, at: (u) => withProps(sit.at(u)) } : sit];
 }
 
-/** `pose` shifted by `k` × (from − to) in every channel (angles unwrapped): a fading seam offset. */
-function offsetPose(pose: Pose, from: Pose, to: Pose, k: number): Pose {
-  const a = unwrapToward(from, to);
-  const out = { ...pose };
-  const rec = out as unknown as Record<string, number>;
-  const ra = a as unknown as Record<string, number>;
-  const rt = to as unknown as Record<string, number>;
-  for (const key of ['x', 'y', 'rot', 'torso', 'head', 'lShoulder', 'lElbow', 'rShoulder', 'rElbow', 'lHip', 'lKnee', 'rHip', 'rKnee', 'squash']) {
-    rec[key] = rec[key] + (ra[key] - rt[key]) * k;
-  }
-  if (from.facing !== to.facing) {
-    out.turn = pose.facing * (1 - 2 * k);
-  }
-  return out;
+function build(action: RouteAction, c: Ctx, phases: Phase[], events?: (starts: number[]) => ClipEvent[]): Clip {
+  return buildPhases(action, c.from, phases, { events, minTotal: ROUTE_MIN, maxTotal: ROUTE_MAX });
 }
-
-/** Runs phases in order, starting with a blend from the exact current pose. */
-function build(action: RouteAction, c: Ctx, phases: Phase[], events: (starts: number[]) => ClipEvent[] = () => []): Clip {
-  // Fit the total duration into ROUTE_MIN..ROUTE_MAX by stretching the flexible phases.
-  const fixed = phases.filter((p) => !p.flexible).reduce((a, p) => a + p.dur, 0) + BLEND_IN;
-  const flex = phases.filter((p) => p.flexible).reduce((a, p) => a + p.dur, 0);
-  let k = 1;
-  if (flex > 0) {
-    if (fixed + flex > ROUTE_MAX) {
-      k = Math.max(0.3, (ROUTE_MAX - fixed) / flex);
-    } else if (fixed + flex < ROUTE_MIN) {
-      k = (ROUTE_MIN - fixed) / flex;
-    }
-  }
-  const durs = phases.map((p) => (p.flexible ? Math.max(p.minDur ?? 0, p.dur * k) : p.dur));
-  const starts: number[] = [];
-  let t0 = BLEND_IN;
-  for (const d of durs) {
-    starts.push(t0);
-    t0 += d;
-  }
-  const duration = t0;
-  const first = phases[0];
-  const crossDur = phases.map(() => -1);
-  const seams: ({ end: Pose; start: Pose } | undefined)[] = phases.map(() => undefined);
-  return {
-    action,
-    duration,
-    blend: 0,
-    physics: false,
-    stiff: true,
-    events: events(starts),
-    sample(t: number): ClipFrame {
-      if (t < BLEND_IN) {
-        const target = first.at(0);
-        const u = ease.inOut(t / BLEND_IN);
-        return { ...target, pose: lerpPose(unwrapToward(c.from, target.pose), target.pose, u) };
-      }
-      for (let i = phases.length - 1; i >= 0; i--) {
-        if (t >= starts[i] || i === 0) {
-          const u = durs[i] <= 0 ? 1 : Math.min(1, (t - starts[i]) / durs[i]);
-          const frame = phases[i].at(u);
-          const since = t - starts[i];
-          if (i > 0) {
-            // Cross-fade from where the previous phase ended (longer when limbs have far to go): seams never jump.
-            let cross = crossDur[i];
-            if (cross < 0 || since < cross) {
-              // The seam poses are read once per phase (while inside the fade window), not every frame.
-              const seam = (seams[i] ??= { end: phases[i - 1].at(1).pose, start: phases[i].at(0).pose });
-              if (cross < 0) {
-                const gap = blendTravel(seam.end, seam.start);
-                cross = gap < 2 ? 0 : Math.min(durs[i] * 0.8, Math.max(CROSS, gap / 420));
-                crossDur[i] = cross;
-              }
-              if (since < cross) {
-                // Fade out the seam's gap as an offset on top of the new phase: its own motion (speed, arc) is kept
-                // — lerping from a still pose into a fast-moving phase would make it catch up at double speed.
-                return { ...frame, pose: offsetPose(frame.pose, seam.end, seam.start, 1 - ease.inOut(since / cross)) };
-              }
-            }
-          }
-          return frame;
-        }
-      }
-      return phases[phases.length - 1].at(1);
-    },
-  };
-}
-
-/** End pose of a phase list (for the landing phase that follows it). */
-const endOf = (p: Phase) => (): Pose => p.at(1).pose;
 
 /* ───────────── the routes ───────────── */
 

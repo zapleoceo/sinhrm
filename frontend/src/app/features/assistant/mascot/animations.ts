@@ -56,7 +56,45 @@ export const GETUP_ACTIONS: readonly GetUpAction[] = ['getup', 'sulk', 'stand-up
 /** Ways onto the chat panel's top edge (seat-routes.ts). */
 export type RouteAction = 'route-hop' | 'route-climb' | 'route-ladder' | 'route-rope' | 'route-trampoline' | 'route-balloon' | 'route-vault' | 'route-stairs';
 export const ROUTE_ACTIONS: readonly RouteAction[] = ['route-hop', 'route-climb', 'route-ladder', 'route-rope', 'route-trampoline', 'route-balloon', 'route-vault', 'route-stairs'];
-export type ActionName = EntranceAction | IdleAction | ExitAction | OtherAction | GetUpAction | RouteAction;
+/** Ways of getting around (moves.ts). */
+export type MoveAction =
+  | 'move-run'
+  | 'move-sprint'
+  | 'move-skip'
+  | 'move-sneak'
+  | 'move-moonwalk'
+  | 'move-crawl'
+  | 'move-cartwheel'
+  | 'move-roll'
+  | 'move-backflip'
+  | 'move-kneeslide'
+  | 'move-handwalk'
+  | 'move-skateboard'
+  | 'move-unicycle'
+  | 'move-scooter'
+  | 'move-pogo'
+  | 'move-monkeybars'
+  | 'move-wallflip';
+/** Idle activities with props (activities.ts). */
+export type ActivityAction =
+  | 'act-yoyo'
+  | 'act-keepyuppy'
+  | 'act-rope'
+  | 'act-plane'
+  | 'act-bubbles'
+  | 'act-coffee'
+  | 'act-newspaper'
+  | 'act-laptop'
+  | 'act-dance'
+  | 'act-meditate'
+  | 'act-headstand'
+  | 'act-magic'
+  | 'act-fishing'
+  | 'act-kite'
+  | 'act-selfie'
+  | 'act-wave'
+  | 'act-glassdoodle';
+export type ActionName = EntranceAction | IdleAction | ExitAction | OtherAction | GetUpAction | RouteAction | MoveAction | ActivityAction;
 
 export const ENTRANCES: readonly EntranceAction[] = [
   'enter-peek',
@@ -260,8 +298,13 @@ function toBody(p: Pose, dx: number, dy: number): Vec {
 
 /** Puts a hand on a world point (IK), mutating the pose. */
 export function reach(p: Pose, arm: 'l' | 'r', target: Vec, bend: 1 | -1 = -1): void {
-  const j = forwardKinematics({ ...p, squash: 1 });
-  const d = toBody(p, target.x - (p.x + j.shoulder.x), target.y - (p.y + j.shoulder.y));
+  // Shoulder straight from the spine angle (no full FK solve, no pose copy).
+  const f = p.turn ?? p.facing;
+  const bx = f * Math.sin(p.torso) * BONES.shoulderAt;
+  const by = -Math.cos(p.torso) * BONES.shoulderAt;
+  const c = Math.cos(p.rot);
+  const s = Math.sin(p.rot);
+  const d = toBody(p, target.x - (p.x + bx * c - by * s), target.y - (p.y + bx * s + by * c));
   // The spine carries the arms: solve relative to the unrotated torso.
   const a = armTo(d.x, d.y, p.torso, bend);
   if (arm === 'l') {
@@ -1444,7 +1487,7 @@ function unfoldClip(c: ClipContext): Clip {
 
 /* ───────────────────────── factory ───────────────────────── */
 
-export function createClip(action: Exclude<ActionName, GetUpAction | RouteAction>, c: ClipContext): Clip {
+export function createClip(action: Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction>, c: ClipContext): Clip {
   switch (action) {
     case 'idle-slip':
       return mishap('idle-slip', c, 'slip');
