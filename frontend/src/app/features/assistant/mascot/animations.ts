@@ -48,7 +48,8 @@ export type OtherAction =
   | 'curl'
   | 'orb'
   | 'orb-pop'
-  | 'unfold';
+  | 'unfold'
+  | 'return-seat';
 /** Recovery after a real fall; built by getup.ts from the current ragdoll pose. */
 export type GetUpAction = 'getup' | 'sulk' | 'stand-up' | 'rub-head';
 export const GETUP_ACTIONS: readonly GetUpAction[] = ['getup', 'sulk', 'stand-up', 'rub-head'];
@@ -1326,6 +1327,37 @@ function holdOnClip(c: ClipContext): Clip {
   );
 }
 
+/** After getting up with the chat open: a crouch, a hop in an arc up onto the panel's top edge, and he sits. */
+function returnSeatClip(c: ClipContext): Clip {
+  const seat = c.stage.seat ?? { x: c.stage.width - 120, y: c.stage.ground - 300 };
+  const start = { ...c.from };
+  const f: 1 | -1 = seat.x >= start.x ? 1 : -1;
+  const crouch = { ...start, facing: f, y: start.y + 9, torso: 0.4, lHip: 0.9, lKnee: 1.5, rHip: 0.8, rKnee: 1.4, lShoulder: -0.8, rShoulder: -0.7, lElbow: 0.4, rElbow: 0.4 };
+  const seated = sitting(seat.x, seat.y, -1, 0);
+  const dist = Math.hypot(seated.x - start.x, seated.y - start.y);
+  const flight = Math.min(0.9, 0.35 + dist / 1400);
+  const apex = 50 + Math.max(0, start.y - seated.y) * 0.25;
+  const pre = 0.22;
+  return {
+    action: 'return-seat',
+    duration: pre + flight + 0.12,
+    blend: 0.12,
+    physics: false,
+    events: [{ t: pre, type: 'dust', at: 'feet', strength: 0.3 }],
+    sample(t: number): ClipFrame {
+      if (t < pre) {
+        return { pose: lerpPose(start, crouch, ease.out(segment(t, 0, pre))), expr: { brows: -0.2, mouth: 'flat' } };
+      }
+      const u = segment(t, pre, pre + flight);
+      const air = { ...crouch, lShoulder: 2.6, rShoulder: 2.8, lElbow: 0.3, rElbow: 0.3, lHip: 0.5, lKnee: 0.9, rHip: 0.3, rKnee: 0.8, torso: 0.1 };
+      const p = u < 0.5 ? lerpPose(crouch, air, ease.out(u * 2)) : lerpPose(air, seated, ease.inOut((u - 0.5) * 2));
+      p.x = start.x + (seated.x - start.x) * u;
+      p.y = start.y + (seated.y - start.y) * u - apex * 4 * u * (1 - u);
+      return { pose: p, expr: u < 1 ? { eyes: 'happy', mouth: 'grin' } : { mouth: 'smile' } };
+    },
+  };
+}
+
 /* ───────────────────────── on/off morph ───────────────────────── */
 
 /** Pose whose (collapsed) head sits on a point — the circle's position. */
@@ -1508,6 +1540,8 @@ export function createClip(action: Exclude<ActionName, GetUpAction>, c: ClipCont
       return orbPopClip(c);
     case 'unfold':
       return unfoldClip(c);
+    case 'return-seat':
+      return returnSeatClip(c);
   }
 }
 

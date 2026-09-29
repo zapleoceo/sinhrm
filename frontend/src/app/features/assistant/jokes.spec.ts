@@ -7,7 +7,8 @@ import uk from '../../../../public/i18n/uk.json';
 import { QuipsResult } from './assistant.model';
 import { AssistantService } from './assistant.service';
 import { AssistantJokes, JOKE_FALLBACK_COUNT, JOKE_MAX_TRIES, JOKE_RETRY_MS, JOKE_SITUATIONS, pickNoRepeat, situationFor } from './jokes';
-import { BrainCommand, MascotBrain, TIMING } from './mascot/brain';
+import { BrainCommand, MascotBrain, TIMING, dispatchEngineEvent } from './mascot/brain';
+import { MascotEngine } from './mascot/mascot-engine';
 
 function setup(quips: (situation: string, locale: string) => Observable<QuipsResult>) {
   const api = { quips: vi.fn(quips) };
@@ -143,15 +144,15 @@ describe('brain tells a joke once he is up', () => {
     brain.fell(opts.cause ?? 'trip');
     brain.rested(300);
     vi.advanceTimersByTime(3000);
-    brain.clipDone('getup');
-    brain.clipDone('rub-head');
     const before = commands.length;
-    brain.clipDone('dust');
+    brain.clipDone('getup');
     const said = commands.slice(before).filter((c) => c.type === 'say' && (c.text || c.key));
+    brain.clipDone('rub-head');
+    brain.clipDone('dust');
     return { said, joke, brain };
   }
 
-  it('after the dust-off: one joke for the situation (probability injected)', () => {
+  it('as soon as he is on his feet: one joke for the situation (probability injected)', () => {
     const { said, joke, brain } = run({ rng: 0.2, cause: 'slip' });
     expect(brain.state).toBe('idle');
     expect(joke).toHaveBeenCalledWith('slip');
@@ -189,5 +190,107 @@ describe('brain tells a joke once he is up', () => {
     reduced.fell('throw');
     reduced.clipDone('dust');
     expect(joke).not.toHaveBeenCalled();
+  });
+});
+
+describe('joke with the chat panel open (docked)', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('drag from the chat seat → throw → fall → rest → get up → back to the seat → the joke is said', () => {
+    const stage = { width: 1200, height: 800, ground: 798, seat: { x: 1000, y: 300 }, corner: { x: 1166, y: 766 } };
+    const engine = new MascotEngine(stage, () => 0.4);
+    type Say = Extract<BrainCommand, { type: 'say' }>;
+    const timeline: string[] = [];
+    let frame = 0;
+    const says: Say[] = [];
+    const actions: string[] = [];
+    const brain = new MascotBrain(
+      (c) => {
+        if (c.type === 'play') {
+          actions.push(c.action);
+          timeline.push(`${(frame / 60).toFixed(1)}s play ${c.action}`);
+          engine.play(c.action, { side: c.side, targetX: c.targetX, blend: c.blend, variant: c.variant });
+        } else if (c.type === 'say') {
+          says.push(c);
+          timeline.push(`${(frame / 60).toFixed(1)}s say ${c.text ?? c.key}`);
+          engine.say(c.text ?? c.key);
+        } else if (c.type === 'gesture') {
+          engine.gesture(c.name);
+        }
+      },
+      { rng: () => 0.4, width: () => 1200, joke: (s) => ({ text: `joke:${s}` }), jokeChance: 1 },
+    );
+    const frames = (n: number): void => {
+      for (let i = 0; i < n; i++) {
+        frame++;
+        vi.advanceTimersByTime(1000 / 60);
+        for (const e of engine.tick(1 / 60).events) {
+          dispatchEngineEvent(brain, e);
+        }
+      }
+    };
+    brain.start(true, false);
+    brain.chatOpened();
+    frames(90);
+    expect(brain.state).toBe('docked');
+    const r = engine.root;
+    brain.dragStart();
+    engine.dragStart(r.x, r.y - 20, 0);
+    for (let i = 1; i <= 10; i++) {
+      engine.dragMove(r.x - i * 25, r.y - 20 - i * 10, (i * 1000) / 60);
+      frames(1);
+    }
+    engine.dragEnd();
+    brain.dragEnd();
+    timeline.push(`${(frame / 60).toFixed(1)}s RELEASE`);
+    for (let i = 0; i < 1500 && !(brain.state === 'docked' && actions.includes('dust')); i++) {
+      frames(1);
+    }
+    frames(120);
+    expect(actions).toEqual(expect.arrayContaining(['getup', 'dust']));
+    // Said as soon as he is back on his feet — not seconds later after the head rub and dust-off (the prod bug:
+    // throwing him again in that window meant never hearing a joke).
+    const at = (needle: string): number => timeline.findIndex((l) => l.includes(needle));
+    const jokeLine = timeline[at('say joke:thrown')];
+    const release = Number(timeline[at('RELEASE')].split('s')[0]);
+    expect(at('say joke:thrown')).toBeLessThan(at('play rub-head'));
+    expect(Number(jokeLine.split('s')[0]) - release).toBeLessThan(10);
+    // With the chat open he hops back to the seat, then sits.
+    expect(at('play return-seat')).toBeGreaterThan(at('play dust'));
+    expect(brain.state).toBe('docked');
+    expect(says.some((c) => c.text === 'joke:thrown')).toBe(true);
+    // The last bubble command is not a clear that wiped the joke immediately.
+    const jokeIdx = says.findIndex((c) => c.text === 'joke:thrown');
+    expect(says.slice(jokeIdx + 1).filter((c) => c.key === null && !c.text).length).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('joke bubble placement on the chat seat', () => {
+  it('stays on screen when the chat panel reaches the top edge (placed beside/below the head)', async () => {
+    const { MascotRenderer } = await import('./mascot/mascot-renderer');
+    const stage = { width: 1200, height: 800, ground: 798, seat: { x: 1000, y: 30 }, corner: { x: 1166, y: 766 } };
+    const engine = new MascotEngine(stage, () => 0.4);
+    engine.play('docked', { blend: 0 });
+    engine.tick(0.5);
+    engine.say('Себе в резюме додам: «здатний до польотів без ліцензії».');
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const renderer = new MascotRenderer(host, document);
+    const frame = engine.tick(0.3).frame;
+    renderer.render(frame, { width: 1200, height: 800 }, false);
+    const oy = Number(/translate3d\([^,]+,\s*(-?[\d.]+)px/.exec(host.style.transform)?.[1]);
+    const bubble = host.querySelector('.mascot-bubble') as HTMLElement;
+    const by = Number(/translate\([^,]+,\s*(-?[\d.]+)px\)/.exec(bubble.style.transform)?.[1]);
+    expect(bubble.style.display).toBe('block');
+    expect(oy + by).toBeGreaterThanOrEqual(8);
+    // And it does not cover his face: it starts beside the head.
+    const headX = frame.pose.x + frame.joints.head.x;
+    const ox = Number(/translate3d\((-?[\d.]+)px/.exec(host.style.transform)?.[1]);
+    const bx = Number(/translate\((-?[\d.]+)px/.exec(bubble.style.transform)?.[1]);
+    const left = ox + bx;
+    expect(left > headX + 10 || left + 180 < headX - 10).toBe(true);
+    renderer.destroy();
+    host.remove();
   });
 });

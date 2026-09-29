@@ -137,9 +137,10 @@ const GRAB_BONES: readonly (readonly [number, number])[] = [
 export const RAGDOLL_DT = 1 / 60;
 /** Per-step displacement cap (px) — no explosions, no tunnelling. */
 const MAX_STEP = 70;
-const STILL_SPEED = 0.35;
-const STILL_STEPS = 24;
-const MAX_AGE = 7;
+const STILL_SPEED = 0.5;
+const STILL_STEPS = 20;
+/** Longest tumble before he counts as lying still (a slow slide or a wobble would otherwise delay the get-up). */
+const MAX_AGE = 4.5;
 
 export function ragdollWorld(width: number, ground: number): RagdollWorld {
   return { ground, width, gravity: 2600, drag: 0.4, restitution: 0.28, friction: 0.55, iterations: 8 };
