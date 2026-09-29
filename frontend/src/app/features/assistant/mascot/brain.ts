@@ -368,6 +368,7 @@ export class MascotBrain {
   }
 
   dragStart(): void {
+    this.clear('fidget');
     this.current = 'dragged';
     this.clear('stay');
     this.clear('getup');
@@ -388,6 +389,7 @@ export class MascotBrain {
 
   /** The ragdoll took over (throw, slip, trip, faint): no exits or fidgets until he is up again. */
   fell(cause: FallCause = 'trip'): void {
+    this.clear('fidget');
     if (this.reduced) {
       return;
     }
@@ -655,6 +657,7 @@ export class MascotBrain {
   }
 
   private exit(): void {
+    this.clear('fidget');
     this.clear('stay');
     this.emit({ type: 'say', key: null });
     this.emit({ type: 'gesture', name: null });
@@ -686,6 +689,7 @@ export class MascotBrain {
 
   /** Gets onto the chat panel by one of the routes (the engine picks it by geometry). */
   private routeToSeat(): void {
+    this.clear('fidget');
     this.current = 'docked';
     this.emit({ type: 'visible', value: true });
     this.play('seat-route');
