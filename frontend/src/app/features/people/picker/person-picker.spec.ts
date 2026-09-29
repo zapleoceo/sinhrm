@@ -108,6 +108,20 @@ describe('PersonPicker', () => {
     expect(badge?.textContent).toContain('Звільнений(а)');
   });
 
+  it('projects the prefix icon and suffixes into the form-field slots, not into the input row', async () => {
+    const { fixture } = setup(false, 5);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.mat-mdc-form-field-icon-prefix mat-icon')?.textContent).toBe('person_search');
+    expect(el.querySelector('.mat-mdc-form-field-infix mat-icon')).toBeNull();
+    await vi.runAllTimersAsync();
+    http.expectOne((r) => r.url === '/api/people/lookup').flush({ data: [GONE] });
+    fixture.detectChanges();
+    expect(el.querySelector('.mat-mdc-form-field-icon-prefix .av')).not.toBeNull();
+    expect(el.querySelector('.mat-mdc-form-field-text-suffix .suffix-badge')).not.toBeNull();
+    expect(el.querySelector('.mat-mdc-form-field-icon-suffix button')).not.toBeNull();
+    expect(el.querySelector('.mat-mdc-form-field-infix')?.querySelector('mat-icon, button, .av, .suffix-badge')).toBeNull();
+  });
+
   it('shows the saved person by name (id → name through /lookup)', async () => {
     const { fixture } = setup(false, 7);
     await vi.runAllTimersAsync();

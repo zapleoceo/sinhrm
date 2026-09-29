@@ -34,7 +34,7 @@ import { combineDateAndTime, toIsoDateOrNull, toIsoLocalDateTime } from '../../.
     </header>
 
     <form class="filters" (ngSubmit)="create()">
-      <app-person-picker class="person" name="employee" scope="subordinates" [(ngModel)]="newEmployee" required />
+      <app-person-picker class="person grow" name="employee" scope="subordinates" [(ngModel)]="newEmployee" required />
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>{{ 'perform.fields.when' | transloco }}</mat-label>
         <input matInput [matDatepicker]="whenDay" name="when" [(ngModel)]="newDay" required />
