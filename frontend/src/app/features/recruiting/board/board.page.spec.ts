@@ -1,0 +1,132 @@
+import { CdkDrag, CdkDragStart, CdkDropList } from '@angular/cdk/drag-drop';
+import { signal } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { provideRouter } from '@angular/router';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+import { Observable, from, of } from 'rxjs';
+import { AuthService } from '../../../core/auth/auth.service';
+import { PeopleService } from '../../people/people.service';
+import { Application, Board, PersonalBoard, Stage } from '../recruiting.model';
+import { RecruitingService } from '../recruiting.service';
+import { BoardPage } from './board.page';
+import { dropHint } from './drop-hint';
+
+const stage = (id: number, name: string, kind: Stage['kind']): Stage => ({
+  id, name, kind, position: id, is_terminal: false, is_reject: false, is_hire: kind === 'hire',
+});
+const stages = [stage(1, 'New', 'attract'), stage(2, 'Screen', 'select')];
+const app = (id: number, stageId: number): Application =>
+  ({ id, candidate_id: id + 100, vacancy_id: 1, stage_id: stageId, status: 'active', is_stale: false, candidate: { id: id + 100, full_name: `C${id}` } }) as Application;
+const board = { vacancy: { id: 1, title: 'V', stages }, applications: [app(1, 1), app(2, 1), app(3, 2)] } as unknown as Board;
+const personal: PersonalBoard = {
+  columns: [{ id: 7, title: 'Mine', color: 'blue', position: 0, hidden: false }],
+  cards: [],
+  layout: ['stage:1', 'col:7', 'stage:2'],
+};
+/** Async like real HTTP: a synchronous of() inside the page's load effect would re-trigger it forever. */
+const later = <T>(v: T): Observable<T> => from(Promise.resolve(v));
+const pb = {
+  dropStage: 'stage {{name}}', dropBack: 'back {{name}}', dropPersonal: 'file {{name}}', dropDenied: 'denied {{name}}',
+};
+
+async function render(roles: string[]): Promise<ComponentFixture<BoardPage>> {
+  TestBed.configureTestingModule({
+    imports: [
+      BoardPage,
+      TranslocoTestingModule.forRoot({
+        langs: { uk: { recruiting: { personalBoard: pb } } },
+        translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' },
+        preloadLangs: true,
+      }),
+    ],
+    providers: [
+      provideRouter([]),
+      { provide: AuthService, useValue: { user: signal({ roles }) } },
+      { provide: PeopleService, useValue: {} },
+      {
+        provide: RecruitingService,
+        useValue: { board: () => later(board), personalBoard: () => later(personal), rejectReasons: () => of([]), vacancySources: () => of([]) },
+      },
+    ],
+  });
+  const fixture = TestBed.createComponent(BoardPage);
+  fixture.componentRef.setInput('id', 1);
+  fixture.componentRef.setInput('personal', true);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+  return fixture;
+}
+
+const cardDrags = (f: ComponentFixture<BoardPage>): CdkDrag[] =>
+  f.debugElement.queryAll(By.css('article.card')).map((d) => d.injector.get(CdkDrag));
+const list = (f: ComponentFixture<BoardPage>, key: string): CdkDropList => f.debugElement.query(By.css(`[id="cards-${key}"]`)).injector.get(CdkDropList);
+
+/** Starts a drag of the first card of lane New and moves it over [key] (what CDK emits during a real drag). */
+function dragOver(f: ComponentFixture<BoardPage>, key: string): HTMLElement {
+  const drag = cardDrags(f)[0];
+  drag.started.emit({ source: drag, event: new MouseEvent('mousedown') } as CdkDragStart);
+  const target = list(f, key);
+  target.entered.emit({ container: target, item: drag, currentIndex: 0 });
+  f.detectChanges();
+  return f.nativeElement as HTMLElement;
+}
+
+describe('BoardPage drag & drop visuals', () => {
+  it('every card belongs to its lane drop list (not a free-floating drag) and uses the global preview class', async () => {
+    const f = await render(['recruiter']);
+    const drags = cardDrags(f);
+    expect(drags.length).toBe(3);
+    expect(drags.map((d) => d.dropContainer?.id)).toEqual(['cards-stage:1', 'cards-stage:1', 'cards-stage:2']);
+    expect(drags.every((d) => d.previewClass === 'board-drag-preview')).toBe(true);
+  });
+
+  it('column preview classes are single tokens (CDK adds each with classList.add)', async () => {
+    const f = await render(['recruiter']);
+    const column = f.debugElement.query(By.css('section.column.own')).injector.get(CdkDrag);
+    expect(column.previewClass).toEqual(['board-drag-preview', 'board-drag-preview--column']);
+    expect((column.previewClass as string[]).every((c) => !/\s/.test(c))).toBe(true);
+  });
+
+  it('over a stage column: stage highlight + «change stage» caption, also announced', async () => {
+    const el = dragOver(await render(['recruiter']), 'stage:2');
+    const col = el.querySelector('section.column[data-drop]') as HTMLElement;
+    expect(col.getAttribute('data-drop')).toBe('stage');
+    expect(col.querySelector('.drop-caption')?.textContent?.trim()).toBe('stage Screen');
+    expect(el.querySelector('[aria-live="polite"]')?.textContent?.trim()).toBe('stage Screen');
+  });
+
+  it('over an own column: neutral highlight + «file, stage stays» caption', async () => {
+    const el = dragOver(await render(['recruiter']), 'col:7');
+    expect(el.querySelector('section.column[data-drop]')?.getAttribute('data-drop')).toBe('personal');
+    expect(el.querySelector('.drop-caption')?.textContent?.trim()).toBe('file Mine');
+  });
+
+  it('without write rights a stage column shows the denied state', async () => {
+    const el = dragOver(await render(['employee']), 'stage:2');
+    expect(el.querySelector('section.column[data-drop]')?.getAttribute('data-drop')).toBe('denied');
+    expect(el.querySelector('.drop-caption')?.textContent?.trim()).toBe('denied Screen');
+  });
+
+  it('no caption over the lane the card came from; cleared when the drag ends', async () => {
+    const f = await render(['recruiter']);
+    const el = dragOver(f, 'stage:1');
+    expect(el.querySelector('.drop-caption')).toBeNull();
+    cardDrags(f)[0].ended.emit({ source: cardDrags(f)[0], distance: { x: 0, y: 0 }, dropPoint: { x: 0, y: 0 }, event: new MouseEvent('mouseup') });
+    f.detectChanges();
+    expect(el.querySelector('[data-drop]')).toBeNull();
+    expect(document.body.classList.contains('board-dragging')).toBe(false);
+  });
+});
+
+describe('dropHint', () => {
+  const t = (key: string, p: Record<string, string>): string => `${key.split('.').pop()}:${p['name']}`;
+  const lane = { key: 'stage:2', kind: 'stage' as const, stage: stages[1], items: [] };
+  it('same stage = back, other stage = stage / denied, own column = personal', () => {
+    expect(dropHint(lane, app(3, 2), true, t).kind).toBe('back');
+    expect(dropHint(lane, app(1, 1), true, t)).toEqual({ key: 'stage:2', kind: 'stage', text: 'dropStage:Screen' });
+    expect(dropHint(lane, app(1, 1), false, t).kind).toBe('denied');
+    expect(dropHint({ key: 'col:7', kind: 'personal', column: personal.columns[0], items: [] }, app(1, 1), false, t).text).toBe('dropPersonal:Mine');
+  });
+});
