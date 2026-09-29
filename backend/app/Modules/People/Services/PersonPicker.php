@@ -19,7 +19,9 @@ use Illuminate\Auth\Access\AuthorizationException;
 /**
  * Person picker (search by name, id → name). Reuses the directory query (EmployeeService::list + PeopleScope),
  * so a user finds exactly the people the People directory shows them:
- * - employees — the directory (working people; HR may add terminated);
+ * - employees — the directory (working people). With include_terminated: HR gets every terminated employee,
+ *   a manager only their former subordinates (terminated people whose manager_id chain leads to them — termination
+ *   keeps manager_id, there is no reporting history table), everyone else none;
  * - subordinates — the caller's managed subtree (HR: everyone);
  * - users — active system users, HR staff only.
  */
@@ -46,7 +48,12 @@ final readonly class PersonPicker
 
             return array_values(array_map(static fn (User $u): PersonOption => PersonOption::ofUser($u), $users));
         }
-        $filter = new EmployeeFilter(q: $q, perPage: $limit, anyStatus: $includeTerminated && $ctx->admin);
+        $filter = new EmployeeFilter(
+            q: $q,
+            perPage: $limit,
+            anyStatus: $includeTerminated && ($ctx->admin || $ctx->isManager()),
+            terminatedWithin: $this->terminatedWithin($ctx),
+        );
         if ($scope === PickerScope::Subordinates && ! $ctx->admin) {
             $filter = $filter->restrictedTo($ctx->subtreeIds);
         }
@@ -56,7 +63,7 @@ final readonly class PersonPicker
 
     /**
      * Names for saved ids. Unknown and invisible ids are simply absent. A terminated employee resolves only for
-     * HR and managers above them (the same rule as the profile, EmployeeService::findVisible).
+     * HR and managers above them — the same rule as search and the profile (EmployeeService::findVisible).
      *
      * @param  list<int>  $ids
      * @return list<PersonOption>
@@ -71,12 +78,19 @@ final readonly class PersonPicker
 
             return array_values($this->pickerUsers->activeByIds($ids)->map(static fn (User $u): PersonOption => PersonOption::ofUser($u))->all());
         }
-        $rows = $this->employees->list($ctx, new EmployeeFilter(perPage: max(1, count($ids)), onlyIds: $ids, anyStatus: true))->items();
+        $filter = new EmployeeFilter(perPage: max(1, count($ids)), onlyIds: $ids, anyStatus: true, terminatedWithin: $this->terminatedWithin($ctx));
 
-        return $this->options(array_filter(
-            $rows,
-            static fn (Employee $e): bool => ! $e->isTerminated() || $ctx->admin || $ctx->isAbove($e->id),
-        ));
+        return $this->options($this->employees->list($ctx, $filter)->items());
+    }
+
+    /**
+     * Terminated employees the caller may pick: HR — all (null), a manager — their subtree, others — none.
+     *
+     * @return list<int>|null
+     */
+    private function terminatedWithin(PeopleContext $ctx): ?array
+    {
+        return $ctx->admin ? null : $ctx->subtreeIds;
     }
 
     /**

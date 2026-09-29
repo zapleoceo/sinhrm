@@ -198,4 +198,8 @@ export interface PersonOption {
   position: string | null;
   department: string | null;
   avatar_url: string | null;
+  /** A terminated employee (only HR, or a manager for their former subordinates, may get one). */
+  terminated?: boolean;
+  /** fired_at, YYYY-MM-DD; null for working people. */
+  terminated_at?: string | null;
 }

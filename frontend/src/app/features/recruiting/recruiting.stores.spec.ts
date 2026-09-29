@@ -50,7 +50,8 @@ class FakeApi {
     this.fileCalls.push([appId, columnId]);
     return this.file$;
   };
-  addPersonalColumn = (_v: number, body: { title?: string }) => of<PersonalColumn>({ id: 8, title: body.title ?? '', color: null, position: 1, hidden: false });
+  column$: Observable<PersonalColumn> | null = null;
+  addPersonalColumn = (_v: number, body: { title?: string }) => this.column$ ?? of<PersonalColumn>({ id: 8, title: body.title ?? '', color: null, position: 1, hidden: false });
   vacancies = () => of(page([]));
   candidates = () => this.candidates$;
   candidate = (id: number) => of(candidate(id));
@@ -210,6 +211,28 @@ describe('BoardStore', () => {
     store.load(2, true);
     late.next({ columns: [{ id: 99, title: 'old', color: null, position: 0, hidden: false }], cards: [], layout: ['col:99'] });
     expect(store.personal()?.columns).toEqual([]);
+  });
+
+  it('ignores a late new column and a late rollback of the previous vacancy', () => {
+    const { store, api } = setup(BoardStore);
+    const column$ = new Subject<PersonalColumn>();
+    const layout$ = new Subject<string[]>();
+    api.column$ = column$;
+    api.layout$ = layout$;
+    store.load(1, true);
+    store.addColumn(1, 'Старе', () => undefined);
+    store.moveLane(1, 3, 0, () => undefined);
+    api.personalBoard = () => of<PersonalBoard>({ columns: [], cards: [], layout: [] });
+    store.load(2, true);
+    let key = '';
+    column$.next({ id: 50, title: 'Старе', color: null, position: 1, hidden: false });
+    layout$.error(new HttpErrorResponse({ status: 422, error: { code: 'board_layout_invalid' } }));
+    expect(store.personal()).toEqual({ columns: [], cards: [], layout: [] });
+    expect(key).toBe('');
+    // The same calls on the current vacancy still apply.
+    api.column$ = null;
+    store.addColumn(2, 'Нове', (k) => (key = k));
+    expect(store.personalColumns().map((c) => c.column.title)).toEqual(['Нове']);
   });
 
   it('flags a failed load', () => {

@@ -23,7 +23,12 @@ final class EloquentEmployeeRepository implements EmployeeRepository
             ->when(
                 $filter->status,
                 fn (Builder $q, EmployeeStatus $s) => $q->where('status', $s->value),
-                fn (Builder $q) => $filter->anyStatus ? $q : $q->where('status', '!=', EmployeeStatus::Terminated->value),
+                fn (Builder $q) => match (true) {
+                    ! $filter->anyStatus => $q->where('status', '!=', EmployeeStatus::Terminated->value),
+                    $filter->terminatedWithin === null => $q,
+                    default => $q->where(fn (Builder $w) => $w->where('status', '!=', EmployeeStatus::Terminated->value)
+                        ->orWhereIn('id', $filter->terminatedWithin ?? [])),
+                },
             )
             ->when($filter->q, function (Builder $q, string $term): void {
                 $like = '%'.addcslashes(mb_strtolower($term), '%_\\').'%';

@@ -60,7 +60,7 @@ final class PersonalBoardController
     public function layout(Request $request, Vacancy $vacancy): JsonResponse
     {
         $keys = $request->validate([
-            'keys' => ['present', 'array', 'max:100'],
+            'keys' => ['present', 'array', 'max:'.PersonalBoardService::MAX_LAYOUT_KEYS],
             'keys.*' => ['string', 'regex:/^(stage|col):[1-9][0-9]{0,18}$/'],
         ])['keys'];
 

@@ -17,7 +17,7 @@ final class PersonPickerApiTest extends TestCase
 {
     use PeopleFixtures, RefreshDatabase;
 
-    private const array ROW_KEYS = ['id', 'full_name', 'position', 'department', 'avatar_url'];
+    private const array ROW_KEYS = ['id', 'full_name', 'position', 'department', 'avatar_url', 'terminated', 'terminated_at'];
 
     public function test_guest_and_blocked_user_are_rejected(): void
     {
@@ -58,6 +58,49 @@ final class PersonPickerApiTest extends TestCase
         $this->actingAs($admin)->getJson('/api/people/search?q=person&include_terminated=1')->assertOk()->assertJsonCount(2, 'data');
         $this->actingAs($viewer)->getJson('/api/people/search?q=person&include_terminated=1')->assertOk()
             ->assertJsonCount(1, 'data')->assertJsonPath('data.0.full_name', 'Here Person');
+    }
+
+    public function test_manager_finds_only_own_former_subordinates(): void
+    {
+        $org = $this->org();
+        $goneWorker = Employee::factory()->terminated()->create(['full_name' => 'Gone Worker', 'manager_id' => $org['worker']->id]);
+        Employee::factory()->terminated()->create(['full_name' => 'Gone Stranger', 'manager_id' => $org['other']->id]);
+        Employee::factory()->terminated()->create(['full_name' => 'Gone Orphan']);
+        $search = fn (User $u): array => $this->actingAs($u)->getJson('/api/people/search?q=gone&include_terminated=1')->assertOk()->json('data.*.full_name');
+
+        // Indirect report (worker -> lead -> head) counts; another manager's subtree does not.
+        $this->assertSame(['Gone Worker'], $search($this->userOf($org['lead'])));
+        $this->assertSame(['Gone Worker'], $search($this->userOf($org['head'])));
+        $this->assertSame(['Gone Stranger'], $search($this->userOf($org['other'])));
+        $this->assertSame([], $search($this->userOf($org['peer'])));
+        $this->assertSame([], $search($this->login(UserRole::Viewer)));
+        $this->assertSame(['Gone Orphan', 'Gone Stranger', 'Gone Worker'], $search($this->login(UserRole::HrManager)));
+        // Without the flag nobody gets terminated people.
+        $this->actingAs($this->userOf($org['lead']))->getJson('/api/people/search?q=gone')->assertOk()->assertJsonCount(0, 'data');
+
+        $row = $this->actingAs($this->userOf($org['lead']))->getJson('/api/people/search?q=gone&include_terminated=1')->json('data.0');
+        $this->assertIsArray($row);
+        $this->assertSame(self::ROW_KEYS, array_keys($row));
+        $this->assertSame([$goneWorker->id, true, '2026-01-31'], [$row['id'], $row['terminated'], $row['terminated_at']]);
+        $working = $this->actingAs($this->userOf($org['lead']))->getJson('/api/people/search?q=worker%20person')->json('data.0');
+        $this->assertIsArray($working);
+        $this->assertSame([false, null], [$working['terminated'], $working['terminated_at']]);
+    }
+
+    public function test_lookup_obeys_the_former_subordinate_rule(): void
+    {
+        $org = $this->org();
+        $mine = Employee::factory()->terminated()->create(['full_name' => 'Gone Mine', 'manager_id' => $org['peer']->id]);
+        $theirs = Employee::factory()->terminated()->create(['full_name' => 'Gone Theirs', 'manager_id' => $org['other']->id]);
+        $query = '/api/people/lookup?'.http_build_query(['ids' => [$mine->id, $theirs->id]]);
+        $names = fn (User $u): array => $this->actingAs($u)->getJson($query)->assertOk()->json('data.*.full_name');
+
+        $this->assertSame(['Gone Mine'], $names($this->userOf($org['lead'])));
+        $this->assertSame(['Gone Theirs'], $names($this->userOf($org['other'])));
+        $this->assertSame([], $names($this->userOf($org['worker'])));
+        $this->assertSame(['Gone Mine', 'Gone Theirs'], $names($this->login(UserRole::Admin)));
+        $this->actingAs($this->userOf($org['lead']))->getJson($query)->assertJsonPath('data.0.terminated', true)
+            ->assertJsonPath('data.0.terminated_at', '2026-01-31');
     }
 
     public function test_subordinates_scope_is_the_managed_subtree(): void

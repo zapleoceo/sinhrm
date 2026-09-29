@@ -149,7 +149,7 @@ import { VacancySources } from './vacancy-sources';
           </div>
         </section>
       }
-      @if (personal()) {
+      @if (personal() && store.board()) {
         <div class="column add">
           @if (adding() === store.lanes().length) {
             <ng-container *ngTemplateOutlet="addForm; context: { $implicit: store.lanes().length }" />

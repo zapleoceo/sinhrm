@@ -9,6 +9,7 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\BoardCard;
+use App\Modules\Recruiting\Models\BoardLayout;
 use App\Modules\Recruiting\Models\StageChange;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\PersonalBoardService;
@@ -101,6 +102,30 @@ final class PersonalBoardApiTest extends TestCase
         $at = array_search("stage:{$new->id}", $layout, true);
         $prev = $first[array_search($new->id, $first, true) - 1];
         $this->assertSame("stage:$prev", $layout[$at - 1]);
+    }
+
+    public function test_concurrent_first_layout_saves_do_not_fail(): void
+    {
+        $url = "/api/vacancies/{$this->vacancy->id}/personal-board";
+        $stages = $this->actingAs($this->recruiter)->getJson($url)->json('data.layout');
+        $this->assertIsArray($stages);
+        // The other request's first save lands between our "no layout yet" read and our insert: with the old
+        // SELECT-then-INSERT this row made our INSERT hit the (user_id, vacancy_id) unique key -> 500.
+        BoardLayout::creating(function (): void {
+            BoardLayout::query()->insert(['user_id' => $this->recruiter->id, 'vacancy_id' => $this->vacancy->id, 'keys' => '[]', 'created_at' => now(), 'updated_at' => now()]);
+        });
+
+        $this->actingAs($this->recruiter)->putJson("$url/layout", ['keys' => $stages])->assertOk()->assertJsonPath('data.layout', $stages);
+        $this->actingAs($this->recruiter)->putJson("$url/layout", ['keys' => $stages])->assertOk();
+        $this->assertSame(1, BoardLayout::query()->where('user_id', $this->recruiter->id)->count());
+        $this->assertSame($stages, BoardLayout::query()->where('user_id', $this->recruiter->id)->sole()->keys);
+    }
+
+    public function test_layout_size_is_capped(): void
+    {
+        $keys = array_map(static fn (int $i): string => 'col:'.$i, range(1, PersonalBoardService::MAX_LAYOUT_KEYS + 1));
+        $this->actingAs($this->recruiter)->putJson("/api/vacancies/{$this->vacancy->id}/personal-board/layout", ['keys' => $keys])
+            ->assertUnprocessable()->assertJsonValidationErrors('keys');
     }
 
     public function test_personal_move_never_changes_the_stage_and_delete_returns_the_card(): void
