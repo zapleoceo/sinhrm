@@ -16,12 +16,15 @@ import {
   LogTouch,
   MoveApplication,
   Paged,
+  PersonalBoard,
+  PersonalColumn,
   Pipeline,
   RECRUITING_ERROR_CODES,
   Ref,
   RejectReason,
   RejectReasonsReport,
   SaveCandidate,
+  SavePersonalColumn,
   SaveVacancy,
   Screening,
   SourcesReport,
@@ -140,6 +143,36 @@ export class RecruitingService {
   /** Replaces the interviewers of an application (an empty list removes everyone). */
   setInterviewers(applicationId: number, userIds: readonly number[]): Observable<Application> {
     return this.http.put<{ data: Application }>(`/api/applications/${applicationId}/interviewers`, { user_ids: userIds }).pipe(map((r) => r.data));
+  }
+
+  /** Own columns of the /candidates board for one vacancy (personal view state, never the stage). */
+  personalBoard(vacancyId: number): Observable<PersonalBoard> {
+    return this.http.get<{ data: PersonalBoard }>(`/api/vacancies/${vacancyId}/personal-board`).pipe(map((r) => r.data));
+  }
+
+  addPersonalColumn(vacancyId: number, body: SavePersonalColumn): Observable<PersonalColumn> {
+    return this.http.post<{ data: PersonalColumn }>(`/api/vacancies/${vacancyId}/personal-board/columns`, body).pipe(map((r) => r.data));
+  }
+
+  updatePersonalColumn(columnId: number, body: SavePersonalColumn): Observable<PersonalColumn> {
+    return this.http.patch<{ data: PersonalColumn }>(`/api/personal-board/columns/${columnId}`, body).pipe(map((r) => r.data));
+  }
+
+  deletePersonalColumn(columnId: number): Observable<void> {
+    return this.http.delete<void>(`/api/personal-board/columns/${columnId}`);
+  }
+
+  reorderPersonalColumns(vacancyId: number, ids: number[]): Observable<void> {
+    return this.http.put<void>(`/api/vacancies/${vacancyId}/personal-board/columns/order`, { ids });
+  }
+
+  resetPersonalBoard(vacancyId: number): Observable<void> {
+    return this.http.delete<void>(`/api/vacancies/${vacancyId}/personal-board`);
+  }
+
+  /** Files the card into an own column (null: back to its stage column). The stage is never changed. */
+  fileCard(applicationId: number, columnId: number | null): Observable<void> {
+    return this.http.put<void>(`/api/applications/${applicationId}/personal-column`, { column_id: columnId });
   }
 
   move(applicationId: number, body: MoveApplication): Observable<Application> {

@@ -395,6 +395,8 @@ export const RECRUITING_ERROR_CODES = [
   'duplicate_candidate',
   'already_applied',
   'stage_not_in_pipeline',
+  'board_column_limit',
+  'board_column_mismatch',
   'same_stage',
   'reject_reason_required',
   'application_mismatch',
@@ -452,3 +454,24 @@ export interface BulkResult {
   ok: boolean;
   error: string | null;
 }
+
+/** Palette of personal board columns (mapped to theme tokens in the board styles). */
+export const PERSONAL_COLORS = ['blue', 'green', 'amber', 'red', 'purple', 'grey'] as const;
+export type PersonalColor = (typeof PERSONAL_COLORS)[number];
+
+/** A user's own column on the /candidates board: a personal bucket, never a funnel stage. */
+export interface PersonalColumn {
+  id: number;
+  title: string;
+  color: PersonalColor | null;
+  position: number;
+  hidden: boolean;
+}
+
+/** Own columns of one vacancy + where the user filed cards (application → own column). */
+export interface PersonalBoard {
+  columns: PersonalColumn[];
+  cards: { application_id: number; column_id: number }[];
+}
+
+export type SavePersonalColumn = Partial<Pick<PersonalColumn, 'title' | 'color' | 'hidden'>>;
