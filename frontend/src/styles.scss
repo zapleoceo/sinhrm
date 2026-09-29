@@ -77,6 +77,7 @@ html {
 
   // Shell and shared surfaces.
   --app-card: light-dark(#ffffff, #141c2b); // white card; in dark a step lighter than the page
+  --app-board-card: light-dark(#ffffff, #1e2839); // kanban card: stands out from its column (surface-container-low) in both themes
   --app-card-shadow: 0 1px 2px light-dark(rgb(23 32 51 / 0.04), rgb(0 0 0 / 0.2));
   --app-sidebar-bg: linear-gradient(180deg, light-dark(#e8eff9, #162034) 0%, light-dark(#f0f4fa, #131b2b) 100%);
   --app-nav-heading: light-dark(#52617f, #93a6c8);
@@ -182,3 +183,60 @@ body.app-scroll-locked { overflow: hidden; }
 
 /* Person picker options: the text column may shrink so long names ellipsize and the terminated badge stays visible. */
 .person-picker-panel .mat-mdc-option .mdc-list-item__primary-text { flex: 1 1 auto; min-width: 0; }
+
+/* Board drag & drop (features/recruiting/board): CDK renders the preview outside the component (body / top layer),
+   so its look is global. Solid card, lifted with a shadow and a slight tilt; the pointer shows «grabbing» everywhere.
+   Three classes = specificity above the component's own .card / .column rules that the clone still carries. */
+.cdk-drag.cdk-drag-preview.board-drag-preview {
+  box-sizing: border-box;
+  color: var(--mat-sys-on-surface);
+  box-shadow: var(--mat-sys-level3);
+  rotate: 2deg;
+  scale: 1.03;
+  opacity: 1;
+  cursor: grabbing;
+  z-index: 10000 !important;
+}
+.cdk-drag.cdk-drag-preview.board-drag-preview:not(.board-drag-preview--column) {
+  background: var(--app-board-card);
+  border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 45%, var(--app-border));
+  border-radius: 8px;
+}
+.cdk-drag.cdk-drag-preview.board-drag-preview--column {
+  background: var(--mat-sys-surface-container-low);
+  rotate: 1deg;
+  scale: 1.02;
+}
+body.board-dragging,
+body.board-dragging * { cursor: grabbing !important; }
+
+// Board lanes/cards (app-board-page) during a drag.
+app-board-page {
+  /* Phones: scroll-snap would fight CDK auto-scroll while a card is dragged to the next column. */
+  .board.is-dragging { scroll-snap-type: none; }
+  /* Placeholder = where the card/column will land: a dashed slot of the same size, not a faded duplicate. */
+  .card.cdk-drag-placeholder, .column.cdk-drag-placeholder {
+    opacity: 1; box-shadow: none; border: 2px dashed color-mix(in srgb, var(--mat-sys-primary) 55%, transparent);
+    background: color-mix(in srgb, var(--mat-sys-primary) 6%, transparent);
+  }
+  .card.cdk-drag-placeholder > *, .column.cdk-drag-placeholder > * { visibility: hidden; }
+  /* Drop target under the pointer: stage column = real stage change (stage colour), own column = filing only (neutral, dashed). */
+  .column[data-drop] {
+    outline: 2px solid var(--drop-color); outline-offset: 2px;
+    background: color-mix(in srgb, var(--drop-color) 8%, var(--mat-sys-surface-container-low));
+  }
+  .column[data-drop='stage'] { --drop-color: var(--mat-sys-primary); --drop-on: var(--mat-sys-on-primary); }
+  .column[data-drop='stage'][data-kind='hire'] { --drop-color: var(--app-success); --drop-on: var(--mat-sys-surface); }
+  .column[data-drop='stage'][data-kind='closed'] { --drop-color: var(--app-danger); --drop-on: var(--mat-sys-surface); }
+  .column[data-drop='personal'], .column[data-drop='back'] { --drop-color: var(--mat-sys-outline); outline-style: dashed; }
+  .column[data-drop='denied'] { --drop-color: var(--app-danger); outline-style: dashed; }
+  .drop-caption {
+    position: absolute; top: 0.3rem; left: 0.4rem; right: 0.4rem; z-index: 2; margin: 0; padding: 0.3rem 0.6rem;
+    border-radius: 12px; text-align: center; pointer-events: none; font: var(--mat-sys-label-large);
+    background: var(--drop-color); color: var(--drop-on);
+  }
+  .column[data-drop='personal'] .drop-caption, .column[data-drop='back'] .drop-caption, .column[data-drop='denied'] .drop-caption {
+    background: var(--mat-sys-surface-container-highest); color: var(--mat-sys-on-surface); border: 1px dashed var(--drop-color);
+  }
+  .column[data-drop='denied'] .drop-caption { color: var(--app-bad-text); }
+}

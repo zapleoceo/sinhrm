@@ -1,7 +1,7 @@
-import { NgTemplateOutlet } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
 import { CdkScrollable } from '@angular/cdk/scrolling';
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, booleanAttribute, computed, effect, inject, input, numberAttribute, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, booleanAttribute, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,6 +18,7 @@ import { canWriteRecruiting } from '../recruiting.access';
 import { daysSince } from '../recruiting.format';
 import { Application, PERSONAL_COLORS, PersonalColumn, Stage } from '../recruiting.model';
 import { BoardStore, BoardTarget } from './board.store';
+import { DropHint, dropHint } from './drop-hint';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject.dialog';
 import { VacancySources } from './vacancy-sources';
 
@@ -36,6 +37,9 @@ import { VacancySources } from './vacancy-sources';
         <span class="muted">{{ 'recruiting.personalBoard.hint' | transloco }}</span>
         <button mat-stroked-button type="button" [matMenuTriggerFor]="setup"><mat-icon>tune</mat-icon>{{ 'recruiting.personalBoard.setup' | transloco }}</button>
         <mat-menu #setup="matMenu">
+          @if (store.hiddenColumns().length > 0) {
+            <p class="menu-note muted">{{ 'recruiting.personalBoard.hiddenHead' | transloco }}</p>
+          }
           @for (c of store.hiddenColumns(); track c.id) {
             <button mat-menu-item type="button" (click)="store.updateColumn(c, { hidden: false }, toast)"><mat-icon>visibility</mat-icon>{{ c.title }}</button>
           } @empty {
@@ -74,6 +78,7 @@ import { VacancySources } from './vacancy-sources';
 
     <div
       class="board"
+      [class.is-dragging]="dragging()"
       cdkScrollable
       cdkDropList
       cdkDropListOrientation="horizontal"
@@ -91,7 +96,16 @@ import { VacancySources } from './vacancy-sources';
           [cdkDragDisabled]="lane.kind === 'stage' || !personal()"
           [cdkDragStartDelay]="{ touch: 400, mouse: 0 }"
           [attr.aria-label]="lane.kind === 'stage' ? lane.stage.name : lane.column.title"
+          [attr.data-drop]="dropHint()?.key === lane.key ? dropHint()?.kind : null"
+          [cdkDragPreviewClass]="columnPreviewClass"
+          (cdkDragStarted)="dragStart(null, null)"
+          (cdkDragEnded)="dragEnd()"
         >
+          @if (dropHint(); as hint) {
+            @if (hint.key === lane.key) {
+              <p class="drop-caption" aria-hidden="true">{{ hint.text }}</p>
+            }
+          }
           @if (personal()) {
             <div class="slot" [class.open]="adding() === i">
               @if (adding() === i) {
@@ -103,7 +117,7 @@ import { VacancySources } from './vacancy-sources';
           }
           @if (lane.kind === 'stage') {
             <h2 class="col-head">
-              <span>{{ lane.stage.name }}</span>
+              <span class="col-title">{{ lane.stage.name }}</span>
               @if (personal()) {
                 <mat-icon class="lock" inline [matTooltip]="'recruiting.personalBoard.stageLocked' | transloco" [attr.aria-label]="'recruiting.personalBoard.stageLocked' | transloco">lock</mat-icon>
               }
@@ -124,7 +138,7 @@ import { VacancySources } from './vacancy-sources';
                   (blur)="rename(lane.column, title.value)"
                 />
               } @else {
-                <span>{{ lane.column.title }}</span>
+                <span class="col-title">{{ lane.column.title }}</span>
               }
               <span class="muted">{{ lane.items.length }}</span>
               <button mat-icon-button type="button" class="col-menu" [matMenuTriggerFor]="colMenu" [matMenuTriggerData]="{ column: lane.column }" [attr.aria-label]="'recruiting.personalBoard.columnMenu' | transloco: { name: lane.column.title }">
@@ -140,9 +154,45 @@ import { VacancySources } from './vacancy-sources';
             [cdkDropListData]="lane.kind === 'stage' ? stageTarget(lane.stage) : personalTarget(lane.column)"
             [cdkDropListDisabled]="!canWrite() && !personal()"
             (cdkDropListDropped)="onDrop($event)"
+            (cdkDropListEntered)="dragOver.set(lane.key)"
+            (cdkDropListExited)="leave(lane.key)"
           >
             @for (app of lane.items; track app.id) {
-              <ng-container *ngTemplateOutlet="card; context: { $implicit: app, hire: lane.kind === 'stage' && lane.stage.is_hire, chip: lane.kind === 'personal' }" />
+              <article
+                class="card"
+                cdkDrag
+                [cdkDragData]="app"
+                cdkDragPreviewClass="board-drag-preview"
+                [cdkDragStartDelay]="{ touch: 300, mouse: 0 }"
+                (cdkDragStarted)="dragStart(lane.key, app)"
+                (cdkDragEnded)="dragEnd()"
+                [class.stale]="app.is_stale"
+                [class.pending]="store.pending().has(app.id)"
+                tabindex="0"
+                (keydown.enter)="open(app)"
+                (dblclick)="open(app)"
+              >
+                <div class="card-top">
+                  <a class="name" [routerLink]="['/candidates', app.candidate_id]">{{ app.candidate?.full_name }}</a>
+                  @if (canWrite() || personal()) {
+                    <button mat-icon-button type="button" class="move-btn" [matMenuTriggerFor]="moveMenu" [matMenuTriggerData]="{ app: app }" [attr.aria-label]="'recruiting.personalBoard.moveTo' | transloco">
+                      <mat-icon>drive_file_move</mat-icon>
+                    </button>
+                  }
+                </div>
+                <span class="meta muted">{{ app.candidate?.phone ?? app.candidate?.email ?? '' }}</span>
+                @if (lane.kind === 'personal') {
+                  <span class="stage-chip" [matTooltip]="'recruiting.personalBoard.stageChip' | transloco">{{ stageName(app.stage_id) }}</span>
+                }
+                @if (app.is_stale) {
+                  <span class="stale-text"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.board.stale' | transloco: { days: idle(app) } }}</span>
+                }
+                @if (canWrite() && lane.kind === 'stage' && lane.stage.is_hire) {
+                  <button mat-stroked-button type="button" class="hire" (click)="hire.run(app.id)">
+                    <mat-icon>badge</mat-icon>{{ 'people.hire.action' | transloco }}
+                  </button>
+                }
+              </article>
             } @empty {
               <p class="empty muted">—</p>
             }
@@ -154,11 +204,13 @@ import { VacancySources } from './vacancy-sources';
           @if (adding() === store.lanes().length) {
             <ng-container *ngTemplateOutlet="addForm; context: { $implicit: store.lanes().length }" />
           } @else {
-            <button mat-button type="button" (click)="openSlot(store.lanes().length)"><mat-icon>add</mat-icon>{{ 'recruiting.personalBoard.add' | transloco }}</button>
+            <button mat-button type="button" (click)="openSlot(store.lanes().length)">{{ 'recruiting.personalBoard.add' | transloco }}</button>
           }
         </div>
       }
     </div>
+
+    <p class="visually-hidden" aria-live="polite">{{ dropHint()?.text ?? '' }}</p>
 
     <ng-template #addForm let-at>
       <input
@@ -193,40 +245,6 @@ import { VacancySources } from './vacancy-sources';
       </ng-template>
     </mat-menu>
 
-    <ng-template #card let-app let-isHire="hire" let-chip="chip">
-      <article
-        class="card"
-        cdkDrag
-        [cdkDragData]="app"
-        [class.stale]="app.is_stale"
-        [class.pending]="store.pending().has(app.id)"
-        tabindex="0"
-        (keydown.enter)="open(app)"
-        (dblclick)="open(app)"
-      >
-        <div class="card-top">
-          <a class="name" [routerLink]="['/candidates', app.candidate_id]">{{ app.candidate?.full_name }}</a>
-          @if (canWrite() || personal()) {
-          <button mat-icon-button type="button" class="move-btn" [matMenuTriggerFor]="moveMenu" [matMenuTriggerData]="{ app: app }" [attr.aria-label]="'recruiting.personalBoard.moveTo' | transloco">
-            <mat-icon>drive_file_move</mat-icon>
-          </button>
-          }
-        </div>
-        <span class="meta muted">{{ app.candidate?.phone ?? app.candidate?.email ?? '' }}</span>
-        @if (chip) {
-          <span class="stage-chip" [matTooltip]="'recruiting.personalBoard.stageChip' | transloco">{{ stageName(app.stage_id) }}</span>
-        }
-        @if (app.is_stale) {
-          <span class="stale-text"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.board.stale' | transloco: { days: idle(app) } }}</span>
-        }
-        @if (canWrite() && isHire) {
-          <button mat-stroked-button type="button" class="hire" (click)="hire.run(app.id)">
-            <mat-icon>badge</mat-icon>{{ 'people.hire.action' | transloco }}
-          </button>
-        }
-      </article>
-    </ng-template>
-
     <mat-menu #moveMenu="matMenu">
       <ng-template matMenuContent let-app="app">
         @if (canWrite() || personal()) {
@@ -253,7 +271,8 @@ import { VacancySources } from './vacancy-sources';
     .col-head { display: flex; justify-content: space-between; font: var(--mat-sys-title-small); margin: 0.25rem 0.25rem 0.5rem; }
     .card {
       display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem;
-      background: var(--mat-sys-surface); border: 1px solid var(--app-border); border-radius: 8px; cursor: grab;
+      background: var(--app-board-card); border: 1px solid var(--app-border); border-radius: 8px; cursor: grab;
+      box-shadow: var(--app-card-shadow);
     }
     .card:focus-visible { outline: 2px solid var(--mat-sys-primary); }
     .card.stale { border-left: 3px solid var(--app-warning); }
@@ -263,13 +282,12 @@ import { VacancySources } from './vacancy-sources';
     .stale-text { color: var(--app-warning); font-size: 0.8rem; }
     .empty { text-align: center; margin: 1rem 0; }
     .hire { margin-top: 0.25rem; align-self: flex-start; }
-    .cdk-drag-preview { box-shadow: var(--mat-sys-level3); }
-    .cdk-drag-placeholder { opacity: 0.3; }
+    /* Drag preview, landing slot, drop highlight: global (styles.scss «Board drag & drop»), the preview is outside. */
     .cdk-drag-animating, .cdk-drop-list-dragging .card:not(.cdk-drag-placeholder) { transition: transform 150ms ease-out; }
     .personal-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
     .menu-note { padding: 0 1rem; font-size: 0.85rem; }
     .col-head { align-items: center; gap: 0.25rem; }
-    .col-head > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .col-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .col-menu { margin: -0.5rem -0.25rem -0.5rem 0; }
     .col-input {
       flex: 1; min-width: 0; font: inherit; padding: 0.25rem 0.4rem; border: 1px solid var(--app-border); border-radius: 6px;
@@ -324,10 +342,24 @@ export class BoardPage {
   protected readonly hire = inject(HireAction);
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
   protected readonly colorKeys = PERSONAL_COLORS;
+  /** CDK adds each entry with classList.add — one class per item (a space-separated string throws). */
+  protected readonly columnPreviewClass = ['board-drag-preview', 'board-drag-preview--column'];
   protected readonly renaming = signal<number | null>(null);
   /** Index of the open «+» insertion slot (lanes.length = at the end). */
   protected readonly adding = signal<number | null>(null);
   protected readonly cardListIds = computed(() => this.store.lanes().map((l) => 'cards-' + l.key));
+  /** Drag in progress (card or column); the source lane key and the card — null for a column drag. */
+  protected readonly dragging = signal(false);
+  private readonly dragFrom = signal<{ key: string; app: Application } | null>(null);
+  /** Lane the dragged card is over right now (CDK cdkDropListEntered). */
+  protected readonly dragOver = signal<string | null>(null);
+  /** Highlight + caption of the lane under the dragged card: what the drop will do there. Also read out via aria-live. */
+  protected readonly dropHint = computed<DropHint | null>(() => {
+    const from = this.dragFrom();
+    const lane = this.store.lanes().find((l) => l.key === this.dragOver());
+    return from && lane && lane.key !== from.key ? dropHint(lane, from.app, this.canWrite(), (key, params) => this.i18n.translate(key, params)) : null;
+  });
+  private readonly document = inject(DOCUMENT);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   protected readonly toast = (key: string): void => {
@@ -335,7 +367,14 @@ export class BoardPage {
   };
 
   constructor() {
-    effect(() => this.store.load(this.id(), this.personal()));
+    // Only id/personal drive the reload: load() reads store signals (rejectReasons) that its own answers change —
+    // tracked, they re-ran load() on every answer (endless reloads when the reject-reason list is empty).
+    effect(() => {
+      const id = this.id();
+      const personal = this.personal();
+      untracked(() => this.store.load(id, personal));
+    });
+    inject(DestroyRef).onDestroy(() => this.document.body.classList.remove('board-dragging'));
   }
 
   protected load(): void {
@@ -360,6 +399,27 @@ export class BoardPage {
 
   protected stageName(stageId: number): string {
     return this.store.board()?.vacancy.stages.find((s) => s.id === stageId)?.name ?? '';
+  }
+
+  protected dragStart(key: string | null, app: Application | null): void {
+    this.dragging.set(true);
+    this.dragFrom.set(key !== null && app ? { key, app } : null);
+    this.dragOver.set(key);
+    this.document.body.classList.add('board-dragging');
+  }
+
+  /** Pointer left a lane without entering another one: no highlight, no caption. */
+  protected leave(key: string): void {
+    if (this.dragOver() === key) {
+      this.dragOver.set(null);
+    }
+  }
+
+  protected dragEnd(): void {
+    this.dragging.set(false);
+    this.dragFrom.set(null);
+    this.dragOver.set(null);
+    this.document.body.classList.remove('board-dragging');
   }
 
   protected onDrop(event: CdkDragDrop<BoardTarget, BoardTarget, Application>): void {
