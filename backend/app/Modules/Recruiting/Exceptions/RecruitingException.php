@@ -45,6 +45,18 @@ final class RecruitingException extends RuntimeException
         return new self('board_column_mismatch', 422);
     }
 
+    /** Personal board layout: an unknown / foreign / repeated column key. */
+    public static function boardLayoutInvalid(): self
+    {
+        return new self('board_layout_invalid', 422);
+    }
+
+    /** Personal board layout: funnel stages must keep their own order (they can only be pushed apart). */
+    public static function boardLayoutStageOrder(): self
+    {
+        return new self('board_layout_stage_order', 422);
+    }
+
     public static function stageNotInPipeline(): self
     {
         return new self('stage_not_in_pipeline', 422);

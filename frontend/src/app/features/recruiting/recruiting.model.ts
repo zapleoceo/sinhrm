@@ -493,6 +493,8 @@ export const RECRUITING_ERROR_CODES = [
   'stage_not_in_pipeline',
   'board_column_limit',
   'board_column_mismatch',
+  'board_layout_invalid',
+  'board_layout_stage_order',
   'same_stage',
   'reject_reason_required',
   'application_mismatch',
@@ -568,6 +570,8 @@ export interface PersonalColumn {
 export interface PersonalBoard {
   columns: PersonalColumn[];
   cards: { application_id: number; column_id: number }[];
+  /** Combined column order: "stage:<id>" (funnel order kept) and "col:<id>" anywhere between them. */
+  layout: string[];
 }
 
 export type SavePersonalColumn = Partial<Pick<PersonalColumn, 'title' | 'color' | 'hidden'>>;

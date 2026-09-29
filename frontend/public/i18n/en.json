@@ -330,7 +330,7 @@
       "hired": "Hired",
       "rejected": "Rejected"
     },
-    "personalBoard": {"view":"View","list":"List","board":"Board","vacancy":"Vacancy","pickVacancy":"Pick a vacancy to see its board","hint":"Only you see your own columns. The candidate stage changes only in the funnel columns.","setup":"Customize board","noHidden":"No hidden columns","reset":"Reset to default","resetConfirm":"Delete all your columns of this vacancy? Candidate stages stay as they are.","add":"+ Column","newPlaceholder":"Column name","rename":"Rename","color":"Colour","left":"Move left","right":"Move right","hide":"Hide","delete":"Delete","columnMenu":"Column menu \"{{name}}\"","moveTo":"Move to…","stageChip":"Real funnel stage","colors":{"blue":"Blue","green":"Green","amber":"Amber","red":"Red","purple":"Purple","grey":"Grey"}},
+    "personalBoard":{"addHere":"Add a column here","stageLocked":"Funnel stage: order is fixed","drag":"Drag to move the column","view":"View","list":"List","board":"Board","vacancy":"Vacancy","pickVacancy":"Pick a vacancy to see its board","hint":"Only you see your own columns. The candidate stage changes only in the funnel columns.","setup":"Customize board","noHidden":"No hidden columns","reset":"Reset to default","resetConfirm":"Delete all your columns of this vacancy? Candidate stages stay as they are.","add":"+ Column","newPlaceholder":"Column name","rename":"Rename","color":"Colour","left":"Move left","right":"Move right","hide":"Hide","delete":"Delete","columnMenu":"Column menu \"{{name}}\"","moveTo":"Move to…","stageChip":"Real funnel stage","colors":{"blue":"Blue","green":"Green","amber":"Amber","red":"Red","purple":"Purple","grey":"Grey"}},
     "board": {
       "add": "Add candidate",
       "stale": "{{days}}d without contact",
@@ -459,6 +459,8 @@
       "same_stage": "The candidate is already on this stage",
       "board_column_limit": "At most 12 own columns per vacancy",
       "board_column_mismatch": "The column does not belong to this board",
+      "board_layout_invalid": "Unknown or foreign column in the board order",
+      "board_layout_stage_order": "Funnel stages must keep their order",
       "reject_reason_required": "Choose a rejection reason",
       "application_mismatch": "The application belongs to another candidate",
       "no_default_pipeline": "No default pipeline",

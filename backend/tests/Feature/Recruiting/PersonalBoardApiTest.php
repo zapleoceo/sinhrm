@@ -48,7 +48,7 @@ final class PersonalBoardApiTest extends TestCase
     public function test_columns_crud_limits_and_reset(): void
     {
         $url = "/api/vacancies/{$this->vacancy->id}/personal-board";
-        $this->actingAs($this->recruiter)->getJson($url)->assertOk()->assertExactJson(['data' => ['columns' => [], 'cards' => []]]);
+        $this->actingAs($this->recruiter)->getJson($url)->assertOk()->assertJsonPath('data.columns', [])->assertJsonPath('data.cards', []);
 
         $id = $this->column($this->recruiter);
         $this->actingAs($this->recruiter)->postJson("$url/columns", ['title' => str_repeat('я', 41)])->assertUnprocessable();
@@ -57,11 +57,6 @@ final class PersonalBoardApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.title', 'Топ')->assertJsonPath('data.hidden', true);
 
         $second = $this->column($this->recruiter, 'Чекаю резюме');
-        $this->actingAs($this->recruiter)->putJson("$url/columns/order", ['ids' => [$second, $id]])->assertNoContent();
-        $this->actingAs($this->recruiter)->getJson($url)->assertJsonPath('data.columns.0.id', $second);
-        $this->actingAs($this->recruiter)->putJson("$url/columns/order", ['ids' => [$id]])
-            ->assertUnprocessable()->assertJsonPath('code', 'board_column_mismatch');
-
         for ($i = 3; $i <= PersonalBoardService::MAX_COLUMNS; $i++) {
             $this->column($this->recruiter, "C$i");
         }
@@ -70,6 +65,42 @@ final class PersonalBoardApiTest extends TestCase
 
         $this->actingAs($this->recruiter)->deleteJson($url)->assertNoContent();
         $this->actingAs($this->recruiter)->getJson($url)->assertJsonCount(0, 'data.columns');
+    }
+
+    public function test_layout_mixes_own_columns_between_stages_and_keeps_the_funnel_order(): void
+    {
+        $url = "/api/vacancies/{$this->vacancy->id}/personal-board";
+        $stages = $this->defaultPipeline()->stages()->pluck('id')->map(static fn (int $id): string => "stage:$id")->all();
+        $this->actingAs($this->recruiter)->getJson($url)->assertJsonPath('data.layout', $stages);
+        $id = $this->column($this->recruiter);
+        $this->actingAs($this->recruiter)->getJson($url)->assertJsonPath('data.layout', [...$stages, "col:$id"]);
+
+        // Own column before the first stage and between stages.
+        $second = $this->column($this->recruiter, 'Топ');
+        $keys = ["col:$id", $stages[0], "col:$second", ...array_slice($stages, 1)];
+        $this->actingAs($this->recruiter)->putJson("$url/layout", ['keys' => $keys])->assertOk()->assertJsonPath('data.layout', $keys);
+        $this->actingAs($this->recruiter)->getJson($url)->assertJsonPath('data.layout', $keys);
+
+        // Stages may not be reordered among themselves; unknown, repeated and foreign keys are refused.
+        $swapped = $keys;
+        [$swapped[1], $swapped[3]] = [$swapped[3], $swapped[1]];
+        $this->actingAs($this->recruiter)->putJson("$url/layout", ['keys' => $swapped])->assertUnprocessable()->assertJsonPath('code', 'board_layout_stage_order');
+        $foreign = $this->column($this->userWith(UserRole::Recruiter, [$this->branch]));
+        foreach ([["col:$foreign"], ['stage:999999'], ["col:$id", "col:$id"]] as $bad) {
+            $this->actingAs($this->recruiter)->putJson("$url/layout", ['keys' => $bad])->assertUnprocessable()->assertJsonPath('code', 'board_layout_invalid');
+        }
+        $this->actingAs($this->recruiter)->putJson("$url/layout", ['keys' => ['evil']])->assertUnprocessable();
+
+        // A stage added to the funnel later appears right after its previous stage; a deleted column just drops out.
+        $this->defaultPipeline()->stages()->getQuery()->where('position', '>=', 3)->increment('position', 100);
+        $new = $this->defaultPipeline()->stages()->create(['name' => 'Нова', 'kind' => 'select', 'position' => 3]);
+        $first = $this->defaultPipeline()->stages()->orderBy('position')->orderBy('id')->pluck('id')->all();
+        $this->actingAs($this->recruiter)->deleteJson("/api/personal-board/columns/$id")->assertNoContent();
+        $layout = $this->actingAs($this->recruiter)->getJson($url)->json('data.layout');
+        $this->assertNotContains("col:$id", $layout);
+        $at = array_search("stage:{$new->id}", $layout, true);
+        $prev = $first[array_search($new->id, $first, true) - 1];
+        $this->assertSame("stage:$prev", $layout[$at - 1]);
     }
 
     public function test_personal_move_never_changes_the_stage_and_delete_returns_the_card(): void

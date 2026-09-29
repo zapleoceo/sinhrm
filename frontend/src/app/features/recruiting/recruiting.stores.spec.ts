@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subject, of, throwError } from 'rxjs';
-import { BoardStore } from './board/board.store';
+import { BoardStore, moveInLayout } from './board/board.store';
 import { CandidateCardStore } from './card/candidate-card.store';
 import { CandidatesStore } from './candidates/candidates.store';
 import { InboxStore } from './inbox/inbox.store';
@@ -39,7 +39,13 @@ class FakeApi {
   move = () => this.move$;
   file$ = new Subject<void>();
   fileCalls: [number, number | null][] = [];
-  personalBoard = () => of<PersonalBoard>({ columns: [{ id: 7, title: 'Топ', color: null, position: 0, hidden: false }], cards: [] });
+  personalBoard = () => of<PersonalBoard>({ columns: [{ id: 7, title: 'Топ', color: null, position: 0, hidden: false }], cards: [], layout: ['stage:1', 'stage:2', 'stage:3', 'col:7'] });
+  layoutCalls: string[][] = [];
+  layout$: Observable<string[]> | null = null;
+  savePersonalLayout = (_v: number, keys: string[]) => {
+    this.layoutCalls.push(keys);
+    return this.layout$ ?? of(keys);
+  };
   fileCard = (appId: number, columnId: number | null) => {
     this.fileCalls.push([appId, columnId]);
     return this.file$;
@@ -128,6 +134,82 @@ describe('BoardStore', () => {
     store.load(1, true);
     store.addColumn(1, 'Чекаю резюме', () => undefined);
     expect(store.personalColumns().map((c) => c.column.title)).toEqual(['Топ', 'Чекаю резюме']);
+  });
+
+  it('moves an own column between funnel stages by drag & drop, never a stage', () => {
+    const { store, api } = setup(BoardStore);
+    store.load(1, true);
+    // CDK reports indexes among lanes: col:7 (index 3) dropped at index 1 — between stage 1 and stage 2.
+    store.moveLane(1, 3, 1, () => undefined);
+    expect(store.lanes().map((l) => l.key)).toEqual(['stage:1', 'col:7', 'stage:2', 'stage:3']);
+    expect(api.layoutCalls).toEqual([['stage:1', 'col:7', 'stage:2', 'stage:3']]);
+    // Before the first stage, then the keyboard fallback jumps over a stage.
+    store.moveLane(1, 1, 0, () => undefined);
+    expect(store.lanes()[0].key).toBe('col:7');
+    store.shiftColumn(1, store.personalColumns()[0].column, 1, () => undefined);
+    expect(store.lanes().map((l) => l.key)).toEqual(['stage:1', 'col:7', 'stage:2', 'stage:3']);
+    // A stage cannot be picked up.
+    store.moveLane(1, 0, 3, () => undefined);
+    expect(store.lanes()[0].key).toBe('stage:1');
+    expect(api.layoutCalls.length).toBe(3);
+  });
+
+  it('rolls back a refused layout and keeps hidden columns in their slots', () => {
+    const { store, api } = setup(BoardStore);
+    store.load(1, true);
+    let key = '';
+    api.layout$ = throwError(() => new HttpErrorResponse({ status: 422, error: { code: 'board_layout_stage_order' } }));
+    store.moveLane(1, 3, 0, (k) => (key = k));
+    expect(key).toBe('recruiting.errors.board_layout_stage_order');
+    expect(store.lanes().map((l) => l.key)).toEqual(['stage:1', 'stage:2', 'stage:3', 'col:7']);
+    expect(moveInLayout(['stage:1', 'col:9', 'stage:2', 'col:7'], ['stage:1', 'stage:2', 'col:7'], 2, 0)).toEqual([
+      'col:7',
+      'col:9',
+      'stage:1',
+      'stage:2',
+    ]);
+  });
+
+  it('creates a column right at the «+» slot', () => {
+    const { store, api } = setup(BoardStore);
+    store.load(1, true);
+    store.addColumn(1, 'Чекаю резюме', () => undefined, 1);
+    expect(store.lanes().map((l) => l.key)).toEqual(['stage:1', 'col:8', 'stage:2', 'stage:3', 'col:7']);
+    expect(api.layoutCalls.at(-1)).toEqual(['stage:1', 'col:8', 'stage:2', 'stage:3', 'col:7']);
+  });
+
+  it('takes a filed card out of its own column only after the stage move succeeded', () => {
+    const { store, api } = setup(BoardStore);
+    store.load(1, true);
+    api.file$ = new Subject<void>();
+    store.file(store.board()!.applications[0], 7, () => undefined);
+    api.fileCalls = [];
+    store.moveToStage(store.board()!.applications[0], stage(2), {}, () => undefined);
+    expect(api.fileCalls).toEqual([]);
+    expect(store.filed().get(10)).toBe(7);
+    api.move$.next({ ...application(10, 2), is_stale: false });
+    expect(api.fileCalls).toEqual([[10, null]]);
+    expect(store.filed().has(10)).toBe(false);
+
+    // Refused move: the card stays filed.
+    store.file(store.board()!.applications[0], 7, () => undefined);
+    api.fileCalls = [];
+    api.move$ = new Subject<Application>();
+    store.moveToStage(store.board()!.applications[0], stage(1), {}, () => undefined);
+    api.move$.error(new HttpErrorResponse({ status: 403 }));
+    expect(api.fileCalls).toEqual([]);
+    expect(store.filed().get(10)).toBe(7);
+  });
+
+  it('ignores a late personal board of the previous vacancy', () => {
+    const { store, api } = setup(BoardStore);
+    const late = new Subject<PersonalBoard>();
+    api.personalBoard = () => late;
+    store.load(1, true);
+    api.personalBoard = () => of<PersonalBoard>({ columns: [], cards: [], layout: [] });
+    store.load(2, true);
+    late.next({ columns: [{ id: 99, title: 'old', color: null, position: 0, hidden: false }], cards: [], layout: ['col:99'] });
+    expect(store.personal()?.columns).toEqual([]);
   });
 
   it('flags a failed load', () => {

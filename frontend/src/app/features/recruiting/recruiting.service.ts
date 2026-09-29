@@ -203,8 +203,11 @@ export class RecruitingService {
     return this.http.delete<void>(`/api/personal-board/columns/${columnId}`);
   }
 
-  reorderPersonalColumns(vacancyId: number, ids: number[]): Observable<void> {
-    return this.http.put<void>(`/api/vacancies/${vacancyId}/personal-board/columns/order`, { ids });
+  /** Saves the combined column order; answers with the stored (repaired) layout. */
+  savePersonalLayout(vacancyId: number, keys: string[]): Observable<string[]> {
+    return this.http
+      .put<{ data: { layout: string[] } }>(`/api/vacancies/${vacancyId}/personal-board/layout`, { keys })
+      .pipe(map((r) => r.data.layout));
   }
 
   resetPersonalBoard(vacancyId: number): Observable<void> {

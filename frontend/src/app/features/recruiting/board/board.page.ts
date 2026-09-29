@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { CdkDrag, CdkDragDrop, CdkDropList, CdkDropListGroup } from '@angular/cdk/drag-drop';
-import { ChangeDetectionStrategy, Component, booleanAttribute, computed, effect, inject, input, numberAttribute, signal } from '@angular/core';
+import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
+import { CdkScrollable } from '@angular/cdk/scrolling';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, booleanAttribute, computed, effect, inject, input, numberAttribute, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -26,7 +27,7 @@ import { VacancySources } from './vacancy-sources';
  */
 @Component({
   selector: 'app-board-page',
-  imports: [NgTemplateOutlet, CdkDropListGroup, CdkDropList, CdkDrag, MatButtonModule, MatIconModule, MatMenuModule, MatProgressBarModule, MatTooltipModule, RouterLink, TranslocoPipe, VacancySources],
+  imports: [NgTemplateOutlet, CdkScrollable, CdkDropList, CdkDrag, CdkDragHandle, MatButtonModule, MatIconModule, MatMenuModule, MatProgressBarModule, MatTooltipModule, RouterLink, TranslocoPipe, VacancySources],
   providers: [BoardStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -71,86 +72,126 @@ import { VacancySources } from './vacancy-sources';
       </div>
     }
 
-    <div class="board" cdkDropListGroup>
-      @for (col of store.columns(); track col.stage.id) {
+    <div
+      class="board"
+      cdkScrollable
+      cdkDropList
+      cdkDropListOrientation="horizontal"
+      [cdkDropListDisabled]="!personal()"
+      (cdkDropListDropped)="onLaneDrop($event)"
+    >
+      @for (lane of store.lanes(); track lane.key; let i = $index) {
         <section
           class="column"
-          [attr.data-kind]="col.stage.kind"
-          cdkDropList
-          [cdkDropListData]="stageTarget(col.stage)"
-          [cdkDropListDisabled]="!canWrite() && !personal()"
-          (cdkDropListDropped)="onDrop($event)"
-          [attr.aria-label]="col.stage.name"
+          [class.own]="lane.kind === 'personal'"
+          [attr.data-kind]="lane.kind === 'stage' ? lane.stage.kind : null"
+          [attr.data-color]="lane.kind === 'personal' ? lane.column.color : null"
+          cdkDrag
+          cdkDragLockAxis="x"
+          [cdkDragDisabled]="lane.kind === 'stage' || !personal()"
+          [cdkDragStartDelay]="{ touch: 400, mouse: 0 }"
+          [attr.aria-label]="lane.kind === 'stage' ? lane.stage.name : lane.column.title"
         >
-          <h2 class="col-head">
-            <span>{{ col.stage.name }}</span>
-            <span class="muted">{{ col.items.length }}</span>
-          </h2>
-          @for (app of col.items; track app.id) {
-            <ng-container *ngTemplateOutlet="card; context: { $implicit: app, hire: col.stage.is_hire }" />
-          } @empty {
-            <p class="empty muted">—</p>
+          @if (personal()) {
+            <div class="slot" [class.open]="adding() === i">
+              @if (adding() === i) {
+                <ng-container *ngTemplateOutlet="addForm; context: { $implicit: i }" />
+              } @else {
+                <button type="button" class="slot-btn" (click)="openSlot(i)" [attr.aria-label]="'recruiting.personalBoard.addHere' | transloco">+</button>
+              }
+            </div>
           }
-        </section>
-      }
-      @if (personal()) {
-        @for (pc of store.personalColumns(); track pc.column.id; let first = $first; let last = $last) {
-          <section
-            class="column own"
-            [attr.data-color]="pc.column.color"
-            cdkDropList
-            [cdkDropListData]="personalTarget(pc.column)"
-            (cdkDropListDropped)="onDrop($event)"
-            [attr.aria-label]="pc.column.title"
-          >
+          @if (lane.kind === 'stage') {
             <h2 class="col-head">
-              @if (renaming() === pc.column.id) {
+              <span>{{ lane.stage.name }}</span>
+              @if (personal()) {
+                <mat-icon class="lock" inline [matTooltip]="'recruiting.personalBoard.stageLocked' | transloco" [attr.aria-label]="'recruiting.personalBoard.stageLocked' | transloco">lock</mat-icon>
+              }
+              <span class="muted">{{ lane.items.length }}</span>
+            </h2>
+          } @else {
+            <h2 class="col-head">
+              <mat-icon class="grip" cdkDragHandle [matTooltip]="'recruiting.personalBoard.drag' | transloco">drag_indicator</mat-icon>
+              @if (renaming() === lane.column.id) {
                 <input
                   #title
                   class="col-input"
                   maxlength="40"
-                  [value]="pc.column.title"
+                  [value]="lane.column.title"
                   [attr.aria-label]="'recruiting.personalBoard.rename' | transloco"
-                  (keydown.enter)="rename(pc.column, title.value)"
+                  (keydown.enter)="rename(lane.column, title.value)"
                   (keydown.escape)="renaming.set(null)"
-                  (blur)="rename(pc.column, title.value)"
+                  (blur)="rename(lane.column, title.value)"
                 />
               } @else {
-                <span><mat-icon inline aria-hidden="true">person</mat-icon> {{ pc.column.title }}</span>
+                <span>{{ lane.column.title }}</span>
               }
-              <span class="muted">{{ pc.items.length }}</span>
-              <button mat-icon-button type="button" class="col-menu" [matMenuTriggerFor]="colMenu" [attr.aria-label]="'recruiting.personalBoard.columnMenu' | transloco: { name: pc.column.title }">
+              <span class="muted">{{ lane.items.length }}</span>
+              <button mat-icon-button type="button" class="col-menu" [matMenuTriggerFor]="colMenu" [matMenuTriggerData]="{ column: lane.column }" [attr.aria-label]="'recruiting.personalBoard.columnMenu' | transloco: { name: lane.column.title }">
                 <mat-icon>more_vert</mat-icon>
               </button>
             </h2>
-            <mat-menu #colMenu="matMenu">
-              <button mat-menu-item type="button" (click)="renaming.set(pc.column.id)"><mat-icon>edit</mat-icon>{{ 'recruiting.personalBoard.rename' | transloco }}</button>
-              <button mat-menu-item type="button" [matMenuTriggerFor]="colors"><mat-icon>palette</mat-icon>{{ 'recruiting.personalBoard.color' | transloco }}</button>
-              <button mat-menu-item type="button" [disabled]="first" (click)="store.shiftColumn(id(), pc.column, -1, toast)"><mat-icon>chevron_left</mat-icon>{{ 'recruiting.personalBoard.left' | transloco }}</button>
-              <button mat-menu-item type="button" [disabled]="last" (click)="store.shiftColumn(id(), pc.column, 1, toast)"><mat-icon>chevron_right</mat-icon>{{ 'recruiting.personalBoard.right' | transloco }}</button>
-              <button mat-menu-item type="button" (click)="store.updateColumn(pc.column, { hidden: true }, toast)"><mat-icon>visibility_off</mat-icon>{{ 'recruiting.personalBoard.hide' | transloco }}</button>
-              <button mat-menu-item type="button" (click)="store.deleteColumn(pc.column, toast)"><mat-icon>delete</mat-icon>{{ 'recruiting.personalBoard.delete' | transloco }}</button>
-            </mat-menu>
-            <mat-menu #colors="matMenu">
-              @for (c of colorKeys; track c) {
-                <button mat-menu-item type="button" (click)="store.updateColumn(pc.column, { color: c }, toast)">
-                  <span class="swatch" [attr.data-color]="c"></span>{{ 'recruiting.personalBoard.colors.' + c | transloco }}
-                </button>
-              }
-            </mat-menu>
-            @for (app of pc.items; track app.id) {
-              <ng-container *ngTemplateOutlet="card; context: { $implicit: app, hire: false, chip: true }" />
+          }
+          <div
+            class="cards"
+            cdkDropList
+            [id]="'cards-' + lane.key"
+            [cdkDropListConnectedTo]="cardListIds()"
+            [cdkDropListData]="lane.kind === 'stage' ? stageTarget(lane.stage) : personalTarget(lane.column)"
+            [cdkDropListDisabled]="!canWrite() && !personal()"
+            (cdkDropListDropped)="onDrop($event)"
+          >
+            @for (app of lane.items; track app.id) {
+              <ng-container *ngTemplateOutlet="card; context: { $implicit: app, hire: lane.kind === 'stage' && lane.stage.is_hire, chip: lane.kind === 'personal' }" />
             } @empty {
               <p class="empty muted">—</p>
             }
-          </section>
-        }
-        <form class="column add" (submit)="addColumn($event, newTitle)">
-          <input #newTitle class="col-input" maxlength="40" [placeholder]="'recruiting.personalBoard.newPlaceholder' | transloco" [attr.aria-label]="'recruiting.personalBoard.add' | transloco" />
-          <button mat-button type="submit"><mat-icon>add</mat-icon>{{ 'recruiting.personalBoard.add' | transloco }}</button>
-        </form>
+          </div>
+        </section>
+      }
+      @if (personal()) {
+        <div class="column add">
+          @if (adding() === store.lanes().length) {
+            <ng-container *ngTemplateOutlet="addForm; context: { $implicit: store.lanes().length }" />
+          } @else {
+            <button mat-button type="button" (click)="openSlot(store.lanes().length)"><mat-icon>add</mat-icon>{{ 'recruiting.personalBoard.add' | transloco }}</button>
+          }
+        </div>
       }
     </div>
+
+    <ng-template #addForm let-at>
+      <input
+        #newTitle
+        maxlength="40"
+        class="col-input add-input"
+        [placeholder]="'recruiting.personalBoard.newPlaceholder' | transloco"
+        [attr.aria-label]="'recruiting.personalBoard.add' | transloco"
+        (keydown.enter)="addColumn(newTitle.value, at)"
+        (keydown.escape)="adding.set(null)"
+        (blur)="adding.set(null)"
+      />
+    </ng-template>
+
+    <mat-menu #colMenu="matMenu">
+      <ng-template matMenuContent let-column="column">
+        <button mat-menu-item type="button" (click)="renaming.set(column.id)"><mat-icon>edit</mat-icon>{{ 'recruiting.personalBoard.rename' | transloco }}</button>
+        <button mat-menu-item type="button" [matMenuTriggerFor]="colors" [matMenuTriggerData]="{ column: column }"><mat-icon>palette</mat-icon>{{ 'recruiting.personalBoard.color' | transloco }}</button>
+        <button mat-menu-item type="button" (click)="store.shiftColumn(id(), column, -1, toast)"><mat-icon>chevron_left</mat-icon>{{ 'recruiting.personalBoard.left' | transloco }}</button>
+        <button mat-menu-item type="button" (click)="store.shiftColumn(id(), column, 1, toast)"><mat-icon>chevron_right</mat-icon>{{ 'recruiting.personalBoard.right' | transloco }}</button>
+        <button mat-menu-item type="button" (click)="store.updateColumn(column, { hidden: true }, toast)"><mat-icon>visibility_off</mat-icon>{{ 'recruiting.personalBoard.hide' | transloco }}</button>
+        <button mat-menu-item type="button" (click)="store.deleteColumn(column, toast)"><mat-icon>delete</mat-icon>{{ 'recruiting.personalBoard.delete' | transloco }}</button>
+      </ng-template>
+    </mat-menu>
+    <mat-menu #colors="matMenu">
+      <ng-template matMenuContent let-column="column">
+        @for (c of colorKeys; track c) {
+          <button mat-menu-item type="button" (click)="store.updateColumn(column, { color: c }, toast)">
+            <span class="swatch" [attr.data-color]="c"></span>{{ 'recruiting.personalBoard.colors.' + c | transloco }}
+          </button>
+        }
+      </ng-template>
+    </mat-menu>
 
     <ng-template #card let-app let-isHire="hire" let-chip="chip">
       <article
@@ -249,6 +290,19 @@ import { VacancySources } from './vacancy-sources';
       align-self: flex-start; font-size: 0.75rem; padding: 0 0.5rem; border-radius: 999px;
       background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container);
     }
+    .column { position: relative; }
+    .cards { min-height: 3em; }
+    .grip { cursor: grab; color: var(--app-muted); flex: none; touch-action: none; }
+    .lock { color: var(--app-muted); font-size: 0.9rem; flex: none; }
+    .slot { position: absolute; top: 0; bottom: 0; left: -0.75rem; width: 0.75rem; display: flex; justify-content: center; z-index: 1; }
+    .slot.open { width: 12rem; left: -6.4rem; align-items: flex-start; padding-top: 0.25rem; }
+    .slot-btn {
+      opacity: 0; width: 1.25em; height: 1.25em; margin-top: 0.5rem; border-radius: 50%; border: 1px solid var(--app-border);
+      background: var(--mat-sys-surface); color: var(--mat-sys-primary); cursor: pointer; padding: 0;
+    }
+    .slot:hover .slot-btn, .slot-btn:focus-visible { opacity: 1; }
+    @media (hover: none) { .slot-btn { opacity: 0.6; } }
+    .board.cdk-drop-list-dragging > .column:not(.cdk-drag-placeholder) { transition: transform 150ms ease-out; }
     @media (max-width: 600px) {
       .board { scroll-snap-type: x mandatory; }
       .column { flex-basis: 85vw; scroll-snap-align: start; }
@@ -271,6 +325,11 @@ export class BoardPage {
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
   protected readonly colorKeys = PERSONAL_COLORS;
   protected readonly renaming = signal<number | null>(null);
+  /** Index of the open «+» insertion slot (lanes.length = at the end). */
+  protected readonly adding = signal<number | null>(null);
+  protected readonly cardListIds = computed(() => this.store.lanes().map((l) => 'cards-' + l.key));
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   protected readonly toast = (key: string): void => {
     this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
   };
@@ -309,9 +368,14 @@ export class BoardPage {
     }
   }
 
+  /** Column drag & drop: indexes among the lanes; only own columns can be picked up (stages are locked). */
+  protected onLaneDrop(event: CdkDragDrop<unknown>): void {
+    this.store.moveLane(this.id(), event.previousIndex, event.currentIndex, this.toast);
+  }
+
   /**
-   * Own column: personal filing only, the stage stays. Stage column: leaves the own column (if any) and, when the
-   * stage differs, goes through the shared move (same API and policy as the vacancy board).
+   * Own column: personal filing only, the stage stays. Stage column: the shared move (same API and policy as the
+   * vacancy board); the card leaves its own column only once the server accepted the move.
    */
   protected moveTo(app: Application, target: BoardTarget): void {
     if (target.type === 'personal') {
@@ -319,18 +383,12 @@ export class BoardPage {
       return;
     }
     const stage = target.stage;
-    if (this.store.filed().has(app.id)) {
-      this.store.file(app, null, this.toast);
-    }
-    if (app.stage_id === stage.id) {
-      return;
-    }
-    if (!this.canWrite()) {
+    if (app.stage_id !== stage.id && !this.canWrite()) {
       this.toast('recruiting.errors.forbidden');
       return;
     }
-    if (!this.store.needsReason(stage)) {
-      this.store.move(app, stage, {}, this.toast);
+    if (app.stage_id === stage.id || !this.store.needsReason(stage)) {
+      this.store.moveToStage(app, stage, {}, this.toast);
       return;
     }
     this.dialog
@@ -340,17 +398,22 @@ export class BoardPage {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          this.store.move(app, stage, result, this.toast);
+          this.store.moveToStage(app, stage, result, this.toast);
         }
       });
   }
 
-  protected addColumn(event: Event, input: HTMLInputElement): void {
-    event.preventDefault();
-    const title = input.value.trim();
+  /** «+» slot between columns (or at the end): inline title, Enter saves right there, Esc cancels. */
+  protected openSlot(at: number): void {
+    this.adding.set(at);
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLInputElement>('.add-input')?.focus(), { injector: this.injector });
+  }
+
+  protected addColumn(value: string, at: number): void {
+    const title = value.trim();
+    this.adding.set(null);
     if (title) {
-      this.store.addColumn(this.id(), title, this.toast);
-      input.value = '';
+      this.store.addColumn(this.id(), title, this.toast, at);
     }
   }
 

@@ -32,6 +32,7 @@ final class PersonalBoardController
         return new JsonResponse(['data' => [
             'columns' => $board['columns']->map(fn (BoardColumn $c): array => $this->column($c))->values()->all(),
             'cards' => $board['cards'],
+            'layout' => $board['layout'],
         ]]);
     }
 
@@ -55,13 +56,15 @@ final class PersonalBoardController
         return response()->noContent();
     }
 
-    /** PUT {ids: [column ids in the new order]} — exactly the user's columns of this vacancy. */
-    public function reorder(Request $request, Vacancy $vacancy): Response
+    /** PUT {keys: ["stage:3", "col:7", ...]} — the combined column order; answers with the stored layout. */
+    public function layout(Request $request, Vacancy $vacancy): JsonResponse
     {
-        $ids = $request->validate(['ids' => ['present', 'array', 'max:'.PersonalBoardService::MAX_COLUMNS], 'ids.*' => ['integer', 'distinct']])['ids'];
-        $this->board->reorder($this->viewer($request, $vacancy), $vacancy, array_values(array_map('intval', $ids)));
+        $keys = $request->validate([
+            'keys' => ['present', 'array', 'max:100'],
+            'keys.*' => ['string', 'regex:/^(stage|col):[1-9][0-9]{0,18}$/'],
+        ])['keys'];
 
-        return response()->noContent();
+        return new JsonResponse(['data' => ['layout' => $this->board->saveLayout($this->viewer($request, $vacancy), $vacancy, array_values(array_map('strval', $keys)))]]);
     }
 
     /** DELETE — back to the shared stages only. */
