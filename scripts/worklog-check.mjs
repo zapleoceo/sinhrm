@@ -4,19 +4,12 @@
 //   node scripts/worklog-check.mjs <base-ref>     env: PR_LABELS="a,b" PR_AUTHOR=<login>
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { TEMPLATE, checkPr, isFragmentPath } from './worklog-lib.mjs';
+import { TEMPLATE, checkPr, isFragmentPath, parseNameStatus } from './worklog-lib.mjs';
 
 const base = process.argv[2] || 'origin/main';
-const diff = execFileSync('git', ['diff', '--name-status', '--no-renames', `${base}...HEAD`], { encoding: 'utf8' });
-const changes = diff
-  .trim()
-  .split('\n')
-  .filter(Boolean)
-  .map((l) => {
-    const parts = l.split('\t');
-    // --no-renames: a move is D old + A new; oldPath kept for safety if a rename line ever appears.
-    return { status: parts[0], path: parts[parts.length - 1], oldPath: parts.length > 2 ? parts[1] : undefined };
-  });
+// -z + quotepath=false: paths with unicode, spaces or tabs come back verbatim instead of quoted octal escapes.
+const diff = execFileSync('git', ['-c', 'core.quotepath=false', 'diff', '-z', '--name-status', '--no-renames', `${base}...HEAD`], { encoding: 'utf8' });
+const changes = parseNameStatus(diff);
 const fragments = Object.fromEntries(
   changes.filter((c) => /^[AMR]/.test(c.status) && isFragmentPath(c.path)).map((c) => [c.path, readFileSync(c.path, 'utf8')]),
 );
