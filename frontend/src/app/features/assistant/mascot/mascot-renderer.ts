@@ -1,6 +1,7 @@
 import { DOODLE_DRAW, DOODLE_SHAPES, Effect, doodlePoint, effectAlpha } from './effects';
 import { EyeShape, MouthShape, pupilOffset } from './face';
 import { bubblePath, circlePath, jitter, noise, sketchCircle, smoothPath, starPath, taperedPath } from './ink';
+import { InkProp } from './animations';
 import { Frame } from './mascot-engine';
 import { BONES, Vec } from './skeleton';
 
@@ -8,6 +9,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Size of the moving box and where the hip sits inside it (the drawing overflows it freely). */
 export const BOX = { w: 240, h: 240, hipX: 120, hipY: 150 } as const;
 const PATH_POOL = 16;
+const INK_POOL = 24;
 const TEXT_POOL = 4;
 const f = (n: number): string => (Math.round(n * 100) / 100).toString();
 
@@ -33,6 +35,9 @@ export class MascotRenderer {
   private readonly propRope: SVGPathElement;
   private readonly propBook: SVGPathElement;
   private readonly propBalls: SVGPathElement;
+  /** Route props (ladder, rope, trampoline…) in world coordinates, drawn on stroke by stroke. */
+  private readonly inkGroup: SVGGElement;
+  private readonly inkPaths: SVGPathElement[] = [];
   private readonly thought: SVGPathElement;
   private readonly waves: SVGPathElement;
   private readonly paths: SVGPathElement[] = [];
@@ -67,6 +72,10 @@ export class MascotRenderer {
     this.propRope = this.el('path', { class: 'stroke thin' }, props);
     this.propBook = this.el('path', { class: 'stroke thin' }, props);
     this.propBalls = this.el('path', { class: 'fill' }, props);
+    this.inkGroup = this.el('g', { class: 'ink' }, props);
+    for (let i = 0; i < INK_POOL; i++) {
+      this.inkPaths.push(this.el('path', { class: 'stroke', visibility: 'hidden' }, this.inkGroup));
+    }
 
     this.body = this.el('g', { class: 'body' }, this.svg);
     const far = this.el('g', { class: 'far' }, this.body);
@@ -290,6 +299,27 @@ export class MascotRenderer {
       this.set(this.propBook, 'd', '');
     }
     this.set(this.propBalls, 'd', pr.balls ? pr.balls.map((b) => circlePath(b.x - origin.x, b.y - origin.y, 2.6)).join(' ') : '');
+    this.renderInk(pr.ink ?? null, origin);
+  }
+
+  private renderInk(items: readonly InkProp[] | null, origin: Vec): void {
+    this.set(this.inkGroup, 'transform', `translate(${f(-origin.x)} ${f(-origin.y)})`);
+    const count = items ? Math.min(items.length, INK_POOL) : 0;
+    for (let i = 0; i < INK_POOL; i++) {
+      const el = this.inkPaths[i];
+      if (i >= count || !items) {
+        this.set(el, 'visibility', 'hidden');
+        continue;
+      }
+      const it = items[i];
+      this.set(el, 'visibility', it.alpha > 0.01 ? 'visible' : 'hidden');
+      this.set(el, 'd', it.d);
+      this.set(el, 'opacity', f(Math.max(0, Math.min(1, it.alpha))));
+      const drawing = it.draw < 0.999;
+      this.set(el, 'pathLength', drawing ? '1' : '');
+      this.set(el, 'stroke-dasharray', drawing ? '1 1' : '');
+      this.set(el, 'stroke-dashoffset', drawing ? f(1 - it.draw) : '');
+    }
   }
 
   private renderThought(frame: Frame, head: Vec): void {

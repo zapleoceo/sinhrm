@@ -12,7 +12,7 @@ import { AssistantChat } from '../chat/assistant-chat';
 import { AssistantVoice } from '../voice/assistant-voice';
 import { AssistantJokes } from '../jokes';
 import { LanguageService } from '../../../core/i18n/language.service';
-import { Stage } from './animations';
+import { PanelRect, Stage } from './animations';
 import { BrainCommand, MascotBrain, dispatchEngineEvent } from './brain';
 import { EngineEvent, MascotEngine } from './mascot-engine';
 import { MASCOT_FRAME_CLOCK, MascotLoop } from './mascot-loop';
@@ -76,6 +76,7 @@ export class AssistantMascot {
   private press: { x: number; y: number; id: number; dragging: boolean } | null = null;
   private lastScroll = { top: 0, t: 0 };
   private seat: Vec | null = null;
+  private panel: PanelRect | null = null;
   private blinkTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly cleanups: (() => void)[] = [];
 
@@ -227,13 +228,24 @@ export class AssistantMascot {
 
   private onResize(): void {
     this.cacheViewport();
+    // Read the panel box once per resize (never per frame); routes re-target smoothly.
+    const panel = this.seat ? this.document.querySelector('.assistant-panel') : null;
+    if (panel) {
+      this.measurePanel(panel);
+    }
     this.engine?.setStage(this.stage());
     this.loop?.kick();
   }
 
   private stage(): Stage {
     const { width, height } = this.viewport;
-    return { width, height, ground: height - 2, seat: this.seat, corner: { x: width - CORNER, y: height - CORNER } };
+    return { width, height, ground: height - 2, seat: this.seat, panel: this.panel, corner: { x: width - CORNER, y: height - CORNER } };
+  }
+
+  private measurePanel(panel: Element): void {
+    const r = panel.getBoundingClientRect();
+    this.seat = { x: r.left + r.width * 0.64, y: r.top };
+    this.panel = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
   }
 
   private applyLite(): void {
@@ -290,6 +302,7 @@ export class AssistantMascot {
   private onChat(open: boolean): void {
     if (!open) {
       this.seat = null;
+      this.panel = null;
       this.engine?.setStage(this.stage());
       this.brain?.chatClosed();
       this.updatePause();
@@ -300,8 +313,7 @@ export class AssistantMascot {
     const measure = (): void => {
       const panel = this.document.querySelector('.assistant-panel');
       if (panel) {
-        const r = panel.getBoundingClientRect();
-        this.seat = { x: r.left + r.width * 0.64, y: r.top };
+        this.measurePanel(panel);
         this.engine?.setStage(this.stage());
       }
       this.brain?.chatOpened();

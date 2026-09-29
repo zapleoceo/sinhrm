@@ -1,8 +1,8 @@
 import { AssistantMood } from '../assistant.model';
 import { pickGreeting, pickQuip } from '../quips';
 import type { EngineEvent } from './mascot-engine';
-import { FallCause, Joke, JokeSituation, situationFor } from '../jokes';
-import { ActionName, ENTRANCES, EXITS, EntranceAction, ExitAction, GestureName, IDLE_WEIGHTS } from './animations';
+import { FallCause, Joke, JokeSituation, situationFor } from '../joke-situations';
+import { ActionName, ROUTE_ACTIONS, ENTRANCES, EXITS, EntranceAction, ExitAction, GestureName, IDLE_WEIGHTS } from './animations';
 
 export type BrainState =
   | 'offstage'
@@ -293,6 +293,11 @@ export class MascotBrain {
     this.emit({ type: 'say', key: null });
     if (!this.enabled) {
       this.toOrb(false);
+    } else if (['fallen', 'recovering', 'airborne', 'dragged', 'entering'].includes(this.current)) {
+      // Busy entering / falling / getting up / being held: he heads for the panel once he is on his feet.
+      return;
+    } else if (['idle', 'asleep', 'waking', 'static'].includes(this.current) && !this.reduced) {
+      this.routeToSeat();
     } else {
       this.toDocked(this.reduced ? 0 : undefined);
     }
@@ -434,7 +439,7 @@ export class MascotBrain {
         this.restoreAfterSleep();
         break;
       case 'docked':
-        if (action === 'return-seat') {
+        if ((ROUTE_ACTIONS as readonly string[]).includes(action)) {
           this.play('docked', { blend: 0.12 });
         }
         break;
@@ -493,14 +498,7 @@ export class MascotBrain {
         this.play('dust');
         break;
       default:
-        if (this.chatOpen && !this.reduced) {
-          // Hop back up onto the chat panel (no teleport), then sit.
-          this.current = 'docked';
-          this.play('return-seat');
-          this.resetSleep();
-        } else {
-          this.toIdle();
-        }
+        this.toIdle();
         break;
     }
   }
@@ -522,7 +520,8 @@ export class MascotBrain {
 
   private toIdle(): void {
     if (this.chatOpen) {
-      this.toDocked();
+      // Standing on the floor with the chat open: find a way up onto the panel.
+      this.routeToSeat();
       return;
     }
     this.current = 'idle';
@@ -574,6 +573,11 @@ export class MascotBrain {
   }
 
   private goOffstage(): void {
+    if (this.chatOpen && this.enabled) {
+      // The chat is open (he was peeking or leaving when it opened): come and sit on it instead.
+      this.toDocked();
+      return;
+    }
     this.current = 'offstage';
     this.emit({ type: 'say', key: null });
     this.emit({ type: 'visible', value: false });
@@ -581,6 +585,14 @@ export class MascotBrain {
       const gap = TIMING.minGap + this.rng() * (TIMING.maxGap - TIMING.minGap);
       this.schedule('appear', gap, () => this.appear('quip'));
     }
+  }
+
+  /** Gets onto the chat panel by one of the routes (the engine picks it by geometry). */
+  private routeToSeat(): void {
+    this.current = 'docked';
+    this.emit({ type: 'visible', value: true });
+    this.play('seat-route');
+    this.resetSleep();
   }
 
   private toDocked(blend?: number): void {
