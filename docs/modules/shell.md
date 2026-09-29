@@ -83,6 +83,8 @@
   Angular Material (`provideAppDates()`: неделя с понедельника, формат дд.мм.рррр, названия месяцев на языке интерфейса);
   значки каналов/источников/интеграций — `app-channel-icon` (Font Awesome Free), остальные действия — Material Symbols.
 
+**Цвета.** Сайдбар и мобильный топбар — фон `--app-sidebar-bg` (лёгкий градиент с оттенком бренда), активный пункт — «пилюля» `--app-nav-active-bg` с текстом и иконкой `--app-nav-active-text`, заголовки групп — `--app-nav-heading`, фокус — бирюзовое кольцо `--app-focus-ring`. Все значения — токены из `styles.scss`, палитра: [design-direction §4.1](../architecture/design-direction.md).
+
 ## Как проверить
 `npx ng test --watch=false` (guards, AuthService, язык, сворачивание меню — `nav-groups.spec.ts`, `shell.layout.spec.ts`, счётчики — `nav-badges.spec.ts`, справка — `docs/docs.spec.ts`), `npm run test:docs` (сборщик справки), `npx ng build`.
 Вручную: войти → переключить тему и язык → обновить страницу (выбор сохранился) → «Вийти» ведёт на `/login`.

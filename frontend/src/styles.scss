@@ -1,5 +1,6 @@
-// Angular Material 3 theme. One accent (azure), neutral surfaces; light/dark via color-scheme
-// (docs/architecture/design-direction.md). mat.theme with theme-type color-scheme emits light-dark() tokens.
+// Angular Material 3 theme: brand blue (logo #1A5FB4) as the one accent, neutrals with a slight cool-blue bias,
+// teal (#2EC4B6) only as a sparing secondary accent. Light/dark via color-scheme — every value is light-dark().
+// Palette table: docs/architecture/design-direction.md §4.1; contrast check: scripts/contrast-check.mjs.
 @use '@angular/material' as mat;
 
 html {
@@ -16,6 +17,38 @@ html {
     )
   );
 
+  // Cool-tinted neutrals and the exact logo blue on top of the azure palette (system tokens → all components).
+  @include mat.theme-overrides(
+    (
+      primary: light-dark(#1a5fb4, #8fb8ee),
+      on-primary: light-dark(#ffffff, #06264d),
+      primary-container: light-dark(#d8e6f8, #1d3b63),
+      on-primary-container: light-dark(#0b3b75, #d6e5fa),
+      secondary-container: light-dark(#dde7f5, #1f3150),
+      on-secondary-container: light-dark(#123f73, #cfe0f7),
+      surface: light-dark(#f7f9fc, #0f1623),
+      surface-container-lowest: light-dark(#ffffff, #0b111c),
+      surface-container-low: light-dark(#f1f5fa, #141c2b),
+      surface-container: light-dark(#ebf0f7, #182133),
+      surface-container-high: light-dark(#e4eaf3, #1e2839),
+      surface-container-highest: light-dark(#dde4ee, #253043),
+      on-surface: light-dark(#172033, #e2e8f2),
+      on-surface-variant: light-dark(#4a5670, #a9b4c7),
+      outline: light-dark(#737f96, #7d889c),
+      outline-variant: light-dark(#d6dde8, #2e3a4f),
+    )
+  );
+
+  // Teal as the secondary accent: selected-tab underline and progress bars.
+  @include mat.tabs-overrides(
+    (
+      active-indicator-color: var(--app-accent),
+      active-focus-indicator-color: var(--app-accent),
+      active-hover-indicator-color: var(--app-accent),
+    )
+  );
+  @include mat.progress-bar-overrides((active-indicator-color: var(--app-accent)));
+
   // App tokens on top of Material system variables.
   --app-gap: 1.5rem;
   --app-radius: 12px;
@@ -27,6 +60,36 @@ html {
   --app-brand-text: light-dark(#1a5fb4, #99c1f1);
   --app-danger: light-dark(#b91c1c, #f87171);
   --app-warning: light-dark(#b45309, #fbbf24);
+  --app-info: var(--app-brand-text);
+  // Teal accent, darkened in light theme to keep >= 3:1 as a UI colour (focus rings, indicators).
+  --app-accent: light-dark(#0f7f76, #2ec4b6);
+  --app-focus-ring: var(--app-accent);
+
+  // Semantic chips/badges: text colour + ~12% tint of it as background (AA >= 4.5 on cards, both themes).
+  --app-good-text: light-dark(#166534, #4ade80);
+  --app-warn-text: light-dark(#92400e, #fbbf24);
+  --app-bad-text: light-dark(#b91c1c, #f87171);
+  --app-info-text: var(--app-brand-text);
+  --app-good-bg: color-mix(in srgb, var(--app-good-text) 12%, transparent);
+  --app-warn-bg: color-mix(in srgb, var(--app-warn-text) 12%, transparent);
+  --app-bad-bg: color-mix(in srgb, var(--app-bad-text) 12%, transparent);
+  --app-info-bg: color-mix(in srgb, var(--app-info-text) 12%, transparent);
+
+  // Shell and shared surfaces.
+  --app-card: light-dark(#ffffff, #141c2b); // white card; in dark a step lighter than the page
+  --app-card-shadow: 0 1px 2px light-dark(rgb(23 32 51 / 0.04), rgb(0 0 0 / 0.2));
+  --app-sidebar-bg: linear-gradient(180deg, light-dark(#e8eff9, #162034) 0%, light-dark(#f0f4fa, #131b2b) 100%);
+  --app-nav-heading: light-dark(#52617f, #93a6c8);
+  --app-nav-hover: color-mix(in srgb, var(--app-brand) 7%, transparent);
+  --app-nav-active-bg: color-mix(in srgb, var(--app-brand) 13%, transparent);
+  --app-nav-active-text: light-dark(#154f97, #99c1f1);
+  --app-table-head: light-dark(#f0f4fa, #182133);
+  --app-row-hover: color-mix(in srgb, var(--app-brand) 4%, transparent);
+
+  // Chart ramp (reports): brand blue → teal.
+  --app-chart-1: var(--mat-sys-primary);
+  --app-chart-2: light-dark(#1f7fa6, #5fb8d8);
+  --app-chart-3: var(--app-accent);
 }
 
 // Explicit user choice (ThemeService) overrides the OS preference.
@@ -85,8 +148,15 @@ body {
 .panel {
   border: 1px solid var(--app-border);
   border-radius: var(--app-radius);
+  background: var(--app-card);
+  box-shadow: var(--app-card-shadow);
   overflow-x: auto;
 }
+
+/* Material tables: faintly tinted header row, faint brand tint on row hover. */
+.mat-mdc-header-row { background: var(--app-table-head); }
+.mat-mdc-row:hover { background: var(--app-row-hover); }
+
 
 .state { padding: 2.5rem 1rem; text-align: center; }
 
