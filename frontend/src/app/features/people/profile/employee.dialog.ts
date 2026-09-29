@@ -28,18 +28,31 @@ type EditableStatus = 'active' | 'on_leave';
     <h2 mat-dialog-title>{{ (data.employee ? 'people.edit.title' : 'people.directory.add') | transloco }}</h2>
     <form [formGroup]="form" (ngSubmit)="submit()">
       <mat-dialog-content>
+        <h3 class="section">{{ 'people.edit.sections.main' | transloco }}</h3>
         <div class="grid">
-          <mat-form-field class="full">
+          <mat-form-field class="full" subscriptSizing="dynamic">
             <mat-label>{{ 'people.fields.fullName' | transloco }}</mat-label>
             <input matInput formControlName="full_name" maxlength="255" required cdkFocusInitial />
             <mat-error>{{ 'people.required' | transloco }}</mat-error>
           </mat-form-field>
-          <mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'people.fields.workEmail' | transloco }}</mat-label>
+            <input matInput type="email" formControlName="work_email" maxlength="255" />
+            <mat-error>{{ 'people.invalidEmail' | transloco }}</mat-error>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'people.fields.phone' | transloco }}</mat-label>
+            <input matInput formControlName="phone" maxlength="32" />
+          </mat-form-field>
+        </div>
+        <h3 class="section">{{ 'people.edit.sections.work' | transloco }}</h3>
+        <div class="grid">
+          <mat-form-field subscriptSizing="dynamic">
             <mat-label>{{ 'people.fields.hiredAt' | transloco }}</mat-label>
             <input matInput [matDatepicker]="dp1" formControlName="hired_at" required /><mat-datepicker-toggle matIconSuffix [for]="dp1" /><mat-datepicker #dp1 />
             <mat-error>{{ 'people.required' | transloco }}</mat-error>
           </mat-form-field>
-          <mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
             <mat-label>{{ 'people.fields.employmentType' | transloco }}</mat-label>
             <mat-select formControlName="employment_type">
               @for (t of types; track t) {
@@ -47,7 +60,59 @@ type EditableStatus = 'active' | 'on_leave';
               }
             </mat-select>
           </mat-form-field>
-          <mat-form-field>
+          @if (data.employee) {
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label>{{ 'people.fields.status' | transloco }}</mat-label>
+              <mat-select formControlName="status">
+                <mat-option value="active">{{ 'people.status.active' | transloco }}</mat-option>
+                <mat-option value="on_leave">{{ 'people.status.on_leave' | transloco }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          }
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'people.fields.branch' | transloco }}</mat-label>
+            <mat-select formControlName="branch_id">
+              <mat-option [value]="null">—</mat-option>
+              @for (b of branches(); track b.id) {
+                <mat-option [value]="b.id">{{ b.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'people.fields.department' | transloco }}</mat-label>
+            <mat-select formControlName="department_id">
+              <mat-option [value]="null">—</mat-option>
+              @for (d of departments(); track d.id) {
+                <mat-option [value]="d.id">{{ d.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'people.fields.position' | transloco }}</mat-label>
+            <mat-select formControlName="position_id">
+              <mat-option [value]="null">—</mat-option>
+              @for (p of positions(); track p.id) {
+                <mat-option [value]="p.id">{{ p.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'people.fields.manager' | transloco }}</mat-label>
+            <mat-select formControlName="manager_id">
+              <mat-option [value]="null">—</mat-option>
+              @for (m of managers(); track m.id) {
+                <mat-option [value]="m.id">{{ m.full_name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <h3 class="section">{{ 'people.edit.sections.personal' | transloco }}</h3>
+        <div class="grid">
+          <mat-form-field subscriptSizing="dynamic">
+            <mat-label>{{ 'people.fields.birthDate' | transloco }}</mat-label>
+            <input matInput [matDatepicker]="dp2" formControlName="birth_date" /><mat-datepicker-toggle matIconSuffix [for]="dp2" /><mat-datepicker #dp2 />
+          </mat-form-field>
+          <mat-form-field subscriptSizing="dynamic">
             <mat-label>{{ 'people.fields.gender' | transloco }}</mat-label>
             <mat-select formControlName="gender">
               <mat-option [value]="null">—</mat-option>
@@ -57,75 +122,16 @@ type EditableStatus = 'active' | 'on_leave';
             </mat-select>
             <mat-hint>{{ 'people.gender.hint' | transloco }}</mat-hint>
           </mat-form-field>
-          @if (data.employee) {
-            <mat-form-field>
-              <mat-label>{{ 'people.fields.status' | transloco }}</mat-label>
-              <mat-select formControlName="status">
-                <mat-option value="active">{{ 'people.status.active' | transloco }}</mat-option>
-                <mat-option value="on_leave">{{ 'people.status.on_leave' | transloco }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-          }
-          <mat-form-field>
-            <mat-label>{{ 'people.fields.workEmail' | transloco }}</mat-label>
-            <input matInput type="email" formControlName="work_email" maxlength="255" />
-            <mat-error>{{ 'people.invalidEmail' | transloco }}</mat-error>
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>{{ 'people.fields.phone' | transloco }}</mat-label>
-            <input matInput formControlName="phone" maxlength="32" />
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>{{ 'people.fields.branch' | transloco }}</mat-label>
-            <mat-select formControlName="branch_id">
-              <mat-option [value]="null">—</mat-option>
-              @for (b of branches(); track b.id) {
-                <mat-option [value]="b.id">{{ b.name }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>{{ 'people.fields.department' | transloco }}</mat-label>
-            <mat-select formControlName="department_id">
-              <mat-option [value]="null">—</mat-option>
-              @for (d of departments(); track d.id) {
-                <mat-option [value]="d.id">{{ d.name }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>{{ 'people.fields.position' | transloco }}</mat-label>
-            <mat-select formControlName="position_id">
-              <mat-option [value]="null">—</mat-option>
-              @for (p of positions(); track p.id) {
-                <mat-option [value]="p.id">{{ p.name }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>{{ 'people.fields.manager' | transloco }}</mat-label>
-            <mat-select formControlName="manager_id">
-              <mat-option [value]="null">—</mat-option>
-              @for (m of managers(); track m.id) {
-                <mat-option [value]="m.id">{{ m.full_name }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <p class="full section">{{ 'people.tabs.personal' | transloco }}</p>
-          <mat-form-field>
-            <mat-label>{{ 'people.fields.birthDate' | transloco }}</mat-label>
-            <input matInput [matDatepicker]="dp2" formControlName="birth_date" /><mat-datepicker-toggle matIconSuffix [for]="dp2" /><mat-datepicker #dp2 />
-          </mat-form-field>
-          <mat-form-field>
+          <mat-form-field class="full" subscriptSizing="dynamic">
             <mat-label>{{ 'people.fields.personalEmail' | transloco }}</mat-label>
             <input matInput type="email" formControlName="personal_email" maxlength="255" />
             <mat-error>{{ 'people.invalidEmail' | transloco }}</mat-error>
           </mat-form-field>
-          <mat-form-field class="full">
+          <mat-form-field class="full" subscriptSizing="dynamic">
             <mat-label>{{ 'people.fields.address' | transloco }}</mat-label>
             <input matInput formControlName="address" maxlength="1000" />
           </mat-form-field>
-          <mat-form-field class="full">
+          <mat-form-field class="full" subscriptSizing="dynamic">
             <mat-label>{{ 'people.fields.emergencyContact' | transloco }}</mat-label>
             <input matInput formControlName="emergency_contact" maxlength="1000" />
           </mat-form-field>
@@ -141,10 +147,16 @@ type EditableStatus = 'active' | 'on_leave';
     </form>
   `,
   styles: `
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; min-width: min(40rem, 80vw); }
+    /* Host and form are layout-transparent: title, content and actions stay direct flex items of the dialog
+       surface, so only mat-dialog-content scrolls (vertically) while the title and actions stay in place. */
+    :host, form { display: contents; }
+    mat-dialog-content { overflow-x: hidden; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.75rem 1rem; }
+    .grid mat-form-field { min-width: 0; }
     .full { grid-column: 1 / -1; }
-    .section { margin: 0.5rem 0; font: var(--mat-sys-title-small); color: var(--app-muted); }
-    .error { color: var(--app-danger); margin: 0; }
+    .section { margin: 1rem 0 0.75rem; font: var(--mat-sys-title-small); color: var(--app-muted); }
+    .section:first-child { margin-top: 0.25rem; }
+    .error { color: var(--app-danger); margin: 0.75rem 0 0; }
     @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
   `,
 })

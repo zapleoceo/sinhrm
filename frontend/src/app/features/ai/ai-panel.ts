@@ -22,6 +22,7 @@ import {
   usagePercent,
 } from './ai.model';
 import { AiService, aiCodeKey, aiErrorKey } from './ai.service';
+import { wideDialog } from '../../core/ui/dialog';
 
 /**
  * Integrations → AI: whether AI can run per purpose (and why not), the broker capability and prompt version of each,
@@ -358,7 +359,7 @@ export class AiPanel implements OnInit {
 
   protected openPrompt(purpose: AiPurpose): void {
     this.dialog
-      .open(AiPromptDialog, { data: purpose, width: '56rem', maxWidth: '95vw', autoFocus: false })
+      .open(AiPromptDialog, { ...wideDialog(purpose, '56rem'), autoFocus: false })
       .afterClosed()
       .subscribe((changed: unknown) => {
         if (changed === true) {

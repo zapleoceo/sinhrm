@@ -98,3 +98,14 @@ body.app-scroll-locked { overflow: hidden; }
 
 /* Wide tables scroll inside their container, never the page. */
 .table-scroll { max-width: 100%; overflow-x: auto; }
+
+// Wide dialogs (core/ui/dialog.ts → wideDialog()): the pane width comes from the config, not Material's 560px cap;
+// on phones the dialog takes the whole width so two-column forms collapse to one column without horizontal scroll.
+.cdk-overlay-pane.app-dialog-wide {
+  --mat-dialog-container-max-width: 100%;
+  --mat-dialog-container-small-max-width: 100vw;
+  @media (max-width: 600px) {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+}

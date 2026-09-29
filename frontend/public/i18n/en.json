@@ -638,7 +638,7 @@
     "employmentType": { "full_time": "Full time", "part_time": "Part time", "contractor": "Contractor" },
     "weekday": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },
     "tabs": { "overview": "Overview", "job": "Job", "timeoff": "Time off", "changes": "Change requests", "personal": "Personal", "documents": "Documents", "workflows": "Workflows", "performance": "Performance", "assets": "Assets", "compensation": "Compensation" },
-    "edit": { "title": "Edit" },
+    "edit": { "title": "Edit", "sections": { "main": "Main", "work": "Work", "personal": "Personal" } },
     "terminate": { "action": "Terminate", "title": "Terminate {{name}}", "hint": "The record stays in the history; the person disappears from the directory and the org chart.", "reason": "Reason", "confirm": "Terminate" },
     "approvalEmails": "E-mail me about approvals",
     "changes": { "new": "Request a change", "hint": "Your manager or HR will review the change; the profile updates after approval.", "comment": "Comment", "send": "Send", "sent": "Request sent", "nothing": "Nothing has changed", "empty": "No change requests" },
