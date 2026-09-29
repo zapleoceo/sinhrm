@@ -26,6 +26,7 @@ import { canManagePeople } from '../people.access';
 import { EMPLOYEE_STATUSES, Employee } from '../people.model';
 import { EmployeeDialog, EmployeeDialogData } from '../profile/employee.dialog';
 import { PeopleStore, PeopleView } from './people.store';
+import { wideDialog } from '../../../core/ui/dialog';
 
 /** People directory: search, filters (branch, department, position, status), table or cards; admins add people. */
 @Component({
@@ -308,7 +309,7 @@ export class PeoplePage implements OnInit {
 
   protected add(): void {
     this.dialog
-      .open<EmployeeDialog, EmployeeDialogData, Employee>(EmployeeDialog, { data: { employee: null } })
+      .open<EmployeeDialog, EmployeeDialogData, Employee>(EmployeeDialog, wideDialog({ employee: null }))
       .afterClosed()
       .subscribe((saved) => {
         if (saved) {

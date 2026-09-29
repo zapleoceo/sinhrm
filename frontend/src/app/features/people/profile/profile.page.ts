@@ -30,6 +30,7 @@ import { EmployeeDialog, EmployeeDialogData } from './employee.dialog';
 import { ProfileStore, ProfileTab } from './profile.store';
 import { TerminateDialog } from './terminate.dialog';
 import { PrivacyActions } from '../../privacy/privacy-actions';
+import { wideDialog } from '../../../core/ui/dialog';
 
 /**
  * Employee profile (/people/:id) and "My profile" (/me). Tabs follow the API's access flags: Overview for everyone,
@@ -343,7 +344,7 @@ export class ProfilePage {
 
   protected edit(e: Employee): void {
     this.dialog
-      .open<EmployeeDialog, EmployeeDialogData, Employee>(EmployeeDialog, { data: { employee: e } })
+      .open<EmployeeDialog, EmployeeDialogData, Employee>(EmployeeDialog, wideDialog({ employee: e }))
       .afterClosed()
       .subscribe((saved) => saved && this.store.replace(saved));
   }

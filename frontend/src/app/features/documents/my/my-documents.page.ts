@@ -8,6 +8,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { DocumentViewDialog } from '../document-view.dialog';
 import { HrDocument } from '../documents.model';
 import { DocumentsService } from '../documents.service';
+import { wideDialog } from '../../../core/ui/dialog';
 
 /** "Мої документи" (/me/documents): own documents; open one to acknowledge or reject it. */
 @Component({
@@ -91,7 +92,7 @@ export class MyDocumentsPage implements OnInit {
 
   protected view(d: HrDocument): void {
     this.dialog
-      .open<DocumentViewDialog, number, HrDocument>(DocumentViewDialog, { data: d.id })
+      .open<DocumentViewDialog, number, HrDocument>(DocumentViewDialog, wideDialog(d.id))
       .afterClosed()
       .subscribe((doc) => doc && this.items.update((list) => list.map((x) => (x.id === doc.id ? doc : x))));
   }

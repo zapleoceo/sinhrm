@@ -77,7 +77,6 @@ import { DocumentsService, documentsErrorKey } from './documents.service';
     </mat-dialog-actions>
   `,
   styles: `
-    mat-dialog-content { min-width: min(40rem, 85vw); }
     .doc { padding: 0.75rem 1rem; border: 1px solid var(--app-border); border-radius: var(--app-radius); overflow-wrap: anywhere; }
     .signatures { margin: 0; padding-left: 1.25rem; }
     .error { color: var(--app-danger); }

@@ -12,6 +12,7 @@ import { DocumentViewDialog } from '../document-view.dialog';
 import { DOCUMENT_FILE_ACCEPT, DOCUMENT_FILE_MAX_BYTES, HrDocument, isEditable } from '../documents.model';
 import { DocumentsService, documentsErrorKey } from '../documents.service';
 import { DocumentCreateDialog } from './document-create.dialog';
+import { wideDialog } from '../../../core/ui/dialog';
 
 /** Profile tab "Документи": the employee's documents; admins create, attach files, send and archive. */
 @Component({
@@ -104,7 +105,7 @@ export class EmployeeDocumentsTab {
 
   protected view(d: HrDocument): void {
     this.dialog
-      .open<DocumentViewDialog, number, HrDocument>(DocumentViewDialog, { data: d.id })
+      .open<DocumentViewDialog, number, HrDocument>(DocumentViewDialog, wideDialog(d.id))
       .afterClosed()
       .subscribe((doc) => doc && this.replace(doc));
   }
