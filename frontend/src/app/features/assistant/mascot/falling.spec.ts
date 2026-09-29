@@ -133,9 +133,9 @@ class Sim {
   drag(dx: number, dy: number, steps = 24): void {
     const r = this.engine.root;
     this.brain.dragStart();
-    this.engine.dragStart(r.x, r.y - 20, 0);
+    this.engine.dragStart(r.x, r.y - 20);
     for (let i = 1; i <= steps; i++) {
-      this.engine.dragMove(r.x + (dx * i) / steps, r.y - 20 + (dy * i) / steps, i * 16);
+      this.engine.dragMove(r.x + (dx * i) / steps, r.y - 20 + (dy * i) / steps);
       this.frames(1);
     }
     this.engine.dragEnd();
@@ -200,39 +200,20 @@ describe('real falls: throw → ragdoll → get up, continuously', () => {
     expect(sim.maxJump).toBeLessThan(40);
   });
 
-  it('drag arrows: none while still, more when pulled harder, burst on a hard release; none in reduced motion', () => {
-    const arrows = (speed: number, reduced = false): number => {
-      const e = new MascotEngine(STAGE, seeded(1), reduced);
-      e.play('static', { targetX: 600, blend: 0 });
-      e.tick(0.2);
-      const r = e.root;
-      e.dragStart(r.x, r.y, 0);
-      let max = 0;
-      for (let i = 1; i <= 30; i++) {
-        e.dragMove(r.x + (speed * i) / 60, r.y, (i * 1000) / 60);
-        max = Math.max(max, e.tick(1 / 60).frame.effects.filter((fx) => fx.kind === 'arrow').length);
-      }
-      return max;
-    };
-    expect(arrows(0)).toBe(0);
-    expect(arrows(2000)).toBeGreaterThan(arrows(400));
-    expect(arrows(2000, true)).toBe(0);
-
+  it('no drag arrows any more: holding and throwing him spawns no arrow effects', () => {
     const e = new MascotEngine(STAGE, seeded(1));
     e.play('static', { targetX: 600, blend: 0 });
     e.tick(0.2);
     const r = e.root;
-    e.dragStart(r.x, r.y - 20, 0);
-    for (let i = 1; i <= 8; i++) {
-      e.dragMove(r.x + i * 30, r.y - 20 - i * 30, (i * 1000) / 60);
-      e.tick(1 / 60);
+    e.dragStart(r.x, r.y - 20);
+    const kinds = new Set<string>();
+    for (let i = 1; i <= 20; i++) {
+      e.dragMove(r.x + i * 60, r.y - 20 - i * 30);
+      e.tick(1 / 60).frame.effects.forEach((fx) => kinds.add(fx.kind));
     }
-    const before = e.tick(0).frame.effects.filter((fx) => fx.kind === 'arrow').length;
     e.dragEnd();
-    const after = e.tick(0).frame.effects.filter((fx) => fx.kind === 'arrow');
-    expect(after.length - before).toBeGreaterThanOrEqual(3);
-    // They fly along the throw (up-right).
-    expect(after.every((a) => a.vx > 0 && a.vy < 0)).toBe(true);
+    e.tick(1 / 60).frame.effects.forEach((fx) => kinds.add(fx.kind));
+    expect([...kinds]).not.toContain('arrow');
   });
 
   it('grab where clicked; release keeps the ragdoll velocities (the swing is the throw)', () => {
@@ -241,9 +222,9 @@ describe('real falls: throw → ragdoll → get up, continuously', () => {
     e.tick(0.3);
     const f = e.tick(0).frame;
     const hand = { x: f.pose.x + f.joints.rHand.x, y: f.pose.y + f.joints.rHand.y };
-    e.dragStart(hand.x, hand.y, 0);
+    e.dragStart(hand.x, hand.y);
     for (let i = 1; i <= 30; i++) {
-      e.dragMove(hand.x + i * 12, hand.y - i * 8, (i * 1000) / 60);
+      e.dragMove(hand.x + i * 12, hand.y - i * 8);
       e.tick(1 / 60);
     }
     // Held by the hand: the hand is (almost) at the pointer, the body hangs below it.
@@ -259,28 +240,13 @@ describe('real falls: throw → ragdoll → get up, continuously', () => {
     expect(e.airborne).toBe(true);
   });
 
-  it('arrows fly in the drag direction', () => {
-    const e = new MascotEngine(STAGE, seeded(2));
-    e.play('static', { targetX: 600, blend: 0 });
-    e.tick(0.2);
-    const r = e.root;
-    e.dragStart(r.x, r.y, 0);
-    for (let i = 1; i <= 20; i++) {
-      e.dragMove(r.x - i * 25, r.y, (i * 1000) / 60);
-      e.tick(1 / 60);
-    }
-    const list = e.tick(0).frame.effects.filter((fx) => fx.kind === 'arrow');
-    expect(list.length).toBeGreaterThan(0);
-    expect(list.every((a) => a.vx < 0)).toBe(true);
-  });
-
   it('once up and calm the loop can stop; lying still with nothing to draw is calm too', () => {
     const e = new MascotEngine(STAGE, seeded(4), false);
     e.setLite(true);
     e.play('static', { targetX: 600, blend: 0 });
     e.tick(0.2);
     const r = e.root;
-    e.dragStart(r.x, r.y, 0);
+    e.dragStart(r.x, r.y);
     e.dragEnd();
     for (let i = 0; i < 600 && e.ragdoll && !e.ragdoll.rested; i++) {
       e.tick(1 / 60);
@@ -301,9 +267,9 @@ describe('review fixes: resize, reduced motion, lost hold', () => {
     e.play('static', { targetX: 600, blend: 0 });
     e.tick(0.3);
     const r = e.root;
-    e.dragStart(r.x, r.y - 20, 0);
+    e.dragStart(r.x, r.y - 20);
     for (let i = 1; i <= 6; i++) {
-      e.dragMove(r.x + i * 20, r.y - 20 - i * 25, (i * 1000) / 60);
+      e.dragMove(r.x + i * 20, r.y - 20 - i * 25);
       e.tick(1 / 60);
     }
     e.dragEnd();
@@ -365,9 +331,9 @@ describe('review fixes: resize, reduced motion, lost hold', () => {
     e.play('static', { targetX: 600, blend: 0 });
     e.tick(0.3);
     const r = e.root;
-    e.dragStart(r.x, r.y - 20, 0);
+    e.dragStart(r.x, r.y - 20);
     for (let i = 1; i <= 10; i++) {
-      e.dragMove(r.x - i * 15, r.y - 20 - i * 20, (i * 1000) / 60);
+      e.dragMove(r.x - i * 15, r.y - 20 - i * 20);
       e.tick(1 / 60);
     }
     expect(e.root.y).toBeLessThan(r.y - 100);
@@ -419,9 +385,9 @@ describe('review fixes: resize, reduced motion, lost hold', () => {
     e.play('static', { targetX: 600, blend: 0 });
     e.tick(0.3);
     const r = e.root;
-    e.dragStart(r.x, r.y - 20, 0);
+    e.dragStart(r.x, r.y - 20);
     for (let i = 1; i <= 8; i++) {
-      e.dragMove(r.x + i * 40, r.y - 20, (i * 1000) / 60);
+      e.dragMove(r.x + i * 40, r.y - 20);
       e.tick(1 / 60);
     }
     expect(Math.abs(e.ragdollVelocity(P.Pelvis).x)).toBeGreaterThan(200);

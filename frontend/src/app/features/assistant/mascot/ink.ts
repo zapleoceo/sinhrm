@@ -15,63 +15,100 @@ export function jitter(seed: number, i: number, amp: number): Vec {
 const f = (n: number): string => (Math.round(n * 100) / 100).toString();
 const pt = (p: Vec): string => `${f(p.x)} ${f(p.y)}`;
 
-function unit(dx: number, dy: number): Vec {
-  const len = Math.hypot(dx, dy) || 1;
-  return { x: dx / len, y: dy / len };
+/* Scratch buffers (no per-frame arrays of point objects): strokes have at most MAX_PTS points. */
+const MAX_PTS = 16;
+const PX = new Float64Array(MAX_PTS);
+const PY = new Float64Array(MAX_PTS);
+const LX = new Float64Array(MAX_PTS);
+const LY = new Float64Array(MAX_PTS);
+const RX = new Float64Array(MAX_PTS);
+const RY = new Float64Array(MAX_PTS);
+
+/** Continues a path through the points [from..to] of (xs, ys), stepping by ±1, with rounded corners. */
+function smoothXY(xs: Float64Array, ys: Float64Array, from: number, to: number): string {
+  const step = to >= from ? 1 : -1;
+  const count = Math.abs(to - from) + 1;
+  if (count === 2) {
+    return `L ${f(xs[to])} ${f(ys[to])}`;
+  }
+  let d = `L ${f((xs[from] + xs[from + step]) / 2)} ${f((ys[from] + ys[from + step]) / 2)} `;
+  for (let i = from + step; i !== to; i += step) {
+    d += `Q ${f(xs[i])} ${f(ys[i])} ${f((xs[i] + xs[i + step]) / 2)} ${f((ys[i] + ys[i + step]) / 2)} `;
+  }
+  return `${d}L ${f(xs[to])} ${f(ys[to])}`;
 }
 
 /**
  * A brush stroke along a polyline: filled outline whose width follows `widths` (thick at joints, thin at the tip),
- * rounded joints, round-ish caps and a small overshoot past the last point.
+ * rounded joints, round-ish caps and a small overshoot past the last point. Allocation-light (scratch buffers).
  */
 export function taperedPath(points: readonly Vec[], widths: readonly number[], overshoot = 1.2): string {
-  const n = points.length;
+  const n = Math.min(points.length, MAX_PTS);
   if (n < 2) {
     return '';
   }
-  const pts = points.map((p) => ({ ...p }));
-  const endDir = unit(pts[n - 1].x - pts[n - 2].x, pts[n - 1].y - pts[n - 2].y);
-  pts[n - 1] = { x: pts[n - 1].x + endDir.x * overshoot, y: pts[n - 1].y + endDir.y * overshoot };
-  const tangents = pts.map((_, i) => {
-    const a = pts[Math.max(0, i - 1)];
-    const b = pts[Math.min(n - 1, i + 1)];
-    return unit(b.x - a.x, b.y - a.y);
-  });
-  const left: Vec[] = [];
-  const right: Vec[] = [];
-  pts.forEach((p, i) => {
-    const t = tangents[i];
+  for (let i = 0; i < n; i++) {
+    PX[i] = points[i].x;
+    PY[i] = points[i].y;
+  }
+  let ex = PX[n - 1] - PX[n - 2];
+  let ey = PY[n - 1] - PY[n - 2];
+  let el = Math.hypot(ex, ey) || 1;
+  PX[n - 1] += (ex / el) * overshoot;
+  PY[n - 1] += (ey / el) * overshoot;
+  let t0x = 0;
+  let t0y = 0;
+  let tnx = 0;
+  let tny = 0;
+  for (let i = 0; i < n; i++) {
+    const a = Math.max(0, i - 1);
+    const b = Math.min(n - 1, i + 1);
+    ex = PX[b] - PX[a];
+    ey = PY[b] - PY[a];
+    el = Math.hypot(ex, ey) || 1;
+    const tx = ex / el;
+    const ty = ey / el;
+    if (i === 0) {
+      t0x = tx;
+      t0y = ty;
+    }
+    if (i === n - 1) {
+      tnx = tx;
+      tny = ty;
+    }
     const w = (widths[Math.min(i, widths.length - 1)] ?? 2) / 2;
-    left.push({ x: p.x - t.y * w, y: p.y + t.x * w });
-    right.push({ x: p.x + t.y * w, y: p.y - t.x * w });
-  });
+    LX[i] = PX[i] - ty * w;
+    LY[i] = PY[i] + tx * w;
+    RX[i] = PX[i] + ty * w;
+    RY[i] = PY[i] - tx * w;
+  }
   const wEnd = (widths[Math.min(n - 1, widths.length - 1)] ?? 2) * 0.9;
   const wStart = (widths[0] ?? 2) * 0.9;
-  const tipCtrl = { x: pts[n - 1].x + tangents[n - 1].x * wEnd, y: pts[n - 1].y + tangents[n - 1].y * wEnd };
-  const startCtrl = { x: pts[0].x - tangents[0].x * wStart, y: pts[0].y - tangents[0].y * wStart };
-  return `M ${pt(left[0])} ${smoothThrough(left)} Q ${pt(tipCtrl)} ${pt(right[n - 1])} ${smoothThrough([...right].reverse())} Q ${pt(startCtrl)} ${pt(left[0])} Z`;
-}
-
-/** Continues a path through points with rounded corners (quadratic through midpoints), ending at the last point. */
-function smoothThrough(points: readonly Vec[]): string {
-  const n = points.length;
-  if (n === 2) {
-    return `L ${pt(points[1])}`;
-  }
-  let d = '';
-  for (let i = 1; i < n - 1; i++) {
-    const mid = { x: (points[i].x + points[i + 1].x) / 2, y: (points[i].y + points[i + 1].y) / 2 };
-    d += `${i === 1 ? `L ${pt({ x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 })} ` : ''}Q ${pt(points[i])} ${pt(mid)} `;
-  }
-  return `${d}L ${pt(points[n - 1])}`;
+  return (
+    `M ${f(LX[0])} ${f(LY[0])} ${smoothXY(LX, LY, 0, n - 1)} Q ${f(PX[n - 1] + tnx * wEnd)} ${f(PY[n - 1] + tny * wEnd)} ${f(RX[n - 1])} ${f(RY[n - 1])} ` +
+    `${smoothXY(RX, RY, n - 1, 0)} Q ${f(PX[0] - t0x * wStart)} ${f(PY[0] - t0y * wStart)} ${f(LX[0])} ${f(LY[0])} Z`
+  );
 }
 
 /** Open smooth stroke through points (for strokes drawn with stroke-width). */
 export function smoothPath(points: readonly Vec[]): string {
-  if (points.length === 0) {
+  const n = points.length;
+  if (n === 0) {
     return '';
   }
-  return `M ${pt(points[0])} ${points.length > 1 ? smoothThrough(points) : ''}`;
+  if (n > MAX_PTS) {
+    // Long doodles: plain polyline (rare, not per-frame heavy).
+    let d = `M ${pt(points[0])}`;
+    for (let i = 1; i < n; i++) {
+      d += ` L ${pt(points[i])}`;
+    }
+    return d;
+  }
+  for (let i = 0; i < n; i++) {
+    PX[i] = points[i].x;
+    PY[i] = points[i].y;
+  }
+  return `M ${f(PX[0])} ${f(PY[0])} ${n > 1 ? smoothXY(PX, PY, 0, n - 1) : ''}`;
 }
 
 /** A circle drawn by hand: one loop with slightly uneven radius that overshoots its start. */
@@ -79,13 +116,13 @@ export function sketchCircle(cx: number, cy: number, r: number, seed: number, wo
   const steps = 14;
   const start = noise(seed, 99) * 0.6 - 1.9;
   const sweep = Math.PI * 2 + 0.45;
-  const points: Vec[] = [];
   for (let i = 0; i <= steps; i++) {
     const a = start + (sweep * i) / steps;
     const rr = r + noise(seed, i) * wobble + (i === steps ? 0.7 : 0);
-    points.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr });
+    PX[i] = cx + Math.cos(a) * rr;
+    PY[i] = cy + Math.sin(a) * rr;
   }
-  return smoothPath(points);
+  return `M ${f(PX[0])} ${f(PY[0])} ${smoothXY(PX, PY, 0, steps)}`;
 }
 
 /** Closed circle path (for fills and pupils). */

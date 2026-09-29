@@ -11,6 +11,7 @@ import { AssistantMascot, prefersLite } from './assistant-mascot';
 import { MascotEngine } from './mascot-engine';
 import { FrameClock, MASCOT_FRAME_CLOCK, MascotLoop } from './mascot-loop';
 import { PHYSICS_DT } from './physics';
+import { KIN_STATS } from './skeleton';
 
 const STAGE: Stage = { width: 1200, height: 800, ground: 798, seat: null, corner: { x: 1166, y: 766 } };
 
@@ -344,9 +345,9 @@ describe('AssistantMascot: jokes with the chat open', () => {
     const states: string[] = [cmp.brain.state];
     const r = cmp.engine.root;
     cmp.brain.dragStart();
-    cmp.engine.dragStart(r.x, r.y - 20, 0);
+    cmp.engine.dragStart(r.x, r.y - 20);
     for (let i = 1; i <= 10; i++) {
-      cmp.engine.dragMove(r.x - i * 25, r.y - 20 - i * 10, (i * 1000) / 60);
+      cmp.engine.dragMove(r.x - i * 25, r.y - 20 - i * 10);
       await frames(1);
     }
     cmp.engine.dragEnd();
@@ -361,4 +362,66 @@ describe('AssistantMascot: jokes with the chat open', () => {
     expect({ states, says }).toEqual({ states: expect.arrayContaining(['recovering', 'docked']), says: expect.arrayContaining(['AI joke']) });
   });
 
+});
+
+describe('per-frame allocation guard (new moves and activities)', () => {
+  const STAGE2: Stage = { width: 1200, height: 800, ground: 798, seat: { x: 1000, y: 300 }, corner: { x: 1166, y: 766 } };
+  it.each([['move-handwalk'], ['act-dance'], ['move-kneeslide'], ['move-unicycle'], ['act-bubbles'], ['act-kite'], ['act-rope'], ['act-yoyo']])(
+    '%s: about one full kinematics solve per frame over 600 frames',
+    (action) => {
+      const e = new MascotEngine(STAGE2, () => 0.4);
+      e.play('static', { targetX: 300, blend: 0 });
+      e.tick(0.3);
+      e.play(action as never, { targetX: 850 });
+      e.tick(1 / 60);
+      const before = KIN_STATS.fk;
+      for (let i = 0; i < 600; i++) {
+        if (e.tick(1 / 60).events.some((ev) => ev.type === 'clipDone')) {
+          e.play(action as never, { targetX: 850 });
+        }
+      }
+      // The engine solves the skeleton once per step; clips place hands/feet analytically (no pose copies + FK).
+      // The small rest is one-off work when a clip or a phase seam starts (blend length from the travel).
+      expect((KIN_STATS.fk - before) / 600).toBeLessThanOrEqual(1.5);
+    },
+  );
+});
+
+/**
+ * Realistic loop benchmark (fixed 16.7 ms cadence with idle time between frames), opt-in: MASCOT_BENCH=1.
+ * Prints p50/p95/p99/max frame cost of engine.tick for every move and activity.
+ */
+const benchEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+const benchOn = benchEnv['MASCOT_BENCH'] === '1';
+describe.skipIf(!benchOn)('realistic loop benchmark (MASCOT_BENCH=1)', () => {
+  it('p50/p95/p99/max per move and activity', async () => {
+    const { MOVE_ACTIONS } = await import('./moves');
+    const { ACTIVITY_ACTIONS } = await import('./activities');
+    const STAGE3: Stage = { width: 1200, height: 800, ground: 798, seat: { x: 1000, y: 300 }, corner: { x: 1166, y: 766 } };
+    const seconds = Number(benchEnv['MASCOT_BENCH_SECONDS'] ?? '3');
+    const pct = (xs: number[], p: number): number => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))];
+    for (const action of [...MOVE_ACTIONS, ...ACTIVITY_ACTIONS]) {
+      const e = new MascotEngine(STAGE3, Math.random);
+      const start = (): void => {
+        e.play(action === 'act-fishing' ? 'docked' : 'static', { targetX: 300, blend: 0 });
+        e.tick(0.3);
+        e.play(action, { targetX: 850 });
+      };
+      start();
+      const times: number[] = [];
+      const end = performance.now() + seconds * 1000;
+      let next = performance.now();
+      while (performance.now() < end) {
+        next += 1000 / 60;
+        const t0 = performance.now();
+        if (e.tick(1 / 60).events.some((ev) => ev.type === 'clipDone')) {
+          start();
+        }
+        times.push(performance.now() - t0);
+        await new Promise((r) => setTimeout(r, Math.max(0, next - performance.now())));
+      }
+      times.sort((a, b) => a - b);
+      console.log(`${action} p50=${pct(times, 0.5).toFixed(3)} p95=${pct(times, 0.95).toFixed(3)} p99=${pct(times, 0.99).toFixed(3)} max=${times[times.length - 1].toFixed(2)} ms`);
+    }
+  }, 600_000);
 });

@@ -1,6 +1,6 @@
 import { DOODLE_DRAW, DOODLE_SHAPES, Effect, doodlePoint, effectAlpha } from './effects';
 import { EyeShape, MouthShape, pupilOffset } from './face';
-import { bubblePath, circlePath, jitter, noise, sketchCircle, smoothPath, starPath, taperedPath } from './ink';
+import { bubblePath, circlePath, jitter, sketchCircle, smoothPath, starPath, taperedPath } from './ink';
 import { InkProp } from './animations';
 import { Frame } from './mascot-engine';
 import { BONES, Vec } from './skeleton';
@@ -51,6 +51,8 @@ export class MascotRenderer {
   readonly hit: SVGPathElement;
   private readonly cache = new WeakMap<Element, Map<string, string>>();
   private bubbleText = '';
+  private hitTick = 0;
+  private hitOrb = false;
   private bubbleSize = { w: 0, h: 0 };
   private bubbleSide: 'left' | 'right' = 'right';
 
@@ -182,7 +184,16 @@ export class MascotRenderer {
     this.renderWaves(frame, headC, headR);
     this.renderEffects(frame, origin, headC);
     this.renderBubble(frame, headC, origin, viewport);
-    if (m > 0.5) {
+    // The hit area only needs to follow roughly: rebuilt every 4th frame (it is a long path string).
+    this.hitTick = (this.hitTick + 1) % 4;
+    if (this.hitTick === 0 || m > 0.5 !== this.hitOrb) {
+      this.renderHit(m > 0.5, headC, j);
+    }
+  }
+
+  private renderHit(orb: boolean, headC: Vec, j: Frame['joints']): void {
+    if (orb) {
+      this.hitOrb = true;
       this.set(this.hit, 'd', `M ${f(headC.x)} ${f(headC.y)} l 0.01 0`);
       this.set(this.hit, 'stroke-width', '40');
     } else {
@@ -193,6 +204,7 @@ export class MascotRenderer {
         `M ${L(j.head)} L ${L(j.neck)} L ${L(j.hip)} M ${L(j.shoulder)} L ${L(j.lElbow)} L ${L(j.lHand)} M ${L(j.shoulder)} L ${L(j.rElbow)} L ${L(j.rHand)} M ${L(j.hip)} L ${L(j.lKnee)} L ${L(j.lFoot)} M ${L(j.hip)} L ${L(j.rKnee)} L ${L(j.rFoot)}`,
       );
       this.set(this.hit, 'stroke-width', '26');
+      this.hitOrb = false;
     }
   }
 
@@ -422,26 +434,6 @@ export class MascotRenderer {
         }
         d = smoothPath(pts);
         dash = f(1 - Math.min(1, e.age / DOODLE_DRAW));
-        break;
-      }
-      case 'arrow': {
-        // Hand-drawn arrow: slightly bowed shaft + two-stroke head, shrinking as it flies.
-        const sp = Math.hypot(e.vx, e.vy) || 1;
-        const ux = e.vx / sp;
-        const uy = e.vy / sp;
-        const len = (9 + 9 * e.size) * (1 - 0.55 * p);
-        const tx = x - ux * len;
-        const ty = y - uy * len;
-        const bow = noise(e.rot, 1) * 1.6;
-        const mx = (x + tx) / 2 - uy * bow;
-        const my = (y + ty) / 2 + ux * bow;
-        const hl = 3 + 2.2 * e.size * (1 - 0.5 * p);
-        const a = 0.55;
-        const hx1 = x - (ux * Math.cos(a) - uy * Math.sin(a)) * hl;
-        const hy1 = y - (uy * Math.cos(a) + ux * Math.sin(a)) * hl;
-        const hx2 = x - (ux * Math.cos(-a) - uy * Math.sin(-a)) * hl;
-        const hy2 = y - (uy * Math.cos(-a) + ux * Math.sin(-a)) * hl;
-        d = `M ${f(tx)} ${f(ty)} Q ${f(mx)} ${f(my)} ${f(x)} ${f(y)} M ${f(hx1)} ${f(hy1)} L ${f(x)} ${f(y)} L ${f(hx2)} ${f(hy2)}`;
         break;
       }
       case 'banana':

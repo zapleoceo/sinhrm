@@ -108,50 +108,118 @@ export const STAND: Readonly<Pose> = {
   squash: 1,
 };
 
-/** Direction of an angle measured from straight down (forward = facing, or the turn scale). */
-function down(a: number, facing: number): Vec {
-  return { x: facing * Math.sin(a), y: Math.cos(a) };
-}
+/** Allocation guard for tests: how many full forward-kinematics solves ran (a proxy for per-frame garbage). */
+export const KIN_STATS = { fk: 0 };
 
-function add(p: Vec, d: Vec, len: number): Vec {
-  return { x: p.x + d.x * len, y: p.y + d.y * len };
-}
-
-/** Forward kinematics: joint positions relative to the hip. Pure. */
+/**
+ * Forward kinematics: joint positions relative to the hip. Pure. Computed straight into the 12 result points
+ * (no intermediate vectors), so a solve allocates only what it returns.
+ */
 export function forwardKinematics(p: Pose): Joints {
+  KIN_STATS.fk++;
   // Horizontal direction; during a turn it passes smoothly through 0 instead of flipping.
   const f = p.turn ?? p.facing;
-  const hip: Vec = { x: 0, y: 0 };
-  const up = { x: f * Math.sin(p.torso), y: -Math.cos(p.torso) };
-  const neck = add(hip, up, BONES.spine);
-  const shoulder = add(hip, up, BONES.shoulderAt);
+  const ux = f * Math.sin(p.torso);
+  const uy = -Math.cos(p.torso);
   const headTilt = p.torso + p.head;
-  const head = add(neck, { x: f * Math.sin(headTilt), y: -Math.cos(headTilt) }, BONES.neck + BONES.headR);
-  const lUpper = p.torso + p.lShoulder;
-  const rUpper = p.torso + p.rShoulder;
-  const lElbow = add(shoulder, down(lUpper, f), BONES.upperArm);
-  const lHand = add(lElbow, down(lUpper + p.lElbow, f), BONES.foreArm);
-  const rElbow = add(shoulder, down(rUpper, f), BONES.upperArm);
-  const rHand = add(rElbow, down(rUpper + p.rElbow, f), BONES.foreArm);
-  const lKnee = add(hip, down(p.lHip, f), BONES.thigh);
-  const lFoot = add(lKnee, down(p.lHip - p.lKnee, f), BONES.shin);
-  const rKnee = add(hip, down(p.rHip, f), BONES.thigh);
-  const rFoot = add(rKnee, down(p.rHip - p.rKnee, f), BONES.shin);
+  const nx = ux * BONES.spine;
+  const ny = uy * BONES.spine;
+  const sx0 = ux * BONES.shoulderAt;
+  const sy0 = uy * BONES.shoulderAt;
+  const hl = BONES.neck + BONES.headR;
+  const hx = nx + f * Math.sin(headTilt) * hl;
+  const hy = ny - Math.cos(headTilt) * hl;
+  const lU = p.torso + p.lShoulder;
+  const rU = p.torso + p.rShoulder;
+  const leX = sx0 + f * Math.sin(lU) * BONES.upperArm;
+  const leY = sy0 + Math.cos(lU) * BONES.upperArm;
+  const lhX = leX + f * Math.sin(lU + p.lElbow) * BONES.foreArm;
+  const lhY = leY + Math.cos(lU + p.lElbow) * BONES.foreArm;
+  const reX = sx0 + f * Math.sin(rU) * BONES.upperArm;
+  const reY = sy0 + Math.cos(rU) * BONES.upperArm;
+  const rhX = reX + f * Math.sin(rU + p.rElbow) * BONES.foreArm;
+  const rhY = reY + Math.cos(rU + p.rElbow) * BONES.foreArm;
+  const lkX = f * Math.sin(p.lHip) * BONES.thigh;
+  const lkY = Math.cos(p.lHip) * BONES.thigh;
+  const lfX = lkX + f * Math.sin(p.lHip - p.lKnee) * BONES.shin;
+  const lfY = lkY + Math.cos(p.lHip - p.lKnee) * BONES.shin;
+  const rkX = f * Math.sin(p.rHip) * BONES.thigh;
+  const rkY = Math.cos(p.rHip) * BONES.thigh;
+  const rfX = rkX + f * Math.sin(p.rHip - p.rKnee) * BONES.shin;
+  const rfY = rkY + Math.cos(p.rHip - p.rKnee) * BONES.shin;
 
-  const points = { hip, neck, shoulder, head, lElbow, lHand, rElbow, rHand, lKnee, lFoot, rKnee, rFoot };
-  const anchorY = Math.max(lFoot.y, rFoot.y);
+  const anchorY = Math.max(lfY, rfY);
   const sy = p.squash;
   const sx = 1 / Math.sqrt(Math.max(sy, 0.05));
   const cos = Math.cos(p.rot);
   const sin = Math.sin(p.rot);
-  const out = {} as Record<keyof typeof points, Vec>;
-  for (const key of Object.keys(points) as (keyof typeof points)[]) {
-    const q = points[key];
-    const x = q.x * sx;
-    const y = anchorY + (q.y - anchorY) * sy;
-    out[key] = { x: x * cos - y * sin, y: x * sin + y * cos };
-  }
-  return { ...out, headAngle: p.rot + p.facing * headTilt, facing: p.facing };
+  const T = (qx: number, qy: number): Vec => {
+    const x = qx * sx;
+    const y = anchorY + (qy - anchorY) * sy;
+    return { x: x * cos - y * sin, y: x * sin + y * cos };
+  };
+  return {
+    hip: T(0, 0),
+    neck: T(nx, ny),
+    shoulder: T(sx0, sy0),
+    head: T(hx, hy),
+    lElbow: T(leX, leY),
+    lHand: T(lhX, lhY),
+    rElbow: T(reX, reY),
+    rHand: T(rhX, rhY),
+    lKnee: T(lkX, lkY),
+    lFoot: T(lfX, lfY),
+    rKnee: T(rkX, rkY),
+    rFoot: T(rfX, rfY),
+    headAngle: p.rot + p.facing * headTilt,
+    facing: p.facing,
+  };
+}
+
+/** World position of the shoulder (squash ignored) — without a full FK solve. */
+export function shoulderPos(p: Pose): Vec {
+  const f = p.turn ?? p.facing;
+  const x = f * Math.sin(p.torso) * BONES.shoulderAt;
+  const y = -Math.cos(p.torso) * BONES.shoulderAt;
+  const c = Math.cos(p.rot);
+  const s = Math.sin(p.rot);
+  return { x: p.x + x * c - y * s, y: p.y + x * s + y * c };
+}
+
+/** World position of the head centre (squash ignored). */
+export function headPos(p: Pose): Vec {
+  const f = p.turn ?? p.facing;
+  const t = p.torso + p.head;
+  const hl = BONES.neck + BONES.headR;
+  const x = f * Math.sin(p.torso) * BONES.spine + f * Math.sin(t) * hl;
+  const y = -Math.cos(p.torso) * BONES.spine - Math.cos(t) * hl;
+  const c = Math.cos(p.rot);
+  const s = Math.sin(p.rot);
+  return { x: p.x + x * c - y * s, y: p.y + x * s + y * c };
+}
+
+/** World position of a hand (squash ignored). */
+export function handPos(p: Pose, side: 'l' | 'r'): Vec {
+  const f = p.turn ?? p.facing;
+  const up = p.torso + (side === 'l' ? p.lShoulder : p.rShoulder);
+  const el = side === 'l' ? p.lElbow : p.rElbow;
+  const x = f * (Math.sin(p.torso) * BONES.shoulderAt + Math.sin(up) * BONES.upperArm + Math.sin(up + el) * BONES.foreArm);
+  const y = -Math.cos(p.torso) * BONES.shoulderAt + Math.cos(up) * BONES.upperArm + Math.cos(up + el) * BONES.foreArm;
+  const c = Math.cos(p.rot);
+  const s = Math.sin(p.rot);
+  return { x: p.x + x * c - y * s, y: p.y + x * s + y * c };
+}
+
+/** World position of a foot (squash ignored). */
+export function footPos(p: Pose, side: 'l' | 'r'): Vec {
+  const f = p.turn ?? p.facing;
+  const hip = side === 'l' ? p.lHip : p.rHip;
+  const knee = side === 'l' ? p.lKnee : p.rKnee;
+  const x = f * (Math.sin(hip) * BONES.thigh + Math.sin(hip - knee) * BONES.shin);
+  const y = Math.cos(hip) * BONES.thigh + Math.cos(hip - knee) * BONES.shin;
+  const c = Math.cos(p.rot);
+  const s = Math.sin(p.rot);
+  return { x: p.x + x * c - y * s, y: p.y + x * s + y * c };
 }
 
 /** Linear blend of two poses; a change of facing becomes a continuous turn (x-scale through 0). */

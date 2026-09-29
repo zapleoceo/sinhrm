@@ -1,10 +1,10 @@
 import { ANGLE_KEYS, STAND, forwardKinematics } from './skeleton';
-import { ActionName, ENTRANCES, GetUpAction, RouteAction, EXITS, IDLE_WEIGHTS, Stage, WALK, ballistic, createClip, createGesture, gaitPose } from './animations';
+import { ActionName, ActivityAction, ENTRANCES, GetUpAction, MoveAction, RouteAction, EXITS, IDLE_WEIGHTS, Stage, WALK, ballistic, createClip, createGesture, gaitPose } from './animations';
 import { MascotEngine } from './mascot-engine';
 import { GRAVITY, PHYSICS_DT, defaultWorld, physicsStep } from './physics';
 
 const STAGE: Stage = { width: 1200, height: 800, ground: 798, seat: { x: 900, y: 400 }, corner: { x: 1166, y: 766 } };
-type ClipAction = Exclude<ActionName, GetUpAction | RouteAction>;
+type ClipAction = Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction>;
 const OTHERS: ClipAction[] = ['peek-out', 'sleep', 'wake', 'dragged', 'airborne', 'land', 'dizzy', 'dust', 'docked', 'static', 'hold-on', 'curl', 'orb', 'orb-pop', 'unfold', 'idle-breathe'];
 const ALL: ClipAction[] = [...ENTRANCES, ...EXITS, 'exit-peek', ...(Object.keys(IDLE_WEIGHTS) as ClipAction[]), ...OTHERS];
 
@@ -103,10 +103,10 @@ describe('mascot engine', () => {
     e.play('static', { targetX: 600, blend: 0 });
     tickFor(e, 0.2);
     const r = e.root;
-    e.dragStart(r.x, r.y - 20, 0);
+    e.dragStart(r.x, r.y - 20);
     tickFor(e, 0.1);
     for (let i = 1; i <= 5; i++) {
-      e.dragMove(r.x + i * 20, r.y - 20 - i * 30, i * 16);
+      e.dragMove(r.x + i * 20, r.y - 20 - i * 30);
     }
     tickFor(e, 0.05);
     e.dragEnd();

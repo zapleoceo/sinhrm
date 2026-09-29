@@ -1,6 +1,8 @@
 import { AssistantMood } from '../assistant.model';
 import { pickGreeting, pickQuip } from '../quips';
 import type { EngineEvent } from './mascot-engine';
+import { ACTIVITIES, isActivity } from './activities';
+import { MOVES, isMove } from './moves';
 import { FallCause, Joke, JokeSituation, situationFor } from '../joke-situations';
 import { ActionName, ROUTE_ACTIONS, ENTRANCES, EXITS, EntranceAction, ExitAction, GestureName, IDLE_WEIGHTS } from './animations';
 
@@ -22,7 +24,7 @@ export type BrainState =
   | 'unfolding';
 
 export type BrainCommand =
-  | { type: 'play'; action: ActionName; side?: 'left' | 'right'; targetX?: number; blend?: number; variant?: 'full' | 'sit' }
+  | { type: 'play'; action: ActionName; side?: 'left' | 'right'; targetX?: number; blend?: number; variant?: 'full' | 'sit'; fromX?: number }
   | { type: 'gesture'; name: GestureName | null }
   /** A line in the bubble: an i18n key, or ready text (AI joke) when `text` is set. */
   | { type: 'say'; key: string | null; text?: string }
@@ -50,6 +52,23 @@ export interface BrainOptions {
   jokeChance?: number;
   /** The conversation or voice dictation is in progress — he must stay awake. */
   isBusy?: () => boolean;
+  /** Local hour 0–23 (time-of-day flavour; nothing is sent anywhere). */
+  hour?: () => number;
+  /** A windy day (kite flying). */
+  windy?: () => boolean;
+}
+
+/** How many recent picks (idles, activities, moves) are not repeated. */
+export const RECENT_MEMORY = 6;
+/** Weight of wandering somewhere with a locomotion move among the idle choices. */
+export const WANDER_WEIGHT = 3;
+export const MOVE_ENTRANCE_CHANCE = 0.35;
+export const MOVE_EXIT_CHANCE = 0.3;
+
+/** A windy day, decided from the local date only. */
+export function windyToday(date = new Date()): boolean {
+  const k = date.getFullYear() * 372 + date.getMonth() * 31 + date.getDate();
+  return ((k * 2654435761) >>> 0) % 3 === 0;
 }
 
 export const JOKE_CHANCE = 0.7;
@@ -102,7 +121,10 @@ export function pickWeighted<T extends string>(weights: Readonly<Record<T, numbe
   return keys[keys.length - 1];
 }
 
-type TimerName = 'appear' | 'stay' | 'sleep' | 'say' | 'talk' | 'getup';
+type TimerName = 'appear' | 'stay' | 'sleep' | 'say' | 'talk' | 'getup' | 'fidget';
+
+const DOCKED_FIDGET_MIN = 18_000;
+const DOCKED_FIDGET_MAX = 40_000;
 
 /** Throws within this window make him sulk. */
 export const ANNOY_WINDOW_MS = 20_000;
@@ -130,6 +152,7 @@ export class MascotBrain {
   private lastFidget: keyof typeof IDLE_WEIGHTS | null = null;
   private lastWasBreath = false;
   private hovered = false;
+  private lastTargetX: number | null = null;
   private lite = false;
   private beforeSleep: BrainState = 'idle';
   private throws: number[] = [];
@@ -144,6 +167,10 @@ export class MascotBrain {
   private readonly canJoke: () => boolean;
   private readonly jokeChance: number;
   private readonly isBusy: () => boolean;
+  private readonly hour: () => number;
+  private readonly windy: () => boolean;
+  /** Last picks (idle fidgets, activities, moves): none of them repeats within RECENT_MEMORY. */
+  private recent: string[] = [];
   /** Why the current fall happened (null — not falling). */
   private fallSituation: JokeSituation | null = null;
 
@@ -160,6 +187,8 @@ export class MascotBrain {
     this.canJoke = options.canJoke ?? (() => true);
     this.jokeChance = options.jokeChance ?? JOKE_CHANCE;
     this.isBusy = options.isBusy ?? (() => false);
+    this.hour = options.hour ?? (() => new Date().getHours());
+    this.windy = options.windy ?? (() => windyToday());
   }
 
   get state(): BrainState {
@@ -423,7 +452,7 @@ export class MascotBrain {
         this.recover(action);
         break;
       case 'exiting':
-        if ((EXITS as readonly string[]).includes(action) || action === 'exit-peek') {
+        if ((EXITS as readonly string[]).includes(action) || action === 'exit-peek' || isMove(action)) {
           this.goOffstage();
         }
         break;
@@ -442,8 +471,9 @@ export class MascotBrain {
         this.restoreAfterSleep();
         break;
       case 'docked':
-        if ((ROUTE_ACTIONS as readonly string[]).includes(action)) {
+        if ((ROUTE_ACTIONS as readonly string[]).includes(action) || action === 'act-fishing') {
           this.play('docked', { blend: 0.12 });
+          this.scheduleDockedFidget();
         }
         break;
       default:
@@ -462,12 +492,19 @@ export class MascotBrain {
       return;
     }
     this.pendingQuip = reason === 'greeting' ? pickGreeting(this.rng) : pickQuip(this.url, this.rng);
-    const entrance = pickOne(this.lite ? LITE_ENTRANCES : ENTRANCES, this.lastEntrance, this.rng);
-    this.lastEntrance = entrance;
     this.current = 'entering';
     this.lastAppearance = this.scheduler.now();
     this.emit({ type: 'visible', value: true });
-    this.play(entrance, { side: this.rng() < 0.5 ? 'left' : 'right', targetX: this.randomX() });
+    const side: 'left' | 'right' = this.rng() < 0.5 ? 'left' : 'right';
+    if (this.rng() < MOVE_ENTRANCE_CHANCE) {
+      // In on a skateboard, a unicycle, crawling, hand over hand along the top edge…
+      const move = this.pickFresh(this.moveChoices('entrance')) as ActionName;
+      this.play(move, { fromX: side === 'left' ? -60 : this.width() + 60, targetX: this.randomX() });
+      return;
+    }
+    const entrance = pickOne(this.lite ? LITE_ENTRANCES : ENTRANCES, this.lastEntrance, this.rng);
+    this.lastEntrance = entrance;
+    this.play(entrance, { side, targetX: this.randomX() });
   }
 
   /**
@@ -553,12 +590,64 @@ export class MascotBrain {
     this.exit();
   }
 
+  /** Idle choices with their weights now: fidgets, activities (lite / windy / time of day) and wandering. */
+  idleChoices(): Record<string, number> {
+    const hour = this.hour();
+    const morning = hour >= 6 && hour < 11;
+    const late = hour >= 21 || hour < 4;
+    const out: Record<string, number> = {};
+    for (const [k, w] of Object.entries(IDLE_WEIGHTS) as [string, number][]) {
+      out[k] = late && (k === 'idle-yawn' || k === 'idle-stretch') ? w * 3 : w;
+    }
+    for (const [k, info] of Object.entries(ACTIVITIES)) {
+      if (info.docked || (this.lite && !info.lite) || (info.windy && !this.windy())) {
+        continue;
+      }
+      out[k] = info.weight * (morning && info.morning ? info.morning : 1);
+    }
+    out['wander'] = WANDER_WEIGHT;
+    return out;
+  }
+
+  /** Weighted pick that skips the recent ones (falls back to all when everything is recent). */
+  private pickFresh(weights: Record<string, number>): string {
+    const fresh: Record<string, number> = {};
+    for (const [k, w] of Object.entries(weights)) {
+      if (!this.recent.includes(k)) {
+        fresh[k] = w;
+      }
+    }
+    const pool = Object.keys(fresh).length > 0 ? fresh : weights;
+    const pick = pickWeighted(pool, null, this.rng);
+    this.recent = [...this.recent, pick].slice(-RECENT_MEMORY);
+    return pick;
+  }
+
+  /** Locomotion moves allowed for a purpose (lite mode keeps the cheaper ones). */
+  private moveChoices(kind: 'entrance' | 'exit' | 'wander'): Record<string, number> {
+    const out: Record<string, number> = {};
+    for (const [k, info] of Object.entries(MOVES)) {
+      if (info[kind] && (!this.lite || info.lite)) {
+        out[k] = info.weight;
+      }
+    }
+    return out;
+  }
+
   private nextIdle(): void {
     if (this.lastWasBreath) {
-      const fidget = pickWeighted(IDLE_WEIGHTS, this.lastFidget, this.rng);
-      this.lastFidget = fidget;
+      const pick = this.pickFresh(this.idleChoices());
       this.lastWasBreath = false;
-      this.play(fidget);
+      if (pick === 'wander') {
+        // Off somewhere else along the bottom edge — running, cartwheeling, on a skateboard…
+        const move = this.pickFresh(this.moveChoices('wander')) as ActionName;
+        this.play(move, { targetX: this.wanderX() });
+        return;
+      }
+      if (!isActivity(pick)) {
+        this.lastFidget = pick as keyof typeof IDLE_WEIGHTS;
+      }
+      this.play(pick as ActionName);
     } else {
       this.lastWasBreath = true;
       this.play('idle-breathe');
@@ -569,9 +658,14 @@ export class MascotBrain {
     this.clear('stay');
     this.emit({ type: 'say', key: null });
     this.emit({ type: 'gesture', name: null });
+    this.current = 'exiting';
+    if (!this.reduced && this.rng() < MOVE_EXIT_CHANCE) {
+      const move = this.pickFresh(this.moveChoices('exit')) as ActionName;
+      this.play(move, { targetX: this.lastX() < this.width() / 2 ? -90 : this.width() + 90 });
+      return;
+    }
     const exit = pickOne(EXITS, this.lastExit, this.rng);
     this.lastExit = exit;
-    this.current = 'exiting';
     this.play(exit);
   }
 
@@ -603,6 +697,39 @@ export class MascotBrain {
     this.emit({ type: 'visible', value: true });
     this.play('docked', blend === undefined ? {} : { blend });
     this.resetSleep();
+    this.scheduleDockedFidget();
+  }
+
+  /** Sitting on the chat panel he now and then goes fishing off its edge (not while the chat is busy). */
+  private scheduleDockedFidget(): void {
+    if (this.reduced) {
+      return;
+    }
+    this.schedule('fidget', DOCKED_FIDGET_MIN + this.rng() * (DOCKED_FIDGET_MAX - DOCKED_FIDGET_MIN), () => {
+      if (this.current === 'docked' && this.chatOpen && !this.isBusy()) {
+        this.play('act-fishing');
+      } else if (this.current === 'docked') {
+        this.scheduleDockedFidget();
+      }
+    });
+  }
+
+  /** A floor x at least 150 px away from where he is. */
+  private wanderX(): number {
+    const w = this.width();
+    const here = this.lastX();
+    for (let i = 0; i < 6; i++) {
+      const x = Math.round(60 + this.rng() * (w - 120));
+      if (Math.abs(x - here) >= 150) {
+        return x;
+      }
+    }
+    return here < w / 2 ? Math.min(w - 60, here + 200) : Math.max(60, here - 200);
+  }
+
+  /** Roughly where he is (the last x the brain sent him to). */
+  private lastX(): number {
+    return this.lastTargetX ?? this.width() / 2;
   }
 
   private toStatic(): void {
@@ -651,7 +778,10 @@ export class MascotBrain {
     return Math.round(w * (0.22 + this.rng() * 0.5));
   }
 
-  private play(action: ActionName, extra: { side?: 'left' | 'right'; targetX?: number; blend?: number; variant?: 'full' | 'sit' } = {}): void {
+  private play(action: ActionName, extra: { side?: 'left' | 'right'; targetX?: number; blend?: number; variant?: 'full' | 'sit'; fromX?: number } = {}): void {
+    if (extra.targetX !== undefined) {
+      this.lastTargetX = extra.targetX;
+    }
     this.emit({ type: 'play', action, ...extra });
   }
 

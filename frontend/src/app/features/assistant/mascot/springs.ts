@@ -62,32 +62,37 @@ export function initPoseSprings(p: Pose): PoseSprings {
  * swings the arms and bobs the head — inertia makes them lag and overshoot after a stop.
  */
 export function stepPoseSprings(s: PoseSprings, target: Pose, dt: number, rawAx: number, rawAy: number): PoseSprings {
-  const out = {} as PoseSprings;
+  // Integrated in place (the same spring objects every step — no per-frame garbage); returns `s`.
   const ax = Math.max(-8000, Math.min(8000, rawAx));
   const ay = Math.max(-8000, Math.min(8000, rawAy));
-  const kick = (key: AngleKey): number => {
-    switch (key) {
-      case 'lShoulder':
-      case 'rShoulder':
-        return -ax * 0.008;
-      case 'lElbow':
-      case 'rElbow':
-        return -ax * 0.005 + ay * 0.004;
-      case 'head':
-        return -ax * 0.005 - ay * 0.003;
-      case 'torso':
-        return -ax * 0.002;
-      default:
-        return 0;
-    }
-  };
   for (const key of ANGLE_KEYS) {
     const cur = s[key];
-    out[key] = isLoose(key) ? springStep({ x: cur.x, v: cur.v + kick(key) * dt }, target[key], dt, JOINT_SPRINGS[key]) : { x: target[key], v: 0 };
+    if (!isLoose(key)) {
+      cur.x = target[key];
+      cur.v = 0;
+      continue;
+    }
+    let kick = 0;
+    if (key === 'lShoulder' || key === 'rShoulder') {
+      kick = -ax * 0.008;
+    } else if (key === 'lElbow' || key === 'rElbow') {
+      kick = -ax * 0.005 + ay * 0.004;
+    } else if (key === 'head') {
+      kick = -ax * 0.005 - ay * 0.003;
+    } else if (key === 'torso') {
+      kick = -ax * 0.002;
+    }
+    const p = JOINT_SPRINGS[key];
+    const v0 = cur.v + kick * dt;
+    const a = p.k * (target[key] - cur.x) - 2 * p.zeta * Math.sqrt(p.k) * v0;
+    cur.v = v0 + a * dt;
+    cur.x += cur.v * dt;
   }
-  const sq = springStep(s.squash, target.squash, dt, SQUASH_SPRING);
-  out.squash = { x: Math.min(1.35, Math.max(0.55, sq.x)), v: sq.v };
-  return out;
+  const sq = s.squash;
+  const acc = SQUASH_SPRING.k * (target.squash - sq.x) - 2 * SQUASH_SPRING.zeta * Math.sqrt(SQUASH_SPRING.k) * sq.v;
+  sq.v += acc * dt;
+  sq.x = Math.min(1.35, Math.max(0.55, sq.x + sq.v * dt));
+  return s;
 }
 
 /** Target pose with the spring-filtered angles applied. */
