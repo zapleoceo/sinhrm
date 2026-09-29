@@ -47,19 +47,26 @@ final class QueryReportRepository implements ReportRepository
         $rows = DB::table('applications as a')
             ->join('vacancies as v', 'v.id', '=', 'a.vacancy_id')
             ->join('pipeline_stages as s', 's.id', '=', 'a.stage_id')
+            ->leftJoin('branches as b', 'b.id', '=', 'v.branch_id')
+            ->leftJoin('users as u', 'u.id', '=', 'v.recruiter_id')
             ->whereBetween('a.created_at', [$range->from, $range->to])
             ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->whereIn('v.branch_id', $scope->branchIds ?? []))
             ->when($vacancyId, fn (Builder $q, int $id) => $q->where('v.id', $id))
-            ->groupBy('v.id', 'v.title', 's.id', 's.name', 's.kind', 's.position')
+            ->groupBy('v.id', 'v.title', 'v.status', 'v.opened_at', 'b.name', 'u.name', 's.id', 's.name', 's.kind', 's.position')
             ->orderBy('v.title')
             ->orderBy('v.id')
             ->orderBy('s.position')
-            ->selectRaw('v.id as vacancy_id, v.title as vacancy_title, s.id as stage_id, s.name as stage_name, s.kind as stage_kind, s.position, count(*) as cnt')
+            ->selectRaw('v.id as vacancy_id, v.title as vacancy_title, v.status as vacancy_status, v.opened_at, b.name as branch_name, u.name as recruiter_name, s.id as stage_id, s.name as stage_name, s.kind as stage_kind, s.position, count(*) as cnt')
             ->get();
 
         return array_values($rows->map(static fn (object $r): array => [
             'vacancy_id' => (int) $r->vacancy_id,
             'vacancy_title' => (string) $r->vacancy_title,
+            // Card header of the funnel (additive fields; the stage rows are unchanged).
+            'vacancy_status' => (string) $r->vacancy_status,
+            'branch_name' => $r->branch_name !== null ? (string) $r->branch_name : null,
+            'recruiter_name' => $r->recruiter_name !== null ? (string) $r->recruiter_name : null,
+            'opened_at' => $r->opened_at !== null ? substr((string) $r->opened_at, 0, 10) : null,
             'stage_id' => (int) $r->stage_id,
             'stage_name' => (string) $r->stage_name,
             'stage_kind' => (string) $r->stage_kind,

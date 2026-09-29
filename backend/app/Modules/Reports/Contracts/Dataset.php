@@ -24,8 +24,9 @@ interface Dataset
     public function available(ScopedContext $ctx): bool;
 
     /**
-     * @return array<string, array{expr: string, type: string, pii?: bool}> column key → fixed SQL expression, type,
-     *                                                                      PII flag (admins only)
+     * Column key → SQL expression, type, PII flag (admins only), total hint (Support\Totals, default none).
+     *
+     * @return array<string, array{expr: string, type: string, pii?: bool, total?: string}>
      */
     public function columns(): array;
 }

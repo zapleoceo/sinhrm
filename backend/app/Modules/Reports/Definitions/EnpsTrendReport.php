@@ -35,8 +35,8 @@ final class EnpsTrendReport extends AbstractReport
         return [
             ['key' => 'survey', 'type' => 'string'],
             ['key' => 'closed_on', 'type' => 'date'],
-            ['key' => 'responses', 'type' => 'number'],
-            ['key' => 'enps', 'type' => 'number'],
+            ['key' => 'responses', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'enps', 'type' => 'number', 'total' => 'none'],
         ];
     }
 

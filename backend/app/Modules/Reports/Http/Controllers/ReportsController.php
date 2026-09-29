@@ -49,7 +49,7 @@ final class ReportsController
         $ctx = $this->ctx($request);
         $result = $this->catalog->run($ctx, $this->catalog->find($ctx, $key), $request->query());
 
-        return CsvResponse::make($key, array_column($result['report']['columns'], 'key'), $result['rows']);
+        return CsvResponse::make($key, array_column($result['report']['columns'], 'key'), $result['rows'], $result['totals']);
     }
 
     public function datasets(Request $request): JsonResponse
@@ -71,7 +71,7 @@ final class ReportsController
         $spec = $this->builder->spec($ctx, $request->spec());
         $result = $this->builder->run($ctx, $spec);
 
-        return CsvResponse::make($spec->dataset, $result['columns'], $result['rows']);
+        return CsvResponse::make($spec->dataset, $result['columns'], $result['rows'], $result['totals']);
     }
 
     public function saved(Request $request): JsonResponse
@@ -112,14 +112,14 @@ final class ReportsController
             $spec = $this->builder->spec($ctx, $saved->definition);
             $result = $this->builder->run($ctx, $spec);
 
-            return $csv ? CsvResponse::make($saved->name, $result['columns'], $result['rows'])
+            return $csv ? CsvResponse::make($saved->name, $result['columns'], $result['rows'], $result['totals'])
                 : new JsonResponse(['data' => ['spec' => $spec->toArray()] + $result]);
         }
         /** @var array<string, mixed> $filters */
         $filters = (array) ($saved->definition['filters'] ?? []);
         $result = $this->catalog->run($ctx, $this->catalog->find($ctx, (string) ($saved->definition['key'] ?? '')), $filters);
 
-        return $csv ? CsvResponse::make($saved->name, array_column($result['report']['columns'], 'key'), $result['rows'])
+        return $csv ? CsvResponse::make($saved->name, array_column($result['report']['columns'], 'key'), $result['rows'], $result['totals'])
             : new JsonResponse(['data' => $result]);
     }
 

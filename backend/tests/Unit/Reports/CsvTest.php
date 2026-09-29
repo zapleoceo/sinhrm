@@ -33,4 +33,18 @@ final class CsvTest extends TestCase
         $csv = (string) stream_get_contents($out);
         $this->assertSame("\xEF\xBB\xBFname,n\n\"'=cmd|\"\"/c calc\"\"\",3\n\"multi\nline\",\n", $csv);
     }
+
+    public function test_write_appends_the_total_row_with_the_same_guard(): void
+    {
+        $out = fopen('php://memory', 'w+b');
+        $this->assertNotFalse($out);
+        Csv::write($out, ['name', 'n', 'pct'], [['name' => '=a', 'n' => 3, 'pct' => 10.0], ['name' => 'b', 'n' => 4, 'pct' => 20.0]],
+            ['name' => null, 'n' => 7, 'pct' => null]);
+        rewind($out);
+        $lines = explode("
+", trim((string) stream_get_contents($out)));
+
+        $this->assertSame("'=a,3,10", $lines[1]);
+        $this->assertSame('Total,7,—', $lines[3]);
+    }
 }

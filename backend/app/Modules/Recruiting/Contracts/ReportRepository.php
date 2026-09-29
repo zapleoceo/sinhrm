@@ -20,7 +20,7 @@ interface ReportRepository
     /**
      * Applications created in the range, by vacancy and their current stage.
      *
-     * @return list<array{vacancy_id: int, vacancy_title: string, stage_id: int, stage_name: string, stage_kind: string, position: int, count: int}>
+     * @return list<array{vacancy_id: int, vacancy_title: string, vacancy_status: string, branch_name: string|null, recruiter_name: string|null, opened_at: string|null, stage_id: int, stage_name: string, stage_kind: string, position: int, count: int}>
      */
     public function funnel(Scope $scope, DateRange $range, ?int $vacancyId): array;
 

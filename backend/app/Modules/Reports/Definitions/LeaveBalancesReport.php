@@ -27,7 +27,7 @@ final class LeaveBalancesReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'employee', 'type' => 'string'], ['key' => 'leave_type', 'type' => 'string'], ['key' => 'balance', 'type' => 'number']];
+        return [['key' => 'employee', 'type' => 'string'], ['key' => 'leave_type', 'type' => 'string'], ['key' => 'balance', 'type' => 'number', 'total' => 'none']];
     }
 
     public function available(ScopedContext $ctx): bool

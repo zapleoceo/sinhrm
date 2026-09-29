@@ -31,7 +31,7 @@ final class HeadcountReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'branch', 'type' => 'string'], ['key' => 'department', 'type' => 'string'], ['key' => 'headcount', 'type' => 'number']];
+        return [['key' => 'branch', 'type' => 'string'], ['key' => 'department', 'type' => 'string'], ['key' => 'headcount', 'type' => 'number', 'total' => 'sum']];
     }
 
     public function chart(): array

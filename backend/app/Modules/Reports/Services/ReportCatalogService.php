@@ -8,6 +8,7 @@ use App\Modules\Reports\Contracts\ReportDefinition;
 use App\Modules\Reports\DTO\ScopedContext;
 use App\Modules\Reports\Enums\ReportGroup;
 use App\Modules\Reports\Support\ReportRegistry;
+use App\Modules\Reports\Support\Totals;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -47,13 +48,15 @@ final readonly class ReportCatalogService
 
     /**
      * @param  array<string, mixed>  $input  raw query parameters; only the report's own filters are read
-     * @return array{report: array<string, mixed>, filters: array<string, mixed>, rows: list<array<string, scalar|null>>}
+     * @return array{report: array<string, mixed>, filters: array<string, mixed>, rows: list<array<string, scalar|null>>, totals: array<string, int|float|null>|null}
      */
     public function run(ScopedContext $ctx, ReportDefinition $report, array $input): array
     {
         $filters = self::validate($report, $input);
 
-        return ['report' => self::describe($report), 'filters' => $filters, 'rows' => $report->rows($ctx, $filters)];
+        $rows = $report->rows($ctx, $filters);
+
+        return ['report' => self::describe($report), 'filters' => $filters, 'rows' => $rows, 'totals' => Totals::row($report->columns(), $rows)];
     }
 
     /** @return array<string, mixed> */

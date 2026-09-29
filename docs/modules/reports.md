@@ -90,7 +90,21 @@ API: `GET/POST /api/reports/saved`, `PUT/DELETE /saved/{id}`, `GET /saved/{id}/r
 `StreamedResponse` (`fputcsv` в `php://output`), UTF-8 BOM (Excel и кириллица), `Content-Disposition: attachment`,
 `no-store`. **Защита от CSV/formula injection (OWASP):** текстовая ячейка, начинающаяся с `=`, `+`, `-`, `@` (а
 также табуляции и `\r`), получает префикс `'`; числа не трогаются. Эндпоинты: `GET /api/reports/catalog/{key}/csv`,
-`POST /api/reports/builder/csv`, `GET /saved/{id}/run?format=csv`.
+`POST /api/reports/builder/csv`, `GET /saved/{id}/run?format=csv`. Последняя строка CSV — итог (`Total`, «—» у
+колонок без итога), если он есть; защита та же.
+
+### Строка «Разом» (`Support/Totals`)
+Итог считает бэкенд и отдаёт в `totals` (`run`, `builder/run`, `saved/{id}/run`; `null` при < 2 строк), UI рисует его
+`<tfoot>` в `report-table` (жирный, верхняя граница, токены светлой/тёмной темы). Каждая числовая колонка отчёта
+объявляет `total` осознанно: `sum` (количества, часы, дни, деньги), `ratio` + `of: [числитель, знаменатель]`
+(истинная конверсия — например `hire_rate_pct` = Σhired / Σcandidates, `cost_per_hire` = Σcost / Σhired),
+`avg-weighted` + `weight` (среднее, взвешенное по колонке количества: `avg_days` по `hires`, `avg_score` по
+`evaluations`), `none` (по умолчанию: медианы, проценты без знаменателя в данных, неаддитивные — сотрудники с
+отсутствиями по месяцам, `avg_headcount`, респонденты по неделям). **Анонимность:** `null` в ячейке (скрытая группа)
+делает итог колонки `null` — скрытое значение не вычислить как «итог минус видимые». В `gender_pay_gap` скрытые
+группы выпадают строками целиком, поэтому `employees` — `none`. Конструктор: сгруппированный `value` — `sum` для
+count/sum, `none` для avg; сырые строки — только колонки датасета с `total` (`assets.cost`, `leave_requests.days`);
+при обрезке по лимиту итога нет.
 
 ### Фронтенд
 `frontend/src/app/features/reports`: `catalog.page`, `report-view.page` (фильтры из query-параметров),

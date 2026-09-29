@@ -74,6 +74,9 @@ final class ReportsApiTest extends TestCase
         $funnel = $this->actingAs($this->recruiter)->getJson('/api/reports/funnel')->assertOk()
             ->assertJsonPath('data.totals.total', 3)->json('data.rows');
         $byStage = array_column($funnel, 'count', 'stage_name');
+        $this->assertSame('open', $funnel[0]['vacancy_status']);
+        $this->assertArrayHasKey('branch_name', $funnel[0]);
+        $this->assertArrayHasKey('recruiter_name', $funnel[0]);
         $this->assertSame(1, $byStage[$this->stageAt(1)->name]);
         $this->assertSame(1, $byStage[$this->rejectStage()->name]);
 

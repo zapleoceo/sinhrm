@@ -360,6 +360,11 @@ export interface TouchesRow {
 export interface FunnelRow {
   vacancy_id: number;
   vacancy_title: string;
+  /** card header of the funnel report */
+  vacancy_status?: VacancyStatus;
+  branch_name?: string | null;
+  recruiter_name?: string | null;
+  opened_at?: string | null;
   stage_id: number;
   stage_name: string;
   stage_kind: StageKind;

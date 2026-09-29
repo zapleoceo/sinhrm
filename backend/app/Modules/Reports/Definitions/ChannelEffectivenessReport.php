@@ -37,13 +37,13 @@ final class ChannelEffectivenessReport extends AbstractReport
         return [
             ['key' => 'channel', 'type' => 'string'],
             ['key' => 'type', 'type' => 'string'],
-            ['key' => 'candidates', 'type' => 'number'],
-            ['key' => 'applications', 'type' => 'number'],
-            ['key' => 'advanced', 'type' => 'number'],
-            ['key' => 'hired', 'type' => 'number'],
-            ['key' => 'conversion_pct', 'type' => 'percent'],
-            ['key' => 'cost', 'type' => 'number'],
-            ['key' => 'cost_per_hire', 'type' => 'number'],
+            ['key' => 'candidates', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'applications', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'advanced', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'hired', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'conversion_pct', 'type' => 'percent', 'total' => 'ratio', 'of' => ['hired', 'candidates']],
+            ['key' => 'cost', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'cost_per_hire', 'type' => 'number', 'total' => 'ratio', 'of' => ['cost', 'hired']],
         ];
     }
 

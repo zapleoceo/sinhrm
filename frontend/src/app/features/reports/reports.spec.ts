@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { barPercent, cleanSpec, columnMax, filterParams } from './reports.model';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+import { ReportTable } from './report-table';
+import { Row, barPercent, cleanSpec, columnMax, filterParams } from './reports.model';
 import { ReportsService } from './reports.service';
 
 describe('ReportsService', () => {
@@ -65,5 +67,39 @@ describe('report helpers', () => {
       group_by: null,
       aggregate: null,
     });
+  });
+});
+
+describe('ReportTable total row', () => {
+  const columns = [
+    { key: 'source', type: 'string' as const },
+    { key: 'candidates', type: 'number' as const, total: 'sum' as const },
+    { key: 'hire_rate_pct', type: 'percent' as const, total: 'ratio' as const },
+    { key: 'median', type: 'number' as const },
+  ];
+
+  function footer(rows: Row[], totals: Row | null): string[] | null {
+    TestBed.configureTestingModule({ imports: [ReportTable, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })] });
+    const fixture = TestBed.createComponent(ReportTable);
+    fixture.componentRef.setInput('columns', columns);
+    fixture.componentRef.setInput('rows', rows);
+    fixture.componentRef.setInput('totals', totals);
+    fixture.detectChanges();
+    const tr = (fixture.nativeElement as HTMLElement).querySelector('tfoot tr');
+    return tr ? [...tr.querySelectorAll('td')].map((td) => td.textContent?.trim() ?? '') : null;
+  }
+
+  it('renders the backend totals with «—» for columns without a total', () => {
+    const rows = [
+      { source: 'a', candidates: 1000, hire_rate_pct: 10, median: 5 },
+      { source: 'b', candidates: 234, hire_rate_pct: 20, median: 6 },
+    ];
+    expect(footer(rows, { source: null, candidates: 1234, hire_rate_pct: 12.5, median: null })).toEqual(['reports.total', '1,234', '12.5%', '—']);
+  });
+
+  it('has no total row for a single row or without totals', () => {
+    expect(footer([{ source: 'a', candidates: 1, hire_rate_pct: 1, median: 1 }], { source: null, candidates: 1, hire_rate_pct: 1, median: null })).toBeNull();
+    TestBed.resetTestingModule();
+    expect(footer([{ source: 'a' }, { source: 'b' }], null)).toBeNull();
   });
 });

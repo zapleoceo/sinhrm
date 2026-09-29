@@ -30,7 +30,7 @@ final class LeaveUsageReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'leave_type', 'type' => 'string'], ['key' => 'requests', 'type' => 'number'], ['key' => 'days', 'type' => 'number'], ['key' => 'employees', 'type' => 'number']];
+        return [['key' => 'leave_type', 'type' => 'string'], ['key' => 'requests', 'type' => 'number', 'total' => 'sum'], ['key' => 'days', 'type' => 'number', 'total' => 'sum'], ['key' => 'employees', 'type' => 'number', 'total' => 'none']];
     }
 
     public function chart(): array

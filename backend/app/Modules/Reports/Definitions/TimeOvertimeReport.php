@@ -20,9 +20,9 @@ final class TimeOvertimeReport extends AbstractTimeReport
             ['key' => 'employee', 'type' => 'string'],
             ['key' => 'week_start', 'type' => 'date'],
             ['key' => 'status', 'type' => 'string'],
-            ['key' => 'expected', 'type' => 'number'],
-            ['key' => 'worked', 'type' => 'number'],
-            ['key' => 'overtime', 'type' => 'number'],
+            ['key' => 'expected', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'worked', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'overtime', 'type' => 'number', 'total' => 'sum'],
         ];
     }
 

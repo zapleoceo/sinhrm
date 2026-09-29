@@ -110,8 +110,10 @@ final class ReportsApiTest extends TestCase
             $pay('female', $a, 'USD');
         }
 
-        $rows = (array) $this->actingAs($admin)->getJson('/api/reports/catalog/gender_pay_gap')->assertOk()->json('data.rows');
+        $result = (array) $this->actingAs($admin)->getJson('/api/reports/catalog/gender_pay_gap')->assertOk()->json('data');
+        $rows = (array) $result['rows'];
         $this->assertCount(2, $rows, 'USD group of 4 is hidden');
+        $this->assertNull($result['totals']['employees'], 'a total would count the hidden group back in');
         $this->assertEquals(['currency' => 'UAH', 'period' => 'month', 'gender' => 'female', 'employees' => 5, 'median' => 90, 'gap_pct' => 10], $rows[0]);
         $this->assertEquals(100, $rows[1]['median']);
     }
@@ -233,7 +235,9 @@ final class ReportsApiTest extends TestCase
         $this->answer($open, $people[1], ['enps' => 9, 'q1' => 4]);
         SurveyWave::query()->whereKey([$big->id, $small->id])->update(['status' => 'closed', 'salt' => null]);
 
-        $rows = (array) $this->actingAs($admin)->getJson('/api/reports/catalog/enps_trend')->assertOk()->json('data.rows');
+        $result = (array) $this->actingAs($admin)->getJson('/api/reports/catalog/enps_trend')->assertOk()->json('data');
+        $rows = (array) $result['rows'];
+        $this->assertNull($result['totals']['responses'], 'a suppressed wave hides the total');
         $bySurvey = array_column($rows, null, 'survey');
         $this->assertArrayNotHasKey('Open wave', $bySurvey, 'only closed waves');
         $this->assertSame(['responses' => 5, 'enps' => 20], array_intersect_key($bySurvey['Big wave'], ['responses' => 1, 'enps' => 1]));

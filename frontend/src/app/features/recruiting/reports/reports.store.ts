@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { Channel, DateRange, FunnelReport, RejectReasonsReport, SourcesReport, TouchesReport } from '../recruiting.model';
+import { Channel, DateRange, FunnelReport, FunnelRow, StageKind, VacancyStatus, RejectReasonsReport, SourcesReport, TouchesReport } from '../recruiting.model';
 import { lastDays } from '../recruiting.format';
 import { RecruitingService } from '../recruiting.service';
 
@@ -33,6 +33,83 @@ export function pivotTouches(report: TouchesReport | null): RecruiterTouches[] {
   return [...map.values()].sort((a, b) => b.total - a.total);
 }
 
+export interface FunnelStage {
+  id: number;
+  name: string;
+  kind: StageKind;
+  count: number;
+  /** % of the previous stage (null for the first stage, an empty previous one and the rejections) */
+  conversion: number | null;
+}
+
+export interface FunnelCard {
+  id: number;
+  title: string;
+  status: VacancyStatus | null;
+  /** branch · recruiter */
+  subtitle: string | null;
+  daysOpen: number | null;
+  /** candidates on attract/select stages */
+  active: number;
+  max: number;
+  stages: FunnelStage[];
+}
+
+/** One card per vacancy: stages in funnel order, most active vacancies first. */
+export function funnelCards(rows: readonly FunnelRow[], today: Date = new Date()): FunnelCard[] {
+  const groups = new Map<number, FunnelRow[]>();
+  for (const row of rows) {
+    groups.set(row.vacancy_id, [...(groups.get(row.vacancy_id) ?? []), row]);
+  }
+  const cards = [...groups.values()].map((group): FunnelCard => {
+    const sorted = [...group].sort((a, b) => a.position - b.position);
+    const first = sorted[0];
+    const stages = sorted.map((r, i): FunnelStage => {
+      const prev = i > 0 ? sorted[i - 1].count : 0;
+      return {
+        id: r.stage_id,
+        name: r.stage_name,
+        kind: r.stage_kind,
+        count: r.count,
+        conversion: r.stage_kind !== 'closed' && prev > 0 ? Math.round((r.count / prev) * 100) : null,
+      };
+    });
+    return {
+      id: first.vacancy_id,
+      title: first.vacancy_title,
+      status: first.vacancy_status ?? null,
+      subtitle: [first.branch_name, first.recruiter_name].filter((x) => !!x).join(' · ') || null,
+      daysOpen: daysSince(first.opened_at ?? null, today),
+      active: stages.filter((s) => s.kind === 'attract' || s.kind === 'select').reduce((sum, s) => sum + s.count, 0),
+      max: Math.max(0, ...stages.map((s) => s.count)),
+      stages,
+    };
+  });
+  return cards.sort((a, b) => b.active - a.active || a.title.localeCompare(b.title));
+}
+
+function daysSince(iso: string | null, today: Date): number | null {
+  if (!iso) {
+    return null;
+  }
+  const opened = Date.parse(`${iso}T00:00:00`);
+  return Number.isNaN(opened) ? null : Math.max(0, Math.floor((today.getTime() - opened) / 86_400_000));
+}
+
+/** Column sums of the recruiter × channel matrix (the «Total» row). */
+export function touchesTotal(rows: readonly RecruiterTouches[]): RecruiterTouches {
+  const total: RecruiterTouches = { name: '', total: 0, viaProduct: 0, captured: 0, byChannel: {} };
+  for (const r of rows) {
+    total.total += r.total;
+    total.viaProduct += r.viaProduct;
+    total.captured += r.captured;
+    for (const [channel, n] of Object.entries(r.byChannel) as [Channel, number][]) {
+      total.byChannel[channel] = (total.byChannel[channel] ?? 0) + n;
+    }
+  }
+  return total;
+}
+
 /** Share of the maximum, for plain CSS bars (0..100). */
 export function barWidth(value: number, max: number): number {
   return max > 0 ? Math.round((value / max) * 100) : 0;
@@ -52,16 +129,8 @@ export class ReportsStore {
   readonly rejectReasons = signal<RejectReasonsReport | null>(null);
 
   readonly recruiters = computed(() => pivotTouches(this.touches()));
-  readonly funnelByVacancy = computed(() => {
-    const rows = this.funnel()?.rows ?? [];
-    const groups = new Map<number, { title: string; rows: typeof rows }>();
-    for (const row of rows) {
-      const g = groups.get(row.vacancy_id) ?? { title: row.vacancy_title, rows: [] };
-      g.rows.push(row);
-      groups.set(row.vacancy_id, g);
-    }
-    return [...groups.values()];
-  });
+  readonly recruitersTotal = computed(() => touchesTotal(this.recruiters()));
+  readonly funnelCards = computed(() => funnelCards(this.funnel()?.rows ?? []));
 
   setRange(range: DateRange): void {
     this.range.set(range);

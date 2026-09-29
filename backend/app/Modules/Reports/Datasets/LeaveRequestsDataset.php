@@ -6,6 +6,7 @@ namespace App\Modules\Reports\Datasets;
 
 use App\Modules\Reports\Contracts\Dataset;
 use App\Modules\Reports\DTO\ScopedContext;
+use App\Modules\Reports\Support\Totals;
 
 /** Leave requests of employees in the People scope. Comments are not exposed. */
 final class LeaveRequestsDataset implements Dataset
@@ -30,7 +31,7 @@ final class LeaveRequestsDataset implements Dataset
             'status' => ['expr' => 'lr.status', 'type' => self::STRING],
             'starts_on' => ['expr' => 'lr.starts_on', 'type' => self::DATE],
             'ends_on' => ['expr' => 'lr.ends_on', 'type' => self::DATE],
-            'days' => ['expr' => 'lr.days', 'type' => self::NUMBER],
+            'days' => ['expr' => 'lr.days', 'type' => self::NUMBER, 'total' => Totals::SUM],
             'created_at' => ['expr' => 'lr.created_at', 'type' => self::DATE],
         ];
     }

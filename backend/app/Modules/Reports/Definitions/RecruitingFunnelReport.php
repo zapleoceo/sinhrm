@@ -30,7 +30,7 @@ final class RecruitingFunnelReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'stage', 'type' => 'string'], ['key' => 'applications', 'type' => 'number']];
+        return [['key' => 'stage', 'type' => 'string'], ['key' => 'applications', 'type' => 'number', 'total' => 'sum']];
     }
 
     public function chart(): array

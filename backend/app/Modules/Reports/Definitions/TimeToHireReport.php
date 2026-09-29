@@ -31,7 +31,7 @@ final class TimeToHireReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'vacancy', 'type' => 'string'], ['key' => 'hires', 'type' => 'number'], ['key' => 'avg_days', 'type' => 'number'], ['key' => 'median_days', 'type' => 'number']];
+        return [['key' => 'vacancy', 'type' => 'string'], ['key' => 'hires', 'type' => 'number', 'total' => 'sum'], ['key' => 'avg_days', 'type' => 'number', 'total' => 'avg-weighted', 'weight' => 'hires'], ['key' => 'median_days', 'type' => 'number', 'total' => 'none']];
     }
 
     public function chart(): array

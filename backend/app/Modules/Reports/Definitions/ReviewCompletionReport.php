@@ -28,9 +28,9 @@ final class ReviewCompletionReport extends AbstractReport
         return [
             ['key' => 'cycle', 'type' => 'string'],
             ['key' => 'status', 'type' => 'string'],
-            ['key' => 'assigned', 'type' => 'number'],
-            ['key' => 'submitted', 'type' => 'number'],
-            ['key' => 'completion_pct', 'type' => 'percent'],
+            ['key' => 'assigned', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'submitted', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'completion_pct', 'type' => 'percent', 'total' => 'ratio', 'of' => ['submitted', 'assigned']],
         ];
     }
 

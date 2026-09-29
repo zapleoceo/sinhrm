@@ -33,7 +33,7 @@ final class AbsencesSummaryReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'month', 'type' => 'string'], ['key' => 'employees_absent', 'type' => 'number'], ['key' => 'days', 'type' => 'number']];
+        return [['key' => 'month', 'type' => 'string'], ['key' => 'employees_absent', 'type' => 'number', 'total' => 'none'], ['key' => 'days', 'type' => 'number', 'total' => 'sum']];
     }
 
     public function chart(): array

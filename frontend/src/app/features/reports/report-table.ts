@@ -48,6 +48,27 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
             <tr><td [attr.colspan]="columns().length" class="muted">{{ 'reports.noRows' | transloco }}</td></tr>
           }
         </tbody>
+        @if (footer(); as t) {
+          <tfoot>
+            <tr>
+              @for (c of columns(); track c.key; let first = $first) {
+                <td [class.num]="numeric(c.type)">
+                  @if (t[c.key] === null || t[c.key] === undefined) {
+                    @if (first) {
+                      {{ 'reports.total' | transloco }}
+                    } @else {
+                      <span class="muted">—</span>
+                    }
+                  } @else if (numeric(c.type)) {
+                    {{ asNumber(t[c.key]) | number: '1.0-2' }}{{ c.type === 'percent' ? '%' : '' }}
+                  } @else {
+                    {{ text(t[c.key]) }}
+                  }
+                </td>
+              }
+            </tr>
+          </tfoot>
+        }
       </table>
     </div>
   `,
@@ -62,12 +83,17 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
     th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--app-border); font-weight: normal; }
     thead th { color: var(--app-muted); font-size: 0.8rem; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
+    tfoot td { position: sticky; bottom: 0; background: var(--mat-sys-surface-container-low); font-weight: 600; border-top: 2px solid var(--app-border); border-bottom: 0; }
   `,
 })
 export class ReportTable {
   readonly columns = input.required<{ key: string; type: ColumnType | 'string' | 'number' | 'date' }[]>();
   readonly rows = input.required<Row[]>();
   readonly chart = input<{ label: string; value: string } | null>(null);
+  /** The backend «Total» row; shown only for 2+ rows. */
+  readonly totals = input<Row | null>(null);
+
+  protected readonly footer = computed(() => (this.rows().length >= 2 ? this.totals() : null));
 
   private readonly max = computed(() => {
     const ch = this.chart();

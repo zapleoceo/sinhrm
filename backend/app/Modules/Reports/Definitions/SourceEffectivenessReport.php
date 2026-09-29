@@ -30,7 +30,7 @@ final class SourceEffectivenessReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'source', 'type' => 'string'], ['key' => 'candidates', 'type' => 'number'], ['key' => 'hired', 'type' => 'number'], ['key' => 'hire_rate_pct', 'type' => 'percent']];
+        return [['key' => 'source', 'type' => 'string'], ['key' => 'candidates', 'type' => 'number', 'total' => 'sum'], ['key' => 'hired', 'type' => 'number', 'total' => 'sum'], ['key' => 'hire_rate_pct', 'type' => 'percent', 'total' => 'ratio', 'of' => ['hired', 'candidates']]];
     }
 
     public function chart(): array

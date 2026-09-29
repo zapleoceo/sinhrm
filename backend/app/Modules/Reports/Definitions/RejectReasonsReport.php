@@ -30,7 +30,7 @@ final class RejectReasonsReport extends AbstractReport
 
     public function columns(): array
     {
-        return [['key' => 'reason', 'type' => 'string'], ['key' => 'rejections', 'type' => 'number']];
+        return [['key' => 'reason', 'type' => 'string'], ['key' => 'rejections', 'type' => 'number', 'total' => 'sum']];
     }
 
     public function chart(): array

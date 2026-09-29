@@ -24,9 +24,9 @@ final class TimeMissingReport extends AbstractTimeReport
             ['key' => 'department', 'type' => 'string'],
             ['key' => 'week_start', 'type' => 'date'],
             ['key' => 'status', 'type' => 'string'],
-            ['key' => 'expected', 'type' => 'number'],
-            ['key' => 'worked', 'type' => 'number'],
-            ['key' => 'missing', 'type' => 'number'],
+            ['key' => 'expected', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'worked', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'missing', 'type' => 'number', 'total' => 'sum'],
         ];
     }
 

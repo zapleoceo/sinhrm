@@ -33,8 +33,8 @@ final class RecruiterTouchesReport extends AbstractReport
         return [
             ['key' => 'recruiter', 'type' => 'string'],
             ['key' => 'channel', 'type' => 'string'],
-            ['key' => 'touches', 'type' => 'number'],
-            ['key' => 'via_product', 'type' => 'number'],
+            ['key' => 'touches', 'type' => 'number', 'total' => 'sum'],
+            ['key' => 'via_product', 'type' => 'number', 'total' => 'sum'],
         ];
     }
 
