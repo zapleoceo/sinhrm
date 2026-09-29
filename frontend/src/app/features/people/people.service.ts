@@ -16,6 +16,8 @@ import {
   PEOPLE_ERROR_CODES,
   Paged,
   PeopleQuery,
+  PersonOption,
+  PickerScope,
   SaveEmployee,
 } from './people.model';
 
@@ -91,6 +93,21 @@ export class PeopleService {
     return this.http
       .post<{ data: ChangeRequest }>(`/api/people/change-requests/${id}/${approve ? 'approve' : 'reject'}`, { comment })
       .pipe(map((r) => r.data));
+  }
+
+  /** Person picker: search by name among the people the caller may see (GET /api/people/search, q ≥ 2 chars). */
+  searchPeople(q: string, scope: PickerScope = 'employees', options: { limit?: number; includeTerminated?: boolean } = {}): Observable<PersonOption[]> {
+    const params = toParams({ q, scope, limit: options.limit, include_terminated: options.includeTerminated ? 1 : undefined });
+    return this.http.get<{ data: PersonOption[] }>('/api/people/search', { params }).pipe(map((r) => r.data));
+  }
+
+  /** Person picker: id → name for saved values; unknown or hidden ids are simply absent. */
+  lookupPeople(ids: readonly number[], scope: PickerScope = 'employees'): Observable<PersonOption[]> {
+    let params = toParams({ scope });
+    for (const id of ids) {
+      params = params.append('ids[]', String(id));
+    }
+    return this.http.get<{ data: PersonOption[] }>('/api/people/lookup', { params }).pipe(map((r) => r.data));
   }
 
   /** Recruiting → People: 201 created or 200 when the employee already exists (idempotent). */

@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -12,8 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Observable, Subject, debounceTime, switchMap } from 'rxjs';
-import { Employee } from '../people/people.model';
-import { PeopleService } from '../people/people.service';
+import { PersonPicker, PickerValue } from '../people/picker/person-picker';
 import { ASSET_STATUSES, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
 import { AssetsService, assetsErrorKey } from './assets.service';
 import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
@@ -21,7 +21,7 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 /** Inventory (/admin/assets): table with search and status, new asset, hand out / take back with history. */
 @Component({
   selector: 'app-assets-page',
-  imports: [DatePipe, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, RouterLink, TranslocoPipe],
+  imports: [DatePipe, FormsModule, PersonPicker, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, RouterLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -113,18 +113,7 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
                 <td colspan="7">
                   <form class="row" (submit)="$event.preventDefault(); move(date.value, cond.value)">
                     @if (moving()?.kind === 'assign') {
-                      <mat-form-field subscriptSizing="dynamic" class="grow">
-                        <mat-label>{{ 'assets.employee' | transloco }}</mat-label>
-                        <input matInput (input)="peopleSearch.next(val($event))" [placeholder]="'assets.findEmployee' | transloco" />
-                      </mat-form-field>
-                      <mat-form-field subscriptSizing="dynamic" class="grow">
-                        <mat-label>{{ 'assets.pick' | transloco }}</mat-label>
-                        <mat-select [value]="employeeId()" (valueChange)="employeeId.set($event)">
-                          @for (p of people(); track p.id) {
-                            <mat-option [value]="p.id">{{ p.full_name }}</mat-option>
-                          }
-                        </mat-select>
-                      </mat-form-field>
+                      <app-person-picker class="grow" label="assets.employee" [ngModel]="employeeId()" (ngModelChange)="employeeId.set(asId($event))" [ngModelOptions]="{ standalone: true }" />
                     } @else {
                       <mat-form-field subscriptSizing="dynamic">
                         <mat-label>{{ 'assets.statusLabel' | transloco }}</mat-label>
@@ -180,7 +169,6 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 })
 export class AssetsPage implements OnInit {
   private readonly api = inject(AssetsService);
-  private readonly peopleApi = inject(PeopleService);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly statuses = ASSET_STATUSES;
@@ -195,18 +183,9 @@ export class AssetsPage implements OnInit {
   protected readonly opened = signal<Asset | null>(null);
   protected readonly employeeId = signal<number | null>(null);
   protected readonly returnStatus = signal<AssetStatus>('in_stock');
-  protected readonly people = signal<Employee[]>([]);
-  protected readonly peopleSearch = new Subject<string>();
   private readonly reload = new Subject<void>();
 
   constructor() {
-    this.peopleSearch
-      .pipe(
-        debounceTime(250),
-        switchMap((q) => this.peopleApi.list({ q, status: 'active', perPage: 20 })),
-        takeUntilDestroyed(),
-      )
-      .subscribe({ next: (page) => this.people.set(page.data), error: () => this.people.set([]) });
     this.reload
       .pipe(
         debounceTime(200),
@@ -231,6 +210,10 @@ export class AssetsPage implements OnInit {
   ngOnInit(): void {
     this.reload.next();
     this.api.types().subscribe({ next: (list) => this.types.set(list), error: () => this.types.set([]) });
+  }
+
+  protected asId(value: PickerValue): number | null {
+    return typeof value === 'number' ? value : null;
   }
 
   protected val(event: Event): string {

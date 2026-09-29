@@ -9,10 +9,12 @@ use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\People\Contracts\ChangeRequestRepository;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\Contracts\PickerUserRepository;
 use App\Modules\People\Privacy\CompensationPersonalData;
 use App\Modules\People\Privacy\EmployeePersonalData;
 use App\Modules\People\Repositories\EloquentChangeRequestRepository;
 use App\Modules\People\Repositories\EloquentEmployeeRepository;
+use App\Modules\People\Repositories\EloquentPickerUserRepository;
 use App\Modules\People\Services\PeopleScope;
 use Illuminate\Support\Facades\Gate;
 
@@ -35,6 +37,7 @@ final class PeopleServiceProvider extends ModuleServiceProvider
         $this->app->tag([EmployeePersonalData::class, CompensationPersonalData::class], PersonalDataProvider::class);
         $this->app->bind(EmployeeRepository::class, EloquentEmployeeRepository::class);
         $this->app->bind(ChangeRequestRepository::class, EloquentChangeRequestRepository::class);
+        $this->app->bind(PickerUserRepository::class, EloquentPickerUserRepository::class);
     }
 
     public function boot(): void

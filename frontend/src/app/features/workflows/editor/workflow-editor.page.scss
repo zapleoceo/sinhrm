@@ -22,3 +22,4 @@
 .cdk-drop-list-dragging .item:not(.cdk-drag-placeholder) { transition: transform 200ms ease; }
 
 .secret { margin-top: 1rem; }
+.assignee-user { display: flex; flex-direction: column; min-width: 16rem; }

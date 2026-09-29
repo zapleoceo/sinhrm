@@ -187,3 +187,15 @@ export interface SaveCompensation {
   effective_on: string;
   reason: string | null;
 }
+
+/** Who the person picker searches: directory employees (default), my managed subtree, or system users (HR only). */
+export type PickerScope = 'employees' | 'subordinates' | 'users';
+
+/** One person picker row (GET /api/people/search, /lookup): directory-level fields only. id = user id for 'users'. */
+export interface PersonOption {
+  id: number;
+  full_name: string;
+  position: string | null;
+  department: string | null;
+  avatar_url: string | null;
+}

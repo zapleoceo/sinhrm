@@ -10,6 +10,7 @@ use App\Modules\People\Http\Controllers\EmployeeHistoryController;
 use App\Modules\People\Http\Controllers\HireController;
 use App\Modules\People\Http\Controllers\MyEmployeeController;
 use App\Modules\People\Http\Controllers\PeopleController;
+use App\Modules\People\Http\Controllers\PersonPickerController;
 use App\Modules\People\Providers\PeopleServiceProvider;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,11 @@ use Illuminate\Support\Facades\Route;
 // writing employees: gate people-manage (superadmin, admin — they act as HR). No DELETE: people are terminated.
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('people', [PeopleController::class, 'index'])->name('people.index');
+    // Person picker: search by name / id -> name, directory-level fields only (PersonPicker).
+    Route::middleware('throttle:60,1')->group(function (): void {
+        Route::get('people/search', [PersonPickerController::class, 'search'])->name('people.search');
+        Route::get('people/lookup', [PersonPickerController::class, 'lookup'])->name('people.lookup');
+    });
     Route::get('people/org-chart', [PeopleController::class, 'orgChart'])->name('people.org-chart');
     Route::get('people/change-requests', [ChangeRequestController::class, 'index'])->name('people.change-requests.index');
     Route::post('people/change-requests/{changeRequest}/approve', [ChangeRequestController::class, 'approve'])

@@ -6,7 +6,7 @@ namespace App\Modules\People\DTO;
 
 use App\Modules\People\Enums\EmployeeStatus;
 
-/** Directory search. status null = working (active + on_leave). */
+/** Directory search. status null = working (active + on_leave); anyStatus = also terminated (HR picker only). */
 final readonly class EmployeeFilter
 {
     public function __construct(
@@ -19,11 +19,12 @@ final readonly class EmployeeFilter
         public int $perPage = 50,
         /** @var list<int>|null only these employees (null = no restriction) */
         public ?array $onlyIds = null,
+        public bool $anyStatus = false,
     ) {}
 
     /** @param  list<int>  $ids */
     public function restrictedTo(array $ids): self
     {
-        return new self($this->q, $this->branchId, $this->departmentId, $this->positionId, $this->status, $this->managerId, $this->perPage, $ids);
+        return new self($this->q, $this->branchId, $this->departmentId, $this->positionId, $this->status, $this->managerId, $this->perPage, $ids, $this->anyStatus);
     }
 }

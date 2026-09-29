@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { PersonPicker } from '../../people/picker/person-picker';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -19,7 +20,7 @@ import { PerformService, performErrorKey } from '../perform.service';
  */
 @Component({
   selector: 'app-feedback-page',
-  imports: [DatePipe, FormsModule, MatButtonModule, MatButtonToggleModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, TranslocoPipe],
+  imports: [DatePipe, FormsModule, PersonPicker, MatButtonModule, MatButtonToggleModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -36,10 +37,7 @@ import { PerformService, performErrorKey } from '../perform.service';
       }
       <div class="filters">
         @if (!answering()) {
-          <mat-form-field subscriptSizing="dynamic" class="narrow">
-            <mat-label>{{ 'perform.fields.employeeId' | transloco }}</mat-label>
-            <input matInput type="number" min="1" name="to" [(ngModel)]="to" required />
-          </mat-form-field>
+          <app-person-picker class="person" name="to" [(ngModel)]="to" required />
         }
         <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'perform.fields.type' | transloco }}</mat-label>

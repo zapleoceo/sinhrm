@@ -635,6 +635,7 @@
   },
   "bulk": {"title": "Bulk action: {{n}}", "selected": "Selected: {{n}}", "actions": "Bulk actions", "clear": "Clear selection", "action": "Action", "apply": "Apply", "value": "Value", "vacancy": "Vacancy", "stage": "Stage", "rejectReason": "Reject reason", "tag": "Tag", "recruiter": "Recruiter", "done": "Done {{ok}} of {{total}}", "candidates": {"move": "Move to stage", "reject": "Reject", "tag": "Add tag", "assign": "Assign recruiter"}, "people": {"department": "Change department", "position": "Change position", "manager": "Change manager", "export": "Export CSV"}},
   "people": {
+    "picker": {"employee": "Employee", "user": "User", "placeholder": "Start typing a name…", "minChars": "Type at least {{n}} characters", "empty": "No one found", "error": "Search failed. Please try again.", "clear": "Clear selection", "remove": "Remove"},
     "compensation": {"current": "Current", "empty": "No records", "amount": "Amount", "currency": "Currency", "periodLabel": "Period", "period": {"month": "month", "hour": "hour"}, "effectiveOn": "Effective from", "reason": "Reason", "add": "Add"},
     "gender": {"female": "Female", "male": "Male", "hint": "HR only; used for the pay gap report"},
     "loadError": "Could not load people",
