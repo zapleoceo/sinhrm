@@ -48,7 +48,7 @@ merge-base) или падение самого шага — всё это даё
 (миграции, экспорт OpenAPI через Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
 Job `backend` — агрегатор: `needs` всех трёх, `if: always()`, зелёный только если все три `success`.
 
-Ruleset «Protect main» требует проверки с именами **ровно** `backend`, `frontend`, `extension`, `security`, `docs`.
+Ruleset «Protect main» требует проверки с именами **ровно** `backend`, `frontend`, `extension`, `security`, `docs`, `worklog`.
 Эти job **нельзя переименовывать и удалять**: PR будет вечно ждать отсутствующую проверку. Новые части бэкенда
 добавляются в `needs` агрегатора, а не в ruleset. Workflow называется `CI` — на это имя подписан `deploy.yml`
 (`workflow_run`), его статус учитывает все job. В `deploy.yml` версия Vercel CLI закреплена (`vercel@~61.0.0`),
