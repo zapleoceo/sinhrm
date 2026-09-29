@@ -1,0 +1,43 @@
+name: worklog-build
+
+# Rebuilds the table in docs/worklog.md from docs/worklog.d/*.md after a merge to main.
+# No loop: the bot commit touches only docs/worklog.md (outside `paths`), is pushed with GITHUB_TOKEN
+# (does not trigger workflows) and carries [skip ci]; the actor guard is a belt-and-braces check.
+on:
+  push:
+    branches: [main]
+    paths: ["docs/worklog.d/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: worklog-build
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - name: Build and commit docs/worklog.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          build() {
+            node scripts/worklog-build.mjs
+            git add docs/worklog.md
+            if git diff --cached --quiet; then echo "nothing to commit"; return 1; fi
+            git commit -q -m "docs(worklog): rebuild table from docs/worklog.d [skip ci]"
+          }
+          build || exit 0
+          if ! git push origin HEAD:main; then
+            echo "push raced with another commit: rebasing onto fresh main and retrying once"
+            git fetch -q origin main
+            git reset -q --hard origin/main
+            build || exit 0
+            git push origin HEAD:main
+          fi
