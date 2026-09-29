@@ -6,13 +6,17 @@ namespace Tests\Feature\HiringRequests;
 
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
+use App\Modules\HiringRequests\Models\HiringApproval;
 use App\Modules\HiringRequests\Models\HiringRequest;
 use App\Modules\HiringRequests\Models\HiringSettings;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Scripts\Models\Task;
 use App\Modules\TimeOff\Models\Holiday;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Tests\Support\NavBadgeAssertions;
 use Tests\Support\PeopleFixtures;
 use Tests\Support\RecruitingFixtures;
@@ -195,6 +199,45 @@ final class HiringRequestApiTest extends TestCase
         Carbon::setTestNow('2026-10-09 10:00:00');
         $this->actingAs($lead)->postJson('/api/hiring-requests', $this->payload(['submit' => true]))->assertCreated()
             ->assertJsonPath('data.approvals.0.due_at', '2026-10-13T10:00:00+00:00');
+    }
+
+    /** Makes the "skip the rest of the route" UPDATE fail — the last write of a rejection and of a cancellation. */
+    private function failWhenSkippingOpenApprovals(): void
+    {
+        DB::listen(static function (QueryExecuted $query): void {
+            if (str_starts_with($query->sql, 'update "hiring_approvals"') && ($query->bindings[0] ?? null) === 'skipped') {
+                throw new RuntimeException('simulated failure while skipping the open approvals');
+            }
+        });
+    }
+
+    public function test_rejection_is_atomic(): void
+    {
+        $org = $this->org();
+        $admin = $this->login(UserRole::Admin);
+        $head = $this->userOf($org['head']);
+        $id = $this->actingAs($head)->postJson('/api/hiring-requests', $this->payload(['submit' => true]))->assertCreated()->json('data.id');
+
+        $this->failWhenSkippingOpenApprovals();
+        $this->actingAs($admin)->postJson("/api/hiring-requests/$id/decision", ['decision' => 'reject', 'comment' => 'Budget frozen'])->assertStatus(500);
+
+        // Nothing of the rejection survived: the step is still open and the request still waits for the decision.
+        $this->assertSame('pending', HiringRequest::query()->findOrFail($id)->status->value);
+        $this->assertSame(0, HiringApproval::query()->where('hiring_request_id', $id)->where('status', 'rejected')->count());
+        $this->assertSame(1, HiringApproval::query()->where('hiring_request_id', $id)->where('status', 'pending')->count());
+    }
+
+    public function test_cancellation_is_atomic(): void
+    {
+        $org = $this->org();
+        $head = $this->userOf($org['head']);
+        $id = $this->actingAs($head)->postJson('/api/hiring-requests', $this->payload(['submit' => true]))->assertCreated()->json('data.id');
+
+        $this->failWhenSkippingOpenApprovals();
+        $this->actingAs($head)->postJson("/api/hiring-requests/$id/cancel")->assertStatus(500);
+
+        $this->assertSame('pending', HiringRequest::query()->findOrFail($id)->status->value);
+        $this->assertSame(1, HiringApproval::query()->where('hiring_request_id', $id)->where('status', 'pending')->count());
     }
 
     public function test_reject_cancel_and_manager_skip(): void
