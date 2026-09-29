@@ -87,6 +87,10 @@ export class RecruitingService {
     return this.http.post<{ data: VacancyTemplate }>('/api/vacancy-templates', { name, data }).pipe(map((r) => r.data));
   }
 
+  renameVacancyTemplate(id: number, name: string): Observable<VacancyTemplate> {
+    return this.http.patch<{ data: VacancyTemplate }>(`/api/vacancy-templates/${id}`, { name }).pipe(map((r) => r.data));
+  }
+
   deleteVacancyTemplate(id: number): Observable<void> {
     return this.http.delete<void>(`/api/vacancy-templates/${id}`);
   }

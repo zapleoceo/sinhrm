@@ -9,7 +9,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { VACANCY_STATUSES, Vacancy, VacancyTemplate } from '../recruiting.model';
@@ -55,8 +55,26 @@ import { VacanciesStore } from './vacancies.store';
             </button>
             <mat-menu #tplMenu="matMenu">
               @for (t of templates(); track t.id) {
-                <button mat-menu-item type="button" (click)="fromTemplate(t)">{{ t.name }}</button>
+                @if (t.can_manage) {
+                  <button mat-menu-item type="button" [matMenuTriggerFor]="tplActions" [matMenuTriggerData]="{ t }">{{ t.name }}</button>
+                } @else {
+                  <button mat-menu-item type="button" (click)="fromTemplate(t)">{{ t.name }}</button>
+                }
               }
+            </mat-menu>
+            <!-- Rename / delete only for the author or an admin (API can_manage, VacancyTemplatePolicy). -->
+            <mat-menu #tplActions="matMenu">
+              <ng-template matMenuContent let-t="t">
+                <button mat-menu-item type="button" (click)="fromTemplate(t)">
+                  <mat-icon>content_copy</mat-icon>{{ 'recruiting.form.useTemplate' | transloco }}
+                </button>
+                <button mat-menu-item type="button" (click)="renameTemplate(t)">
+                  <mat-icon>edit</mat-icon>{{ 'recruiting.form.renameTemplate' | transloco }}
+                </button>
+                <button mat-menu-item type="button" (click)="deleteTemplate(t)">
+                  <mat-icon>delete</mat-icon>{{ 'recruiting.form.deleteTemplate' | transloco }}
+                </button>
+              </ng-template>
             </mat-menu>
           }
           <a mat-flat-button routerLink="/vacancies/create">
@@ -165,6 +183,7 @@ export class VacanciesPage implements OnInit {
   private readonly api = inject(RecruitingService);
   protected readonly templates = signal<VacancyTemplate[]>([]);
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly search$ = new Subject<string>();
   protected readonly statuses = VACANCY_STATUSES;
@@ -195,6 +214,27 @@ export class VacanciesPage implements OnInit {
 
   protected fromTemplate(t: VacancyTemplate): void {
     void this.router.navigate(['/vacancies/create'], { queryParams: { template: t.id } });
+  }
+
+  protected renameTemplate(t: VacancyTemplate): void {
+    const name = window.prompt(this.i18n.translate('recruiting.form.templateName'), t.name)?.trim();
+    if (!name || name === t.name) {
+      return;
+    }
+    this.api.renameVacancyTemplate(t.id, name).subscribe({
+      next: (saved) => this.templates.update((list) => list.map((x) => (x.id === saved.id ? saved : x))),
+      error: () => undefined,
+    });
+  }
+
+  protected deleteTemplate(t: VacancyTemplate): void {
+    if (!window.confirm(this.i18n.translate('recruiting.form.deleteTemplateConfirm', { name: t.name }))) {
+      return;
+    }
+    this.api.deleteVacancyTemplate(t.id).subscribe({
+      next: () => this.templates.update((list) => list.filter((x) => x.id !== t.id)),
+      error: () => undefined,
+    });
   }
 
   protected onPage(e: PageEvent): void {

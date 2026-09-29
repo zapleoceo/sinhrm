@@ -136,6 +136,49 @@ final class VacancyFormApiTest extends TestCase
         $this->assertSame(0, VacancyTemplate::query()->count());
     }
 
+    public function test_template_rename_and_delete_only_by_author_or_admin(): void
+    {
+        $author = $this->userWith(UserRole::Recruiter, [$this->north]);
+        $other = $this->userWith(UserRole::Recruiter, [$this->north]);
+        $admin = $this->userWith(UserRole::Admin);
+        $id = $this->actingAs($author)->postJson('/api/vacancy-templates', ['name' => 'Sales', 'data' => ['title' => 'Sales']])
+            ->assertCreated()->assertJsonPath('data.can_manage', true)->json('data.id');
+
+        $this->actingAs($other)->getJson('/api/vacancy-templates')->assertOk()
+            ->assertJsonPath('data.0.id', $id)->assertJsonPath('data.0.can_manage', false);
+        $this->actingAs($other)->patchJson("/api/vacancy-templates/{$id}", ['name' => 'Mine'])->assertForbidden();
+        $this->actingAs($other)->deleteJson("/api/vacancy-templates/{$id}")->assertForbidden();
+
+        $this->actingAs($author)->patchJson("/api/vacancy-templates/{$id}", ['name' => ' Sales 2 '])->assertOk()
+            ->assertJsonPath('data.name', 'Sales 2')->assertJsonPath('data.data.title', 'Sales');
+        $this->actingAs($admin)->getJson('/api/vacancy-templates')->assertOk()->assertJsonPath('data.0.can_manage', true);
+        $this->actingAs($admin)->patchJson("/api/vacancy-templates/{$id}", ['name' => 'Sales 3'])->assertOk();
+        $this->actingAs($admin)->deleteJson("/api/vacancy-templates/{$id}")->assertNoContent();
+    }
+
+    public function test_legacy_template_without_author_is_managed_by_admins_only(): void
+    {
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->north]);
+        $admin = $this->userWith(UserRole::Superadmin);
+        $legacy = VacancyTemplate::query()->create(['name' => 'Old', 'data' => ['title' => 'Old']]);
+
+        $this->actingAs($recruiter)->getJson('/api/vacancy-templates')->assertOk()->assertJsonPath('data.0.can_manage', false);
+        $this->actingAs($recruiter)->patchJson("/api/vacancy-templates/{$legacy->id}", ['name' => 'x'])->assertForbidden();
+        $this->actingAs($recruiter)->deleteJson("/api/vacancy-templates/{$legacy->id}")->assertForbidden();
+        $this->actingAs($admin)->deleteJson("/api/vacancy-templates/{$legacy->id}")->assertNoContent();
+    }
+
+    public function test_vacancy_text_checks_category_branch_and_scope(): void
+    {
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->north]);
+        $facts = ['section' => 'requirements', 'title' => 'Sales Manager'];
+
+        $this->actingAs($recruiter)->postJson('/api/vacancy-text', [...$facts, 'category_id' => 999999, 'branch_id' => 999999])
+            ->assertUnprocessable()->assertJsonValidationErrors(['category_id', 'branch_id']);
+        $this->actingAs($recruiter)->postJson('/api/vacancy-text', [...$facts, 'branch_id' => $this->south->id])
+            ->assertForbidden()->assertJsonPath('code', 'vacancy_out_of_scope');
+    }
+
     public function test_active_rule_scope_filter_count_and_resource(): void
     {
         $active = $this->vacancyIn($this->north);

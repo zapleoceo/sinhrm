@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -10,6 +10,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { AppLang } from '../../../core/auth/auth.model';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { Logo } from '../../../core/ui/logo';
+import { salaryRange } from '../../hiring-requests/hiring-requests.model';
 
 /** Public fields of a published vacancy (GET /api/public/vacancies[/{slug}]). */
 export interface PublicVacancy {
@@ -19,7 +20,23 @@ export interface PublicVacancy {
   position?: string | null;
   opened_at?: string | null;
   description?: string | null;
+  city?: string | null;
+  employment_type?: string | null;
+  work_format?: string | null;
+  /** Present only when the recruiter ticked «Показувати кандидатам» (salary_visible). */
+  salary?: { min: number | null; max: number | null; currency: string } | null;
+  /** Markdown sections rendered to HTML on the server (raw HTML escaped); bound via [innerHTML], i.e. Angular-sanitized. */
+  requirements_html?: string | null;
+  responsibilities_html?: string | null;
+  additional_info_html?: string | null;
 }
+
+/** Public sections of the vacancy page, in display order. */
+export const PUBLIC_SECTIONS = [
+  { key: 'requirements_html', label: 'recruiting.form.sections.requirements' },
+  { key: 'responsibilities_html', label: 'recruiting.form.sections.responsibilities' },
+  { key: 'additional_info_html', label: 'recruiting.form.sections.additional_info' },
+] as const;
 
 const LANGS: AppLang[] = ['uk', 'ru', 'en'];
 
@@ -105,7 +122,32 @@ export class JobsPage implements OnInit {
         @if (v.branch) {
           <p class="muted">{{ v.branch }}</p>
         }
+        @if (v.city || v.employment_type || v.work_format) {
+          <ul class="chips" data-testid="job-chips">
+            @if (v.city) {
+              <li>{{ v.city }}</li>
+            }
+            @if (v.employment_type) {
+              <li>{{ 'recruiting.form.options.employment.' + v.employment_type | transloco }}</li>
+            }
+            @if (v.work_format) {
+              <li>{{ 'recruiting.form.options.format.' + v.work_format | transloco }}</li>
+            }
+          </ul>
+        }
+        @if (salary(); as s) {
+          <p class="salary" data-testid="job-salary">{{ s }}</p>
+        }
         <p class="text">{{ v.description }}</p>
+        @for (s of sections; track s.key) {
+          @if (v[s.key]; as html) {
+            <section class="section">
+              <h2>{{ s.label | transloco }}</h2>
+              <!-- [innerHTML] goes through Angular's DomSanitizer (never bypassed): scripts and on* handlers are stripped. -->
+              <div class="md" [attr.data-testid]="s.key" [innerHTML]="html"></div>
+            </section>
+          }
+        }
         @if (sent()) {
           <p role="status">{{ 'careers.thanks' | transloco }}</p>
         } @else {
@@ -148,6 +190,10 @@ export class JobsPage implements OnInit {
   styles: `
     .careers { max-width: 48rem; margin: 0 auto; padding: 0 16px 2rem; }
     .text { white-space: pre-wrap; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; margin: 0 0 0.75rem; padding: 0; }
+    .chips li { padding: 0.15rem 0.6rem; border-radius: 999px; border: 1px solid var(--mat-sys-outline-variant); font-size: 0.875rem; }
+    .salary { font-weight: 600; font-size: 1.1rem; margin: 0 0 0.75rem; }
+    .section h2 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; }
     .muted { color: var(--app-muted, inherit); }
     .form { display: flex; flex-direction: column; gap: 0.25rem; }
     .hp { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
@@ -160,6 +206,11 @@ export class JobPage implements OnInit {
 
   private readonly http = inject(HttpClient);
   protected readonly vacancy = signal<PublicVacancy | null>(null);
+  protected readonly sections = PUBLIC_SECTIONS;
+  protected readonly salary = computed(() => {
+    const s = this.vacancy()?.salary;
+    return s ? salaryRange({ salary_min: s.min, salary_max: s.max, currency: s.currency }) || null : null;
+  });
   protected readonly missing = signal(false);
   protected readonly sent = signal(false);
   protected readonly busy = signal(false);

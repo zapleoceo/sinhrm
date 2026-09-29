@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Http\Requests\ApplyCandidateRequest;
 use App\Modules\Recruiting\Http\Requests\ListVacanciesRequest;
 use App\Modules\Recruiting\Http\Requests\SaveVacancyRequest;
@@ -13,6 +14,7 @@ use App\Modules\Recruiting\Http\Resources\VacancyResource;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\ApplicationService;
+use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Recruiting\Services\ReportService;
 use App\Modules\Recruiting\Services\VacancyService;
 use App\Modules\Recruiting\Services\VacancyTextService;
@@ -43,9 +45,16 @@ final class VacancyController
     }
 
     /** «Створити з ШІ»: an AI draft of one section (done now, or deferred → poll aiTextResult). */
-    public function aiText(VacancyTextRequest $request, VacancyTextService $texts): JsonResponse
+    public function aiText(VacancyTextRequest $request, VacancyTextService $texts, RecruitingScope $scope): JsonResponse
     {
-        return new JsonResponse(['data' => $texts->generate($this->actor($request), $request->facts())]);
+        $actor = $this->actor($request);
+        $facts = $request->facts();
+        // Same branch scope as creating a vacancy: no drafts «for» a branch the user cannot see.
+        if ($facts['branch_id'] !== null && ! $scope->for($actor)->allowsBranch($facts['branch_id'])) {
+            throw RecruitingException::vacancyOutOfScope();
+        }
+
+        return new JsonResponse(['data' => $texts->generate($actor, $facts)]);
     }
 
     public function aiTextResult(Request $request, int $aiRequest, VacancyTextService $texts): JsonResponse

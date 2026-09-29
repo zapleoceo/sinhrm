@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Requests;
 
+use App\Modules\Directory\Enums\DirectoryStatus;
+use App\Modules\Directory\Models\Branch;
+use App\Modules\Directory\Models\VacancyCategory;
 use App\Modules\Recruiting\Ai\VacancyTextPrompt;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Support\VacancyOptions;
@@ -21,11 +24,14 @@ final class VacancyTextRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        $active = static fn (string $model) => Rule::exists($model, 'id')->where('status', DirectoryStatus::Active->value);
+
         return [
             'section' => ['required', 'string', Rule::in(VacancyTextPrompt::SECTIONS)],
             'title' => ['required', 'string', 'max:255'],
-            'category_id' => ['nullable', 'integer'],
-            'branch_id' => ['nullable', 'integer'],
+            'category_id' => ['nullable', 'integer', $active(VacancyCategory::class)],
+            // Same as vacancy create: an active branch; the user's branch scope is checked by the controller (403).
+            'branch_id' => ['nullable', 'integer', $active(Branch::class)],
             'employment_type' => ['nullable', 'string', Rule::in(VacancyOptions::EMPLOYMENT_TYPES)],
             'experience_level' => ['nullable', 'string', Rule::in(VacancyOptions::EXPERIENCE_LEVELS)],
         ];
