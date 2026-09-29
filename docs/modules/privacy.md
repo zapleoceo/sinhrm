@@ -63,7 +63,7 @@
 ### Эндпоинты (`auth:sanctum` + активный пользователь + gate `privacy-manage`: superadmin, admin; иначе 403)
 | Метод | Путь | Что |
 |---|---|---|
-| GET | `/api/privacy/{candidate\|employee}/{id}/export?format=json\|html` | файл-выгрузка (`Content-Disposition: attachment`) |
+| GET | `/api/privacy/{candidate\|employee}/{id}/export?format=json\|html` | файл-выгрузка (`Content-Disposition: attachment`, `Cache-Control: private, no-store` — персональные данные не оседают в кеше браузера и прокси) |
 | POST | `/api/privacy/{candidate\|employee}/{id}/erase` | `{reason (3–500), confirm: true}` → `{data: {erased, counts}}` |
 | GET | `/api/privacy/{candidate\|employee}/{id}/requests` | журнал запросов по человеку |
 | GET/PUT | `/api/privacy/settings` | `{retention_rejected_months: 1..120 \| null}` |

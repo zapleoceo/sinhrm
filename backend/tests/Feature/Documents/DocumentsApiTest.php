@@ -145,6 +145,20 @@ final class DocumentsApiTest extends TestCase
         $this->actingAs($this->login(UserRole::Viewer))->getJson('/api/me/documents')->assertOk()->assertJsonCount(0, 'data');
     }
 
+    public function test_sent_document_is_frozen_including_title_and_category(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $org = $this->org();
+        $id = $this->actingAs($admin)->postJson('/api/documents', ['employee_id' => $org['worker']->id, 'title' => 'Safety rules'])->json('data.id');
+        $this->actingAs($admin)->patchJson("/api/documents/$id", ['title' => 'Safety rules v2', 'category' => 'hr', 'content_md' => 'Read me'])->assertOk();
+        $this->actingAs($admin)->postJson("/api/documents/$id/send")->assertOk();
+
+        foreach ([['title' => 'Renamed'], ['category' => 'other'], ['content_md' => 'changed']] as $change) {
+            $this->actingAs($admin)->patchJson("/api/documents/$id", $change)->assertStatus(409)->assertJsonPath('code', 'not_editable');
+        }
+        $this->actingAs($admin)->patchJson("/api/documents/$id", ['status' => 'archived'])->assertOk()->assertJsonPath('data.status', 'archived');
+    }
+
     public function test_send_acknowledge_flow_with_task_and_hashed_client(): void
     {
         $admin = $this->login(UserRole::Admin);

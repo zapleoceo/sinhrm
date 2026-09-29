@@ -31,12 +31,14 @@ final class PersonalDataController
             return new Response($this->html->render($export), 200, [
                 'Content-Type' => 'text/html; charset=utf-8',
                 'Content-Disposition' => 'attachment; filename="'.$name.'.html"',
+                'Cache-Control' => 'private, no-store',
             ]);
         }
 
         return new Response((string) json_encode($export, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), 200, [
             'Content-Type' => 'application/json; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="'.$name.'.json"',
+            'Cache-Control' => 'private, no-store',
         ]);
     }
 

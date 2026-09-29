@@ -14,7 +14,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     // Any active user: can the card schedule meetings? Scheduling itself is checked by CandidatePolicy::update.
     Route::get('calendar', [GoogleStatusController::class, 'calendar'])->name('google.calendar');
     Route::post('candidates/{candidate}/meetings', [MeetingController::class, 'store'])
-        ->whereNumber('candidate')->name('google.meetings.store');
+        ->whereNumber('candidate')->middleware('throttle:20,1')->name('google.meetings.store');
 
     Route::middleware('can:'.IntegrationsServiceProvider::MANAGE_INTEGRATIONS)->group(function (): void {
         Route::get('status', [GoogleStatusController::class, 'index'])->name('google.status');
