@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, booleanAttribute, forwardRef, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -8,7 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Observable, Subject, catchError, debounceTime, distinctUntilChanged, map, of, startWith, switchMap } from 'rxjs';
 import { initials } from '../org-tree';
 import { PersonOption, PickerScope } from '../people.model';
@@ -27,6 +28,12 @@ export function unknownPerson(id: number): PersonOption {
   return { id, full_name: `#${id}`, position: null, department: null, avatar_url: null };
 }
 
+/** "2026-01-31" → "31.01.2026" (no locale data needed). */
+export function dayOf(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return d && m && y ? `${d}.${m}.${y}` : iso;
+}
+
 /** "Analyst · Sales" — the secondary line of an option. */
 export function personSubtitle(p: PersonOption): string {
   return [p.position, p.department].filter((v): v is string => !!v).join(' · ');
@@ -39,7 +46,7 @@ export function personSubtitle(p: PersonOption): string {
  */
 @Component({
   selector: 'app-person-picker',
-  imports: [MatAutocompleteModule, MatButtonModule, MatChipsModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressSpinnerModule, TranslocoPipe],
+  imports: [NgTemplateOutlet, MatAutocompleteModule, MatButtonModule, MatChipsModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressSpinnerModule, TranslocoPipe],
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => PersonPicker), multi: true }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -48,8 +55,11 @@ export function personSubtitle(p: PersonOption): string {
       @if (multiple()) {
         <mat-chip-grid #grid [attr.aria-label]="label() | transloco" [disabled]="disabled()">
           @for (p of selected(); track p.id) {
-            <mat-chip-row (removed)="remove(p.id)">
+            <mat-chip-row (removed)="remove(p.id)" [class.gone]="p.terminated" [attr.aria-label]="ariaOf(p)">
               <span class="chip-av" aria-hidden="true">{{ initialsOf(p) }}</span>{{ p.full_name }}
+              @if (p.terminated) {
+                <ng-container *ngTemplateOutlet="goneBadge; context: { $implicit: p }" />
+              }
               <button matChipRemove type="button" [attr.aria-label]="('people.picker.remove' | transloco) + ' ' + p.full_name"><mat-icon>cancel</mat-icon></button>
             </mat-chip-row>
           }
@@ -86,6 +96,11 @@ export function personSubtitle(p: PersonOption): string {
           (blur)="blurSingle()"
           autocomplete="off"
         />
+        @if (selected()[0]; as p) {
+          @if (p.terminated) {
+            <span matSuffix class="suffix-badge" [attr.aria-label]="ariaOf(p)" role="note"><ng-container *ngTemplateOutlet="goneBadge; context: { $implicit: p }" /></span>
+          }
+        }
         @if (selected().length > 0 && !disabled()) {
           <button mat-icon-button matSuffix type="button" (click)="clear()" [attr.aria-label]="'people.picker.clear' | transloco">
             <mat-icon>close</mat-icon>
@@ -108,13 +123,18 @@ export function personSubtitle(p: PersonOption): string {
           }
         }
         @for (p of rows(); track p.id) {
-          <mat-option [value]="p" [disabled]="isSelected(p.id)">
+          <mat-option [value]="p" [disabled]="isSelected(p.id)" [class.gone]="p.terminated" [attr.aria-label]="ariaOf(p)">
             <span class="opt">
               <span class="av" aria-hidden="true">
                 @if (p.avatar_url) { <img [src]="p.avatar_url" alt="" /> } @else { {{ initialsOf(p) }} }
               </span>
               <span class="who">
-                <span class="name">{{ p.full_name }}</span>
+                <span class="name"
+                  >{{ p.full_name }}
+                  @if (p.terminated) {
+                    <ng-container *ngTemplateOutlet="goneBadge; context: { $implicit: p }" />
+                  }
+                </span>
                 @if (subtitleOf(p); as sub) { <span class="sub">{{ sub }}</span> }
               </span>
             </span>
@@ -126,6 +146,15 @@ export function personSubtitle(p: PersonOption): string {
         }
       </mat-autocomplete>
     </mat-form-field>
+
+    <ng-template #goneBadge let-p>
+      <span class="gone-badge" aria-hidden="true"
+        >{{ 'people.picker.terminated' | transloco }}
+        @if (p.terminated_at) {
+          · {{ dayOf(p.terminated_at) }}
+        }
+      </span>
+    </ng-template>
   `,
   styles: `
     :host { display: block; min-width: 14rem; }
@@ -146,6 +175,16 @@ export function personSubtitle(p: PersonOption): string {
     .sub { color: var(--mat-sys-on-surface-variant); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hint { color: var(--mat-sys-on-surface-variant); font-style: italic; }
     .hint.err { color: var(--mat-sys-error); font-style: normal; }
+    /* Terminated people (HR, or a manager's former subordinates): muted name, warn-toned badge. */
+    .gone .name,
+    mat-chip-row.gone { color: var(--app-muted); }
+    .gone .av,
+    .gone .chip-av { filter: grayscale(1); opacity: 0.7; }
+    .gone-badge {
+      display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: 0.5rem; vertical-align: middle;
+      background: var(--app-warn-bg); color: var(--app-warn-text); font-size: 0.7rem; font-weight: 500; line-height: 1.3rem; white-space: nowrap;
+    }
+    .suffix-badge { margin-right: 0.25rem; }
   `,
 })
 export class PersonPicker implements ControlValueAccessor, OnInit {
@@ -164,6 +203,7 @@ export class PersonPicker implements ControlValueAccessor, OnInit {
   protected readonly disabled = signal(false);
 
   private readonly api = inject(PeopleService);
+  private readonly i18n = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly queries = new Subject<string>();
   private onChange: (value: PickerValue) => void = () => undefined;
@@ -263,6 +303,19 @@ export class PersonPicker implements ControlValueAccessor, OnInit {
 
   protected isSelected(id: number): boolean {
     return this.selected().some((p) => p.id === id);
+  }
+
+  /** Accessible name: a terminated person is announced as such (the visual badge itself is aria-hidden). */
+  protected ariaOf(p: PersonOption): string | null {
+    if (!p.terminated) {
+      return null;
+    }
+    const date = p.terminated_at ? dayOf(p.terminated_at) : '';
+    return this.i18n.translate('people.picker.terminatedAria', { name: p.full_name, date }).trim();
+  }
+
+  protected dayOf(iso: string): string {
+    return dayOf(iso);
   }
 
   protected initialsOf(p: PersonOption): string {

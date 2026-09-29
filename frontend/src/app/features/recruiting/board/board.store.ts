@@ -85,9 +85,12 @@ export class BoardStore {
   readonly staleCount = computed(() => this.board()?.applications.filter((a) => a.is_stale).length ?? 0);
 
   private seq = 0;
+  /** Vacancy of the last load(): late answers to calls made for another vacancy are ignored. */
+  private vacancyId: number | null = null;
 
   load(vacancyId: number, withPersonal = false): void {
     const seq = ++this.seq;
+    this.vacancyId = vacancyId;
     this.loading.set(true);
     this.failed.set(false);
     this.api.board(vacancyId).subscribe({
@@ -183,6 +186,9 @@ export class BoardStore {
   addColumn(vacancyId: number, title: string, onError: (key: string) => void, at?: number): void {
     this.api.addPersonalColumn(vacancyId, { title }).subscribe({
       next: (column) => {
+        if (vacancyId !== this.vacancyId) {
+          return; // the user switched to another vacancy meanwhile: this column belongs to the old board
+        }
         const key = `col:${column.id}`;
         this.personal.update((p) => (p ? { ...p, columns: [...p.columns, column], layout: [...p.layout, key] } : p));
         const visible = this.lanes().map((l) => l.key);
@@ -243,13 +249,17 @@ export class BoardStore {
 
   private optimistic(change: (p: PersonalBoard) => PersonalBoard, request: Observable<unknown>, onError: (key: string) => void): void {
     const before = this.personal();
+    const vacancyId = this.vacancyId;
     if (!before) {
       return;
     }
     this.personal.set(change(before));
     request.subscribe({
       error: (e: unknown) => {
-        this.personal.set(before);
+        // Roll back only the board it was made on: after a vacancy switch "before" is the old vacancy's layer.
+        if (vacancyId === this.vacancyId) {
+          this.personal.set(before);
+        }
         onError(recruitingErrorKey(e));
       },
     });

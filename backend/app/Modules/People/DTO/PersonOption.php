@@ -19,11 +19,21 @@ final readonly class PersonOption
         public ?string $position,
         public ?string $department,
         public ?string $avatarUrl,
+        public bool $terminated = false,
+        public ?string $terminatedAt = null,
     ) {}
 
     public static function ofEmployee(Employee $employee): self
     {
-        return new self($employee->id, $employee->full_name, $employee->position?->name, $employee->department?->name, $employee->avatar_url);
+        return new self(
+            $employee->id,
+            $employee->full_name,
+            $employee->position?->name,
+            $employee->department?->name,
+            $employee->avatar_url,
+            $employee->isTerminated(),
+            $employee->isTerminated() ? $employee->fired_at?->toDateString() : null,
+        );
     }
 
     public static function ofUser(User $user): self
@@ -31,7 +41,7 @@ final readonly class PersonOption
         return new self($user->id, $user->name, null, null, $user->avatar_url);
     }
 
-    /** @return array{id: int, full_name: string, position: string|null, department: string|null, avatar_url: string|null} */
+    /** @return array{id: int, full_name: string, position: string|null, department: string|null, avatar_url: string|null, terminated: bool, terminated_at: string|null} */
     public function toArray(): array
     {
         return [
@@ -40,6 +50,8 @@ final readonly class PersonOption
             'position' => $this->position,
             'department' => $this->department,
             'avatar_url' => $this->avatarUrl,
+            'terminated' => $this->terminated,
+            'terminated_at' => $this->terminatedAt,
         ];
     }
 }

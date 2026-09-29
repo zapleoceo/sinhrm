@@ -72,8 +72,8 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
             }
           </mat-select>
         </mat-form-field>
-        @if (vacancyId(); as vid) {
-          <app-board-page [id]="vid" personal />
+        @if (selectedVacancy(); as v) {
+          <app-board-page [id]="v.id" personal />
         } @else {
           <p class="state muted">{{ 'recruiting.personalBoard.pickVacancy' | transloco }}</p>
         }
@@ -231,6 +231,8 @@ export class CandidatesPage implements OnInit {
   protected readonly view = signal<CandidatesView>(this.pref.view);
   protected readonly vacancyId = signal<number | null>(this.pref.vacancyId);
   protected readonly vacancies = signal<Vacancy[]>([]);
+  /** The board shows up only for a vacancy from the loaded list — not for a remembered id before the list arrives. */
+  protected readonly selectedVacancy = computed(() => this.vacancies().find((v) => v.id === this.vacancyId()) ?? null);
 
   ngOnInit(): void {
     this.search$

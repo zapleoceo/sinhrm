@@ -23,6 +23,9 @@ final readonly class PersonalBoardService
 {
     public const int MAX_COLUMNS = 12;
 
+    /** Upper bound on keys in one saved layout (funnel stages + own columns), a request-size guard. */
+    public const int MAX_LAYOUT_KEYS = 100;
+
     /** @return array{columns: Collection<int, BoardColumn>, cards: list<array{application_id: int, column_id: int}>, layout: list<string>} */
     public function board(User $user, Vacancy $vacancy): array
     {
@@ -88,9 +91,12 @@ final readonly class PersonalBoardService
         if (array_values(array_intersect($keys, $stages)) !== array_values(array_intersect($stages, $keys))) {
             throw RecruitingException::boardLayoutStageOrder();
         }
-        BoardLayout::query()->updateOrCreate(
-            ['user_id' => $user->id, 'vacancy_id' => $vacancy->id],
-            ['keys' => $keys],
+        // One atomic INSERT .. ON CONFLICT on the (user_id, vacancy_id) unique key: two first saves at once
+        // (two tabs, a double drop) no longer race a SELECT-then-INSERT into a unique violation. The last write wins.
+        BoardLayout::query()->upsert(
+            [['user_id' => $user->id, 'vacancy_id' => $vacancy->id, 'keys' => json_encode($keys, JSON_THROW_ON_ERROR)]],
+            ['user_id', 'vacancy_id'],
+            ['keys'],
         );
 
         return $this->layout($user, $vacancy, $columns);

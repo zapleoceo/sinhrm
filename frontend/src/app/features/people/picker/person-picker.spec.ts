@@ -7,10 +7,12 @@ import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { PersonOption } from '../people.model';
 import { PeopleService } from '../people.service';
-import { PICKER_DEBOUNCE_MS, PersonPicker, PickerValue, personSubtitle, unknownPerson } from './person-picker';
+import { PICKER_DEBOUNCE_MS, PersonPicker, PickerValue, dayOf, personSubtitle, unknownPerson } from './person-picker';
 
 const ANNA: PersonOption = { id: 7, full_name: 'Anna Stone', position: 'Analyst', department: 'Sales', avatar_url: null };
 const BOHDAN: PersonOption = { id: 9, full_name: 'Bohdan Lee', position: null, department: null, avatar_url: null };
+const GONE: PersonOption = { id: 5, full_name: 'Gone Worker', position: null, department: null, avatar_url: null, terminated: true, terminated_at: '2026-01-31' };
+const UK = { people: { picker: { terminated: 'Звільнений(а)', terminatedAria: '{{name}}, звільнений(а) {{date}}' } } };
 
 @Component({
   imports: [FormsModule, PersonPicker],
@@ -41,6 +43,7 @@ describe('person picker helpers', () => {
     expect(personSubtitle(ANNA)).toBe('Analyst · Sales');
     expect(personSubtitle(BOHDAN)).toBe('');
     expect(unknownPerson(42).full_name).toBe('#42');
+    expect(dayOf('2026-01-31')).toBe('31.01.2026');
   });
 });
 
@@ -63,7 +66,7 @@ describe('PersonPicker', () => {
 
   const setup = (multi = false, value: PickerValue = null) => {
     TestBed.configureTestingModule({
-      imports: [Host, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      imports: [Host, TranslocoTestingModule.forRoot({ langs: { uk: UK }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
@@ -80,6 +83,29 @@ describe('PersonPicker', () => {
   afterEach(() => {
     http.verify();
     vi.useRealTimers();
+  });
+
+  it('marks a terminated person: muted chip, badge with the date, accessible name', async () => {
+    const { fixture } = setup(true, [5, 7]);
+    await vi.runAllTimersAsync();
+    http.expectOne((r) => r.url === '/api/people/lookup').flush({ data: [GONE, ANNA] });
+    fixture.detectChanges();
+    const chips = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('mat-chip-row'));
+    expect(chips.map((c) => c.classList.contains('gone'))).toEqual([true, false]);
+    expect(chips[0].querySelector('.gone-badge')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Звільнений(а) · 31.01.2026');
+    expect(chips[0].getAttribute('aria-label')).toBe('Gone Worker, звільнений(а) 31.01.2026');
+    expect(chips[1].querySelector('.gone-badge')).toBeNull();
+    expect(chips[1].hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('single mode shows the terminated badge next to the selected name', async () => {
+    const { fixture } = setup(false, 5);
+    await vi.runAllTimersAsync();
+    http.expectOne((r) => r.url === '/api/people/lookup').flush({ data: [GONE] });
+    fixture.detectChanges();
+    const badge = (fixture.nativeElement as HTMLElement).querySelector('.suffix-badge');
+    expect(badge?.getAttribute('aria-label')).toBe('Gone Worker, звільнений(а) 31.01.2026');
+    expect(badge?.textContent).toContain('Звільнений(а)');
   });
 
   it('shows the saved person by name (id → name through /lookup)', async () => {
