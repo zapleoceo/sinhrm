@@ -1,7 +1,7 @@
 import { ROUTE_ACTIONS, RouteAction, Stage, sitting, standAt } from './animations';
 import { BrainCommand, MascotBrain, TIMING, dispatchEngineEvent } from './brain';
 import { MascotEngine } from './mascot-engine';
-import { allowedRoutes, chooseRoute, createRouteClip, routeGeometry } from './seat-routes';
+import { MAX_CLIMB_SPEED, allowedRoutes, chooseRoute, createRouteClip, routeGeometry, stairSteps } from './seat-routes';
 import { Joints, Pose, forwardKinematics } from './skeleton';
 
 const PANEL = { left: 794, top: 204, right: 1184, bottom: 784 };
@@ -30,7 +30,7 @@ function maxJump(a: ReturnType<typeof world>, b: ReturnType<typeof world>): numb
 
 describe('route selection by geometry', () => {
   it('near and low: hop or stairs; no rope, ladder or balloon', () => {
-    const near = allowedRoutes({ dx: 120, height: 150, room: 400, panelTop: 600 }, false);
+    const near = allowedRoutes({ dx: 120, height: 150, room: 400, panelTop: 600, seatInset: 250 }, false);
     expect(near['route-hop']).toBeGreaterThan(0);
     expect(near['route-stairs']).toBeGreaterThan(0);
     expect(near['route-rope']).toBeUndefined();
@@ -38,7 +38,7 @@ describe('route selection by geometry', () => {
   });
 
   it('far and high: rope, ladder and balloon allowed; no short hop', () => {
-    const far = allowedRoutes({ dx: 700, height: 560, room: 700, panelTop: 240 }, false);
+    const far = allowedRoutes({ dx: 350, height: 500, room: 700, panelTop: 240, seatInset: 60 }, false);
     expect(far['route-rope']).toBeGreaterThan(0);
     expect(far['route-ladder']).toBeGreaterThan(0);
     expect(far['route-balloon']).toBeGreaterThan(0);
@@ -46,20 +46,20 @@ describe('route selection by geometry', () => {
   });
 
   it('panel at the very top: no rope from above and no balloon', () => {
-    const top = allowedRoutes({ dx: 400, height: 700, room: 500, panelTop: 40 }, false);
+    const top = allowedRoutes({ dx: 400, height: 700, room: 500, panelTop: 40, seatInset: 250 }, false);
     expect(top['route-rope']).toBeUndefined();
     expect(top['route-balloon']).toBeUndefined();
   });
 
   it('lite mode keeps only the simple routes', () => {
-    const lite = allowedRoutes({ dx: 700, height: 300, room: 700, panelTop: 400 }, true);
+    const lite = allowedRoutes({ dx: 700, height: 300, room: 700, panelTop: 400, seatInset: 250 }, true);
     for (const r of Object.keys(lite)) {
       expect(['route-hop', 'route-stairs', 'route-climb']).toContain(r);
     }
   });
 
   it('never picks the same route twice in a row', () => {
-    const g = { dx: 500, height: 300, room: 600, panelTop: 400 };
+    const g = { dx: 500, height: 300, room: 600, panelTop: 400, seatInset: 250 };
     const rng = seeded(5);
     let last: RouteAction | null = null;
     const seen = new Set<RouteAction>();
@@ -98,7 +98,7 @@ describe('every route: continuous, contact, 1.5–4 s, ends seated', () => {
         runs++;
         const clip = createRouteClip(route, { stage, from, side: 'left', targetX: startX, rng: seeded(2) }, false);
         expect(clip.duration).toBeGreaterThanOrEqual(1.5);
-        expect(clip.duration).toBeLessThanOrEqual(4.8);
+        expect(clip.duration).toBeLessThanOrEqual(6.1);
         const first = world(clip.sample(0, env).pose);
         expect(maxJump(first, world(from))).toBeLessThan(2);
         let prev = first;
@@ -307,5 +307,250 @@ describe('routes in the engine and brain', () => {
     }
     expect(['offstage', 'idle']).toContain(brain.state);
     expect(e.route).toBeNull();
+  });
+});
+
+describe('edge cases: every allowed route stays inside the viewport', () => {
+  const env = { vx: 0, vy: 0, spin: 0, pointer: null };
+  const ALL_JOINTS = ['head', 'neck', 'hip', 'shoulder', 'lElbow', 'rElbow', 'lHand', 'rHand', 'lKnee', 'rKnee', 'lFoot', 'rFoot'] as const;
+
+  /** Absolute points of an ink path (M/L/Q); relative arcs (the balloon) are skipped. */
+  function inkPoints(d: string): { x: number; y: number }[] {
+    const out: { x: number; y: number }[] = [];
+    const tokens = d.match(/[A-Za-z]|-?\d+(?:\.\d+)?/g) ?? [];
+    let cmd = '';
+    let nums: number[] = [];
+    const flush = (): void => {
+      if (cmd === 'M' || cmd === 'L' || cmd === 'Q') {
+        for (let i = 0; i + 1 < nums.length; i += 2) {
+          out.push({ x: nums[i], y: nums[i + 1] });
+        }
+      }
+      nums = [];
+    };
+    for (const t of tokens) {
+      if (/[A-Za-z]/.test(t)) {
+        flush();
+        cmd = t;
+      } else {
+        nums.push(Number(t));
+      }
+    }
+    flush();
+    return out;
+  }
+
+  const sheet = (w: number, h: number, top: number): Stage => ({
+    width: w,
+    height: h,
+    ground: h - 2,
+    seat: { x: w * 0.64, y: top },
+    panel: { left: 0, top, right: w, bottom: h },
+    corner: { x: w - 34, y: h - 34 },
+  });
+  const desk = (panel: { left: number; top: number; right: number; bottom: number }): Stage => ({
+    width: 1200,
+    height: 800,
+    ground: 798,
+    seat: { x: panel.left + (panel.right - panel.left) * 0.64, y: panel.top },
+    panel,
+    corner: { x: 1166, y: 766 },
+  });
+  const CONFIGS: [string, Stage][] = [
+    ['landscape bottom sheet 667x375', sheet(667, 375, 120)],
+    ['portrait bottom sheet 375x812', sheet(375, 812, 228)],
+    ['desktop, panel on the right', STAGE],
+    ['desktop, little room on the right', desk({ left: 400, top: 300, right: 1180, bottom: 784 })],
+    ['desktop, very tall panel (top near 0)', desk({ left: 794, top: 10, right: 1184, bottom: 784 })],
+    ['desktop, low panel', desk({ left: 794, top: 548, right: 1184, bottom: 784 })],
+  ];
+
+  it.each(CONFIGS)('%s', (_name, stage) => {
+    const seated = sitting(stage.seat!.x, stage.seat!.y, -1, 0);
+    const sj = forwardKinematics(seated);
+    // The seated pose itself may reach above a panel that touches the top edge; allow that region (+3 px).
+    const topLimit = Math.min(0, ...ALL_JOINTS.map((k) => seated.y + sj[k].y) .map((y) => y - 12));
+    let runs = 0;
+    for (const lite of [false, true]) {
+      for (const startX of [30, stage.width * 0.3, stage.width * 0.6, stage.width - 30]) {
+        const from = standAt(stage, startX, 1);
+        const allowed = Object.keys(allowedRoutes(routeGeometry(stage, from), lite)) as RouteAction[];
+        expect(allowed.length).toBeGreaterThan(0);
+        for (const route of allowed) {
+          runs++;
+          const clip = createRouteClip(route, { stage, from, side: 'left', targetX: startX, rng: seeded(3) }, lite);
+          let prev: ReturnType<typeof world> | null = null;
+          for (let t = 0; t <= clip.duration + 1e-9; t += 1 / 60) {
+            const f = clip.sample(t, env);
+            const j = forwardKinematics(f.pose);
+            for (const k of ALL_JOINTS) {
+              const x = f.pose.x + j[k].x;
+              const y = f.pose.y + j[k].y;
+              const where = `${route} ${k} at t=${t.toFixed(2)} from ${Math.round(startX)}`;
+              expect(x, where).toBeGreaterThanOrEqual(-1);
+              expect(x, where).toBeLessThanOrEqual(stage.width + 1);
+              expect(y, where).toBeGreaterThanOrEqual(topLimit);
+              expect(y, where).toBeLessThanOrEqual(stage.height + 1);
+            }
+            for (const it of f.props?.ink ?? []) {
+              for (const q of inkPoints(it.d)) {
+                expect(q.x, `${route} prop x`).toBeGreaterThanOrEqual(-1);
+                expect(q.x, `${route} prop x`).toBeLessThanOrEqual(stage.width + 1);
+                expect(q.y, `${route} prop y`).toBeGreaterThanOrEqual(-1);
+                expect(q.y, `${route} prop y`).toBeLessThanOrEqual(stage.height + 1);
+              }
+            }
+            const cur = world(f.pose, j);
+            if (prev) {
+              expect(maxJump(cur, prev), `${route} jump at t=${t.toFixed(2)}`).toBeLessThan(40);
+            }
+            prev = cur;
+          }
+        }
+      }
+    }
+    expect(runs).toBeGreaterThan(0);
+  });
+
+  it('bottom sheet (no room beside the panel): no stairs or other side routes, a hop straight up', () => {
+    const land = sheet(667, 375, 120);
+    const g = routeGeometry(land, standAt(land, 100, 1));
+    expect(g.room).toBe(0);
+    expect(Object.keys(allowedRoutes(g, false))).toEqual(['route-hop']);
+    const portrait = sheet(375, 812, 228);
+    expect(Object.keys(allowedRoutes(routeGeometry(portrait, standAt(portrait, 100, 1)), false))).toEqual(['route-hop']);
+  });
+
+  it('stairs need room for every step (count from the same helper)', () => {
+    const g = { dx: 400, height: 300, room: 0, panelTop: 400, seatInset: 250 };
+    for (const room of [100, 200, 260, 400]) {
+      const allowed = !!allowedRoutes({ ...g, room }, false)['route-stairs'];
+      expect(allowed).toBe(room >= 22 * stairSteps(300) + 50);
+    }
+  });
+
+  it('a tall climb is speed-capped and longer, not faster (MAX_CLIMB_SPEED, about 5 s)', () => {
+    const tall = desk({ left: 794, top: 150, right: 1184, bottom: 784 });
+    const from = standAt(tall, 760, 1);
+    expect(allowedRoutes(routeGeometry(tall, from), false)['route-climb']).toBeGreaterThan(0);
+    const clip = createRouteClip('route-climb', { stage: tall, from, side: 'left', targetX: 760, rng: seeded(1) }, false);
+    expect(clip.duration).toBeLessThanOrEqual(5.8);
+    let prevY: number | null = null;
+    let maxSpeed = 0;
+    for (let t = 0; t < clip.duration; t += 1 / 60) {
+      const p = clip.sample(t, env).pose;
+      const j = forwardKinematics(p);
+      const midClimb = Math.abs(p.x + j.lHand.x - 794) < 3 && p.y < tall.ground - 90 && p.y > 210;
+      if (midClimb && prevY !== null) {
+        maxSpeed = Math.max(maxSpeed, Math.abs(p.y - prevY) * 60);
+      }
+      prevY = midClimb ? p.y : null;
+    }
+    expect(maxSpeed).toBeGreaterThan(50);
+    expect(maxSpeed).toBeLessThanOrEqual(MAX_CLIMB_SPEED * 1.05);
+    // Taller than that: the climb is not offered at all.
+    const tallest = desk({ left: 794, top: 10, right: 1184, bottom: 784 });
+    expect(allowedRoutes(routeGeometry(tallest, standAt(tallest, 300, 1)), false)['route-climb']).toBeUndefined();
+  });
+});
+
+describe('interruptions mid-route', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('the live re-target state is eased in place and cleared when the route ends or the chat closes', () => {
+    const e = new MascotEngine(STAGE, seeded(4));
+    const live = e as unknown as { liveSeat: { x: number } | null; livePanel: object | null };
+    e.play('static', { targetX: 300, blend: 0 });
+    e.tick(0.3);
+    e.play('seat-route');
+    e.tick(1 / 60);
+    const seatObj = live.liveSeat;
+    expect(seatObj).not.toBeNull();
+    e.tick(1 / 60);
+    expect(live.liveSeat).toBe(seatObj);
+    for (let i = 0; i < 500 && e.route; i++) {
+      e.tick(1 / 60);
+    }
+    e.tick(1 / 60);
+    expect(live.liveSeat).toBeNull();
+    expect(live.livePanel).toBeNull();
+    e.play('seat-route');
+    e.tick(1 / 60);
+    expect(live.liveSeat).not.toBeNull();
+    e.setStage({ ...STAGE, seat: null, panel: null });
+    e.tick(1 / 60);
+    expect(live.liveSeat).toBeNull();
+  });
+
+  it('grabbing him mid-route: continuous hand-over to the hold, route over, props fade', () => {
+    const e = new MascotEngine(STAGE, seeded(4));
+    e.play('static', { targetX: 200, blend: 0 });
+    e.tick(0.3);
+    e.play('route-ladder');
+    let f = e.tick(1 / 60).frame;
+    for (let i = 0; i < 120; i++) {
+      f = e.tick(1 / 60).frame;
+    }
+    const before = world(f.pose, f.joints);
+    e.dragStart(f.pose.x, f.pose.y - 20, 0);
+    const after = e.tick(1 / 60).frame;
+    expect(maxJump(world(after.pose, after.joints), before)).toBeLessThan(40);
+    expect(e.held).toBe(true);
+    expect(e.route).toBeNull();
+    expect(Math.max(0, ...(after.props.ink ?? []).map((i) => i.alpha))).toBeLessThan(1);
+  });
+
+  it('chat closed and reopened mid-route: ends seated on the panel again, no jumps while drawn from clips', () => {
+    const e = new MascotEngine(STAGE, seeded(9));
+    const brain = new MascotBrain(
+      (c) => {
+        if (c.type === 'play') {
+          e.play(c.action, { side: c.side, targetX: c.targetX, blend: c.blend, variant: c.variant });
+        }
+      },
+      { rng: () => 0.5, width: () => 1200 },
+    );
+    let prev: ReturnType<typeof world> | null = null;
+    let worst = 0;
+    let worstAt = '';
+    let fno = 0;
+    const frames = (n: number): void => {
+      for (let i = 0; i < n; i++) {
+        vi.advanceTimersByTime(1000 / 60);
+        const { frame, events } = e.tick(1 / 60);
+        for (const ev of events) {
+          dispatchEngineEvent(brain, ev);
+        }
+        const cur = world(frame.pose, frame.joints);
+        if (prev && !e.ragdoll) {
+          const d = maxJump(cur, prev);
+          if (d > worst) {
+            worst = d;
+            worstAt = `${e.currentAction} f${fno}`;
+          }
+        }
+        fno++;
+        prev = e.ragdoll ? null : cur;
+      }
+    };
+    brain.start(true, false);
+    vi.advanceTimersByTime(TIMING.firstAppearance);
+    brain.clipDone('enter-walk');
+    brain.chatOpened();
+    frames(70);
+    expect(e.route).not.toBeNull();
+    brain.chatClosed();
+    frames(12);
+    brain.chatOpened();
+    for (let i = 0; i < 1500 && !(brain.state === 'docked' && e.currentAction === 'docked'); i++) {
+      frames(1);
+    }
+    expect(brain.state).toBe('docked');
+    expect(e.currentAction).toBe('docked');
+    frames(60);
+    const seat = sitting(STAGE.seat!.x, STAGE.seat!.y, -1, 0);
+    expect(Math.hypot(e.root.x - seat.x, e.root.y - seat.y)).toBeLessThan(6);
+    expect(worst, worstAt).toBeLessThan(40);
   });
 });

@@ -37,10 +37,67 @@ export interface RouteGeometry {
   room: number;
   /** y of the panel top (small — the panel reaches the top of the viewport). */
   panelTop: number;
+  /** Horizontal distance from the approach edge of the panel to the seat. */
+  seatInset: number;
 }
 
 export const ROUTE_MIN = 1.5;
 export const ROUTE_MAX = 4;
+/** Believable hand-over-hand climbing speed (px/s): a tall climb takes longer instead of getting faster. */
+export const MAX_CLIMB_SPEED = 230;
+/** Climbs taller than this (px) are not offered — they would take well over 4 s. */
+const MAX_CLIMB_HEIGHT = 700;
+/** Longest a route may take in total (a long climb from far away is not offered beyond this). */
+export const ROUTE_LIMIT = 5.8;
+
+/** Rough duration of a climbing route (walk to the panel + capped-speed climb + getting on top). */
+function climbTime(g: RouteGeometry): number {
+  const dist = Math.max(0, g.dx - g.seatInset);
+  // Same speeds as walkPhase: short walks still take up to ~1.1 s.
+  const walk = dist / Math.min(460, Math.max(130, dist / 1.1));
+  // … plus walking along the top to the seat.
+  const top = Math.max(0, g.seatInset - 16);
+  return 0.25 + walk + 0.25 + Math.max(0, g.height - 60) / MAX_CLIMB_SPEED + 0.9 + (top < 4 ? 0 : Math.max(0.3, top / Math.min(TOP_WALK_MAX, Math.max(150, top / 0.9))));
+}
+const STEP_WIDTH = 22;
+/** Room his body needs beyond the outermost prop/foot on the approach side (px). */
+const BODY_MARGIN = 20;
+/** Head and raised hands above the hip (px) — how much headroom a pose needs. */
+const HEADROOM = 85;
+/** The balloon lifts him off the floor first, so dangling feet never dip below it. */
+const LIFT = 8;
+/** Fastest trot along the panel top to the seat (px/s). */
+const TOP_WALK_MAX = 300;
+
+/** How many steps the stairs route draws for a panel top `height` px above the floor (shared by selection and route). */
+export function stairSteps(height: number): number {
+  return Math.max(2, Math.min(9, Math.ceil(height / 30)));
+}
+
+/** Room beside the panel each route needs on the approach side (px); it must stay inside the viewport. */
+export function routeRoom(route: RouteAction, g: RouteGeometry): number {
+  switch (route) {
+    case 'route-hop':
+      return 0;
+    case 'route-climb':
+      return 13 + BODY_MARGIN;
+    case 'route-ladder':
+      return 58 + BODY_MARGIN;
+    case 'route-stairs':
+      return STEP_WIDTH * stairSteps(g.height) + 30 + BODY_MARGIN;
+    case 'route-trampoline':
+      return 78 + BODY_MARGIN;
+    case 'route-rope':
+      // The back swing goes out beyond the rope by ~0.35 of the rope-to-seat distance.
+      return 56 + 0.35 * (g.seatInset + 56) + BODY_MARGIN;
+    case 'route-balloon':
+      return 30 + 25 + BODY_MARGIN;
+    case 'route-vault': {
+      const pole = Math.min(260, g.height + 40) - 30;
+      return 34 + Math.max(40, 0.8 * pole) + BODY_MARGIN;
+    }
+  }
+}
 const BLEND_IN = 0.25;
 /** Cross-fade at every phase seam (s). */
 const CROSS = 0.14;
@@ -77,39 +134,45 @@ export function routeGeometry(stage: Stage, from: Pose): RouteGeometry {
     height: stage.ground - panel.top,
     room: side === 'left' ? panel.left : stage.width - panel.right,
     panelTop: panel.top,
+    seatInset: Math.abs(seat.x - (side === 'left' ? panel.left : panel.right)),
   };
 }
 
 /** Route weights allowed by the geometry (lite mode: only the simple ones). */
 export function allowedRoutes(g: RouteGeometry, lite: boolean): Partial<Record<RouteAction, number>> {
   const out: Partial<Record<RouteAction, number>> = {};
+  // Every route keeps him, his hands/feet and its props inside the viewport: it needs its room beside the panel.
+  const fits = (r: RouteAction): boolean => g.room >= routeRoom(r, g);
   if (g.dx < 300 && g.height < 280) {
     out['route-hop'] = 1.2;
   }
-  if (g.height < 420) {
+  if (g.height < 420 && fits('route-stairs')) {
     out['route-stairs'] = 1.5;
   }
-  if (g.room >= 24) {
+  if (g.height <= MAX_CLIMB_HEIGHT && climbTime(g) <= ROUTE_LIMIT && fits('route-climb')) {
     out['route-climb'] = 1.5;
   }
   if (!lite) {
-    if (g.height >= 140 && g.room >= 60) {
+    if (g.height >= 140 && g.height <= MAX_CLIMB_HEIGHT && climbTime(g) + 0.7 <= ROUTE_LIMIT && fits('route-ladder')) {
       out['route-ladder'] = 1;
     }
-    if (g.height >= 110 && g.height <= 560 && g.room >= 70) {
+    // The last bounce peaks 40 px above the seat: headroom above the panel top.
+    if (g.height >= 110 && g.height <= 560 && g.panelTop >= 40 + HEADROOM && fits('route-trampoline')) {
       out['route-trampoline'] = 1;
     }
-    if (g.height >= 180 && g.panelTop >= 90 && g.room >= 50) {
+    if (g.height >= 180 && g.height <= MAX_CLIMB_HEIGHT && climbTime(g) <= ROUTE_LIMIT && g.panelTop >= 90 && fits('route-rope')) {
       out['route-rope'] = 1;
     }
-    if (g.height >= 140 && g.panelTop >= 90) {
+    // He floats ~72 px above the seat with the balloon above his raised hand.
+    if (g.height >= 140 && g.panelTop >= 72 + HEADROOM + 40 && fits('route-balloon')) {
       out['route-balloon'] = 1;
     }
-    if (g.height < 300 && g.dx >= 160 && g.room >= 90) {
+    if (g.height < 300 && g.dx >= 160 && fits('route-vault')) {
       out['route-vault'] = 0.8;
     }
   }
   if (Object.keys(out).length === 0) {
+    // Nothing fits (e.g. the mobile bottom sheet spans the full width): a hop straight up onto the seat.
     out['route-hop'] = 1;
   }
   return out;
@@ -127,6 +190,8 @@ interface Phase {
   dur: number;
   /** Stretched when the route must fit ROUTE_MIN..ROUTE_MAX. */
   flexible: boolean;
+  /** Never squeezed below this (speed cap), even if the route then runs longer than ROUTE_MAX. */
+  minDur?: number;
   at(u: number): ClipFrame;
 }
 
@@ -210,6 +275,7 @@ function climbPhase(c: Ctx, bottom: () => Vec, top: () => Vec, nrm: Vec, facing:
   return {
     dur: dist / speed,
     flexible: true,
+    minDur: dist / MAX_CLIMB_SPEED,
     at: (u) => ({ pose: climbPose(c, bottom(), top(), nrm, fromD + (toD() - fromD) * u, facing), expr: { brows: -0.4, mouth: 'wobbly' } }),
   };
 }
@@ -229,6 +295,60 @@ function landPhase(c: Ctx, from: () => Pose, arc = 16, dur = LAND): Phase {
   };
 }
 
+/** Standing on the panel top at x (the top edge works as a floor). */
+function standOnTop(c: Ctx, x: number, facing: 1 | -1): Pose {
+  return gaitPose({ ...c.stage, ground: c.panel().top }, x, 0, facing, WALK);
+}
+
+/**
+ * Arrived at the panel's edge: stand up on top, walk along it to the seat (the seat can be far from the edge on a
+ * wide panel), then sit. `from` is the pose where the previous phase ended; `props` keeps its props drawn.
+ */
+function topWalk(c: Ctx, from: () => Pose, props?: () => InkProp[]): Phase[] {
+  const x0 = (): number => edgeX(c) - c.out * 16;
+  const withProps = (f: ClipFrame): ClipFrame => (props ? { ...f, props: { ink: props() } } : f);
+  const standUp: Phase = {
+    dur: Math.max(0.3, blendTravel(from(), standOnTop(c, x0(), c.toward)) / 300),
+    flexible: false,
+    at: (u) => {
+      const a = from();
+      const b = standOnTop(c, x0(), c.toward);
+      return withProps({ pose: lerpPose(unwrapToward(a, b), b, ease.inOut(u)), expr: { mouth: 'smile' } });
+    },
+  };
+  const dist = Math.abs(c.seat().x - x0());
+  const topStage = (): Stage => ({ ...c.stage, ground: c.panel().top });
+  const dir: 1 | -1 = c.seat().x >= x0() ? 1 : -1;
+  const speed = Math.min(TOP_WALK_MAX, Math.max(150, dist / 0.9));
+  const walk: Phase = {
+    dur: dist < 4 ? 0.05 : Math.max(0.3, dist / speed),
+    flexible: false,
+    at: (u) => {
+      const xa = x0();
+      const xb = c.seat().x;
+      return withProps({ pose: gaitPose(topStage(), xa + (xb - xa) * u, Math.abs(xb - xa) * u, dir, speed > 170 ? RUN : WALK), expr: { mouth: 'smile' } });
+    },
+  };
+  const sit = landPhase(c, () => walk.at(1).pose, 4, 0.4);
+  return [standUp, walk, props ? { ...sit, at: (u) => withProps(sit.at(u)) } : sit];
+}
+
+/** `pose` shifted by `k` × (from − to) in every channel (angles unwrapped): a fading seam offset. */
+function offsetPose(pose: Pose, from: Pose, to: Pose, k: number): Pose {
+  const a = unwrapToward(from, to);
+  const out = { ...pose };
+  const rec = out as unknown as Record<string, number>;
+  const ra = a as unknown as Record<string, number>;
+  const rt = to as unknown as Record<string, number>;
+  for (const key of ['x', 'y', 'rot', 'torso', 'head', 'lShoulder', 'lElbow', 'rShoulder', 'rElbow', 'lHip', 'lKnee', 'rHip', 'rKnee', 'squash']) {
+    rec[key] = rec[key] + (ra[key] - rt[key]) * k;
+  }
+  if (from.facing !== to.facing) {
+    out.turn = pose.facing * (1 - 2 * k);
+  }
+  return out;
+}
+
 /** Runs phases in order, starting with a blend from the exact current pose. */
 function build(action: RouteAction, c: Ctx, phases: Phase[], events: (starts: number[]) => ClipEvent[] = () => []): Clip {
   // Fit the total duration into ROUTE_MIN..ROUTE_MAX by stretching the flexible phases.
@@ -242,7 +362,7 @@ function build(action: RouteAction, c: Ctx, phases: Phase[], events: (starts: nu
       k = (ROUTE_MIN - fixed) / flex;
     }
   }
-  const durs = phases.map((p) => (p.flexible ? p.dur * k : p.dur));
+  const durs = phases.map((p) => (p.flexible ? Math.max(p.minDur ?? 0, p.dur * k) : p.dur));
   const starts: number[] = [];
   let t0 = BLEND_IN;
   for (const d of durs) {
@@ -252,6 +372,7 @@ function build(action: RouteAction, c: Ctx, phases: Phase[], events: (starts: nu
   const duration = t0;
   const first = phases[0];
   const crossDur = phases.map(() => -1);
+  const seams: ({ end: Pose; start: Pose } | undefined)[] = phases.map(() => undefined);
   return {
     action,
     duration,
@@ -272,14 +393,20 @@ function build(action: RouteAction, c: Ctx, phases: Phase[], events: (starts: nu
           const since = t - starts[i];
           if (i > 0) {
             // Cross-fade from where the previous phase ended (longer when limbs have far to go): seams never jump.
-            const prevEnd = phases[i - 1].at(1).pose;
             let cross = crossDur[i];
-            if (cross < 0) {
-              cross = Math.min(durs[i] * 0.8, Math.max(CROSS, blendTravel(prevEnd, phases[i].at(0).pose) / 420));
-              crossDur[i] = cross;
-            }
-            if (since < cross) {
-              return { ...frame, pose: lerpPose(unwrapToward(prevEnd, frame.pose), frame.pose, ease.inOut(since / cross)) };
+            if (cross < 0 || since < cross) {
+              // The seam poses are read once per phase (while inside the fade window), not every frame.
+              const seam = (seams[i] ??= { end: phases[i - 1].at(1).pose, start: phases[i].at(0).pose });
+              if (cross < 0) {
+                const gap = blendTravel(seam.end, seam.start);
+                cross = gap < 2 ? 0 : Math.min(durs[i] * 0.8, Math.max(CROSS, gap / 420));
+                crossDur[i] = cross;
+              }
+              if (since < cross) {
+                // Fade out the seam's gap as an offset on top of the new phase: its own motion (speed, arc) is kept
+                // — lerping from a still pose into a fast-moving phase would make it catch up at double speed.
+                return { ...frame, pose: offsetPose(frame.pose, seam.end, seam.start, 1 - ease.inOut(since / cross)) };
+              }
             }
           }
           return frame;
@@ -300,7 +427,8 @@ function hopRoute(c: Ctx): Clip {
   const crouch = { ...start, y: start.y + 9, torso: 0.4, lHip: 0.9, lKnee: 1.5, rHip: 0.8, rKnee: 1.4, lShoulder: -0.8, rShoulder: -0.7, lElbow: 0.4, rElbow: 0.4 };
   const air = { ...crouch, lShoulder: 2.6, rShoulder: 2.8, lElbow: 0.3, rElbow: 0.3, lHip: 0.5, lKnee: 0.9, rHip: 0.3, rKnee: 0.8, torso: 0.1 };
   const dist = Math.hypot(c.seat().x - start.x, c.seat().y - start.y);
-  const flight = Math.min(0.9, 0.35 + dist / 1400);
+  // Longer hops (the fallback on a full-width bottom sheet can be far and high) take proportionally longer.
+  const flight = Math.min(1.6, 0.35 + dist / 750);
   return build('route-hop', c, [
     holdPhase(0.22, (u) => ({ pose: lerpPose(start, crouch, ease.out(u)), expr: { brows: -0.2, mouth: 'flat' } })),
     {
@@ -308,10 +436,12 @@ function hopRoute(c: Ctx): Clip {
       flexible: true,
       at: (u) => {
         const end = seated(c);
-        const apex = 50 + Math.max(0, start.y - end.y) * 0.25;
-        const p = u < 0.5 ? lerpPose(crouch, air, ease.out(u * 2)) : lerpPose(air, end, ease.inOut((u - 0.5) * 2));
+        // Keep the head and raised arms inside the viewport at the top of the arc.
+        const room = (start.y + end.y) / 2 - HEADROOM;
+        const apex = Math.max(0, Math.min(50 + Math.max(0, start.y - end.y) * 0.25, room));
+        const p = u < 0.5 ? lerpPose(crouch, air, ease.inOut(u * 2)) : lerpPose(air, end, ease.inOut((u - 0.5) * 2));
         p.x = start.x + (end.x - start.x) * u;
-        p.y = start.y + (end.y - start.y) * u - apex * 4 * u * (1 - u);
+        p.y = start.y + 9 * (1 - u) * (1 - u) + (end.y - start.y) * u - apex * 4 * u * (1 - u);
         return { pose: p, expr: { eyes: 'happy', mouth: 'grin' } };
       },
     },
@@ -333,14 +463,19 @@ function climbRoute(c: Ctx): Clip {
   const climb = climbPhase(c, bottom, top, nrm, c.toward, standD, climbTo);
   const toClimb = holdPhase(0.25, (u) => ({ pose: lerpPose(walk.at(1).pose, climbPose(c, bottom(), top(), nrm, standD, c.toward), ease.inOut(u)), expr: { brows: 0.3 } }));
   // Pull over the top: chest over the edge, a knee up, then sit.
-  const over = holdPhase(0.4, (u) => {
-    const a = climbPose(c, bottom(), top(), nrm, climbTo(), c.toward);
+  const kneelPose = (): Pose => {
     const kneel = pose({ x: edgeX(c) - c.out * 14, y: c.panel().top - 20, facing: c.toward, torso: 0.5, head: -0.2, lHip: 1.5, lKnee: 2.2, rHip: 0.6, rKnee: 1.4 });
     reach(kneel, 'l', { x: edgeX(c) - c.out * 26, y: c.panel().top }, 1);
     reach(kneel, 'r', { x: edgeX(c) - c.out * 20, y: c.panel().top }, 1);
+    return kneel;
+  };
+  const overDur = Math.max(0.4, blendTravel(climbPose(c, bottom(), top(), nrm, climbTo(), c.toward), kneelPose()) / 280);
+  const over = holdPhase(overDur, (u) => {
+    const a = climbPose(c, bottom(), top(), nrm, climbTo(), c.toward);
+    const kneel = kneelPose();
     return { pose: lerpPose(unwrapToward(a, kneel), kneel, ease.inOut(u)), expr: { brows: -0.6, mouth: 'wobbly' } };
   });
-  return build('route-climb', c, [walk, toClimb, climb, over, landPhase(c, endOf(over), 6, 0.4)]);
+  return build('route-climb', c, [walk, toClimb, climb, over, ...topWalk(c, endOf(over))]);
 }
 
 function ladderRoute(c: Ctx): Clip {
@@ -377,9 +512,7 @@ function ladderRoute(c: Ctx): Clip {
   const climbRaw = climbPhase(c, bottom, top, nrm, c.toward, standD, toD);
   const climb: Phase = { ...climbRaw, at: (u) => ({ ...climbRaw.at(u), props: { ink: [ladder(1)] } }) };
   const toClimb = holdPhase(0.25, (u) => ({ pose: lerpPose(drawPhase.at(1).pose, climbPose(c, bottom(), top(), nrm, standD, c.toward), ease.inOut(u)), props: { ink: [ladder(1)] } }));
-  const land = landPhase(c, endOf(climbRaw), 18);
-  const landInk: Phase = { ...land, at: (u) => ({ ...land.at(u), props: { ink: [ladder(1)] } }) };
-  return build('route-ladder', c, [walk, drawPhase, toClimb, climb, landInk]);
+  return build('route-ladder', c, [walk, drawPhase, toClimb, climb, ...topWalk(c, endOf(climbRaw), () => [ladder(1)])]);
 }
 
 function ropeRoute(c: Ctx): Clip {
@@ -425,7 +558,8 @@ function ropeRoute(c: Ctx): Clip {
     flexible: false,
     at: (u) => {
       const R = topHip();
-      const D = c.seat().x - ropeX();
+      // Swing just past the edge onto the top (a wide panel's seat can be far; he walks the rest).
+      const D = edgeX(c) - c.out * 30 - ropeX();
       const target = Math.asin(Math.max(-0.95, Math.min(0.95, D / R)));
       const theta = u < 0.35 ? -0.35 * target * Math.sin((u / 0.35) * (Math.PI / 2)) : -0.35 * target + 1.35 * target * ease.inOut((u - 0.35) / 0.65);
       const base = hangPose(R, 0);
@@ -435,7 +569,8 @@ function ropeRoute(c: Ctx): Clip {
   };
   const land = landPhase(c, endOf(swing), 10, 0.55);
   const landInk: Phase = { ...land, at: (u) => ({ ...land.at(u), props: { ink: [ropeInk(hangEnd, null)] } }) };
-  return build('route-rope', c, [walkRope, grab, climb, swing, landInk]);
+  void landInk;
+  return build('route-rope', c, [walkRope, grab, climb, swing, ...topWalk(c, endOf(swing), () => [ropeInk(hangEnd, null)])]);
 }
 
 function trampolineRoute(c: Ctx): Clip {
@@ -478,36 +613,40 @@ function trampolineRoute(c: Ctx): Clip {
     p.y -= 20 * 4 * u * (1 - u);
     return { pose: p, props: { ink: [tramp(1)] } };
   });
-  // The last bounce is a real ballistic arc: up past the panel top, down onto the seat.
-  const arc = (): { v0: number; T: number; apexH: number } => {
-    const rise = surfaceHip - seated(c).y;
+  // The last bounce is a real ballistic arc: up past the panel top, down onto it just inside the edge.
+  const landX = (): number => edgeX(c) - c.out * 16;
+  const landPose = (): Pose => standOnTop(c, landX(), c.toward);
+  const arc = (): { v0: number; T: number } => {
+    const rise = surfaceHip - landPose().y;
     const apexH = Math.max(60, rise + 40);
     const v0 = Math.sqrt(2 * TRAMP_GRAVITY * apexH);
-    const T = v0 / TRAMP_GRAVITY + Math.sqrt((2 * (apexH - rise)) / TRAMP_GRAVITY);
-    return { v0, T, apexH };
+    return { v0, T: v0 / TRAMP_GRAVITY + Math.sqrt((2 * (apexH - rise)) / TRAMP_GRAVITY) };
   };
   const finalArc: Phase = {
     dur: arc().T,
     flexible: false,
     at: (u) => {
       dip = u < 0.12 ? 10 * (1 - u / 0.12) : 0;
-      const end = seated(c);
-      const { v0, T } = arc();
-      const tau = u * T;
-      const x = tx() + (end.x - tx()) * u;
-      const y = u >= 1 ? end.y : surfaceHip - v0 * tau + 0.5 * TRAMP_GRAVITY * tau * tau;
+      const end = landPose();
       if (u >= 1) {
         return { pose: end, props: { ink: [tramp(1)] } };
       }
+      const { v0, T } = arc();
+      const tau = u * T;
+      const x = tx() + (end.x - tx()) * u;
+      const y = surfaceHip - v0 * tau + 0.5 * TRAMP_GRAVITY * tau * tau;
       const p = u < 0.7 ? air(x, y, u < 0.55) : lerpPose(air(x, y, false), { ...end, x, y }, ease.inOut((u - 0.7) / 0.3));
       return { pose: p, expr: { eyes: 'happy', mouth: 'grin' }, props: { ink: [tramp(1)] } };
     },
   };
-  return build('route-trampoline', c, [walk, drawPhase, hopOn, bounce(40), bounce(85), finalArc]);
+  return build('route-trampoline', c, [walk, drawPhase, hopOn, bounce(40), bounce(85), finalArc, ...topWalk(c, endOf(finalArc), () => [tramp(1)])]);
 }
 
 function balloonRoute(c: Ctx): Clip {
-  const start = standingAt(c, c.from.x, c.toward);
+  // Too close to the viewport edge for the raised arm and the balloon: a few steps inward first.
+  const sx = Math.min(c.stage.width - 45, Math.max(45, c.from.x));
+  const stepIn = walkPhase(c, c.from.x, sx, 0.5);
+  const start = standingAt(c, sx, c.toward);
   const floatTo = (): Vec => ({ x: c.seat().x, y: c.seat().y - 72 });
   const via = (): Vec => ({ x: edgeX(c) + c.out * 30, y: c.panel().top - 80 });
   const balloon = (hand: Vec, r: number): InkProp => {
@@ -545,14 +684,14 @@ function balloonRoute(c: Ctx): Clip {
     flexible: true,
     at: (u) => {
       const e = ease.inOut(u);
-      const q = bez({ x: start.x, y: start.y }, floatTo(), via(), e);
+      const q = bez({ x: start.x, y: start.y - LIFT }, floatTo(), via(), e);
       const sway = 7 * Math.sin(u * 9) * Math.sin(Math.PI * u);
       const p = floatPose(q.x + sway, q.y, u * 3);
       return { pose: p, expr: { eyes: 'happy', mouth: 'smile' }, props: { ink: [balloon(handOf(p), 14)] } };
     },
   };
   const liftOff = holdPhase(0.2, (u) => {
-    const p = lerpPose(inflate.at(1).pose, floatPose(start.x, start.y, 0), u);
+    const p = lerpPose(inflate.at(1).pose, floatPose(start.x, start.y - LIFT, 0), u);
     return { pose: p, props: { ink: [balloon(handOf(p), 14)] } };
   });
   const pin = holdPhase(0.35, (u) => {
@@ -573,9 +712,9 @@ function balloonRoute(c: Ctx): Clip {
       return { pose: p, expr: { mouth: 'o', eyes: 'wide', brows: 1 } };
     },
   };
-  return build('route-balloon', c, [inflate, liftOff, float, pin, drop], (s) => [
-    { t: s[4], type: 'bang' },
-    { t: s[4], type: 'sparkle', at: 'head' },
+  return build('route-balloon', c, [stepIn, inflate, liftOff, float, pin, drop], (s) => [
+    { t: s[5], type: 'bang' },
+    { t: s[5], type: 'sparkle', at: 'head' },
   ]);
 }
 
@@ -626,14 +765,16 @@ function vaultRoute(c: Ctx): Clip {
       return { pose: p, expr: u > 0.7 ? { eyes: 'happy', mouth: 'smile' } : { mouth: 'o' }, props: { ink: [poleInk(tip(), { x: tip().x + c.out * 30 * u, y: tip().y - poleLen() * (1 - 0.4 * u) }, 1 - u)] } };
     },
   };
-  return build('route-vault', c, [runPole, toVault, vault, fly]);
+  void fly;
+  const standingPole = (): InkProp[] => [poleInk(tip(), { x: tip().x, y: tip().y - poleLen() }, 0.7)];
+  return build('route-vault', c, [runPole, toVault, vault, ...topWalk(c, endOf(vault), standingPole)]);
 }
 
 function stairsRoute(c: Ctx): Clip {
   const height = (): number => c.g - c.panel().top;
   // At most 9 steps: a tall panel gets taller steps rather than a long staircase.
-  const count = Math.max(2, Math.min(9, Math.ceil((c.g - c.panel().top) / 30)));
-  const width = 22;
+  const count = stairSteps(c.g - c.panel().top);
+  const width = STEP_WIDTH;
   // Step k (0 = lowest) sits outside the panel, the last one right at the edge.
   const stepTop = (k: number): Vec => ({ x: edgeX(c) + c.out * (width * (count - k) - width / 2), y: c.g - (height() * (k + 1)) / (count + 1) });
   const startX = (): number => stepTop(0).x + c.out * 30;
@@ -673,10 +814,8 @@ function stairsRoute(c: Ctx): Clip {
     });
   }
   const last = hops[hops.length - 1];
-  const land = landPhase(c, endOf(last), 4, 0.35);
-  const landInk: Phase = { ...land, at: (u) => ({ ...land.at(u), props: { ink: stairsInk(count) } }) };
   const walkInk: Phase = { ...walk, at: (u) => ({ ...walk.at(u), props: { ink: stairsInk(u * 0.4) } }) };
-  return build('route-stairs', c, [walkInk, ...hops, landInk]);
+  return build('route-stairs', c, [walkInk, ...hops, ...topWalk(c, endOf(last), () => stairsInk(count))]);
 }
 
 /** Builds the chosen route from the current pose. */

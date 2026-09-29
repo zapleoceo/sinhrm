@@ -87,7 +87,10 @@ export function pickOne<T>(list: readonly T[], avoid: T | null, rng: () => numbe
 
 /** Weighted random key, never the previous one when there is a choice. */
 export function pickWeighted<T extends string>(weights: Readonly<Record<T, number>>, avoid: T | null, rng: () => number): T {
-  const keys = (Object.keys(weights) as T[]).filter((k) => k !== avoid);
+  const all = Object.keys(weights) as T[];
+  const others = all.filter((k) => k !== avoid);
+  // The only option is the one to avoid: take it anyway.
+  const keys = others.length > 0 ? others : all;
   const total = keys.reduce((a, k) => a + weights[k], 0);
   let r = rng() * total;
   for (const k of keys) {

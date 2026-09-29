@@ -551,7 +551,7 @@ export class MascotEngine {
       for (const k of ANGLE_KEYS) {
         this.springs[k].x = from[k];
       }
-      this.blendDur = this.reduced ? blend : Math.max(blend, Math.min(0.7, blendTravel(from, target) / BLEND_SPEED));
+      this.blendDur = this.reduced ? blend : Math.max(blend, Math.min(1.1, blendTravel(from, target) / BLEND_SPEED));
     } else {
       this.blendFrom = null;
       const first = this.clip.sample(0, this.env());
@@ -661,16 +661,23 @@ export class MascotEngine {
       }
     }
     const seat = this.stage.seat;
-    if (seat && this.liveSeat) {
-      this.liveSeat = { x: approach(this.liveSeat.x, seat.x, h, RETARGET_HALF_LIFE), y: approach(this.liveSeat.y, seat.y, h, RETARGET_HALF_LIFE) };
+    if (!seat || !this.inRoute) {
+      // Route over or chat closed: nothing to aim at any more.
+      this.liveSeat = null;
+      this.livePanel = null;
+      return;
+    }
+    const ls = this.liveSeat;
+    const lp = this.livePanel;
+    if (ls && lp) {
+      // Eased in place (no new objects per step).
       const p = panelOf(this.stage);
-      const lp = this.livePanel ?? p;
-      this.livePanel = {
-        left: approach(lp.left, p.left, h, RETARGET_HALF_LIFE),
-        top: approach(lp.top, p.top, h, RETARGET_HALF_LIFE),
-        right: approach(lp.right, p.right, h, RETARGET_HALF_LIFE),
-        bottom: approach(lp.bottom, p.bottom, h, RETARGET_HALF_LIFE),
-      };
+      ls.x = approach(ls.x, seat.x, h, RETARGET_HALF_LIFE);
+      ls.y = approach(ls.y, seat.y, h, RETARGET_HALF_LIFE);
+      lp.left = approach(lp.left, p.left, h, RETARGET_HALF_LIFE);
+      lp.top = approach(lp.top, p.top, h, RETARGET_HALF_LIFE);
+      lp.right = approach(lp.right, p.right, h, RETARGET_HALF_LIFE);
+      lp.bottom = approach(lp.bottom, p.bottom, h, RETARGET_HALF_LIFE);
     }
   }
 
