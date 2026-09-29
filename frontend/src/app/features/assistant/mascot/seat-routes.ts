@@ -567,9 +567,6 @@ function ropeRoute(c: Ctx): Clip {
       return { pose: p, expr: { eyes: 'happy', mouth: 'grin' }, props: { ink: [ropeInk(hangEnd, handsOn(p))] } };
     },
   };
-  const land = landPhase(c, endOf(swing), 10, 0.55);
-  const landInk: Phase = { ...land, at: (u) => ({ ...land.at(u), props: { ink: [ropeInk(hangEnd, null)] } }) };
-  void landInk;
   return build('route-rope', c, [walkRope, grab, climb, swing, ...topWalk(c, endOf(swing), () => [ropeInk(hangEnd, null)])]);
 }
 
@@ -754,18 +751,6 @@ function vaultRoute(c: Ctx): Clip {
   };
   // Long enough for the hands to travel up to the pole top without whipping.
   const toVault = holdPhase(Math.max(0.35, blendTravel(run.at(1).pose, vault.at(0).pose) / 380), (u) => ({ pose: lerpPose(run.at(1).pose, vault.at(0).pose, ease.inOut(u)), props: { ink: [poleInk(tip(), handsOf(vault.at(0).pose))] } }));
-  const fly: Phase = {
-    dur: 0.45,
-    flexible: false,
-    at: (u) => {
-      const a = vault.at(1).pose;
-      const b = seated(c);
-      const p = lerpPose(unwrapToward(a, b), b, ease.inOut(u));
-      p.y -= 26 * 4 * u * (1 - u);
-      return { pose: p, expr: u > 0.7 ? { eyes: 'happy', mouth: 'smile' } : { mouth: 'o' }, props: { ink: [poleInk(tip(), { x: tip().x + c.out * 30 * u, y: tip().y - poleLen() * (1 - 0.4 * u) }, 1 - u)] } };
-    },
-  };
-  void fly;
   const standingPole = (): InkProp[] => [poleInk(tip(), { x: tip().x, y: tip().y - poleLen() }, 0.7)];
   return build('route-vault', c, [runPole, toVault, vault, ...topWalk(c, endOf(vault), standingPole)]);
 }
