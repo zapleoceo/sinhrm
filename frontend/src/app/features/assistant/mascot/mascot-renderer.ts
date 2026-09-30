@@ -412,9 +412,6 @@ export class MascotRenderer {
         d = starPath(x, y, e.size * (1 - 0.4 * p), e.size * 0.35, 4, e.rot);
         cls = 'fill';
         break;
-      case 'streak':
-        d = `M ${f(x)} ${f(y)} L ${f(x - e.vx * 0.045 * e.size)} ${f(y - e.vy * 0.045 * e.size)}`;
-        break;
       case 'drop':
         d = `M ${f(x)} ${f(y - 3.2)} Q ${f(x + 2.6)} ${f(y + 1)} ${f(x)} ${f(y + 2.4)} Q ${f(x - 2.6)} ${f(y + 1)} ${f(x)} ${f(y - 3.2)} Z`;
         break;

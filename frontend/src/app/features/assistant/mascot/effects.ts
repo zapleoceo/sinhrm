@@ -1,7 +1,7 @@
 import { Vec } from './skeleton';
 
 /** Little drawn extras around «Стік». Pure data + pure update; the renderer draws them from a pool. */
-export type EffectKind = 'puff' | 'spark' | 'streak' | 'drop' | 'bang' | 'zz' | 'star' | 'ring' | 'doodle' | 'rope' | 'banana';
+export type EffectKind = 'puff' | 'spark' | 'drop' | 'bang' | 'zz' | 'star' | 'ring' | 'doodle' | 'rope' | 'banana';
 
 export type DoodleShape = 'heart' | 'star' | 'spiral' | 'smile';
 export const DOODLE_SHAPES: readonly DoodleShape[] = ['heart', 'star', 'spiral', 'smile'];
@@ -59,10 +59,6 @@ export function spawnSparkles(x: number, y: number, rng: () => number): Effect[]
 }
 
 /** Speed line left behind a fast move (drawn along the velocity). */
-export function spawnStreak(x: number, y: number, vx: number, vy: number, rng: () => number): Effect {
-  return make('streak', x + (rng() - 0.5) * 30, y + (rng() - 0.5) * 50, 0.22, { vx, vy, size: 0.6 + rng() * 0.6 });
-}
-
 export function spawnSweat(): Effect {
   return make('drop', 11, -8, 1.1, { attached: true, vy: 14 });
 }

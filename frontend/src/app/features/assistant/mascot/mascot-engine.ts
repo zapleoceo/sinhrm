@@ -31,7 +31,6 @@ import {
   spawnRope,
   spawnSparkles,
   spawnStars,
-  spawnStreak,
   spawnSweat,
   spawnZ,
   stepEffects,
@@ -225,7 +224,6 @@ export class MascotEngine {
   private gestureState: GestureState | null = null;
   private effects: Effect[] = [];
   private ambientT = 0;
-  private streakT = 0;
   private time = 0;
   private acc = 0;
   private brows = 0;
@@ -1031,14 +1029,6 @@ export class MascotEngine {
       if (this.ambientT >= this.clip.ambient.every) {
         this.ambientT = 0;
         this.add(spawnZ(head.x + this.displayed.facing * 10, head.y - 12, this.rng));
-      }
-    }
-    const speed = Math.hypot(this.lastVel.x, this.lastVel.y);
-    if (speed > 650 && !this.reduced && this.morph < 0.5) {
-      this.streakT += h;
-      if (this.streakT >= 0.06) {
-        this.streakT = 0;
-        this.add(spawnStreak(this.displayed.x, this.displayed.y - 20, this.lastVel.x, this.lastVel.y, this.rng));
       }
     }
   }
