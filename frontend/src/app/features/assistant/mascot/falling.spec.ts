@@ -200,20 +200,25 @@ describe('real falls: throw → ragdoll → get up, continuously', () => {
     expect(sim.maxJump).toBeLessThan(40);
   });
 
-  it('no drag arrows any more: holding and throwing him spawns no arrow effects', () => {
+  it('nothing flies off him while he is dragged or thrown (no arrows, no speed streaks, no effects at all)', () => {
     const e = new MascotEngine(STAGE, seeded(1));
     e.play('static', { targetX: 600, blend: 0 });
     e.tick(0.2);
     const r = e.root;
     e.dragStart(r.x, r.y - 20);
     const kinds = new Set<string>();
+    // Fast yanks (3600 px/s) used to spawn a speed streak every 0.06 s, up to ~270 px long.
     for (let i = 1; i <= 20; i++) {
       e.dragMove(r.x + i * 60, r.y - 20 - i * 30);
       e.tick(1 / 60).frame.effects.forEach((fx) => kinds.add(fx.kind));
     }
+    expect([...kinds]).toEqual([]);
     e.dragEnd();
-    e.tick(1 / 60).frame.effects.forEach((fx) => kinds.add(fx.kind));
-    expect([...kinds]).not.toContain('arrow');
+    // In flight until the first impact: still nothing (dust/stars only on landing).
+    for (let i = 0; i < 6; i++) {
+      e.tick(1 / 60).frame.effects.forEach((fx) => kinds.add(fx.kind));
+    }
+    expect([...kinds]).toEqual([]);
   });
 
   it('grab where clicked; release keeps the ragdoll velocities (the swing is the throw)', () => {
