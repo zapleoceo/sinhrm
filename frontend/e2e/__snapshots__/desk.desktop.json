@@ -1,0 +1,36 @@
+{
+ "path": "/desk",
+ "state": null,
+ "headings": [
+  "Мої звернення"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Нове звернення\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\" [expanded]",
+  "link \"#1 Звернення №1 [ТЕСТ] Довідки та документи [ТЕСТ] · 11.09.2026 08:02\" -> /desk/cases/1",
+  "link \"Safe Speak\" -> /safe-speak",
+  "link \"SinHRM\" -> /",
+  "link \"База знань\" -> /knowledge",
+  "link \"Довідка\" -> /docs",
+  "link \"Каталог звітів\" -> /reports/catalog",
+  "link \"Конструктор звітів\" -> /reports/builder",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мої звернення\" -> /desk",
+  "link \"Огляд\" -> /"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 4,
+  "listitem": 1
+ }
+}

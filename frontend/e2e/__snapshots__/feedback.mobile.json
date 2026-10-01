@@ -1,0 +1,31 @@
+{
+ "path": "/perform/feedback",
+ "state": null,
+ "headings": [
+  "Дати фідбек",
+  "Фідбек"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "button \"Надіслати\" [disabled]",
+  "combobox \"Видимість\"",
+  "combobox \"Співробітник\"",
+  "combobox \"Тип\"",
+  "link \"Огляд\" -> /",
+  "radio \"Запити до мене\"",
+  "radio \"Моя команда\"",
+  "radio \"Надіслані\"",
+  "radio \"Отримані\" [checked]",
+  "radio \"Публічні\"",
+  "textbox \"Текст\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "listitem": 1
+ }
+}

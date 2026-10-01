@@ -1,0 +1,88 @@
+{
+ "GET /api/pipelines": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "name": "Основна воронка",
+     "is_default": true,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

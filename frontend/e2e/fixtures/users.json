@@ -1,0 +1,520 @@
+{
+ "GET /api/users?page=1&perPage=20": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 2,
+     "name": "Адміністратор [ТЕСТ]",
+     "email": "demo+admin@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "admin"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 72,
+     "name": "Бондаренко Євген [ТЕСТ]",
+     "email": "demo+emp-70@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 122,
+     "name": "Бондаренко Євген [ТЕСТ]",
+     "email": "demo+emp-120@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 113,
+     "name": "Бондаренко Ірина [ТЕСТ]",
+     "email": "demo+emp-111@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 40,
+     "name": "Бондаренко Віктор [ТЕСТ]",
+     "email": "demo+emp-38@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 90,
+     "name": "Бондаренко Віктор [ТЕСТ]",
+     "email": "demo+emp-88@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 81,
+     "name": "Бондаренко Вікторія [ТЕСТ]",
+     "email": "demo+emp-79@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 8,
+     "name": "Бондаренко Дмитро [ТЕСТ]",
+     "email": "demo+emp-06@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 49,
+     "name": "Бондаренко Наталія [ТЕСТ]",
+     "email": "demo+emp-47@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 17,
+     "name": "Бондаренко Оксана [ТЕСТ]",
+     "email": "demo+emp-15@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 7,
+     "name": "Гончаренко Анна [ТЕСТ]",
+     "email": "demo+emp-05@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 30,
+     "name": "Гончаренко Максим [ТЕСТ]",
+     "email": "demo+emp-28@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 80,
+     "name": "Гончаренко Максим [ТЕСТ]",
+     "email": "demo+emp-78@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 130,
+     "name": "Гончаренко Максим [ТЕСТ]",
+     "email": "demo+emp-128@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 39,
+     "name": "Гончаренко Марія [ТЕСТ]",
+     "email": "demo+emp-37@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 89,
+     "name": "Гончаренко Марія [ТЕСТ]",
+     "email": "demo+emp-87@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 112,
+     "name": "Гончаренко Павло [ТЕСТ]",
+     "email": "demo+emp-110@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 71,
+     "name": "Гончаренко Софія [ТЕСТ]",
+     "email": "demo+emp-69@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 121,
+     "name": "Гончаренко Софія [ТЕСТ]",
+     "email": "demo+emp-119@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    },
+    {
+     "id": 48,
+     "name": "Гончаренко Тарас [ТЕСТ]",
+     "email": "demo+emp-46@sinhrm.test",
+     "avatar_url": null,
+     "roles": [
+      "employee"
+     ],
+     "status": "active",
+     "branches": [
+      {
+       "id": 1,
+       "name": "Тестовий філіал",
+       "status": "active"
+      }
+     ],
+     "safe_speak_handler": false,
+     "locale": "uk",
+     "invited_by": null,
+     "last_login_at": null,
+     "created_at": "2026-10-01T18:02:00+00:00"
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/users?page=1",
+    "last": "https://sinhrm.test/api/users?page=7",
+    "prev": null,
+    "next": "https://sinhrm.test/api/users?page=2"
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 7,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/users?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": "https://sinhrm.test/api/users?page=2",
+      "label": "2",
+      "page": 2,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/users?page=3",
+      "label": "3",
+      "page": 3,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/users?page=4",
+      "label": "4",
+      "page": 4,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/users?page=5",
+      "label": "5",
+      "page": 5,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/users?page=6",
+      "label": "6",
+      "page": 6,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/users?page=7",
+      "label": "7",
+      "page": 7,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/users?page=2",
+      "label": "Next &raquo;",
+      "page": 2,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/users",
+    "per_page": 20,
+    "to": 20,
+    "total": 130
+   }
+  }
+ }
+}

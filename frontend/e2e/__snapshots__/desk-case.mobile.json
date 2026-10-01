@@ -1,0 +1,23 @@
+{
+ "path": "/desk/cases/1",
+ "state": null,
+ "headings": [
+  "#1 Звернення №1 [ТЕСТ]"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Взяти собі\"",
+  "button \"Головне меню\"",
+  "combobox \"Статус\"",
+  "link \"Огляд\" -> /",
+  "link \"← Назад\" -> /desk/queue"
+ ],
+ "columns": [],
+ "counts": {
+  "article": 1,
+  "img": 2
+ }
+}

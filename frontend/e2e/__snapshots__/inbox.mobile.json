@@ -1,0 +1,19 @@
+{
+ "path": "/inbox",
+ "state": null,
+ "headings": [
+  "Вхідні"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "link \"Огляд\" -> /"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2
+ }
+}

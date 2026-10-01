@@ -19,7 +19,9 @@
    лимиты, без логирования промптов); новый/изменённый промпт — новая версия и текст в `docs/modules/ai.md`.
 8. Метрики сабагентов — ledger вне репозитория (`D:\Projects\HRM\docs\tasks\*.agent-metrics.tsv`).
 9. Все файлы — рабочие копии, скрипты, скриншоты, выгрузки, любые временные файлы — только в `D:\Projects\`. Не в `C:\`, не в `%TEMP%`, не в `/tmp`, не в папках профиля. Нужна папка для временных файлов — создаём её там же, под проект: `D:\Projects\_tmp\<проект>\` (для SinHRM — `D:\Projects\_tmp\sinhrm\`; рабочие копии агентов — `D:\Projects\sinhrm-wt\<имя>`). Как только временные файлы больше не нужны (PR влит, задача закрыта, проверка закончена) — удаляем их и пустую папку. Секреты во временные файлы не кладём. Подробнее — `docs/guides/development.md`, раздел «Файлы и временные папки».
+10. Правка UI (особенно рестайл) держит job `ui-parity` зелёным: инвентарь кнопок/полей/колонок не теряется молча; снапшоты обновляются только осознанно (`npm run e2e:update`, дифф в PR) — `docs/guides/ui-parity.md`.
 
 ## Команды (CI)
 Бэкенд: `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `php artisan test --coverage --min=70`.
 Фронт: `npx ng lint`, `npx ng test --watch=false`, `npm run test:docs`, `npm run build` (собирает справку `/docs` из `docs/` и приложение).
+UI parity: `npm run build && npm run e2e` (job `ui-parity`, пока не обязательный).

@@ -1,0 +1,1728 @@
+{
+ "GET /api/perform/development-plans?employee_id=1": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/perform/feedback?box=received": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/perform/kpis?employee_id=1": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/perform/objectives?owner_employee_id=1": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 18,
+     "scope": "personal",
+     "owner": {
+      "id": 1,
+      "full_name": "Коваленко Олена [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 76,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 76,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    }
+   ]
+  }
+ },
+ "GET /api/perform/objectives?period=2026-Q4": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "scope": "team",
+     "owner": null,
+     "department_id": 1,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Дирекція: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 37,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 37,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 2,
+     "scope": "team",
+     "owner": null,
+     "department_id": 2,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Маркетинг: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 75,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 75,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 3,
+     "scope": "team",
+     "owner": null,
+     "department_id": 3,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Контакт-центр: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 79,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 79,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 4,
+     "scope": "team",
+     "owner": null,
+     "department_id": 4,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Фінанси та бухгалтерія: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 49,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 49,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 5,
+     "scope": "team",
+     "owner": null,
+     "department_id": 5,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "HR: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 65,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 65,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 6,
+     "scope": "team",
+     "owner": null,
+     "department_id": 6,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Методичний центр: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 62,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 62,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 7,
+     "scope": "team",
+     "owner": null,
+     "department_id": 7,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "IT: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 58,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 58,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 8,
+     "scope": "team",
+     "owner": null,
+     "department_id": 8,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Дирекція філії Київ: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 52,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 52,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 9,
+     "scope": "team",
+     "owner": null,
+     "department_id": 9,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Навчальний відділ Київ: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 41,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 41,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 10,
+     "scope": "team",
+     "owner": null,
+     "department_id": 10,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Відділ продажів Київ: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 69,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 69,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 11,
+     "scope": "team",
+     "owner": null,
+     "department_id": 11,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Дирекція філії Львів: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 53,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 53,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 12,
+     "scope": "team",
+     "owner": null,
+     "department_id": 12,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Навчальний відділ Львів: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 55,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 55,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 13,
+     "scope": "team",
+     "owner": null,
+     "department_id": 13,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Відділ продажів Львів: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 61,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 61,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 14,
+     "scope": "team",
+     "owner": null,
+     "department_id": 14,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Дирекція філії Дніпро: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 83,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 83,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 15,
+     "scope": "team",
+     "owner": null,
+     "department_id": 15,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Навчальний відділ Дніпро: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 71,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 71,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 16,
+     "scope": "team",
+     "owner": null,
+     "department_id": 16,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Відділ продажів Дніпро: ключова ціль кварталу [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 79,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 79,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 17,
+     "scope": "company",
+     "owner": null,
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Зростання набору на 20% [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 60,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 60,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 18,
+     "scope": "personal",
+     "owner": {
+      "id": 1,
+      "full_name": "Коваленко Олена [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 76,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 76,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 19,
+     "scope": "personal",
+     "owner": {
+      "id": 2,
+      "full_name": "Кравченко Богдан [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 62,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 62,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 20,
+     "scope": "personal",
+     "owner": {
+      "id": 3,
+      "full_name": "Поліщук Оксана [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 65,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 65,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 21,
+     "scope": "personal",
+     "owner": {
+      "id": 4,
+      "full_name": "Марченко Сергій [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 76,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 76,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 22,
+     "scope": "personal",
+     "owner": {
+      "id": 5,
+      "full_name": "Гончаренко Анна [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 38,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 38,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 23,
+     "scope": "personal",
+     "owner": {
+      "id": 6,
+      "full_name": "Бондаренко Дмитро [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 66,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 66,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 24,
+     "scope": "personal",
+     "owner": {
+      "id": 7,
+      "full_name": "Олійник Софія [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 47,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 47,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 25,
+     "scope": "personal",
+     "owner": {
+      "id": 8,
+      "full_name": "Савченко Євген [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 71,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 71,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 26,
+     "scope": "personal",
+     "owner": {
+      "id": 9,
+      "full_name": "Мороз Юлія [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 92,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 92,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 27,
+     "scope": "personal",
+     "owner": {
+      "id": 11,
+      "full_name": "Ткаченко Ірина [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 49,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 49,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 28,
+     "scope": "personal",
+     "owner": {
+      "id": 12,
+      "full_name": "Шевчук Роман [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 44,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 44,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 29,
+     "scope": "personal",
+     "owner": {
+      "id": 13,
+      "full_name": "Руденко Олена [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 73,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 73,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    },
+    {
+     "id": 30,
+     "scope": "personal",
+     "owner": {
+      "id": 14,
+      "full_name": "Лисенко Богдан [ТЕСТ]"
+     },
+     "department_id": null,
+     "branch_id": null,
+     "period": "2026-Q4",
+     "title": "Особиста ціль розвитку [ТЕСТ]",
+     "description": null,
+     "key_results": [
+      {
+       "id": "kr1",
+       "title": "Ключовий результат",
+       "start": 0,
+       "target": 100,
+       "current": 66,
+       "unit": "%",
+       "weight": 1
+      }
+     ],
+     "progress": 66,
+     "status": "active",
+     "parent_objective_id": null,
+     "visibility": "public",
+     "updated_at": "2026-10-01T00:00:00+00:00",
+     "can_edit": true
+    }
+   ]
+  }
+ },
+ "GET /api/perform/one-on-one-templates": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/perform/one-on-ones": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 240,
+     "manager": {
+      "id": 7,
+      "full_name": "Олійник Софія [ТЕСТ]"
+     },
+     "employee": {
+      "id": 125,
+      "full_name": "Ткаченко Марія [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 220,
+     "manager": {
+      "id": 112,
+      "full_name": "Олійник Роман [ТЕСТ]"
+     },
+     "employee": {
+      "id": 114,
+      "full_name": "Лисенко Богдан [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 200,
+     "manager": {
+      "id": 5,
+      "full_name": "Гончаренко Анна [ТЕСТ]"
+     },
+     "employee": {
+      "id": 104,
+      "full_name": "Руденко Сергій [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 180,
+     "manager": {
+      "id": 90,
+      "full_name": "Савченко Максим [ТЕСТ]"
+     },
+     "employee": {
+      "id": 94,
+      "full_name": "Шевчук Андрій [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 160,
+     "manager": {
+      "id": 77,
+      "full_name": "Марченко Дарина [ТЕСТ]"
+     },
+     "employee": {
+      "id": 83,
+      "full_name": "Павленко Тетяна [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 140,
+     "manager": {
+      "id": 72,
+      "full_name": "Руденко Павло [ТЕСТ]"
+     },
+     "employee": {
+      "id": 73,
+      "full_name": "Лисенко Наталія [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 120,
+     "manager": {
+      "id": 62,
+      "full_name": "Шевчук Роман [ТЕСТ]"
+     },
+     "employee": {
+      "id": 63,
+      "full_name": "Руденко Олена [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 100,
+     "manager": {
+      "id": 36,
+      "full_name": "Марченко Ігор [ТЕСТ]"
+     },
+     "employee": {
+      "id": 53,
+      "full_name": "Шевчук Оксана [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 80,
+     "manager": {
+      "id": 39,
+      "full_name": "Олійник Дарина [ТЕСТ]"
+     },
+     "employee": {
+      "id": 42,
+      "full_name": "Павленко Олег [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 60,
+     "manager": {
+      "id": 29,
+      "full_name": "Ткаченко Вікторія [ТЕСТ]"
+     },
+     "employee": {
+      "id": 32,
+      "full_name": "Лисенко Андрій [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 40,
+     "manager": {
+      "id": 18,
+      "full_name": "Мороз Дмитро [ТЕСТ]"
+     },
+     "employee": {
+      "id": 22,
+      "full_name": "Руденко Павло [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 20,
+     "manager": {
+      "id": 11,
+      "full_name": "Ткаченко Ірина [ТЕСТ]"
+     },
+     "employee": {
+      "id": 12,
+      "full_name": "Шевчук Роман [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-08T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 232,
+     "manager": {
+      "id": 119,
+      "full_name": "Гончаренко Софія [ТЕСТ]"
+     },
+     "employee": {
+      "id": 120,
+      "full_name": "Бондаренко Євген [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 212,
+     "manager": {
+      "id": 5,
+      "full_name": "Гончаренко Анна [ТЕСТ]"
+     },
+     "employee": {
+      "id": 110,
+      "full_name": "Гончаренко Павло [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 192,
+     "manager": {
+      "id": 99,
+      "full_name": "Савченко Ірина [ТЕСТ]"
+     },
+     "employee": {
+      "id": 100,
+      "full_name": "Мороз Роман [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 172,
+     "manager": {
+      "id": 3,
+      "full_name": "Поліщук Оксана [ТЕСТ]"
+     },
+     "employee": {
+      "id": 90,
+      "full_name": "Савченко Максим [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 152,
+     "manager": {
+      "id": 77,
+      "full_name": "Марченко Дарина [ТЕСТ]"
+     },
+     "employee": {
+      "id": 79,
+      "full_name": "Бондаренко Вікторія [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 132,
+     "manager": {
+      "id": 67,
+      "full_name": "Поліщук Анна [ТЕСТ]"
+     },
+     "employee": {
+      "id": 69,
+      "full_name": "Гончаренко Софія [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 112,
+     "manager": {
+      "id": 2,
+      "full_name": "Кравченко Богдан [ТЕСТ]"
+     },
+     "employee": {
+      "id": 59,
+      "full_name": "Мороз Юлія [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 92,
+     "manager": {
+      "id": 38,
+      "full_name": "Бондаренко Віктор [ТЕСТ]"
+     },
+     "employee": {
+      "id": 49,
+      "full_name": "Савченко Ірина [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 72,
+     "manager": {
+      "id": 36,
+      "full_name": "Марченко Ігор [ТЕСТ]"
+     },
+     "employee": {
+      "id": 38,
+      "full_name": "Бондаренко Віктор [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 52,
+     "manager": {
+      "id": 24,
+      "full_name": "Коваленко Роман [ТЕСТ]"
+     },
+     "employee": {
+      "id": 28,
+      "full_name": "Гончаренко Максим [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 32,
+     "manager": {
+      "id": 11,
+      "full_name": "Ткаченко Ірина [ТЕСТ]"
+     },
+     "employee": {
+      "id": 18,
+      "full_name": "Мороз Дмитро [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 12,
+     "manager": {
+      "id": 1,
+      "full_name": "Коваленко Олена [ТЕСТ]"
+     },
+     "employee": {
+      "id": 7,
+      "full_name": "Олійник Софія [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-07T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "notes_private_manager": null,
+     "can_manage": true,
+     "can_private_notes": true
+    },
+    {
+     "id": 244,
+     "manager": {
+      "id": 125,
+      "full_name": "Ткаченко Марія [ТЕСТ]"
+     },
+     "employee": {
+      "id": 127,
+      "full_name": "Марченко Дарина [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-06T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 224,
+     "manager": {
+      "id": 112,
+      "full_name": "Олійник Роман [ТЕСТ]"
+     },
+     "employee": {
+      "id": 116,
+      "full_name": "Кравченко Сергій [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-06T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 204,
+     "manager": {
+      "id": 104,
+      "full_name": "Руденко Сергій [ТЕСТ]"
+     },
+     "employee": {
+      "id": 106,
+      "full_name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-06T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 184,
+     "manager": {
+      "id": 90,
+      "full_name": "Савченко Максим [ТЕСТ]"
+     },
+     "employee": {
+      "id": 96,
+      "full_name": "Лисенко Тарас [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-06T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 164,
+     "manager": {
+      "id": 84,
+      "full_name": "Ткаченко Тарас [ТЕСТ]"
+     },
+     "employee": {
+      "id": 85,
+      "full_name": "Поліщук Наталія [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-06T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    },
+    {
+     "id": 144,
+     "manager": {
+      "id": 72,
+      "full_name": "Руденко Павло [ТЕСТ]"
+     },
+     "employee": {
+      "id": 75,
+      "full_name": "Кравченко Марія [ТЕСТ]"
+     },
+     "scheduled_at": "2026-10-06T11:00:00+00:00",
+     "template_id": null,
+     "status": "scheduled",
+     "agenda": [
+      {
+       "id": "a1",
+       "text": "Як справи з задачами?",
+       "done": false
+      }
+     ],
+     "notes_shared": null,
+     "action_items": [],
+     "can_manage": true,
+     "can_private_notes": false
+    }
+   ]
+  }
+ },
+ "GET /api/perform/one-on-ones?employee_id=1": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/perform/review/assignments": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 6,
+     "cycle": {
+      "id": 1,
+      "name": "Оцінка 360 2026-Q2 [ТЕСТ]",
+      "status": "closed",
+      "deadline": null
+     },
+     "subject": {
+      "id": 6,
+      "full_name": "Бондаренко Дмитро [ТЕСТ]"
+     },
+     "type": "manager",
+     "status": "submitted",
+     "submitted_at": "2026-07-08T00:00:00+00:00"
+    },
+    {
+     "id": 2,
+     "cycle": {
+      "id": 1,
+      "name": "Оцінка 360 2026-Q2 [ТЕСТ]",
+      "status": "closed",
+      "deadline": null
+     },
+     "subject": {
+      "id": 2,
+      "full_name": "Кравченко Богдан [ТЕСТ]"
+     },
+     "type": "manager",
+     "status": "submitted",
+     "submitted_at": "2026-07-08T00:00:00+00:00"
+    }
+   ]
+  }
+ },
+ "GET /api/perform/review/employees/1/results": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ }
+}

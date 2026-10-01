@@ -1,0 +1,19 @@
+{
+ "GET /api/nav/badges": {
+  "status": 200,
+  "body": {
+   "data": {
+    "desk_mine": 0,
+    "desk_queue": 9,
+    "hiring_inbox": 2,
+    "inbox": 0,
+    "mail_unknown": 0,
+    "my_documents": 0,
+    "surveys": 0,
+    "tasks": 0,
+    "time_approvals": 40,
+    "timeoff_approvals": 30
+   }
+  }
+ }
+}

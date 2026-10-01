@@ -1,0 +1,33 @@
+{
+ "path": "/inbox",
+ "state": null,
+ "headings": [
+  "Вхідні"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг\" [expanded]",
+  "button \"Сервіси\"",
+  "link \"SinHRM\" -> /",
+  "link \"Вакансії\" -> /vacancies",
+  "link \"Вхідні\" -> /inbox",
+  "link \"Довідка\" -> /docs",
+  "link \"Заявки на підбір 2 нових\" -> /hiring-requests",
+  "link \"Звіти\" -> /reports",
+  "link \"Кандидати\" -> /candidates",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Огляд\" -> /"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 4
+ }
+}

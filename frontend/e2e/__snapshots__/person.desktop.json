@@ -1,0 +1,58 @@
+{
+ "path": "/people/1",
+ "state": null,
+ "headings": [
+  "Коваленко Олена [ТЕСТ]"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\"",
+  "tablist \"\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Запит на зміну даних\"",
+  "button \"Звільнити\"",
+  "button \"Люди\" [expanded]",
+  "button \"Меню користувача\"",
+  "button \"Персональні дані\"",
+  "button \"Продуктивність\"",
+  "button \"Редагувати\"",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\"",
+  "link \"+380503000000\" -> tel:+380503000000",
+  "link \"SinHRM\" -> /",
+  "link \"demo+emp-01@sinhrm.test\" -> mailto:demo+emp-01@sinhrm.test",
+  "link \"Воркфлоу\" -> /workflows/runs",
+  "link \"Довідка\" -> /docs",
+  "link \"Календар команди\" -> /timeoff/calendar",
+  "link \"Мої відсутності\" -> /timeoff",
+  "link \"Мої документи\" -> /me/documents",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мій табель\" -> /time",
+  "link \"Огляд\" -> /",
+  "link \"Оргструктура\" -> /people/org-chart",
+  "link \"Погодження 30 нових\" -> /timeoff/approvals",
+  "link \"Погодження табелів 40 нових\" -> /time/approvals",
+  "link \"Показати в оргструктурі\" -> /people/org-chart?root=1",
+  "link \"Співробітники\" -> /people",
+  "link \"Табелі команди\" -> /time/team",
+  "switch \"Листи про погодження на пошту\"",
+  "tab \"Історія\"",
+  "tab \"Активи\"",
+  "tab \"Воркфлоу\"",
+  "tab \"Відсутності\"",
+  "tab \"Документи\"",
+  "tab \"Запити на зміни\"",
+  "tab \"Компенсація\"",
+  "tab \"Огляд\" [selected]",
+  "tab \"Продуктивність\"",
+  "tab \"Робота\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 5,
+  "tab": 10
+ }
+}

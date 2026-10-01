@@ -1,0 +1,45 @@
+{
+ "GET /api/channels": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "key": "google_gmail",
+     "channel": "email",
+     "mode": "off",
+     "reason": "not_connected"
+    },
+    {
+     "key": "telegram_business",
+     "channel": "telegram",
+     "mode": "off"
+    },
+    {
+     "key": "whatsapp_cloud",
+     "channel": "whatsapp",
+     "mode": "off"
+    },
+    {
+     "key": "viber",
+     "channel": "viber",
+     "mode": "off"
+    },
+    {
+     "key": "phonet",
+     "channel": "call",
+     "mode": "off"
+    },
+    {
+     "key": "ringostat",
+     "channel": "call",
+     "mode": "off"
+    },
+    {
+     "key": "binotel",
+     "channel": "call",
+     "mode": "off"
+    }
+   ]
+  }
+ }
+}

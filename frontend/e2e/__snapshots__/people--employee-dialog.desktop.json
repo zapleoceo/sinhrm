@@ -1,0 +1,35 @@
+{
+ "path": "/people",
+ "state": "employee-dialog",
+ "headings": [
+  "Додати співробітника",
+  "Основне",
+  "Особисте",
+  "Робота"
+ ],
+ "landmarks": [
+  "dialog \"Додати співробітника\""
+ ],
+ "interactive": [
+  "button \"Відкрити календар\"",
+  "button \"Відкрити календар\"",
+  "button \"Зберегти\"",
+  "button \"Скасувати\"",
+  "combobox \"Відділ\"",
+  "combobox \"Керівник\"",
+  "combobox \"Посада\"",
+  "combobox \"Стать\"",
+  "combobox \"Тип зайнятості\"",
+  "combobox \"Філія\"",
+  "textbox \"Адреса\"",
+  "textbox \"Дата народження\"",
+  "textbox \"Дата прийому\"",
+  "textbox \"Екстрений контакт\"",
+  "textbox \"Особистий e-mail\"",
+  "textbox \"ПІБ\"",
+  "textbox \"Робочий e-mail\"",
+  "textbox \"Телефон\""
+ ],
+ "columns": [],
+ "counts": {}
+}

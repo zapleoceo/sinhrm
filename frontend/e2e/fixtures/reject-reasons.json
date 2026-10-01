@@ -1,0 +1,39 @@
+{
+ "GET /api/reject-reasons": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "name": "Не підійшов за досвідом",
+     "active": true
+    },
+    {
+     "id": 2,
+     "name": "Відмовився сам",
+     "active": true
+    },
+    {
+     "id": 3,
+     "name": "Не виходить на звʼязок",
+     "active": true
+    },
+    {
+     "id": 4,
+     "name": "Не влаштували умови",
+     "active": true
+    },
+    {
+     "id": 5,
+     "name": "Не прийшов на зустріч",
+     "active": true
+    },
+    {
+     "id": 6,
+     "name": "Інше",
+     "active": true
+    }
+   ]
+  }
+ }
+}

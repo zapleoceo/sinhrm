@@ -1,0 +1,14 @@
+{
+ "path": "/vacancies/1",
+ "state": "reject-dialog",
+ "headings": [],
+ "landmarks": [],
+ "interactive": [
+  "button \"Відмовити\"",
+  "button \"Скасувати\"",
+  "combobox \"Причина\"",
+  "textbox \"Коментар (необовʼязково)\""
+ ],
+ "columns": [],
+ "counts": {}
+}

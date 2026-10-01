@@ -1,0 +1,8 @@
+{
+ "GET /api/auth/me": {
+  "status": 401,
+  "body": {
+   "message": "Unauthenticated."
+  }
+ }
+}

@@ -1,0 +1,41 @@
+{
+ "path": "/tasks",
+ "state": null,
+ "headings": [
+  "Мої задачі"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\"",
+  "link \"SinHRM\" -> /",
+  "link \"Довідка\" -> /docs",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Огляд\" -> /",
+  "radio \"Воркфлоу\"",
+  "radio \"Документи\"",
+  "radio \"Заявки на підбір\"",
+  "radio \"Звернення\"",
+  "radio \"Опитування\"",
+  "radio \"Прострочені\"",
+  "radio \"Рекрутинг\"",
+  "radio \"Сьогодні\"",
+  "radio \"Табель\"",
+  "radio \"Усі строки\" [checked]",
+  "radio \"Усі\" [checked]",
+  "switch \"Показати виконані\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 4,
+  "listitem": 1
+ }
+}

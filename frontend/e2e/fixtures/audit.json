@@ -1,0 +1,768 @@
+{
+ "GET /api/audit?page=1&perPage=20": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 601,
+     "action": "created",
+     "entity_type": "application",
+     "entity_id": 150,
+     "user": null,
+     "changes": {
+      "status": {
+       "from": null,
+       "to": "active"
+      },
+      "candidate_id": {
+       "from": null,
+       "to": 150
+      },
+      "vacancy_id": {
+       "from": null,
+       "to": 6
+      },
+      "stage_id": {
+       "from": null,
+       "to": 1
+      }
+     },
+     "meta": {
+      "candidate_id": 150
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 600,
+     "action": "created",
+     "entity_type": "candidate",
+     "entity_id": 150,
+     "user": null,
+     "changes": {
+      "source": {
+       "from": null,
+       "to": "djinni"
+      },
+      "full_name": {
+       "from": null,
+       "to": "***"
+      },
+      "phone": {
+       "from": null,
+       "to": "***"
+      },
+      "email": {
+       "from": null,
+       "to": "***"
+      },
+      "channel_id": {
+       "from": null,
+       "to": 3
+      },
+      "added_via": {
+       "from": null,
+       "to": "manual"
+      },
+      "tags": {
+       "from": null,
+       "to": "***"
+      },
+      "owner_id": {
+       "from": null,
+       "to": 108
+      },
+      "created_by": {
+       "from": null,
+       "to": 108
+      }
+     },
+     "meta": null,
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 599,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 149,
+     "user": null,
+     "changes": {
+      "stage_id": {
+       "from": 3,
+       "to": 4
+      }
+     },
+     "meta": {
+      "candidate_id": 149
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 598,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 149,
+     "user": null,
+     "changes": {
+      "stage_id": {
+       "from": 2,
+       "to": 3
+      }
+     },
+     "meta": {
+      "candidate_id": 149
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 597,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 149,
+     "user": null,
+     "changes": {
+      "stage_id": {
+       "from": 1,
+       "to": 2
+      },
+      "closed_at": {
+       "from": null,
+       "to": null
+      },
+      "reject_reason_id": {
+       "from": null,
+       "to": null
+      },
+      "rejected_note": {
+       "from": null,
+       "to": null
+      }
+     },
+     "meta": {
+      "candidate_id": 149
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 596,
+     "action": "created",
+     "entity_type": "application",
+     "entity_id": 149,
+     "user": null,
+     "changes": {
+      "status": {
+       "from": null,
+       "to": "active"
+      },
+      "candidate_id": {
+       "from": null,
+       "to": 149
+      },
+      "vacancy_id": {
+       "from": null,
+       "to": 5
+      },
+      "stage_id": {
+       "from": null,
+       "to": 1
+      }
+     },
+     "meta": {
+      "candidate_id": 149
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 595,
+     "action": "created",
+     "entity_type": "candidate",
+     "entity_id": 149,
+     "user": null,
+     "changes": {
+      "source": {
+       "from": null,
+       "to": "work_ua"
+      },
+      "full_name": {
+       "from": null,
+       "to": "***"
+      },
+      "phone": {
+       "from": null,
+       "to": "***"
+      },
+      "email": {
+       "from": null,
+       "to": "***"
+      },
+      "channel_id": {
+       "from": null,
+       "to": 1
+      },
+      "added_via": {
+       "from": null,
+       "to": "manual"
+      },
+      "tags": {
+       "from": null,
+       "to": "***"
+      },
+      "owner_id": {
+       "from": null,
+       "to": 107
+      },
+      "created_by": {
+       "from": null,
+       "to": 107
+      }
+     },
+     "meta": null,
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 594,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 148,
+     "user": null,
+     "changes": {
+      "stage_id": {
+       "from": 1,
+       "to": 2
+      },
+      "closed_at": {
+       "from": null,
+       "to": null
+      },
+      "reject_reason_id": {
+       "from": null,
+       "to": null
+      },
+      "rejected_note": {
+       "from": null,
+       "to": null
+      }
+     },
+     "meta": {
+      "candidate_id": 148
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 593,
+     "action": "created",
+     "entity_type": "application",
+     "entity_id": 148,
+     "user": null,
+     "changes": {
+      "status": {
+       "from": null,
+       "to": "active"
+      },
+      "candidate_id": {
+       "from": null,
+       "to": 148
+      },
+      "vacancy_id": {
+       "from": null,
+       "to": 4
+      },
+      "stage_id": {
+       "from": null,
+       "to": 1
+      }
+     },
+     "meta": {
+      "candidate_id": 148
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 592,
+     "action": "created",
+     "entity_type": "candidate",
+     "entity_id": 148,
+     "user": null,
+     "changes": {
+      "source": {
+       "from": null,
+       "to": "site"
+      },
+      "full_name": {
+       "from": null,
+       "to": "***"
+      },
+      "phone": {
+       "from": null,
+       "to": "***"
+      },
+      "email": {
+       "from": null,
+       "to": "***"
+      },
+      "telegram_username": {
+       "from": null,
+       "to": "***"
+      },
+      "channel_id": {
+       "from": null,
+       "to": 11
+      },
+      "added_via": {
+       "from": null,
+       "to": "career_site"
+      },
+      "tags": {
+       "from": null,
+       "to": "***"
+      },
+      "owner_id": {
+       "from": null,
+       "to": 110
+      },
+      "created_by": {
+       "from": null,
+       "to": 110
+      }
+     },
+     "meta": null,
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 591,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 147,
+     "user": null,
+     "changes": {
+      "status": {
+       "from": "active",
+       "to": "rejected"
+      },
+      "stage_id": {
+       "from": 1,
+       "to": 8
+      },
+      "closed_at": {
+       "from": null,
+       "to": "2026-04-03 16:02:00"
+      },
+      "reject_reason_id": {
+       "from": null,
+       "to": 5
+      },
+      "rejected_note": {
+       "from": null,
+       "to": "***"
+      }
+     },
+     "meta": {
+      "candidate_id": 147
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 590,
+     "action": "created",
+     "entity_type": "application",
+     "entity_id": 147,
+     "user": null,
+     "changes": {
+      "status": {
+       "from": null,
+       "to": "active"
+      },
+      "candidate_id": {
+       "from": null,
+       "to": 147
+      },
+      "vacancy_id": {
+       "from": null,
+       "to": 3
+      },
+      "stage_id": {
+       "from": null,
+       "to": 1
+      }
+     },
+     "meta": {
+      "candidate_id": 147
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 589,
+     "action": "created",
+     "entity_type": "candidate",
+     "entity_id": 147,
+     "user": null,
+     "changes": {
+      "source": {
+       "from": null,
+       "to": "robota_ua"
+      },
+      "full_name": {
+       "from": null,
+       "to": "***"
+      },
+      "phone": {
+       "from": null,
+       "to": "***"
+      },
+      "email": {
+       "from": null,
+       "to": "***"
+      },
+      "channel_id": {
+       "from": null,
+       "to": 2
+      },
+      "added_via": {
+       "from": null,
+       "to": "manual"
+      },
+      "tags": {
+       "from": null,
+       "to": "***"
+      },
+      "owner_id": {
+       "from": null,
+       "to": 109
+      },
+      "created_by": {
+       "from": null,
+       "to": 109
+      }
+     },
+     "meta": null,
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 588,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 146,
+     "user": null,
+     "changes": {
+      "stage_id": {
+       "from": 3,
+       "to": 4
+      }
+     },
+     "meta": {
+      "candidate_id": 146
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 587,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 146,
+     "user": null,
+     "changes": {
+      "stage_id": {
+       "from": 2,
+       "to": 3
+      }
+     },
+     "meta": {
+      "candidate_id": 146
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 586,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 146,
+     "user": null,
+     "changes": {
+      "stage_id": {
+       "from": 1,
+       "to": 2
+      },
+      "closed_at": {
+       "from": null,
+       "to": null
+      },
+      "reject_reason_id": {
+       "from": null,
+       "to": null
+      },
+      "rejected_note": {
+       "from": null,
+       "to": null
+      }
+     },
+     "meta": {
+      "candidate_id": 146
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 585,
+     "action": "created",
+     "entity_type": "application",
+     "entity_id": 146,
+     "user": null,
+     "changes": {
+      "status": {
+       "from": null,
+       "to": "active"
+      },
+      "candidate_id": {
+       "from": null,
+       "to": 146
+      },
+      "vacancy_id": {
+       "from": null,
+       "to": 2
+      },
+      "stage_id": {
+       "from": null,
+       "to": 1
+      }
+     },
+     "meta": {
+      "candidate_id": 146
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 584,
+     "action": "created",
+     "entity_type": "candidate",
+     "entity_id": 146,
+     "user": null,
+     "changes": {
+      "source": {
+       "from": null,
+       "to": "referral"
+      },
+      "full_name": {
+       "from": null,
+       "to": "***"
+      },
+      "phone": {
+       "from": null,
+       "to": "***"
+      },
+      "email": {
+       "from": null,
+       "to": "***"
+      },
+      "channel_id": {
+       "from": null,
+       "to": 12
+      },
+      "added_via": {
+       "from": null,
+       "to": "manual"
+      },
+      "tags": {
+       "from": null,
+       "to": "***"
+      },
+      "owner_id": {
+       "from": null,
+       "to": 108
+      },
+      "created_by": {
+       "from": null,
+       "to": 108
+      }
+     },
+     "meta": null,
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 583,
+     "action": "stage_changed",
+     "entity_type": "application",
+     "entity_id": 145,
+     "user": null,
+     "changes": {
+      "stage_id": {
+       "from": 1,
+       "to": 2
+      },
+      "closed_at": {
+       "from": null,
+       "to": null
+      },
+      "reject_reason_id": {
+       "from": null,
+       "to": null
+      },
+      "rejected_note": {
+       "from": null,
+       "to": null
+      }
+     },
+     "meta": {
+      "candidate_id": 145
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    },
+    {
+     "id": 582,
+     "action": "created",
+     "entity_type": "application",
+     "entity_id": 145,
+     "user": null,
+     "changes": {
+      "status": {
+       "from": null,
+       "to": "active"
+      },
+      "candidate_id": {
+       "from": null,
+       "to": 145
+      },
+      "vacancy_id": {
+       "from": null,
+       "to": 1
+      },
+      "stage_id": {
+       "from": null,
+       "to": 1
+      }
+     },
+     "meta": {
+      "candidate_id": 145
+     },
+     "created_at": "2026-10-01T18:02:20+00:00"
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/audit?page=1",
+    "last": "https://sinhrm.test/api/audit?page=31",
+    "prev": null,
+    "next": "https://sinhrm.test/api/audit?page=2"
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 31,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=2",
+      "label": "2",
+      "page": 2,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=3",
+      "label": "3",
+      "page": 3,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=4",
+      "label": "4",
+      "page": 4,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=5",
+      "label": "5",
+      "page": 5,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=6",
+      "label": "6",
+      "page": 6,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=7",
+      "label": "7",
+      "page": 7,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=8",
+      "label": "8",
+      "page": 8,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=9",
+      "label": "9",
+      "page": 9,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=10",
+      "label": "10",
+      "page": 10,
+      "active": false
+     },
+     {
+      "url": null,
+      "label": "...",
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=30",
+      "label": "30",
+      "page": 30,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=31",
+      "label": "31",
+      "page": 31,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/audit?page=2",
+      "label": "Next &raquo;",
+      "page": 2,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/audit",
+    "per_page": 20,
+    "to": 20,
+    "total": 601
+   }
+  }
+ },
+ "GET /api/audit/options": {
+  "status": 200,
+  "body": {
+   "entity_types": [
+    "application",
+    "candidate",
+    "user",
+    "vacancy"
+   ],
+   "actions": [
+    "created",
+    "updated",
+    "deleted",
+    "status_changed",
+    "role_changed",
+    "stage_changed",
+    "secret_set",
+    "secret_cleared",
+    "prompt_activated"
+   ],
+   "users": []
+  }
+ }
+}
