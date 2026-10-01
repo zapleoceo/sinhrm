@@ -1,7 +1,38 @@
-// Angular Material 3 theme: brand blue (logo #1A5FB4) as the one accent, neutrals with a slight cool-blue bias,
-// teal (#2EC4B6) only as a sparing secondary accent. Light/dark via color-scheme — every value is light-dark().
-// Palette table: docs/architecture/design-direction.md §4.1; contrast check: scripts/contrast-check.mjs.
+// Direction C «Маршрут» (Route): the hiring funnel is a metro line — calm neutral base, colour only on stage lines,
+// actions and status. Light/dark via color-scheme — every value is light-dark(), the explicit ThemeService choice
+// (html[data-theme]) wins over the OS preference.
+// Palette / type / shape tables and rules: docs/architecture/design-direction.md §4.2; contrast check:
+// scripts/contrast-check.mjs (keep both in sync with the values below). Pages never write hex — only these tokens.
+@use 'sass:map';
 @use '@angular/material' as mat;
+
+$font-text: ('Wix Madefor Text', 'Segoe UI', system-ui, -apple-system, Roboto, 'Noto Sans', sans-serif);
+$font-display: ('Wix Madefor Display', 'Wix Madefor Text', 'Segoe UI', system-ui, sans-serif);
+
+// Type scale 11 / 12 / 12.5 / 13.5 / 14 / 15 / 22 / 26 (Material composite tokens are literal, so set all parts).
+@function type-role($weight, $size, $lh, $family, $tracking: 0) {
+  @return ('': #{$weight} #{$size} / #{$lh} #{$family}, '-font': $family, '-weight': $weight, '-size': $size,
+    '-line-height': $lh, '-tracking': $tracking);
+}
+$type-scale: (
+  headline-medium: type-role(800, 1.75rem, 2.125rem, $font-display, -0.02em),
+  headline-small: type-role(800, 1.625rem, 2rem, $font-display, -0.02em),
+  title-large: type-role(700, 1.375rem, 1.75rem, $font-display, -0.01em),
+  title-medium: type-role(700, 0.9375rem, 1.375rem, $font-display),
+  title-small: type-role(700, 0.84375rem, 1.25rem, $font-text),
+  body-large: type-role(400, 0.9375rem, 1.5rem, $font-text),
+  body-medium: type-role(400, 0.875rem, 1.25rem, $font-text),
+  body-small: type-role(400, 0.78125rem, 1.125rem, $font-text),
+  label-large: type-role(700, 0.84375rem, 1.25rem, $font-text),
+  label-medium: type-role(600, 0.75rem, 1rem, $font-text),
+  label-small: type-role(600, 0.6875rem, 1rem, $font-text, 0.01em),
+);
+$type-overrides: ();
+@each $role, $parts in $type-scale {
+  @each $suffix, $value in $parts {
+    $type-overrides: map.set($type-overrides, '#{$role}#{$suffix}', $value);
+  }
+}
 
 html {
   height: 100%;
@@ -12,85 +43,256 @@ html {
         primary: mat.$azure-palette,
         theme-type: color-scheme,
       ),
-      typography: Roboto,
+      typography: (
+        plain-family: $font-text,
+        brand-family: $font-display,
+        bold-weight: 700,
+        medium-weight: 600,
+        regular-weight: 400,
+      ),
       density: 0,
     )
   );
 
-  // Cool-tinted neutrals and the exact logo blue on top of the azure palette (system tokens → all components).
+  // System tokens → every Material component. Light = cool off-white canvas + white cards; dark = blue-black.
   @include mat.theme-overrides(
-    (
-      primary: light-dark(#1a5fb4, #8fb8ee),
-      on-primary: light-dark(#ffffff, #06264d),
-      primary-container: light-dark(#d8e6f8, #1d3b63),
-      on-primary-container: light-dark(#0b3b75, #d6e5fa),
-      secondary-container: light-dark(#dde7f5, #1f3150),
-      on-secondary-container: light-dark(#123f73, #cfe0f7),
-      surface: light-dark(#f7f9fc, #0f1623),
-      surface-container-lowest: light-dark(#ffffff, #0b111c),
-      surface-container-low: light-dark(#f1f5fa, #141c2b),
-      surface-container: light-dark(#ebf0f7, #182133),
-      surface-container-high: light-dark(#e4eaf3, #1e2839),
-      surface-container-highest: light-dark(#dde4ee, #253043),
-      on-surface: light-dark(#172033, #e2e8f2),
-      on-surface-variant: light-dark(#4a5670, #a9b4c7),
-      outline: light-dark(#737f96, #7d889c),
-      outline-variant: light-dark(#d6dde8, #2e3a4f),
+    map.merge(
+      (
+        primary: light-dark(#1a5fb4, #86b4f0),
+        on-primary: light-dark(#ffffff, #08203f),
+        primary-container: light-dark(#dce8f8, #1b3557),
+        on-primary-container: light-dark(#0b3b75, #d6e5fa),
+        secondary: light-dark(#4e5666, #a0a8b6),
+        secondary-container: light-dark(#e3ecf8, #1f3150),
+        on-secondary-container: light-dark(#123f73, #cfe0f7),
+        tertiary: light-dark(#0e7c73, #3ccfc0),
+        on-tertiary: light-dark(#ffffff, #002824),
+        error: light-dark(#b42318, #f59a8f),
+        on-error: light-dark(#ffffff, #3b0904),
+        background: light-dark(#f5f6f8, #0e1218),
+        surface: light-dark(#f5f6f8, #0e1218),
+        surface-container-lowest: light-dark(#ffffff, #0a0d12),
+        surface-container-low: light-dark(#f9fafb, #151a22),
+        surface-container: light-dark(#f1f3f6, #191f28),
+        surface-container-high: light-dark(#eceff3, #1e2530),
+        surface-container-highest: light-dark(#e6e9ee, #252d39),
+        on-surface: light-dark(#121722, #e7eaef),
+        on-surface-variant: light-dark(#4e5666, #a0a8b6),
+        outline: light-dark(#767e8c, #7b8494),
+        outline-variant: light-dark(#d9dde4, #2a313d),
+        inverse-surface: light-dark(#121722, #e7eaef),
+        inverse-on-surface: light-dark(#f5f6f8, #0e1218),
+        inverse-primary: light-dark(#86b4f0, #1a5fb4),
+        corner-extra-small: 6px,
+        corner-extra-small-top: 6px 6px 0 0,
+        corner-small: 8px,
+        corner-medium: 10px,
+        corner-large: 12px,
+        corner-large-top: 12px 12px 0 0,
+        corner-large-start: 12px 0 0 12px,
+        corner-large-end: 0 12px 12px 0,
+        corner-extra-large: 14px,
+        corner-extra-large-top: 14px 14px 0 0,
+      ),
+      $type-overrides
     )
   );
 
-  // Teal as the secondary accent: selected-tab underline and progress bars.
+  // ---- Component looks (all through tokens; pages get them without edits) ----
+  // Buttons: pill, 38px; filled = ink («тёмна кнопка»), outlined = 1.5px line + ink label, text = brand.
+  @include mat.button-overrides(
+    (
+      filled-container-color: var(--app-ink),
+      filled-label-text-color: var(--app-on-ink),
+      filled-container-height: 38px,
+      filled-horizontal-padding: 18px,
+      filled-label-text-weight: 700,
+      outlined-container-height: 38px,
+      outlined-outline-color: var(--app-border),
+      outlined-outline-width: 1.5px,
+      outlined-label-text-color: var(--mat-sys-on-surface),
+      outlined-label-text-weight: 700,
+      outlined-horizontal-padding: 16px,
+      text-container-height: 38px,
+      text-label-text-weight: 700,
+      tonal-container-height: 38px,
+      tonal-label-text-weight: 700,
+      protected-container-height: 38px,
+    )
+  );
+  @include mat.button-toggle-overrides(
+    (
+      shape: 999px,
+      height: 34px,
+      divider-color: var(--app-border),
+      selected-state-background-color: var(--app-ink),
+      selected-state-text-color: var(--app-on-ink),
+      label-text-weight: 700,
+      label-text-size: 0.78125rem,
+    )
+  );
+  // Inputs: CSS-only «line» look for the default FILLED fields (no markup/config change): white field, 8px corners,
+  // 1.5px boundary in the outline token (>= 3:1), focus = 2px brand ring, error = 2px error ring (CSS below);
+  // the bottom indicator is hidden. Density -1 = 52px (denser than 56; -2 would hide filled labels).
+  // The few appearance="outline" fields get the same 8px / 1.5px look via the outlined tokens.
+  @include mat.form-field-overrides(
+    (
+      filled-container-color: var(--app-card),
+      filled-disabled-container-color: var(--app-card-2),
+      filled-container-shape: 8px,
+      filled-active-indicator-color: transparent,
+      filled-hover-active-indicator-color: transparent,
+      filled-focus-active-indicator-color: transparent,
+      filled-error-active-indicator-color: transparent,
+      filled-error-hover-active-indicator-color: transparent,
+      filled-error-focus-active-indicator-color: transparent,
+      outlined-container-shape: 8px,
+      outlined-outline-width: 1.5px,
+      outlined-focus-outline-width: 2px,
+      outlined-outline-color: var(--mat-sys-outline),
+      outlined-hover-outline-color: var(--mat-sys-on-surface),
+    )
+  );
+  @include mat.form-field-density(-1);
+  @include mat.chips-overrides(
+    (
+      container-shape-radius: 999px,
+      container-height: 30px,
+      outline-color: var(--app-border),
+      outline-width: 1.5px,
+      label-text-weight: 600,
+    )
+  );
+  // Tables: plain header with a 1.5px line, rows split by the lighter «track» line, 52px rows (density kept).
+  @include mat.table-overrides(
+    (
+      background-color: var(--app-card),
+      header-headline-color: var(--app-muted),
+      header-headline-weight: 700,
+      header-headline-size: 0.75rem,
+      header-container-height: 44px,
+      row-item-outline-color: var(--app-track),
+      row-item-outline-width: 1.5px,
+      row-item-label-text-size: 0.84375rem, // 13.5px: the wider Wix Madefor keeps today's columns on one line
+    )
+  );
+  // Tabs: brand «line» indicator 3px, divider = route track.
   @include mat.tabs-overrides(
     (
-      active-indicator-color: var(--app-accent),
-      active-focus-indicator-color: var(--app-accent),
-      active-hover-indicator-color: var(--app-accent),
+      active-indicator-color: var(--mat-sys-primary),
+      active-focus-indicator-color: var(--mat-sys-primary),
+      active-hover-indicator-color: var(--mat-sys-primary),
+      active-indicator-height: 3px,
+      active-indicator-shape: 3px 3px 0 0,
+      divider-color: var(--app-border),
+      label-text-weight: 700,
     )
   );
   @include mat.progress-bar-overrides((active-indicator-color: var(--app-accent)));
+  // Overlays: white card + 1.5px line (border added below), soft shadow only to lift them off the page.
+  @include mat.dialog-overrides((container-color: var(--app-card), container-shape: 14px));
+  @include mat.menu-overrides((container-color: var(--app-card), container-shape: 10px));
+  @include mat.select-overrides((panel-background-color: var(--app-card)));
+  @include mat.autocomplete-overrides((background-color: var(--app-card)));
+  @include mat.datepicker-overrides((calendar-container-background-color: var(--app-card), calendar-container-shape: 12px));
+  @include mat.tooltip-overrides(
+    (
+      container-color: var(--app-ink),
+      supporting-text-color: var(--app-on-ink),
+      container-shape: 6px,
+      supporting-text-size: 0.75rem,
+      supporting-text-weight: 600,
+    )
+  );
+  @include mat.snack-bar-overrides((container-color: var(--app-ink), supporting-text-color: var(--app-on-ink), container-shape: 10px));
+  @include mat.card-overrides(
+    (
+      outlined-container-color: var(--app-card),
+      outlined-outline-color: var(--app-border),
+      outlined-outline-width: 1.5px,
+      outlined-container-shape: 10px,
+      elevated-container-color: var(--app-card),
+      elevated-container-shape: 10px,
+    )
+  );
+  @include mat.sidenav-overrides((container-background-color: var(--app-card), container-shape: 0));
+  // Keyboard focus on Material controls: teal ring (>= 3:1 on canvas and cards in both themes).
+  @include mat.strong-focus-indicators((border-color: var(--app-focus-ring), border-width: 2px));
 
-  // App tokens on top of Material system variables.
+  // ---- App tokens on top of Material system variables ----
   --app-gap: 1.5rem;
-  --app-radius: 12px;
+  --app-radius: 10px; // cards, panels
+  --app-radius-sm: 8px; // small elements, inputs
+  --app-radius-pill: 999px; // buttons, chips, search
+  --app-border-w: 1.5px; // line language: borders instead of shadows
   --app-sidebar-width: 240px;
-  --app-border: var(--mat-sys-outline-variant);
+  --app-font-text: #{$font-text};
+  --app-font-display: #{$font-display};
+  --app-font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --app-fast: 120ms;
+
+  --app-canvas: var(--mat-sys-surface);
+  --app-ink: var(--mat-sys-on-surface);
+  --app-on-ink: var(--mat-sys-surface); // text on ink-filled buttons, tooltips, snackbars
+  --app-border: var(--mat-sys-outline-variant); // «line» — decorative frame, meaning is never carried by it
+  --app-track: light-dark(#e6e9ee, #232a35); // lighter «track» line: row dividers, rails, dashed separators
   --app-muted: var(--mat-sys-on-surface-variant);
-  --app-success: light-dark(#15803d, #4ade80);
-  --app-brand: light-dark(#1a5fb4, #3584e4);
-  --app-brand-text: light-dark(#1a5fb4, #99c1f1);
-  --app-danger: light-dark(#b91c1c, #f87171);
-  --app-warning: light-dark(#b45309, #fbbf24);
+  --app-success: light-dark(#2e7d32, #72cf7a);
+  --app-brand: light-dark(#1a5fb4, #3584e4); // logo square only
+  --app-brand-text: light-dark(#1a5fb4, #86b4f0);
+  --app-danger: light-dark(#b42318, #f59a8f);
+  --app-warning: light-dark(#a65a00, #f0a74a);
   --app-info: var(--app-brand-text);
-  // Teal accent, darkened in light theme to keep >= 3:1 as a UI colour (focus rings, indicators).
-  --app-accent: light-dark(#0f7f76, #2ec4b6);
+  // Teal = hints and focus («інтерв'ю» line colour); >= 3:1 as a UI colour in both themes.
+  --app-accent: light-dark(#0e7c73, #3ccfc0);
   --app-focus-ring: var(--app-accent);
 
+  // Stage lines — fixed semantics by stage TYPE (data-kind), never by column order.
+  --app-stage-new: light-dark(#5d6b80, #a3afc2);
+  --app-stage-screen: var(--mat-sys-primary);
+  --app-stage-interview: var(--app-accent);
+  --app-stage-offer: var(--app-warning);
+  --app-stage-hire: var(--app-success);
+  --app-stage-closed: var(--app-danger);
+  --app-stage-reserve: var(--app-muted);
+  --app-stage-attract: var(--app-stage-new); // board kinds: attract | select | hire | closed
+  --app-stage-select: var(--app-stage-screen);
+
   // Semantic chips/badges: text colour + ~12% tint of it as background (AA >= 4.5 on cards, both themes).
-  --app-good-text: light-dark(#166534, #4ade80);
-  --app-warn-text: light-dark(#92400e, #fbbf24);
-  --app-bad-text: light-dark(#b91c1c, #f87171);
+  --app-good-text: light-dark(#2a7330, #72cf7a);
+  --app-warn-text: light-dark(#965200, #f0a74a);
+  --app-bad-text: light-dark(#b42318, #f59a8f);
   --app-info-text: var(--app-brand-text);
   --app-good-bg: color-mix(in srgb, var(--app-good-text) 12%, transparent);
   --app-warn-bg: color-mix(in srgb, var(--app-warn-text) 12%, transparent);
   --app-bad-bg: color-mix(in srgb, var(--app-bad-text) 12%, transparent);
   --app-info-bg: color-mix(in srgb, var(--app-info-text) 12%, transparent);
+  --app-badge-bg: var(--app-warning); // nav counters
+  --app-badge-text: light-dark(#ffffff, #1e1200);
 
   // Shell and shared surfaces.
-  --app-card: light-dark(#ffffff, #141c2b); // white card; in dark a step lighter than the page
-  --app-board-card: light-dark(#ffffff, #1e2839); // kanban card: stands out from its column (surface-container-low) in both themes
-  --app-card-shadow: 0 1px 2px light-dark(rgb(23 32 51 / 0.04), rgb(0 0 0 / 0.2));
-  --app-sidebar-bg: linear-gradient(180deg, light-dark(#e8eff9, #162034) 0%, light-dark(#f0f4fa, #131b2b) 100%);
-  --app-nav-heading: light-dark(#52617f, #93a6c8);
-  --app-nav-hover: color-mix(in srgb, var(--app-brand) 7%, transparent);
-  --app-nav-active-bg: color-mix(in srgb, var(--app-brand) 13%, transparent);
-  --app-nav-active-text: light-dark(#154f97, #99c1f1);
-  --app-table-head: light-dark(#f0f4fa, #182133);
-  --app-row-hover: color-mix(in srgb, var(--app-brand) 4%, transparent);
+  --app-card: light-dark(#ffffff, #151a22);
+  --app-card-2: light-dark(#f9fafb, #191f28); // hover / quiet fill inside cards
+  --app-board-card: var(--app-card);
+  --app-card-shadow: none; // line language: no shadows on cards
+  --app-overlay-shadow: 0 12px 32px -12px light-dark(rgb(18 23 34 / 0.22), rgb(0 0 0 / 0.6));
+  --app-drag-shadow: 0 18px 36px -16px rgb(18 23 34 / 0.45), 0 4px 10px -4px rgb(18 23 34 / 0.25);
+  --app-sidebar-bg: var(--app-card);
+  --app-nav-heading: var(--app-muted);
+  --app-nav-hover: var(--app-card-2);
+  --app-nav-active-bg: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+  --app-nav-active-text: light-dark(#154f97, #a9caf5);
+  --app-table-head: var(--app-card);
+  --app-row-hover: var(--app-card-2);
+  --app-row-selected: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
+  --app-scrollbar: light-dark(#c3c9d3, #3a4250);
 
-  // Chart ramp (reports): brand blue → teal.
+  // Chart ramp (reports): stage lines brand → teal → amber.
   --app-chart-1: var(--mat-sys-primary);
-  --app-chart-2: light-dark(#1f7fa6, #5fb8d8);
-  --app-chart-3: var(--app-accent);
+  --app-chart-2: var(--app-accent);
+  --app-chart-3: var(--app-warning);
+
+  scrollbar-color: var(--app-scrollbar) transparent;
 }
 
 // Explicit user choice (ThemeService) overrides the OS preference.
@@ -103,15 +305,43 @@ html[data-theme='dark'] {
 }
 
 body {
-  background-color: var(--mat-sys-surface);
+  background-color: var(--app-canvas);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
   margin: 0;
   height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--mat-sys-primary) 24%, transparent);
+}
+
+// Visible focus for everything that is not a Material control (links, custom buttons, rows).
+:focus-visible {
+  outline: 2px solid var(--app-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .muted {
   color: var(--app-muted);
+}
+
+// Numbers that are scanned in columns: mono, tabular figures. (Pages already use `.num` for right-aligned
+// numeric cells and number inputs, so the mono look is opt-in via `.app-num` / `.mono`, not `.num`.)
+.app-num, .mono {
+  font-family: var(--app-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
 }
 
 .visually-hidden {
@@ -132,7 +362,7 @@ body {
   gap: 1rem;
   margin-bottom: var(--app-gap);
 
-  h1 { font: var(--mat-sys-headline-small); margin: 0; }
+  h1 { font: var(--mat-sys-headline-small); letter-spacing: var(--mat-sys-headline-small-tracking); margin: 0; }
   p { margin: 0.25rem 0 0; }
 }
 
@@ -147,19 +377,161 @@ body {
 }
 
 .panel {
-  border: 1px solid var(--app-border);
+  border: var(--app-border-w) solid var(--app-border);
   border-radius: var(--app-radius);
   background: var(--app-card);
   box-shadow: var(--app-card-shadow);
   overflow-x: auto;
 }
 
-/* Material tables: faintly tinted header row, faint brand tint on row hover. */
+/* Table cells read at 13.5px (the wider Wix Madefor keeps today's columns on one line). Zero specificity:
+   any page rule that sets a cell font still wins; only the inherited 14px body size is replaced. */
+:where(td) { font-size: 0.84375rem; }
+
+/* Material tables: plain header, quiet row hover; plain <table class="app-table"> gets the same look. */
 .mat-mdc-header-row { background: var(--app-table-head); }
+.mat-mdc-header-row .mat-mdc-header-cell { border-bottom: var(--app-border-w) solid var(--app-border); }
 .mat-mdc-row:hover { background: var(--app-row-hover); }
+.mat-mdc-row:last-child .mat-mdc-cell { border-bottom-color: transparent; }
+.app-table {
+  width: 100%;
+  border-collapse: collapse;
+  th { text-align: left; font: var(--mat-sys-label-medium); font-weight: 700; color: var(--app-muted); padding: 0.75rem 1rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-border); white-space: nowrap; }
+  td { padding: 0.6rem 1rem; border-bottom: var(--app-border-w) solid var(--app-track); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--app-row-hover); }
+  tbody tr[aria-selected='true'] { background: var(--app-row-selected); }
+  tbody tr[aria-selected='true'] td:first-child { box-shadow: inset 4px 0 0 var(--mat-sys-primary); }
+}
 
+// Fields are white with a 1.5px line on cards and on the grey canvas alike (mockup: inputs on surface).
+// Ring = inset box-shadow, so focus/error never shift the layout.
+.mat-mdc-text-field-wrapper.mdc-text-field--filled {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1.5px var(--mat-sys-outline);
+}
+.mat-mdc-form-field:hover .mdc-text-field--filled:not(.mdc-text-field--disabled) { box-shadow: inset 0 0 0 1.5px var(--mat-sys-on-surface); }
+.mat-focused .mat-mdc-text-field-wrapper.mdc-text-field--filled { box-shadow: inset 0 0 0 2px var(--mat-sys-primary); }
+.mat-form-field-invalid .mat-mdc-text-field-wrapper.mdc-text-field--filled { box-shadow: inset 0 0 0 2px var(--mat-sys-error); }
+.mdc-text-field--filled.mdc-text-field--disabled { box-shadow: inset 0 0 0 1.5px var(--app-border); }
+.mat-mdc-text-field-wrapper.mdc-text-field--outlined:not(.mdc-text-field--disabled) {
+  background: var(--app-card);
+  border-radius: 8px;
+}
 
-.state { padding: 2.5rem 1rem; text-align: center; }
+// Overlay surfaces: line + soft lift (menus, selects, autocomplete, datepicker, dialogs).
+.mat-mdc-menu-panel,
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel,
+.mat-datepicker-content {
+  border: var(--app-border-w) solid var(--app-border);
+  box-shadow: var(--app-overlay-shadow) !important;
+}
+.mat-mdc-dialog-surface {
+  border: var(--app-border-w) solid var(--app-border);
+  box-shadow: var(--app-overlay-shadow) !important;
+}
+.mat-mdc-dialog-container .mat-mdc-dialog-title { font: var(--mat-sys-title-large); letter-spacing: var(--mat-sys-title-large-tracking); }
+.mat-mdc-snack-bar-container .mat-mdc-snackbar-surface { box-shadow: var(--app-overlay-shadow); }
+
+/* Status pill: colour is never alone — a marker SHAPE + text carry the meaning.
+   <span class="app-pill" data-tone="good|warn|bad|info|neutral">Текст</span>
+   good ● filled circle · info ○ ring · warn ◆ diamond · bad ■ square · neutral ○ dashed ring. */
+.app-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--app-radius-pill);
+  font: var(--mat-sys-label-medium);
+  white-space: nowrap;
+  color: var(--pill-text, var(--app-muted));
+  background: var(--pill-bg, transparent);
+  border: var(--app-border-w) solid var(--pill-line, var(--app-border));
+
+  &::before {
+    content: '';
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+  }
+  &[data-tone='good'] { --pill-text: var(--app-good-text); --pill-bg: var(--app-good-bg); --pill-line: transparent; }
+  &[data-tone='good']::before { background: currentColor; }
+  &[data-tone='info'] { --pill-text: var(--app-info-text); --pill-bg: var(--app-info-bg); --pill-line: transparent; }
+  &[data-tone='warn'] { --pill-text: var(--app-warn-text); --pill-bg: var(--app-warn-bg); --pill-line: transparent; }
+  &[data-tone='warn']::before { border-radius: 1px; rotate: 45deg; background: currentColor; width: 0.45rem; height: 0.45rem; }
+  &[data-tone='bad'] { --pill-text: var(--app-bad-text); --pill-bg: var(--app-bad-bg); --pill-line: transparent; }
+  &[data-tone='bad']::before { border-radius: 1px; background: currentColor; }
+  &[data-tone='neutral']::before { border-style: dashed; }
+}
+
+/* Stage marker («station»): ring in the stage colour of data-kind, filled when current. */
+.app-station {
+  display: inline-block;
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid var(--station, var(--app-stage-new));
+  background: var(--app-card);
+  &[data-kind='attract'], &[data-kind='new'] { --station: var(--app-stage-new); }
+  &[data-kind='select'], &[data-kind='screen'] { --station: var(--app-stage-screen); }
+  &[data-kind='interview'] { --station: var(--app-stage-interview); }
+  &[data-kind='offer'] { --station: var(--app-stage-offer); }
+  &[data-kind='hire'] { --station: var(--app-stage-hire); }
+  &[data-kind='closed'] { --station: var(--app-stage-closed); border-radius: 2px; } // closed = square, not only red
+  &.current { background: var(--station); }
+}
+
+// Nav / counter badge (also Material matBadge).
+.app-badge {
+  display: inline-block;
+  min-width: 1.1rem;
+  padding: 0 0.3rem;
+  box-sizing: border-box;
+  border-radius: var(--app-radius-pill);
+  background: var(--app-badge-bg);
+  color: var(--app-badge-text);
+  font: 600 0.65rem/1.1rem var(--app-font-mono);
+  text-align: center;
+}
+.mat-badge-content { font-family: var(--app-font-mono); font-weight: 600; }
+
+.state { padding: 2.5rem 1rem; text-align: center; color: var(--app-muted); }
+
+/* Empty state base: a dashed «branch» between two stations above the text (static, no animation). */
+.app-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--app-muted);
+  font: var(--mat-sys-body-small);
+
+  &::before {
+    content: '';
+    display: block;
+    width: 7.5rem;
+    height: 0.75rem;
+    margin: 0 auto 0.75rem;
+    background:
+      radial-gradient(circle at 0.375rem 50%, var(--app-card) 0.2rem, var(--app-muted) 0.21rem 0.375rem, transparent 0.385rem),
+      radial-gradient(circle at calc(100% - 0.375rem) 50%, var(--app-card) 0.2rem, var(--app-muted) 0.21rem 0.375rem, transparent 0.385rem),
+      repeating-linear-gradient(90deg, var(--app-border) 0 0.4rem, transparent 0.4rem 0.7rem) center / calc(100% - 1.5rem) 2px no-repeat;
+  }
+  b, strong { display: block; color: var(--mat-sys-on-surface); font: var(--mat-sys-title-small); margin-bottom: 0.25rem; }
+}
+
+/* Skeleton placeholder: static tinted block (no shimmer — effects budget). */
+.app-skeleton {
+  display: block;
+  height: 0.8rem;
+  border-radius: 4px;
+  background: var(--app-track);
+  &.line + &.line { margin-top: 0.5rem; }
+}
 
 /* Week picker (features/time/week-picker.ts): days of the selected week inside the datepicker overlay. */
 .app-week-day { background: color-mix(in srgb, var(--mat-sys-primary) 14%, transparent); }
@@ -190,8 +562,8 @@ body.app-scroll-locked { overflow: hidden; }
 .cdk-drag.cdk-drag-preview.board-drag-preview {
   box-sizing: border-box;
   color: var(--mat-sys-on-surface);
-  box-shadow: var(--mat-sys-level3);
-  rotate: 2deg;
+  box-shadow: var(--app-drag-shadow);
+  rotate: 1.6deg;
   scale: 1.03;
   opacity: 1;
   cursor: grabbing;
@@ -199,8 +571,8 @@ body.app-scroll-locked { overflow: hidden; }
 }
 .cdk-drag.cdk-drag-preview.board-drag-preview:not(.board-drag-preview--column) {
   background: var(--app-board-card);
-  border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 45%, var(--app-border));
-  border-radius: 8px;
+  border: 2px solid var(--mat-sys-primary);
+  border-radius: var(--app-radius);
 }
 .cdk-drag.cdk-drag-preview.board-drag-preview--column {
   background: var(--mat-sys-surface-container-low);
@@ -232,7 +604,7 @@ app-board-page {
   .column[data-drop='denied'] { --drop-color: var(--app-danger); outline-style: dashed; }
   .drop-caption {
     position: absolute; top: 0.3rem; left: 0.4rem; right: 0.4rem; z-index: 2; margin: 0; padding: 0.3rem 0.6rem;
-    border-radius: 12px; text-align: center; pointer-events: none; font: var(--mat-sys-label-large);
+    border-radius: var(--app-radius-pill); text-align: center; pointer-events: none; font: var(--mat-sys-label-large);
     background: var(--drop-color); color: var(--drop-on);
   }
   .column[data-drop='personal'] .drop-caption, .column[data-drop='back'] .drop-caption, .column[data-drop='denied'] .drop-caption {

@@ -88,7 +88,7 @@
   Angular Material (`provideAppDates()`: неделя с понедельника, формат дд.мм.рррр, названия месяцев на языке интерфейса);
   значки каналов/источников/интеграций — `app-channel-icon` (Font Awesome Free), остальные действия — Material Symbols.
 
-**Цвета.** Сайдбар и мобильный топбар — фон `--app-sidebar-bg` (лёгкий градиент с оттенком бренда), активный пункт — «пилюля» `--app-nav-active-bg` с текстом и иконкой `--app-nav-active-text`, заголовки групп — `--app-nav-heading`, фокус — бирюзовое кольцо `--app-focus-ring`. Все значения — токены из `styles.scss`, палитра: [design-direction §4.1](../architecture/design-direction.md).
+**Цвета.** Сайдбар и мобильный топбар — фон `--app-sidebar-bg` (с рестайла C «Маршрут» — белая карточка `--app-card` / `#151a22` с линией-рамкой), активный пункт — «пилюля» `--app-nav-active-bg` с текстом и иконкой `--app-nav-active-text`, заголовки групп — `--app-nav-heading`, фокус — бирюзовое кольцо `--app-focus-ring`. Счётчики `app-nav-badge` — янтарная пилюля `--app-badge-bg` / `--app-badge-text`, цифры моноширинные (`--app-font-mono`); на кнопке-бургере счётчик стоит в её правом верхнем углу (хост — `display: contents`, поэтому позиция задаётся самой пилюле). На узком экране сетка оболочки прижата к верху (`align-content: start`) — на коротких страницах топбар не растягивается. Все значения — токены из `styles.scss`, палитра: [design-direction §4.2](../architecture/design-direction.md).
 
 ## Как проверить
 `npx ng test --watch=false` (guards, AuthService, язык, сворачивание меню — `nav-groups.spec.ts`, `shell.layout.spec.ts`, счётчики — `nav-badges.spec.ts`, справка — `docs/docs.spec.ts`), `npm run test:docs` (сборщик справки), `npx ng build`.
