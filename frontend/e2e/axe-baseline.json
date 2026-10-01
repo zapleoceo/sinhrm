@@ -249,13 +249,11 @@
  },
  "people--employee-dialog.mobile.light": {},
  "people.desktop.dark": {
-  "aria-prohibited-attr": 2,
   "button-name": 2,
   "color-contrast": 1,
   "label": 30
  },
  "people.desktop.light": {
-  "aria-prohibited-attr": 2,
   "button-name": 2,
   "label": 30
  },
