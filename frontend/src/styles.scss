@@ -6,8 +6,8 @@
 @use 'sass:map';
 @use '@angular/material' as mat;
 
-$font-text: ('Wix Madefor Text', 'Segoe UI', system-ui, -apple-system, Roboto, 'Noto Sans', sans-serif);
-$font-display: ('Wix Madefor Display', 'Wix Madefor Text', 'Segoe UI', system-ui, sans-serif);
+$font-text: ('Wix Madefor Text', 'Wix Madefor Text Fallback', 'Segoe UI', system-ui, -apple-system, Roboto, 'Noto Sans', sans-serif);
+$font-display: ('Wix Madefor Display', 'Wix Madefor Display Fallback', 'Wix Madefor Text', 'Segoe UI', system-ui, sans-serif);
 
 // Type scale 11 / 12 / 12.5 / 13.5 / 14 / 15 / 22 / 26 (Material composite tokens are literal, so set all parts).
 @function type-role($weight, $size, $lh, $family, $tracking: 0) {
@@ -32,6 +32,28 @@ $type-overrides: ();
   @each $suffix, $value in $parts {
     $type-overrides: map.set($type-overrides, '#{$role}#{$suffix}', $value);
   }
+}
+
+// Metric-matched local fallbacks (no network): while the Google fonts swap in (display=swap), text is set in
+// Arial/Helvetica/Roboto scaled to Wix Madefor metrics, so nav items and buttons don't jump on load.
+// Values: width ratio measured on a uk+en UI sample in Chromium (Text 400 = 1.035, Display 800 vs Arial Bold = 1.055),
+// ascent/descent = Wix Madefor hhea 1008/252 per 1000 divided by size-adjust.
+@font-face {
+  font-family: 'Wix Madefor Text Fallback';
+  src: local('Arial'), local('ArialMT'), local('Helvetica Neue'), local('Helvetica'), local('Roboto');
+  size-adjust: 103.5%;
+  ascent-override: 97.4%;
+  descent-override: 24.35%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Wix Madefor Display Fallback';
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Helvetica Neue Bold'), local('Helvetica Bold'), local('Roboto Bold');
+  font-weight: 700 800;
+  size-adjust: 105.5%;
+  ascent-override: 95.5%;
+  descent-override: 23.9%;
+  line-gap-override: 0%;
 }
 
 html {
@@ -123,7 +145,7 @@ html {
   @include mat.button-toggle-overrides(
     (
       shape: 999px,
-      height: 34px,
+      height: 40px,
       divider-color: var(--app-border),
       selected-state-background-color: var(--app-ink),
       selected-state-text-color: var(--app-on-ink),
@@ -188,6 +210,12 @@ html {
       label-text-weight: 700,
     )
   );
+  // Touch targets on phones (<= 600px): segmented toggles and interactive chips reach 44px; Material keeps its own
+  // 48px touch targets for icon buttons, buttons, checkboxes and radios, menu items are 48px tall.
+  @media (max-width: 600px) {
+    @include mat.button-toggle-overrides((height: 44px));
+    .mat-mdc-chip-option, .mat-mdc-chip-row { --mat-chip-container-height: 44px; }
+  }
   @include mat.progress-bar-overrides((active-indicator-color: var(--app-accent)));
   // Overlays: white card + 1.5px line (border added below), soft shadow only to lift them off the page.
   @include mat.dialog-overrides((container-color: var(--app-card), container-shape: 14px));

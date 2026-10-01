@@ -204,7 +204,10 @@
 **Wix Madefor Display** 700/800, текст — **Wix Madefor Text** 400–700, цифры — **IBM Plex Mono** 500/600
 (`--app-font-mono`, утилита `.app-num`/`.mono` с `tabular-nums`; существующий `.num` страниц — выравнивание, его не трогаем). Фолбэки: `'Segoe UI', system-ui, -apple-system,
 Roboto, 'Noto Sans', sans-serif` / `ui-monospace, 'Cascadia Mono', Consolas, monospace`. Onest 600 остаётся
-только для словесного знака логотипа. (В брифе рекомендован self-host woff2 — отложено, решение владельца:
+только для словесного знака логотипа. **Без «прыжка» при загрузке:** `display=swap` сохраняется (кириллица текста видна
+сразу), но первым фолбэком стоят локальные `@font-face` «Wix Madefor Text/Display Fallback» (Arial / Helvetica / Roboto
+с `size-adjust` 103.5% / 105.5% и `ascent-/descent-override` под метрики Wix Madefor) — пункты меню и кнопки не
+сдвигаются, когда веб-шрифт подменяет фолбэк. (В брифе рекомендован self-host woff2 — отложено, решение владельца:
 Google Fonts; при переходе проверить `@fontsource/*`.)
 
 **Шкала текста** (Material `--mat-sys-*`, все части composite-токенов переопределены)
@@ -230,8 +233,16 @@ Google Fonts; при переходе проверить `@fontsource/*`.)
 | Поля | вид полей не меняется в разметке (по умолчанию filled) — только CSS: белое поле, 8px, граница `outline` 1.5px (inset), фокус — кольцо 2px бренд, ошибка — 2px `error`, нижний индикатор скрыт; плотность −1 = 52px (было 56; −2 прячет подписи filled-полей); редкие `appearance="outline"` — тот же вид |
 | Таблицы | шапка без заливки + линия 1.5px, текст ячеек 13.5px, строки 52px, разделители «трек»; `.app-table` — то же для обычной `<table>` |
 | Табы | индикатор бренд 3px со скруглённым верхом, разделитель — линия |
+| Цели касания | на ≤ 600px: сегментный переключатель (`mat-button-toggle`) и интерактивные чипы (`chip-option`, `chip-row`) — 44px, пункты меню-ящика — 44px; кнопки, иконки-кнопки, чекбоксы, радио — штатные цели Material 48px; переключатель на десктопе — 40px |
 | Фокус | бирюзовое кольцо 2px с отступом 2px: `:focus-visible` для всего + `mat.strong-focus-indicators` для Material |
 | Движение | hover 120мс (`--app-fast`); `prefers-reduced-motion` гасит все анимации и переходы глобально |
+
+**Хрупкое место — приватные классы MDC.** Вид полей (белое поле, кольцо фокуса/ошибки через inset `box-shadow`) задан
+селекторами `.mat-mdc-text-field-wrapper`, `.mdc-text-field--filled`, `.mdc-text-field--outlined`, `.mat-focused`,
+`.mat-form-field-invalid`, оверлеи — `.mat-mdc-menu-panel`, `.mat-mdc-select-panel`, `.mat-mdc-dialog-surface` и др. Это не
+публичный API Angular Material: **при каждом обновлении Material заново проверять поля и оверлеи** (скриншоты 1440/390,
+обе темы, фокус и ошибка). Где есть токен (`mat.form-field-overrides` / `--mat-form-field-*`, `--mat-*-container-*`) —
+предпочитать его селектору; селекторы — только там, где токена нет (рамка filled-поля, кольцо).
 
 **Глобальные паттерны** (`styles.scss`): `.panel`, `.page-head`, `.filters`, `.state`, `.app-table`, `.app-num`/`.mono`,
 `.app-pill[data-tone=good|warn|bad|info|neutral]` (маркер-**форма**: ● / ◆ / ■ / ○ / пунктирное ○ + текст),
