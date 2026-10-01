@@ -310,7 +310,8 @@ describe('routes in the engine and brain', () => {
   });
 });
 
-describe('edge cases: every allowed route stays inside the viewport', () => {
+// Exhaustive (every route × layouts × starts): slower on CI runners than the 5 s default.
+describe('edge cases: every allowed route stays inside the viewport', { timeout: 60_000 }, () => {
   const env = { vx: 0, vy: 0, spin: 0, pointer: null };
   const ALL_JOINTS = ['head', 'neck', 'hip', 'shoulder', 'lElbow', 'rElbow', 'lHand', 'rHand', 'lKnee', 'rKnee', 'lFoot', 'rFoot'] as const;
 

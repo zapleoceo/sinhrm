@@ -88,7 +88,8 @@ const STARTS: { name: string; from: Pose }[] = [
   { name: 'seated on the chat', from: sitting(1000, 300, -1, 0) },
 ];
 
-describe('in-scene exits: continuous, never past the edge, he ends hidden inside the door/hole', () => {
+// Exhaustive (every exit × start poses × seeds): slower on CI runners than the 5 s default.
+describe('in-scene exits: continuous, never past the edge, he ends hidden inside the door/hole', { timeout: 60_000 }, () => {
   it.each(EXITS.map((e) => [e]))('%s', (exit: ExitAction) => {
     for (const { name, from } of STARTS) {
       for (const lite of [false, true]) {
