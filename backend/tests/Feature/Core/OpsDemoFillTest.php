@@ -6,6 +6,7 @@ namespace Tests\Feature\Core;
 
 use App\Models\User;
 use App\Modules\Core\Services\Demo\DemoDataService;
+use App\Modules\Core\Services\Demo\DemoName;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Recruiting\Services\RecruitingDemoData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -48,8 +49,8 @@ final class OpsDemoFillTest extends TestCase
             $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk()->assertJsonPath('already', false);
         }
         $this->getJson('/api/ops/demo-fill?confirm=demo&steps=list', self::HEADERS)->assertJsonPath('done', DemoDataService::STEPS);
-        $this->assertSame(self::PEOPLE, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
-        $this->assertSame(150, DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
+        $this->assertSame(self::PEOPLE, DB::table('employees')->where('full_name', 'like', '%'.DemoName::SUFFIX)->count());
+        $this->assertSame(150, DB::table('candidates')->where('full_name', 'like', '%'.DemoName::SUFFIX)->count());
         $this->assertGreaterThanOrEqual(600, DB::table('touchpoints')->count());
         $this->assertSame(2, DB::table('survey_waves')->where('status', 'closed')->count());
         $this->assertGreaterThan(0, DB::table('survey_wave_members')->count());
@@ -66,7 +67,7 @@ final class OpsDemoFillTest extends TestCase
         $this->assertGreaterThan(0, DB::table('script_evaluations')->count());
         // Recruiting reports: all reject reasons used, varied sources incl. the career site, a funnel narrowing down.
         $this->assertSame(DB::table('reject_reasons')->where('active', true)->count(), DB::table('applications')->whereNotNull('reject_reason_id')->distinct()->count('reject_reason_id'));
-        $bySource = DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->groupBy('source')->selectRaw('source, count(*) as c')->pluck('c', 'source')->all();
+        $bySource = DB::table('candidates')->where('full_name', 'like', '%'.DemoName::SUFFIX)->groupBy('source')->selectRaw('source, count(*) as c')->pluck('c', 'source')->all();
         $this->assertGreaterThanOrEqual(8, count($bySource));
         $this->assertGreaterThanOrEqual(20, (int) $bySource['work_ua']);
         $this->assertGreaterThan(10, DB::table('candidates')->where('added_via', 'career_site')->count());
@@ -92,7 +93,7 @@ final class OpsDemoFillTest extends TestCase
     {
         app(RecruitingDemoData::class)->generate(); // preview seed: demo-N touch ids, *@example.test users
         $real = User::query()->create(['email' => 'demo+emp-01@sinhrm.test', 'name' => 'Real person', 'status' => 'active']);
-        $type = DB::table('asset_types')->insertGetId(['name' => DemoDataService::PREFIX.'Ноутбук']);
+        $type = DB::table('asset_types')->insertGetId(['name' => DemoName::tag('Ноутбук')]);
         DB::table('assets')->insert(['inventory_number' => 'DEMO-0001', 'name' => 'Real laptop', 'status' => 'in_stock', 'type_id' => $type]);
         DB::table('candidates')->insert(['full_name' => 'Real candidate', 'email' => 'candidate501@example.test', 'phone' => '+380679999999', 'source' => 'manual', 'created_at' => now(), 'updated_at' => now()]);
         $before = $this->tableCounts();
@@ -100,18 +101,21 @@ final class OpsDemoFillTest extends TestCase
         foreach (DemoDataService::STEPS as $step) {
             $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk();
         }
-        $this->assertSame(self::PEOPLE - 1, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
+        $this->assertSame(self::PEOPLE - 1, DB::table('employees')->where('full_name', 'like', '%'.DemoName::SUFFIX)->count());
         $this->assertSame('Real person', $real->fresh()?->name);
         $this->assertNull(DB::table('employees')->where('user_id', $real->id)->value('id'));
         $this->assertSame(0, DB::table('model_has_roles')->where('model_id', $real->id)->count());
         $this->assertSame('Real laptop', DB::table('assets')->where('inventory_number', 'DEMO-0001')->value('name'));
-        $this->assertSame(149, DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->count());
+        $this->assertSame(149, DB::table('candidates')->where('full_name', 'like', '%'.DemoName::SUFFIX)->count());
         $this->assertGreaterThanOrEqual(600, DB::table('touchpoints')->where('external_id', 'like', 'demo-fill-%')->count()
-            + DB::table('touchpoints')->whereNull('external_id')->whereIn('candidate_id', DB::table('candidates')->where('full_name', 'like', DemoDataService::PREFIX.'%')->pluck('id'))->count());
+            + DB::table('touchpoints')->whereNull('external_id')->whereIn('candidate_id', DB::table('candidates')->where('full_name', 'like', '%'.DemoName::SUFFIX)->pluck('id'))->count());
 
         $this->postJson('/api/ops/demo-fill?confirm=demo&reset=1', [], self::HEADERS)->assertOk();
         $after = $this->tableCounts();
         unset($before['audit_log'], $after['audit_log']);
+        // A user on the reserved test domain is a test account by definition (DemoLegacy): reset removes it too.
+        $this->assertNull($real->fresh());
+        $before['users']--;
         $this->assertSame($before, $after);
     }
 
@@ -122,7 +126,7 @@ final class OpsDemoFillTest extends TestCase
     public function test_prod_like_state_full_sequence_twice(): void
     {
         app(RecruitingDemoData::class)->generate();
-        User::query()->create(['email' => 'demo+hr-2@sinhrm.test', 'name' => 'Real recruiter', 'status' => 'active']);
+        $taken = User::query()->create(['email' => 'demo+hr-2@sinhrm.test', 'name' => 'Real recruiter', 'status' => 'active']);
         DB::table('candidates')->insert(['full_name' => 'Real candidate', 'email' => 'candidate510@example.test', 'phone' => '+380679999998', 'source' => 'manual', 'created_at' => now(), 'updated_at' => now()]);
         $script = DB::table('scripts')->insertGetId(['name' => 'Real script', 'channel' => 'call', 'archived' => false, 'created_at' => now(), 'updated_at' => now()]);
         $version = DB::table('script_versions')->insertGetId(['script_id' => $script, 'version' => 1, 'steps' => '[]', 'objections' => '[]', 'templates' => '[]', 'followups' => '[]', 'next_step_patterns' => '{}', 'created_at' => now(), 'updated_at' => now()]);
@@ -133,7 +137,7 @@ final class OpsDemoFillTest extends TestCase
                 if ($step === 'scripts' && $round === 1) {
                     // What the EvaluateTouchpoint job did on prod before this step: some demo call touches are evaluated.
                     $calls = DB::table('touchpoints')->join('candidates as c', 'c.id', '=', 'touchpoints.candidate_id')
-                        ->where('c.full_name', 'like', DemoDataService::PREFIX.'%')->where('touchpoints.channel', 'call')->limit(3)->pluck('touchpoints.id');
+                        ->where('c.full_name', 'like', '%'.DemoName::SUFFIX)->where('touchpoints.channel', 'call')->limit(3)->pluck('touchpoints.id');
                     $this->assertCount(3, $calls);
                     foreach ($calls as $touchpoint) {
                         DB::table('script_evaluations')->insert(['touchpoint_id' => $touchpoint, 'script_version_id' => $version, 'engine' => 'rules', 'score' => 50, 'result' => '{}', 'created_at' => now()]);
@@ -151,6 +155,8 @@ final class OpsDemoFillTest extends TestCase
         $this->postJson('/api/ops/demo-fill?confirm=demo&reset=1', [], self::HEADERS)->assertOk();
         $after = $this->tableCounts();
         unset($before['audit_log'], $after['audit_log']);
+        $this->assertNull($taken->fresh(), 'test-domain account goes with the reset');
+        $before['users']--;
         $this->assertSame($before, $after);
     }
 
@@ -163,10 +169,10 @@ final class OpsDemoFillTest extends TestCase
     {
         $old = [];
         foreach (['branches', 'departments', 'positions'] as $table) {
-            $old[$table] = DB::table($table)->insertGetId(['name' => DemoDataService::PREFIX.'Старий '.$table, 'status' => 'active']);
+            $old[$table] = DB::table($table)->insertGetId(['name' => DemoName::LEGACY_PREFIX.'Старий '.$table, 'status' => 'active']);
         }
-        $oldUser = User::query()->create(['email' => 'demo+emp-99@sinhrm.test', 'name' => DemoDataService::PREFIX.'Старий', 'status' => 'active']);
-        $oldEmployee = DB::table('employees')->insertGetId(['user_id' => $oldUser->id, 'full_name' => DemoDataService::PREFIX.'Старий', 'status' => 'active', 'hired_at' => '2024-01-01',
+        $oldUser = User::query()->create(['email' => 'demo+emp-99@sinhrm.test', 'name' => DemoName::LEGACY_PREFIX.'Старий', 'status' => 'active']);
+        $oldEmployee = DB::table('employees')->insertGetId(['user_id' => $oldUser->id, 'full_name' => DemoName::LEGACY_PREFIX.'Старий', 'status' => 'active', 'hired_at' => '2024-01-01',
             'branch_id' => $old['branches'], 'department_id' => $old['departments'], 'position_id' => $old['positions'], 'created_at' => now(), 'updated_at' => now()]);
         foreach ([...$old, 'users' => $oldUser->id, 'employees' => $oldEmployee, 'step:org' => 0, 'step:people' => 0] as $table => $id) {
             DB::table('demo_records')->insert(['table_name' => $table, 'record_id' => $id, 'created_at' => now()]);
@@ -191,7 +197,7 @@ final class OpsDemoFillTest extends TestCase
                 $this->postJson('/api/ops/demo-fill?confirm=demo&step='.$step, [], self::HEADERS)->assertOk()->assertJsonPath('already', $already);
             }
         }
-        $employees = DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->get(['id', 'manager_id']);
+        $employees = DB::table('employees')->where('full_name', 'like', '%'.DemoName::SUFFIX)->get(['id', 'manager_id']);
         $this->assertSame(self::PEOPLE, $employees->count());
         $this->assertGreaterThanOrEqual(120, $employees->count());
         $this->assertLessThanOrEqual(150, $employees->count());
@@ -209,7 +215,7 @@ final class OpsDemoFillTest extends TestCase
             $depth = max($depth, $d);
         }
         $this->assertGreaterThanOrEqual(4, $depth);
-        $this->assertSame(0, DB::table('employees')->where('full_name', 'like', DemoDataService::PREFIX.'%')->whereNull('department_id')->count());
+        $this->assertSame(0, DB::table('employees')->where('full_name', 'like', '%'.DemoName::SUFFIX)->whereNull('department_id')->count());
         $this->assertSame(4, DB::table('employees')->join('users', 'users.id', '=', 'employees.user_id')->where('users.email', 'like', 'demo+hr-%')->count());
         // Approvals come from the chain of command, not a single admin.
         $this->assertGreaterThan(5, DB::table('leave_requests')->whereNotNull('approver_id')->distinct()->count('approver_id'));

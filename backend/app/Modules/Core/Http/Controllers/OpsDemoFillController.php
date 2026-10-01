@@ -12,10 +12,11 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * /api/ops/demo-fill?confirm=demo — synthetic "[ТЕСТ]" data for the report charts (X-Ops-Secret), one step per request:
+ * /api/ops/demo-fill?confirm=demo — synthetic data (names end with " [ТЕСТ]", one branch "Тестовий філіал") for the report charts (X-Ops-Secret), one step per request:
  * - GET|POST &steps=list → {steps: [...order], done: [...]}
  * - POST &step=<name>    → runs that step in its own transaction (done step → already=true; earlier step missing → 409)
- * - POST &reset=1        → deletes only rows listed in demo_records
+ * - GET|POST &reset=1&dry=1 → what reset would delete: legacy test rows (DemoLegacy), registered rows, side effects; changes nothing
+ * - POST &reset=1        → registers the legacy test rows, then deletes only rows listed in demo_records
  * Without confirm=demo nothing happens (422). Driven by .github/workflows/demo-fill.yml.
  */
 final class OpsDemoFillController
@@ -28,14 +29,17 @@ final class OpsDemoFillController
         if ($request->query('steps') === 'list') {
             return new JsonResponse(['ok' => true, 'steps' => $demo->steps(), 'done' => $demo->done()]);
         }
+        if ($request->boolean('reset') && $request->boolean('dry')) {
+            return new JsonResponse(['ok' => true, 'action' => 'reset-dry-run', ...array_map(static fn (array $part): object => (object) $part, $demo->resetPreview())]);
+        }
         if (! $request->isMethod('POST')) {
             return $this->fail('post_required', 405);
         }
         if ($request->boolean('reset')) {
-            $deleted = $demo->reset();
-            Log::info('ops.demo_reset', ['deleted' => $deleted]);
+            $result = $demo->reset();
+            Log::info('ops.demo_reset', $result);
 
-            return new JsonResponse(['ok' => true, 'action' => 'reset', 'deleted' => (object) $deleted]);
+            return new JsonResponse(['ok' => true, 'action' => 'reset', 'legacy' => (object) $result['legacy'], 'deleted' => (object) $result['deleted']]);
         }
         $step = $request->query('step');
         if (! is_string($step) || $step === '') {

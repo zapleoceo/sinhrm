@@ -1,6 +1,9 @@
-# Manual: fill prod with synthetic "[ТЕСТ]" data for the report charts, or remove it (reset).
+# Manual: fill prod with synthetic test data for the report charts (names end with " [ТЕСТ]", everything in the one
+# branch "Тестовий філіал"), or remove it (reset). Reset also removes legacy test rows of earlier fills (old "[ТЕСТ] …"
+# names, "Тестова філія А/Б", …; see DemoLegacy); reset + dry only prints what would be removed. Clean state: run with
+# reset (optionally dry first), then without.
 # Fill: GET ?confirm=demo&steps=list, then POST ?confirm=demo&step=<name> for each step in order (a done step is a no-op).
-# Reset: POST ?confirm=demo&reset=1. Both use the X-Ops-Secret from repository secrets —
+# Reset: POST ?confirm=demo&reset=1 (dry run: GET …&reset=1&dry=1). Both use the X-Ops-Secret from repository secrets —
 # the secret never leaves GitHub Actions. Re-running the fill is a no-op; reset deletes only rows listed in demo_records.
 name: Demo data
 
@@ -9,6 +12,10 @@ on:
     inputs:
       reset:
         description: "Remove demo data instead of filling it"
+        type: boolean
+        default: false
+      dry:
+        description: "With reset: only list what would be removed (changes nothing)"
         type: boolean
         default: false
 
@@ -27,12 +34,14 @@ jobs:
       API_URL: "https://sinhrm-api.vercel.app"
       OPS_SECRET: "${{ secrets.OPS_SECRET }}"
       RESET: "${{ inputs.reset }}"
+      DRY: "${{ inputs.dry }}"
     steps:
-      - name: Reset (one call)
+      - name: Reset or its dry run (one call)
         if: ${{ inputs.reset }}
         run: |
           [ -n "$OPS_SECRET" ] || { echo "::error::OPS_SECRET is not set"; exit 1; }
-          code=$(curl -sS -m 90 -o out.json -w %{http_code} -X POST "$API_URL/api/ops/demo-fill?confirm=demo&reset=1" \
+          if [ "$DRY" = "true" ]; then method=GET; query="reset=1&dry=1"; else method=POST; query="reset=1"; fi
+          code=$(curl -sS -m 90 -o out.json -w %{http_code} -X "$method" "$API_URL/api/ops/demo-fill?confirm=demo&$query" \
             -H "X-Ops-Secret: $OPS_SECRET" -H "Accept: application/json" || echo 000)
           cat out.json || true; echo; echo "HTTP $code"
           [ "$code" = "200" ] || { echo "::error::reset failed (HTTP $code)"; exit 1; }
