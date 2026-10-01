@@ -240,3 +240,6 @@ app-board-page {
   }
   .column[data-drop='denied'] .drop-caption { color: var(--app-bad-text); }
 }
+
+/* THROWAWAY regression demo (ui-parity) */
+app-board-page .move-btn { display: none !important; }
