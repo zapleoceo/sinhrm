@@ -61,6 +61,29 @@ export function parseInventory(yaml: string): Inventory {
   return inv;
 }
 
-export async function inventoryOf(page: Page): Promise<Inventory> {
-  return parseInventory(await page.locator('body').ariaSnapshot());
+/** @param volatile CSS of content to leave out (aria-hidden while the snapshot is taken, then restored). */
+export async function inventoryOf(page: Page, volatile?: string): Promise<Inventory> {
+  const mark = (on: boolean) =>
+    page.evaluate(
+      ([css, hide]) => {
+        for (const el of Array.from(document.querySelectorAll(css))) {
+          if (hide) el.setAttribute('data-ui-parity-hidden', el.getAttribute('aria-hidden') ?? '');
+          if (hide) el.setAttribute('aria-hidden', 'true');
+          else {
+            const was = el.getAttribute('data-ui-parity-hidden');
+            el.removeAttribute('data-ui-parity-hidden');
+            if (was) el.setAttribute('aria-hidden', was);
+            else el.removeAttribute('aria-hidden');
+          }
+        }
+      },
+      [volatile ?? '', on] as const,
+    );
+  if (volatile) await mark(true);
+  try {
+    return parseInventory(await page.locator('body').ariaSnapshot());
+  } finally {
+    if (volatile) await mark(false);
+  }
 }
+

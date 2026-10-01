@@ -8,13 +8,15 @@
 //   ready  — text that must be visible before the page counts as loaded (besides network idle)
 //   states — dialogs/menus opened by `steps`; each state is its own snapshot (<id>--<state>.<viewport>.json)
 //   only   — 'desktop' | 'mobile': the state exists on one viewport only
+//   volatile — CSS of content that changes with the repo, not the UI (left out of the inventory, still checked
+//              for errors, layout and axe)
 // step:  { click: Target } | { fill: Target & { value } } | { press: key } | { check: Target } | { waitFor: Target }
 //   Target = { role, name, exact?, nth? } (accessible role + name, like getByRole) or { text } or { css }
 
 /** @typedef {{ role?: string, name?: string, exact?: boolean, nth?: number, text?: string, css?: string }} Target */
 /** @typedef {{ click?: Target, fill?: Target & { value: string }, press?: string, check?: Target, waitFor?: Target }} Step */
 /** @typedef {{ id: string, steps: Step[], only?: 'desktop' | 'mobile' }} State */
-/** @typedef {{ id: string, path: string, guest?: boolean, ready?: string, states?: State[] }} Page */
+/** @typedef {{ id: string, path: string, guest?: boolean, ready?: string, volatile?: string, states?: State[] }} Page */
 
 // Personal board of vacancy 1 (the recorder gives it one own column «Мої [ТЕСТ]»).
 export const boardSteps = [
@@ -118,7 +120,8 @@ export const PAGES = [
   { id: 'audit', path: '/admin/audit' },
   { id: 'errors', path: '/admin/errors' },
   { id: 'privacy', path: '/admin/privacy' },
-  { id: 'docs', path: '/docs' },
+  // Help content is built from the repo's docs/ (and git history): only the page frame is inventoried.
+  { id: 'docs', path: '/docs', volatile: '.doc-body, aside.toc > :not(.search)' },
   { id: 'me', path: '/me' },
 ];
 

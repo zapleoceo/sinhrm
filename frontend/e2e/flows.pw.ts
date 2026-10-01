@@ -137,10 +137,11 @@ test.describe('desktop flows', () => {
     expect(new URL(req.url()).searchParams.get('q')).toBe('Ко');
     const option = page.getByRole('option').filter({ hasNotText: /символ|Завантаження/ }).first();
     await expect(option).toBeVisible();
-    const text = await option.innerText();
+    // The option label carries the full name (initials and position around it are styling, not checked).
+    const label = (await option.getAttribute('aria-label')) ?? (await option.innerText());
     await option.click();
     await expect(box).toHaveValue(/\[ТЕСТ\]/);
-    expect(text).toContain(await box.inputValue());
+    expect(label).toContain(await box.inputValue());
   });
 
   test('report view: the table has a «Разом» row', async ({ page, context }) => {

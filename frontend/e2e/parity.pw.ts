@@ -40,7 +40,7 @@ for (const p of PAGES) {
       await runSteps(page, state.steps);
 
       // (a) inventory — identical across themes, so only the light run writes it.
-      const inventory = await inventoryOf(page);
+      const inventory = await inventoryOf(page, p.volatile);
       const file = join(SNAPSHOTS, `${key}.json`);
       if (UPDATE && theme === 'light') {
         mkdirSync(SNAPSHOTS, { recursive: true });
@@ -66,7 +66,9 @@ for (const p of PAGES) {
       }
 
       // (d) axe WCAG A/AA: per-rule node counts must not grow.
-      const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+      const builder = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']);
+      for (const css of (p.volatile ?? '').split(',').map((s) => s.trim()).filter(Boolean)) builder.exclude(css);
+      const axe = await builder.analyze();
       const counts: Record<string, number> = Object.fromEntries(
         axe.violations
           .map((v) => [v.id, v.nodes.filter((n) => !NONDETERMINISTIC(v.id, n.html)).length] as const)

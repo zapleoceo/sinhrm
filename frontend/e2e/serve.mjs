@@ -21,6 +21,7 @@ const RANGES = {
   cyrillic: 'U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116',
 };
 const missingFonts = new Set();
+let warned = false;
 function localFace(family, weight) {
   if (family === 'Material Symbols Outlined') {
     return `@font-face{font-family:'${family}';font-style:normal;font-weight:100 700;font-display:block;src:url(/__fonts/material-symbols/material-symbols-outlined.woff2) format('woff2')}`;
@@ -45,7 +46,10 @@ function localFonts(html) {
     if (family) faces.add(localFace(family, weight));
     return '';
   });
-  if (missingFonts.size) console.warn(`ui-parity: no local font for ${[...missingFonts].join(', ')} — npm i -D the package`);
+  if (missingFonts.size && !warned) {
+    warned = true;
+    console.warn(`ui-parity: no local font for ${[...missingFonts].join(', ')} — npm i -D the package`);
+  }
   return out.replace('</head>', `<style id="ui-parity-fonts">${[...faces].join('\n')}</style></head>`);
 }
 const root = resolve(fileURLToPath(new URL('../dist/frontend/browser', import.meta.url)));

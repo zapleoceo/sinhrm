@@ -57,7 +57,10 @@ export function watchNetwork(page) {
 export async function settle(page, quietMs = 300) {
   const n = track(page);
   await page.waitForLoadState('load');
-  const deadline = Date.now() + 15_000;
-  while (Date.now() < deadline && (n.inflight > 0 || Date.now() - n.last < quietMs)) await page.waitForTimeout(50);
+  const start = Date.now();
+  const deadline = start + 15_000;
+  // Quiet counts from the later of the last request and the call itself: a click that starts no request still
+  // gets its quiet window (expanding groups, dialogs opening).
+  while (Date.now() < deadline && (n.inflight > 0 || Date.now() - Math.max(n.last, start) < quietMs)) await page.waitForTimeout(50);
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(undefined)))));
 }
