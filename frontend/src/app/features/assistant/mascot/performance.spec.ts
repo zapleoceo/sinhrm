@@ -120,7 +120,7 @@ describe('engine budget', () => {
     const e = new MascotEngine(STAGE, () => 0.5);
     e.play('enter-walk', { side: 'left', targetX: 600 });
     e.tick(1);
-    const actions = ['idle-breathe', 'idle-juggle', 'exit-run'] as const;
+    const actions = ['idle-breathe', 'idle-juggle', 'exit-door'] as const;
     const results: number[] = [];
     for (const a of actions) {
       e.play(a, { side: 'left', targetX: 600 });
@@ -147,7 +147,7 @@ describe('engine budget', () => {
     e.play('sleep');
     e.tick(0.5);
     expect(e.fps).toBe(10);
-    e.play('exit-run');
+    e.play('exit-door');
     e.tick(0.1);
     expect(e.fps).toBe(60);
     e.setLite(true);

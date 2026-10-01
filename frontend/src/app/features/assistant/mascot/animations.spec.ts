@@ -1,12 +1,13 @@
 import { ANGLE_KEYS, STAND, forwardKinematics } from './skeleton';
-import { ActionName, ActivityAction, ENTRANCES, GetUpAction, MoveAction, RouteAction, EXITS, IDLE_WEIGHTS, Stage, WALK, ballistic, createClip, createGesture, gaitPose } from './animations';
+import { ActionName, ActivityAction, ENTRANCES, GetUpAction, MoveAction, RouteAction, IDLE_WEIGHTS, SceneOnlyAction, Stage, WALK, ballistic, createClip, createGesture, gaitPose } from './animations';
+import { isSceneAction } from './exits';
 import { MascotEngine } from './mascot-engine';
 import { GRAVITY, PHYSICS_DT, defaultWorld, physicsStep } from './physics';
 
 const STAGE: Stage = { width: 1200, height: 800, ground: 798, seat: { x: 900, y: 400 }, corner: { x: 1166, y: 766 } };
-type ClipAction = Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction>;
+type ClipAction = Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction | SceneOnlyAction>;
 const OTHERS: ClipAction[] = ['peek-out', 'sleep', 'wake', 'dragged', 'airborne', 'land', 'dizzy', 'dust', 'docked', 'static', 'hold-on', 'curl', 'orb', 'orb-pop', 'unfold', 'idle-breathe'];
-const ALL: ClipAction[] = [...ENTRANCES, ...EXITS, 'exit-peek', ...(Object.keys(IDLE_WEIGHTS) as ClipAction[]), ...OTHERS];
+const ALL: ClipAction[] = [...(ENTRANCES.filter((e) => !isSceneAction(e)) as ClipAction[]), ...(Object.keys(IDLE_WEIGHTS) as ClipAction[]), ...OTHERS];
 
 function seeded(seed = 1): () => number {
   let s = seed;

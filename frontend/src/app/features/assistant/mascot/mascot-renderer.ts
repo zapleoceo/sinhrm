@@ -4,6 +4,7 @@ import { bubblePath, circlePath, jitter, sketchCircle, smoothPath, starPath, tap
 import { InkProp } from './animations';
 import { Frame } from './mascot-engine';
 import { BONES, Vec } from './skeleton';
+import { FigureMask, maskPath } from './mask';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Size of the moving box and where the hip sits inside it (the drawing overflows it freely). */
@@ -12,6 +13,8 @@ const PATH_POOL = 16;
 const INK_POOL = 24;
 const TEXT_POOL = 4;
 const f = (n: number): string => (Math.round(n * 100) / 100).toString();
+/** Unique clipPath ids when several renderers share a document (tests). */
+let clipSeq = 0;
 
 type LimbKey = 'lArm' | 'rArm' | 'lLeg' | 'rLeg' | 'torso' | 'lFoot' | 'rFoot';
 
@@ -49,6 +52,11 @@ export class MascotRenderer {
   private readonly rest: HTMLSpanElement;
   /** Hit area for grabbing/clicking: a thick invisible stroke along the whole body (grab him wherever you click). */
   readonly hit: SVGPathElement;
+  /** Clip of the body and its shadow for in-scene exits (a doorway, a hole…), world coordinates. */
+  private readonly clipShape: SVGPathElement;
+  private readonly clipUrl: string;
+  private lastMask: FigureMask | null = null;
+  private lastMaskD = '';
   private readonly cache = new WeakMap<Element, Map<string, string>>();
   private bubbleText = '';
   private hitTick = 0;
@@ -69,6 +77,11 @@ export class MascotRenderer {
       'aria-hidden': 'true',
       focusable: 'false',
     });
+    const clipId = `mascot-clip-${++clipSeq}`;
+    this.clipUrl = `url(#${clipId})`;
+    const defs = this.el('defs', {}, this.svg);
+    const clip = this.el('clipPath', { id: clipId, clipPathUnits: 'userSpaceOnUse' }, defs);
+    this.clipShape = this.el('path', { 'clip-rule': 'evenodd' }, clip);
     this.shadow = this.el('ellipse', { class: 'shadow', rx: '20', ry: '3.2' }, this.svg);
     const props = this.el('g', { class: 'props' }, this.svg);
     this.propRope = this.el('path', { class: 'stroke thin' }, props);
@@ -178,6 +191,7 @@ export class MascotRenderer {
     this.set(this.headPath, 'stroke-width', f(2.5 * (1 + m * 0.15)));
 
     this.renderFace(frame, headC, headR, origin);
+    this.renderMask(frame.mask, origin);
     this.renderShadow(frame, origin);
     this.renderProps(frame, origin);
     this.renderThought(frame, headC);
@@ -185,10 +199,32 @@ export class MascotRenderer {
     this.renderEffects(frame, origin, headC);
     this.renderBubble(frame, headC, origin, viewport);
     // The hit area only needs to follow roughly: rebuilt every 4th frame (it is a long path string).
+    // While he disappears into a door/hole there is nothing to grab.
     this.hitTick = (this.hitTick + 1) % 4;
-    if (this.hitTick === 0 || m > 0.5 !== this.hitOrb) {
+    if (frame.mask) {
+      this.set(this.hit, 'd', '');
+      this.hitTick = 3;
+    } else if (this.hitTick === 0 || m > 0.5 !== this.hitOrb) {
       this.renderHit(m > 0.5, headC, j);
     }
+  }
+
+  /** Clips the body and shadow; the shape is rebuilt only when the mask changes (it moves with the box). */
+  private renderMask(mask: FigureMask | null, origin: Vec): void {
+    if (!mask) {
+      this.set(this.body, 'clip-path', '');
+      this.set(this.shadow, 'clip-path', '');
+      this.lastMask = null;
+      return;
+    }
+    if (mask !== this.lastMask) {
+      this.lastMask = mask;
+      this.lastMaskD = maskPath(mask);
+    }
+    this.set(this.clipShape, 'd', this.lastMaskD);
+    this.set(this.clipShape, 'transform', `translate(${f(-origin.x)} ${f(-origin.y)})`);
+    this.set(this.body, 'clip-path', this.clipUrl);
+    this.set(this.shadow, 'clip-path', this.clipUrl);
   }
 
   private renderHit(orb: boolean, headC: Vec, j: Frame['joints']): void {

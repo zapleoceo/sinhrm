@@ -15,6 +15,7 @@ import {
   RouteAction,
   MoveAction,
   ActivityAction,
+  SceneOnlyAction,
   Stage,
   airborneClip,
   createClip,
@@ -40,6 +41,8 @@ import type { FallCause } from '../joke-situations';
 import { chooseRoute, createRouteClip, panelOf, routeGeometry } from './seat-routes';
 import { MOVE_ACTIONS, createMoveClip, isMove } from './moves';
 import { createActivityClip, isActivity } from './activities';
+import { SCENE_ACTIONS, createSceneClip, isSceneAction } from './exits';
+import type { FigureMask } from './mask';
 import { GetUpVariant, createGetUp, createRubHead, createStandUp, createSulk } from './getup';
 import { normalizeAngle } from './ik';
 import { Body, PHYSICS_DT, World, accumulate, defaultWorld, launchSpeed, physicsStep } from './physics';
@@ -98,6 +101,8 @@ export interface Frame {
   squint: number;
   morph: number;
   scale: number;
+  /** Clipping of the figure (in-scene exits/entrances), null when he is fully drawn. */
+  mask: FigureMask | null;
   effects: readonly Effect[];
   shadow: ShadowState | null;
   props: PropsFrame;
@@ -153,11 +158,7 @@ const FAST_ACTIONS: ReadonlySet<ActionName> = new Set<ActionName>([
   'enter-gopher',
   'enter-slide',
   'peek-out',
-  'exit-run',
-  'exit-jump',
-  'exit-slide',
-  'exit-wave',
-  'exit-peek',
+  ...SCENE_ACTIONS,
   'curl',
   'unfold',
   'orb-pop',
@@ -238,6 +239,7 @@ export class MascotEngine {
   private boilT = 0;
   private morph = 0;
   private scale = 1;
+  private mask: FigureMask | null = null;
   private grab: Grab | null = null;
   private grabOffset: Vec = { x: 0, y: 0 };
   private heldFor = 0;
@@ -368,7 +370,9 @@ export class MascotEngine {
             })
           : isActivity(action)
             ? createActivityClip(action, { stage: this.stage, from, lite: this.lite, rng: this.rng, seat: this.stage.seat, pointer: this.pointerPos })
-            : createClip(action as Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction>, this.context({ ...options, from }));
+            : isSceneAction(action)
+              ? createSceneClip(action, { ...this.context({ ...options, from }), lite: this.lite })
+              : createClip(action as Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction | SceneOnlyAction>, this.context({ ...options, from }));
     this.clipT = 0;
     this.doneSent = false;
     this.ambientT = 0;
@@ -717,6 +721,7 @@ export class MascotEngine {
     this.lastVel = { x: (this.displayed.x - prevX) / h, y: (this.displayed.y - prevY) / h };
     this.morph = 0;
     this.scale = 1;
+    this.mask = null;
     this.props = { ...NO_PROPS, ink: this.inkWithFading(null) };
     this.thinking = false;
     this.listening = false;
@@ -771,6 +776,7 @@ export class MascotEngine {
     this.lastVel = { x: (this.displayed.x - prevX) / h, y: (this.displayed.y - prevY) / h };
     this.morph = 0;
     this.scale = 1;
+    this.mask = null;
     this.props = { ...NO_PROPS, ink: this.inkWithFading(null) };
     this.thinking = false;
     this.listening = false;
@@ -959,6 +965,7 @@ export class MascotEngine {
     }
     this.morph = morph;
     this.scale = frame.scale ?? 1;
+    this.mask = frame.mask ?? null;
 
     const gesture = this.applyGesture(target, h);
 
@@ -1093,6 +1100,7 @@ export class MascotEngine {
       squint: squintFor(pointerDist),
       morph: this.morph,
       scale: this.scale,
+      mask: this.mask,
       effects: this.effects,
       shadow: this.shadow(),
       props: this.props,
