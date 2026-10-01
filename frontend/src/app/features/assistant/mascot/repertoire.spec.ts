@@ -1,6 +1,6 @@
-import { ActivityAction, MoveAction, Stage, sitting, standAt } from './animations';
+import { ActivityAction, EXITS, MoveAction, Stage, sitting, standAt } from './animations';
 import { ACTIVITIES, ACTIVITY_ACTIONS, activityEnd, createActivityClip } from './activities';
-import { BrainCommand, MascotBrain, RECENT_MEMORY, TIMING, windyToday } from './brain';
+import { BrainCommand, EXIT_INSET, MascotBrain, RECENT_MEMORY, TIMING, windyToday } from './brain';
 import { MascotEngine } from './mascot-engine';
 import { MOVES, MOVE_ACTIONS, createMoveClip, moveEnd } from './moves';
 import { Joints, Pose, forwardKinematics } from './skeleton';
@@ -202,7 +202,7 @@ describe('variety system', () => {
     expect(plays.filter((a) => a.startsWith('move-') || a.startsWith('act-'))).toEqual([]);
   });
 
-  it('entrances and exits sometimes use a move (from / to off screen)', () => {
+  it('entrances sometimes use a move from off screen; exits use a move to the side, then leave in the scene', () => {
     const entrances: Extract<BrainCommand, { type: 'play' }>[] = [];
     const exits: Extract<BrainCommand, { type: 'play' }>[] = [];
     for (let seed = 1; seed < 40; seed++) {
@@ -223,6 +223,11 @@ describe('variety system', () => {
       const exit = commands.filter((c): c is Extract<BrainCommand, { type: 'play' }> => c.type === 'play').at(-1)!;
       exits.push(exit);
       brain.clipDone(exit.action);
+      if (exit.action.startsWith('move-')) {
+        const scene = commands.filter((c): c is Extract<BrainCommand, { type: 'play' }> => c.type === 'play').at(-1)!;
+        expect(EXITS as readonly string[]).toContain(scene.action);
+        brain.clipDone(scene.action);
+      }
       expect(brain.state).toBe('offstage');
     }
     const moveIn = entrances.filter((c) => c.action.startsWith('move-'));
@@ -234,7 +239,8 @@ describe('variety system', () => {
       expect(MOVES[c.action as MoveAction].entrance).toBe(true);
     }
     for (const c of moveOut) {
-      expect(c.targetX! < 0 || c.targetX! > 1200).toBe(true);
+      // Stops on screen, near a side (never past the edge).
+      expect(c.targetX === EXIT_INSET || c.targetX === 1200 - EXIT_INSET).toBe(true);
     }
   });
 

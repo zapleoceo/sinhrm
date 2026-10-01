@@ -215,7 +215,7 @@ describe('routes in the engine and brain', () => {
       high = f.pose.y < STAGE.ground - 200;
     }
     expect(high).toBe(true);
-    e.play('exit-run');
+    e.play('peek-out');
     const ev = e.tick(1 / 60);
     expect(e.airborne).toBe(true);
     expect(ev.frame.props.ink?.length).toBeGreaterThan(0);
@@ -233,9 +233,9 @@ describe('routes in the engine and brain', () => {
     for (let i = 0; i < 50; i++) {
       e.tick(1 / 60);
     }
-    e.play('exit-run');
+    e.play('peek-out');
     expect(e.airborne).toBe(false);
-    expect(e.currentAction).toBe('exit-run');
+    expect(e.currentAction).toBe('peek-out');
   });
 
   it('reduced motion: a short linear blend to the seat, no props', () => {
@@ -310,7 +310,8 @@ describe('routes in the engine and brain', () => {
   });
 });
 
-describe('edge cases: every allowed route stays inside the viewport', () => {
+// Exhaustive (every route × layouts × starts): slower on CI runners than the 5 s default.
+describe('edge cases: every allowed route stays inside the viewport', { timeout: 60_000 }, () => {
   const env = { vx: 0, vy: 0, spin: 0, pointer: null };
   const ALL_JOINTS = ['head', 'neck', 'hip', 'shoulder', 'lElbow', 'rElbow', 'lHand', 'rHand', 'lKnee', 'rKnee', 'lFoot', 'rFoot'] as const;
 
@@ -536,7 +537,12 @@ describe('interruptions mid-route', () => {
     };
     brain.start(true, false);
     vi.advanceTimersByTime(TIMING.firstAppearance);
-    brain.clipDone('enter-walk');
+    // Let whichever entrance was picked finish for real, then measure from the route on.
+    for (let i = 0; i < 900 && brain.state !== 'idle'; i++) {
+      frames(1);
+    }
+    expect(brain.state).toBe('idle');
+    worst = 0;
     brain.chatOpened();
     frames(70);
     expect(e.route).not.toBeNull();

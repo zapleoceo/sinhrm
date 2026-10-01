@@ -68,8 +68,10 @@ describe('MascotBrain', () => {
     back.brain.start(true, false);
     vi.advanceTimersByTime(TIMING.firstAppearance);
     back.brain.clipDone('enter-peek');
-    expect(back.lastPlay()).toBe('exit-peek');
-    back.brain.clipDone('exit-peek');
+    // Caught peeking: out through a door/hatch/… drawn right there (never back past the edge).
+    const exit = back.lastPlay()!;
+    expect(EXITS as readonly string[]).toContain(exit);
+    back.brain.clipDone(exit as never);
     expect(back.brain.state).toBe('offstage');
   });
 
@@ -266,7 +268,10 @@ describe('MascotBrain', () => {
     vi.advanceTimersByTime(TIMING.firstAppearance);
     h.brain.clipDone('enter-walk');
     vi.advanceTimersByTime(TIMING.stay);
-    h.brain.clipDone(h.lastPlay() as never);
+    // A move exit stops at the side and continues through a door/hatch/…: finish both.
+    for (let i = 0; i < 3 && h.brain.state === 'exiting'; i++) {
+      h.brain.clipDone(h.lastPlay() as never);
+    }
     expect(h.brain.state).toBe('offstage');
     h.brain.routeChanged('/candidates');
     vi.advanceTimersByTime(TIMING.routeDelay);

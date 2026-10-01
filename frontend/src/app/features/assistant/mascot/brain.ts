@@ -3,6 +3,7 @@ import { pickGreeting, pickQuip } from '../quips';
 import type { EngineEvent } from './mascot-engine';
 import { ACTIVITIES, isActivity } from './activities';
 import { MOVES, isMove } from './moves';
+import { EXIT_INFO } from './exits';
 import { FallCause, Joke, JokeSituation, situationFor } from '../joke-situations';
 import { ActionName, ROUTE_ACTIONS, ENTRANCES, EXITS, EntranceAction, ExitAction, GestureName, IDLE_WEIGHTS } from './animations';
 
@@ -64,6 +65,8 @@ export const RECENT_MEMORY = 6;
 export const WANDER_WEIGHT = 3;
 export const MOVE_ENTRANCE_CHANCE = 0.35;
 export const MOVE_EXIT_CHANCE = 0.3;
+/** A move exit stops this far inside the edge, where the door/hatch/… is drawn. */
+export const EXIT_INSET = 110;
 
 /** A windy day, decided from the local date only. */
 export function windyToday(date = new Date()): boolean {
@@ -90,7 +93,7 @@ export const TIMING = {
   jolt: 2500,
 } as const;
 
-const LITE_ENTRANCES: readonly EntranceAction[] = ['enter-walk', 'enter-peek', 'enter-sneak'];
+const LITE_ENTRANCES: readonly EntranceAction[] = ['enter-walk', 'enter-peek', 'enter-sneak', 'enter-door', 'enter-hatch'];
 
 const defaultScheduler: Scheduler = {
   setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms),
@@ -328,7 +331,8 @@ export class MascotBrain {
     } else if (['fallen', 'recovering', 'airborne', 'dragged', 'entering'].includes(this.current)) {
       // Busy entering / falling / getting up / being held: he heads for the panel once he is on his feet.
       return;
-    } else if (['idle', 'asleep', 'waking', 'static'].includes(this.current) && !this.reduced) {
+    } else if (['idle', 'asleep', 'waking', 'static', 'exiting'].includes(this.current) && !this.reduced) {
+      // Leaving (still on screen, maybe half into a door): turns back and takes a route to the panel.
       this.routeToSeat();
     } else {
       this.toDocked(this.reduced ? 0 : undefined);
@@ -438,8 +442,9 @@ export class MascotBrain {
       case 'entering':
         if (action === 'enter-peek') {
           if (this.rng() < 0.4) {
+            // Caught peeking: he slips out through a door (or hatch…) drawn right there.
             this.current = 'exiting';
-            this.play('exit-peek');
+            this.playSceneExit();
           } else {
             this.play('peek-out', { targetX: this.randomX() });
           }
@@ -454,8 +459,11 @@ export class MascotBrain {
         this.recover(action);
         break;
       case 'exiting':
-        if ((EXITS as readonly string[]).includes(action) || action === 'exit-peek' || isMove(action)) {
+        if ((EXITS as readonly string[]).includes(action)) {
           this.goOffstage();
+        } else if (isMove(action)) {
+          // Got to the side: now out through something drawn there.
+          this.playSceneExit();
         }
         break;
       case 'unfolding':
@@ -663,11 +671,28 @@ export class MascotBrain {
     this.emit({ type: 'gesture', name: null });
     this.current = 'exiting';
     if (!this.reduced && this.rng() < MOVE_EXIT_CHANCE) {
+      // Off to the nearer side with a locomotion move (stopping on screen), then out through a door/hatch/… there.
       const move = this.pickFresh(this.moveChoices('exit')) as ActionName;
-      this.play(move, { targetX: this.lastX() < this.width() / 2 ? -90 : this.width() + 90 });
+      this.play(move, { targetX: this.lastX() < this.width() / 2 ? EXIT_INSET : this.width() - EXIT_INSET });
       return;
     }
-    const exit = pickOne(EXITS, this.lastExit, this.rng);
+    this.playSceneExit();
+  }
+
+  /** In-scene exits allowed now (lite: the plain door and hatch). */
+  exitChoices(): Partial<Record<ExitAction, number>> {
+    const out: Partial<Record<ExitAction, number>> = {};
+    for (const [k, info] of Object.entries(EXIT_INFO) as [ExitAction, (typeof EXIT_INFO)[ExitAction]][]) {
+      if (!this.lite || info.lite) {
+        out[k] = info.weight;
+      }
+    }
+    return out;
+  }
+
+  /** Weighted, never the same exit twice in a row. */
+  private playSceneExit(): void {
+    const exit = pickWeighted(this.exitChoices() as Record<ExitAction, number>, this.lastExit, this.rng);
     this.lastExit = exit;
     this.play(exit);
   }

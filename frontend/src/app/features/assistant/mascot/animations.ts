@@ -1,6 +1,7 @@
 import type { FallCause } from '../joke-situations';
 import { DOODLE_DRAW, DOODLE_SHAPES, DoodleShape, doodlePoint } from './effects';
 import { Expression } from './face';
+import type { FigureMask } from './mask';
 import { GRAVITY, launchSpeed } from './physics';
 import { BONES, Pose, STAND, STAND_HIP, Vec, armTo, forwardKinematics, legTo, lerpPose } from './skeleton';
 
@@ -15,7 +16,10 @@ export type EntranceAction =
   | 'enter-sneak'
   | 'enter-rope'
   | 'enter-gopher'
-  | 'enter-slide';
+  | 'enter-slide'
+  | 'enter-door'
+  | 'enter-hatch'
+  | 'enter-portal';
 export type IdleAction =
   | 'idle-breathe'
   | 'idle-scratch'
@@ -32,7 +36,8 @@ export type IdleAction =
   | 'idle-slip'
   | 'idle-trip'
   | 'idle-faint';
-export type ExitAction = 'exit-run' | 'exit-jump' | 'exit-slide' | 'exit-wave' | 'exit-peek';
+/** In-scene exits (exits.ts): he leaves through something drawn on screen, never past the viewport edge. */
+export type ExitAction = 'exit-door' | 'exit-hatch' | 'exit-portal' | 'exit-elevator' | 'exit-trapdoor' | 'exit-erase';
 export type OtherAction =
   | 'peek-out'
   | 'sleep'
@@ -106,8 +111,11 @@ export const ENTRANCES: readonly EntranceAction[] = [
   'enter-rope',
   'enter-gopher',
   'enter-slide',
+  'enter-door',
+  'enter-hatch',
+  'enter-portal',
 ];
-export const EXITS: readonly ExitAction[] = ['exit-run', 'exit-jump', 'exit-slide', 'exit-wave'];
+export const EXITS: readonly ExitAction[] = ['exit-door', 'exit-hatch', 'exit-portal', 'exit-elevator', 'exit-trapdoor', 'exit-erase'];
 /** Idle fidgets with their weights (breathing sits between them). */
 export const IDLE_WEIGHTS: Readonly<Record<Exclude<IdleAction, 'idle-breathe'>, number>> = {
   'idle-scratch': 3,
@@ -174,6 +182,8 @@ export interface ClipFrame {
   morph?: number;
   /** Extra scale of the whole drawing (orb pop). */
   scale?: number;
+  /** Clipping of the figure: he disappears into a doorway or a hole (exits.ts). */
+  mask?: FigureMask;
 }
 
 export type ClipEventType = 'launch' | 'dust' | 'sparkle' | 'sweat' | 'bang' | 'ring' | 'doodle' | 'stars' | 'rope' | 'hop' | 'ragdoll' | 'banana';
@@ -779,106 +789,6 @@ function enterSlide(c: ClipContext): Clip {
       return { pose: getUp(t), expr: { mouth: 'smile', brows: 0.2 } };
     },
   };
-}
-
-/* ───────────────────────── exits ───────────────────────── */
-
-function nearestSide(stage: Stage, x: number): 'left' | 'right' {
-  return x < stage.width / 2 ? 'left' : 'right';
-}
-
-function exitRun(c: ClipContext): Clip {
-  const side = nearestSide(c.stage, c.from.x);
-  const f: 1 | -1 = side === 'left' ? -1 : 1;
-  const x0 = c.from.x;
-  const anticipation = standAt(c.stage, x0, f, { y: standHip(c.stage) + 7, torso: 0.45, head: -0.3, lHip: 0.7, lKnee: 1.2, rHip: 0.2, rKnee: 0.9, lShoulder: 0.7, rShoulder: -0.8, lElbow: 1.4, rElbow: 1.4 });
-  const start = standAt(c.stage, x0, f);
-  return travel('exit-run', c.stage, x0, offX(c.stage, side, 90), {
-    speed: 270,
-    gait: RUN,
-    delay: 0.45,
-    prelude: (t) => lerpPose(start, anticipation, ease.out(segment(t, 0, 0.3))),
-    expr: { brows: -0.3, mouth: 'grin' },
-  });
-}
-
-function exitJump(c: ClipContext): Clip {
-  const x0 = c.from.x;
-  const side = nearestSide(c.stage, x0);
-  const f: 1 | -1 = side === 'left' ? -1 : 1;
-  const crouch = standAt(c.stage, x0, f, { y: standHip(c.stage) + 9, torso: 0.35, lHip: 0.8, lKnee: 1.5, rHip: 0.7, rKnee: 1.4, lShoulder: -0.9, rShoulder: -0.7, lElbow: 0.3, rElbow: 0.3 });
-  const start = standAt(c.stage, x0, f);
-  return {
-    action: 'exit-jump',
-    duration: 0.42,
-    blend: 0.2,
-    physics: false,
-    events: [{ t: 0.4, type: 'launch', vx: f * 90, vy: launchSpeed(120), spin: f * 3, walls: false, floor: false }],
-    sample: (t: number): ClipFrame => ({ pose: lerpPose(start, crouch, ease.out(segment(t, 0, 0.35))), expr: { brows: -0.2, mouth: 'grin' } }),
-  };
-}
-
-function exitSlide(c: ClipContext): Clip {
-  const x = c.from.x;
-  const f = c.from.facing;
-  const g = c.stage.ground;
-  const start = standAt(c.stage, x, f);
-  return {
-    action: 'exit-slide',
-    duration: 1.7,
-    blend: 0.2,
-    physics: false,
-    events: [],
-    sample(t: number): ClipFrame {
-      const sit = sitting(x, g, f, t);
-      if (t < 0.55) {
-        return { pose: lerpPose(start, sit, ease.inOut(segment(t, 0, 0.55))), expr: { mouth: 'smile' } };
-      }
-      const u = ease.in(segment(t, 0.75, 1.7));
-      const p = { ...sit, y: sit.y + u * 150, lShoulder: 2.8, rShoulder: 2.9, lElbow: 0.3, rElbow: 0.3 };
-      return { pose: p, expr: { eyes: 'happy', mouth: 'grin', brows: 0.5 } };
-    },
-  };
-}
-
-function exitWave(c: ClipContext): Clip {
-  const x = c.from.x;
-  const f = c.from.facing;
-  const base = standAt(c.stage, x, f);
-  return {
-    action: 'exit-wave',
-    duration: 2.3,
-    blend: 0.2,
-    physics: false,
-    events: [],
-    sample(t: number): ClipFrame {
-      const p = breathing(c.stage, x, f, t);
-      const up = ease.out(segment(t, 0, 0.3)) * (1 - segment(t, 1.5, 1.7));
-      p.rShoulder = mix(base.rShoulder, 2.7, up);
-      p.rElbow = mix(base.rElbow, 0.5 + 0.45 * Math.sin(t * 13), up);
-      p.head = 0.15;
-      const duck = ease.in(segment(t, 1.7, 2.3));
-      const crouch = segment(t, 1.5, 1.75);
-      p.y += crouch * 10 + duck * 140;
-      p.lHip += crouch * 0.6;
-      p.lKnee += crouch * 1.1;
-      p.rHip += crouch * 0.5;
-      p.rKnee += crouch * 1;
-      return { pose: p, expr: { eyes: 'happy', mouth: 'grin', brows: 0.3 } };
-    },
-  };
-}
-
-function exitPeek(c: ClipContext): Clip {
-  const f = c.from.facing;
-  const hide = { ...c.from, x: c.from.x - f * 70 };
-  const lean = { ...c.from, x: c.from.x + f * 4, torso: c.from.torso + 0.1 };
-  const track = keyed([
-    { t: 0, p: c.from },
-    { t: 0.18, p: lean, e: ease.out },
-    { t: 0.6, p: hide, e: ease.in },
-  ]);
-  return { action: 'exit-peek', duration: 0.6, blend: 0.1, physics: false, events: [], sample: (t) => ({ pose: track(t), expr: { mouth: 'grin', eyes: 'happy' } }) };
 }
 
 /* ───────────────────────── idles ───────────────────────── */
@@ -1487,7 +1397,10 @@ function unfoldClip(c: ClipContext): Clip {
 
 /* ───────────────────────── factory ───────────────────────── */
 
-export function createClip(action: Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction>, c: ClipContext): Clip {
+/** Built by exits.ts (they need the lite flag and draw props). */
+export type SceneOnlyAction = ExitAction | 'enter-door' | 'enter-hatch' | 'enter-portal';
+
+export function createClip(action: Exclude<ActionName, GetUpAction | RouteAction | MoveAction | ActivityAction | SceneOnlyAction>, c: ClipContext): Clip {
   switch (action) {
     case 'idle-slip':
       return mishap('idle-slip', c, 'slip');
@@ -1515,16 +1428,6 @@ export function createClip(action: Exclude<ActionName, GetUpAction | RouteAction
       return enterSlide(c);
     case 'peek-out':
       return peekOut(c);
-    case 'exit-run':
-      return exitRun(c);
-    case 'exit-jump':
-      return exitJump(c);
-    case 'exit-slide':
-      return exitSlide(c);
-    case 'exit-wave':
-      return exitWave(c);
-    case 'exit-peek':
-      return exitPeek(c);
     case 'idle-breathe':
       return idleBreathe(c);
     case 'idle-scratch':
