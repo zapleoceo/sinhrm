@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Services\Demo;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -118,17 +119,50 @@ final class DemoRegistry
         }
         $tables = DB::table('demo_records')->where('table_name', 'not like', self::STEP_PREFIX.'%')->select('table_name')->groupBy('table_name')
             ->orderByRaw('MAX(id) DESC')->pluck('table_name')->all();
-        foreach ($tables as $table) {
-            $table = (string) $table;
-            foreach (array_chunk($this->ids($table), 500) as $ids) {
-                $ids = $this->unreferenced($table, $ids);
-                $n = DB::table($table)->whereIn('id', $ids)->delete();
-                $deleted[$table] = ($deleted[$table] ?? 0) + $n;
+        // Newest registrations first; a row a foreign key still holds (e.g. a legacy branch registered after the rows
+        // that use it) is retried on the next pass, after its users are gone. A row that never frees up is kept.
+        for ($pass = 0, $progress = true; $pass < 4 && $progress; $pass++) {
+            $progress = false;
+            foreach ($tables as $table) {
+                $table = (string) $table;
+                foreach (array_chunk($this->ids($table), 500) as $ids) {
+                    $ids = DB::table($table)->whereIn('id', $this->unreferenced($table, $ids))->pluck('id')->map(static fn ($id): int => (int) $id)->all();
+                    $n = $this->delete($table, $ids);
+                    $deleted[$table] = ($deleted[$table] ?? 0) + $n;
+                    $progress = $progress || $n > 0;
+                }
             }
         }
         DB::table('demo_records')->delete();
 
         return array_filter($deleted);
+    }
+
+    /**
+     * Deletes the rows in a savepoint (a failing statement would abort the whole Postgres transaction); when a foreign
+     * key refuses the chunk, row by row, skipping the rows still in use.
+     *
+     * @param  list<int>  $ids
+     */
+    private function delete(string $table, array $ids): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+        try {
+            return DB::transaction(static fn (): int => DB::table($table)->whereIn('id', $ids)->delete());
+        } catch (QueryException) {
+            $n = 0;
+            foreach ($ids as $id) {
+                try {
+                    $n += DB::transaction(static fn (): int => DB::table($table)->where('id', $id)->delete());
+                } catch (QueryException) {
+                    // still referenced by a row outside the demo: kept
+                }
+            }
+
+            return $n;
+        }
     }
 
     /**

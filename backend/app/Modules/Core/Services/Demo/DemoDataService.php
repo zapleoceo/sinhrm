@@ -24,7 +24,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Company-wide synthetic data for the report charts (POST /api/ops/demo-fill?confirm=demo&step=<name>): an IT school
- * network (head office + 3 branches, ~128 people in a 4–6 level org chart, see blueprint()) with pay, recruiting funnel with channel costs and touches, time off, timesheets, OKR, 1:1s, a closed 360
+ * network (head office + 3 city units, ~128 people in a 4–6 level org chart, see blueprint(); all in ONE branch DemoName::BRANCH) with pay, recruiting funnel with channel costs and touches, time off, timesheets, OKR, 1:1s, a closed 360
  * cycle, two closed Pulse waves, mood, Desk, knowledge, assets, hiring requests, script scores — the last 6 months.
  *
  * The fill is split into ordered STEPS; each runs in its own transaction (one HTTP request, well under the 60 s
@@ -32,15 +32,13 @@ use Spatie\Permission\PermissionRegistrar;
  * created from the registry. Plain data goes in bulk inserts (chunks of 500); Recruiting and Pulse go through their
  * own services (stage history, captured touches, anonymous responses, membership snapshot on close).
  *
- * Rules: every name/title starts with "[ТЕСТ]", e-mails are demo+<key>@sinhrm.test (reserved .test TLD); a unique value that is already taken by a row that is not
+ * Rules: every name/title ends with " [ТЕСТ]" (DemoName::tag; the branch is "Тестовий філіал"), e-mails are demo+<key>@sinhrm.test (reserved .test TLD); a unique value that is already taken by a row that is not
  * demo-registered is skipped, never reused or changed; every root row is
  * listed in demo_records (DemoRegistry), reset deletes only those. Randomness is a seeded Mt19937 per step (Faker is
  * a dev dependency, absent on deploys).
  */
 final class DemoDataService
 {
-    public const string PREFIX = '[ТЕСТ] ';
-
     public const array STEPS = [
         'org', 'people', 'recruiting-setup',
         'recruiting-1', 'recruiting-2', 'recruiting-3', 'recruiting-4', 'recruiting-5', 'recruiting-6', 'recruiting-7', 'recruiting-8',
@@ -63,16 +61,14 @@ final class DemoDataService
 
     private const array LAST = ['Коваленко', 'Бондаренко', 'Ткаченко', 'Кравченко', 'Олійник', 'Шевчук', 'Поліщук', 'Савченко', 'Руденко', 'Марченко', 'Мороз', 'Лисенко', 'Гончаренко', 'Павленко'];
 
-    /** Teaching branches: city, branch name, teachers, sales managers, administrators. The head office is a branch too. */
+    /** City units of the one demo branch: city, teachers, sales managers, administrators (each gets its own departments). */
     private const array BRANCHES = [
-        ['Київ', 'Київ Центр', 14, 6, 2],
-        ['Львів', 'Львів', 11, 5, 1],
-        ['Дніпро', 'Дніпро', 12, 6, 1],
+        ['Київ', 14, 6, 2],
+        ['Львів', 11, 5, 1],
+        ['Дніпро', 12, 6, 1],
     ];
 
-    private const string CENTRAL = 'Центральний офіс';
-
-    /** Head-office departments; each teaching branch adds "Дирекція філії", "Навчальний відділ", "Відділ продажів" + city. */
+    /** Head-office departments; each city unit adds "Дирекція філії", "Навчальний відділ", "Відділ продажів" + city. */
     private const array CENTRAL_DEPARTMENTS = ['Дирекція', 'Маркетинг', 'Контакт-центр', 'Фінанси та бухгалтерія', 'HR', 'Методичний центр', 'IT'];
 
     /** position => base monthly pay, UAH */
@@ -99,6 +95,7 @@ final class DemoDataService
 
     public function __construct(
         private readonly DemoRegistry $registry,
+        private readonly DemoLegacy $legacy,
         private readonly RecruitingDemoData $recruiting,
         private readonly VacancyService $vacancies,
         private readonly WaveLifecycle $waves,
@@ -152,10 +149,24 @@ final class DemoDataService
         return ['step' => $step, 'already' => false, 'counts' => $this->counts];
     }
 
-    /** @return array<string, int> */
+    /**
+     * Registers the legacy test rows (DemoLegacy), then deletes everything registered.
+     *
+     * @return array{legacy: array<string, int>, deleted: array<string, int>}
+     */
     public function reset(): array
     {
-        return DB::transaction(fn (): array => $this->registry->purge());
+        return DB::transaction(fn (): array => ['legacy' => $this->legacy->register(), 'deleted' => $this->registry->purge()]);
+    }
+
+    /**
+     * What reset would touch, changing nothing.
+     *
+     * @return array{legacy: array<string, int>, registered: array<string, int>, effects: array<string, int>}
+     */
+    public function resetPreview(): array
+    {
+        return $this->legacy->report();
     }
 
     private function dispatch(string $step): void
@@ -194,14 +205,10 @@ final class DemoDataService
 
     // ---------------------------------------------------------------- context from earlier steps
 
-    /** @return array{branches: list<int>, departments: list<int>, positions: list<int>} */
-    private function org(): array
+    /** The one demo branch ("Тестовий філіал"): every demo person, vacancy and request belongs to it. */
+    private function branch(): int
     {
-        return [
-            'branches' => $this->registry->ids('branches'),
-            'departments' => $this->registry->ids('departments'),
-            'positions' => $this->registry->ids('positions'),
-        ];
+        return $this->registry->ids('branches')[0] ?? throw new RuntimeException('previous_step_missing:org');
     }
 
     /** @return list<array{id: int, user_id: int, branch: int, department: int, manager: int|null, active: bool}> */
@@ -253,17 +260,13 @@ final class DemoDataService
 
     private function structure(): void
     {
-        $cities = [];
-        foreach (self::BRANCHES as [$city, $branch]) {
-            $cities[$city] = $this->insert('cities', ['name' => self::PREFIX.$city, 'status' => 'active']);
-            $this->insert('branches', ['name' => self::PREFIX.$branch, 'status' => 'active', 'city_id' => $cities[$city]]);
-        }
-        $this->insert('branches', ['name' => self::PREFIX.self::CENTRAL, 'status' => 'active', 'city_id' => $cities['Київ']]);
+        $city = $this->insert('cities', ['name' => DemoName::tag('Київ'), 'status' => 'active']);
+        $this->insert('branches', ['name' => DemoName::BRANCH, 'status' => 'active', 'city_id' => $city]);
         foreach ($this->departmentNames() as $name) {
-            $this->insert('departments', ['name' => self::PREFIX.$name, 'status' => 'active']);
+            $this->insert('departments', ['name' => DemoName::tag($name), 'status' => 'active']);
         }
         foreach (array_keys(self::POSITIONS) as $name) {
-            $this->insert('positions', ['name' => self::PREFIX.$name, 'status' => 'active']);
+            $this->insert('positions', ['name' => DemoName::tag($name), 'status' => 'active']);
         }
     }
 
@@ -278,12 +281,12 @@ final class DemoDataService
         return $names;
     }
 
-    /** @return array<string, int> demo row name without the prefix => id */
+    /** @return array<string, int> demo row name without the marker => id */
     private function named(string $table): array
     {
         $out = [];
         foreach (DB::table($table)->whereIn('id', $this->registry->ids($table))->orderBy('id')->get(['id', 'name']) as $row) {
-            $out[substr((string) $row->name, strlen(self::PREFIX))] = (int) $row->id;
+            $out[DemoName::untag((string) $row->name)] = (int) $row->id;
         }
 
         return $out;
@@ -293,16 +296,16 @@ final class DemoDataService
      * Org chart of a private IT school network (~128 people), built on the usual span of control of 5–8: the CEO
      * leads 6 C-level directors; the COO leads 3 branch directors (administrator, head of teaching → senior methodists
      * → teachers, head of sales → managers); head-office functions sit under their C-level. 4–6 levels, every manager
-     * has ≤ 9 direct reports. Branch staff belong to their branch, the head office to "Центральний офіс".
+     * has ≤ 9 direct reports. Everyone belongs to the one demo branch; city units differ by department.
      *
-     * @return array<string, array{key: string, parent: string|null, position: string, department: string, branch: string, depth: int}>
+     * @return array<string, array{key: string, parent: string|null, position: string, department: string, depth: int}>
      */
     private function blueprint(): array
     {
         $nodes = [];
-        $add = static function (string $key, ?string $parent, string $position, string $department, string $branch = self::CENTRAL) use (&$nodes): string {
+        $add = static function (string $key, ?string $parent, string $position, string $department) use (&$nodes): string {
             $depth = $parent === null ? 0 : $nodes[$parent]['depth'] + 1;
-            $nodes[$key] = ['key' => $key, 'parent' => $parent, 'position' => $position, 'department' => $department, 'branch' => $branch, 'depth' => $depth];
+            $nodes[$key] = ['key' => $key, 'parent' => $parent, 'position' => $position, 'department' => $department, 'depth' => $depth];
 
             return $key;
         };
@@ -320,22 +323,22 @@ final class DemoDataService
         $clo = $add('clo', $ceo, 'Директор з навчання', 'Дирекція');
         $cio = $add('cio', $ceo, 'IT-директор', 'Дирекція');
 
-        foreach (self::BRANCHES as $b => [$city, $branch, $teachers, $sales, $admins]) {
-            $dir = $add("b{$b}-dir", $coo, 'Директор філії', 'Дирекція філії '.$city, $branch);
+        foreach (self::BRANCHES as $b => [$city, $teachers, $sales, $admins]) {
+            $dir = $add("b{$b}-dir", $coo, 'Директор філії', 'Дирекція філії '.$city);
             for ($i = 0; $i < $admins; $i++) {
-                $add("b{$b}-adm-{$i}", $dir, 'Адміністратор філії', 'Дирекція філії '.$city, $branch);
+                $add("b{$b}-adm-{$i}", $dir, 'Адміністратор філії', 'Дирекція філії '.$city);
             }
-            $edu = $add("b{$b}-edu", $dir, 'Керівник навчального відділу', 'Навчальний відділ '.$city, $branch);
+            $edu = $add("b{$b}-edu", $dir, 'Керівник навчального відділу', 'Навчальний відділ '.$city);
             $groups = (int) ceil($teachers / 5);
             for ($g = 0; $g < $groups; $g++) {
-                $lead = $add("b{$b}-met-{$g}", $edu, 'Старший методист', 'Навчальний відділ '.$city, $branch);
+                $lead = $add("b{$b}-met-{$g}", $edu, 'Старший методист', 'Навчальний відділ '.$city);
                 for ($t = $g; $t < $teachers; $t += $groups) {
-                    $add("b{$b}-t-{$t}", $lead, 'Викладач', 'Навчальний відділ '.$city, $branch);
+                    $add("b{$b}-t-{$t}", $lead, 'Викладач', 'Навчальний відділ '.$city);
                 }
             }
-            $head = $add("b{$b}-sales", $dir, 'Керівник відділу продажів', 'Відділ продажів '.$city, $branch);
+            $head = $add("b{$b}-sales", $dir, 'Керівник відділу продажів', 'Відділ продажів '.$city);
             for ($i = 0; $i < $sales; $i++) {
-                $add("b{$b}-s-{$i}", $head, 'Менеджер з продажу', 'Відділ продажів '.$city, $branch);
+                $add("b{$b}-s-{$i}", $head, 'Менеджер з продажу', 'Відділ продажів '.$city);
             }
         }
         $team('mkt', $cco, 'Керівник з маркетингу', 'Маркетолог', 5, 'Маркетинг');
@@ -366,11 +369,10 @@ final class DemoDataService
      */
     private function people(): void
     {
-        $org = $this->org();
-        $branchIds = $this->named('branches');
+        $branch = $this->branch();
         $departmentIds = $this->named('departments');
         $positionIds = $this->named('positions');
-        $users = [['email' => self::ADMIN_EMAIL, 'name' => self::PREFIX.'Адміністратор', 'role' => 'admin', 'branches' => $org['branches']]];
+        $users = [['email' => self::ADMIN_EMAIL, 'name' => DemoName::tag('Адміністратор'), 'role' => 'admin', 'branches' => [$branch]]];
         $blueprint = $this->blueprint();
         $leaders = array_flip(array_filter(array_column($blueprint, 'parent')));
         $employees = [];
@@ -379,9 +381,8 @@ final class DemoDataService
             $recruiter = str_starts_with($node['key'], 'hr-');
             $email = $recruiter ? "demo+{$node['key']}@sinhrm.test" : sprintf('demo+emp-%02d@sinhrm.test', $n + 1);
             $female = $n % 2 === 0;
-            $name = self::PREFIX.self::LAST[($n * 3 + intdiv($n, 14)) % count(self::LAST)].' '.($female ? self::FIRST_F : self::FIRST_M)[($n * 5 + intdiv($n, 24)) % 12];
-            $branch = $branchIds[$node['branch']];
-            $users[] = ['email' => $email, 'name' => $name, 'role' => $recruiter ? 'recruiter' : 'employee', 'branches' => $recruiter ? $org['branches'] : [$branch]];
+            $name = DemoName::tag(self::LAST[($n * 3 + intdiv($n, 14)) % count(self::LAST)].' '.($female ? self::FIRST_F : self::FIRST_M)[($n * 5 + intdiv($n, 24)) % 12]);
+            $users[] = ['email' => $email, 'name' => $name, 'role' => $recruiter ? 'recruiter' : 'employee', 'branches' => [$branch]];
             $leader = isset($leaders[$node['key']]);
             $terminated = ! $leader && ! $recruiter && $node['depth'] >= 3 && $n % 19 === 9;
             $days = $leader ? 2200 - 300 * $node['depth'] - $this->rnd->getInt(0, 200) : ($n % 6 === 1 ? $this->rnd->getInt(10, 175) : $this->rnd->getInt(200, 1300));
@@ -489,12 +490,10 @@ final class DemoDataService
 
     private function recruitingSetup(): void
     {
-        $org = $this->org();
         $admin = $this->admin();
         $recruiters = $this->recruiters();
         $departments = $this->named('departments');
         $positions = $this->named('positions');
-        $central = $this->named('branches')[self::CENTRAL] ?? $org['branches'][0];
         // title => [position, department ("" + city = a branch unit), branch index or null = head office]
         $titles = [
             ['Менеджер з продажу', 'Менеджер з продажу', 'Відділ продажів ', 0], ['Викладач англійської', 'Викладач', 'Навчальний відділ ', 1],
@@ -504,8 +503,8 @@ final class DemoDataService
         ];
         foreach ($titles as $i => [$title, $position, $unit, $b]) {
             $vacancy = $this->vacancies->create($admin, new VacancyData([
-                'title' => self::PREFIX.$title,
-                'branch_id' => $b === null ? $central : $org['branches'][$b],
+                'title' => DemoName::tag($title),
+                'branch_id' => $this->branch(),
                 'department_id' => $departments[$b === null ? $unit : $unit.self::BRANCHES[$b][0]] ?? null,
                 'position_id' => $positions[$position] ?? null,
                 'recruiter_id' => $recruiters[$i % count($recruiters)]->id,
@@ -517,7 +516,7 @@ final class DemoDataService
             $vacancy->forceFill(['created_at' => $this->now->copy()->subDays(185 - $i * 12)])->saveQuietly();
         }
 
-        $note = self::PREFIX.'витрати';
+        $note = DemoName::tag('витрати');
         $costs = [];
         foreach (array_values($this->channels()) as $c => $channel) {
             for ($m = 5; $m >= 0; $m--) {
@@ -543,7 +542,7 @@ final class DemoDataService
     private function candidates(int $slice): void
     {
         $vacancies = array_values(Vacancy::query()->whereIn('id', $this->registry->ids('vacancies'))->orderBy('id')->get()->all());
-        $stories = $this->recruiting->populate($this->recruiters(), $vacancies, self::CANDIDATES_PER_STEP, 180, self::PREFIX, $this->channels(), 500, $slice * self::CANDIDATES_PER_STEP);
+        $stories = $this->recruiting->populate($this->recruiters(), $vacancies, self::CANDIDATES_PER_STEP, 180, DemoName::SUFFIX, $this->channels(), 500, $slice * self::CANDIDATES_PER_STEP);
         foreach ($stories as $story) {
             $this->registry->add('candidates', $story['candidate']);
             $this->count('candidates');
@@ -569,7 +568,7 @@ final class DemoDataService
 
     private function scripts(): void
     {
-        $script = $this->insert('scripts', ['name' => self::PREFIX.'Перший дзвінок кандидату', 'channel' => 'call', 'archived' => false, 'created_at' => $this->now, 'updated_at' => $this->now]);
+        $script = $this->insert('scripts', ['name' => DemoName::tag('Перший дзвінок кандидату'), 'channel' => 'call', 'archived' => false, 'created_at' => $this->now, 'updated_at' => $this->now]);
         $version = $this->insert('script_versions', [
             'script_id' => $script, 'version' => 1, 'published_at' => $this->now->copy()->subDays(120),
             'steps' => json_encode([['id' => 's1', 'title' => 'Привітання'], ['id' => 's2', 'title' => 'Умови'], ['id' => 's3', 'title' => 'Наступний крок']]),
@@ -612,7 +611,7 @@ final class DemoDataService
                 $rows[] = [
                     'employee_id' => $e['id'], 'leave_type_id' => $types[($i + $r) % count($types)],
                     'starts_on' => $start->toDateString(), 'ends_on' => $start->copy()->addDays($days - 1)->toDateString(),
-                    'half_day' => 'none', 'days' => $days, 'comment' => self::PREFIX.'відпустка', 'status' => $status,
+                    'half_day' => 'none', 'days' => $days, 'comment' => DemoName::tag('відпустка'), 'status' => $status,
                     'balance_override' => false, 'approver_id' => $status === 'pending' ? null : $approver,
                     'decided_at' => $status === 'pending' ? null : $start->copy()->subDays(7),
                     'created_by' => $e['user_id'], 'created_at' => $start->copy()->subDays(10), 'updated_at' => $start->copy()->subDays(7),
@@ -673,7 +672,6 @@ final class DemoDataService
 
     private function perform(): void
     {
-        $org = $this->org();
         $admin = $this->admin();
         $active = $this->active();
         $quarter = $this->now->year.'-Q'.$this->now->quarter;
@@ -730,7 +728,7 @@ final class DemoDataService
 
         return $this->insert('objectives', [
             'scope' => $scope, 'owner_employee_id' => $owner, 'department_id' => $scope === 'team' ? $department : null, 'branch_id' => null,
-            'period' => $period, 'title' => self::PREFIX.$title, 'description' => null, 'key_results' => '[]', 'progress' => 0,
+            'period' => $period, 'title' => DemoName::tag($title), 'description' => null, 'key_results' => '[]', 'progress' => 0,
             'status' => 'active', 'visibility' => 'public', 'created_by' => $by, 'created_at' => $at, 'updated_at' => $at,
         ]);
     }
@@ -738,17 +736,17 @@ final class DemoDataService
     /** @param  list<array{id: int, user_id: int, branch: int, department: int, manager: int|null, active: bool}>  $active */
     private function review(array $active, int $admin): void
     {
-        $scale = $this->insert('rating_scales', ['name' => self::PREFIX.'Шкала 1–5', 'levels' => json_encode(array_map(
+        $scale = $this->insert('rating_scales', ['name' => DemoName::tag('Шкала 1–5'), 'levels' => json_encode(array_map(
             static fn (int $v): array => ['value' => $v, 'label' => (string) $v], [1, 2, 3, 4, 5],
         )), 'created_at' => $this->now, 'updated_at' => $this->now]);
         $competencies = [];
         foreach (['Комунікація', 'Відповідальність', 'Командна робота', 'Орієнтація на результат'] as $name) {
-            $competencies[] = $this->insert('competencies', ['name' => self::PREFIX.$name, 'scale_id' => $scale, 'active' => true, 'created_at' => $this->now, 'updated_at' => $this->now]);
+            $competencies[] = $this->insert('competencies', ['name' => DemoName::tag($name), 'scale_id' => $scale, 'active' => true, 'created_at' => $this->now, 'updated_at' => $this->now]);
         }
         $start = $this->now->copy()->subMonths(4)->startOfQuarter();
         $submitted = $start->copy()->addMonths(3)->addDays(7);
         $cycle = $this->insert('review_cycles', [
-            'name' => self::PREFIX.'Оцінка 360 '.$start->year.'-Q'.$start->quarter, 'period_start' => $start->toDateString(),
+            'name' => DemoName::tag('Оцінка 360 '.$start->year.'-Q'.$start->quarter), 'period_start' => $start->toDateString(),
             'period_end' => $start->copy()->endOfQuarter()->toDateString(), 'participants' => json_encode(['branch_ids' => [], 'department_ids' => []]),
             'types' => json_encode(['self', 'manager', 'peer']), 'competency_ids' => json_encode($competencies), 'anonymous' => true,
             'deadlines' => '{}', 'status' => 'closed', 'created_by' => $admin,
@@ -795,7 +793,7 @@ final class DemoDataService
     {
         $admin = $this->admin();
         $survey = $this->registry->ids('surveys')[0] ?? $this->insert('surveys', [
-            'title' => self::PREFIX.'Пульс залученості', 'type' => 'engagement', 'description' => 'Тестове опитування.',
+            'title' => DemoName::tag('Пульс залученості'), 'type' => 'engagement', 'description' => 'Тестове опитування.',
             'questions' => json_encode([
                 ['id' => 'enps', 'type' => 'enps', 'text' => 'Наскільки ймовірно, що ви порекомендуєте нас як роботодавця?', 'required' => true],
                 ['id' => 'q1', 'type' => 'scale5', 'text' => 'Я розумію, чого від мене очікують', 'required' => true],
@@ -858,7 +856,7 @@ final class DemoDataService
         $categories = [];
         foreach ([['Довідки та документи', 4, 24], ['Зарплата', 8, 48], ['ІТ та доступи', 2, 16]] as [$name, $first, $resolve]) {
             $categories[] = [$this->insert('desk_categories', [
-                'name' => self::PREFIX.$name, 'first_response_hours' => $first, 'resolve_hours' => $resolve,
+                'name' => DemoName::tag($name), 'first_response_hours' => $first, 'resolve_hours' => $resolve,
                 'default_assignee_id' => $admin, 'active' => true, 'created_at' => $this->now, 'updated_at' => $this->now,
             ]), $first, $resolve];
         }
@@ -871,7 +869,7 @@ final class DemoDataService
             $resolvedAt = $created->copy()->addMinutes((int) ($resolve * 60 * ($i % 6 === 0 ? 1.5 : 0.6)));
             $open = $i % 5 === 1 || $resolvedAt->isFuture();
             $rows[] = [
-                'employee_id' => $e['id'], 'category_id' => $category, 'subject' => self::PREFIX.'Звернення №'.($i + 1), 'body' => 'Тестове звернення.',
+                'employee_id' => $e['id'], 'category_id' => $category, 'subject' => DemoName::tag('Звернення №'.($i + 1)), 'body' => 'Тестове звернення.',
                 'status' => $open ? ($i % 2 === 0 ? 'in_progress' : 'new') : ($i % 3 === 0 ? 'closed' : 'resolved'),
                 'assignee_id' => $admin, 'first_response_at' => $firstAt->isFuture() ? null : $firstAt,
                 'resolved_at' => $open ? null : $resolvedAt, 'closed_at' => ! $open && $i % 3 === 0 ? $resolvedAt : null,
@@ -889,13 +887,13 @@ final class DemoDataService
         $titles = ['Як оформити відпустку', 'Графік виплат', 'Доступ до пошти', 'Правила відряджень', 'Як отримати довідку', 'Онбординг новачка', 'Лікарняний', 'Техніка та обладнання'];
         $categories = [];
         foreach (['Кадрові питання', 'ІТ'] as $p => $name) {
-            $categories[] = $this->insert('kb_categories', ['name' => self::PREFIX.$name, 'emoji' => null, 'position' => 100 + $p, 'created_at' => $this->now, 'updated_at' => $this->now]);
+            $categories[] = $this->insert('kb_categories', ['name' => DemoName::tag($name), 'emoji' => null, 'position' => 100 + $p, 'created_at' => $this->now, 'updated_at' => $this->now]);
         }
         $votes = [];
         foreach ($titles as $i => $title) {
             $at = $this->now->copy()->subDays(150 - $i * 15);
             $article = $this->insert('kb_articles', [
-                'category_id' => $categories[$i % 2], 'title' => self::PREFIX.$title, 'body_md' => 'Тестова стаття.', 'body_html' => '<p>Тестова стаття.</p>',
+                'category_id' => $categories[$i % 2], 'title' => DemoName::tag($title), 'body_md' => 'Тестова стаття.', 'body_html' => '<p>Тестова стаття.</p>',
                 'tags' => json_encode(['тест']), 'audience' => json_encode(['type' => 'all']), 'status' => 'published', 'version' => 1,
                 'author_id' => $admin, 'updated_by' => $admin, 'published_at' => $at, 'created_at' => $at, 'updated_at' => $at,
             ]);
@@ -915,7 +913,7 @@ final class DemoDataService
         $names = ['Ноутбук', 'Монітор', 'Телефон'];
         $types = [];
         foreach ($names as $name) {
-            $types[] = $this->insert('asset_types', ['name' => $this->freeValue('asset_types', 'name', self::PREFIX.$name), 'created_at' => $this->now, 'updated_at' => $this->now]);
+            $types[] = $this->insert('asset_types', ['name' => $this->freeValue('asset_types', 'name', $name), 'created_at' => $this->now, 'updated_at' => $this->now]);
         }
         // Unique inventory numbers: DEMO-0001… skipping any number that already exists (demo or not).
         $takenNumbers = array_flip(array_map('strval', DB::table('assets')->where('inventory_number', 'like', 'DEMO-%')->pluck('inventory_number')->all()));
@@ -929,7 +927,7 @@ final class DemoDataService
             $status = $i < 20 && $e['active'] ? 'assigned' : ['in_stock', 'repair', 'written_off'][$i % 3];
             $bought = $this->now->copy()->subDays($this->rnd->getInt(30, 900));
             $rows[] = [
-                'inventory_number' => $inventory, 'serial' => sprintf('SN-DEMO-%05d', $i * 131), 'name' => self::PREFIX.$names[$i % 3],
+                'inventory_number' => $inventory, 'serial' => sprintf('SN-DEMO-%05d', $i * 131), 'name' => DemoName::tag($names[$i % 3]),
                 'type_id' => $types[$i % 3], 'status' => $status, 'cost' => [32000, 8000, 15000][$i % 3], 'purchased_at' => $bought->toDateString(),
                 'notes' => null, 'employee_id' => $status === 'assigned' ? $e['id'] : null, 'created_at' => $bought, 'updated_at' => $bought,
             ];
@@ -950,7 +948,6 @@ final class DemoDataService
 
     private function hiring(): void
     {
-        $org = $this->org();
         $admin = $this->admin()->id;
         $recruiters = $this->recruiters();
         $steps = DB::table('hiring_route_steps')->orderBy('position')->get()->all();
@@ -959,7 +956,7 @@ final class DemoDataService
         foreach ($statuses as $i => $status) {
             $submitted = $this->now->copy()->subDays(160 - $i * 22);
             $request = $this->insert('hiring_requests', [
-                'title' => self::PREFIX.'Заявка на підбір №'.($i + 1), 'branch_id' => $org['branches'][$i % 3], 'department_id' => $this->named('departments')['Відділ продажів '.self::BRANCHES[$i % 3][0]] ?? null,
+                'title' => DemoName::tag('Заявка на підбір №'.($i + 1)), 'branch_id' => $this->branch(), 'department_id' => $this->named('departments')['Відділ продажів '.self::BRANCHES[$i % 3][0]] ?? null,
                 'position_id' => $this->named('positions')['Менеджер з продажу'] ?? null, 'headcount' => 1 + $i % 2, 'reason' => $i % 3 === 0 ? 'replacement' : 'new_position',
                 'desired_start_date' => $submitted->copy()->addDays(45)->toDateString(), 'salary_min' => 25000, 'salary_max' => 35000, 'currency' => 'UAH',
                 'requirements' => 'Тестові вимоги.', 'priority' => ['normal', 'high', 'low', 'urgent'][$i % 4], 'extra' => '{}', 'status' => $status,
@@ -988,12 +985,12 @@ final class DemoDataService
 
     // ---------------------------------------------------------------- helpers
 
-    /** $value, or "$value (2)", "(3)"… — the first one not taken in $table.$column (unique columns). */
+    /** Tagged $value, or "$value (2) [ТЕСТ]", "(3)"… — the first one not taken in $table.$column (unique columns). */
     private function freeValue(string $table, string $column, string $value): string
     {
-        $candidate = $value;
+        $candidate = DemoName::tag($value);
         for ($n = 2; DB::table($table)->where($column, $candidate)->exists(); $n++) {
-            $candidate = $value.' ('.$n.')';
+            $candidate = DemoName::tag($value.' ('.$n.')');
         }
 
         return $candidate;

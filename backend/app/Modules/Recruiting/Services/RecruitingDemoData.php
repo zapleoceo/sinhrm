@@ -70,10 +70,10 @@ final class RecruitingDemoData
 
     private int $nameSeq = 0;
 
-    /** Candidate number offset, name prefix, story span and step pace (see populate()). */
+    /** Candidate number offset, name suffix, story span and step pace (see populate()). */
     private int $offset = 0;
 
-    private string $prefix = '';
+    private string $suffix = '';
 
     private int $spanDays = 25;
 
@@ -165,7 +165,7 @@ final class RecruitingDemoData
 
     /**
      * Candidate stories for a caller that owns the surrounding data (the company-wide demo fill, DemoDataService):
-     * the same route as generate() — real services, stage moves, captured touches — but with a name prefix, a longer
+     * the same route as generate() — real services, stage moves, captured touches — but with a name suffix (" [ТЕСТ]" at the end), a longer
      * span (created up to $spanDays ago), stage moves days apart and acquisition channels. Deterministic.
      * Numbers are offset so the contacts never collide with the preview set of generate().
      *
@@ -175,9 +175,9 @@ final class RecruitingDemoData
      * @param  int  $from  first story number (a caller may split the stories into several requests)
      * @return list<array{candidate: int, touches: int}>
      */
-    public function populate(array $recruiters, array $vacancies, int $count, int $spanDays, string $prefix, array $channelIds, int $offset = 500, int $from = 0): array
+    public function populate(array $recruiters, array $vacancies, int $count, int $spanDays, string $suffix, array $channelIds, int $offset = 500, int $from = 0): array
     {
-        [$this->offset, $this->prefix, $this->spanDays, $this->stepHours, $this->channelIds] = [$offset, $prefix, $spanDays, 60, $channelIds];
+        [$this->offset, $this->suffix, $this->spanDays, $this->stepHours, $this->channelIds] = [$offset, $suffix, $spanDays, 60, $channelIds];
         $stages = $this->pipelines->defaultPipeline()?->stages->values()->all() ?? [];
         $reasons = $this->pipelines->rejectReasons(true)->pluck('id')->all();
         $out = [];
@@ -191,7 +191,7 @@ final class RecruitingDemoData
             }
         }
         $this->externalPrefix = 'demo-';
-        [$this->offset, $this->prefix, $this->spanDays, $this->stepHours, $this->channelIds] = [0, '', 25, 6, []];
+        [$this->offset, $this->suffix, $this->spanDays, $this->stepHours, $this->channelIds] = [0, '', 25, 6, []];
 
         return $out;
     }
@@ -287,7 +287,7 @@ final class RecruitingDemoData
     private function candidateStory(int $i, User $recruiter, Vacancy $vacancy, array $stages, array $reasons): array
     {
         $n = $i + $this->offset;
-        $fill = $this->prefix !== ''; // company demo fill: realistic source mix and funnel shape
+        $fill = $this->suffix !== ''; // company demo fill: realistic source mix and funnel shape
         $sources = $fill ? self::FILL_SOURCES : [CandidateSource::WorkUa, CandidateSource::RobotaUa, CandidateSource::MetaAds, CandidateSource::Site, CandidateSource::Referral, CandidateSource::Telegram, CandidateSource::Manual];
         $source = $sources[$i % count($sources)];
         $phone = sprintf('+38067%07d', 1000000 + $n * 7919);
@@ -295,13 +295,13 @@ final class RecruitingDemoData
         $telegram = $i % 3 === 0 ? sprintf('demo_cand_%02d', $n + 1) : null;
         $start = Carbon::now()->subDays($this->spanDays + 3 - ($i * 37) % $this->spanDays)->setTime(9 + $i % 8, ($i * 7) % 60);
 
-        if ($this->prefix !== '' && Candidate::query()->where('phone', $phone)->orWhere('email', $email)
+        if ($this->suffix !== '' && Candidate::query()->where('phone', $phone)->orWhere('email', $email)
             ->when($telegram !== null, fn ($q) => $q->orWhere('telegram_username', $telegram))->exists()) {
             // Pre-check (no failing INSERT, which would abort the Postgres transaction): a taken contact skips the story.
             throw RecruitingException::duplicateCandidateRestricted();
         }
         $candidate = $this->candidates->create($recruiter, new CandidateData(
-            fullName: $this->prefix.$this->nextName(),
+            fullName: $this->nextName().$this->suffix,
             phone: $phone,
             email: $email,
             telegram: $telegram,

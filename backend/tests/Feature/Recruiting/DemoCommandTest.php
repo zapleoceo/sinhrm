@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Recruiting;
 
+use App\Models\User;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Touchpoint;
+use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\RecruitingDemoData;
 use App\Modules\Recruiting\Services\StalenessService;
 use Database\Seeders\DatabaseSeeder;
@@ -50,6 +52,23 @@ final class DemoCommandTest extends TestCase
 
         $this->assertSame(40, Candidate::query()->count());
         $this->assertSame(6, Touchpoint::query()->whereNull('candidate_id')->count());
+    }
+
+    /** The company demo fill (Core DemoDataService) passes a name suffix: the marker goes at the end, never at the start. */
+    public function test_populate_puts_the_suffix_at_the_end_of_names(): void
+    {
+        $demo = $this->app->make(RecruitingDemoData::class);
+        $demo->generate();
+        $recruiters = array_values(User::query()->where('email', 'like', '%@example.test')->orderBy('id')->get()->all());
+        $vacancies = array_values(Vacancy::query()->orderBy('id')->get()->all());
+
+        $stories = $demo->populate($recruiters, $vacancies, 3, 30, ' [ТЕСТ]', [], 900);
+
+        $this->assertCount(3, $stories);
+        foreach (Candidate::query()->whereIn('id', array_column($stories, 'candidate'))->pluck('full_name') as $name) {
+            $this->assertStringEndsWith(' [ТЕСТ]', $name);
+            $this->assertStringStartsNotWith('[ТЕСТ]', $name);
+        }
     }
 
     public function test_service_reports_duration_and_refuses_in_production(): void
