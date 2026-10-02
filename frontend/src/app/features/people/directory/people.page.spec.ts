@@ -28,6 +28,9 @@ describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
   beforeEach(async () => {
     queries = [];
     empty = false;
+    // The table view is remembered in localStorage; another spec (people.spec.ts → setView('cards')) may leave «cards»
+    // behind in a shared test environment, and then there are no headers to test.
+    localStorage.removeItem('sinhrm.people.view');
     TestBed.configureTestingModule({
       imports: [TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
       providers: [
