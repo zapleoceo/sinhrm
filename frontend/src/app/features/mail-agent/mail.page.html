@@ -71,7 +71,7 @@
 
 <p class="muted small"><mat-icon inline>info</mat-icon> {{ 'mail.parsersNote' | transloco }}</p>
 
-<mat-tab-group mat-stretch-tabs="false">
+<mat-tab-group [selectedIndex]="tabIndex()" (selectedIndexChange)="setTab($event)" mat-stretch-tabs="false">
   <mat-tab [label]="'mail.tabs.unknown' | transloco">
     <section class="panel">
       @for (u of store.unknown(); track u.id) {
@@ -207,17 +207,21 @@
 
   <mat-tab [label]="'mail.tabs.log' | transloco">
     <section class="panel">
-      <table class="log">
+      <table class="app-table log" [appTableSort]="log.sort()" (appTableSortChange)="log.setSort($event)">
         <thead>
           <tr>
-            <th>{{ 'mail.log.received' | transloco }}</th>
-            <th>{{ 'mail.log.sender' | transloco }}</th>
-            <th>{{ 'mail.log.subject' | transloco }}</th>
-            <th>{{ 'mail.log.outcome' | transloco }}</th>
+            <th scope="col" app-column-header key="received" [label]="'mail.log.received' | transloco"
+              [filter]="dateFilter" [filterValue]="log.filterValue('received')" (filterChange)="log.setFilter('received', $event)"></th>
+            <th scope="col" app-column-header key="sender" [label]="'mail.log.sender' | transloco"
+              [filter]="textFilter" [filterValue]="log.filterValue('sender')" (filterChange)="log.setFilter('sender', $event)"></th>
+            <th scope="col" app-column-header key="subject" [label]="'mail.log.subject' | transloco"
+              [filter]="textFilter" [filterValue]="log.filterValue('subject')" (filterChange)="log.setFilter('subject', $event)"></th>
+            <th scope="col" app-column-header key="outcome" [label]="'mail.log.outcome' | transloco"
+              [filter]="outcomeFilter()" [filterValue]="log.filterValue('outcome')" (filterChange)="log.setFilter('outcome', $event)"></th>
           </tr>
         </thead>
         <tbody>
-          @for (m of store.messages(); track m.id) {
+          @for (m of log.rows(); track m.id) {
             <tr>
               <td class="muted">{{ m.received_at | date: 'dd.MM HH:mm' }}</td>
               <td>{{ m.sender ?? '—' }}</td>
@@ -233,7 +237,7 @@
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="4" class="muted">{{ 'mail.log.empty' | transloco }}</td></tr>
+            <tr><td colspan="4" class="muted">{{ (store.messages().length ? 'table.noMatches' : 'mail.log.empty') | transloco }}</td></tr>
           }
         </tbody>
       </table>

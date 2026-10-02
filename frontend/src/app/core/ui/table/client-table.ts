@@ -137,16 +137,12 @@ export function distinctValues<T>(rows: readonly T[], value: (row: T) => CellVal
 }
 
 /**
- * Select filter with translated labels (`label(value)` returns a translation key), rebuilt when the values change,
- * the language switches or its translations finish loading. Call it in a field initializer (injection context).
+ * Select filter whose option labels are translation keys (`label(value)`), rebuilt when the values change. The one
+ * way to translate filter options is `FilterOption.i18n` — the header translates the key in the current language,
+ * so a language switch needs no rebuild here; this is only a shorthand for a list of codes.
  */
 export function translatedSelect(values: () => readonly string[], label: (value: string) => string): Signal<ColumnFilter> {
-  const i18n = inject(TranslocoService);
-  const translation = toSignal(i18n.selectTranslation(), { initialValue: null });
-  return computed(() => {
-    translation();
-    return { type: 'select', options: values().map((value) => ({ value, label: i18n.translate(label(value)) })) };
-  });
+  return computed(() => ({ type: 'select', options: values().map((value) => ({ value, label: label(value), i18n: true })) }));
 }
 
 export interface ClientTableOptions<T> {

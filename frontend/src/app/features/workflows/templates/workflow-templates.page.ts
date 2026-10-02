@@ -14,6 +14,20 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDialog, ConfirmDialogData } from '../confirm.dialog';
 import { WORKFLOW_KINDS, WORKFLOW_TRIGGERS, WorkflowKind, WorkflowTemplate, WorkflowTrigger } from '../workflows.model';
 import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
+import { ClientColumn, ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER, translatedSelect } from '../../../core/ui/table/client-table';
+import { ColumnHeader } from '../../../core/ui/table/column-header';
+import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
+import { TableUrlState } from '../../../core/ui/table/table-url-state';
+
+/** Columns of the templates list (all rows are on the page). Kind and trigger sort in their list order. */
+export const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
+  { key: 'name', value: (t) => t.name, filter: 'text' },
+  { key: 'kind', value: (t) => WORKFLOW_KINDS.indexOf(t.kind), filter: 'select', filterValue: (t) => t.kind },
+  { key: 'trigger', value: (t) => WORKFLOW_TRIGGERS.indexOf(t.trigger), filter: 'select', filterValue: (t) => t.trigger },
+  { key: 'steps', value: (t) => t.steps.length, filter: 'number' },
+  { key: 'runs', value: (t) => t.runs_count, filter: 'number' },
+  { key: 'updated', value: (t) => t.updated_at, filter: 'date' },
+];
 
 /** Admin → Воркфлоу: onboarding/offboarding templates, creation of a new one and deletion (only without runs). */
 @Component({
@@ -29,7 +43,10 @@ import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
     MatSelectModule,
     RouterLink,
     TranslocoPipe,
+    TableSortDirective,
+    ColumnHeader,
   ],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -74,20 +91,26 @@ import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
       </div>
     }
     <div class="panel">
-      <table>
+      <table class="app-table" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
-            <th scope="col">{{ 'workflows.fields.name' | transloco }}</th>
-            <th scope="col">{{ 'workflows.fields.kind' | transloco }}</th>
-            <th scope="col">{{ 'workflows.fields.trigger' | transloco }}</th>
-            <th scope="col">{{ 'workflows.fields.steps' | transloco }}</th>
-            <th scope="col">{{ 'workflows.fields.runs' | transloco }}</th>
-            <th scope="col">{{ 'workflows.fields.updated' | transloco }}</th>
+            <th scope="col" app-column-header key="name" [label]="'workflows.fields.name' | transloco"
+              [filter]="textFilter" [filterValue]="table.filterValue('name')" (filterChange)="table.setFilter('name', $event)"></th>
+            <th scope="col" app-column-header key="kind" [label]="'workflows.fields.kind' | transloco"
+              [filter]="kindFilter()" [filterValue]="table.filterValue('kind')" (filterChange)="table.setFilter('kind', $event)"></th>
+            <th scope="col" app-column-header key="trigger" [label]="'workflows.fields.trigger' | transloco"
+              [filter]="triggerFilter()" [filterValue]="table.filterValue('trigger')" (filterChange)="table.setFilter('trigger', $event)"></th>
+            <th scope="col" class="num" app-column-header key="steps" [label]="'workflows.fields.steps' | transloco"
+              [filter]="numberFilter" [filterValue]="table.filterValue('steps')" (filterChange)="table.setFilter('steps', $event)"></th>
+            <th scope="col" class="num" app-column-header key="runs" [label]="'workflows.fields.runs' | transloco"
+              [filter]="numberFilter" [filterValue]="table.filterValue('runs')" (filterChange)="table.setFilter('runs', $event)"></th>
+            <th scope="col" app-column-header key="updated" [label]="'workflows.fields.updated' | transloco"
+              [filter]="dateFilter" [filterValue]="table.filterValue('updated')" (filterChange)="table.setFilter('updated', $event)"></th>
             <th scope="col"><span class="visually-hidden">{{ 'workflows.templates.delete' | transloco }}</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (t of templates(); track t.id) {
+          @for (t of table.rows(); track t.id) {
             <tr [class.inactive]="!t.active">
               <th scope="row">
                 <a [routerLink]="['/admin/workflows', t.id]">{{ t.name }}</a>
@@ -97,9 +120,9 @@ import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
               </th>
               <td>{{ 'workflows.kind.' + t.kind | transloco }}</td>
               <td>{{ 'workflows.trigger.' + t.trigger | transloco }}</td>
-              <td>{{ t.steps.length }}</td>
-              <td>{{ t.runs_count }}</td>
-              <td>{{ t.updated_at | date: 'dd.MM.yyyy' }}</td>
+              <td class="num app-num">{{ t.steps.length }}</td>
+              <td class="num app-num">{{ t.runs_count }}</td>
+              <td class="app-num">{{ t.updated_at | date: 'dd.MM.yyyy' }}</td>
               <td>
                 <button mat-icon-button type="button" (click)="remove(t)" [attr.aria-label]="'workflows.templates.delete' | transloco">
                   <mat-icon>delete</mat-icon>
@@ -108,7 +131,7 @@ import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
             </tr>
           } @empty {
             @if (!loading()) {
-              <tr><td colspan="7" class="muted">{{ 'workflows.templates.empty' | transloco }}</td></tr>
+              <tr><td colspan="7" class="muted">{{ (templates().length ? 'table.noMatches' : 'workflows.templates.empty') | transloco }}</td></tr>
             }
           }
         </tbody>
@@ -116,12 +139,14 @@ import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
     </div>
   `,
   styles: `
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
-    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
+    /* The hidden «actions» column title is position: absolute — keep it inside the scrolling panel, or it widens the page on phones. */
+    .panel { position: relative; }
+    /* Row header (the template name) reads as a cell, not as a column title of the global .app-table. */
+    tbody th { font: inherit; color: inherit; white-space: normal; padding: 0.6rem 1rem; border-bottom-color: var(--app-track); }
     th a { color: inherit; font-weight: 500; }
+    .num { text-align: right; }
+    .app-num { font-size: 0.8rem; white-space: nowrap; }
     tr.inactive { opacity: 0.6; }
-    tbody tr:hover { background: var(--app-row-hover); }
   `,
 })
 export class WorkflowTemplatesPage implements OnInit {
@@ -142,6 +167,12 @@ export class WorkflowTemplatesPage implements OnInit {
     kind: ['onboarding' as WorkflowKind],
     trigger: ['manual' as WorkflowTrigger],
   });
+  protected readonly table = new ClientTable({ rows: this.templates, columns: TEMPLATE_COLUMNS });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberFilter = NUMBER_RANGE;
+  protected readonly dateFilter = DATE_RANGE;
+  protected readonly kindFilter = translatedSelect(() => WORKFLOW_KINDS, (k) => 'workflows.kind.' + k);
+  protected readonly triggerFilter = translatedSelect(() => WORKFLOW_TRIGGERS, (t) => 'workflows.trigger.' + t);
 
   ngOnInit(): void {
     this.load();

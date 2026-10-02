@@ -168,6 +168,7 @@ describe('PeopleStore', () => {
 
     store.setView('cards');
     expect(store.view()).toBe('cards');
+    localStorage.removeItem('sinhrm.people.view'); // do not leak the choice into other specs
   });
 });
 

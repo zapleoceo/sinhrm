@@ -180,6 +180,7 @@ export interface Competency {
 }
 
 export type CycleStatus = 'draft' | 'active' | 'closed';
+export const CYCLE_STATUSES: readonly CycleStatus[] = ['draft', 'active', 'closed'];
 export interface ReviewCycle {
   id: number;
   name: string;
