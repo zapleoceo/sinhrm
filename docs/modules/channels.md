@@ -139,6 +139,7 @@ Ringostat станет доступен только после появлени
 ### Общие примитивы фронта
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Ошибки: `channelErrorCode`/`channelErrorKey` читают код и статус ответа общими `apiErrorCode`/`apiErrorStatus` (`core/api/api-error.ts`); 403 по-прежнему показывает `recruiting.errors.forbidden` (кандидат вне области доступа).
+- Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Channels/WebhookApiTest.php` (404 неизвестного/выключенного, 403 на неверный/отсутствующий секрет

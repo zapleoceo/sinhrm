@@ -3,11 +3,11 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, numberAttrib
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { KbArticle } from './knowledge.model';
 import { KnowledgeService, knowledgeErrorKey } from './knowledge.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * Article view (/knowledge/:id). The HTML comes sanitized from the server (raw HTML escaped, unsafe links dropped);
@@ -57,8 +57,7 @@ export class ArticlePage {
   readonly id = input.required({ transform: numberAttribute });
 
   private readonly api = inject(KnowledgeService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly article = signal<KbArticle | null>(null);
   protected readonly loading = signal(false);
 
@@ -73,7 +72,7 @@ export class ArticlePage {
         },
         error: (e: unknown) => {
           this.loading.set(false);
-          this.toast(knowledgeErrorKey(e));
+          this.notify.show(knowledgeErrorKey(e), { duration: 3000 });
         },
       });
     });
@@ -83,13 +82,9 @@ export class ArticlePage {
     this.api.vote(this.id(), helpful).subscribe({
       next: (a) => {
         this.article.set(a);
-        this.toast('knowledge.thanks');
+        this.notify.show('knowledge.thanks', { duration: 3000 });
       },
-      error: (e: unknown) => this.toast(knowledgeErrorKey(e)),
+      error: (e: unknown) => this.notify.show(knowledgeErrorKey(e), { duration: 3000 }),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
   }
 }

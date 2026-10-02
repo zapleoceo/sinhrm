@@ -6,10 +6,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatRadioModule } from '@angular/material/radio';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Assignment } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * "My reviews" (/perform/reviews): the forms the user fills as a reviewer (self, manager, peer, upward) and the
@@ -96,8 +96,7 @@ import { PerformService, performErrorKey } from '../perform.service';
 })
 export class MyReviewsPage implements OnInit {
   private readonly api = inject(PerformService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly items = signal<Assignment[]>([]);
   protected readonly open = signal<Assignment | null>(null);
   protected readonly loading = signal(false);
@@ -113,7 +112,7 @@ export class MyReviewsPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(performErrorKey(e));
+        this.notify.show(performErrorKey(e));
       },
     });
   }
@@ -125,7 +124,7 @@ export class MyReviewsPage implements OnInit {
         this.comments = Object.fromEntries((full.answers ?? []).map((x) => [x.competency_id, x.comment ?? '']));
         this.open.set(full);
       },
-      error: (e: unknown) => this.toast(performErrorKey(e)),
+      error: (e: unknown) => this.notify.show(performErrorKey(e)),
     });
   }
 
@@ -139,13 +138,9 @@ export class MyReviewsPage implements OnInit {
       next: (saved) => {
         this.open.set(saved);
         this.items.update((list) => list.map((x) => (x.id === saved.id ? { ...x, status: saved.status } : x)));
-        this.toast('perform.reviews.submitted');
+        this.notify.show('perform.reviews.submitted');
       },
-      error: (e: unknown) => this.toast(performErrorKey(e)),
+      error: (e: unknown) => this.notify.show(performErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

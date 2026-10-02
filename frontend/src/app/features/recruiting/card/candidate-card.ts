@@ -7,9 +7,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { SendMessage } from '../../channels/channels.model';
 import { channelErrorCode, channelErrorKey } from '../../channels/channels.service';
@@ -34,6 +33,7 @@ import { TouchComposer } from './touch-composer';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { PrivacyActions } from '../../privacy/privacy-actions';
 import { hasChannelIcon } from '../../../core/ui/channel-icons';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * The candidate card: contacts and source/UTM chips, the ROUTE per vacancy (stages with time spent), a stage
@@ -70,8 +70,7 @@ export class CandidateCard {
 
   protected readonly store = inject(CandidateCardStore);
   private readonly dialog = inject(MatDialog);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly auth = inject(AuthService);
   private readonly composer = viewChild(TouchComposer);
   private readonly google = inject(GoogleService);
@@ -118,7 +117,7 @@ export class CandidateCard {
 
   protected copy(link: string): void {
     this.clipboard.copy(link);
-    this.toast('google.meeting.copied');
+    this.notify.show('google.meeting.copied', { duration: 3000 });
   }
 
   protected isOn(filter: TimelineFilter): boolean {
@@ -150,11 +149,11 @@ export class CandidateCard {
     this.store.logTouch(body).subscribe({
       next: () => {
         this.composer()?.reset();
-        this.toast('recruiting.composer.saved');
+        this.notify.show('recruiting.composer.saved', { duration: 3000 });
       },
       error: (e: unknown) => {
         this.composer()?.setBusy(false);
-        this.toast(recruitingErrorKey(e));
+        this.notify.show(recruitingErrorKey(e), { duration: 3000 });
       },
     });
   }
@@ -163,7 +162,7 @@ export class CandidateCard {
     this.store.sendMessage(body).subscribe({
       next: (touch) => {
         this.composer()?.reset();
-        this.toast(touch.meta.demo === true ? 'channels.composer.sentDemo' : 'channels.composer.sent');
+        this.notify.show(touch.meta.demo === true ? 'channels.composer.sentDemo' : 'channels.composer.sent', { duration: 3000 });
       },
       error: (e: unknown) => {
         if (channelErrorCode(e) === 'channel_not_connected') {
@@ -171,16 +170,12 @@ export class CandidateCard {
         } else {
           this.composer()?.setBusy(false);
         }
-        this.toast(channelErrorKey(e));
+        this.notify.show(channelErrorKey(e), { duration: 3000 });
       },
     });
   }
 
   private doMove(app: Application, body: { stage_id: number; reject_reason_id?: number; reason?: string }): void {
-    this.store.move(app, body).subscribe({ error: (e: unknown) => this.toast(recruitingErrorKey(e)) });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.store.move(app, body).subscribe({ error: (e: unknown) => this.notify.show(recruitingErrorKey(e), { duration: 3000 }) });
   }
 }

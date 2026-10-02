@@ -6,12 +6,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 import { HandledReport, REPORT_STATUSES, ReportStatus, reportStatusTone } from './safe-speak.model';
 import { SafeSpeakService, safeSpeakErrorKey } from './safe-speak.service';
 import { SafeSpeakThread } from './thread';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** Handler inbox (/safe-speak/inbox): anonymous reports, the thread, answers, status. Admins with the handler flag. */
 @Component({
@@ -101,8 +101,7 @@ import { SafeSpeakThread } from './thread';
 })
 export class SafeSpeakInboxPage implements OnInit {
   private readonly api = inject(SafeSpeakService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly statuses = REPORT_STATUSES;
   protected readonly status = signal<ReportStatus | undefined>(undefined);
   protected readonly items = signal<HandledReport[]>([]);
@@ -149,7 +148,7 @@ export class SafeSpeakInboxPage implements OnInit {
         this.items.update((list) => list.map((x) => (x.id === r.id ? { ...x, status: r.status, updated_on: r.updated_on } : x)));
         done?.();
       },
-      error: (e: unknown) => this.toast(safeSpeakErrorKey(e)),
+      error: (e: unknown) => this.notify.show(safeSpeakErrorKey(e)),
     });
   }
 
@@ -162,12 +161,8 @@ export class SafeSpeakInboxPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(safeSpeakErrorKey(e));
+        this.notify.show(safeSpeakErrorKey(e));
       },
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

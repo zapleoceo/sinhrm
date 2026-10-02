@@ -5,14 +5,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 import { DocumentViewDialog } from '../document-view.dialog';
 import { DOCUMENT_FILE_ACCEPT, DOCUMENT_FILE_MAX_BYTES, DOCUMENT_STATUS_TONE, HrDocument, isEditable } from '../documents.model';
 import { DocumentsService, documentsErrorKey } from '../documents.service';
 import { DocumentCreateDialog } from './document-create.dialog';
 import { wideDialog } from '../../../core/ui/dialog';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Profile tab "Документи": the employee's documents; admins create, attach files, send and archive. */
 @Component({
@@ -79,8 +79,7 @@ export class EmployeeDocumentsTab {
 
   private readonly api = inject(DocumentsService);
   private readonly dialog = inject(MatDialog);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly accept = DOCUMENT_FILE_ACCEPT;
   protected readonly statusTone = DOCUMENT_STATUS_TONE;
   protected readonly items = signal<HrDocument[]>([]);
@@ -122,7 +121,7 @@ export class EmployeeDocumentsTab {
       return;
     }
     if (file.size > DOCUMENT_FILE_MAX_BYTES) {
-      this.toast('documents.errors.file_too_large');
+      this.notify.show('documents.errors.file_too_large');
       return;
     }
     this.apply(this.api.upload(target.id, file), 'documents.uploaded');
@@ -145,7 +144,7 @@ export class EmployeeDocumentsTab {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(documentsErrorKey(e));
+        this.notify.show(documentsErrorKey(e));
       },
     });
   }
@@ -154,17 +153,13 @@ export class EmployeeDocumentsTab {
     call.subscribe({
       next: (doc) => {
         this.replace(doc);
-        this.toast(okKey);
+        this.notify.show(okKey);
       },
-      error: (e: unknown) => this.toast(documentsErrorKey(e)),
+      error: (e: unknown) => this.notify.show(documentsErrorKey(e)),
     });
   }
 
   private replace(doc: HrDocument): void {
     this.items.update((list) => list.map((d) => (d.id === doc.id ? doc : d)));
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

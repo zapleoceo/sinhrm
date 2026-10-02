@@ -5,14 +5,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { USER_ROLES, UserRole } from '../../core/auth/auth.model';
 import { DictionaryItem } from '../directory/directory.model';
 import { DirectoryService } from '../directory/directory.service';
 import { ArticleStatus, Audience, KbCategory, KbVersion, SaveArticle, parseTags } from './knowledge.model';
 import { KnowledgeService, knowledgeErrorKey } from './knowledge.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 type AudienceType = Audience['type'];
 
@@ -141,8 +141,7 @@ export class KnowledgeEditorPage implements OnInit {
   private readonly api = inject(KnowledgeService);
   private readonly directory = inject(DirectoryService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly allRoles = USER_ROLES;
   protected readonly articleId = signal<number | null>(null);
   protected readonly categories = signal<KbCategory[]>([]);
@@ -196,7 +195,7 @@ export class KnowledgeEditorPage implements OnInit {
     this.api.save(this.articleId(), body).subscribe({
       next: (a) => {
         this.saving.set(false);
-        this.snack.open(this.i18n.translate('knowledge.saved'), undefined, { duration: 3000 });
+        this.notify.show('knowledge.saved', { duration: 3000 });
         if (this.articleId() === null) {
           void this.router.navigate(['/admin/knowledge', a.id]);
         } else {
@@ -205,7 +204,7 @@ export class KnowledgeEditorPage implements OnInit {
       },
       error: (e: unknown) => {
         this.saving.set(false);
-        this.snack.open(this.i18n.translate(knowledgeErrorKey(e)), undefined, { duration: 4000 });
+        this.notify.show(knowledgeErrorKey(e));
       },
     });
   }
@@ -223,7 +222,7 @@ export class KnowledgeEditorPage implements OnInit {
         this.branchIds.set(audience.type === 'branches' ? audience.ids : []);
         this.roles.set(audience.type === 'roles' ? audience.roles : []);
       },
-      error: (e: unknown) => this.snack.open(this.i18n.translate(knowledgeErrorKey(e)), undefined, { duration: 4000 }),
+      error: (e: unknown) => this.notify.show(knowledgeErrorKey(e)),
     });
     this.api.versions(id).subscribe({ next: (list) => this.versions.set(list), error: () => this.versions.set([]) });
   }

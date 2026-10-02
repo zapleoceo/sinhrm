@@ -211,6 +211,8 @@ describe('ShellLayout user menu in sidebar footer', () => {
     expect(setActiveRole).toHaveBeenCalledWith('recruiter');
     expect(nav).toHaveBeenCalledWith('/');
     expect(document.querySelector('.mat-mdc-snack-bar-label')?.textContent).toContain('shell.menu.workingAs');
+    // The toast (core NotifyService) keeps the snack bar's polite live region: screen readers announce it without moving focus.
+    expect(document.querySelector('.mat-mdc-snack-bar-container [aria-live="polite"]')).not.toBeNull();
   });
 });
 

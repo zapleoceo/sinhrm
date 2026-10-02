@@ -4,9 +4,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { PrivacyService } from './privacy.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** Default term offered when the rule is switched on. */
 export const DEFAULT_RETENTION_MONTHS = 12;
@@ -45,8 +45,7 @@ export const DEFAULT_RETENTION_MONTHS = 12;
 })
 export class PrivacySettingsPage implements OnInit {
   private readonly api = inject(PrivacyService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly enabled = signal(false);
   protected readonly months = signal(DEFAULT_RETENTION_MONTHS);
@@ -64,11 +63,11 @@ export class PrivacySettingsPage implements OnInit {
     this.api.saveSettings({ retention_rejected_months: this.enabled() ? this.months() : null }).subscribe({
       next: () => {
         this.busy.set(false);
-        this.snack.open(this.i18n.translate('privacy.settings.saved'), undefined, { duration: 3000 });
+        this.notify.show('privacy.settings.saved', { duration: 3000 });
       },
       error: () => {
         this.busy.set(false);
-        this.snack.open(this.i18n.translate('common.error'), undefined, { duration: 4000 });
+        this.notify.show('common.error');
       },
     });
   }
