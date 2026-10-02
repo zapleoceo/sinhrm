@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Sanctum SPA cookie auth: the SPA is same-origin with the API (Vercel rewrite).
         $middleware->statefulApi();
+        // Client IP for rate limits: believe ONLY X-Forwarded-For and only from config('trustedproxy.proxies')
+        // (env TRUSTED_PROXIES; unset → nobody). On Vercel that is the loopback launcher (docs/modules/core.md).
+        $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR);
         // API-only app: there is no "login" route to redirect guests to — answer 401 JSON instead of a 500.
         $middleware->redirectGuestsTo(fn (Request $request): ?string => null);
         // X-Frame-Options, nosniff, CSP, HSTS, … on every API response (docs/architecture/observability.md).

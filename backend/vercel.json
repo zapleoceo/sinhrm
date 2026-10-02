@@ -28,7 +28,8 @@
     "QUEUE_CONNECTION": "database",
     "DB_CONNECTION": "pgsql",
     "LOG_STDERR_FORMATTER": "Monolog\\Formatter\\JsonFormatter",
-    "LOG_LEVEL": "warning"
+    "LOG_LEVEL": "warning",
+    "TRUSTED_PROXIES": "127.0.0.1,::1"
   },
   "regions": [
     "fra1"
