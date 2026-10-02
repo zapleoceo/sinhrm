@@ -7,7 +7,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -21,6 +20,7 @@ import { BoardStore, BoardTarget } from './board.store';
 import { DropHint, dropHint } from './drop-hint';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from './reject.dialog';
 import { VacancySources } from './vacancy-sources';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Kanban of one vacancy: a column per pipeline stage, drag & drop between columns (CDK). Moving to the reject
@@ -400,7 +400,7 @@ export class BoardPage {
 
   protected readonly store = inject(BoardStore);
   private readonly dialog = inject(MatDialog);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
@@ -427,8 +427,9 @@ export class BoardPage {
   private readonly document = inject(DOCUMENT);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  /** Error callback of the board store (shorter toast: the board is busy with drag & drop). */
   protected readonly toast = (key: string): void => {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.notify.show(key, { duration: 3000 });
   };
 
   constructor() {

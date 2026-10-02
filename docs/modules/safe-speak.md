@@ -76,6 +76,12 @@ JSON (ошибка валидации не превращается в реди�
 на рассмотрении ◆ warn, закрыто ┄ neutral. Входящие: строки ≥ 44px, выбранная — подсветка и полоса бренда слева, пусто —
 общий `.app-empty` (пунктирная ветка). Тест — `safe-speak.view.spec.ts`.
 
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `safeSpeakErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
 ## Как проверить
 - `php artisan test --filter=SafeSpeak` — схема и строки БД не содержат ни IP, ни user agent, ни id/имени/почты
   отправителя (в т.ч. вошедшего), нет записи в `sessions`; код хранится только HMAC; лимит неверных кодов и отправок

@@ -5,12 +5,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { DictionaryItem } from '../directory/directory.model';
 import { DirectoryService } from '../directory/directory.service';
 import { WorkScheduleRow } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** Admin: work schedules — the company default and branch overrides (an employee's own People schedule wins). */
 @Component({
@@ -63,8 +63,7 @@ import { TimeService, timeErrorKey } from './time.service';
 export class TimeSchedulesPage implements OnInit {
   private readonly api = inject(TimeService);
   private readonly directory = inject(DirectoryService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly weekdays = [1, 2, 3, 4, 5, 6, 7];
   protected readonly rows = signal<WorkScheduleRow[]>([]);
   protected readonly branches = signal<DictionaryItem[]>([]);
@@ -85,9 +84,9 @@ export class TimeSchedulesPage implements OnInit {
       next: () => {
         this.newBranch.set(null);
         this.load();
-        this.snack.open(this.i18n.translate('time.schedules.saved'), undefined, { duration: 3000 });
+        this.notify.show('time.schedules.saved', { duration: 3000 });
       },
-      error: (e: unknown) => this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 }),
+      error: (e: unknown) => this.notify.show(timeErrorKey(e)),
     });
   }
 

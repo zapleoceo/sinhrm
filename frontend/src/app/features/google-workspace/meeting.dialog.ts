@@ -9,12 +9,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MEETING_DURATIONS, MEETING_TYPES, MeetingType, ScheduledMeeting, toIsoWithOffset } from './google.model';
 import { GoogleService, googleErrorKey } from './google.service';
 import { fromTimeString, toIsoDate, toTimeString, today } from '../../core/date/iso-date';
+import { NotifyService } from '../../core/ui/notify.service';
 
 export interface MeetingDialogData {
   candidateId: number;
@@ -138,7 +138,7 @@ export class MeetingDialog {
   protected readonly data = inject<MeetingDialogData>(MAT_DIALOG_DATA);
   private readonly api = inject(GoogleService);
   private readonly clipboard = inject(Clipboard);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
 
   protected readonly types = MEETING_TYPES;
@@ -186,14 +186,14 @@ export class MeetingDialog {
         },
         error: (e: unknown) => {
           this.busy.set(false);
-          this.snack.open(this.i18n.translate(googleErrorKey(e)), undefined, { duration: 4000 });
+          this.notify.show(googleErrorKey(e));
         },
       });
   }
 
   protected copy(link: string): void {
     this.clipboard.copy(link);
-    this.snack.open(this.i18n.translate('google.meeting.copied'), undefined, { duration: 2000 });
+    this.notify.show('google.meeting.copied', { duration: 2000 });
   }
 }
 

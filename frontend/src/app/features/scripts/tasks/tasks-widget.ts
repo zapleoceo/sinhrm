@@ -4,13 +4,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { canWriteRecruiting } from '../../recruiting/recruiting.access';
 import { Task, TaskQuery, canCompleteTask, isInternalLink, splitLink } from '../scripts.model';
 import { TasksStore } from './tasks.store';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Unified tasks (recruiting follow-ups, workflow steps, documents to acknowledge) with a "done" checkbox.
@@ -99,14 +99,13 @@ export class TasksWidget {
 
   protected readonly store = inject(TasksStore);
   private readonly auth = inject(AuthService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
   private readonly userId = computed(() => this.auth.user()?.id ?? null);
   /** In the candidate card the candidate is obvious; elsewhere it links to the card. */
   protected readonly showCandidate = computed(() => this.query().candidate_id === undefined);
   protected readonly toast = (key: string): void => {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.notify.show(key, { duration: 3000 });
   };
 
   constructor() {

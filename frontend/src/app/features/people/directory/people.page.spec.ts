@@ -18,6 +18,7 @@ const PAGE: Paged<Employee> = {
 
 describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
   let queries: PeopleQuery[];
+  let empty: boolean;
   let harness: RouterTestingHarness;
 
   const th = (label: string) =>
@@ -26,11 +27,12 @@ describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
 
   beforeEach(async () => {
     queries = [];
+    empty = false;
     TestBed.configureTestingModule({
       imports: [TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
       providers: [
         provideRouter([{ path: 'people', component: PeoplePage }]),
-        { provide: PeopleService, useValue: { list: (q: PeopleQuery) => (queries.push(q), of(PAGE)) } },
+        { provide: PeopleService, useValue: { list: (q: PeopleQuery) => (queries.push(q), of(empty ? { ...PAGE, data: [] } : PAGE)) } },
         { provide: DirectoryService, useValue: { active: () => of([{ id: 3, name: 'Analyst', status: 'active' }]) } },
         { provide: AuthService, useValue: { user: signal({ roles: ['viewer'] }) } },
         { provide: MatDialog, useValue: {} },
@@ -74,5 +76,40 @@ describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
     harness.detectChanges();
     expect(th('people.fields.fullName').getAttribute('aria-sort')).toBe('descending');
     expect(queries.at(-1)).toEqual(expect.objectContaining({ page: 4, sort: 'name', dir: 'desc' }));
+  });
+
+  it('text filters of hideable columns stay visible and removable as chips (cards view, narrow screens)', async () => {
+    await harness.navigateByUrl('/people?name=Ko&manager=lead&position_id=3');
+    harness.detectChanges();
+    const chips = () => Array.from(harness.routeNativeElement!.querySelectorAll<HTMLElement>('app-active-filters .chip'));
+    expect(chips().map((c) => c.querySelector('.text')?.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
+      'people.fields.fullName: Ko',
+      'people.fields.manager: lead',
+    ]);
+
+    chips()[1].querySelector<HTMLButtonElement>('button.remove')!.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(url().searchParams.has('manager')).toBe(false);
+    expect(url().searchParams.get('name')).toBe('Ko');
+    expect(queries.at(-1)).toEqual(expect.objectContaining({ name: 'Ko', manager: undefined, page: 1 }));
+    expect(chips()).toHaveLength(1);
+
+    await harness.navigateByUrl('/people?name=Ko&contact=050');
+    harness.detectChanges();
+    harness.routeNativeElement!.querySelector<HTMLButtonElement>('app-active-filters button.all')!.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(url().searchParams.has('name')).toBe(false);
+    expect(url().searchParams.has('contact')).toBe(false);
+    expect(chips()).toHaveLength(0);
+  });
+
+  it('an empty result keeps the table headers, so the filter that emptied it can be cleared', async () => {
+    empty = true;
+    await harness.navigateByUrl('/people?name=nobody');
+    harness.detectChanges();
+    expect(th('people.fields.fullName')).toBeTruthy();
+    expect(harness.routeNativeElement!.textContent).toContain('people.directory.empty');
   });
 });

@@ -96,6 +96,7 @@ describe('Overview', () => {
     TestBed.inject(OverviewService).dashboard().subscribe((r) => (d = r));
     http.expectOne({ method: 'GET', url: '/api/dashboard' }).flush({ data: DASHBOARD });
     expect(d?.counts.active).toBe(5);
+    expect(d).toEqual(DASHBOARD); // the { data } wrapper is dropped (core unwrapData), the body is untouched
   });
 
   it('store derives tiles and bars; flags a failure', () => {

@@ -1,11 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { ReportTable } from './report-table';
 import { Row, barPercent, cleanSpec, columnMax, filterParams } from './reports.model';
-import { ReportsService } from './reports.service';
+import { ReportsService, reportsErrorKey } from './reports.service';
 
 describe('ReportsService', () => {
   let api: ReportsService;
@@ -188,5 +188,14 @@ describe('ReportTable headers: sort and filter in the browser, «Разом» st
     TestBed.resetTestingModule();
     const sorted = await render('/?r_sort=source&r_dir=asc');
     expect(firstColumn(sorted.el)).toEqual(['Djinni', 'robota', 'Work.ua']);
+  });
+});
+
+describe('reportsErrorKey', () => {
+  it('maps statuses to reports.errors.*, anything else to common.error', () => {
+    expect(reportsErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('reports.errors.forbidden');
+    expect(reportsErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('reports.errors.not_found');
+    expect(reportsErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'unknown' } }))).toBe('reports.errors.validation');
+    expect(reportsErrorKey(new HttpErrorResponse({ status: 500 }))).toBe('common.error');
   });
 });

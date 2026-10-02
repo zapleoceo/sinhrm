@@ -3,12 +3,12 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { saveBlob } from '../../core/http/api-error';
 import { CatalogGroup, SavedReport } from './reports.model';
 import { ReportsService, reportsErrorKey } from './reports.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** Report catalog (/reports/catalog): ready reports grouped (only those the user may run), saved reports, builder. */
 @Component({
@@ -88,8 +88,7 @@ import { ReportsService, reportsErrorKey } from './reports.service';
 })
 export class ReportCatalogPage implements OnInit {
   private readonly api = inject(ReportsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly groups = signal<CatalogGroup[]>([]);
   protected readonly saved = signal<SavedReport[]>([]);
   protected readonly loading = signal(false);
@@ -103,7 +102,7 @@ export class ReportCatalogPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(reportsErrorKey(e));
+        this.notify.show(reportsErrorKey(e));
       },
     });
     this.api.saved().subscribe({ next: (s) => this.saved.set(s), error: () => this.saved.set([]) });
@@ -118,17 +117,13 @@ export class ReportCatalogPage implements OnInit {
   }
 
   protected csv(s: SavedReport): void {
-    this.api.savedCsv(s.id).subscribe({ next: (blob) => saveBlob(blob, `${s.name}.csv`), error: (e: unknown) => this.toast(reportsErrorKey(e)) });
+    this.api.savedCsv(s.id).subscribe({ next: (blob) => saveBlob(blob, `${s.name}.csv`), error: (e: unknown) => this.notify.show(reportsErrorKey(e)) });
   }
 
   protected remove(s: SavedReport): void {
     this.api.remove(s.id).subscribe({
       next: () => this.saved.update((list) => list.filter((x) => x.id !== s.id)),
-      error: (e: unknown) => this.toast(reportsErrorKey(e)),
+      error: (e: unknown) => this.notify.show(reportsErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

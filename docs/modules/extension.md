@@ -101,6 +101,10 @@ TypeScript без фреймворка, сборка esbuild, тесты Vitest 
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Панели страницы — общий вид `.panel` (линия 1.5px, радиус 10), одноразовый токен — пунктирная рамка 1.5px и моноширинный шрифт, предупреждения — AA-цвет текста `--app-warn-text`. Тест вида — `features/extension/extension.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
 ## Как проверить
 - Расширение: `cd extension && npm ci && npm run lint && npm run typecheck && npm test && npm run package`
   (тесты: определение сайта, извлечение на вымышленных страницах всех четырёх сайтов — JSON-LD, `og:`, DOM, обрезка

@@ -6,13 +6,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Vacancy } from '../recruiting/recruiting.model';
 import { RecruitingService } from '../recruiting/recruiting.service';
 import { HiringRequest, PILL_TONE, salaryRange, statusTone, stepIcon } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * Request card: fields, the approval route as a timeline (who, when, comment, SLA / overdue), the linked vacancy with
@@ -193,8 +193,7 @@ export class HiringDetailPage {
   readonly id = input.required({ transform: numberAttribute });
   protected readonly api = inject(HiringRequestsService);
   private readonly recruiting = inject(RecruitingService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly request = signal<HiringRequest | null>(null);
   protected readonly busy = signal(false);
   protected readonly users = signal<{ id: number; name: string }[]>([]);
@@ -239,7 +238,7 @@ export class HiringDetailPage {
       },
       error: (e: unknown) => {
         this.busy.set(false);
-        this.snack.open(this.i18n.translate(hiringErrorKey(e)), undefined, { duration: 4000 });
+        this.notify.show(hiringErrorKey(e));
       },
     });
   }

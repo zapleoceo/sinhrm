@@ -10,7 +10,9 @@ export interface TableSort {
 /** What a column header can filter by. Values are strings, as in the URL and the API query. */
 export interface FilterOption {
   value: string;
+  /** Visible text; with `i18n: true` it is a translation key (the header translates it in the current language). */
   label: string;
+  i18n?: boolean;
 }
 export type ColumnFilter =
   | { type: 'text' }
@@ -80,10 +82,59 @@ export function intParam(params: ParamMap, name: string): number | undefined {
   return n > 0 ? n : undefined;
 }
 
-/** Non-empty trimmed text param or undefined. */
+/** Longest text filter the APIs accept (`max:100`); a longer hand-edited URL is cut, not answered with 422. */
+export const TEXT_PARAM_MAX = 100;
+
+/** Non-empty trimmed text param (at most TEXT_PARAM_MAX characters) or undefined. */
 export function textParam(params: ParamMap, name: string): string | undefined {
-  const raw = params.get(name)?.trim();
+  const raw = params.get(name)?.trim().slice(0, TEXT_PARAM_MAX).trim();
   return raw ? raw : undefined;
+}
+
+/** One of the allowed values or undefined (`?status=junk` → undefined, never sent to the API). */
+export function oneOfParam<T extends string>(params: ParamMap, name: string, allowed: readonly T[]): T | undefined {
+  const raw = params.get(name);
+  return raw !== null && (allowed as readonly string[]).includes(raw) ? (raw as T) : undefined;
+}
+
+const ISO_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** A real calendar day `YYYY-MM-DD` (2026-02-31 is not; the API checks the same). */
+export function isIsoDay(value: string | null | undefined): value is string {
+  const m = value ? ISO_DAY.exec(value) : null;
+  if (!m) return false;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+}
+
+/**
+ * Date range of the URL (`?from=2026-09-01&to=2026-09-30`, names given): only real `YYYY-MM-DD` days are kept;
+ * a reversed range is swapped, so the API never answers 422 to a hand-edited link.
+ */
+export function dateRangeFromParams(params: ParamMap, fromName: string, toName: string): RangeValue | null {
+  const day = (name: string): string | null => {
+    const raw = params.get(name);
+    return isIsoDay(raw) ? raw : null;
+  };
+  const from = day(fromName);
+  const to = day(toName);
+  if (from && to && to < from) return { from: to, to: from };
+  return from || to ? { from, to } : null;
+}
+
+/** Params of a date range under the given names; an empty range removes both. */
+export function dateRangeToParams(value: FilterValue, fromName: string, toName: string): Params {
+  const range = value !== null && typeof value === 'object' ? value : { from: null, to: null };
+  const day = (v: string | null): string | null => (isIsoDay(v) ? v : null);
+  const [from, to] = [day(range.from), day(range.to)];
+  return from && to && to < from ? { [fromName]: to, [toName]: from } : { [fromName]: from, [toName]: to };
+}
+
+/** Same flat query? (the URL emits again on navigations that do not change it — no second request). */
+export function sameQuery<Q extends object>(a: Q, b: Q): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)] as (keyof Q)[]);
+  return [...keys].every((k) => a[k] === b[k]);
 }
 
 /** Param value of a filter: text/select as is, empty → null (removed from the URL). */

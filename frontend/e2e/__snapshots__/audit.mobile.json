@@ -10,17 +10,18 @@
  ],
  "interactive": [
   "button \"Next page\"",
-  "button \"Open calendar\"",
-  "button \"Open calendar\"",
   "button \"Previous page\" [disabled]",
   "button \"Головне меню\"",
+  "button \"Дія\"",
+  "button \"Користувач\"",
+  "button \"Обʼєкт\"",
+  "button \"Фільтр стовпця «Дія»\"",
+  "button \"Фільтр стовпця «Користувач»\"",
+  "button \"Фільтр стовпця «Обʼєкт»\"",
+  "button \"Фільтр стовпця «Час»\"",
+  "button \"Час\"",
   "combobox \"Items per page:\"",
-  "combobox \"Дія\"",
-  "combobox \"Користувач\"",
-  "combobox \"Обʼєкт\"",
-  "link \"Огляд\" -> /",
-  "textbox \"З дати\"",
-  "textbox \"По дату\""
+  "link \"Огляд\" -> /"
  ],
  "columns": [
   "Дія",

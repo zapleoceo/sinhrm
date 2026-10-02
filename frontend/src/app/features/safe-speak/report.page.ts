@@ -5,11 +5,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AnonymousReport, REPORT_CATEGORIES, ReportCategory, reportStatusTone } from './safe-speak.model';
 import { SafeSpeakService, safeSpeakErrorKey } from './safe-speak.service';
 import { SafeSpeakThread } from './thread';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * Safe Speak (/safe-speak): send an anonymous report and get an access code shown ONCE; follow up with the code.
@@ -132,8 +132,7 @@ import { SafeSpeakThread } from './thread';
 })
 export class SafeSpeakPage {
   private readonly api = inject(SafeSpeakService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly categories = REPORT_CATEGORIES;
   protected readonly mode = signal<'new' | 'follow'>('new');
   protected readonly category = signal<ReportCategory | null>(null);
@@ -196,11 +195,11 @@ export class SafeSpeakPage {
   }
 
   protected copy(code: string): void {
-    void navigator.clipboard?.writeText(code).then(() => this.snack.open(this.i18n.translate('safeSpeak.copied'), undefined, { duration: 2000 }));
+    void navigator.clipboard?.writeText(code).then(() => this.notify.show('safeSpeak.copied', { duration: 2000 }));
   }
 
   private fail(e: unknown): void {
     this.busy.set(false);
-    this.snack.open(this.i18n.translate(safeSpeakErrorKey(e)), undefined, { duration: 5000 });
+    this.notify.show(safeSpeakErrorKey(e), { duration: 5000 });
   }
 }

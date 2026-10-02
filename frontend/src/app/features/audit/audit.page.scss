@@ -1,17 +1,4 @@
-.head {
-  margin-bottom: var(--app-gap);
-
-  h1 { font: var(--mat-sys-headline-small); margin: 0; }
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-
+// Page head, panel frame and the empty / error state come from the global styles (.page-head, .panel, .state).
 table { width: 100%; }
 
 .nowrap { white-space: nowrap; }
@@ -24,5 +11,3 @@ table { width: 100%; }
   font-size: 0.85rem;
   overflow-wrap: anywhere;
 }
-
-.state { padding: 2.5rem 1rem; text-align: center; }

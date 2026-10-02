@@ -7,14 +7,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AcquisitionChannel, CHANNEL_TYPES, ChannelType } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
-import { ChannelsService, UtmInput, channelErrorKey, ruleLabel } from './channels.service';
+import { ChannelsService, UtmInput, acquisitionChannelErrorKey, ruleLabel } from './channels.service';
 import { toIsoDate } from '../../../core/date/iso-date';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { hasChannelIcon } from '../../../core/ui/channel-icons';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Admin: acquisition channels dictionary (tz3) — channel, technical name (code), type, active; UTM rules per
@@ -139,8 +139,7 @@ import { hasChannelIcon } from '../../../core/ui/channel-icons';
 export class AcquisitionChannelsPage implements OnInit {
   private readonly recruiting = inject(RecruitingService);
   private readonly api = inject(ChannelsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly types = CHANNEL_TYPES;
   protected readonly hasIcon = hasChannelIcon;
   protected readonly channels = signal<AcquisitionChannel[]>([]);
@@ -162,11 +161,11 @@ export class AcquisitionChannelsPage implements OnInit {
     }
     codeInput.value = '';
     nameInput.value = '';
-    this.api.save(null, { code, name, type }).subscribe({ next: () => this.load(), error: (e: unknown) => this.toast(e) });
+    this.api.save(null, { code, name, type }).subscribe({ next: () => this.load(), error: (e: unknown) => this.showError(e) });
   }
 
   protected save(ch: AcquisitionChannel, body: { active: boolean }): void {
-    this.api.save(ch.id, body).subscribe({ next: (saved) => this.replace(saved), error: (e: unknown) => this.toast(e) });
+    this.api.save(ch.id, body).subscribe({ next: (saved) => this.replace(saved), error: (e: unknown) => this.showError(e) });
   }
 
   protected addRule(ch: AcquisitionChannel, source: HTMLInputElement, medium: HTMLInputElement, campaign: HTMLInputElement, priority: string): void {
@@ -174,11 +173,11 @@ export class AcquisitionChannelsPage implements OnInit {
     for (const input of [source, medium, campaign]) {
       input.value = '';
     }
-    this.api.addRule(ch.id, rule).subscribe({ next: (saved) => this.replace(saved), error: (e: unknown) => this.toast(e) });
+    this.api.addRule(ch.id, rule).subscribe({ next: (saved) => this.replace(saved), error: (e: unknown) => this.showError(e) });
   }
 
   protected deleteRule(id: number): void {
-    this.api.deleteRule(id).subscribe({ next: () => this.load(), error: (e: unknown) => this.toast(e) });
+    this.api.deleteRule(id).subscribe({ next: () => this.load(), error: (e: unknown) => this.showError(e) });
   }
 
   protected addCost(ch: AcquisitionChannel, start: Date | null, end: Date | null, amount: string): void {
@@ -188,30 +187,30 @@ export class AcquisitionChannelsPage implements OnInit {
     }
     this.api.addCost(ch.id, { period_start: from, period_end: to, amount: Number(amount) }).subscribe({
       next: (saved) => this.replace(saved),
-      error: (e: unknown) => this.toast(e),
+      error: (e: unknown) => this.showError(e),
     });
   }
 
   protected deleteCost(id: number): void {
-    this.api.deleteCost(id).subscribe({ next: () => this.load(), error: (e: unknown) => this.toast(e) });
+    this.api.deleteCost(id).subscribe({ next: () => this.load(), error: (e: unknown) => this.showError(e) });
   }
 
   protected test(source: string, medium: string, campaign: string): void {
     this.api.preview({ utm_source: source || null, utm_medium: medium || null, utm_campaign: campaign || null }).subscribe({
       next: (r) => this.tested.set(r.channel_id),
-      error: (e: unknown) => this.toast(e),
+      error: (e: unknown) => this.showError(e),
     });
   }
 
   private load(): void {
-    this.recruiting.channels(true).subscribe({ next: (list) => this.channels.set(list), error: (e: unknown) => this.toast(e) });
+    this.recruiting.channels(true).subscribe({ next: (list) => this.channels.set(list), error: (e: unknown) => this.showError(e) });
   }
 
   private replace(saved: AcquisitionChannel): void {
     this.channels.update((list) => list.map((c) => (c.id === saved.id ? saved : c)));
   }
 
-  private toast(e: unknown): void {
-    this.snack.open(this.i18n.translate(channelErrorKey(e)), undefined, { duration: 4000 });
+  private showError(e: unknown): void {
+    this.notify.show(acquisitionChannelErrorKey(e));
   }
 }

@@ -7,12 +7,12 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { MoodEntry, MoodSettings, TeamMood, moodEmoji } from '../pulse.model';
 import { PulseService, pulseErrorKey } from '../pulse.service';
 import { MoodCheckinWidget } from './mood-checkin.widget';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Mood (/pulse/mood): today's check-in, my history (visible to me only), the team trend by week for managers
@@ -126,8 +126,7 @@ import { MoodCheckinWidget } from './mood-checkin.widget';
 export class MoodPage implements OnInit {
   private readonly api = inject(PulseService);
   private readonly auth = inject(AuthService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly weekdays = [1, 2, 3, 4, 5, 6, 7];
   protected readonly history = signal<MoodEntry[]>([]);
   protected readonly team = signal<TeamMood | null>(null);
@@ -152,13 +151,9 @@ export class MoodPage implements OnInit {
     this.api.saveMoodSettings({ ...s, alert_drop: Number(s.alert_drop), min_group: Number(s.min_group) }).subscribe({
       next: (saved) => {
         this.settings.set(saved);
-        this.toast('pulse.saved');
+        this.notify.show('pulse.saved');
       },
-      error: (e: unknown) => this.toast(pulseErrorKey(e)),
+      error: (e: unknown) => this.notify.show(pulseErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

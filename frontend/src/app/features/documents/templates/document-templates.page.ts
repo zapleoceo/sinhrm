@@ -8,11 +8,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { DOCUMENT_VARIABLES, DocumentTemplate, TemplatePreview, insertVariable } from '../documents.model';
 import { DocumentsService, documentsErrorKey, unknownVariables } from '../documents.service';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 interface Draft {
   id: number | null;
@@ -153,8 +153,7 @@ const EMPTY_DRAFT: Draft = { id: null, name: '', category: '', body: '', archive
 })
 export class DocumentTemplatesPage implements OnInit {
   private readonly api = inject(DocumentsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly bodyChanges = new Subject<string>();
 
@@ -192,7 +191,7 @@ export class DocumentTemplatesPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(documentsErrorKey(e));
+        this.notify.show(documentsErrorKey(e));
       },
     });
   }
@@ -246,12 +245,12 @@ export class DocumentTemplatesPage implements OnInit {
         this.saving.set(false);
         this.upsert(saved);
         this.patch({ id: saved.id });
-        this.toast('documents.templates.saved');
+        this.notify.show('documents.templates.saved');
       },
       error: (e: unknown) => {
         this.saving.set(false);
         this.unknown.set(unknownVariables(e));
-        this.toast(documentsErrorKey(e));
+        this.notify.show(documentsErrorKey(e));
       },
     });
   }
@@ -266,15 +265,11 @@ export class DocumentTemplatesPage implements OnInit {
         this.patch({ archived: saved.archived });
         this.upsert(saved);
       },
-      error: (e: unknown) => this.toast(documentsErrorKey(e)),
+      error: (e: unknown) => this.notify.show(documentsErrorKey(e)),
     });
   }
 
   private upsert(t: DocumentTemplate): void {
     this.templates.update((list) => (list.some((x) => x.id === t.id) ? list.map((x) => (x.id === t.id ? t : x)) : [t, ...list]));
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

@@ -52,5 +52,6 @@ describe('PrivacyService', () => {
     expect(privacyErrorKey(new HttpErrorResponse({ status: 409, error: { code: 'not_terminated' } }))).toBe('privacy.errors.not_terminated');
     expect(privacyErrorKey(new HttpErrorResponse({ status: 500 }))).toBe('common.error');
     expect(privacyErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('privacy.errors.not_found');
+    expect(privacyErrorKey(new Error('x'))).toBe('common.error');
   });
 });

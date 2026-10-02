@@ -70,6 +70,8 @@ describe('DocumentsService', () => {
     expect(documentsErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('documents.errors.forbidden');
     expect(documentsErrorKey(new HttpErrorResponse({ status: 422, error: {} }))).toBe('documents.errors.validation');
     expect(documentsErrorKey(new Error('x'))).toBe('common.error');
+    expect(documentsErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('documents.errors.not_found');
+    expect(documentsErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('common.error');
     expect(unknownVariables(new Error('x'))).toEqual([]);
   });
 });

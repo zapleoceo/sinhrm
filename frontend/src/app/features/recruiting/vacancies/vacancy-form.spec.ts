@@ -11,7 +11,7 @@ import { SaveVacancy, Vacancy, VacancyTemplate, VacancyTextDraft } from '../recr
 import { RecruitingService } from '../recruiting.service';
 import { applyMarkdown } from './markdown-field';
 import { VacanciesStore } from './vacancies.store';
-import { VacancyFormPage, aiErrorKey } from './vacancy-form.page';
+import { VacancyFormPage } from './vacancy-form.page';
 
 const OPTIONS = {
   employment_types: ['full_time'],
@@ -176,9 +176,6 @@ describe('VacancyFormPage', () => {
     api.text$ = throwError(() => new HttpErrorResponse({ status: 422, error: { code: 'ai_disabled' } }));
     internals(page).generate('description');
     expect(internals(page).aiHints()['description']).toBe('ai.errors.ai_disabled');
-    expect(aiErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('ai.errors.throttled');
-    expect(aiErrorKey('ai_budget_exceeded')).toBe('ai.errors.ai_budget_exceeded');
-    expect(aiErrorKey('weird')).toBe('ai.errors.generic');
   });
 
   it('guards unsaved edits and restores the autosaved draft', () => {

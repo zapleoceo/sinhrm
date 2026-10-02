@@ -77,6 +77,11 @@ JSON, ему ничего грузить не нужно), `X-Frame-Options: DEN
 
 Вход через Google — это переход по ссылке (навигация), CSP его не ограничивает.
 
+**Permissions-Policy у SPA отличается от API одним пунктом:** `microphone=(self)` — микрофон разрешён только своему
+домену, иначе браузер запрещает `getUserMedia` и «Диктовка голосом» ассистента ([assistant.md](../modules/assistant.md))
+не работает. Камера, геолокация, оплата, USB по-прежнему выключены (`=()`). Проверка — `frontend/scripts/vercel-headers.test.mjs`
+(`npm run test:docs`).
+
 **Почему `'unsafe-inline'` для стилей, а не nonce.** Nonce нужно генерировать на каждый ответ сервером, а SPA
 отдаётся статикой с CDN Vercel — сервера для nonce нет. Инлайн-стили не исполняют код; главное — скрипты — закрыты
 строго (`script-src 'self'`, без `unsafe-inline` и `unsafe-eval`).
