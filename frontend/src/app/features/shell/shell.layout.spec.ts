@@ -169,7 +169,8 @@ describe('ShellLayout user menu in sidebar footer', () => {
     expect(langUse).toHaveBeenCalledWith('ru');
   });
 
-  it('logs out and goes to /login', async () => {
+  it('logs out, drops the saved assistant chat and goes to /login', async () => {
+    sessionStorage.setItem('sinhrm.assistant.history.1', '[{"role":"user","content":"hi"}]');
     const { el, router, detect } = await setup();
     const nav = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     const panel = await openMenu(el, detect);
@@ -177,6 +178,7 @@ describe('ShellLayout user menu in sidebar footer', () => {
     await detect();
     expect(logout).toHaveBeenCalled();
     expect(nav).toHaveBeenCalledWith('/login');
+    expect(sessionStorage.getItem('sinhrm.assistant.history.1')).toBeNull();
   });
 
   it('hides "work as" for a single-role account', async () => {

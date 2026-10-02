@@ -140,6 +140,7 @@ e-mail моноширинный, плашка роли «Працювати як
 ### Общие примитивы фронта
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- Выход (`logout()`) удаляет сохранённую историю чата ассистента из sessionStorage — `clearAssistantHistory()` из `features/assistant/assistant-conversation.ts` ([assistant.md](assistant.md)).
 
 ## Как проверить
 `npx ng test --watch=false` (guards, AuthService, язык, сворачивание меню — `nav-groups.spec.ts`, `shell.layout.spec.ts`, счётчики — `nav-badges.spec.ts`, справка — `docs/docs.spec.ts`), `npm run test:docs` (сборщик справки), `npx ng build`.

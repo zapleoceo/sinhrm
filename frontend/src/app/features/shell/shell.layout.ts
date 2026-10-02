@@ -13,6 +13,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
+import { clearAssistantHistory } from '../assistant/assistant-conversation';
 import { AssistantSettings } from '../assistant/assistant-settings';
 import { AssistantMascot } from '../assistant/mascot/assistant-mascot';
 import { LanguageSwitcher } from './language-switcher';
@@ -254,7 +255,11 @@ export class ShellLayout {
   }
 
   protected async logout(): Promise<void> {
-    await this.auth.logout();
+    try {
+      await this.auth.logout();
+    } finally {
+      clearAssistantHistory();
+    }
     await this.router.navigateByUrl('/login');
   }
 }
