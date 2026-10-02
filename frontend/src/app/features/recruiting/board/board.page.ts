@@ -76,138 +76,142 @@ import { VacancySources } from './vacancy-sources';
       </div>
     }
 
-    <div
-      class="board"
-      [class.is-dragging]="dragging()"
-      cdkScrollable
-      cdkDropList
-      cdkDropListOrientation="horizontal"
-      [cdkDropListDisabled]="!personal()"
-      (cdkDropListDropped)="onLaneDrop($event)"
-    >
-      @for (lane of store.lanes(); track lane.key; let i = $index) {
-        <section
-          class="column"
-          [class.own]="lane.kind === 'personal'"
-          [attr.data-kind]="lane.kind === 'stage' ? lane.stage.kind : null"
-          [attr.data-color]="lane.kind === 'personal' ? lane.column.color : null"
-          cdkDrag
-          cdkDragLockAxis="x"
-          [cdkDragDisabled]="lane.kind === 'stage' || !personal()"
-          [cdkDragStartDelay]="{ touch: 400, mouse: 0 }"
-          [attr.aria-label]="lane.kind === 'stage' ? lane.stage.name : lane.column.title"
-          [attr.data-drop]="dropHint()?.key === lane.key ? dropHint()?.kind : null"
-          [cdkDragPreviewClass]="columnPreviewClass"
-          (cdkDragStarted)="dragStart(null, null)"
-          (cdkDragEnded)="dragEnd()"
-        >
-          @if (dropHint(); as hint) {
-            @if (hint.key === lane.key) {
-              <p class="drop-caption" aria-hidden="true">{{ hint.text }}</p>
-            }
-          }
-          @if (personal()) {
-            <div class="slot" [class.open]="adding() === i">
-              @if (adding() === i) {
-                <ng-container *ngTemplateOutlet="addForm; context: { $implicit: i }" />
-              } @else {
-                <button type="button" class="slot-btn" (click)="openSlot(i)" [attr.aria-label]="'recruiting.personalBoard.addHere' | transloco">+</button>
-              }
-            </div>
-          }
-          @if (lane.kind === 'stage') {
-            <h2 class="col-head">
-              <span class="col-title">{{ lane.stage.name }}</span>
-              @if (personal()) {
-                <mat-icon class="lock" inline [matTooltip]="'recruiting.personalBoard.stageLocked' | transloco" [attr.aria-label]="'recruiting.personalBoard.stageLocked' | transloco">lock</mat-icon>
-              }
-              <span class="muted">{{ lane.items.length }}</span>
-            </h2>
-          } @else {
-            <h2 class="col-head">
-              <mat-icon class="grip" cdkDragHandle [matTooltip]="'recruiting.personalBoard.drag' | transloco">drag_indicator</mat-icon>
-              @if (renaming() === lane.column.id) {
-                <input
-                  #title
-                  class="col-input"
-                  maxlength="40"
-                  [value]="lane.column.title"
-                  [attr.aria-label]="'recruiting.personalBoard.rename' | transloco"
-                  (keydown.enter)="rename(lane.column, title.value)"
-                  (keydown.escape)="renaming.set(null)"
-                  (blur)="rename(lane.column, title.value)"
-                />
-              } @else {
-                <span class="col-title">{{ lane.column.title }}</span>
-              }
-              <span class="muted">{{ lane.items.length }}</span>
-              <button mat-icon-button type="button" class="col-menu" [matMenuTriggerFor]="colMenu" [matMenuTriggerData]="{ column: lane.column }" [attr.aria-label]="'recruiting.personalBoard.columnMenu' | transloco: { name: lane.column.title }">
-                <mat-icon>more_vert</mat-icon>
-              </button>
-            </h2>
-          }
-          <div
-            class="cards"
-            cdkDropList
-            [id]="'cards-' + lane.key"
-            [cdkDropListConnectedTo]="cardListIds()"
-            [cdkDropListData]="lane.kind === 'stage' ? stageTarget(lane.stage) : personalTarget(lane.column)"
-            [cdkDropListDisabled]="!canWrite() && !personal()"
-            (cdkDropListDropped)="onDrop($event)"
-            (cdkDropListEntered)="dragOver.set(lane.key)"
-            (cdkDropListExited)="leave(lane.key)"
+    <div class="board-wrap">
+      <div
+        class="board"
+        [class.is-dragging]="dragging()"
+        cdkScrollable
+        cdkDropList
+        cdkDropListOrientation="horizontal"
+        [cdkDropListDisabled]="!personal()"
+        (cdkDropListDropped)="onLaneDrop($event)"
+      >
+        @for (lane of store.lanes(); track lane.key; let i = $index) {
+          <section
+            class="column"
+            [class.own]="lane.kind === 'personal'"
+            [attr.data-kind]="lane.kind === 'stage' ? lane.stage.kind : null"
+            [attr.data-color]="lane.kind === 'personal' ? lane.column.color : null"
+            cdkDrag
+            cdkDragLockAxis="x"
+            [cdkDragDisabled]="lane.kind === 'stage' || !personal()"
+            [cdkDragStartDelay]="{ touch: 400, mouse: 0 }"
+            [attr.aria-label]="lane.kind === 'stage' ? lane.stage.name : lane.column.title"
+            [attr.data-drop]="dropHint()?.key === lane.key ? dropHint()?.kind : null"
+            [cdkDragPreviewClass]="columnPreviewClass"
+            (cdkDragStarted)="dragStart(null, null)"
+            (cdkDragEnded)="dragEnd()"
           >
-            @for (app of lane.items; track app.id) {
-              <article
-                class="card"
-                cdkDrag
-                [cdkDragData]="app"
-                cdkDragPreviewClass="board-drag-preview"
-                [cdkDragStartDelay]="{ touch: 300, mouse: 0 }"
-                (cdkDragStarted)="dragStart(lane.key, app)"
-                (cdkDragEnded)="dragEnd()"
-                [class.stale]="app.is_stale"
-                [class.pending]="store.pending().has(app.id)"
-                tabindex="0"
-                (keydown.enter)="open(app)"
-                (dblclick)="open(app)"
-              >
-                <div class="card-top">
-                  <a class="name" [routerLink]="['/candidates', app.candidate_id]">{{ app.candidate?.full_name }}</a>
-                  @if (canWrite() || personal()) {
-                    <button mat-icon-button type="button" class="move-btn" [matMenuTriggerFor]="moveMenu" [matMenuTriggerData]="{ app: app }" [attr.aria-label]="'recruiting.personalBoard.moveTo' | transloco">
-                      <mat-icon>drive_file_move</mat-icon>
+            @if (dropHint(); as hint) {
+              @if (hint.key === lane.key) {
+                <p class="drop-caption" aria-hidden="true">{{ hint.text }}</p>
+              }
+            }
+            @if (personal()) {
+              <div class="slot" [class.open]="adding() === i">
+                @if (adding() === i) {
+                  <ng-container *ngTemplateOutlet="addForm; context: { $implicit: i }" />
+                } @else {
+                  <button type="button" class="slot-btn" (click)="openSlot(i)" [attr.aria-label]="'recruiting.personalBoard.addHere' | transloco">+</button>
+                }
+              </div>
+            }
+            @if (lane.kind === 'stage') {
+              <h2 class="col-head">
+                <span class="app-station" [attr.data-kind]="lane.stage.kind" aria-hidden="true"></span>
+                <span class="col-title">{{ lane.stage.name }}</span>
+                @if (personal()) {
+                  <mat-icon class="lock" inline [matTooltip]="'recruiting.personalBoard.stageLocked' | transloco" [attr.aria-label]="'recruiting.personalBoard.stageLocked' | transloco">lock</mat-icon>
+                }
+                <span class="col-count app-num">{{ lane.items.length }}</span>
+              </h2>
+            } @else {
+              <h2 class="col-head">
+                <mat-icon class="grip" cdkDragHandle [matTooltip]="'recruiting.personalBoard.drag' | transloco">drag_indicator</mat-icon>
+                <span class="app-station" aria-hidden="true"></span>
+                @if (renaming() === lane.column.id) {
+                  <input
+                    #title
+                    class="col-input"
+                    maxlength="40"
+                    [value]="lane.column.title"
+                    [attr.aria-label]="'recruiting.personalBoard.rename' | transloco"
+                    (keydown.enter)="rename(lane.column, title.value)"
+                    (keydown.escape)="renaming.set(null)"
+                    (blur)="rename(lane.column, title.value)"
+                  />
+                } @else {
+                  <span class="col-title">{{ lane.column.title }}</span>
+                }
+                <span class="col-count app-num">{{ lane.items.length }}</span>
+                <button mat-icon-button type="button" class="col-menu" [matMenuTriggerFor]="colMenu" [matMenuTriggerData]="{ column: lane.column }" [attr.aria-label]="'recruiting.personalBoard.columnMenu' | transloco: { name: lane.column.title }">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+              </h2>
+            }
+            <div
+              class="cards"
+              cdkDropList
+              [id]="'cards-' + lane.key"
+              [cdkDropListConnectedTo]="cardListIds()"
+              [cdkDropListData]="lane.kind === 'stage' ? stageTarget(lane.stage) : personalTarget(lane.column)"
+              [cdkDropListDisabled]="!canWrite() && !personal()"
+              (cdkDropListDropped)="onDrop($event)"
+              (cdkDropListEntered)="dragOver.set(lane.key)"
+              (cdkDropListExited)="leave(lane.key)"
+            >
+              @for (app of lane.items; track app.id) {
+                <article
+                  class="card"
+                  cdkDrag
+                  [cdkDragData]="app"
+                  cdkDragPreviewClass="board-drag-preview"
+                  [cdkDragStartDelay]="{ touch: 300, mouse: 0 }"
+                  (cdkDragStarted)="dragStart(lane.key, app)"
+                  (cdkDragEnded)="dragEnd()"
+                  [class.stale]="app.is_stale"
+                  [class.pending]="store.pending().has(app.id)"
+                  tabindex="0"
+                  (keydown.enter)="open(app)"
+                  (dblclick)="open(app)"
+                >
+                  <div class="card-top">
+                    <a class="name" [routerLink]="['/candidates', app.candidate_id]">{{ app.candidate?.full_name }}</a>
+                    @if (canWrite() || personal()) {
+                      <button mat-icon-button type="button" class="move-btn" [matMenuTriggerFor]="moveMenu" [matMenuTriggerData]="{ app: app }" [attr.aria-label]="'recruiting.personalBoard.moveTo' | transloco">
+                        <mat-icon>drive_file_move</mat-icon>
+                      </button>
+                    }
+                  </div>
+                  <span class="meta muted app-num">{{ app.candidate?.phone ?? app.candidate?.email ?? '' }}</span>
+                  @if (lane.kind === 'personal') {
+                    <span class="stage-chip" [matTooltip]="'recruiting.personalBoard.stageChip' | transloco">{{ stageName(app.stage_id) }}</span>
+                  }
+                  @if (app.is_stale) {
+                    <span class="stale-text"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.board.stale' | transloco: { days: idle(app) } }}</span>
+                  }
+                  @if (canWrite() && lane.kind === 'stage' && lane.stage.is_hire) {
+                    <button mat-stroked-button type="button" class="hire" (click)="hire.run(app.id)">
+                      <mat-icon>badge</mat-icon>{{ 'people.hire.action' | transloco }}
                     </button>
                   }
-                </div>
-                <span class="meta muted">{{ app.candidate?.phone ?? app.candidate?.email ?? '' }}</span>
-                @if (lane.kind === 'personal') {
-                  <span class="stage-chip" [matTooltip]="'recruiting.personalBoard.stageChip' | transloco">{{ stageName(app.stage_id) }}</span>
-                }
-                @if (app.is_stale) {
-                  <span class="stale-text"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.board.stale' | transloco: { days: idle(app) } }}</span>
-                }
-                @if (canWrite() && lane.kind === 'stage' && lane.stage.is_hire) {
-                  <button mat-stroked-button type="button" class="hire" (click)="hire.run(app.id)">
-                    <mat-icon>badge</mat-icon>{{ 'people.hire.action' | transloco }}
-                  </button>
-                }
-              </article>
-            } @empty {
-              <p class="empty muted">—</p>
+                </article>
+              } @empty {
+                <p class="empty muted">—</p>
+              }
+            </div>
+          </section>
+        }
+        @if (personal() && store.board()) {
+          <div class="column add">
+            @if (adding() === store.lanes().length) {
+              <ng-container *ngTemplateOutlet="addForm; context: { $implicit: store.lanes().length }" />
+            } @else {
+              <button mat-button type="button" (click)="openSlot(store.lanes().length)">{{ 'recruiting.personalBoard.add' | transloco }}</button>
             }
           </div>
-        </section>
-      }
-      @if (personal() && store.board()) {
-        <div class="column add">
-          @if (adding() === store.lanes().length) {
-            <ng-container *ngTemplateOutlet="addForm; context: { $implicit: store.lanes().length }" />
-          } @else {
-            <button mat-button type="button" (click)="openSlot(store.lanes().length)">{{ 'recruiting.personalBoard.add' | transloco }}</button>
-          }
-        </div>
-      }
+        }
+      </div>
     </div>
 
     <p class="visually-hidden" aria-live="polite">{{ dropHint()?.text ?? '' }}</p>
@@ -261,51 +265,96 @@ import { VacancySources } from './vacancy-sources';
     </mat-menu>
   `,
   styles: `
-    .board { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 1rem; align-items: flex-start; }
+    /* Restyle C «Маршрут»: column heads are stations on one line that runs through the whole board (station and line
+       colour = stage TYPE via data-kind, never column order); own columns are a dashed «reserve branch». No per-card
+       progress dots: the column already is the stage. Tokens only (styles.scss). */
+    .board-wrap { position: relative; timeline-scope: --board-x; }
+    .board { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 1rem; align-items: flex-start; scroll-timeline: --board-x x; }
+    /* Scroll hint: a fade + chevron on the right edge while more columns are to the right. Driven by the board's own
+       scroll position (no script): hidden when nothing overflows (inactive timeline) and at the end of the route. */
+    .board-wrap::after {
+      content: '›'; position: absolute; top: 0; right: 0; bottom: 1rem; width: 3rem; z-index: 3; pointer-events: none;
+      display: flex; align-items: flex-start; justify-content: flex-end; padding: 0.15rem 0.25rem 0 0; box-sizing: border-box;
+      font: 600 1.6rem/1.75rem var(--app-font-text); color: var(--mat-sys-on-surface); opacity: 0;
+      background: linear-gradient(to right, transparent, var(--app-canvas) 85%);
+      animation: board-hint linear both; animation-timeline: --board-x;
+    }
+    .board-wrap:has(.board.is-dragging)::after { visibility: hidden; }
+    @keyframes board-hint { 0%, 92% { opacity: 1; } 100% { opacity: 0; } }
     .column {
-      flex: 0 0 15rem; background: var(--mat-sys-surface-container-low); border-radius: var(--app-radius);
-      padding: 0.5rem; min-height: 8rem; border-top: 3px solid var(--app-border);
+      --line: var(--app-stage-new);
+      --col-bg: var(--mat-sys-surface-container-low);
+      flex: 0 0 15rem; background: var(--col-bg); border-radius: var(--app-radius);
+      padding: 0.5rem; min-height: 8rem;
     }
-    .column[data-kind='hire'] { border-top-color: var(--app-success); }
-    .column[data-kind='closed'] { border-top-color: var(--app-danger); }
-    .col-head { display: flex; justify-content: space-between; font: var(--mat-sys-title-small); margin: 0.25rem 0.25rem 0.5rem; }
+    .column[data-kind='select'] { --line: var(--app-stage-select); }
+    .column[data-kind='hire'] { --line: var(--app-stage-hire); }
+    .column[data-kind='closed'] { --line: var(--app-stage-closed); }
+    /* Drop highlight (global, styles.scss) tints the column: the head «cut-outs» follow it. */
+    .column[data-drop] { --col-bg: color-mix(in srgb, var(--drop-color) 8%, var(--mat-sys-surface-container-low)); }
+    .col-head {
+      position: relative; display: flex; align-items: center; gap: 0; margin: 0.25rem 0.25rem 0.6rem;
+      font: var(--mat-sys-title-small); font-family: var(--app-font-display);
+    }
+    /* One line through all heads: from this station on, through the gap, to the next station (it sits on top). */
+    .col-head::after {
+      content: ''; position: absolute; z-index: 1; left: 0.5rem; right: -2.25rem; top: 50%; height: 3px; translate: 0 -50%;
+      border-radius: 2px; background: var(--line); pointer-events: none;
+    }
+    .column:last-child .col-head::after, .column:has(+ .column.add) .col-head::after { right: 0; }
+    /* Head content stands on the line; title and icons «cut» it with the column's own background. */
+    .col-head > * { position: relative; z-index: 2; }
+    /* No flex gap: neighbours touch, so the line shows only after the last label, up to the count. */
+    .col-head > .col-title, .col-head > .lock, .col-head > .grip { background: var(--col-bg); padding-right: 0.4rem; }
+    .col-head > .app-station + * { margin-left: 0; padding-left: 0.4rem; }
+    .col-head .app-station { width: 1rem; height: 1rem; box-shadow: 0 0 0 3px var(--col-bg); }
+    .col-head .col-count {
+      flex: none; margin-left: auto; margin-right: 0.15rem; min-width: 1.5rem; padding: 0 0.35rem; box-sizing: border-box; text-align: center;
+      font-size: 0.75rem; line-height: 1.25rem; color: var(--mat-sys-on-surface);
+      border: var(--app-border-w) solid var(--line); border-radius: var(--app-radius-pill); background: var(--app-card);
+    }
+    .col-head .col-menu { background: var(--col-bg); }
     .card {
-      display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem;
-      background: var(--app-board-card); border: 1px solid var(--app-border); border-radius: 8px; cursor: grab;
-      box-shadow: var(--app-card-shadow);
+      display: flex; flex-direction: column; gap: 0.125rem; padding: 0.55rem 0.75rem; margin-bottom: 0.5rem;
+      background: var(--app-board-card); border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius); cursor: grab;
+      box-shadow: var(--app-card-shadow); transition: border-color var(--app-fast) ease-out, translate var(--app-fast) ease-out;
     }
-    .card:focus-visible { outline: 2px solid var(--mat-sys-primary); }
-    .card.stale { border-left: 3px solid var(--app-warning); }
+    .card:hover { border-color: var(--line); translate: 0 -1px; }
+    .card:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
+    .card.stale { border-left: 4px solid var(--app-warning); }
     .card.pending { opacity: 0.6; }
-    .name { color: inherit; font-weight: 500; text-decoration: none; }
-    .meta { font-size: 0.8rem; font-variant-numeric: tabular-nums; }
-    .stale-text { color: var(--app-warning); font-size: 0.8rem; }
+    .name { color: inherit; font-weight: 600; text-decoration: none; }
+    .name:hover { text-decoration: underline; }
+    .meta { font-size: 0.78rem; }
+    .stale-text { display: inline-flex; align-items: center; gap: 0.2rem; color: var(--app-warn-text); font-size: 0.8rem; }
     .empty { text-align: center; margin: 1rem 0; }
     .hire { margin-top: 0.25rem; align-self: flex-start; }
     /* Drag preview, landing slot, drop highlight: global (styles.scss «Board drag & drop»), the preview is outside. */
     .cdk-drag-animating, .cdk-drop-list-dragging .card:not(.cdk-drag-placeholder) { transition: transform 150ms ease-out; }
     .personal-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
     .menu-note { padding: 0 1rem; font-size: 0.85rem; }
-    .col-head { align-items: center; gap: 0.25rem; }
-    .col-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .col-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .col-menu { margin: -0.5rem -0.25rem -0.5rem 0; }
     .col-input {
       flex: 1; min-width: 0; font: inherit; padding: 0.25rem 0.4rem; border: 1px solid var(--app-border); border-radius: 6px;
       background: var(--mat-sys-surface); color: var(--mat-sys-on-surface);
     }
-    .column.own { border-top-style: dashed; }
-    .column.add { display: flex; flex-direction: column; gap: 0.25rem; min-height: 0; background: transparent; border: 1px dashed var(--app-border); }
-    .column[data-color='blue'], .swatch[data-color='blue'] { border-top-color: var(--mat-sys-primary); --swatch: var(--mat-sys-primary); }
-    .column[data-color='green'], .swatch[data-color='green'] { border-top-color: var(--app-success); --swatch: var(--app-success); }
-    .column[data-color='amber'], .swatch[data-color='amber'] { border-top-color: var(--app-warning); --swatch: var(--app-warning); }
-    .column[data-color='red'], .swatch[data-color='red'] { border-top-color: var(--app-danger); --swatch: var(--app-danger); }
-    .column[data-color='purple'], .swatch[data-color='purple'] { border-top-color: var(--mat-sys-tertiary); --swatch: var(--mat-sys-tertiary); }
-    .column[data-color='grey'], .swatch[data-color='grey'] { border-top-color: var(--mat-sys-outline); --swatch: var(--mat-sys-outline); }
+    /* Own column = «reserve branch»: dashed frame, station and line in the column's chosen colour. */
+    .column.own { --line: var(--swatch, var(--mat-sys-outline)); --col-bg: var(--app-canvas); background: var(--col-bg); border: var(--app-border-w) dashed var(--app-border); }
+    .column.own .app-station { --station: var(--line); border-style: dashed; }
+    .column.own .col-head::after { height: 2px; background: repeating-linear-gradient(90deg, var(--line) 0 0.4rem, transparent 0.4rem 0.7rem); }
+    .column.add { display: flex; flex-direction: column; gap: 0.25rem; min-height: 0; background: transparent; border: var(--app-border-w) dashed var(--app-border); }
+    .column[data-color='blue'], .swatch[data-color='blue'] { --swatch: var(--mat-sys-primary); }
+    .column[data-color='green'], .swatch[data-color='green'] { --swatch: var(--app-success); }
+    .column[data-color='amber'], .swatch[data-color='amber'] { --swatch: var(--app-warning); }
+    .column[data-color='red'], .swatch[data-color='red'] { --swatch: var(--app-danger); }
+    .column[data-color='purple'], .swatch[data-color='purple'] { --swatch: var(--mat-sys-tertiary); }
+    .column[data-color='grey'], .swatch[data-color='grey'] { --swatch: var(--mat-sys-outline); }
     .swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 50%; margin-right: 0.5rem; background: var(--swatch); vertical-align: middle; }
     .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.25rem; }
     .move-btn { margin: -0.5rem -0.5rem -0.5rem 0; flex: none; }
     .stage-chip {
-      align-self: flex-start; font-size: 0.75rem; padding: 0 0.5rem; border-radius: 999px;
+      align-self: flex-start; font-size: 0.75rem; padding: 0 0.5rem; border-radius: var(--app-radius-pill);
       background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container);
     }
     .column { position: relative; }
@@ -320,7 +369,23 @@ import { VacancySources } from './vacancy-sources';
     }
     .slot:hover .slot-btn, .slot-btn:focus-visible { opacity: 1; }
     @media (hover: none) { .slot-btn { opacity: 0.6; } }
+    /* Touch: the «+» stays small to the eye, its hit area is 44px. */
+    @media (pointer: coarse) {
+      .slot-btn { position: relative; }
+      .slot-btn::before { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; translate: -50% -50%; }
+    }
     .board.cdk-drop-list-dragging > .column:not(.cdk-drag-placeholder) { transition: transform 150ms ease-out; }
+    /* The one «pop»: a card dragged over a stage column — that station gets a halo and pops once. */
+    .column[data-drop='stage'] .col-head .app-station { box-shadow: 0 0 0 4px color-mix(in srgb, var(--station) 25%, transparent); }
+    @media (prefers-reduced-motion: no-preference) {
+      .column[data-drop='stage'] .col-head .app-station { animation: station-pop 200ms ease-out; }
+    }
+    @keyframes station-pop { 50% { scale: 1.35; } }
+    @media (prefers-reduced-motion: reduce) {
+      .card, .cdk-drag-animating, .cdk-drop-list-dragging .card:not(.cdk-drag-placeholder),
+      .board.cdk-drop-list-dragging > .column:not(.cdk-drag-placeholder) { transition: none; }
+      .card:hover { translate: none; }
+    }
     @media (max-width: 600px) {
       .board { scroll-snap-type: x mandatory; }
       .column { flex-basis: 85vw; scroll-snap-align: start; }
