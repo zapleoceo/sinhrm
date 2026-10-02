@@ -124,6 +124,9 @@ export const LOGIN_ROUTE = ['new', 'screen', 'interview', 'offer', 'hire'] as co
       background: var(--app-card); color: var(--mat-sys-on-surface);
       font: var(--mat-sys-label-large); font-size: 0.9375rem; text-decoration: none;
       transition: border-color var(--app-fast) ease, transform var(--app-fast) ease;
+      /* Keyboard focus = the global teal :focus-visible ring (>= 3:1), 3px instead of 2px on the page's one action
+         (this longhand outranks the global shorthand; no outline is drawn without :focus-visible). */
+      outline-width: 3px;
     }
     .google:hover { border-color: var(--app-ink); transform: translateY(-1px); }
     .g { width: 20px; height: 20px; flex: none; }

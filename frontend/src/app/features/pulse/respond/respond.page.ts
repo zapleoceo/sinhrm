@@ -22,7 +22,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (error(); as key) {
-      <div class="state end" data-tone="bad">
+      <div class="state end" data-tone="bad" role="alert">
         <span class="stop" aria-hidden="true"></span>
         <p>{{ key | transloco }}</p>
         <a mat-stroked-button routerLink="/pulse">{{ 'pulse.my.title' | transloco }}</a>

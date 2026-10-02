@@ -1,11 +1,12 @@
 // UI parity harness (docs/guides/ui-parity.md). Runs against the production build with a mock API.
 import { defineConfig } from '@playwright/test';
+import { E2E_ORIGIN, E2E_PORT } from './port.mjs';
 
 const CI = !!process.env['CI'];
 const VISUAL = !!process.env['E2E_VISUAL'];
 const desktop = { width: 1440, height: 900 };
 const mobile = { width: 390, height: 844 };
-const common = { locale: 'uk-UA', timezoneId: 'Europe/Kyiv', reducedMotion: 'reduce' as const, baseURL: 'http://127.0.0.1:4317' };
+const common = { locale: 'uk-UA', timezoneId: 'Europe/Kyiv', reducedMotion: 'reduce' as const, baseURL: E2E_ORIGIN };
 
 export default defineConfig({
   testDir: '.',
@@ -21,7 +22,7 @@ export default defineConfig({
   reporter: CI ? [['list'], ['html', { open: 'never', outputFolder: '.out/report' }]] : [['list'], ['html', { open: 'never', outputFolder: '.out/report' }]],
   globalTeardown: './axe-teardown.ts',
   use: { ...common, actionTimeout: 10_000, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
-  webServer: { command: 'node e2e/serve.mjs --port=4317', cwd: '..', url: 'http://127.0.0.1:4317/login', reuseExistingServer: !CI, timeout: 30_000 },
+  webServer: { command: `node e2e/serve.mjs --port=${E2E_PORT}`, cwd: '..', url: `${E2E_ORIGIN}/login`, reuseExistingServer: !CI, timeout: 30_000 },
   projects: [
     { name: 'desktop-light', use: { viewport: desktop, colorScheme: 'light' } },
     { name: 'desktop-dark', use: { viewport: desktop, colorScheme: 'dark' } },

@@ -6,7 +6,7 @@
 //
 // Prerequisites (docs/guides/ui-parity.md, «Перезапис фікстур»):
 //   1. backend on SQLite with migrations + all DemoDataService steps + a superadmin user, served by
-//      `php artisan serve --port=8017`, SANCTUM_STATEFUL_DOMAINS=127.0.0.1:4317;
+//      `php artisan serve --port=8017`, SANCTUM_STATEFUL_DOMAINS=127.0.0.1:<E2E_PORT, default 4317>;
 //   2. a session cookie of that superadmin, made by a local helper OUTSIDE the repo (never a login route),
 //      saved as JSON {"name": "<session cookie name>", "value": "<encrypted cookie value>"};
 //   3. `npm run build`.
@@ -19,13 +19,14 @@ import { chromium } from '@playwright/test';
 import { PAGES } from './pages.mjs';
 import { runSteps, settle, watchNetwork } from './steps.mjs';
 import { fixtureKey, sanitize, trim, areaOf } from './fixture-lib.mjs';
+import { E2E_ORIGIN, E2E_PORT } from './port.mjs';
 
 const api = process.env.SINHRM_API ?? 'http://127.0.0.1:8017';
 const sessionFile = process.env.SINHRM_SESSION;
 if (!sessionFile) throw new Error('SINHRM_SESSION=<path to session.json> is required');
 const session = JSON.parse(await readFile(sessionFile, 'utf8'));
-const port = 4317;
-const base = `http://127.0.0.1:${port}`;
+const port = E2E_PORT;
+const base = E2E_ORIGIN;
 const outDir = fileURLToPath(new URL('./fixtures/', import.meta.url));
 const only = process.env.RECORD_ONLY ? new Set(process.env.RECORD_ONLY.split(',')) : null;
 

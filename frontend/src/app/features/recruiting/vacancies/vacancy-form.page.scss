@@ -47,7 +47,7 @@ h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.5rem; }
 }
 .title-input::placeholder { color: var(--app-muted); }
 .title-input:focus-visible { border-bottom-color: var(--mat-sys-primary); outline: none; }
-.title-input[aria-invalid='true'] { border-bottom-color: var(--app-danger); }
+.title-input[aria-invalid='true'] { border-bottom-color: var(--app-bad-text); }
 
 .grid { display: grid; gap: 0 0.75rem; }
 .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -70,7 +70,7 @@ legend { font: var(--mat-sys-title-small); margin-bottom: 0.5rem; padding: 0; }
 
 .notice {
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 1rem;
-  border: var(--app-border-w) solid var(--app-warning); border-radius: var(--app-radius); background: var(--app-warn-bg);
+  border: var(--app-border-w) solid var(--app-warn-text); border-radius: var(--app-radius); background: var(--app-warn-bg);
 }
 
 .actions {

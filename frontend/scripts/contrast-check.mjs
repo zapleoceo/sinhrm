@@ -38,6 +38,11 @@ const pairs = (t) => [
   ['muted text / page', t.muted, t.surface, 4.5],
   ['muted text / card', t.muted, t.card, 4.5],
   ['muted text / sidebar', t.muted, t.sidebar, 4.5],
+  // 11-12px captions (Pulse results/mood, Safe Speak thread/report) sit on cards, quiet fills and handler bubbles.
+  ['muted text / card-2 (quiet fill)', t.muted, t.card2, 4.5],
+  ['muted text / handler bubble (6% primary)', t.muted, mix(t.primary, t.card, 0.06), 4.5],
+  ['warn text / card', t.warning, t.card, 4.5],
+  ['bad text / card', t.danger, t.card, 4.5],
   ['nav text / sidebar', t.ink, t.sidebar, 4.5],
   ['nav heading / sidebar', t.navHeading, t.sidebar, 4.5],
   ['active nav text / 12% brand pill', t.navActive, mix(t.primary, t.sidebar, 0.12), 4.5],

@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { BrowserContext, Page, Request } from '@playwright/test';
 import { fixtureKey } from './fixture-lib.mjs';
+import { E2E_HOST } from './port.mjs';
 
 interface Fixture {
   status: number;
@@ -61,8 +62,8 @@ function mutationAnswer(method: string, path: string, body: unknown): { status: 
 export async function installMock(context: BrowserContext, opts: { guest?: boolean } = {}): Promise<Mock> {
   const mock: Mock = { mutations: [], missing: [] };
   // Fonts are local (e2e/serve.mjs rewrites the inlined Google Fonts); any other host = network dependence.
-  await context.route(/^https?:\/\/(?!127\.0\.0\.1:4317\/)/, (route) => route.abort('blockedbyclient'));
-  await context.route(/^http:\/\/127\.0\.0\.1:4317\/(api|sanctum)\//, async (route) => {
+  await context.route((url) => /^https?:$/.test(url.protocol) && url.host !== E2E_HOST, (route) => route.abort('blockedbyclient'));
+  await context.route((url) => url.protocol === 'http:' && url.host === E2E_HOST && /^\/(api|sanctum)\//.test(url.pathname), async (route) => {
     const req: Request = route.request();
     const url = new URL(req.url());
     const method = req.method();
@@ -102,11 +103,11 @@ export function watchErrors(page: Page, expectedStatus: (path: string, status: n
   page.on('requestfailed', (r) => {
     const u = new URL(r.url());
     // ERR_ABORTED = the app cancelled the request (route change, switchMap) — normal, not a failure.
-    if (u.host === '127.0.0.1:4317' && r.failure()?.errorText !== 'net::ERR_ABORTED') errors.push(`requestfailed: ${r.method()} ${u.pathname} ${r.failure()?.errorText ?? ''}`);
+    if (u.host === E2E_HOST && r.failure()?.errorText !== 'net::ERR_ABORTED') errors.push(`requestfailed: ${r.method()} ${u.pathname} ${r.failure()?.errorText ?? ''}`);
   });
   page.on('response', (r) => {
     const u = new URL(r.url());
-    if (u.host === '127.0.0.1:4317' && r.status() >= 400 && !expectedStatus(u.pathname, r.status())) {
+    if (u.host === E2E_HOST && r.status() >= 400 && !expectedStatus(u.pathname, r.status())) {
       errors.push(`http ${r.status()}: ${r.request().method()} ${u.pathname}${u.search}`);
     }
   });

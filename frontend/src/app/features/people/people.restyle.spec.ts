@@ -37,6 +37,12 @@ describe('people restyle (C «Маршрут»)', () => {
     expect(css).not.toMatch(/rgba?\(/i);
   });
 
+  it('terminate dialog: the error text uses the AA --app-bad-text token', () => {
+    const css = stylesOf(TerminateDialog);
+    expect(css).toMatch(/\.error[^{]*\{[^}]*color:\s*var\(--app-bad-text\)/);
+    expect(css).not.toMatch(/color:\s*var\(--app-danger\)/);
+  });
+
   it('draws avatars as station rings and statuses as shape-marker pills', () => {
     for (const cmp of [PeoplePage, ProfilePage]) {
       const css = stylesOf(cmp);
