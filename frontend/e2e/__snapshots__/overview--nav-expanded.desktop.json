@@ -17,6 +17,7 @@
  ],
  "interactive": [
   "button \"Адміністрування\" [expanded]",
+  "button \"Згорнути меню\" [expanded]",
   "button \"Люди\" [expanded]",
   "button \"Меню користувача\"",
   "button \"Оновити\"",

@@ -41,6 +41,7 @@
   "button \"Відхилити\"",
   "button \"Відхилити\"",
   "button \"Відхилити\"",
+  "button \"Згорнути меню\" [expanded]",
   "button \"Люди\" [expanded]",
   "button \"Меню користувача\"",
   "button \"Оновити\"",

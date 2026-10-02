@@ -14,6 +14,7 @@
   "button \"Previous page\" [disabled]",
   "button \"Адміністрування 9 нових\"",
   "button \"Додати співробітника\"",
+  "button \"Згорнути меню\" [expanded]",
   "button \"Люди\" [expanded]",
   "button \"Меню користувача\"",
   "button \"Продуктивність\"",
