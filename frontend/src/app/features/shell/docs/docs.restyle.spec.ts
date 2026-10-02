@@ -1,12 +1,6 @@
-import { Type } from '@angular/core';
 import { DocsOverview } from './docs-overview';
 import { DocsPage } from './docs.page';
-
-/** Compiled component CSS — restyle C «Маршрут» contract: theme tokens only (no hex), 1.5px lines, no fades. */
-function css(component: Type<unknown>): string {
-  // %NS% is the compiler's placeholder inside custom property names; it is empty at runtime.
-  return (component as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('\n').replaceAll('%NS%', '');
-}
+import { css } from '../../../../testing/css';
 
 describe('Help (docs) restyle', () => {
   it('TOC: current page = brand rail, links reach 44px on phones, group titles not faded', () => {

@@ -1,13 +1,7 @@
-import { Type } from '@angular/core';
 import { ModuleOffPage } from './module-off.page';
 import { ModulesPage } from './modules.page';
 import { StatusPage } from './status.page';
-
-/** Compiled component CSS — restyle C «Маршрут» contract: theme tokens only (no hex), 1.5px lines, no fades. */
-function css(component: Type<unknown>): string {
-  // %NS% is the compiler's placeholder inside custom property names; it is empty at runtime.
-  return (component as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('\n').replaceAll('%NS%', '');
-}
+import { css } from '../../../testing/css';
 
 describe('Core pages restyle', () => {
   it('modules matrix: track row lines, muted label header, no hex', () => {

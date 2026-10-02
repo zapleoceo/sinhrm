@@ -21,7 +21,8 @@
 (реальные страницы сайтов в репозиторий не копируем), ESLint; `npm run lint|typecheck|test|package` — job `extension` в CI.
 
 **Фронтенд (Angular):** standalone, signals, `inject()`, `OnPush`, typed forms, без `any`, HTTP только через сервисы
-в `core/api`, строки интерфейса — через i18n (ru/uk/en). Тесты — Vitest.
+в `core/api`, строки интерфейса — через i18n (ru/uk/en). Тесты — Vitest. Общие хелперы тестов — `frontend/src/testing/`
+(в сборку приложения не входят): `css(Component)` — скомпилированный CSS компонента для тестов вида `*.restyle.spec.ts`.
 
 ## Документация
 Изменил модуль → обнови `docs/modules/<модуль>.md` (CI проверяет). Имя страницы — имя модуля в kebab-case

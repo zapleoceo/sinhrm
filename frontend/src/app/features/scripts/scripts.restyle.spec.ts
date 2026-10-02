@@ -1,12 +1,6 @@
-import { Type } from '@angular/core';
 import { EvaluationBadge } from './evaluation/evaluation-badge';
 import { TasksWidget } from './tasks/tasks-widget';
-
-/** Compiled component CSS — restyle C «Маршрут» contract: theme tokens only (no hex), 1.5px lines, no fades. */
-function css(component: Type<unknown>): string {
-  // %NS% is the compiler's placeholder inside custom property names; it is empty at runtime.
-  return (component as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('\n').replaceAll('%NS%', '');
-}
+import { css } from '../../../testing/css';
 
 describe('Scripts restyle', () => {
   it('evaluation chip: band colour on the line and icon, 44px on phones', () => {

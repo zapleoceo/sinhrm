@@ -1,13 +1,7 @@
-import { Type } from '@angular/core';
 import { FEEDBACK_TONE, FEEDBACK_TYPES } from './perform.model';
 import { ObjectivesPage } from './objectives/objectives.page';
 import { ReviewResults } from './reviews/review-results';
-
-/** Compiled component CSS — restyle C «Маршрут» contract: theme tokens only (no hex), 1.5px lines, no fades. */
-function css(component: Type<unknown>): string {
-  // %NS% is the compiler's placeholder inside custom property names; it is empty at runtime.
-  return (component as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('\n').replaceAll('%NS%', '');
-}
+import { css } from '../../../testing/css';
 
 const PILL_TONES: readonly string[] = ['good', 'warn', 'bad', 'info', 'neutral'];
 
