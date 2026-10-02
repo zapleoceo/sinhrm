@@ -72,7 +72,7 @@ import { ChannelsService, channelErrorKey, webhookUrlForConsole } from './channe
     }
   `,
   styles: `
-    .panel { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--mat-sys-outline-variant); }
+    .panel { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.5rem; border-top: var(--app-border-w) solid var(--app-track); }
     h4 { margin: 0; }
     .url { display: flex; align-items: center; gap: 0.25rem; }
     code { overflow-wrap: anywhere; font-size: 0.85rem; padding: 0.25rem 0.5rem; border-radius: 6px; background: var(--mat-sys-surface-container); }

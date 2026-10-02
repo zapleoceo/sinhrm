@@ -11,15 +11,11 @@
   margin-bottom: 1rem;
 }
 
-.panel {
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
-  overflow-x: auto;
-}
 
 table { width: 100%; }
 
 .nowrap { white-space: nowrap; }
+.app-num { font-size: 0.8rem; }
 
 .changes {
   list-style: none;

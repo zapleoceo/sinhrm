@@ -137,11 +137,11 @@ import { toIsoDate } from '../../../core/date/iso-date';
           @for (c of cycles(); track c.id) {
             <tr>
               <th scope="row">{{ c.name }}</th>
-              <td class="muted">{{ c.period_start }} — {{ c.period_end }}</td>
-              <td>{{ 'perform.cycleStatus.' + c.status | transloco }}</td>
+              <td class="muted app-num">{{ c.period_start }} — {{ c.period_end }}</td>
+              <td><span class="app-pill" [attr.data-tone]="c.status === 'active' ? 'info' : c.status === 'closed' ? 'good' : 'neutral'">{{ 'perform.cycleStatus.' + c.status | transloco }}</span></td>
               <td>
                 <span class="mini"><span [style.width.%]="c.progress.total ? (c.progress.submitted / c.progress.total) * 100 : 0"></span></span>
-                {{ c.progress.submitted }}/{{ c.progress.total }}
+                <span class="app-num">{{ c.progress.submitted }}/{{ c.progress.total }}</span>
               </td>
               <td>
                 @if (c.status === 'draft') {
@@ -160,13 +160,20 @@ import { toIsoDate } from '../../../core/date/iso-date';
   `,
   styles: `
     .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-    .box { padding: 1rem; margin-bottom: 1rem; }
+    .box { padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .box h2 { margin: 0 0 0.5rem; font: var(--mat-sys-title-medium); }
     .checks { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0.5rem 0; }
     .cycles { width: 100%; border-collapse: collapse; }
-    .cycles th, .cycles td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--app-border); }
-    .mini { display: inline-block; width: 5rem; height: 6px; border-radius: 3px; background: var(--mat-sys-surface-container-highest); overflow: hidden; vertical-align: middle; }
-    .mini span { display: block; height: 100%; background: var(--app-success); }
+    .cycles th, .cycles td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); }
+    .cycles tr:last-child th, .cycles tr:last-child td { border-bottom: 0; }
+    .app-num { font-size: 0.8rem; white-space: nowrap; }
+    .mini { display: inline-block; width: 5rem; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; vertical-align: middle; margin-right: 0.35rem; }
+    .mini span {
+      display: block; height: 100%; border-radius: inherit; background: var(--app-success);
+      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes trace { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) { .mini span { animation: none; } }
   `,
 })
 export class ReviewAdminPage implements OnInit {

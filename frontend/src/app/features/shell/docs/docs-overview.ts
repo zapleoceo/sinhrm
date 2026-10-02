@@ -56,19 +56,25 @@ import { DocPage } from './docs.model';
     .map { display: flex; flex-direction: column; gap: 0.75rem; }
     .flow { display: flex; gap: 0.5rem; align-items: stretch; }
     .flow .zone { flex: 1 1 0; min-width: 0; }
-    .zone { border: 1px solid var(--app-border); border-radius: var(--app-radius); padding: 0.75rem; background: var(--mat-sys-surface-container-low); }
-    .zone h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.5rem; color: var(--app-muted); }
-    .zone[data-zone='recruiting'] { border-color: var(--mat-sys-primary); }
-    .zone[data-zone='people'] { border-color: var(--mat-sys-tertiary); }
+    /* Zones of the map: card + line with a «sleeper» on top in the zone colour (the heading names the zone). */
+    .zone { border: var(--app-border-w) solid var(--app-border); border-top: 4px solid var(--app-stage-new); border-radius: var(--app-radius); padding: 0.75rem 0.9rem; background: var(--app-card-2); }
+    .zone h2 { font: var(--mat-sys-label-medium); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.5rem; color: var(--app-muted); }
+    .zone[data-zone='recruiting'] { border-top-color: var(--app-stage-screen); }
+    .zone[data-zone='people'] { border-top-color: var(--app-stage-interview); }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
     .band ul { flex-direction: row; flex-wrap: wrap; }
     .band li { flex: 1 1 12rem; }
-    .block { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.45rem 0.55rem; border-radius: 8px; color: inherit; text-decoration: none; background: var(--mat-sys-surface); }
-    .block:hover { background: var(--mat-sys-surface-container-high); }
-    .block:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 1px; }
+    .block {
+      display: flex; gap: 0.6rem; align-items: flex-start; min-height: 2.75rem; box-sizing: border-box; padding: 0.45rem 0.6rem;
+      border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius-sm); color: inherit; text-decoration: none; background: var(--app-card);
+      transition: border-color var(--app-fast) ease-out;
+    }
+    .block:hover { border-color: var(--mat-sys-primary); }
+    .block:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .block { transition: none; } }
     .block fa-icon { color: var(--mat-sys-primary); margin-top: 0.15rem; }
     .txt { display: flex; flex-direction: column; min-width: 0; }
-    .txt strong { font-weight: 500; }
+    .txt strong { font-weight: 700; }
     .hint { font-size: 0.8rem; color: var(--app-muted); }
     .arrow { flex: none; align-self: center; width: 1.75rem; height: 1.75rem; color: var(--app-muted); }
     @media (max-width: 1100px) {

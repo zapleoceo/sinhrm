@@ -2,7 +2,6 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { FormControl, FormRecord, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -11,7 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ChannelPanel } from '../channels/channel-panel';
-import { Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
+import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
 import { IntegrationsStore } from './integrations.store';
 import { ChannelIcon } from '../../core/ui/channel-icon';
@@ -26,7 +25,6 @@ const URL_PATTERN = /^https:\/\/\S+$/i;
     DatePipe,
     ReactiveFormsModule,
     MatButtonModule,
-    MatChipsModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -48,6 +46,7 @@ export class IntegrationCard {
   readonly item = input.required<Integration>();
 
   protected readonly manualStatuses = MANUAL_STATUSES;
+  protected readonly statusTone = INTEGRATION_STATUS_TONE;
   protected readonly expanded = signal(false);
   protected readonly form = signal(new FormRecord<FormControl<string>>({}));
   protected readonly cleared = signal<ReadonlySet<string>>(new Set());

@@ -168,6 +168,8 @@ e-mail / Telegram (глобально) — **matched**, иначе **created** (
 
 **Интерфейс (2026-09-26):** Даты вводятся только выпадающим календарём Angular Material (формат дд.мм.рррр, неделя с понедельника; [core.md](core.md)), в API уходит прежний `YYYY-MM-DD` (`core/date/iso-date.ts`, без сдвига часового пояса); в «Запланувати зустріч» день — календарь, время — `mat-timepicker` (шаг 15 мин, 24 ч), в API по-прежнему `toIsoWithOffset(date, time)`. Сервисы Gmail / Calendar / Sheets в панели подключения показаны иконками Font Awesome (`app-channel-icon`).
 
+**Вид (рестайл C «Маршрут», 2026-10-02).** Состояние каждого сервиса Google — пилюля `.app-pill` (подключён ● good, ошибка ◆ warn, выключен — пунктирный ○), панели — общий `.panel`; предпросмотр импорта из Таблиц — шапка-подпись и строки на «треке» 1.5px, сохранённое сопоставление — зелёная «рельса» 4px. Тест вида — `features/google-workspace/google.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
 ## Как проверить
 Бэкенд (Google везде подменён `Http::fake`, `Http::preventStrayRequests()`; все значения синтетические):
 - `tests/Feature/GoogleWorkspace/GoogleConnectTest` — 401/403; redirect: scopes, `offline`, `consent`, state в сессии,

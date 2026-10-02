@@ -50,7 +50,7 @@ import { RequestAction, RequestsList } from '../widgets/requests-list';
     }
   `,
   styles: `
-    .card { padding: 1rem; margin-bottom: var(--app-gap); }
+    .card { padding: 1rem 1.25rem; margin-bottom: var(--app-gap); }
     h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.75rem; }
   `,
 })

@@ -123,10 +123,10 @@ export function moveItem<T>(list: readonly T[], index: number, delta: -1 | 1): T
     </section>
   `,
   styles: `
-    .box { padding: 1rem; margin-bottom: var(--app-gap); display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+    .box { padding: 1rem 1.25rem; margin-bottom: var(--app-gap); display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
     h2 { font: var(--mat-sys-title-medium); margin: 0; }
     .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    .num { width: 1.5rem; color: var(--app-muted); }
+    .num { width: 1.5rem; color: var(--app-muted); font-family: var(--app-font-mono); }
     .sm { width: 10rem; }
     .xs { width: 6rem; }
     .wide { width: 100%; max-width: 40rem; }

@@ -1,6 +1,13 @@
 /** Types and pure helpers of the Time API (backend app/Modules/Time). */
 
 export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+/** Status-pill tone (`.app-pill[data-tone]`: colour + marker shape, never colour alone). */
+export const TIMESHEET_STATUS_TONE: Readonly<Record<TimesheetStatus, 'neutral' | 'warn' | 'good' | 'bad'>> = {
+  draft: 'neutral',
+  submitted: 'warn',
+  approved: 'good',
+  rejected: 'bad',
+};
 
 export interface TimeDay {
   date: string;

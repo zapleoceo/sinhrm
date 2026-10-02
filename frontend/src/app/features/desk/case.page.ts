@@ -127,16 +127,16 @@ import { SlaBadge } from './sla-badge';
   `,
   styles: `
     .meta { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-    .thread { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; margin-bottom: 1rem; }
-    .msg { max-width: 48rem; padding: 0.5rem 0.75rem; border-radius: var(--app-radius); border: 1px solid var(--app-border); }
+    .thread { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .msg { max-width: 48rem; padding: 0.5rem 0.75rem; border-radius: var(--app-radius); border: var(--app-border-w) solid var(--app-border); }
     .msg.mine { align-self: flex-start; }
     .msg:not(.mine) { align-self: flex-end; background: color-mix(in srgb, var(--mat-sys-primary) 6%, transparent); }
-    .msg.internal { border-style: dashed; background: color-mix(in srgb, var(--app-warning) 8%, transparent); }
+    .msg.internal { border-style: dashed; border-color: var(--app-warning); background: var(--app-warn-bg); }
     .who { margin: 0 0 0.25rem; }
     .text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
     .article { display: inline-flex; gap: 0.25rem; align-items: center; margin-top: 0.25rem; }
     .files { list-style: none; padding: 0; margin: 0 0 1rem; }
-    .reply { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; }
+    .reply { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 1.25rem; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .grow { flex: 1; }
     .small { font-size: 0.8rem; }

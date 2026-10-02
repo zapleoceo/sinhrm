@@ -128,7 +128,7 @@ const EMPTY_DRAFT: Draft = { id: null, name: '', category: '', body: '', archive
     .actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .layout { display: grid; grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
     .list { list-style: none; margin: 0; padding: 0; }
-    .list li { border-bottom: 1px solid var(--app-border); }
+    .list li { border-bottom: var(--app-border-w) solid var(--app-track); }
     .list li:last-child { border-bottom: 0; }
     .list li.active { background: var(--mat-sys-secondary-container); }
     .list li.archived { opacity: 0.6; }

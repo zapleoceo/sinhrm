@@ -34,7 +34,7 @@ import { REVIEW_TYPES, ReviewResult, ReviewType, scoreWidth } from '../perform.m
             <th scope="row">{{ c.name }} @if (c.average !== null) { <span class="muted">· {{ c.average }}</span> }</th>
             <td>
               @for (t of types(); track t) {
-                <div class="barrow">
+                <div class="barrow" [attr.data-type]="t">
                   <span class="bar" [attr.data-type]="t" [style.width.%]="width(c.scores[t], c.max)"></span>
                   <span class="num">{{ c.scores[t] ?? '—' }}</span>
                 </div>
@@ -56,13 +56,27 @@ import { REVIEW_TYPES, ReviewResult, ReviewType, scoreWidth } from '../perform.m
   styles: `
     :host { display: block; }
     h3 { font: var(--mat-sys-title-medium); margin: 0.5rem 0; }
-    .legend { display: flex; gap: 1rem; flex-wrap: wrap; }
-    .key::before { content: ''; display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 2px; margin-right: 0.35rem; background: var(--c); }
+    /* Reviewer types: colour + marker SHAPE (legend and every bar), never colour alone. */
+    .legend { display: flex; gap: 0.5rem 1rem; flex-wrap: wrap; }
+    .key::before, .barrow::before {
+      content: ''; display: inline-block; flex: none; width: 0.6rem; height: 0.6rem; box-sizing: border-box; margin-right: 0.35rem;
+      border-radius: 50%; background: var(--c); border: 2px solid var(--c);
+    }
+    [data-type='manager']::before { border-radius: 1px; }
+    [data-type='peer']::before { border-radius: 1px; rotate: 45deg; width: 0.5rem; height: 0.5rem; }
+    [data-type='upward']::before { background: transparent; }
     .scores { width: 100%; border-collapse: collapse; }
-    .scores th { text-align: left; font-weight: 500; width: 35%; vertical-align: top; padding: 0.4rem 0.5rem 0.4rem 0; }
-    .barrow { display: flex; align-items: center; gap: 0.5rem; margin: 0.15rem 0; }
-    .bar { display: inline-block; height: 10px; border-radius: 3px; background: var(--c); min-width: 2px; }
-    .num { font-size: 0.8rem; color: var(--app-muted); }
+    .scores th { text-align: left; font-weight: 600; width: 35%; vertical-align: top; padding: 0.5rem 0.75rem 0.5rem 0; }
+    .scores tr + tr th, .scores tr + tr td { border-top: var(--app-border-w) solid var(--app-track); }
+    .barrow { display: flex; align-items: center; gap: 0.5rem; margin: 0.2rem 0; }
+    .barrow::before { margin-right: 0; }
+    .bar {
+      display: inline-block; height: 0.5rem; border-radius: var(--app-radius-pill); background: var(--c); min-width: 2px;
+      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes trace { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) { .bar { animation: none; } }
+    .num { font: 500 0.75rem var(--app-font-mono); color: var(--app-muted); }
     [data-type='self'] { --c: var(--mat-sys-tertiary); }
     [data-type='manager'] { --c: var(--mat-sys-primary); }
     [data-type='peer'] { --c: var(--app-success); }

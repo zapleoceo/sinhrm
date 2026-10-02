@@ -80,6 +80,8 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
 `features/directory/directory.service.ts` (`active('branches')`); `users.service.ts` — HTTP и перевод кодов ошибок
 в i18n-ключи. Маршрут `/admin/users` защищён `roleGuard('superadmin')`.
 
+**Вид (рестайл C «Маршрут», 2026-10-02).** Статус пользователя — пилюля `.app-pill` (активен ● good, заблокирован ■ bad) вместо чипа с перекрашенным текстом; рамка таблицы — от общего `.panel`. Тест вида — `features/users/users.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
 ## Как проверить
 Тесты: `tests/Feature/Users/UsersAdminTest.php` (401/403, пагинация и `perPage` строкой, фильтры, приглашение,
 422/409, смена роли/статуса, запрет менять себя, 404, назначение/замена/снятие филиалов, валидация `branch_ids`), `tests/Unit/Users/UserAdminServiceTest.php`

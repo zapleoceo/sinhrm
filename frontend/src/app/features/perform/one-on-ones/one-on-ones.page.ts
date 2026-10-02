@@ -152,25 +152,43 @@ import { combineDateAndTime, toIsoDateOrNull, toIsoLocalDateTime } from '../../.
           </div>
         </section>
       } @else {
-        <p class="muted state">{{ 'perform.oneOnOnes.pick' | transloco }}</p>
+        <p class="panel app-empty">{{ 'perform.oneOnOnes.pick' | transloco }}</p>
       }
     </div>
   `,
   styles: `
-    .layout { display: grid; grid-template-columns: minmax(14rem, 20rem) 1fr; gap: 1rem; }
-    @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
-    .list { display: flex; flex-direction: column; gap: 0.25rem; }
-    .list h2 { font: var(--mat-sys-title-small); margin: 0.75rem 0 0.25rem; }
-    .row { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; padding: 0.5rem 0.75rem; border: 1px solid var(--app-border); border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-    .row.active { border-color: var(--mat-sys-primary); background: var(--mat-sys-secondary-container); }
-    .detail { padding: 1rem; }
+    .layout { display: grid; grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
+    @media (max-width: 800px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+    .list { display: flex; flex-direction: column; gap: 0.35rem; }
+    .list h2 { font: var(--mat-sys-label-medium); font-weight: 700; color: var(--app-muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0.75rem 0 0.25rem; }
+    .list h2:first-child { margin-top: 0; }
+    /* Meetings are stations: ring = upcoming, dashed ring = past, filled = the open one. */
+    .row {
+      position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; min-height: 2.75rem; box-sizing: border-box;
+      padding: 0.5rem 0.75rem 0.5rem 2.1rem; border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius-sm);
+      background: var(--app-card); color: inherit; font: inherit; cursor: pointer; text-align: left;
+      transition: border-color var(--app-fast) ease-out, background-color var(--app-fast) ease-out;
+    }
+    .row::before {
+      content: ''; position: absolute; left: 0.75rem; top: 0.85rem; width: 0.75rem; height: 0.75rem; box-sizing: border-box;
+      border-radius: 50%; border: 3px solid var(--mat-sys-primary); background: var(--app-card);
+    }
+    h2 ~ h2 ~ .row::before { border: 2px dashed var(--app-muted); }
+    .row:hover { border-color: var(--mat-sys-outline); background: var(--app-card-2); }
+    .row.active { border-color: var(--mat-sys-primary); background: var(--app-row-selected); box-shadow: inset 0 0 0 1px var(--mat-sys-primary); }
+    .row.active::before { background: var(--mat-sys-primary); border-style: solid; border-color: var(--mat-sys-primary); }
+    .row .muted { font-family: var(--app-font-mono); font-size: 0.75rem; }
+    @media (prefers-reduced-motion: reduce) { .row { transition: none; } }
+    .detail { padding: 1rem 1.25rem; }
     .detail-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
     .detail-head h2 { margin: 0; font: var(--mat-sys-title-medium); }
+    .detail-head p { margin: 0.25rem 0 0; font-family: var(--app-font-mono); font-size: 0.8rem; }
+    h3 { font: var(--mat-sys-title-small); margin: 1.25rem 0 0.25rem; padding-top: 0.75rem; border-top: var(--app-border-w) solid var(--app-track); }
     .items { list-style: none; margin: 0; padding: 0; }
     .add { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
     .grow { flex: 1 1 12rem; }
     .full { width: 100%; margin-top: 1rem; }
-    .private { background: color-mix(in srgb, var(--app-warning) 6%, transparent); border-radius: 8px; }
+    .private { background: var(--app-warn-bg); border-radius: var(--app-radius-sm); }
     .narrow { width: 9rem; }
   `,
 })

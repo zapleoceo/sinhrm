@@ -58,10 +58,12 @@ import { TimeService, timeErrorKey } from './time.service';
   `,
   styles: `
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--app-border); font-weight: normal; }
-    thead th { color: var(--app-muted); font-size: 0.8rem; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
+    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
-    .over { color: #b26a00; }
+    td.num { font-family: var(--app-font-mono); font-size: 0.8rem; font-weight: 500; }
+    tbody tr:hover { background: var(--app-row-hover); }
+    .over { color: var(--app-warn-text); }
     .actions { white-space: nowrap; text-align: right; }
     .panel { overflow-x: auto; }
   `,

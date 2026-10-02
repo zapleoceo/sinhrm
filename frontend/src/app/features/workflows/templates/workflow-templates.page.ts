@@ -117,10 +117,11 @@ import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
   `,
   styles: `
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--app-border); font-weight: normal; }
-    thead th { color: var(--app-muted); font-size: 0.8rem; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
+    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
     th a { color: inherit; font-weight: 500; }
     tr.inactive { opacity: 0.6; }
+    tbody tr:hover { background: var(--app-row-hover); }
   `,
 })
 export class WorkflowTemplatesPage implements OnInit {

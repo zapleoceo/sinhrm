@@ -1,5 +1,12 @@
 /** Mirrors backend App\Modules\Integrations\Enums\IntegrationStatus. */
 export type IntegrationStatus = 'off' | 'demo' | 'connected' | 'error';
+/** Status-pill tone (`.app-pill[data-tone]`: colour + marker shape — ● connected, ■ error, ○ demo, dashed ○ off). */
+export const INTEGRATION_STATUS_TONE: Readonly<Record<IntegrationStatus, 'good' | 'bad' | 'info' | 'neutral'>> = {
+  connected: 'good',
+  error: 'bad',
+  demo: 'info',
+  off: 'neutral',
+};
 /** Statuses a superadmin can set by hand (connected/error come only from a check). */
 export type ManualStatus = 'off' | 'demo';
 export const MANUAL_STATUSES: readonly ManualStatus[] = ['off', 'demo'];

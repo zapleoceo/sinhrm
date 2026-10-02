@@ -124,12 +124,12 @@ export function audienceOf(type: AudienceType, branchIds: number[], roles: UserR
     }
   `,
   styles: `
-    .form { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; }
+    .form { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 1.25rem; }
     .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
     .grow { flex: 1 1 14rem; }
     .actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
-    textarea { font-family: ui-monospace, monospace; }
-    .history { margin-top: var(--app-gap); padding: 1rem; }
+    textarea { font-family: var(--app-font-mono); }
+    .history { margin-top: var(--app-gap); padding: 1rem 1.25rem; }
     .history h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.5rem; }
     .history ul { list-style: none; padding: 0; margin: 0; }
   `,

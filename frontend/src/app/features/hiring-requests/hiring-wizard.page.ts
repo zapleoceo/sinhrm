@@ -197,12 +197,21 @@ type Extra = Record<string, string | number | boolean>;
     </form>
   `,
   styles: `
-    .steps { display: flex; gap: 1rem; list-style: none; padding: 0; margin: 0 0 0.75rem; counter-reset: s; }
-    .steps li { color: var(--app-muted); }
-    .steps li::before { counter-increment: s; content: counter(s) '. '; }
-    .steps li.active { color: inherit; font-weight: 600; }
+    /* Wizard steps = stations on one line: number in a ring, done = filled, current = brand ring. */
+    .steps { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; list-style: none; padding: 0; margin: 0 0 1rem; counter-reset: s; }
+    .steps li { position: relative; display: flex; align-items: center; gap: 0.5rem; color: var(--app-muted); }
+    .steps li::before {
+      counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; box-sizing: border-box;
+      border-radius: 50%; border: 2px solid var(--app-border); background: var(--app-card); font: 600 0.75rem var(--app-font-mono);
+    }
+    .steps li + li::after {
+      content: ''; position: absolute; left: -1.4rem; top: 50%; width: 1.3rem; height: 2px; background: var(--app-track);
+    }
+    .steps li.active { color: inherit; font-weight: 700; }
+    .steps li.active::before { border-color: var(--mat-sys-primary); color: var(--mat-sys-primary); }
     .steps li.done { color: var(--mat-sys-primary); }
-    .body { padding: 1rem; display: flex; flex-direction: column; gap: 0.25rem; }
+    .steps li.done::before { border-color: var(--mat-sys-primary); background: var(--mat-sys-primary); color: var(--mat-sys-on-primary); }
+    .body { padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0 1rem; }
     .wide { width: 100%; }
     .review { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; }
@@ -210,7 +219,7 @@ type Extra = Record<string, string | number | boolean>;
     .review dd { margin: 0; }
     .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
     .spacer { flex: 1; }
-    .warn { color: var(--app-danger); }
+    .warn { color: var(--app-bad-text); }
   `,
 })
 export class HiringWizardPage implements OnInit {

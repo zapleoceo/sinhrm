@@ -5,9 +5,7 @@
       <h3><app-channel-icon [key]="it.key" /> {{ 'integrations.items.' + it.key + '.name' | transloco }}</h3>
       <p class="muted">{{ 'integrations.items.' + it.key + '.description' | transloco }}</p>
     </div>
-    <mat-chip-set>
-      <mat-chip [class]="'status-' + it.status" [disableRipple]="true">{{ 'integrations.status.' + it.status | transloco }}</mat-chip>
-    </mat-chip-set>
+    <span class="app-pill" [attr.data-tone]="statusTone[it.status]">{{ 'integrations.status.' + it.status | transloco }}</span>
   </header>
 
   @if (it.last_error) {

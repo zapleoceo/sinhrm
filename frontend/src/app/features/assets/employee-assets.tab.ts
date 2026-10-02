@@ -41,7 +41,7 @@ import { AssetsService } from './assets.service';
     :host { display: block; padding: 1rem 0; }
     h3 { font: var(--mat-sys-title-small); margin: 0.5rem 0; }
     .list { list-style: none; margin: 0; padding: 0; }
-    .list li { padding: 0.4rem 0; border-bottom: 1px solid var(--app-border); }
+    .list li { padding: 0.4rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
     .small { font-size: 0.8rem; }
   `,
 })

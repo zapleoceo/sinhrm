@@ -40,7 +40,7 @@ interface Draft {
     @if (loading()) {
       <mat-progress-bar mode="indeterminate" />
     }
-    <div class="table-wrap">
+    <div class="table-wrap panel">
       <table class="matrix">
         <thead>
           <tr>
@@ -103,17 +103,20 @@ interface Draft {
     <p class="muted note">{{ 'modules.contextualNote' | transloco }}</p>
   `,
   styles: `
-    h1 { font: var(--mat-sys-headline-small); margin: 0 0 0.5rem; }
-    .table-wrap { overflow-x: auto; }
+    h1 { font: var(--mat-sys-headline-small); letter-spacing: var(--mat-sys-headline-small-tracking); margin: 0 0 0.5rem; }
+    .table-wrap { margin-top: 1rem; }
     .matrix { border-collapse: collapse; width: 100%; }
-    th, td { padding: 0.35rem 0.5rem; text-align: left; border-bottom: 1px solid var(--mat-sys-outline-variant); }
+    th, td { padding: 0.4rem 0.75rem; text-align: left; border-bottom: var(--app-border-w) solid var(--app-track); }
+    thead th { font: var(--mat-sys-label-medium); font-weight: 700; color: var(--app-muted); border-bottom-color: var(--app-border); white-space: nowrap; }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: var(--app-row-hover); }
     .role { text-align: center; }
     .name { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500; }
     .lock { font-size: 18px; width: 18px; height: 18px; opacity: 0.7; }
     tr.off .name { opacity: 0.6; }
     .actions { white-space: nowrap; }
     .actions button { margin-left: 0.25rem; }
-    .warn { color: var(--app-danger); margin-right: 0.5rem; }
+    .warn { color: var(--app-bad-text); margin-right: 0.5rem; }
     .note { margin-top: 1rem; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   `,

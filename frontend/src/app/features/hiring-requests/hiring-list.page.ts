@@ -7,7 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { HIRING_STATUSES, HiringRequest, HiringStatus, statusTone } from './hiring-requests.model';
+import { HIRING_STATUSES, HiringRequest, HiringStatus, PILL_TONE, statusTone } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 
 type ListMode = 'all' | 'mine' | 'inbox';
@@ -68,7 +68,7 @@ type ListMode = 'all' | 'mine' | 'inbox';
                 <br /><span class="muted small">{{ r.branch.name }} · ×{{ r.headcount }} · {{ 'hiring.priority.' + r.priority | transloco }}</span>
               </td>
               <td>{{ r.requester?.name ?? '—' }}</td>
-              <td><span class="chip" [attr.data-tone]="tone(r.status)">{{ 'hiring.status.' + r.status | transloco }}</span></td>
+              <td><span class="app-pill" [attr.data-tone]="pill[tone(r.status)]">{{ 'hiring.status.' + r.status | transloco }}</span></td>
               <td>
                 @if (r.current_step; as step) {
                   {{ step.name }}
@@ -81,12 +81,12 @@ type ListMode = 'all' | 'mine' | 'inbox';
               </td>
               <td>
                 @if (r.progress && r.vacancy) {
-                  {{ r.progress.hired }}/{{ r.progress.headcount }}
+                  <span class="app-num">{{ r.progress.hired }}/{{ r.progress.headcount }}</span>
                 } @else {
                   —
                 }
               </td>
-              <td>{{ r.created_at | date: 'dd.MM.yyyy' }}</td>
+              <td class="app-num">{{ r.created_at | date: 'dd.MM.yyyy' }}</td>
             </tr>
           } @empty {
             <tr><td colspan="6" class="muted">{{ 'hiring.list.empty' | transloco }}</td></tr>
@@ -98,14 +98,12 @@ type ListMode = 'all' | 'mine' | 'inbox';
   styles: `
     .filters { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--app-border); font-weight: normal; vertical-align: top; }
-    thead th { color: var(--app-muted); font-size: 0.8rem; }
-    tr[data-overdue='true'] td:first-child { box-shadow: inset 3px 0 0 var(--app-danger); }
-    .chip { padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; background: var(--app-border); }
-    .chip[data-tone='info'] { background: color-mix(in srgb, var(--mat-sys-primary) 15%, transparent); }
-    .chip[data-tone='success'] { background: color-mix(in srgb, #2e7d32 18%, transparent); }
-    .chip[data-tone='danger'] { background: color-mix(in srgb, var(--app-danger) 18%, transparent); }
-    .warn { color: var(--app-danger); }
+    th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; vertical-align: top; }
+    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
+    tr[data-overdue='true'] td:first-child { box-shadow: inset 4px 0 0 var(--app-danger); }
+    tbody tr:hover { background: var(--app-row-hover); }
+    .app-num { font-size: 0.8rem; white-space: nowrap; }
+    .warn { color: var(--app-bad-text); }
     .small { font-size: 0.8rem; }
     .panel { overflow-x: auto; }
   `,
@@ -123,6 +121,7 @@ export class HiringListPage implements OnInit {
   protected readonly loading = signal(false);
   protected readonly canCreate = signal(false);
   protected readonly tone = statusTone;
+  protected readonly pill = PILL_TONE;
 
   ngOnInit(): void {
     this.mode.set(this.view());

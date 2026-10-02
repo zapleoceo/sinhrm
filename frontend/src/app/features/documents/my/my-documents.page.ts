@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DocumentViewDialog } from '../document-view.dialog';
-import { HrDocument } from '../documents.model';
+import { DOCUMENT_STATUS_TONE, HrDocument } from '../documents.model';
 import { DocumentsService } from '../documents.service';
 import { wideDialog } from '../../../core/ui/dialog';
 
@@ -41,32 +41,31 @@ import { wideDialog } from '../../../core/ui/dialog';
               @if (d.sent_at) { · {{ d.sent_at | date: 'dd.MM.yyyy' }} }
             </span>
           </div>
-          <span class="status">{{ 'documents.status.' + d.status | transloco }}</span>
+          <span class="status app-pill" [attr.data-tone]="statusTone[d.status]">{{ 'documents.status.' + d.status | transloco }}</span>
           <button mat-stroked-button type="button" (click)="view(d)">
             <mat-icon>{{ d.can_acknowledge ? 'task_alt' : 'visibility' }}</mat-icon>{{ (d.can_acknowledge ? 'documents.my.review' : 'documents.actions.view') | transloco }}
           </button>
         </li>
       } @empty {
         @if (!loading() && !failed()) {
-          <li class="muted">{{ 'documents.empty' | transloco }}</li>
+          <li class="app-empty">{{ 'documents.empty' | transloco }}</li>
         }
       }
     </ul>
   `,
   styles: `
     .docs { list-style: none; margin: 0; padding: 0; }
-    .docs li { display: flex; gap: 1rem; align-items: center; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--app-border); flex-wrap: wrap; }
+    .docs li { display: flex; gap: 1rem; align-items: center; padding: 0.6rem 0.75rem; border-bottom: var(--app-border-w) solid var(--app-track); flex-wrap: wrap; }
     .docs li:last-child { border-bottom: 0; }
     .main { flex: 1 1 14rem; display: flex; flex-direction: column; min-width: 0; }
-    .docs li[data-status='sent'] .status { color: var(--app-warning); }
-    .docs li[data-status='signed'] .status { color: var(--app-success); }
-    .docs li[data-status='rejected'] .status { color: var(--app-danger); }
+    .docs li.app-empty { display: block; }
     .small { font-size: 0.8rem; }
   `,
 })
 export class MyDocumentsPage implements OnInit {
   private readonly api = inject(DocumentsService);
   private readonly dialog = inject(MatDialog);
+  protected readonly statusTone = DOCUMENT_STATUS_TONE;
   protected readonly items = signal<HrDocument[]>([]);
   protected readonly loading = signal(false);
   protected readonly failed = signal(false);

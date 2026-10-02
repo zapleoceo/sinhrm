@@ -47,6 +47,8 @@
 (кого можно обезличить по сроку хранения), субъект — `DTO\DataSubject` + `Enums\DataSubjectType` (`candidate`,
 `employee`). Модули регистрируют их тегами; исполняет модуль Privacy — [privacy.md](privacy.md).
 
+**Вид (рестайл C «Маршрут», 2026-10-02).** Страницы `features/core` (модули, статус, «модуль выключен»): матрица модулей в карточке `.panel`, строки разделены «треком» 1.5px, шапка — подпись `label-medium` приглушённым цветом, hover строки; заголовки — `headline-small` с трекингом темы; иконка «модуль выключен» приглушена цветом, а не прозрачностью. Тест вида — `features/core/core.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
 ## Как проверить
 Тесты: `iso-date.spec.ts`, `app-date-adapter.spec.ts`, `datepicker-intl.spec.ts`, `channel-icon.spec.ts`, `tests/Feature/Core/HealthTest.php`, `tests/Feature/Core/OpsJobsTest.php`, `tests/Feature/Core/SecurityHeadersTest.php`, `error-reporter.spec.ts`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
 `auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.

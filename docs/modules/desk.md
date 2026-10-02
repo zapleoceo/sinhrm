@@ -68,6 +68,8 @@
 `frontend/src/app/features/desk`: `my-cases.page` (`/desk`), `case.page` (`/desk/cases/:id`), `queue.page`
 (`/desk/queue`, `roleGuard('superadmin','admin')`), `sla-badge`, `desk.service`, `desk.model` (`slaState`).
 
+**Вид (рестайл C «Маршрут», 2026-10-02).** Статус обращения — пилюля `.app-pill` (`CASE_STATUS_TONE`: новое/в работе ○ info, ждёт ◆ warn, решено ● good, закрыто — пунктирный ○); SLA-бейдж — тоже пилюля (`SLA_TONE`: просрочено ■ bad, идёт срок ◆ warn, выполнено — пунктирный ○). Номер и даты — моно, просроченная строка очереди — красная «рельса» 4px слева, внутренние заметки — пунктирная рамка цвета предупреждения. Тест вида — `features/desk/desk.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
 ## Как проверить
 - `php artisan test --filter=Desk` — матрица доступа (сотрудник/руководитель/коллега/HR), скрытие внутренних заметок,
   первая реакция и статусы, флаги SLA, идемпотентность `desk.sla`, файлы.

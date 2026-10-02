@@ -139,12 +139,12 @@ import { ReportsService, reportsErrorKey } from './reports.service';
     }
   `,
   styles: `
-    .form { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; margin-bottom: 1rem; }
+    .form { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
     .grow { flex: 1 1 14rem; }
     h3 { font: var(--mat-sys-title-small); margin: 0.5rem 0 0; }
     .actions { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
-    .card { padding: 1rem; }
+    .card { padding: 1rem 1.25rem; }
   `,
 })
 export class ReportBuilderPage implements OnInit {

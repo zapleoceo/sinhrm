@@ -1,6 +1,13 @@
 /** Types of the Assets API (backend app/Modules/Assets). */
 
 export type AssetStatus = 'in_stock' | 'assigned' | 'repair' | 'written_off';
+/** Status-pill tone (`.app-pill[data-tone]`: colour + marker shape, never colour alone). */
+export const ASSET_STATUS_TONE: Readonly<Record<AssetStatus, 'good' | 'info' | 'warn' | 'neutral'>> = {
+  in_stock: 'good',
+  assigned: 'info',
+  repair: 'warn',
+  written_off: 'neutral',
+};
 export const ASSET_STATUSES: readonly AssetStatus[] = ['in_stock', 'assigned', 'repair', 'written_off'];
 /** Statuses an asset may take when edited or returned ("assigned" only through assign). */
 export const RETURN_STATUSES: readonly AssetStatus[] = ['in_stock', 'repair', 'written_off'];

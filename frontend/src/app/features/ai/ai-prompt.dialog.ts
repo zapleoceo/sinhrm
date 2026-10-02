@@ -127,7 +127,7 @@ import { AiService, aiCodeKey, aiErrorKey, promptProblemKeys } from './ai.servic
               <code>{{ i.builtin_version }}</code>
               <span class="muted">{{ 'ai.prompt.builtin' | transloco }}</span>
               @if (i.active_version === null) {
-                <span class="badge">{{ 'ai.prompt.active' | transloco }}</span>
+                <span class="app-pill" data-tone="good">{{ 'ai.prompt.active' | transloco }}</span>
               } @else {
                 <button mat-button type="button" [disabled]="busy()" (click)="restoreBuiltin()">
                   {{ 'ai.prompt.restoreBuiltin' | transloco }}
@@ -141,7 +141,7 @@ import { AiService, aiCodeKey, aiErrorKey, promptProblemKeys } from './ai.servic
                   >{{ v.author ?? '—' }} · {{ v.created_at | date: 'short' }}</span
                 >
                 @if (v.is_active) {
-                  <span class="badge">{{ 'ai.prompt.active' | transloco }}</span>
+                  <span class="app-pill" data-tone="good">{{ 'ai.prompt.active' | transloco }}</span>
                 } @else {
                   <button mat-button type="button" [disabled]="busy()" (click)="activate(v.id)">
                     {{ 'ai.prompt.activate' | transloco }}
@@ -192,7 +192,7 @@ import { AiService, aiCodeKey, aiErrorKey, promptProblemKeys } from './ai.servic
       margin-top: 0.5rem;
     }
     .body textarea {
-      font-family: monospace;
+      font-family: var(--app-font-mono);
       font-size: 0.85rem;
     }
     .output {
@@ -205,6 +205,7 @@ import { AiService, aiCodeKey, aiErrorKey, promptProblemKeys } from './ai.servic
     }
     .output code {
       word-break: break-all;
+      font-family: var(--app-font-mono);
     }
     .notice,
     .error {
@@ -224,9 +225,11 @@ import { AiService, aiCodeKey, aiErrorKey, promptProblemKeys } from './ai.servic
       overflow: auto;
       font-size: 0.75rem;
       white-space: pre-wrap;
-      border: 1px solid var(--app-border);
-      border-radius: 8px;
-      padding: 0.5rem;
+      border: var(--app-border-w) solid var(--app-border);
+      border-radius: var(--app-radius-sm);
+      padding: 0.5rem 0.75rem;
+      font-family: var(--app-font-mono);
+      background: var(--app-card-2);
     }
     .versions {
       margin-top: 0.75rem;
@@ -243,12 +246,6 @@ import { AiService, aiCodeKey, aiErrorKey, promptProblemKeys } from './ai.servic
       gap: 0.5rem;
       align-items: center;
       flex-wrap: wrap;
-    }
-    .badge {
-      font-size: 0.75rem;
-      border: 1px solid var(--app-border);
-      border-radius: 999px;
-      padding: 0 0.5rem;
     }
     .small {
       font-size: 0.8rem;

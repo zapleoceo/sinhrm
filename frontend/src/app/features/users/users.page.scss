@@ -17,11 +17,7 @@
   .search { flex: 1 1 18rem; }
 }
 
-.panel {
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
-  overflow: hidden;
-}
+.panel { overflow: hidden; } // frame, radius and card fill come from the global .panel
 
 table { width: 100%; }
 
@@ -32,7 +28,6 @@ table { width: 100%; }
 
 .branches { width: 14rem; }
 
-.blocked { --mat-chip-label-text-color: var(--app-danger); }
 
 .actions { text-align: right; }
 

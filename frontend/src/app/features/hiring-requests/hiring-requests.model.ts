@@ -133,6 +133,9 @@ export const HIRING_ERROR_CODES = [
 ] as const;
 
 /** Colour group of a status chip. */
+/** statusTone() → global status-pill tone (`.app-pill[data-tone]`: colour + marker shape, never colour alone). */
+export const PILL_TONE = { neutral: 'neutral', info: 'info', success: 'good', danger: 'bad' } as const;
+
 export function statusTone(status: HiringStatus): 'neutral' | 'info' | 'success' | 'danger' {
   switch (status) {
     case 'pending':

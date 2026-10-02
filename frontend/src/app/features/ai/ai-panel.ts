@@ -121,7 +121,7 @@ import { wideDialog } from '../../core/ui/dialog';
                   v
                 }}</code>
               }
-              <span class="muted">{{
+              <span class="app-pill" [attr.data-tone]="s.purposes[p] === null ? 'good' : 'warn'">{{
                 (s.purposes[p] === null ? 'ai.panel.on' : 'ai.errors.' + s.purposes[p]) | transloco
               }}</span>
               <span class="spacer"></span>
@@ -190,9 +190,7 @@ import { wideDialog } from '../../core/ui/dialog';
   `,
   styles: `
     .panel {
-      border: 1px solid var(--app-border);
-      border-radius: 12px;
-      padding: 1rem;
+      padding: 1rem 1.25rem;
       margin-bottom: 1rem;
     }
     .head {
@@ -225,8 +223,11 @@ import { wideDialog } from '../../core/ui/dialog';
       margin: 0;
     }
     .period {
-      --mat-button-toggle-height: 28px;
+      --mat-button-toggle-height: 32px;
       font-size: 0.8rem;
+    }
+    @media (max-width: 600px) {
+      .period { --mat-button-toggle-height: 44px; } /* touch target */
     }
     .purposes {
       list-style: none;
@@ -240,19 +241,31 @@ import { wideDialog } from '../../core/ui/dialog';
       flex-wrap: wrap;
       gap: 0.5rem;
       align-items: center;
-      min-height: 2rem;
+      min-height: 2.5rem;
+      border-bottom: var(--app-border-w) solid var(--app-track);
+    }
+    .purposes li:last-child {
+      border-bottom: 0;
+    }
+    code {
+      font: 500 0.75rem var(--app-font-mono);
+      padding: 0.05rem 0.4rem;
+      border-radius: var(--app-radius-pill);
+      border: var(--app-border-w) solid var(--app-border);
     }
     .purposes li.off .name {
       color: var(--app-muted);
     }
     .custom {
-      color: var(--app-accent, inherit);
+      color: var(--app-accent);
+      border-color: currentColor;
     }
     .spacer {
       flex: 1 1 auto;
     }
     .figures {
-      font-size: 0.8rem;
+      font-family: var(--app-font-mono);
+      font-size: 0.75rem;
       display: inline-flex;
       gap: 0.25rem;
       align-items: center;
@@ -266,8 +279,10 @@ import { wideDialog } from '../../core/ui/dialog';
     }
     .spark path {
       fill: none;
-      stroke: currentColor;
-      stroke-width: 1.2;
+      stroke: var(--mat-sys-primary);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     .usage {
       display: grid;

@@ -55,6 +55,8 @@ Postgres и SQLite.
 `frontend/src/app/features/knowledge`: `knowledge.page`, `article.page`, `editor.page` (`audienceOf`),
 `knowledge.service`, `knowledge.model` (`parseTags`, `helpfulPercent`).
 
+**Вид (рестайл C «Маршрут», 2026-10-02).** Список статей — строки на «треке» с hover, «Чернетка» — нейтральная пилюля, теги — моно, на телефоне 44px (цель касания); пустой список — `.app-empty`. Статья — ширина чтения 52rem, нажатая кнопка голоса — линия и текст бренда. Тест вида — `features/knowledge/knowledge.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
 ## Как проверить
 `php artisan test --filter=Knowledge` — запись только админам, черновики скрыты (404), очистка XSS (`<script>`,
 `javascript:`, `<img onerror>`), аудитория по филиалу и роли, поиск без учёта регистра и с буквальными `%`/`_`,

@@ -40,14 +40,19 @@ import { EvaluationView } from './evaluation-view';
   styles: `
     :host { display: block; margin-top: 0.25rem; }
     .chip {
-      display: inline-flex; align-items: center; gap: 0.25rem; font: inherit; font-size: 0.8rem; cursor: pointer;
-      background: transparent; color: inherit; border: 1px solid var(--app-border); border-radius: 999px; padding: 0 0.5rem;
+      display: inline-flex; align-items: center; gap: 0.25rem; min-height: 1.75rem; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+      background: var(--app-card); color: inherit; border: var(--app-border-w) solid var(--band, var(--app-border)); border-radius: var(--app-radius-pill);
+      padding: 0 0.6rem; transition: background-color var(--app-fast) ease-out;
     }
-    .chip[data-band='good'] { border-color: var(--app-success); }
-    .chip[data-band='mid'] { border-color: var(--app-warning); }
-    .chip[data-band='low'] { border-color: var(--app-danger); }
-    .engine { color: var(--app-muted); }
-    .details { margin-top: 0.5rem; padding: 0.75rem; border: 1px solid var(--app-border); border-radius: var(--app-radius); }
+    .chip:hover { background: var(--app-card-2); }
+    .chip[data-band='good'] { --band: var(--app-success); }
+    .chip[data-band='mid'] { --band: var(--app-warning); }
+    .chip[data-band='low'] { --band: var(--app-danger); }
+    .chip mat-icon:first-child { color: var(--band, var(--app-muted)); }
+    .engine { color: var(--app-muted); font-weight: 400; }
+    .details { margin-top: 0.5rem; padding: 0.75rem 1rem; border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius); background: var(--app-card); }
+    @media (max-width: 600px) { .chip { min-height: 2.75rem; } } /* 44px touch target */
+    @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }
   `,
 })
 export class EvaluationBadge {

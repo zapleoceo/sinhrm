@@ -52,10 +52,20 @@ import { AuditLoader, AuditPaging } from './audit.model';
   `,
   styles: `
     :host { display: block; padding: 0.5rem 0; }
+    /* The history reads as a feed on one route line: every change is a station. */
     .entries { list-style: none; margin: 0; padding: 0; }
-    .entries li { padding: 0.5rem 0; border-bottom: 1px solid var(--app-border); }
+    .entries li { position: relative; padding: 0.5rem 0 0.5rem 1.5rem; }
+    .entries li::before { content: ''; position: absolute; left: 0.3rem; top: 0; bottom: 0; width: 2px; background: var(--app-track); }
+    .entries li:first-child::before { top: 0.95rem; }
+    .entries li:last-child::before { bottom: auto; height: 0.95rem; }
+    .entries li:only-child::before { display: none; }
+    .entries li::after {
+      content: ''; position: absolute; left: 0; top: 0.65rem; width: 0.75rem; height: 0.75rem; box-sizing: border-box;
+      border-radius: 50%; border: 3px solid var(--mat-sys-primary); background: var(--app-card);
+    }
     .line { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; align-items: baseline; }
     .spacer { flex: 1; }
+    time { font-family: var(--app-font-mono); font-size: 0.75rem; font-weight: 500; }
     .change { font-size: 0.85rem; color: var(--app-muted); overflow-wrap: anywhere; }
     .state { padding: 1.5rem 1rem; text-align: center; }
   `,

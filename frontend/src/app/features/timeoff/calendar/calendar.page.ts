@@ -100,13 +100,14 @@ import { toIsoDate } from '../../../core/date/iso-date';
     .month { min-width: 10rem; text-align: center; text-transform: capitalize; }
     .scroll { overflow-x: auto; }
     .grid { display: grid; min-width: 60rem; }
-    .head { font-size: 0.75rem; text-align: center; padding: 0.25rem 0; color: var(--app-muted); border-bottom: 1px solid var(--app-border); }
-    .head.today { color: var(--mat-sys-primary); font-weight: 600; }
+    .head { font-size: 0.75rem; text-align: center; padding: 0.25rem 0; color: var(--app-muted); border-bottom: var(--app-border-w) solid var(--app-track); }
+    .head { font-family: var(--app-font-mono); }
+    .head.today { color: var(--mat-sys-primary); font-weight: 700; box-shadow: inset 0 -3px 0 var(--mat-sys-primary); }
     .name {
       padding: 0.25rem 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: inherit;
-      text-decoration: none; border-bottom: 1px solid var(--app-border);
+      text-decoration: none; border-bottom: var(--app-border-w) solid var(--app-track);
     }
-    .cell { min-height: 2rem; border-bottom: 1px solid var(--app-border); border-left: 1px solid var(--app-border); }
+    .cell { min-height: 2rem; border-bottom: var(--app-border-w) solid var(--app-track); border-left: var(--app-border-w) solid var(--app-track); }
     .weekend { background: var(--mat-sys-surface-container); }
     .holiday { background: color-mix(in srgb, var(--app-warning) 18%, transparent); }
     .cell.on { background: var(--c); }
