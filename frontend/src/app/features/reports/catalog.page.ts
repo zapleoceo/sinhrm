@@ -60,13 +60,30 @@ import { ReportsService, reportsErrorKey } from './reports.service';
     <p class="muted small">{{ 'reports.payGapNote' | transloco }}</p>
   `,
   styles: `
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: var(--app-gap); margin-bottom: 1rem; }
-    .card { padding: 1rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--app-gap); margin-bottom: 1rem; }
+    .card { padding: 1rem 1.25rem; }
     h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.5rem; }
-    ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
-    .saved { display: flex; align-items: center; gap: 0.25rem; }
-    .saved a { flex: 1; }
+    ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+    /* A report group reads as a branch: stations (rings) on one track line. */
+    li { position: relative; display: flex; align-items: center; gap: 0.25rem; min-height: 2.25rem; padding-left: 1.5rem; }
+    li::before {
+      content: ''; position: absolute; left: 0.3rem; top: 0; bottom: 0; width: 2px; background: var(--app-track);
+    }
+    li:first-child::before { top: 50%; }
+    li:last-child::before { bottom: 50%; }
+    li:only-child::before { display: none; }
+    li::after {
+      content: ''; position: absolute; left: 0; top: 50%; width: 0.75rem; height: 0.75rem; margin-top: -0.375rem; box-sizing: border-box;
+      border-radius: 50%; border: 3px solid var(--mat-sys-primary); background: var(--app-card);
+    }
+    li.muted::after { border-color: var(--app-muted); border-style: dashed; border-width: 2px; }
+    li a { flex: 1; padding: 0.35rem 0; font-weight: 600; }
     .small { font-size: 0.8rem; }
+    .saved .small { font-family: var(--app-font-mono); }
+    @media (max-width: 600px) {
+      li { min-height: 2.75rem; } /* 44px touch targets for the report links */
+      li a { padding: 0.7rem 0; }
+    }
   `,
 })
 export class ReportCatalogPage implements OnInit {

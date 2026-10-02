@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { LeaveRequest } from '../timeoff.model';
+import { LEAVE_STATUS_TONE, LeaveRequest } from '../timeoff.model';
 
 export interface RequestAction {
   request: LeaveRequest;
@@ -40,7 +40,7 @@ export interface RequestAction {
               <span class="muted small">{{ r.approver?.name }}: «{{ r.decision_comment }}»</span>
             }
           </div>
-          <span class="status">{{ 'timeoff.status.' + r.status | transloco }}</span>
+          <span class="status app-pill" [attr.data-tone]="statusTone[r.status]">{{ 'timeoff.status.' + r.status | transloco }}</span>
           @if (r.can_decide) {
             <button mat-stroked-button type="button" (click)="act.emit({ request: r, action: 'approve' })">
               <mat-icon>check</mat-icon>{{ 'timeoff.actions.approve' | transloco }}
@@ -52,24 +52,25 @@ export interface RequestAction {
           }
         </li>
       } @empty {
-        <li class="muted empty">{{ 'timeoff.noRequests' | transloco }}</li>
+        <li class="app-empty empty">{{ 'timeoff.noRequests' | transloco }}</li>
       }
     </ul>
   `,
   styles: `
     .rows { list-style: none; margin: 0; padding: 0; }
-    .row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; border-bottom: 1px solid var(--app-border); flex-wrap: wrap; }
-    .row[data-status='rejected'], .row[data-status='cancelled'] { opacity: 0.6; }
+    .row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; border-bottom: var(--app-border-w) solid var(--app-track); flex-wrap: wrap; }
+    .row[data-status='rejected'] .main, .row[data-status='cancelled'] .main { color: var(--app-muted); }
     .dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; flex: none; }
     .main { flex: 1; display: flex; flex-direction: column; min-width: 12rem; }
-    .row[data-status='pending'] .status { color: var(--app-warning); }
-    .row[data-status='approved'] .status { color: var(--app-success); }
+    .row:hover { background: var(--app-row-hover); }
+    .row:last-child { border-bottom: 0; }
     .small { font-size: 0.8rem; }
-    .empty { padding: 1rem; }
+    .empty { display: block; }
   `,
 })
 export class RequestsList {
   readonly requests = input.required<readonly LeaveRequest[]>();
   readonly showEmployee = input(false);
   readonly act = output<RequestAction>();
+  protected readonly statusTone = LEAVE_STATUS_TONE;
 }

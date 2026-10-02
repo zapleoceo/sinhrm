@@ -118,6 +118,8 @@ export interface Kpi {
 
 export type FeedbackType = 'praise' | 'constructive' | 'request';
 export const FEEDBACK_TYPES: readonly FeedbackType[] = ['praise', 'constructive', 'request'];
+/** Status-pill tone of a feedback type (`.app-pill[data-tone]`: colour + marker shape, never colour alone). */
+export const FEEDBACK_TONE: Readonly<Record<FeedbackType, 'good' | 'warn' | 'info'>> = { praise: 'good', constructive: 'warn', request: 'info' };
 export type FeedbackVisibility = 'private_to_recipient' | 'manager' | 'public';
 export const FEEDBACK_VISIBILITIES: readonly FeedbackVisibility[] = ['private_to_recipient', 'manager', 'public'];
 export type FeedbackBox = 'received' | 'given' | 'requests' | 'team' | 'public';

@@ -30,7 +30,7 @@
   }
   <section class="tiles" [attr.aria-label]="'overview.countersLabel' | transloco">
     @for (t of store.tiles(); track t.key) {
-      <a class="tile" [routerLink]="t.link" [attr.data-tone]="t.tone">
+      <a class="tile" [routerLink]="t.link" [attr.data-tone]="t.tone" [attr.data-key]="t.key">
         <mat-icon>{{ t.icon }}</mat-icon>
         <span class="value">{{ t.value }}</span>
         <span class="label">{{ 'overview.counts.' + t.key | transloco: { days: d.stale_days } }}</span>
@@ -153,7 +153,7 @@
         <tbody>
           @for (r of store.funnel(); track r.position + r.stage_name) {
             <tr>
-              <th scope="row">{{ r.stage_name }}</th>
+              <th scope="row"><span class="app-station" [attr.data-kind]="r.stage_kind" aria-hidden="true"></span>{{ r.stage_name }}</th>
               <td class="barcell"><span class="bar" [attr.data-kind]="r.stage_kind" [style.width.%]="r.width"></span><span class="num">{{ r.count }}</span></td>
             </tr>
           } @empty {

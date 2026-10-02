@@ -93,14 +93,14 @@ const INACTIVE: ExtensionTokenStatus = { active: false, created_at: null, last_u
     :host { display: block; max-width: 48rem; }
     .sites { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; list-style: none; padding: 0; margin: 0 0 1rem; }
     .sites li { display: inline-flex; align-items: center; gap: 0.35rem; }
-    .panel { border: 1px solid var(--app-border); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+    .panel { padding: 1rem 1.25rem; margin-bottom: 1rem; }
     dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; margin: 0.5rem 0; }
     dd { margin: 0; }
     .ok { color: var(--app-success); vertical-align: middle; }
-    .once { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: 8px; border: 1px dashed var(--app-warning); margin: 0.75rem 0; }
-    code { word-break: break-all; user-select: all; }
+    .once { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: var(--app-radius-sm); border: var(--app-border-w) dashed var(--app-warning); margin: 0.75rem 0; }
+    code { word-break: break-all; user-select: all; font-family: var(--app-font-mono); }
     .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
-    .error { color: var(--app-warning); }
+    .error { color: var(--app-warn-text); }
     .small { font-size: 0.8rem; }
   `,
 })

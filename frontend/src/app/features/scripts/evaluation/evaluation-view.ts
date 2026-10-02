@@ -75,11 +75,11 @@ import { EvaluationDetails, scoreBand } from '../scripts.model';
   styles: `
     :host { display: block; }
     .head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-    .score { font-weight: 500; padding: 0 0.5rem; border-radius: 999px; border: 1px solid currentColor; }
-    .score[data-band='good'] { color: var(--app-success); }
-    .score[data-band='mid'] { color: var(--app-warning); }
-    .score[data-band='low'] { color: var(--app-danger); }
-    .engine { font-size: 0.75rem; color: var(--app-muted); border: 1px dashed var(--app-border); border-radius: 999px; padding: 0 0.4rem; }
+    .score { font: 600 0.8rem var(--app-font-mono); padding: 0.05rem 0.55rem; border-radius: var(--app-radius-pill); border: var(--app-border-w) solid currentColor; }
+    .score[data-band='good'] { color: var(--app-good-text); }
+    .score[data-band='mid'] { color: var(--app-warn-text); }
+    .score[data-band='low'] { color: var(--app-bad-text); }
+    .engine { font-size: 0.75rem; color: var(--app-muted); border: var(--app-border-w) dashed var(--app-border); border-radius: var(--app-radius-pill); padding: 0 0.4rem; }
     .next { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--app-danger); }
     .next.ok { color: var(--app-success); }
     blockquote { margin: 0.25rem 0 0; color: var(--app-muted); font-style: italic; }

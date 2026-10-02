@@ -98,7 +98,7 @@ interface KrDraft {
     }
     <ul class="tree">
       @for (n of tree(); track n.objective.id) {
-        <li [style.padding-left.rem]="n.depth * 1.5">
+        <li [style.padding-left.rem]="n.depth * 1.5" [class.child]="n.depth > 0">
           <div class="obj panel">
             <div class="obj-head">
               <strong>{{ n.objective.title }}</strong>
@@ -138,30 +138,50 @@ interface KrDraft {
         </li>
       } @empty {
         @if (!loading()) {
-          <li class="muted state">{{ 'perform.objectives.empty' | transloco }}</li>
+          <li class="panel app-empty">{{ 'perform.objectives.empty' | transloco }}</li>
         }
       }
     </ul>
   `,
   styles: `
-    .create { padding: 0.75rem 1rem; margin-bottom: 1rem; }
-    .create summary { cursor: pointer; font-weight: 500; }
+    .create { padding: 0.75rem 1.25rem; margin-bottom: 1rem; }
+    .create summary { cursor: pointer; font-weight: 700; min-height: 2rem; display: flex; align-items: center; }
     .create form { margin-top: 0.75rem; }
     .num { width: 7rem; }
     .tree { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-    .obj { padding: 0.75rem 1rem; }
+    /* Child objectives hang off their parent like a branch: a short track line into the card. */
+    .tree li.child { position: relative; }
+    .tree li.child::before {
+      content: ''; position: absolute; top: -0.5rem; bottom: 50%; width: 0.75rem; margin-left: -0.9rem;
+      border-left: 2px solid var(--app-track); border-bottom: 2px solid var(--app-track); border-bottom-left-radius: var(--app-radius-sm);
+    }
+    .obj { padding: 0.875rem 1.25rem; }
     .obj-head { display: flex; gap: 0.75rem; align-items: baseline; flex-wrap: wrap; }
-    .pct { margin-left: auto; font-weight: 600; }
-    .bar, .mini { display: block; height: 8px; border-radius: 4px; background: var(--mat-sys-surface-container-highest); overflow: hidden; margin: 0.5rem 0; }
-    .mini { width: 6rem; height: 6px; margin: 0; display: inline-block; }
-    .bar span, .mini span { display: block; height: 100%; background: var(--mat-sys-primary); }
-    [data-tone='danger'] { color: var(--app-danger); }
+    .pct { margin-left: auto; font: 600 0.9375rem var(--app-font-mono); font-variant-numeric: tabular-nums; }
+    /* Progress = a route line: track + filled part in the tone colour, drawn once («trace», transform only). */
+    .bar, .mini { display: block; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; margin: 0.6rem 0; }
+    .mini { width: 6rem; height: 4px; margin: 0; display: inline-block; }
+    .bar span, .mini span {
+      display: block; height: 100%; border-radius: inherit; background: var(--mat-sys-primary);
+      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes trace { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) { .bar span, .mini span { animation: none; } }
+    [data-tone='danger'] { color: var(--app-bad-text); }
+    [data-tone='warning'] { color: var(--app-warn-text); }
+    [data-tone='success'] { color: var(--app-good-text); }
     .bar span[data-tone='danger'] { background: var(--app-danger); }
     .bar span[data-tone='warning'] { background: var(--app-warning); }
     .bar span[data-tone='success'] { background: var(--app-success); }
     .krs { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.25rem; }
-    .krs li { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-    .cur { width: 6rem; }
+    .krs li { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; min-height: 2rem; }
+    .krs .muted { font-family: var(--app-font-mono); font-size: 0.8rem; }
+    .cur {
+      width: 6rem; height: 2.25rem; box-sizing: border-box; padding: 0 0.6rem; border-radius: var(--app-radius-sm);
+      border: var(--app-border-w) solid var(--mat-sys-outline); background: var(--app-card); color: inherit;
+      font: 500 0.875rem var(--app-font-mono);
+    }
+    @media (max-width: 600px) { .cur { height: 2.75rem; } }
   `,
 })
 export class ObjectivesPage implements OnInit {

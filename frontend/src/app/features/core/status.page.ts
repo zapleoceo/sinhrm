@@ -27,7 +27,7 @@ import { HealthService } from '../../core/api/health.service';
     }
   `,
   styles: `
-    h1 { font: var(--mat-sys-headline-small); margin: 0 0 1.5rem; }
+    h1 { font: var(--mat-sys-headline-small); letter-spacing: var(--mat-sys-headline-small-tracking); margin: 0 0 1.5rem; }
     .state { display: flex; align-items: center; gap: 0.5rem; font: var(--mat-sys-title-medium); }
     .ok { color: var(--app-success); }
     .fail { color: var(--app-danger); }

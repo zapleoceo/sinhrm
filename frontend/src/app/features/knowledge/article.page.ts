@@ -28,7 +28,7 @@ import { KnowledgeService, knowledgeErrorKey } from './knowledge.service';
           <h1>{{ a.title }}</h1>
           <p class="muted">
             {{ a.category?.emoji ?? '' }} {{ a.category?.name ?? '—' }} · {{ a.updated_at | date: 'dd.MM.yyyy' }} · v{{ a.version }}
-            @if (a.status === 'draft') { · <strong>{{ 'knowledge.status.draft' | transloco }}</strong> }
+            @if (a.status === 'draft') { · <span class="app-pill" data-tone="neutral">{{ 'knowledge.status.draft' | transloco }}</span> }
           </p>
         </div>
         @if (a.can_edit) {
@@ -48,9 +48,9 @@ import { KnowledgeService, knowledgeErrorKey } from './knowledge.service';
     }
   `,
   styles: `
-    .body { padding: 1rem 1.25rem; line-height: 1.55; overflow-wrap: anywhere; }
+    .body { padding: 1.25rem 1.5rem; line-height: 1.6; overflow-wrap: anywhere; max-width: 52rem; }
     .vote { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
-    .on { border-color: var(--mat-sys-primary); color: var(--mat-sys-primary); }
+    .on { --mat-button-outlined-outline-color: var(--mat-sys-primary); --mat-button-outlined-label-text-color: var(--mat-sys-primary); background: var(--app-row-selected); }
   `,
 })
 export class ArticlePage {

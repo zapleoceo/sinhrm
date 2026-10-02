@@ -37,6 +37,8 @@ export const ASSIGNEE_RULES: readonly AssigneeRule[] = ['employee', 'manager', '
 
 export type RunStatus = 'running' | 'completed' | 'cancelled';
 export const RUN_STATUSES: readonly RunStatus[] = ['running', 'completed', 'cancelled'];
+/** Status-pill tone (`.app-pill[data-tone]`: colour + marker shape, never colour alone). */
+export const RUN_STATUS_TONE: Readonly<Record<RunStatus, 'info' | 'good' | 'neutral'>> = { running: 'info', completed: 'good', cancelled: 'neutral' };
 
 export type StepStatus = 'pending' | 'done' | 'skipped' | 'failed';
 

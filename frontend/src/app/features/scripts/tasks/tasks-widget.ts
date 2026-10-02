@@ -72,7 +72,7 @@ import { TasksStore } from './tasks.store';
         </li>
       } @empty {
         @if (!store.loading() && !store.failed()) {
-          <li class="muted empty">{{ 'scripts.tasks.empty' | transloco }}</li>
+          <li class="app-empty empty">{{ 'scripts.tasks.empty' | transloco }}</li>
         }
       }
     </ul>
@@ -80,16 +80,18 @@ import { TasksStore } from './tasks.store';
   styles: `
     :host { display: block; }
     .tasks { list-style: none; margin: 0; padding: 0; }
-    li { display: flex; align-items: flex-start; gap: 0.25rem; padding: 0.25rem 0; border-bottom: 1px solid var(--app-border); }
+    li { display: flex; align-items: flex-start; gap: 0.25rem; padding: 0.3rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
     li:last-child { border-bottom: 0; }
     li.done .title { text-decoration: line-through; color: var(--app-muted); }
-    li.overdue .meta mat-icon { color: var(--app-warning); }
+    li.overdue .meta mat-icon, li.overdue time { color: var(--app-warn-text); }
+    .title { font-weight: 600; }
+    time { font-family: var(--app-font-mono); font-size: 0.75rem; font-weight: 500; }
     .body { display: flex; flex-direction: column; padding-top: 0.6rem; min-width: 0; flex: 1; }
     .doc-icon { margin: 0.6rem 0.7rem 0; color: var(--app-muted); }
     .open { flex: none; margin-top: 0.2rem; }
     .meta { font-size: 0.8rem; }
     .meta a { color: inherit; }
-    .empty { padding: 0.5rem 0; border: 0; }
+    .empty { display: block; border: 0; }
   `,
 })
 export class TasksWidget {

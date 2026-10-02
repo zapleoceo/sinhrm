@@ -55,7 +55,7 @@ import { KnowledgeService } from './knowledge.service';
           <a [routerLink]="['/knowledge', a.id]" class="title">{{ a.category?.emoji ?? '📄' }} {{ a.title }}</a>
           <span class="muted small">
             {{ a.category?.name ?? '—' }} · {{ a.updated_at | date: 'dd.MM.yyyy' }}
-            @if (a.status === 'draft') { · <strong>{{ 'knowledge.status.draft' | transloco }}</strong> }
+            @if (a.status === 'draft') { · <span class="app-pill" data-tone="neutral">{{ 'knowledge.status.draft' | transloco }}</span> }
             @if (helpful(a); as p) { · 👍 {{ p }}% }
           </span>
           <span class="tags">
@@ -66,7 +66,7 @@ import { KnowledgeService } from './knowledge.service';
         </li>
       } @empty {
         @if (!loading()) {
-          <li class="muted">{{ 'knowledge.empty' | transloco }}</li>
+          <li class="app-empty">{{ 'knowledge.empty' | transloco }}</li>
         }
       }
     </ul>
@@ -75,11 +75,17 @@ import { KnowledgeService } from './knowledge.service';
     .search { min-width: min(28rem, 100%); }
     mat-chip-listbox { display: block; margin: 0.5rem 0 1rem; }
     .list { list-style: none; margin: 0; padding: 0; }
-    .list li { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--app-border); }
+    .list li { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.6rem 0.75rem; border-bottom: var(--app-border-w) solid var(--app-track); }
     .list li:last-child { border-bottom: 0; }
-    .title { font-weight: 500; color: inherit; }
+    .list li:hover:not(.app-empty) { background: var(--app-row-hover); }
+    .title { font-weight: 700; color: inherit; }
     .tags { display: flex; gap: 0.25rem; flex-wrap: wrap; }
-    .tag { border: 0; background: none; color: var(--mat-sys-primary); cursor: pointer; padding: 0; font: inherit; font-size: 0.8rem; }
+    .tag {
+      border: 0; background: none; color: var(--mat-sys-primary); cursor: pointer; padding: 0.15rem 0.1rem; border-radius: var(--app-radius-sm);
+      font: 500 0.75rem var(--app-font-mono);
+    }
+    .tag:hover { text-decoration: underline; }
+    @media (max-width: 600px) { .tags { gap: 0.5rem; } .tag { min-height: 2.75rem; padding: 0 0.35rem; } } /* 44px touch targets */
     .small { font-size: 0.8rem; }
   `,
 })

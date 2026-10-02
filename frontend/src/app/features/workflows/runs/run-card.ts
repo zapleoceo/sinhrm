@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDialog, ConfirmDialogData } from '../confirm.dialog';
-import { RunStep, StepCommand, WorkflowRun, progressPercent, stepResultKey } from '../workflows.model';
+import { RUN_STATUS_TONE, RunStep, StepCommand, WorkflowRun, progressPercent, stepResultKey } from '../workflows.model';
 
 export interface StepAction {
   run: WorkflowRun;
@@ -34,7 +34,7 @@ export interface StepAction {
           }
           <span class="muted small"> · {{ 'workflows.runs.anchor' | transloco }} {{ r.anchor_date | date: 'dd.MM.yyyy' }}</span>
         </span>
-        <span class="status">{{ 'workflows.runStatus.' + r.status | transloco }}</span>
+        <span class="status app-pill" [attr.data-tone]="statusTone[r.status]">{{ 'workflows.runStatus.' + r.status | transloco }}</span>
         @if (r.has_failed) {
           <mat-icon class="failed" [matTooltip]="'workflows.runs.hasFailed' | transloco">error</mat-icon>
         }
@@ -94,24 +94,36 @@ export interface StepAction {
     </article>
   `,
   styles: `
-    .run { border: 1px solid var(--app-border); border-radius: var(--app-radius); background: var(--mat-sys-surface); }
+    .run { border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius); background: var(--app-card); }
     .head {
-      display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.6rem 0.75rem;
-      border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 2.75rem; padding: 0.6rem 0.9rem;
+      border: 0; border-radius: inherit; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; flex-wrap: wrap;
     }
+    .head:hover { background: var(--app-card-2); }
     .title { flex: 1 1 16rem; min-width: 0; }
     .progress { display: flex; align-items: center; gap: 0.5rem; width: 10rem; }
-    .run[data-status='running'] .status { color: var(--app-warning); }
-    .run[data-status='completed'] .status { color: var(--app-success); }
-    .run[data-status='cancelled'] { opacity: 0.7; }
+    .progress .small { font-family: var(--app-font-mono); }
+    .run[data-status='cancelled'] .title { color: var(--app-muted); }
     .failed { color: var(--app-danger); }
-    .body { padding: 0 0.75rem 0.75rem; }
+    .body { padding: 0 0.9rem 0.9rem; }
+    /* Steps of a run = stations on one line: icon in a ring, done = success line behind it. */
     .steps { list-style: none; margin: 0; padding: 0; }
-    .steps li { display: flex; gap: 0.75rem; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid var(--app-border); flex-wrap: wrap; }
-    .steps li[data-status='done'] .icon { color: var(--app-success); }
-    .steps li[data-status='failed'] .icon, .result { color: var(--app-danger); }
-    .steps li[data-status='skipped'] { opacity: 0.7; }
-    .main { flex: 1 1 14rem; display: flex; flex-direction: column; min-width: 0; }
+    .steps li { position: relative; display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.45rem 0; flex-wrap: wrap; }
+    .steps li:not(:last-child)::before {
+      content: ''; position: absolute; left: calc(0.875rem - 1px); top: 2.2rem; bottom: -0.45rem; width: 2px; background: var(--app-track);
+    }
+    .steps li[data-status='done']:not(:last-child)::before { background: var(--app-success); }
+    .icon {
+      flex: none; width: 1.75rem; height: 1.75rem; box-sizing: border-box; padding: 0.2rem; font-size: 1.1rem; line-height: 1.35rem;
+      border-radius: 50%; border: 2px solid var(--station, var(--app-muted)); color: var(--station, var(--app-muted)); background: var(--app-card);
+    }
+    .steps li[data-status='pending'] { --station: var(--mat-sys-primary); }
+    .steps li[data-status='done'] { --station: var(--app-success); }
+    .steps li[data-status='failed'] { --station: var(--app-danger); }
+    .steps li[data-status='skipped'] .icon { border-style: dashed; }
+    .steps li[data-status='skipped'] .main > span:first-child { color: var(--app-muted); }
+    .result { color: var(--app-bad-text); }
+    .main { flex: 1 1 14rem; display: flex; flex-direction: column; min-width: 0; padding-top: 0.2rem; }
     .small { font-size: 0.8rem; }
     .danger { color: var(--app-danger); margin-top: 0.5rem; }
   `,
@@ -126,6 +138,7 @@ export class RunCard {
   private readonly i18n = inject(TranslocoService);
   private readonly dialog = inject(MatDialog);
   protected readonly open = signal(false);
+  protected readonly statusTone = RUN_STATUS_TONE;
   protected readonly percent = computed(() => progressPercent(this.run()));
 
   protected icon(step: RunStep): string {

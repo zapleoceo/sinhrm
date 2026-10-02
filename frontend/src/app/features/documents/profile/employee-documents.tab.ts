@@ -9,7 +9,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 import { DocumentViewDialog } from '../document-view.dialog';
-import { DOCUMENT_FILE_ACCEPT, DOCUMENT_FILE_MAX_BYTES, HrDocument, isEditable } from '../documents.model';
+import { DOCUMENT_FILE_ACCEPT, DOCUMENT_FILE_MAX_BYTES, DOCUMENT_STATUS_TONE, HrDocument, isEditable } from '../documents.model';
 import { DocumentsService, documentsErrorKey } from '../documents.service';
 import { DocumentCreateDialog } from './document-create.dialog';
 import { wideDialog } from '../../../core/ui/dialog';
@@ -39,7 +39,7 @@ import { wideDialog } from '../../../core/ui/dialog';
               @if (d.file) { · <mat-icon inline>attach_file</mat-icon>{{ d.file.filename }} }
             </span>
           </div>
-          <span class="status">{{ 'documents.status.' + d.status | transloco }}</span>
+          <span class="status app-pill" [attr.data-tone]="statusTone[d.status]">{{ 'documents.status.' + d.status | transloco }}</span>
           @if (d.can_manage) {
             <button mat-icon-button type="button" [matMenuTriggerFor]="menu" [attr.aria-label]="'documents.actions.more' | transloco"><mat-icon>more_vert</mat-icon></button>
             <mat-menu #menu="matMenu">
@@ -64,13 +64,11 @@ import { wideDialog } from '../../../core/ui/dialog';
   styles: `
     :host { display: block; padding: 1rem 0; }
     .docs { list-style: none; margin: 0; padding: 0; }
-    .docs li { display: flex; gap: 1rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--app-border); }
+    .docs li { display: flex; gap: 1rem; align-items: center; padding: 0.5rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
     .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-    .link { border: 0; background: none; padding: 0; color: inherit; font: inherit; font-weight: 500; text-align: left; cursor: pointer; text-decoration: underline; }
-    .docs li[data-status='sent'] .status { color: var(--app-warning); }
-    .docs li[data-status='signed'] .status { color: var(--app-success); }
-    .docs li[data-status='rejected'] .status { color: var(--app-danger); }
-    .docs li[data-status='archived'] { opacity: 0.6; }
+    .link { border: 0; background: none; padding: 0; min-height: 2rem; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 0.15em; }
+    @media (max-width: 600px) { .link { min-height: 2.75rem; } }
+    .docs li[data-status='archived'] .link { color: var(--app-muted); }
     .small { font-size: 0.8rem; }
   `,
 })
@@ -84,6 +82,7 @@ export class EmployeeDocumentsTab {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly accept = DOCUMENT_FILE_ACCEPT;
+  protected readonly statusTone = DOCUMENT_STATUS_TONE;
   protected readonly items = signal<HrDocument[]>([]);
   protected readonly loading = signal(false);
   private uploadTarget: HrDocument | null = null;

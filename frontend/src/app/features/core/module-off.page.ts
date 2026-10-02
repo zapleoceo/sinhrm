@@ -24,8 +24,8 @@ import { map } from 'rxjs';
   `,
   styles: `
     .off { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem; padding: 3rem 1rem; }
-    .off mat-icon { font-size: 48px; width: 48px; height: 48px; opacity: 0.6; }
-    h1 { font: var(--mat-sys-headline-small); margin: 0; }
+    .off mat-icon { font-size: 48px; width: 48px; height: 48px; color: var(--app-muted); }
+    h1 { font: var(--mat-sys-headline-small); letter-spacing: var(--mat-sys-headline-small-tracking); margin: 0; }
     .module { font-weight: 500; margin: 0; }
   `,
 })

@@ -10,12 +10,16 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
   margin-bottom: var(--app-gap);
-  border: 1px solid var(--app-danger);
+  border: var(--app-border-w) solid var(--app-danger);
+  border-left-width: 4px;
   border-radius: var(--app-radius);
+  background: var(--app-card);
 
+  > mat-icon { color: var(--app-danger); }
   &.on { border-color: var(--app-success); }
+  &.on > mat-icon { color: var(--app-success); }
 
   .ai-text { display: flex; flex-direction: column; flex: 1 1 16rem; }
 }
@@ -23,7 +27,7 @@
 .group {
   margin-bottom: var(--app-gap);
 
-  h2 { font: var(--mat-sys-title-large); margin: 0 0 0.75rem; }
+  h2 { font: var(--mat-sys-title-large); letter-spacing: var(--mat-sys-title-large-tracking); margin: 0 0 0.75rem; }
 }
 
 .grid {
@@ -33,3 +37,7 @@
 }
 
 .state { padding: 2.5rem 1rem; text-align: center; }
+
+@media (max-width: 600px) {
+  .ai-banner { padding: 0.875rem 1rem; }
+}

@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { DeskCase, DeskCategory } from './desk.model';
+import { CASE_STATUS_TONE, DeskCase, DeskCategory } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
 
@@ -59,27 +59,27 @@ import { SlaBadge } from './sla-badge';
         <li>
           <a [routerLink]="['/desk/cases', c.id]" class="main">
             <strong>#{{ c.id }} {{ c.subject }}</strong>
-            <span class="muted small">{{ c.category.name }} · {{ c.created_at | date: 'dd.MM.yyyy HH:mm' }}</span>
+            <span class="muted small">{{ c.category.name }} · <span class="app-num">{{ c.created_at | date: 'dd.MM.yyyy HH:mm' }}</span></span>
           </a>
           <app-sla-badge [c]="c" />
-          <span class="status" [attr.data-status]="c.status">{{ 'desk.status.' + c.status | transloco }}</span>
+          <span class="status app-pill" [attr.data-status]="c.status" [attr.data-tone]="statusTone[c.status]">{{ 'desk.status.' + c.status | transloco }}</span>
         </li>
       } @empty {
         @if (!loading()) {
-          <li class="muted">{{ 'desk.my.empty' | transloco }}</li>
+          <li class="app-empty">{{ 'desk.my.empty' | transloco }}</li>
         }
       }
     </ul>
   `,
   styles: `
-    .form { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; margin-bottom: var(--app-gap); }
+    .form { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 1.25rem; margin-bottom: var(--app-gap); }
     .actions { display: flex; justify-content: flex-end; }
     .cases { list-style: none; margin: 0; padding: 0; }
-    .cases li { display: flex; gap: 1rem; align-items: center; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--app-border); flex-wrap: wrap; }
+    .cases li { display: flex; gap: 1rem; align-items: center; padding: 0.6rem 0.75rem; border-bottom: var(--app-border-w) solid var(--app-track); flex-wrap: wrap; }
     .cases li:last-child { border-bottom: 0; }
+    .cases li:hover:not(.app-empty) { background: var(--app-row-hover); }
+    .cases li.app-empty { display: block; }
     .main { flex: 1 1 16rem; display: flex; flex-direction: column; color: inherit; text-decoration: none; min-width: 0; }
-    .status[data-status='resolved'], .status[data-status='closed'] { color: var(--app-success); }
-    .status[data-status='waiting'] { color: var(--app-warning); }
     .small { font-size: 0.8rem; }
   `,
 })
@@ -88,6 +88,7 @@ export class MyCasesPage implements OnInit {
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
+  protected readonly statusTone = CASE_STATUS_TONE;
   protected readonly items = signal<DeskCase[]>([]);
   protected readonly categories = signal<DeskCategory[]>([]);
   protected readonly loading = signal(false);

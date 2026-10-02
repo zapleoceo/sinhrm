@@ -6,7 +6,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { TeamRow, addWeeks, mondayOf } from './time.model';
+import { TIMESHEET_STATUS_TONE, TeamRow, addWeeks, mondayOf } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
 import { toIsoDate } from '../../core/date/iso-date';
 import { WeekPicker } from './week-picker';
@@ -48,7 +48,7 @@ import { WeekPicker } from './week-picker';
           @for (r of rows(); track r.employee.id) {
             <tr>
               <td><a routerLink="/time" [queryParams]="{ week: weekStart(), employee_id: r.employee.id }">{{ r.employee.full_name }}</a></td>
-              <td>{{ 'time.status.' + r.status | transloco }}</td>
+              <td><span class="app-pill" [attr.data-tone]="statusTone[r.status]">{{ 'time.status.' + r.status | transloco }}</span></td>
               <td class="num">{{ r.expected | number: '1.0-2' }}</td>
               <td class="num">{{ r.worked | number: '1.0-2' }}</td>
               <td class="num" [class.over]="r.overtime > 0">{{ r.overtime | number: '1.0-2' }}</td>
@@ -65,17 +65,20 @@ import { WeekPicker } from './week-picker';
   styles: `
     .row { display: flex; gap: 0.25rem; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--app-border); font-weight: normal; }
-    thead th { color: var(--app-muted); font-size: 0.8rem; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
+    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
-    .over { color: #b26a00; }
-    .short { color: var(--app-danger); }
+    td.num { font-family: var(--app-font-mono); font-size: 0.8rem; font-weight: 500; }
+    tbody tr:hover { background: var(--app-row-hover); }
+    .over { color: var(--app-warn-text); }
+    .short { color: var(--app-bad-text); }
     .panel { overflow-x: auto; }
   `,
 })
 export class TimeTeamPage {
   readonly week = input<string | undefined>(undefined);
   private readonly api = inject(TimeService);
+  protected readonly statusTone = TIMESHEET_STATUS_TONE;
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);

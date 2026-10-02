@@ -14,7 +14,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Observable, Subject, debounceTime, switchMap } from 'rxjs';
 import { PersonPicker, PickerValue } from '../people/picker/person-picker';
-import { ASSET_STATUSES, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
+import { ASSET_STATUSES, ASSET_STATUS_TONE, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
 import { AssetsService, assetsErrorKey } from './assets.service';
 import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 
@@ -89,11 +89,11 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
         <tbody>
           @for (a of items(); track a.id) {
             <tr>
-              <td><strong>{{ a.inventory_number }}</strong></td>
+              <td><strong class="app-num">{{ a.inventory_number }}</strong></td>
               <td>{{ a.name }}</td>
               <td>{{ a.type?.name ?? '—' }}</td>
-              <td>{{ a.serial ?? '—' }}</td>
-              <td><span class="status" [attr.data-status]="a.status">{{ 'assets.status.' + a.status | transloco }}</span></td>
+              <td class="app-num serial">{{ a.serial ?? '—' }}</td>
+              <td><span class="status app-pill" [attr.data-status]="a.status" [attr.data-tone]="statusTone[a.status]">{{ 'assets.status.' + a.status | transloco }}</span></td>
               <td>
                 @if (a.employee) { <a [routerLink]="['/people', a.employee.id]" [queryParams]="{ tab: 'assets' }">{{ a.employee.full_name }}</a> } @else { — }
               </td>
@@ -157,13 +157,13 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
     .grow { flex: 1 1 12rem; }
     .scroll { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--app-border); font-weight: normal; }
-    thead th { color: var(--app-muted); font-size: 0.8rem; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
+    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
     .actions { white-space: nowrap; text-align: right; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-    .status[data-status='assigned'] { color: var(--mat-sys-primary); }
-    .status[data-status='repair'] { color: var(--app-warning); }
-    .status[data-status='written_off'] { color: var(--app-muted); text-decoration: line-through; }
+    .status[data-status='written_off'] { text-decoration: line-through; }
+    tbody tr:hover { background: var(--app-row-hover); }
+    .serial { font-size: 0.8rem; }
     .hist { margin: 0; padding-left: 1rem; }
   `,
 })
@@ -172,6 +172,7 @@ export class AssetsPage implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly statuses = ASSET_STATUSES;
+  protected readonly statusTone = ASSET_STATUS_TONE;
   protected readonly returnStatuses = RETURN_STATUSES;
   protected readonly items = signal<Asset[]>([]);
   protected readonly types = signal<AssetType[]>([]);

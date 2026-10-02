@@ -99,6 +99,8 @@ TypeScript без фреймворка, сборка esbuild, тесты Vitest 
 
 **Интерфейс (2026-09-26):** Под описанием — строка «Підтримувані сайти» с иконками LinkedIn, Work.ua, Djinni, DOU, Robota.ua (`app-channel-icon`, [core.md](core.md)), тот же набор, что в `extension/src/extractors`.
 
+**Вид (рестайл C «Маршрут», 2026-10-02).** Панели страницы — общий вид `.panel` (линия 1.5px, радиус 10), одноразовый токен — пунктирная рамка 1.5px и моноширинный шрифт, предупреждения — AA-цвет текста `--app-warn-text`. Тест вида — `features/extension/extension.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
 ## Как проверить
 - Расширение: `cd extension && npm ci && npm run lint && npm run typecheck && npm test && npm run package`
   (тесты: определение сайта, извлечение на вымышленных страницах всех четырёх сайтов — JSON-LD, `og:`, DOM, обрезка

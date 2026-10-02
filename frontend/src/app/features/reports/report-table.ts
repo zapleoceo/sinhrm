@@ -74,17 +74,29 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
     </div>
   `,
   styles: `
-    .chart { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1rem; }
-    .bar-row { display: grid; grid-template-columns: minmax(6rem, 14rem) 1fr auto; gap: 0.5rem; align-items: center; }
-    .bar-row .bar { display: block; height: 0.6rem; border-radius: 999px; background: var(--mat-sys-primary); min-width: 2px; }
+    /* Restyle C «Маршрут»: the chart is a set of route lines (brand), numbers in mono; the bars are drawn once on load
+       («trace», transform only) and stay static with prefers-reduced-motion. */
+    .chart { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+    .bar-row { display: grid; grid-template-columns: minmax(6rem, 14rem) 1fr auto; gap: 0.75rem; align-items: center; }
+    .bar-row .bar {
+      display: block; height: 0.5rem; border-radius: var(--app-radius-pill); background: var(--app-chart-1); min-width: 2px;
+      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes trace { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) { .bar-row .bar { animation: none; } }
     .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; }
-    .val { font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+    .val { font-family: var(--app-font-mono); font-variant-numeric: tabular-nums; font-size: 0.8rem; font-weight: 500; }
     .scroll { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--app-border); font-weight: normal; }
-    thead th { color: var(--app-muted); font-size: 0.8rem; }
+    th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
+    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
+    tbody tr:hover { background: var(--app-row-hover); }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
-    tfoot td { position: sticky; bottom: 0; background: var(--mat-sys-surface-container-low); font-weight: 600; border-top: 2px solid var(--app-border); border-bottom: 0; }
+    td.num { font-family: var(--app-font-mono); font-size: 0.8rem; font-weight: 500; }
+    tfoot td {
+      position: sticky; bottom: 0; background: var(--app-card-2); font-weight: 700;
+      border-top: var(--app-border-w) solid var(--app-border); border-bottom: 0;
+    }
   `,
 })
 export class ReportTable {

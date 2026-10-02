@@ -30,7 +30,7 @@ import { toIsoDate } from '../../../core/date/iso-date';
           <div class="line">
             <span>{{ o.title }} <span class="muted">· {{ o.period }}</span></span>
             <span class="bar"><span [style.width.%]="o.progress" [attr.data-tone]="tone(o.progress)"></span></span>
-            <span>{{ o.progress }}%</span>
+            <span class="pct">{{ o.progress }}%</span>
           </div>
         } @empty {
           <p class="muted">{{ 'perform.objectives.empty' | transloco }}</p>
@@ -46,8 +46,8 @@ import { toIsoDate } from '../../../core/date/iso-date';
               <tr>
                 <th scope="row">{{ k.metric }}</th>
                 <td class="muted">{{ k.period }}</td>
-                <td>{{ k.actual ?? '—' }} / {{ k.target }} {{ k.unit ?? '' }}</td>
-                <td>{{ k.attainment === null ? '—' : k.attainment + '%' }}</td>
+                <td class="app-num">{{ k.actual ?? '—' }} / {{ k.target }} {{ k.unit ?? '' }}</td>
+                <td class="app-num">{{ k.attainment === null ? '—' : k.attainment + '%' }}</td>
               </tr>
             } @empty {
               <tr><td class="muted">{{ 'perform.kpis.empty' | transloco }}</td></tr>
@@ -130,15 +130,23 @@ import { toIsoDate } from '../../../core/date/iso-date';
   styles: `
     :host { display: block; padding: 1rem 0; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-    .box { padding: 1rem; }
+    .box { padding: 1rem 1.25rem; }
     .box h3 { margin: 0 0 0.5rem; font: var(--mat-sys-title-small); }
-    .line { display: grid; grid-template-columns: 1fr 6rem 3rem; gap: 0.5rem; align-items: center; margin-bottom: 0.35rem; }
-    .bar { display: block; height: 8px; border-radius: 4px; background: var(--mat-sys-surface-container-highest); overflow: hidden; }
-    .bar span { display: block; height: 100%; background: var(--app-success); }
+    .line { display: grid; grid-template-columns: minmax(0, 1fr) 6rem 3rem; gap: 0.5rem; align-items: center; margin-bottom: 0.35rem; }
+    .pct { font: 500 0.8rem var(--app-font-mono); text-align: right; }
+    .bar { display: block; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; }
+    .bar span {
+      display: block; height: 100%; border-radius: inherit; background: var(--app-success);
+      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes trace { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) { .bar span { animation: none; } }
     .bar span[data-tone='danger'] { background: var(--app-danger); }
     .bar span[data-tone='warning'] { background: var(--app-warning); }
     .kpis { width: 100%; border-collapse: collapse; }
-    .kpis th, .kpis td { text-align: left; padding: 0.25rem 0.5rem 0.25rem 0; }
+    .kpis th, .kpis td { text-align: left; padding: 0.4rem 0.5rem 0.4rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
+    .kpis tr:last-child th, .kpis tr:last-child td { border-bottom: 0; }
+    .app-num { font-size: 0.8rem; }
     .plan { margin-bottom: 0.75rem; display: flex; flex-direction: column; }
     .plan ul { margin: 0.25rem 0; padding-left: 1.25rem; }
     .num { width: 7rem; }

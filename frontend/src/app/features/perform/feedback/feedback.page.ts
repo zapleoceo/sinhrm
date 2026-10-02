@@ -11,7 +11,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { FEEDBACK_BOXES, FEEDBACK_TYPES, FEEDBACK_VISIBILITIES, Feedback, FeedbackBox, FeedbackType, FeedbackVisibility } from '../perform.model';
+import { FEEDBACK_BOXES, FEEDBACK_TONE, FEEDBACK_TYPES, FEEDBACK_VISIBILITIES, Feedback, FeedbackBox, FeedbackType, FeedbackVisibility } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 
 /**
@@ -82,7 +82,7 @@ import { PerformService, performErrorKey } from '../perform.service';
       @for (f of items(); track f.id) {
         <li class="panel" [attr.data-type]="f.type">
           <div class="meta">
-            <span class="badge">{{ 'perform.feedbackType.' + f.type | transloco }}</span>
+            <span class="app-pill" [attr.data-tone]="typeTone[f.type]">{{ 'perform.feedbackType.' + f.type | transloco }}</span>
             <span>{{ f.from.full_name }} → {{ f.to.full_name }}</span>
             <span class="muted">{{ f.created_at | date: 'dd.MM.yyyy' }} · {{ 'perform.feedbackVisibility.' + f.visibility | transloco }}</span>
           </div>
@@ -93,23 +93,23 @@ import { PerformService, performErrorKey } from '../perform.service';
         </li>
       } @empty {
         @if (!loading()) {
-          <li class="muted state">{{ 'perform.feedback.empty' | transloco }}</li>
+          <li class="panel app-empty">{{ 'perform.feedback.empty' | transloco }}</li>
         }
       }
     </ul>
   `,
   styles: `
-    .give { padding: 1rem; margin-bottom: 1rem; }
+    .give { padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .give h2 { margin: 0 0 0.5rem; font: var(--mat-sys-title-medium); }
     .full { width: 100%; }
+    /* The box switcher scrolls inside itself on phones instead of widening the page. */
+    mat-button-toggle-group { max-width: 100%; overflow-x: auto; }
     .narrow { width: 9rem; }
     .list { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-direction: column; gap: 0.5rem; }
-    .list li { padding: 0.75rem 1rem; }
+    .list li.panel:not(.app-empty) { padding: 0.875rem 1.25rem; }
     .list p { margin: 0.5rem 0 0; white-space: pre-line; }
-    .meta { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: baseline; }
-    .badge { font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: var(--mat-sys-secondary-container); }
-    [data-type='praise'] .badge { background: color-mix(in srgb, var(--app-success) 18%, transparent); }
-    [data-type='constructive'] .badge { background: color-mix(in srgb, var(--app-warning) 18%, transparent); }
+    .meta { display: flex; gap: 0.5rem 0.75rem; flex-wrap: wrap; align-items: center; }
+    .meta .muted { font-family: var(--app-font-mono); font-size: 0.75rem; }
   `,
 })
 export class FeedbackPage implements OnInit {
@@ -118,6 +118,7 @@ export class FeedbackPage implements OnInit {
   private readonly i18n = inject(TranslocoService);
   protected readonly boxes = FEEDBACK_BOXES;
   protected readonly types = FEEDBACK_TYPES;
+  protected readonly typeTone = FEEDBACK_TONE;
   protected readonly visibilities = FEEDBACK_VISIBILITIES;
   protected readonly box = signal<FeedbackBox>('received');
   protected readonly items = signal<Feedback[]>([]);

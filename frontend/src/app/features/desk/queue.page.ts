@@ -11,7 +11,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { CASE_STATUSES, CaseStatus, DeskCase, DeskCategory, slaState } from './desk.model';
+import { CASE_STATUSES, CASE_STATUS_TONE, CaseStatus, DeskCase, DeskCategory, slaState } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
 
@@ -67,12 +67,12 @@ import { SlaBadge } from './sla-badge';
         <tbody>
           @for (c of items(); track c.id) {
             <tr [attr.data-sla]="sla(c)">
-              <td>{{ c.id }}</td>
-              <td><a [routerLink]="['/desk/cases', c.id]">{{ c.subject }}</a><br /><span class="muted small">{{ c.created_at | date: 'dd.MM HH:mm' }}</span></td>
+              <td class="app-num">{{ c.id }}</td>
+              <td><a [routerLink]="['/desk/cases', c.id]">{{ c.subject }}</a><br /><span class="muted small app-num">{{ c.created_at | date: 'dd.MM HH:mm' }}</span></td>
               <td>{{ c.employee.full_name }}</td>
               <td>{{ c.category.name }}</td>
               <td>{{ c.assignee?.name ?? '—' }}</td>
-              <td>{{ 'desk.status.' + c.status | transloco }}</td>
+              <td><span class="app-pill" [attr.data-tone]="statusTone[c.status]">{{ 'desk.status.' + c.status | transloco }}</span></td>
               <td><app-sla-badge [c]="c" /></td>
             </tr>
           } @empty {
@@ -98,8 +98,8 @@ import { SlaBadge } from './sla-badge';
           @for (k of categories(); track k.id) {
             <tr>
               <td>{{ k.name }}</td>
-              <td class="num">{{ k.first_response_hours ?? '—' }}</td>
-              <td class="num">{{ k.resolve_hours ?? '—' }}</td>
+              <td class="num app-num">{{ k.first_response_hours ?? '—' }}</td>
+              <td class="num app-num">{{ k.resolve_hours ?? '—' }}</td>
               <td><mat-slide-toggle [checked]="k.active" (change)="toggleCategory(k, $event.checked)" [attr.aria-label]="k.name" /></td>
             </tr>
           }
@@ -115,11 +115,13 @@ import { SlaBadge } from './sla-badge';
   `,
   styles: `
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--app-border); font-weight: normal; vertical-align: top; }
-    thead th { color: var(--app-muted); font-size: 0.8rem; }
-    tr[data-sla='breached'] td:first-child { box-shadow: inset 3px 0 0 var(--app-danger); }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; vertical-align: top; }
+    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
+    tr[data-sla='breached'] td:first-child { box-shadow: inset 4px 0 0 var(--app-danger); }
+    tbody tr:hover { background: var(--app-row-hover); }
+    .app-num { font-size: 0.8rem; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
-    .cats { margin-top: var(--app-gap); padding: 1rem; }
+    .cats { margin-top: var(--app-gap); padding: 1rem 1.25rem; }
     .cats h2 { font: var(--mat-sys-title-medium); margin: 0; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
     .small { font-size: 0.8rem; }
@@ -131,6 +133,7 @@ export class DeskQueuePage implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly statuses = CASE_STATUSES;
+  protected readonly statusTone = CASE_STATUS_TONE;
   protected readonly status = signal<CaseStatus | 'open'>('open');
   protected readonly items = signal<DeskCase[]>([]);
   protected readonly categories = signal<DeskCategory[]>([]);

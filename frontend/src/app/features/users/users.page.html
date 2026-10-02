@@ -118,9 +118,7 @@
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef>{{ 'users.columns.status' | transloco }}</th>
         <td mat-cell *matCellDef="let u">
-          <mat-chip-set>
-            <mat-chip [class.blocked]="u.status === 'blocked'" [disableRipple]="true">{{ 'statuses.' + u.status | transloco }}</mat-chip>
-          </mat-chip-set>
+          <span class="app-pill" [attr.data-tone]="u.status === 'blocked' ? 'bad' : 'good'">{{ 'statuses.' + u.status | transloco }}</span>
         </td>
       </ng-container>
 

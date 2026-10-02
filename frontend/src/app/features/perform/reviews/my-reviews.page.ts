@@ -35,12 +35,12 @@ import { PerformService, performErrorKey } from '../perform.service';
           <button type="button" class="row" [class.active]="a.id === open()?.id" (click)="select(a)">
             <strong>{{ a.subject.full_name }}</strong>
             <span class="muted">{{ a.cycle.name }} · {{ 'perform.reviewType.' + a.type | transloco }}@if (a.cycle.deadline) { · {{ 'perform.reviews.until' | transloco: { date: a.cycle.deadline } }}}</span>
-            <span class="status" [attr.data-status]="a.status">{{ 'perform.assignmentStatus.' + a.status | transloco }}</span>
+            <span class="status app-pill" [attr.data-status]="a.status" [attr.data-tone]="a.status === 'submitted' ? 'good' : 'warn'">{{ 'perform.assignmentStatus.' + a.status | transloco }}</span>
           </button>
         </li>
       } @empty {
         @if (!loading()) {
-          <li class="muted state">{{ 'perform.reviews.none' | transloco }}</li>
+          <li class="panel app-empty">{{ 'perform.reviews.none' | transloco }}</li>
         }
       }
     </ul>
@@ -76,14 +76,20 @@ import { PerformService, performErrorKey } from '../perform.service';
   `,
   styles: `
     .list { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
-    .row { width: 100%; display: flex; gap: 0.75rem; align-items: baseline; flex-wrap: wrap; padding: 0.6rem 0.75rem; border: 1px solid var(--app-border); border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-    .row.active { border-color: var(--mat-sys-primary); }
+    .row {
+      width: 100%; min-height: 2.75rem; box-sizing: border-box; display: flex; gap: 0.5rem 0.75rem; align-items: center; flex-wrap: wrap;
+      padding: 0.6rem 1rem; border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius-sm);
+      background: var(--app-card); color: inherit; font: inherit; cursor: pointer; text-align: left;
+      transition: border-color var(--app-fast) ease-out, background-color var(--app-fast) ease-out;
+    }
+    .row:hover { border-color: var(--mat-sys-outline); background: var(--app-card-2); }
+    @media (prefers-reduced-motion: reduce) { .row { transition: none; } }
+    .row.active { border-color: var(--mat-sys-primary); background: var(--app-row-selected); box-shadow: inset 0 0 0 1px var(--mat-sys-primary); }
     .status { margin-left: auto; }
-    .status[data-status='submitted'] { color: var(--app-success); }
-    .form { padding: 1rem; }
+    .form { padding: 1rem 1.25rem; }
     .form h2 { margin: 0 0 0.5rem; font: var(--mat-sys-title-medium); }
-    fieldset { border: none; border-bottom: 1px solid var(--app-border); padding: 0.5rem 0 0.75rem; margin: 0 0 0.5rem; }
-    legend { font-weight: 500; }
+    fieldset { border: none; border-bottom: var(--app-border-w) solid var(--app-track); padding: 0.5rem 0 0.75rem; margin: 0 0 0.5rem; }
+    legend { font: var(--mat-sys-title-small); }
     mat-radio-group { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
     .full { width: 100%; margin-top: 0.5rem; }
   `,

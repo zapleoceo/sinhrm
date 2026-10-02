@@ -4,6 +4,13 @@ export type HalfDay = 'none' | 'start' | 'end';
 export const HALF_DAYS: readonly HalfDay[] = ['none', 'start', 'end'];
 
 export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+/** Status-pill tone (`.app-pill[data-tone]`: colour + marker shape, never colour alone). */
+export const LEAVE_STATUS_TONE: Readonly<Record<LeaveRequestStatus, 'warn' | 'good' | 'bad' | 'neutral'>> = {
+  pending: 'warn',
+  approved: 'good',
+  rejected: 'bad',
+  cancelled: 'neutral',
+};
 export const LEAVE_REQUEST_STATUSES: readonly LeaveRequestStatus[] = ['pending', 'approved', 'rejected', 'cancelled'];
 
 export type AccrualMode = 'yearly_upfront' | 'monthly';

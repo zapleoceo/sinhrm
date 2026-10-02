@@ -84,7 +84,7 @@ type Filters = Partial<Record<ReportFilter, string>>;
   `,
   styles: `
     .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .card { padding: 1rem; }
+    .card { padding: 1rem 1.25rem; }
     .filters { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
   `,
 })

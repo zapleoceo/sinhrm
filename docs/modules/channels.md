@@ -129,6 +129,8 @@ Ringostat станет доступен только после появлени
 Отправка — в `features/recruiting/card/touch-composer.ts` (кнопка «Надіслати», запасной путь «Записати вручну»). Строки —
 `channels.*` и `integrations.logs.messages.*`, `integrations.fields.*` в `public/i18n/{uk,ru,en}.json`.
 
+**Вид (рестайл C «Маршрут», 2026-10-02).** Разделитель панели канала — «трек» 1.5px (`--app-track`), без hex и линий 1px. Тест вида — `features/channels/channels.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
 ## Как проверить
 Бэкенд: `tests/Feature/Channels/WebhookApiTest.php` (404 неизвестного/выключенного, 403 на неверный/отсутствующий секрет
 для каждого провайдера, сопоставление по @username/телефону, «Вхідні», идемпотентность, исходящее от владельца в Telegram,

@@ -11,7 +11,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Vacancy } from '../recruiting/recruiting.model';
 import { RecruitingService } from '../recruiting/recruiting.service';
-import { HiringRequest, salaryRange, statusTone, stepIcon } from './hiring-requests.model';
+import { HiringRequest, PILL_TONE, salaryRange, statusTone, stepIcon } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 
 /**
@@ -29,7 +29,7 @@ import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service
         <div>
           <h1>{{ r.title }} <span class="muted">× {{ r.headcount }}</span></h1>
           <p class="muted">
-            <span class="chip" [attr.data-tone]="tone(r.status)">{{ 'hiring.status.' + r.status | transloco }}</span>
+            <span class="app-pill" [attr.data-tone]="pill[tone(r.status)]">{{ 'hiring.status.' + r.status | transloco }}</span>
             · {{ r.branch.name }}{{ r.department ? ' · ' + r.department.name : '' }} · {{ 'hiring.priority.' + r.priority | transloco }}
             · {{ 'hiring.fields.requester' | transloco }}: {{ r.requester?.name ?? '—' }}
           </p>
@@ -152,27 +152,41 @@ import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service
   styles: `
     .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
     .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: var(--app-gap); }
-    .box { padding: 1rem; }
+    .box { padding: 1rem 1.25rem; }
     h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.5rem; }
     h3 { font: var(--mat-sys-title-small); margin: 0.75rem 0 0.25rem; }
     .kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 1rem; margin: 0; }
     .kv dt { color: var(--app-muted); }
     .kv dd { margin: 0; }
     .pre { white-space: pre-wrap; }
-    .timeline { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
-    .timeline li { display: flex; gap: 0.5rem; }
-    .timeline li[data-status='approved'] mat-icon { color: #2e7d32; }
-    .timeline li[data-status='rejected'] mat-icon, .timeline li.overdue mat-icon { color: var(--app-danger); }
+    /* The approval route is a line of stations: each step's icon sits in a ring on one track. */
+    .timeline { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+    .timeline li { position: relative; display: flex; gap: 0.75rem; padding-bottom: 0.9rem; }
+    .timeline li:not(:last-child)::before {
+      content: ''; position: absolute; left: calc(0.875rem - 1px); top: 1.75rem; bottom: 0; width: 2px; background: var(--app-track);
+    }
+    .timeline li[data-status='approved']:not(:last-child)::before { background: var(--app-success); }
+    .timeline mat-icon {
+      flex: none; width: 1.75rem; height: 1.75rem; box-sizing: border-box; padding: 0.2rem; font-size: 1.1rem; line-height: 1.35rem;
+      border-radius: 50%; border: 2px solid var(--station, var(--app-muted)); color: var(--station, var(--app-muted)); background: var(--app-card);
+    }
+    .timeline li[data-status='pending'] { --station: var(--mat-sys-primary); }
+    .timeline li[data-status='approved'] { --station: var(--app-success); }
+    .timeline li[data-status='rejected'], .timeline li.overdue { --station: var(--app-danger); }
+    .timeline li[data-status='skipped'] mat-icon { border-style: dashed; }
     .timeline li[data-status='waiting'], .timeline li[data-status='skipped'] { color: var(--app-muted); }
-    blockquote { margin: 0.25rem 0 0; padding-left: 0.5rem; border-left: 2px solid var(--app-border); }
+    blockquote { margin: 0.25rem 0 0; padding-left: 0.6rem; border-left: var(--app-border-w) solid var(--app-border); }
     .small { font-size: 0.8rem; }
-    .warn { color: var(--app-danger); }
+    .warn { color: var(--app-bad-text); }
     .wide { width: 100%; }
     .decide { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
-    .bar { height: 8px; border-radius: 4px; background: var(--app-border); overflow: hidden; }
-    .bar span { display: block; height: 100%; background: var(--mat-sys-primary); }
-    .chip { padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; background: var(--app-border); }
-    .chip[data-tone='danger'] { background: color-mix(in srgb, var(--app-danger) 18%, transparent); }
+    .bar { height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; }
+    .bar span {
+      display: block; height: 100%; border-radius: inherit; background: var(--mat-sys-primary);
+      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    }
+    @keyframes trace { from { transform: scaleX(0); } }
+    @media (prefers-reduced-motion: reduce) { .bar span { animation: none; } }
   `,
 })
 export class HiringDetailPage {
@@ -187,6 +201,7 @@ export class HiringDetailPage {
   protected readonly vacancies = signal<Vacancy[]>([]);
   protected readonly recruiterId = signal<number | null>(null);
   protected readonly tone = statusTone;
+  protected readonly pill = PILL_TONE;
   protected readonly icon = stepIcon;
   protected readonly salary = salaryRange;
   protected readonly extras = computed(() => Object.entries(this.request()?.extra ?? {}).map(([k, v]) => [k, String(v)] as const));

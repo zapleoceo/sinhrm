@@ -21,5 +21,7 @@
 выключить. Причина — `POST /api/errors/client` принимает отчёты от каждого вошедшего пользователя при любой роли;
 сам журнал и так закрыт для всех, кроме суперадмина, а `errors.prune` работает всегда.
 
+**Вид (рестайл C «Маршрут», 2026-10-02).** Группа ошибки — карточка с красной «рельсой» 4px; решённая — пунктирная рамка и нейтральная рельса (без opacity: текст не теряет контраст); счётчик «×N» — моно-пилюля, время — моно, пустой список — `.app-empty`. Тест вида — `features/observability/observability.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
 ## Как проверить
 `tests/Feature/Observability/ErrorLogTest.php`, `tests/Feature/Core/ModuleAccessTest.php`, `frontend/src/app/core/errors/error-reporter.spec.ts`.

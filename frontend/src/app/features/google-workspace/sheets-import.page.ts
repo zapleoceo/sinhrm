@@ -174,16 +174,17 @@ import { GoogleService, googleErrorKey } from './google.service';
     </section>
   `,
   styles: `
-    .panel { border: 1px solid var(--app-border); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
-    .panel.ok { border-color: var(--app-success); }
+    .panel { padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .panel.ok { border-color: var(--app-success); border-left-width: 4px; }
     .source, .actions, .saved { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .url { flex: 1; min-width: min(28rem, 100%); }
     .mapping { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: 0.75rem; }
     .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
     .preview { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
-    .preview th, .preview td { border-bottom: 1px solid var(--app-border); padding: 0.3rem 0.5rem; text-align: left; white-space: nowrap; }
+    .preview th, .preview td { border-bottom: var(--app-border-w) solid var(--app-track); padding: 0.4rem 0.6rem; text-align: left; white-space: nowrap; }
+    .preview thead th { font: var(--mat-sys-label-medium); font-weight: 700; color: var(--app-muted); border-bottom-color: var(--app-border); }
     .spacer { flex: 1; }
-    .saved { padding: 0.5rem 0; border-bottom: 1px solid var(--app-border); }
+    .saved { padding: 0.5rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
     .error { color: var(--app-danger); }
     .small { font-size: 0.8rem; }
   `,

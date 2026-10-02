@@ -1,6 +1,14 @@
 /** Types of the Documents API (backend app/Modules/Documents). */
 
 export type DocumentStatus = 'draft' | 'sent' | 'signed' | 'rejected' | 'archived';
+/** Status-pill tone (`.app-pill[data-tone]`: colour + marker shape, never colour alone). */
+export const DOCUMENT_STATUS_TONE: Readonly<Record<DocumentStatus, 'neutral' | 'warn' | 'good' | 'bad'>> = {
+  draft: 'neutral',
+  sent: 'warn',
+  signed: 'good',
+  rejected: 'bad',
+  archived: 'neutral',
+};
 export const DOCUMENT_STATUSES: readonly DocumentStatus[] = ['draft', 'sent', 'signed', 'rejected', 'archived'];
 
 /** Variables of document templates, written as {Name} in the body. */

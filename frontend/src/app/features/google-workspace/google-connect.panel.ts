@@ -41,7 +41,7 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
           <li [attr.data-state]="state(c)">
             <app-channel-icon [key]="c.service" />
             <span class="name">{{ 'google.services.' + c.service | transloco }}</span>
-            <span class="state">{{ 'google.connect.state.' + state(c) | transloco }}</span>
+            <span class="app-pill" [attr.data-tone]="stateTone[state(c)]">{{ 'google.connect.state.' + state(c) | transloco }}</span>
             @if (c.account_email) {
               <span class="muted">{{ c.account_email }}</span>
             }
@@ -60,15 +60,13 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
     </section>
   `,
   styles: `
-    .panel { border: 1px solid var(--app-border); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+    .panel { padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
     .text { display: flex; flex-direction: column; flex: 1; min-width: 14rem; }
     .services { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; gap: 1.5rem; flex-wrap: wrap; }
     .services li { display: flex; align-items: center; gap: 0.4rem; }
-    li[data-state='connected'] .state { color: var(--app-success); }
-    li[data-state='error'] .state { color: var(--app-warning); }
     .notice { margin: 0.5rem 0 0; }
-    .notice.error { color: var(--app-warning); }
+    .notice.error { color: var(--app-warn-text); }
     .small { font-size: 0.8rem; margin-bottom: 0; }
     a.disabled { pointer-events: none; opacity: 0.5; }
     code { word-break: break-all; }
@@ -97,6 +95,9 @@ export class GoogleConnectPanel implements OnInit {
       error: () => this.connections.set([]),
     });
   }
+
+  /** Status-pill tone per state (`.app-pill[data-tone]`: colour + marker shape). */
+  protected readonly stateTone = { connected: 'good', error: 'warn', off: 'neutral' } as const;
 
   protected state(c: GoogleConnection): 'connected' | 'error' | 'off' {
     if (c.error === 'reconnect_required' || c.status === 'error') {

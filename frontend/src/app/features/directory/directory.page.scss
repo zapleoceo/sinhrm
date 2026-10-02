@@ -11,8 +11,9 @@
 }
 
 .notice {
-  border: 1px solid var(--app-border);
+  border: var(--app-border-w) solid var(--app-border);
   border-radius: var(--app-radius);
+  background: var(--app-card);
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
   display: flex;
@@ -21,7 +22,7 @@
   gap: 0.5rem 1rem;
 
   ul { margin: 0; padding-left: 1.25rem; flex-basis: 100%; }
-  &.error { color: var(--app-danger); }
+  &.error { color: var(--app-bad-text); border-color: var(--app-danger); border-left-width: 4px; }
 }
 
 mat-tab-group { margin-bottom: 1rem; }
@@ -42,11 +43,6 @@ mat-tab-group { margin-bottom: 1rem; }
   flex-wrap: wrap;
 }
 
-.panel {
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius);
-  overflow-x: auto;
-}
 
 table { width: 100%; }
 
@@ -54,7 +50,6 @@ table { width: 100%; }
 
 .tag { font-size: 0.75rem; margin-left: 0.25rem; }
 
-.disabled { --mat-chip-label-text-color: var(--app-danger); }
 
 .actions { text-align: right; }
 

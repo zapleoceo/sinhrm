@@ -19,7 +19,7 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
     }
     <ul class="balances">
       @for (b of balances(); track b.leave_type.id) {
-        <li class="balance" [style.border-left-color]="b.leave_type.color">
+        <li class="balance" [style.border-top-color]="b.leave_type.color">
           <span class="name">{{ b.leave_type.name }}</span>
           @if (b.tracked) {
             <strong class="value">{{ b.available }}</strong>
@@ -38,11 +38,12 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
   styles: `
     .balances { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
     .balance {
-      display: flex; flex-direction: column; padding: 0.75rem 1rem; border: 1px solid var(--app-border);
-      border-left-width: 4px; border-radius: var(--app-radius);
+      /* KPI tile: card + line, a «sleeper» on top in the leave type's colour (the name says what it is). */
+      display: flex; flex-direction: column; padding: 0.75rem 1rem; border: var(--app-border-w) solid var(--app-border);
+      border-top-width: 4px; border-radius: var(--app-radius); background: var(--app-card);
     }
     .name { font: var(--mat-sys-title-small); }
-    .value { font: var(--mat-sys-headline-medium); font-variant-numeric: tabular-nums; }
+    .value { font: var(--mat-sys-headline-medium); letter-spacing: var(--mat-sys-headline-medium-tracking); font-variant-numeric: tabular-nums; }
     .small { font-size: 0.8rem; }
   `,
 })

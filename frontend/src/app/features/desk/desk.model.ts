@@ -1,6 +1,16 @@
 /** Types of the Desk API (backend app/Modules/Desk). */
 
 export type CaseStatus = 'new' | 'in_progress' | 'waiting' | 'resolved' | 'closed';
+/** Status-pill tone (`.app-pill[data-tone]`: colour + marker shape, never colour alone). */
+export const CASE_STATUS_TONE: Readonly<Record<CaseStatus, 'info' | 'warn' | 'good' | 'neutral'>> = {
+  new: 'info',
+  in_progress: 'info',
+  waiting: 'warn',
+  resolved: 'good',
+  closed: 'neutral',
+};
+/** SLA state → status-pill tone: breached ■, running with a due time ◆, met / no target dashed ○. */
+export const SLA_TONE = { breached: 'bad', due: 'warn', ok: 'neutral' } as const;
 export const CASE_STATUSES: readonly CaseStatus[] = ['new', 'in_progress', 'waiting', 'resolved', 'closed'];
 
 export interface DeskCategory {

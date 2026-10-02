@@ -8,7 +8,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { GridRow, TimeWeek, addDays, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
+import { GridRow, TIMESHEET_STATUS_TONE, TimeWeek, addDays, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
 import { toIsoDate } from '../../core/date/iso-date';
 import { WeekPicker } from './week-picker';
@@ -29,7 +29,7 @@ import { WeekPicker } from './week-picker';
         <p class="muted">
           {{ 'time.week.range' | transloco: { from: (weekStart() | date: 'dd.MM'), to: (weekEnd() | date: 'dd.MM.yyyy') } }}
           @if (data(); as w) {
-            · <span class="chip" [attr.data-status]="w.status">{{ 'time.status.' + w.status | transloco }}</span>
+            · <span class="app-pill" [attr.data-status]="w.status" [attr.data-tone]="statusTone[w.status]">{{ 'time.status.' + w.status | transloco }}</span>
           }
         </p>
       </div>
@@ -136,27 +136,30 @@ import { WeekPicker } from './week-picker';
     .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
     .grid-wrap { overflow-x: auto; }
     .grid { width: 100%; border-collapse: collapse; }
-    .grid th, .grid td { padding: 0.25rem 0.35rem; border-bottom: 1px solid var(--app-border); font-weight: normal; text-align: left; vertical-align: top; }
-    .grid thead th { color: var(--app-muted); font-size: 0.8rem; }
+    .grid th, .grid td { padding: 0.25rem 0.35rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; text-align: left; vertical-align: top; }
+    .grid thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
     .grid th.off { opacity: 0.6; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.num, .summary strong { font-family: var(--app-font-mono); font-weight: 600; }
     .strong { font-weight: 600; }
-    .cell { width: 4.2rem; padding: 0.25rem; border: 1px solid var(--app-border); border-radius: 4px; background: transparent; color: inherit; text-align: right; font: inherit; }
+    .cell {
+      width: 4.2rem; min-height: 2.25rem; box-sizing: border-box; padding: 0.25rem 0.4rem; border: var(--app-border-w) solid var(--mat-sys-outline);
+      border-radius: var(--app-radius-sm); background: var(--app-card); color: inherit; text-align: right; font: 500 0.8125rem var(--app-font-mono);
+    }
+    .cell.text { font: inherit; }
+    @media (max-width: 600px) { .cell { min-height: 2.75rem; } } /* 44px touch targets */
     .cell.text { width: 9rem; text-align: left; }
-    .cell:disabled { border-color: transparent; }
-    .tag { font-size: 0.7rem; border-radius: 4px; padding: 0 0.25rem; }
-    .tag.holiday { background: color-mix(in srgb, var(--mat-sys-primary) 15%, transparent); }
-    .tag.leave { background: color-mix(in srgb, #2e7d32 18%, transparent); }
+    .cell:disabled { border-color: transparent; background: transparent; }
+    .tag { font-size: 0.7rem; font-weight: 600; border-radius: var(--app-radius-pill); padding: 0 0.4rem; }
+    .tag.holiday { background: var(--app-info-bg); color: var(--app-info-text); }
+    .tag.leave { background: var(--app-good-bg); color: var(--app-good-text); }
     .small { font-size: 0.75rem; }
-    .over { color: #b26a00; }
-    .short { color: var(--app-danger); }
+    .over { color: var(--app-warn-text); }
+    .short { color: var(--app-bad-text); }
     .summary { display: flex; gap: 1.25rem; flex-wrap: wrap; margin: 0.75rem 0; }
     .actions { margin-top: 0.5rem; }
     .spacer { flex: 1; }
-    .chip { padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--app-border); font-size: 0.8rem; }
-    .chip[data-status='approved'] { background: color-mix(in srgb, #2e7d32 18%, transparent); }
-    .chip[data-status='rejected'] { background: color-mix(in srgb, var(--app-danger) 18%, transparent); }
-    .note { padding: 0.5rem 0.75rem; border-left: 3px solid var(--app-border); }
+    .note { padding: 0.5rem 0.75rem; border-left: 4px solid var(--app-border); border-radius: var(--app-radius-sm); background: var(--app-card); }
     .note[data-status='rejected'] { border-color: var(--app-danger); }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   `,
@@ -174,6 +177,7 @@ export class MyWeekPage {
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
+  protected readonly statusTone = TIMESHEET_STATUS_TONE;
   protected readonly data = signal<TimeWeek | null>(null);
   protected readonly rows = signal<GridRow[]>([]);
   protected readonly busy = signal(false);
