@@ -41,7 +41,7 @@ import { toIsoDate, today } from '../../../core/date/iso-date';
   `,
   styles: `
     mat-dialog-content { display: flex; flex-direction: column; min-width: min(26rem, 80vw); }
-    .error { color: var(--app-danger); margin: 0; }
+    .error { color: var(--app-bad-text); margin: 0; }
     .danger { background: var(--mat-sys-error); color: var(--mat-sys-on-error); }
   `,
 })

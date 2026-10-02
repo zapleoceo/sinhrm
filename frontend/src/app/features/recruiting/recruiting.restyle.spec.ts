@@ -1,3 +1,4 @@
+import { BoardPage } from './board/board.page';
 import { CandidateCard } from './card/candidate-card';
 import { ScreeningPanel } from './card/screening-panel';
 import { CandidateDialog } from './candidates/candidate.dialog';
@@ -52,6 +53,27 @@ describe('recruiting restyle (C «Маршрут»)', () => {
   it('list rows are at least 44px tall for touch', () => {
     expect(stylesOf(CandidatesPage)).toMatch(/min-height:\s*44px/);
     expect(stylesOf(VacanciesPage)).toMatch(/min-height:\s*52px/);
+  });
+
+  it('warning / error text and notice frames use the AA *-text tokens, not the raw warning / danger colours', () => {
+    expect(stylesOf(CandidatesPage)).toMatch(/\.stale[^{]*\{[^}]*color:\s*var\(--app-warn-text\)/);
+    expect(stylesOf(CandidateDialog)).toMatch(/\.error[^{]*\{[^}]*color:\s*var\(--app-bad-text\)/);
+    const form = stylesOf(VacancyFormPage);
+    expect(form).toMatch(/\.error[^{]*\{[^}]*color:\s*var\(--app-bad-text\)/);
+    expect(form).toMatch(/\.notice[^{]*\{[^}]*border:[^;]*var\(--app-warn-text\)/);
+    for (const cmp of [CandidatesPage, CandidateDialog, VacancyFormPage]) {
+      expect(stylesOf(cmp)).not.toMatch(/var\(--app-(danger|warning)\)/);
+    }
+  });
+
+  it('board: column title inputs use the border / radius tokens; the scroll hint arrow is silent for screen readers', () => {
+    const css = stylesOf(BoardPage);
+    const input = /\.col-input\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(input).toMatch(/border:\s*var\(--app-border-w\) solid var\(--app-border\)/);
+    expect(input).toMatch(/border-radius:\s*var\(--app-radius-sm\)/);
+    expect(input).not.toMatch(/\b\d+px\b/);
+    // content: '›' / '' — empty alt text after the slash (stylesOf strips the quotes; the compiler escapes › as \203a).
+    expect(css).toMatch(/\.board-wrap::after[^{]*\{[^}]*content:\s*(?:›|\\203a)\s*\/\s*;/);
   });
 
   it('statuses carry a shape marker, not colour alone', () => {

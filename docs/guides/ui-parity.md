@@ -40,6 +40,12 @@ npm run e2e -- --project=desktop-light vacancies   # одна тема/шири�
 npm run e2e:lint                  # eslint + tsc для e2e/
 ```
 
+**Порт.** Сборку отдаёт `e2e/serve.mjs` на `127.0.0.1:4317`. Занят (например, второй прогон в соседнем worktree) —
+задайте другой переменной окружения `E2E_PORT`: `E2E_PORT=4400 npm run e2e`. Её читают одним местом (`e2e/port.mjs`)
+конфиг Playwright (`baseURL`, `webServer`), мок API в `e2e/harness.ts` (пропускает только этот хост, остальное
+обрывает) и запись фикстур (`e2e:record`; тогда и `SANCTUM_STATEFUL_DOMAINS=127.0.0.1:<порт>`). Не число 1..65535 —
+ошибка при старте. CI переменную не задаёт — там 4317.
+
 Временные файлы — только в `D:\Projects\` (правило 9 в `CLAUDE.md`): перед запуском направьте кеши туда,
 например `PLAYWRIGHT_BROWSERS_PATH=D:/Projects/_tmp/sinhrm/cache/pw`, `npm_config_cache=D:/Projects/_tmp/sinhrm/cache/npm`.
 
@@ -62,7 +68,7 @@ git diff frontend/e2e  # прочитать: каждая строка «-» —
 Скрипт `frontend/e2e/record-fixtures.mjs` в CI не запускается.
 
 1. Поднять бэкенд локально на SQLite во временной папке (`D:\Projects\_tmp\sinhrm\<папка>\`):
-   `.env` с `DB_CONNECTION=sqlite`, `SANCTUM_STATEFUL_DOMAINS=127.0.0.1:4317`, `php artisan migrate`,
+   `.env` с `DB_CONNECTION=sqlite`, `SANCTUM_STATEFUL_DOMAINS=127.0.0.1:4317` (или ваш `E2E_PORT`), `php artisan migrate`,
    все шаги `DemoDataService` (как ops `demo-fill`), `php artisan serve --port=8017`.
 2. Сделать сессию демо-пользователя с ролями superadmin + hr_manager **локальным скриптом во временной папке**
    (через `session()` и `encrypter` приложения) и сохранить `{"name": …, "value": …}` в `session.json`.

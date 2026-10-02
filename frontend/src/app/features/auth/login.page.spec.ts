@@ -46,4 +46,10 @@ describe('LoginPage', () => {
     const alert = el.querySelector('.card [role="alert"]');
     expect(alert?.textContent?.trim()).toBe('Заблоковано');
   });
+
+  it('Google link keeps a 3px keyboard focus ring; the language toggles reach 44px on phones', () => {
+    const css = ((LoginPage as unknown as { ɵcmp: { styles?: string[] } }).ɵcmp.styles ?? []).join('\n').replace(/\[_ng(content|host)-[^\]]*\]/g, '').replace(/%NS%/g, '');
+    expect(css).toMatch(/\.google\s*\{[^}]*outline-width:\s*3px/);
+    expect(css).toMatch(/@media \(max-width: 600px\)\s*\{[^}]*\.lang\s*\{[^}]*--mat-button-toggle-height:\s*44px/);
+  });
 });

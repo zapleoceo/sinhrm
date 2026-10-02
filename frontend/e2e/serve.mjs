@@ -1,15 +1,16 @@
 // Static server for the production build (dist/frontend/browser) with the SPA fallback to index.html.
 // Tests answer /api/** and /sanctum/** themselves (page.route), so by default the server answers them 503.
 // The fixture recorder passes --proxy=http://127.0.0.1:8017 to forward them to a local backend instead.
-// Usage: node e2e/serve.mjs [--port=4317] [--proxy=http://127.0.0.1:8017]
+// Usage: node e2e/serve.mjs [--port=<E2E_PORT, default 4317>] [--proxy=http://127.0.0.1:8017]
 import { createServer, request as httpRequest } from 'node:http';
 import { existsSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { E2E_PORT } from './port.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')));
-const port = Number(args.port ?? 4317);
+const port = Number(args.port ?? E2E_PORT);
 const proxy = args.proxy ? new URL(args.proxy) : null;
 const modules = resolve(fileURLToPath(new URL('../node_modules', import.meta.url)));
 // Fonts: the production build inlines the Google Fonts CSS (fonts.gstatic.com URLs) into index.html. Without

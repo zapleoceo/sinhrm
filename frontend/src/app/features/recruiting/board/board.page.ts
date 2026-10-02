@@ -273,7 +273,7 @@ import { VacancySources } from './vacancy-sources';
     /* Scroll hint: a fade + chevron on the right edge while more columns are to the right. Driven by the board's own
        scroll position (no script): hidden when nothing overflows (inactive timeline) and at the end of the route. */
     .board-wrap::after {
-      content: '›'; position: absolute; top: 0; right: 0; bottom: 1rem; width: 3rem; z-index: 3; pointer-events: none;
+      content: '›' / ''; position: absolute; top: 0; right: 0; bottom: 1rem; width: 3rem; z-index: 3; pointer-events: none;
       display: flex; align-items: flex-start; justify-content: flex-end; padding: 0.15rem 0.25rem 0 0; box-sizing: border-box;
       font: 600 1.6rem/1.75rem var(--app-font-text); color: var(--mat-sys-on-surface); opacity: 0;
       background: linear-gradient(to right, transparent, var(--app-canvas) 85%);
@@ -336,7 +336,7 @@ import { VacancySources } from './vacancy-sources';
     .col-title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .col-menu { margin: -0.5rem -0.25rem -0.5rem 0; }
     .col-input {
-      flex: 1; min-width: 0; font: inherit; padding: 0.25rem 0.4rem; border: 1px solid var(--app-border); border-radius: 6px;
+      flex: 1; min-width: 0; font: inherit; padding: 0.25rem 0.4rem; border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius-sm);
       background: var(--mat-sys-surface); color: var(--mat-sys-on-surface);
     }
     /* Own column = «reserve branch»: dashed frame, station and line in the column's chosen colour. */

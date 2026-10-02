@@ -210,7 +210,7 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
       border-radius: var(--app-radius-sm); background: var(--app-row-selected);
     }
     .sub { grid-column: 2; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .stale { grid-column: 3; grid-row: 1 / span 2; align-self: center; color: var(--app-warning); }
+    .stale { grid-column: 3; grid-row: 1 / span 2; align-self: center; color: var(--app-warn-text); }
     .detail {
       min-width: 0; padding: 1.25rem 1.5rem; box-sizing: border-box; border: var(--app-border-w) solid var(--app-border);
       border-radius: var(--app-radius); background: var(--app-card);
