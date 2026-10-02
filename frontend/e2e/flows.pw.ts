@@ -144,6 +144,83 @@ test.describe('desktop flows', () => {
     expect(label).toContain(await box.inputValue());
   });
 
+  test('people: a header title sorts asc → desc via the URL, the filter works from the keyboard, «back» restores', async ({ page, context }) => {
+    const sent: URLSearchParams[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/people') sent.push(u.searchParams);
+    });
+    await open(page, context, '/people?page=2');
+    const name = page.getByRole('columnheader', { name: /^ПІБ/ });
+    const position = page.getByRole('columnheader', { name: /^Посада/ });
+    // Default order of the API (by name) carries the arrow.
+    await expect(name).toHaveAttribute('aria-sort', 'ascending');
+    await expect(position).toHaveAttribute('aria-sort', 'none');
+
+    // Click on the title: ascending, page back to 1, sort sent to the API; second click: descending.
+    await position.getByRole('button', { name: 'Посада', exact: true }).click();
+    await expect(position).toHaveAttribute('aria-sort', 'ascending');
+    await expect(page).toHaveURL(/[?&]sort=position&dir=asc(&|$)/);
+    expect(new URL(page.url()).searchParams.has('page')).toBe(false);
+    await expect.poll(() => sent.at(-1)?.get('sort')).toBe('position');
+    expect(sent.at(-1)?.get('page')).toBe('1');
+    await position.getByRole('button', { name: 'Посада', exact: true }).press('Enter');
+    await expect(position).toHaveAttribute('aria-sort', 'descending');
+    await expect.poll(() => sent.at(-1)?.get('dir')).toBe('desc');
+
+    // Filter from the keyboard: Enter opens the dialog with the field focused, Esc closes and returns focus.
+    const funnel = name.getByRole('button', { name: 'Фільтр стовпця «ПІБ»' });
+    await funnel.focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «ПІБ»' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('searchbox')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(funnel).toBeFocused();
+
+    // Apply: Enter in the field → name= in the URL and the request, the funnel shows the active state.
+    await page.keyboard.press('Enter');
+    await dialog.getByRole('searchbox').fill('Ко');
+    await page.keyboard.press('Enter');
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/[?&]name=%D0%9A%D0%BE/);
+    await expect.poll(() => sent.at(-1)?.get('name')).toBe('Ко');
+    const active = name.getByRole('button', { name: 'Фільтр стовпця «ПІБ», увімкнено' });
+    await expect(active).toBeVisible();
+
+    // «Back» undoes the filter, then the reverse sort.
+    await page.goBack();
+    await expect(name.getByRole('button', { name: 'Фільтр стовпця «ПІБ»', exact: true })).toBeVisible();
+    await page.goBack();
+    await expect(position).toHaveAttribute('aria-sort', 'ascending');
+    await page.goForward();
+    await page.goForward();
+    await expect(active).toBeVisible();
+
+    // Clear removes the filter from the URL.
+    await active.click();
+    await dialog.getByRole('button', { name: 'Очистити' }).click();
+    await expect(dialog).toBeHidden();
+    await expect.poll(() => new URL(page.url()).searchParams.has('name')).toBe(false);
+    await expect(position).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  test('people (390 px): the header filters do not widen the page, the table scrolls inside its panel', async ({ page, context }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, context, '/people');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBe(0);
+    const funnel = page.getByRole('button', { name: 'Фільтр стовпця «ПІБ»' });
+    const box = (await funnel.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(32);
+    await funnel.click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «ПІБ»' });
+    const d = (await dialog.boundingBox())!;
+    expect(d.x).toBeGreaterThanOrEqual(0);
+    expect(d.x + d.width).toBeLessThanOrEqual(390);
+  });
+
   test('report view: the table has a «Разом» row', async ({ page, context }) => {
     await open(page, context, '/reports/catalog/desk_sla');
     await expect(page.getByRole('row', { name: /^Разом/ })).toBeVisible();

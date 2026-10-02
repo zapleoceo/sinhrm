@@ -27,8 +27,23 @@ import { EMPLOYEE_STATUSES, Employee } from '../people.model';
 import { EmployeeDialog, EmployeeDialogData } from '../profile/employee.dialog';
 import { PeopleStore, PeopleView } from './people.store';
 import { wideDialog } from '../../../core/ui/dialog';
+import { ColumnHeader } from '../../../core/ui/table/column-header';
+import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
+import { ColumnFilter, FilterValue, TableSort, filterToParam, sortToParams } from '../../../core/ui/table/table-state';
+import { TableUrlState } from '../../../core/ui/table/table-url-state';
+import { peopleQueryFromParams } from './people.query';
 
-/** People directory: search, filters (branch, department, position, status), table or cards; admins add people. */
+const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
+
+/** Header filter of a dictionary column: choose one item (value = id as in the URL). */
+function selectFilter(items: DictionaryItem[]): ColumnFilter {
+  return { type: 'select', options: items.map((i) => ({ value: String(i.id), label: i.name })) };
+}
+
+/**
+ * People directory: search, status, table or cards; admins add people. Table headers sort and filter
+ * (core/ui/table); branch / department / position also sit above the cards. All of it lives in the URL query.
+ */
 @Component({
   selector: 'app-people-page',
   imports: [
@@ -42,9 +57,11 @@ import { wideDialog } from '../../../core/ui/dialog';
     MatProgressBarModule,
     MatSelectModule,
     RouterLink,
+    TableSortDirective,
+    ColumnHeader,
     TranslocoPipe,
   ],
-  providers: [PeopleStore],
+  providers: [PeopleStore, TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -60,42 +77,47 @@ import { wideDialog } from '../../../core/ui/dialog';
       </div>
     </header>
 
+    @let query = store.query();
     <div class="filters">
       <mat-form-field class="grow" subscriptSizing="dynamic">
         <mat-label>{{ 'people.directory.search' | transloco }}</mat-label>
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput type="search" #q (input)="search$.next(q.value)" />
+        <input matInput type="search" #q [value]="query.q ?? ''" (input)="search$.next(q.value)" />
       </mat-form-field>
-      <mat-form-field subscriptSizing="dynamic">
-        <mat-label>{{ 'people.fields.branch' | transloco }}</mat-label>
-        <mat-select [value]="store.query().branch_id" (valueChange)="store.patchQuery({ branch_id: $event })">
-          <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
-          @for (b of branches(); track b.id) {
-            <mat-option [value]="b.id">{{ b.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field subscriptSizing="dynamic">
-        <mat-label>{{ 'people.fields.department' | transloco }}</mat-label>
-        <mat-select [value]="store.query().department_id" (valueChange)="store.patchQuery({ department_id: $event })">
-          <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
-          @for (d of departments(); track d.id) {
-            <mat-option [value]="d.id">{{ d.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field subscriptSizing="dynamic">
-        <mat-label>{{ 'people.fields.position' | transloco }}</mat-label>
-        <mat-select [value]="store.query().position_id" (valueChange)="store.patchQuery({ position_id: $event })">
-          <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
-          @for (p of positions(); track p.id) {
-            <mat-option [value]="p.id">{{ p.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <!-- Branch / department / position: filtered in the table headers; here only for the cards view and narrow
+           screens (where those columns are hidden). One state in the URL, so both places show the same choice. -->
+      <div class="dict" [class.in-table]="store.view() === 'table'">
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>{{ 'people.fields.branch' | transloco }}</mat-label>
+          <mat-select [value]="query.branch_id" (valueChange)="setParam('branch_id', $event)">
+            <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+            @for (b of branches(); track b.id) {
+              <mat-option [value]="b.id">{{ b.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>{{ 'people.fields.department' | transloco }}</mat-label>
+          <mat-select [value]="query.department_id" (valueChange)="setParam('department_id', $event)">
+            <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+            @for (d of departments(); track d.id) {
+              <mat-option [value]="d.id">{{ d.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>{{ 'people.fields.position' | transloco }}</mat-label>
+          <mat-select [value]="query.position_id" (valueChange)="setParam('position_id', $event)">
+            <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
+            @for (p of positions(); track p.id) {
+              <mat-option [value]="p.id">{{ p.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>{{ 'people.fields.status' | transloco }}</mat-label>
-        <mat-select [value]="store.query().status" (valueChange)="store.patchQuery({ status: $event })">
+        <mat-select [value]="query.status" (valueChange)="setParam('status', $event)">
           <mat-option [value]="undefined">{{ 'people.directory.working' | transloco }}</mat-option>
           @for (s of statuses; track s) {
             <mat-option [value]="s">{{ 'people.status.' + s | transloco }}</mat-option>
@@ -133,18 +155,24 @@ import { wideDialog } from '../../../core/ui/dialog';
             <button mat-button type="button" (click)="clear()">{{ 'bulk.clear' | transloco }}</button>
           </div>
         }
-        <table class="people app-table">
+        <table class="people app-table" [appTableSort]="sort()" (appTableSortChange)="onSort($event)">
           <thead>
             <tr>
               @if (canManage()) {
                 <th scope="col"></th>
               }
-              <th scope="col">{{ 'people.fields.fullName' | transloco }}</th>
-              <th scope="col">{{ 'people.fields.position' | transloco }}</th>
-              <th scope="col" class="wide">{{ 'people.fields.department' | transloco }}</th>
-              <th scope="col" class="wide">{{ 'people.fields.branch' | transloco }}</th>
-              <th scope="col" class="wide">{{ 'people.fields.contacts' | transloco }}</th>
-              <th scope="col" class="wide">{{ 'people.fields.manager' | transloco }}</th>
+              <th scope="col" app-column-header key="name" [label]="'people.fields.fullName' | transloco"
+                [filter]="textFilter" [filterValue]="query.name ?? null" (filterChange)="setFilter('name', $event)"></th>
+              <th scope="col" app-column-header key="position" [label]="'people.fields.position' | transloco"
+                [filter]="positionFilter()" [filterValue]="idValue(query.position_id)" (filterChange)="setFilter('position_id', $event)"></th>
+              <th scope="col" class="wide" app-column-header key="department" [label]="'people.fields.department' | transloco"
+                [filter]="departmentFilter()" [filterValue]="idValue(query.department_id)" (filterChange)="setFilter('department_id', $event)"></th>
+              <th scope="col" class="wide" app-column-header key="branch" [label]="'people.fields.branch' | transloco"
+                [filter]="branchFilter()" [filterValue]="idValue(query.branch_id)" (filterChange)="setFilter('branch_id', $event)"></th>
+              <th scope="col" class="wide" app-column-header key="contact" [sortable]="false" [label]="'people.fields.contacts' | transloco"
+                [filter]="textFilter" [filterValue]="query.contact ?? null" (filterChange)="setFilter('contact', $event)"></th>
+              <th scope="col" class="wide" app-column-header key="manager" [label]="'people.fields.manager' | transloco"
+                [filter]="textFilter" [filterValue]="query.manager ?? null" (filterChange)="setFilter('manager', $event)"></th>
             </tr>
           </thead>
           <tbody>
@@ -200,8 +228,8 @@ import { wideDialog } from '../../../core/ui/dialog';
       }
       <mat-paginator
         [length]="store.total()"
-        [pageIndex]="(store.query().page ?? 1) - 1"
-        [pageSize]="store.query().perPage"
+        [pageIndex]="(query.page ?? 1) - 1"
+        [pageSize]="query.perPage"
         [pageSizeOptions]="[20, 50, 100]"
         (page)="onPage($event)"
       />
@@ -240,6 +268,8 @@ import { wideDialog } from '../../../core/ui/dialog';
     .card strong { font: var(--mat-sys-title-medium); }
     .card:hover, .card:focus-visible { border-color: var(--mat-sys-primary); transform: translateY(-1px); }
     .small { font-size: 0.8rem; }
+    .dict { display: contents; }
+    @media (min-width: 901px) { .dict.in-table { display: none; } }
     @media (max-width: 900px) { .wide { display: none; } }
     @media (max-width: 600px) {
       .filters .grow { flex-basis: 100%; }
@@ -256,6 +286,7 @@ export class PeoplePage implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly url = inject(TableUrlState);
 
   protected readonly search$ = new Subject<string>();
   protected readonly statuses = EMPLOYEE_STATUSES;
@@ -268,14 +299,24 @@ export class PeoplePage implements OnInit {
   protected readonly selected = signal(new Set<number>());
   protected readonly canManage = computed(() => canManagePeople(this.auth.user()?.roles ?? []));
 
+  protected readonly textFilter: ColumnFilter = { type: 'text' };
+  protected readonly branchFilter = computed(() => selectFilter(this.branches()));
+  protected readonly departmentFilter = computed(() => selectFilter(this.departments()));
+  protected readonly positionFilter = computed(() => selectFilter(this.positions()));
+  /** Shown sort: the URL one, or the API default (by name, A→Z) so the name column carries the arrow. */
+  protected readonly sort = computed<TableSort>(() => {
+    const q = this.store.query();
+    return q.sort ? { key: q.sort, dir: q.dir ?? 'asc' } : DEFAULT_SORT;
+  });
+
   ngOnInit(): void {
     this.search$
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe((q) => this.store.patchQuery({ q: q.trim() || undefined }));
+      .subscribe((q) => this.url.update({ q: q.trim() || null }));
     this.directory.active('branches').subscribe({ next: (l) => this.branches.set(l), error: () => undefined });
     this.directory.active('departments').subscribe({ next: (l) => this.departments.set(l), error: () => undefined });
     this.directory.active('positions').subscribe({ next: (l) => this.positions.set(l), error: () => undefined });
-    this.store.load();
+    this.url.watch(peopleQueryFromParams, (query) => this.store.apply(query));
   }
 
   protected initialsOf(e: Employee): string {
@@ -287,7 +328,25 @@ export class PeoplePage implements OnInit {
   }
 
   protected onPage(e: PageEvent): void {
-    this.store.setPage(e.pageIndex + 1, e.pageSize);
+    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+  }
+
+  protected onSort(sort: TableSort | null): void {
+    this.url.update(sortToParams(sort));
+  }
+
+  /** Top selects: a value or «all» (undefined). */
+  protected setParam(name: 'branch_id' | 'department_id' | 'position_id' | 'status', value: string | number | undefined): void {
+    this.url.update({ [name]: value ?? null });
+  }
+
+  /** Header filters: text or the chosen id; cleared → removed from the URL. */
+  protected setFilter(name: 'name' | 'contact' | 'manager' | 'branch_id' | 'department_id' | 'position_id', value: FilterValue): void {
+    this.url.update({ [name]: filterToParam(value) });
+  }
+
+  protected idValue(id: number | undefined): string | null {
+    return id ? String(id) : null;
   }
 
   protected toggle(id: number): void {
