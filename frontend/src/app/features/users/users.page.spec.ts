@@ -11,6 +11,7 @@ import { AdminUser, UsersPage as UsersPageData, UsersQuery } from './users.model
 import { UsersPage } from './users.page';
 import { USERS_PAGE_SIZE, usersQueryFromParams } from './users.query';
 import { UsersService } from './users.service';
+import { sortCount } from '../../../testing/table-page';
 
 const USER: AdminUser = {
   id: 2,
@@ -109,6 +110,7 @@ describe('UsersPage: sortable / filterable headers bound to the URL', () => {
   it('loads the URL query once; its sort and filter show on the headers', () => {
     expect(queries).toHaveLength(1);
     expect(queries[0]).toEqual(expect.objectContaining({ role: 'viewer', page: 3, sort: 'last_login', dir: 'desc' }));
+    expect(sortCount(harness.fixture)).toBe(PAGE.meta.total); // the server total, announced by an open filter
     expect(th('users.columns.lastLogin').getAttribute('aria-sort')).toBe('descending');
     expect(th('users.columns.user').getAttribute('aria-sort')).toBe('none');
     expect(th('users.columns.role').querySelector('.dot')).not.toBeNull();

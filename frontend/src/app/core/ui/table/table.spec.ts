@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { convertToParamMap } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { ColumnHeader } from './column-header';
+import { COUNT_ANNOUNCE_DELAY_MS, ColumnHeader } from './column-header';
 import { TableSortDirective } from './table-sort.directive';
 import { LIVE_FILTER_DEBOUNCE_MS } from './table-url-state';
 import {
@@ -134,19 +134,29 @@ describe('ColumnHeader + appTableSort', () => {
     input.dispatchEvent(new Event('input'));
   };
   const key = (target: Element, k: string) => target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
-  /** Waits past the live-filter pause (real timers: the overlay and afterNextRender need them too). */
-  const pause = (ms = LIVE_FILTER_DEBOUNCE_MS + 50) => new Promise((resolve) => setTimeout(resolve, ms));
+  /** Moves the fake clock past the live-filter pause (exactly: no margin, no real waiting). */
+  const pause = (ms = LIVE_FILTER_DEBOUNCE_MS) => vi.advanceTimersByTimeAsync(ms);
 
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     TestBed.configureTestingModule({
-      imports: [Host, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      imports: [
+        Host,
+        TranslocoTestingModule.forRoot({
+          langs: { uk: { table: { filter: { found: 'Знайдено: {{ n }}' } } } },
+          translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' },
+        }),
+      ],
     });
     fixture = TestBed.createComponent(Host);
     host = fixture.componentInstance;
     await settle();
   });
 
-  afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = '')));
+  afterEach(() => {
+    vi.useRealTimers();
+    document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = ''));
+  });
 
   it('puts aria-sort on the th: the sorted column, «none» elsewhere, nothing on a column that cannot sort', () => {
     expect(th(0).getAttribute('aria-sort')).toBe('ascending');
@@ -342,15 +352,104 @@ describe('ColumnHeader + appTableSort', () => {
     expect(panel()).not.toBeNull();
   });
 
-  it('announces the row count of the table in a polite live region of the dialog', async () => {
+  it('announces the row count of the table in a polite live region of the dialog, once it settles', async () => {
+    host.count.set(5);
+    await settle();
     funnelOf(0).click();
     await settle();
     const status = panel()!.querySelector('.count') as HTMLElement;
     expect(status.getAttribute('aria-live')).toBe('polite');
-    expect(status.textContent?.trim()).toBe(''); // count unknown
-    host.count.set(3);
+    expect(status.textContent?.trim()).toBe('Знайдено: 5'); // the count at opening, at once
+
+    // Every letter changes the count of a client table: only the settled one is spoken.
+    for (const n of [4, 3, 2]) {
+      host.count.set(n);
+      await settle();
+      await pause(COUNT_ANNOUNCE_DELAY_MS / 2);
+    }
+    expect(status.textContent?.trim()).toBe('Знайдено: 5');
+    await pause(COUNT_ANNOUNCE_DELAY_MS / 2);
     await settle();
-    expect(status.textContent?.trim()).toBe('table.filter.found');
+    expect(status.textContent?.trim()).toBe('Знайдено: 2');
     expect(panel()!.querySelector('.count')).toBe(status); // the same region, so the change is announced
+
+    host.count.set(null);
+    await settle();
+    await pause(COUNT_ANNOUNCE_DELAY_MS);
+    await settle();
+    expect(status.textContent?.trim()).toBe(''); // count unknown (a server table loading)
+  });
+
+  it('choice list: arrow steps wait for the pause (one output), a click right after applies at once, Enter flushes', async () => {
+    funnelOf(1).click();
+    await settle();
+    const radios = () => Array.from(panel()!.querySelectorAll<HTMLInputElement>('input[type=radio]'));
+    const group = panel()!.querySelector('mat-radio-group') as HTMLElement;
+    const step = (i: number) => {
+      key(radios()[i], 'ArrowDown'); // the browser then moves the check: here, the click
+      radios()[i].click();
+    };
+
+    step(1);
+    step(2);
+    step(0);
+    step(2);
+    await settle();
+    expect(host.statusValue()).toBeNull(); // still stepping: nothing sent
+    await pause();
+    await settle();
+    expect(host.statusValue()).toBe('gone'); // one output for the whole run
+
+    group.dispatchEvent(new Event('pointerdown'));
+    radios()[1].click();
+    await settle();
+    expect(host.statusValue()).toBe('active'); // a click is a pick
+
+    step(2);
+    key(radios()[2], 'Enter');
+    await settle();
+    expect(host.statusValue()).toBe('gone'); // Enter sends the stepped value now and closes
+    expect(panel()).toBeNull();
+  });
+
+  it('Enter that confirms an IME composition neither commits nor closes; Esc while composing stays too', async () => {
+    funnelOf(0).click();
+    await settle();
+    const input = panel()!.querySelector('input') as HTMLInputElement;
+    type(input, 'にほん');
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true, cancelable: true }));
+    await settle();
+    expect(panel()).not.toBeNull();
+    expect(host.names).toEqual([]);
+
+    key(input, 'Enter'); // the composition is over: a real Enter
+    await settle();
+    expect(host.names).toEqual(['にほん']);
+    expect(panel()).toBeNull();
+  });
+
+  it('a value changed from outside while the dialog is open («back») replaces the draft; own echoes do not', async () => {
+    funnelOf(0).click();
+    await settle();
+    const input = panel()!.querySelector('input') as HTMLInputElement;
+    type(input, 'Ann');
+    await pause();
+    await settle();
+    expect(host.name()).toBe('Ann'); // our own value came back: the field keeps the text as typed
+    expect(input.value).toBe('Ann');
+
+    type(input, 'Anna'); // still waiting for the pause: an outside change now is not mixed in
+    host.name.set('Bob');
+    await settle();
+    expect(input.value).toBe('Anna');
+    await pause();
+    await settle();
+    expect(host.name()).toBe('Anna');
+
+    host.name.set('Bob'); // «back»: nothing of ours is on its way
+    await settle();
+    expect(input.value).toBe('Bob');
+    expect(host.names).toEqual(['Ann', 'Anna']); // the field follows the table, nothing is sent back
   });
 });

@@ -103,7 +103,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
         <!-- Segments: sort and filter in the headers (core/ui/table), URL seg_sort / seg_<column>. Hidden groups have no
              number: they sort last and drop out of a number filter, so nothing about their size leaks. -->
         <div class="panel">
-          <table class="app-table segments" [appTableSort]="segTable.sort()" (appTableSortChange)="segTable.setSort($event)">
+          <table class="app-table segments" [appTableSort]="segTable.sort()" [appTableSortCount]="segTable.rows().length" (appTableSortChange)="segTable.setSort($event)">
             <thead>
               <tr>
                 <th scope="col" app-column-header key="name" [label]="'pulse.results.segment' | transloco"

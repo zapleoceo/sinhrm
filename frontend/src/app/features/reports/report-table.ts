@@ -44,7 +44,7 @@ const HEADER_FILTER: Record<ClientFilterKind, ColumnFilter> = { text: TEXT_FILTE
       </div>
     }
     <div class="scroll">
-      <table class="app-table" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <table class="app-table" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             @for (c of columns(); track c.key) {

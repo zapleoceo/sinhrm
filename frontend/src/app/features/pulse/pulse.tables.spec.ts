@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { of } from 'rxjs';
-import { clickTitle, column, header, openTablePage } from '../../../testing/table-page';
+import { clickTitle, column, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { Survey, Wave, WaveResults } from './pulse.model';
 import { PulseService } from './pulse.service';
 import { WaveResultsPage } from './results/wave-results.page';
@@ -51,8 +51,9 @@ describe('SurveysPage waves table (header sort and filter)', () => {
   });
 
   it('address → view: the status filter keeps closed waves only', async () => {
-    const { el } = await open('/?wave_status=closed');
+    const { el, fixture } = await open('/?wave_status=closed');
     expect(column(wavesTable(el), 2)).toEqual(['pulse.waveStatus.closed', 'pulse.waveStatus.closed']);
+    expect(sortCount(fixture)).toBe(2); // what an open header filter announces
   });
 });
 
@@ -92,8 +93,9 @@ describe('WaveResultsPage segments table (header sort and filter)', () => {
   });
 
   it('address → view: names sorted by the interface language', async () => {
-    const { el } = await open('/?seg_sort=name&seg_dir=asc');
+    const { el, fixture } = await open('/?seg_sort=name&seg_dir=asc');
     expect(column(segTable(el), 0)).toEqual(['Бухгалтерія', 'ІТ', 'Продажі']);
+    expect(sortCount(fixture)).toBe(3);
   });
 
   it('switching the grouping drops the seg_* filters (other rows now) but keeps the sort', async () => {

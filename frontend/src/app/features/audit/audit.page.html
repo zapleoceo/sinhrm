@@ -15,7 +15,7 @@
     </div>
   } @else {
     <!-- The headers stay when nothing matches: the filters that emptied the log are cleared right there. -->
-    <div class="table-scroll"><table mat-table [dataSource]="rows()" [appTableSort]="sort()" (appTableSortChange)="onSort($event)">
+    <div class="table-scroll"><table mat-table [dataSource]="rows()" [appTableSort]="sort()" [appTableSortCount]="loading() ? null : total()" (appTableSortChange)="onSort($event)">
       <ng-container matColumnDef="time">
         <th mat-header-cell *matHeaderCellDef scope="col" app-column-header key="time" [label]="'audit.columns.time' | transloco"
           [filter]="dateFilter" [filterValue]="range()" (filterChange)="setRange($event)"></th>

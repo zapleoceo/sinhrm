@@ -1,6 +1,6 @@
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
-import { TablePage, clickTitle, header, openTablePage } from '../../../../testing/table-page';
+import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../../testing/table-page';
 import { WorkflowTemplate } from '../workflows.model';
 import { WorkflowsService } from '../workflows.service';
 import { WorkflowTemplatesPage } from './workflow-templates.page';
@@ -48,5 +48,6 @@ describe('WorkflowTemplatesPage: sortable / filterable headers bound to the URL'
     expect(cells(0, 'table', 'a')).toEqual(['Онбординг ІТ']);
     await navigate('/?updated_from=2026-08-01&updated_to=2026-09-30');
     expect(cells(0, 'table', 'a')).toEqual(['Онбординг ІТ', 'Звільнення']);
+    expect(sortCount(page.fixture)).toBe(2); // what an open header filter announces
   });
 });

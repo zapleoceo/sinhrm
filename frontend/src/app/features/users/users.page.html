@@ -19,7 +19,7 @@
     </div>
   } @else {
     <!-- The headers stay when nothing matches: the filters that emptied the list are cleared right there. -->
-    <div class="table-scroll"><table mat-table [dataSource]="users()" [appTableSort]="sort()" (appTableSortChange)="onSort($event)">
+    <div class="table-scroll"><table mat-table [dataSource]="users()" [appTableSort]="sort()" [appTableSortCount]="loading() ? null : total()" (appTableSortChange)="onSort($event)">
       <ng-container matColumnDef="user">
         <th mat-header-cell *matHeaderCellDef scope="col" app-column-header key="name" [label]="'users.columns.user' | transloco"
           [filter]="textFilter" [filterValue]="query().q ?? null" (filterChange)="setFilter('q', $event)"></th>

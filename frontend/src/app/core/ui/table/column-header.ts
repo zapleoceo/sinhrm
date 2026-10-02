@@ -9,10 +9,12 @@ import {
   Injector,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -31,6 +33,15 @@ let nextId = 0;
 /** A choice list longer than this gets a search field over its options. */
 export const SELECT_SEARCH_MIN = 8;
 
+/**
+ * Pause before the dialog's live region speaks a new row count: a screen reader says «Знайдено: N» once the user
+ * stops typing (or stepping through a list with the arrows), not after every letter.
+ */
+export const COUNT_ANNOUNCE_DELAY_MS = 500;
+
+/** Keys that step through a radio list (each step selects): such a choice waits like typing does. */
+const STEP_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End']);
+
 const POSITIONS: ConnectedPosition[] = [
   { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
   { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
@@ -45,8 +56,11 @@ const POSITIONS: ConnectedPosition[] = [
  * filter field (text / choice / range). Filters are live, there is no «apply»: text follows the typing (contains,
  * any case), a choice applies on click, a range on change / blur. Through the page's `TableUrlState` the URL (and a
  * server request) follows after LIVE_FILTER_DEBOUNCE_MS; without it the header debounces its output itself.
- * Enter or Esc close the dialog keeping the value and return focus; «Очистити» removes it. A dot marks an active
- * filter; a long choice list (> SELECT_SEARCH_MIN options) gets a search field over its options.
+ * In a choice list a click / Space applies at once, arrow steps wait for the same pause (no request per step).
+ * Enter or Esc close the dialog keeping the value and return focus (not while an IME composes: that Enter picks the
+ * word); «Очистити» removes it. A URL change from outside while the dialog is open («back») replaces the draft.
+ * A dot marks an active filter; a long choice list (> SELECT_SEARCH_MIN options) gets a search field over its
+ * options. The row count is announced COUNT_ANNOUNCE_DELAY_MS after it settles.
  * Content between the tags (e.g. a channel icon) is shown before the title, inside the sort button.
  */
 @Component({
@@ -124,7 +138,9 @@ const POSITIONS: ConnectedPosition[] = [
                       (input)="optionQuery.set(search.value)" (keydown)="onSearchKeydown($event)" />
                   </mat-form-field>
                 }
-                <mat-radio-group class="options" [id]="listId" [attr.aria-label]="label()" [value]="draftText()" (change)="pick($event.value)">
+                <!-- A click / Space / Enter applies at once; arrow steps wait for a pause (one request, not one per step). -->
+                <mat-radio-group class="options" [id]="listId" [attr.aria-label]="label()" [value]="draftText()"
+                  (keydown)="onListKeydown($event)" (pointerdown)="stepping = false" (change)="pick($event.value)">
                   <mat-radio-button value="">{{ 'table.filter.all' | transloco }}</mat-radio-button>
                   @for (o of visibleOptions(); track o.value) {
                     <mat-radio-button [value]="o.value">{{ o.text }}</mat-radio-button>
@@ -149,7 +165,7 @@ const POSITIONS: ConnectedPosition[] = [
               }
             }
             <!-- Always in the DOM (a live region added later is not announced); empty while the count is unknown. -->
-            <p class="count" role="status" aria-live="polite">@if (count() !== null) { {{ 'table.filter.found' | transloco: { n: count() } }} }</p>
+            <p class="count" role="status" aria-live="polite">@if (shownCount() !== null) { {{ 'table.filter.found' | transloco: { n: shownCount() } }} }</p>
             <div class="buttons">
               <button mat-button type="button" class="clear" (click)="clear()" [disabled]="!clearable()">{{ 'table.filter.clear' | transloco }}</button>
             </div>
@@ -233,6 +249,10 @@ export class ColumnHeader {
   protected readonly draftRange = signal<RangeValue>({ from: null, to: null });
   /** Search over the options of a long choice list. */
   protected readonly optionQuery = signal('');
+  /** Row count spoken by the live region: `count()` once it has settled (COUNT_ANNOUNCE_DELAY_MS). */
+  protected readonly shownCount = signal<number | null>(null);
+  /** True after an arrow key in the choice list, until a pointer or another key: that choice is a step, not a pick. */
+  protected stepping = false;
 
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
   private readonly panel = viewChild<ElementRef<HTMLFormElement>>('panel');
@@ -244,6 +264,7 @@ export class ColumnHeader {
   /** Own debounce of the output when the page has no TableUrlState. */
   private timer: ReturnType<typeof setTimeout> | null = null;
   private queued: { value: FilterValue } | null = null;
+  private countTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
 
   protected readonly canSort = computed(() => this.sortable() && this.table !== null);
@@ -279,6 +300,18 @@ export class ColumnHeader {
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
       this.clearTimer();
+      this.clearCountTimer();
+    });
+    // The count speaks once it settles (typing changes it on every letter in a client table).
+    effect(() => {
+      const n = this.count();
+      untracked(() => this.announce(n));
+    });
+    // «Back» (or any URL change not made by this dialog) while it is open: the field shows what the table now has.
+    effect(() => {
+      const value = normalize(this.filterValue());
+      const writing = this.url?.writing() ?? null;
+      untracked(() => this.resync(value, writing !== null));
     });
   }
 
@@ -297,6 +330,9 @@ export class ColumnHeader {
     this.optionQuery.set('');
     this.sent = normalize(value);
     this.wrote = false;
+    this.stepping = false;
+    this.clearCountTimer();
+    this.shownCount.set(this.count());
     this.open.set(true);
   }
 
@@ -306,10 +342,19 @@ export class ColumnHeader {
     this.send(value, LIVE_FILTER_DEBOUNCE_MS);
   }
 
-  /** A choice applies at once; the dialog stays open (arrows move through the list, Enter / Esc close it). */
+  /**
+   * A choice applies at once; the dialog stays open (Enter / Esc close it). An arrow step through the list selects
+   * too, but waits LIVE_FILTER_DEBOUNCE_MS like typing: running down 30 options makes one request, not 30.
+   */
   protected pick(value: string): void {
     this.draftText.set(value);
-    this.send(value, 0);
+    const step = this.stepping;
+    this.stepping = false;
+    this.send(value, step ? LIVE_FILTER_DEBOUNCE_MS : 0);
+  }
+
+  protected onListKeydown(event: KeyboardEvent): void {
+    this.stepping = STEP_KEYS.has(event.key);
   }
 
   protected setRange(edge: keyof RangeValue, value: string): void {
@@ -323,6 +368,7 @@ export class ColumnHeader {
 
   /** Enter in a field: the current value goes out now and the dialog closes (the value stays applied). */
   protected onEnter(event: Event): void {
+    if (composing(event)) return; // Enter that confirms an IME word: not a commit
     const target = event.target;
     if (!(target instanceof HTMLInputElement)) return; // Enter on «Очистити» stays that button's click
     if (target.classList.contains('option-search')) {
@@ -363,7 +409,7 @@ export class ColumnHeader {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape' && !composing(event)) {
       event.preventDefault();
       event.stopPropagation();
       this.close();
@@ -434,6 +480,36 @@ export class ColumnHeader {
     this.timer = null;
   }
 
+  private announce(n: number | null): void {
+    this.clearCountTimer();
+    if (!this.open()) {
+      this.shownCount.set(n);
+      return;
+    }
+    this.countTimer = setTimeout(() => {
+      this.countTimer = null;
+      this.shownCount.set(n);
+    }, COUNT_ANNOUNCE_DELAY_MS);
+  }
+
+  private clearCountTimer(): void {
+    if (this.countTimer !== null) clearTimeout(this.countTimer);
+    this.countTimer = null;
+  }
+
+  /**
+   * The table's value changed while the dialog is open. Our own edits are still on their way (`writing`, or the
+   * header's own queue) or match what was sent — nothing to do. Otherwise the URL changed from outside («back»):
+   * the field takes the table's value, and the next edit starts a new history entry.
+   */
+  private resync(value: FilterValue, writing: boolean): void {
+    if (!this.open() || writing || this.queued || sameFilter(value, this.sent)) return;
+    this.sent = value;
+    this.wrote = false;
+    this.draftText.set(typeof value === 'string' ? value : '');
+    this.draftRange.set(value !== null && typeof value === 'object' ? { ...value } : { from: null, to: null });
+  }
+
   private close(): void {
     this.flush();
     this.open.set(false);
@@ -450,6 +526,11 @@ interface ShownOption {
 function normalize(value: FilterValue): FilterValue {
   if (!isFilterActive(value)) return null;
   return typeof value === 'string' ? value.trim() : value;
+}
+
+/** True for a key event that belongs to an IME composition (229: older engines report the composition this way). */
+function composing(event: Event): boolean {
+  return event instanceof KeyboardEvent && (event.isComposing || event.keyCode === 229);
 }
 
 function sameFilter(a: FilterValue, b: FilterValue): boolean {

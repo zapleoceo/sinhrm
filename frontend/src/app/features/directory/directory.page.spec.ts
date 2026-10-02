@@ -7,6 +7,7 @@ import { DictionaryPage, DictionaryQuery, DictionaryType } from './directory.mod
 import { DirectoryPage } from './directory.page';
 import { directoryViewFromParams } from './directory.query';
 import { DirectoryService } from './directory.service';
+import { sortCount } from '../../../testing/table-page';
 
 const PAGE: DictionaryPage = {
   data: [{ id: 1, name: 'Alpha', status: 'active', created_at: null, updated_at: null, city: { id: 4, name: 'Kyiv' }, city_id: 4 }],
@@ -60,6 +61,7 @@ describe('DirectoryPage: tab and headers bound to the URL', () => {
 
   it('loads the URL view once; the city filter shows on its header; name carries the default order', () => {
     expect(calls).toEqual([{ type: 'branches', query: expect.objectContaining({ city_id: 4, page: 2 }) }]);
+    expect(sortCount(harness.fixture)).toBe(PAGE.meta.total); // the server total, announced by an open filter
     expect(th('directory.columns.city')!.querySelector('.dot')).not.toBeNull();
     expect(th('directory.columns.name')!.getAttribute('aria-sort')).toBe('ascending');
   });

@@ -1,7 +1,8 @@
 import { Component, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, convertToParamMap, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+import type { MockInstance } from 'vitest';
 import {
   ClientColumn,
   ClientTable,
@@ -126,7 +127,9 @@ class HostComponent {
 }
 
 describe('ClientTable bound to the URL', () => {
-  async function setup(url: string): Promise<{ el: HTMLElement; host: HostComponent; router: Router; detect: () => Promise<void> }> {
+  async function setup(
+    url: string,
+  ): Promise<{ el: HTMLElement; host: HostComponent; router: Router; fixture: ComponentFixture<HostComponent>; detect: () => Promise<void> }> {
     TestBed.configureTestingModule({
       imports: [HostComponent, TranslocoTestingModule.forRoot({ langs: { uk: { kind: { a: 'Альфа', b: 'Бета' } } }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
       providers: [provideRouter([])],
@@ -141,11 +144,31 @@ describe('ClientTable bound to the URL', () => {
       await fixture.whenStable();
       fixture.detectChanges();
     };
-    return { el: fixture.nativeElement as HTMLElement, host: fixture.componentInstance, router, detect };
+    return { el: fixture.nativeElement as HTMLElement, host: fixture.componentInstance, router, fixture, detect };
   }
 
   const shown = (el: HTMLElement): number[] => [...el.querySelectorAll('tbody td')].map((td) => Number(td.textContent));
-  const pause = () => new Promise((resolve) => setTimeout(resolve, LIVE_FILTER_DEBOUNCE_MS + 50));
+  /** The live-filter pause on the fake clock: exactly LIVE_FILTER_DEBOUNCE_MS, no margin, no real waiting. */
+  const pause = () => vi.advanceTimersByTimeAsync(LIVE_FILTER_DEBOUNCE_MS);
+  /** Opens the text filter of «Name» and returns its field and a typing helper (no change detection inside). */
+  async function openName(el: HTMLElement, detect: () => Promise<void>): Promise<{ input: HTMLInputElement; put: (value: string) => void }> {
+    (el.querySelector('th button.filter') as HTMLButtonElement).click();
+    await detect();
+    const input = document.querySelector('form.popover input') as HTMLInputElement;
+    return {
+      input,
+      put: (value: string) => {
+        input.value = value;
+        input.dispatchEvent(new Event('input'));
+      },
+    };
+  }
+
+  beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] }));
+  afterEach(() => {
+    vi.useRealTimers();
+    document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = ''));
+  });
 
   it('live header filter: rows narrow on every keystroke at once, the URL follows once after the pause', async () => {
     const { el, router, detect } = await setup('/?x=1&t_sort=name&t_dir=asc');
@@ -181,6 +204,73 @@ describe('ClientTable bound to the URL', () => {
     expect(navigate).toHaveBeenCalledTimes(2);
     expect(navigate.mock.calls[0][1]?.replaceUrl).toBe(false);
     expect(navigate.mock.calls[1][1]?.replaceUrl).toBe(true);
+  });
+
+  it('typed rows hold while the URL catches up: no flash of an older value between two writes', async () => {
+    const { el, router, fixture, detect } = await setup('/?x=1');
+    const navigate = vi.spyOn(router, 'navigate');
+    const { put } = await openName(el, detect);
+
+    put('Я');
+    vi.advanceTimersByTime(LIVE_FILTER_DEBOUNCE_MS); // the pause ends: the write of «Я» starts navigating
+    expect(navigate).toHaveBeenCalledTimes(1);
+    put('АН'); // typed while that navigation still runs
+    fixture.detectChanges();
+    expect(shown(el)).toEqual([2, 5]);
+
+    await fixture.whenStable(); // «Я» reaches the URL, «АН» still waits for its pause
+    fixture.detectChanges();
+    expect(decodeURIComponent(router.url)).toBe('/?x=1&t_name=Я');
+    expect(shown(el)).toEqual([2, 5]); // not the rows of «Я» for a moment
+
+    await pause();
+    await detect();
+    expect(decodeURIComponent(router.url)).toBe('/?x=1&t_name=АН');
+    expect(shown(el)).toEqual([2, 5]);
+    expect(navigate.mock.calls.map((c) => c[1]?.replaceUrl)).toEqual([false, true]); // one history entry for the session
+  });
+
+  it('«back» while an edit waits drops it: the rows and the field show the URL, nothing is written later', async () => {
+    const { el, router, fixture, detect } = await setup('/?x=1');
+    const navigate = vi.spyOn(router, 'navigate');
+    const { input, put } = await openName(el, detect);
+    put('Я');
+    fixture.detectChanges();
+    expect(shown(el)).toEqual([1]);
+
+    await router.navigateByUrl('/?x=2'); // another navigation (as «back» does): NavigationStart drops the queue
+    await detect();
+    expect(shown(el)).toEqual([1, 2, 3, 4, 5]); // the URL has no filter, so the rows have none either
+    expect(input.value).toBe(''); // and the open field says so
+
+    await pause();
+    await detect();
+    expect(navigate).not.toHaveBeenCalled();
+    expect(router.url).toBe('/?x=2');
+  });
+
+  it('«back» to another filter value replaces the typed one in the rows and in the open field', async () => {
+    const { el, router, fixture, detect } = await setup('/?t_name=%D0%AF');
+    const navigate = vi.spyOn(router, 'navigate');
+    const { input, put } = await openName(el, detect);
+    expect(input.value).toBe('Я');
+    put('Антон');
+    fixture.detectChanges();
+    expect(shown(el)).toEqual([2, 5]);
+
+    await router.navigateByUrl('/?t_name=%D1%94'); // «back» to a link filtered by «є»
+    await detect();
+    expect(shown(el)).toEqual([4]);
+    expect(input.value).toBe('є');
+    await pause();
+    expect(navigate).not.toHaveBeenCalled(); // «Антон» never goes out
+
+    // The next edit after «back» starts a new history entry instead of replacing the one «back» landed on.
+    put('а');
+    await pause();
+    await detect();
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate.mock.calls[0][1]?.replaceUrl).toBe(false);
   });
 
   it('URL → rows: prefixed sort and filter apply; without them the API order shows and the default arrow stays', async () => {
@@ -243,7 +333,7 @@ describe('ClientTable bound to the URL', () => {
 });
 
 describe('TableUrlState live edits', () => {
-  function setup(): { url: TableUrlState; router: Router; navigate: ReturnType<typeof vi.spyOn> } {
+  function setup(): { url: TableUrlState; router: Router; navigate: MockInstance<Router['navigate']> } {
     TestBed.configureTestingModule({ providers: [provideRouter([]), TableUrlState] });
     const router = TestBed.inject(Router);
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
@@ -264,12 +354,15 @@ describe('TableUrlState live edits', () => {
     expect(navigate.mock.calls[0][1]).toMatchObject({ queryParams: { name: 'an', page: null }, replaceUrl: false });
   });
 
-  it('flush() writes a waiting edit now; a plain update() takes it along in one navigation', () => {
+  it('flush() writes a waiting edit now; a plain update() takes it along in one navigation', async () => {
     vi.useFakeTimers();
     const { url, navigate } = setup();
     url.live(() => url.update({ name: 'a' }));
     url.flush();
     expect(navigate).toHaveBeenCalledTimes(1);
+    expect(url.writing()).toEqual({ name: 'a' }); // on its way until the router settles it
+    await vi.advanceTimersByTimeAsync(0);
+    expect(url.writing()).toBeNull();
     url.flush();
     expect(navigate).toHaveBeenCalledTimes(1); // nothing left
 
@@ -279,6 +372,57 @@ describe('TableUrlState live edits', () => {
     expect(navigate.mock.calls[1][1]).toMatchObject({ queryParams: { name: 'ab', sort: 'name', page: null }, replaceUrl: false });
     vi.advanceTimersByTime(LIVE_FILTER_DEBOUNCE_MS * 2);
     expect(navigate).toHaveBeenCalledTimes(2);
+  });
+
+  it('a second flush while the first navigation runs waits for it: one new history entry, then a replace', async () => {
+    const { url, navigate } = setup();
+    let finish: (done: boolean) => void = () => undefined;
+    navigate.mockImplementationOnce(() => new Promise<boolean>((resolve) => (finish = resolve)));
+    url.live(() => url.update({ name: 'a' }));
+    url.flush();
+    url.live(() => url.update({ name: 'an' }), { replace: true });
+    url.flush();
+    expect(navigate).toHaveBeenCalledTimes(1); // not a second, overlapping navigation
+    expect(url.writing()).toEqual({ name: 'an' });
+
+    finish(true);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(navigate).toHaveBeenCalledTimes(2);
+    expect(navigate.mock.calls.map((c) => c[1]?.replaceUrl)).toEqual([false, true]);
+    expect(navigate.mock.calls[1][1]).toMatchObject({ queryParams: { name: 'an', page: null } });
+  });
+
+  it('a first navigation that fails hands its params and its «new entry» to the edit queued after it', async () => {
+    const { url, navigate } = setup();
+    let finish: (done: boolean) => void = () => undefined;
+    navigate.mockImplementationOnce(() => new Promise<boolean>((resolve) => (finish = resolve)));
+    url.live(() => url.update({ name: 'a', page: 2 }, { paging: true }));
+    url.flush();
+    url.live(() => url.update({ city: '3' }), { replace: true });
+    url.flush();
+    finish(false);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(navigate).toHaveBeenCalledTimes(2);
+    expect(navigate.mock.calls[1][1]).toMatchObject({ queryParams: { name: 'a', page: null, city: '3' }, replaceUrl: false });
+  });
+
+  it('another navigation («back») drops the queued edit; the running one settles without a follow-up', async () => {
+    const { url, router, navigate } = setup();
+    let finish: (done: boolean) => void = () => undefined;
+    navigate.mockImplementationOnce(() => new Promise<boolean>((resolve) => (finish = resolve)));
+    url.live(() => url.update({ name: 'a' }));
+    url.flush();
+    url.live(() => url.update({ name: 'an' }), { replace: true });
+    navigate.mockRestore();
+    await router.navigateByUrl('/?back=1');
+    expect(url.writing()).toEqual({ name: 'a' }); // only the superseded write is left
+    finish(false);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(url.writing()).toBeNull();
+    expect(router.url).toBe('/?back=1');
   });
 
   it('a page that goes away drops the waiting edit (no navigation back to it)', () => {

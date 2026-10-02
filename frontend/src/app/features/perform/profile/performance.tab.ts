@@ -60,7 +60,7 @@ import { toIsoDate } from '../../../core/date/iso-date';
         <h3>{{ 'perform.kpis.title' | transloco }}</h3>
         <!-- KPI: sort and filter in the headers (core/ui/table), URL kpi_sort / kpi_<column>. -->
         <div class="scroll">
-          <table class="app-table kpis" [appTableSort]="kpiTable.sort()" (appTableSortChange)="kpiTable.setSort($event)">
+          <table class="app-table kpis" [appTableSort]="kpiTable.sort()" [appTableSortCount]="kpiTable.rows().length" (appTableSortChange)="kpiTable.setSort($event)">
             <thead>
               <tr>
                 <th scope="col" app-column-header key="metric" [label]="'perform.kpis.metric' | transloco"

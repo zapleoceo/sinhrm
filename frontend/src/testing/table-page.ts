@@ -1,7 +1,9 @@
 import { EnvironmentProviders, Provider, Type } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+import { TableSortDirective } from '../app/core/ui/table/table-sort.directive';
 
 /**
  * Unit tests of pages with header sorting / filtering (core/ui/table): opens the component at a URL (the table state
@@ -53,4 +55,14 @@ export function clickTitle(table: Element, title: string): void {
 /** Trimmed text of the n-th cell (th or td) of every body row. */
 export function column(table: Element, index: number): string[] {
   return [...table.querySelectorAll('tbody tr')].map((tr) => tr.children[index]?.textContent?.trim() ?? '');
+}
+
+/**
+ * Row count the n-th table of the page hands its header filters (`[appTableSortCount]`): what an open filter
+ * announces as «Знайдено: N»; null = not announced (e.g. a server table still loading).
+ */
+export function sortCount(fixture: ComponentFixture<unknown>, index = 0): number | null {
+  const table = fixture.debugElement.queryAll(By.directive(TableSortDirective))[index];
+  if (!table) throw new Error(`no table #${index} with appTableSort`);
+  return table.injector.get(TableSortDirective).count();
 }

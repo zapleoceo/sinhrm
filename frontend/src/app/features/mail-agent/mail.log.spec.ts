@@ -1,6 +1,6 @@
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { of } from 'rxjs';
-import { TablePage, clickTitle, header, openTablePage } from '../../../testing/table-page';
+import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { MailOutcome, ProcessedMail } from './mail.model';
 import { MailPage } from './mail.page';
 import { MailService } from './mail.service';
@@ -60,6 +60,7 @@ describe('MailPage «Журнал»: sortable / filterable headers bound to the 
   it('outcome and date filters from the URL narrow the log', async () => {
     await openLog('/?outcome=application&received_from=2026-10-01');
     expect(cells(2, 'table.log')).toEqual(['Тема 1']);
+    expect(sortCount(page.fixture)).toBe(1); // what an open header filter announces
     expect(header(table(), 'mail.log.outcome').querySelector('.dot')).not.toBeNull();
   });
   it('the open tab lives in the URL: a link with the log sort opens the log, a tab click writes ?tab=', async () => {

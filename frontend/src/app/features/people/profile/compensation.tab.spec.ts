@@ -1,5 +1,5 @@
 import { of } from 'rxjs';
-import { clickTitle, column, header, openTablePage } from '../../../../testing/table-page';
+import { clickTitle, column, header, openTablePage, sortCount } from '../../../../testing/table-page';
 import { CompensationRecord } from '../people.model';
 import { PeopleService } from '../people.service';
 import { CompensationTab } from './compensation.tab';
@@ -48,7 +48,8 @@ describe('CompensationTab history table (header sort and filter)', () => {
   });
 
   it('address → view: currency and date range filters', async () => {
-    const { el } = await open('/?comp_currency=UAH&comp_effective_on_from=2026-01-01');
+    const { el, fixture } = await open('/?comp_currency=UAH&comp_effective_on_from=2026-01-01');
     expect(column(historyTable(el), 0)).toEqual(['01.07.2026']);
+    expect(sortCount(fixture)).toBe(1); // what an open header filter announces
   });
 });

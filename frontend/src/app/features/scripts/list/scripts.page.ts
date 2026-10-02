@@ -84,7 +84,7 @@ import { ScriptsService, scriptsErrorKey } from '../scripts.service';
       </div>
     }
     <div class="panel">
-      <table class="app-table" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <table class="app-table" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="name" [label]="'scripts.name' | transloco"

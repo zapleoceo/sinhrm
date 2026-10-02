@@ -84,7 +84,7 @@ export function queueQueryFromParams(params: ParamMap): QueueQuery {
     <!-- Status (default «open»: a server filter, the list is capped) and category go to the API; the rest is
          filtered on the page. Sort and filters live in the URL. -->
     <div class="panel">
-      <table class="app-table queue" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <table class="app-table queue" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="id" label="#"></th>
@@ -124,7 +124,7 @@ export function queueQueryFromParams(params: ParamMap): QueueQuery {
       <h2>{{ 'desk.categories.title' | transloco }}</h2>
       <p class="muted small">{{ 'desk.categories.hint' | transloco }}</p>
       <!-- Categories: sort and filter in the headers (core/ui/table), state in the URL as cat_sort / cat_<column>. -->
-      <table class="app-table" [appTableSort]="cats.sort()" (appTableSortChange)="cats.setSort($event)">
+      <table class="app-table" [appTableSort]="cats.sort()" [appTableSortCount]="cats.rows().length" (appTableSortChange)="cats.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="name" [label]="'desk.categories.name' | transloco"

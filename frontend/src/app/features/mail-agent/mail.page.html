@@ -207,7 +207,7 @@
 
   <mat-tab [label]="'mail.tabs.log' | transloco">
     <section class="panel">
-      <table class="app-table log" [appTableSort]="log.sort()" (appTableSortChange)="log.setSort($event)">
+      <table class="app-table log" [appTableSort]="log.sort()" [appTableSortCount]="log.rows().length" (appTableSortChange)="log.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="received" [label]="'mail.log.received' | transloco"

@@ -1,5 +1,5 @@
 import { of } from 'rxjs';
-import { TablePage, clickTitle, header, openTablePage } from '../../../testing/table-page';
+import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { HiringListPage } from './hiring-list.page';
 import { HiringRequest, HiringStatus } from './hiring-requests.model';
 import { HiringRequestsService } from './hiring-requests.service';
@@ -54,5 +54,6 @@ describe('HiringListPage: sortable / filterable headers bound to the URL', () =>
     await page.settle();
     expect(calls.at(-1)).toEqual({ status: undefined, mine: false });
     expect(titles()).toEqual(['Бухгалтер', 'Аналітик']);
+    expect(sortCount(page.fixture)).toBe(2); // what an open header filter announces
   });
 });

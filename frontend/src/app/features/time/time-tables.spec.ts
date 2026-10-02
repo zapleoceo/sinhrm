@@ -1,6 +1,6 @@
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { of } from 'rxjs';
-import { TablePage, clickTitle, header, openTablePage } from '../../../testing/table-page';
+import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { TeamRow, TimesheetApproval } from './time.model';
 import { TimeApprovalsPage } from './time-approvals.page';
 import { TimeService } from './time.service';
@@ -62,6 +62,7 @@ describe('TimeApprovalsPage: sortable / filterable headers bound to the URL', ()
   it('week (date range) and worked (number range) filters', async () => {
     await navigate('/?week_from=2026-09-20&worked_to=41');
     expect(cells(0)).toEqual(['Антоненко']);
+    expect(sortCount(page.fixture)).toBe(1); // what an open header filter announces
   });
 });
 
@@ -81,6 +82,7 @@ describe('TimeTeamPage: sortable / filterable headers, kept when the week change
   it('filters by status from the URL; «missing» sorts as a number', async () => {
     expect(weeks).toEqual(['2026-09-28']);
     expect(names()).toEqual(['Шевченко']);
+    expect(sortCount(page.fixture)).toBe(1);
     await page.router.navigateByUrl('/?week=2026-09-28&sort=missing&dir=desc');
     await page.settle();
     expect(names()).toEqual(['Мельник', 'Шевченко', 'Антоненко']);

@@ -69,7 +69,7 @@ export function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
     }
     <!-- The status filter is in its column header (sent to the API outside the inbox); sort and filters live in the URL. -->
     <div class="panel">
-      <table class="app-table requests" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <table class="app-table requests" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="title" [label]="'hiring.fields.title' | transloco"

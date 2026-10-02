@@ -7,6 +7,7 @@ import { AuditPage as AuditPageData, AuditQuery } from './audit.model';
 import { AuditPage } from './audit.page';
 import { AUDIT_PAGE_SIZE, auditQueryFromParams } from './audit.query';
 import { AuditService } from './audit.service';
+import { sortCount } from '../../../testing/table-page';
 
 const PAGE: AuditPageData = {
   data: [{ id: 7, action: 'updated', entity_type: 'employee', entity_id: 3, user: { id: 5, name: 'Ann' }, changes: null, meta: null, created_at: '2026-09-15T10:00:00+00:00' }],
@@ -74,6 +75,7 @@ describe('AuditPage: sortable / filterable headers bound to the URL', () => {
 
   it('without ?sort the time column carries the API order (newest first); the URL filter shows on its header', () => {
     expect(queries).toEqual([expect.objectContaining({ entity_type: 'employee', page: 2, sort: undefined })]);
+    expect(sortCount(harness.fixture)).toBe(PAGE.meta.total); // the server total, announced by an open filter
     expect(th('audit.columns.time').getAttribute('aria-sort')).toBe('descending');
     expect(th('audit.columns.entity').querySelector('.dot')).not.toBeNull();
     expect(th('audit.columns.changes')).toBeUndefined(); // a plain header: the diff is not sortable
