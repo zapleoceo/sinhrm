@@ -134,7 +134,7 @@ import { VacanciesStore } from './vacancies.store';
                 <span class="dot" [class.on]="v.is_active" aria-hidden="true"></span>{{ activeLabel(v) | transloco }}
               </span>
               <span class="count" [title]="'recruiting.vacancies.activeCount' | transloco">
-                <mat-icon>person</mat-icon>{{ v.active_applications_count }}/{{ v.applications_count }}
+                <mat-icon>person</mat-icon><span class="mono">{{ v.active_applications_count }}</span><span class="mono total">/{{ v.applications_count }}</span>
               </span>
               @if (canWrite()) {
                 <a mat-icon-button [routerLink]="['/vacancies', v.id, 'edit']" [attr.aria-label]="'recruiting.vacancies.edit' | transloco">
@@ -157,24 +157,36 @@ import { VacanciesStore } from './vacancies.store';
   styles: `
     .rows { list-style: none; margin: 0; padding: 0; }
     .row {
-      display: flex; align-items: center; gap: 1rem; padding: 0.5rem 1rem;
-      border-bottom: 1px solid var(--app-border);
+      display: flex; align-items: center; gap: 1rem; padding: 0.5rem 1rem; min-height: 52px; box-sizing: border-box;
+      border-bottom: var(--app-border-w) solid var(--app-track); transition: background-color var(--app-fast);
     }
-    .main { flex: 1; display: flex; flex-direction: column; color: inherit; text-decoration: none; min-width: 0; }
+    .row:last-child { border-bottom: 0; }
+    .row:hover { background: var(--app-row-hover); }
+    .main { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; color: inherit; text-decoration: none; min-width: 0; }
+    .main strong { font-weight: 700; overflow-wrap: anywhere; }
+    .main .muted { font-size: 0.8125rem; }
     .main:hover strong, .main:focus-visible strong { color: var(--mat-sys-primary); }
     .head-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .active-total { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0.25rem 0 0; }
-    .dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--app-muted); flex: none; }
-    .dot.on { background: var(--app-success, #2e7d32); }
+    .active-total { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0.35rem 0 0; font: var(--mat-sys-label-large); }
+    /* Status marker: active = filled circle (good), otherwise a dashed ring — shape + text, never colour alone. */
+    .dot { display: inline-block; vertical-align: middle; width: 0.5rem; height: 0.5rem; box-sizing: border-box; border-radius: 50%; border: 2px dashed var(--app-muted); flex: none; }
+    .dot.on { border: 2px solid var(--app-good-text); background: var(--app-good-text); }
     .state-chip {
-      display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.6rem; border-radius: 999px;
-      border: 1px solid var(--app-border); color: var(--app-muted); font-size: 0.85rem; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.6rem; border-radius: var(--app-radius-pill);
+      border: var(--app-border-w) solid var(--app-border); color: var(--app-muted); font: var(--mat-sys-label-medium); white-space: nowrap;
     }
-    .state-chip.on { color: var(--app-success, #2e7d32); border-color: currentColor; font-weight: 500; }
+    .state-chip.on { color: var(--app-good-text); background: var(--app-good-bg); border-color: transparent; }
     .active-filter .dot { margin-right: 0.4rem; }
-    .active-filter.on { background: color-mix(in srgb, var(--app-success, #2e7d32) 12%, transparent); }
-    .count { display: inline-flex; align-items: center; gap: 0.25rem; font-variant-numeric: tabular-nums; }
-    .count mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .active-filter.on { background: var(--app-good-bg); color: var(--app-good-text); border-color: currentColor; }
+    .count { display: inline-flex; align-items: center; gap: 0.25rem; min-width: 4.5rem; font-variant-numeric: tabular-nums; }
+    .count .total { color: var(--app-muted); }
+    .count mat-icon { font-size: 18px; width: 18px; height: 18px; color: var(--app-muted); }
+    @media (max-width: 600px) {
+      .row { flex-wrap: wrap; gap: 0.25rem 0.75rem; padding: 0.6rem 0.75rem; }
+      .main { flex-basis: 100%; }
+      .count { margin-right: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) { .row { transition: none; } }
   `,
 })
 export class VacanciesPage implements OnInit {

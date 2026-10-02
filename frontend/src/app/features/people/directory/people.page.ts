@@ -133,7 +133,7 @@ import { wideDialog } from '../../../core/ui/dialog';
             <button mat-button type="button" (click)="clear()">{{ 'bulk.clear' | transloco }}</button>
           </div>
         }
-        <table class="people">
+        <table class="people app-table">
           <thead>
             <tr>
               @if (canManage()) {
@@ -156,23 +156,23 @@ import { wideDialog } from '../../../core/ui/dialog';
                 <td>
                   <a class="person" [routerLink]="['/people', e.id]">
                     <span class="avatar" aria-hidden="true">{{ initialsOf(e) }}</span>
-                    <span>{{ e.full_name }}</span>
+                    <span class="nm">{{ e.full_name }}</span>
                     @if (e.status !== 'active') {
-                      <span class="badge" [attr.data-status]="e.status">{{ 'people.status.' + e.status | transloco }}</span>
+                      <span class="badge app-pill" [attr.data-status]="e.status">{{ 'people.status.' + e.status | transloco }}</span>
                     }
                   </a>
                 </td>
                 <td>{{ e.position?.name ?? '—' }}</td>
                 <td class="wide">{{ e.department?.name ?? '—' }}</td>
                 <td class="wide">{{ e.branch?.name ?? '—' }}</td>
-                <td class="wide contacts">
+                <td class="wide"><span class="contacts">
                   @if (e.work_email) {
                     <a [href]="'mailto:' + e.work_email">{{ e.work_email }}</a>
                   }
                   @if (e.phone) {
-                    <a [href]="'tel:' + e.phone">{{ e.phone }}</a>
+                    <a class="mono" [href]="'tel:' + e.phone">{{ e.phone }}</a>
                   }
-                </td>
+                </span></td>
                 <td class="wide">
                   @if (e.manager) {
                     <a [routerLink]="['/people', e.manager.id]">{{ e.manager.name }}</a>
@@ -208,29 +208,45 @@ import { wideDialog } from '../../../core/ui/dialog';
     </section>
   `,
   styles: `
-    .bulk-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; }
+    .bulk-bar {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 1rem;
+      border-bottom: var(--app-border-w) solid var(--app-track); background: var(--app-row-selected);
+    }
     .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .people { width: 100%; border-collapse: collapse; }
-    .people th, .people td { text-align: left; padding: 0.5rem 1rem; border-bottom: 1px solid var(--app-border); }
-    .people th { font: var(--mat-sys-label-large); color: var(--app-muted); }
-    .person { display: inline-flex; align-items: center; gap: 0.5rem; color: inherit; text-decoration: none; font-weight: 500; }
-    .person:hover span:nth-child(2) { color: var(--mat-sys-primary); }
-    .contacts { display: flex; flex-direction: column; font-size: 0.85rem; }
+    .people td { vertical-align: middle; }
+    .person { display: inline-grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 0.75rem; color: inherit; text-decoration: none; font-weight: 600; }
+    .person .badge { grid-column: 2; justify-self: start; margin-top: 0.2rem; }
+    .person:hover .nm, .person:focus-visible .nm { color: var(--mat-sys-primary); }
+    .contacts { display: flex; flex-direction: column; gap: 0.1rem; }
+    .contacts a { overflow-wrap: anywhere; font-size: 0.78rem; }
+    .person .nm { min-width: 9rem; }
+    .contacts .mono { font-size: 0.78rem; white-space: nowrap; }
+    /* Avatar = «station»: a ring in the line colour, initials inside. */
     .avatar {
-      display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; flex: none;
-      background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container); font-size: 0.8rem;
+      display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; box-sizing: border-box; border-radius: 50%; flex: none;
+      border: 2px solid var(--mat-sys-primary); background: var(--app-card); color: var(--mat-sys-primary);
+      font: 600 0.75rem/1 var(--app-font-text); grid-row: 1 / span 2;
     }
-    .avatar.big { width: 3.5rem; height: 3.5rem; font-size: 1.2rem; }
-    .badge { font-size: 0.75rem; color: var(--app-warning); }
-    .badge[data-status='terminated'] { color: var(--app-muted); }
-    .cards { list-style: none; margin: 0; padding: 1rem; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); }
+    .avatar.big { width: 3.5rem; height: 3.5rem; border-width: 2.5px; font: 700 1.1rem/1 var(--app-font-display); }
+    .badge[data-status='on_leave'] { --pill-text: var(--app-info-text); --pill-bg: var(--app-info-bg); --pill-line: transparent; }
+    .badge[data-status='terminated']::before { border-style: dashed; }
+    .cards { list-style: none; margin: 0; padding: 1rem; display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }
     .card {
-      display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 1rem; text-align: center;
-      border: 1px solid var(--app-border); border-radius: var(--app-radius); color: inherit; text-decoration: none;
+      display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 1.25rem 1rem 1rem; text-align: center; height: 100%;
+      box-sizing: border-box; border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius); background: var(--app-card);
+      color: inherit; text-decoration: none; transition: border-color var(--app-fast), transform var(--app-fast);
     }
-    .card:hover, .card:focus-visible { border-color: var(--mat-sys-primary); }
+    .card .avatar { margin-bottom: 0.35rem; }
+    .card strong { font: var(--mat-sys-title-medium); }
+    .card:hover, .card:focus-visible { border-color: var(--mat-sys-primary); transform: translateY(-1px); }
     .small { font-size: 0.8rem; }
     @media (max-width: 900px) { .wide { display: none; } }
+    @media (max-width: 600px) {
+      .filters .grow { flex-basis: 100%; }
+      .filters mat-form-field:not(.grow) { flex: 1 1 calc(50% - 0.375rem); min-width: 0; }
+      .cards { padding: 0.75rem; grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
   `,
 })
 export class PeoplePage implements OnInit {

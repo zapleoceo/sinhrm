@@ -11,7 +11,7 @@
 @if (store.candidate(); as c) {
   <header class="head">
     <h2>{{ c.full_name }}</h2>
-    <div class="contacts">
+    <div class="contacts mono">
       @if (c.phone) {
         <a [href]="'tel:' + c.phone"><app-channel-icon key="call" />{{ c.phone }}</a>
       }
@@ -60,7 +60,7 @@
       <div class="app">
         <div class="app-head">
           <strong>{{ app.vacancy?.title }}</strong>
-          <span class="status" [attr.data-status]="app.status">{{ 'recruiting.appStatus.' + app.status | transloco }}</span>
+          <span class="status app-pill" [attr.data-status]="app.status">{{ 'recruiting.appStatus.' + app.status | transloco }}</span>
           @if (app.is_stale) {
             <span class="stale"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.card.stale' | transloco }}</span>
           }
@@ -91,7 +91,7 @@
           @for (step of app.route ?? []; track step.stage_change_id; let last = $last) {
             <li [class.current]="last" [attr.data-kind]="step.kind">
               <span class="step-name">{{ step.stage_name }}</span>
-              <span class="muted">{{ step.entered_at | date: 'dd.MM HH:mm' }} · {{ duration(step.duration_sec) }}</span>
+              <span class="muted mono">{{ step.entered_at | date: 'dd.MM HH:mm' }} · {{ duration(step.duration_sec) }}</span>
               @if (step.reason) {
                 <span class="muted reason">«{{ step.reason }}»</span>
               }
@@ -162,7 +162,7 @@
                   <span class="muted">{{ duration(item.touchpoint.meta.duration_sec) }}</span>
                 }
                 <span class="spacer"></span>
-                <time class="muted" [attr.datetime]="item.at">{{ item.at | date: 'dd.MM.yyyy HH:mm' }}</time>
+                <time class="muted mono" [attr.datetime]="item.at">{{ item.at | date: 'dd.MM.yyyy HH:mm' }}</time>
               </div>
               @if (item.touchpoint.meta.start) {
                 <p class="meeting">
@@ -204,7 +204,7 @@
                 <strong>{{ item.stage_change.from_stage?.name ?? ('recruiting.card.created' | transloco) }} → {{ item.stage_change.to_stage.name }}</strong>
                 <span class="muted">{{ item.stage_change.vacancy.title }}</span>
                 <span class="spacer"></span>
-                <time class="muted" [attr.datetime]="item.at">{{ item.at | date: 'dd.MM.yyyy HH:mm' }}</time>
+                <time class="muted mono" [attr.datetime]="item.at">{{ item.at | date: 'dd.MM.yyyy HH:mm' }}</time>
               </div>
               @if (item.stage_change.reason) {
                 <p class="text">{{ item.stage_change.reason }}</p>
