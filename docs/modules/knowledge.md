@@ -57,6 +57,13 @@ Postgres и SQLite.
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Список статей — строки на «треке» с hover, «Чернетка» — нейтральная пилюля, теги — моно, на телефоне 44px (цель касания); пустой список — `.app-empty`. Статья — ширина чтения 52rem, нажатая кнопка голоса — линия и текст бренда. Тест вида — `features/knowledge/knowledge.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
+### Общие хелперы Core (2026-10-02)
+- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (`ESCAPE '!'`, `Like::contains(…, Like::PORTABLE)`), `ilike` на Postgres;
+- gate `knowledge-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
 ## Как проверить
 `php artisan test --filter=Knowledge` — запись только админам, черновики скрыты (404), очистка XSS (`<script>`,
 `javascript:`, `<img onerror>`), аудитория по филиалу и роли, поиск без учёта регистра и с буквальными `%`/`_`,

@@ -231,6 +231,12 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
 
 **Интерфейс (2026-09-26):** Даты вводятся только выпадающим календарём Angular Material (формат дд.мм.рррр, неделя с понедельника; [core.md](core.md)), в API уходит прежний `YYYY-MM-DD` (`core/date/iso-date.ts`, без сдвига часового пояса): начало и конец волны опроса.
 
+### Общие хелперы Core (2026-10-02)
+- gate `pulse-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (`MoodController`, `SurveyController`, `WaveController`).
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
 ## Как проверить
 - `php artisan test --filter=Pulse` — Feature: `AnonymityTest` (**ответы по одному в открытой волне ничего не
   раскрывают — только диапазон участия; после закрытия — результаты; отдел, чей остаток мал, не показывается;

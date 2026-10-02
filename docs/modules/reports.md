@@ -21,6 +21,19 @@
 Бэкенд — `backend/app/Modules/Reports`, маршруты `/api/reports/{catalog,builder,saved}` (старые
 `/api/reports/{touches,funnel,sources,reject-reasons,scripts}` остаются в Recruiting/Scripts).
 
+Маршруты (`routes.php`, `auth:sanctum` + `EnsureUserIsActive`; доступность решает каждый отчёт/набор):
+
+| Метод и путь `/api/reports/…` | Что |
+|---|---|
+| `GET catalog` | каталог отчётов, доступных пользователю (`ReportsController::index`) |
+| `GET catalog/{key}` (`[a-z_]+`) | запуск отчёта с фильтрами из query (`run`); недоступный/неизвестный — 404 |
+| `GET catalog/{key}/csv` | то же в CSV |
+| `GET builder/datasets` | наборы конструктора, доступные пользователю, с колонками (`datasets`) |
+| `POST builder/run`, `POST builder/csv` | запуск конструктора / CSV |
+| `GET/POST saved`, `PUT/DELETE saved/{id}`, `GET saved/{id}/run` | сохранённые отчёты (см. ниже) |
+
+«Админ» в этой странице — `PeopleScope::isAdmin` (`UserRole::hrStaff()`: superadmin, admin, hr_manager).
+
 ### Реестр отчётов (Open/Closed)
 `Contracts/ReportDefinition`: `key`, `group (general|hr|performance|recruiting)`, `filters()` (схема: `from`, `to`,
 `branch_id`, `weeks`, `period`), `columns()` (`{key, type: string|number|percent|date}`), `chart()` (колонки полос),
@@ -54,7 +67,7 @@
 | `review_completion` | performance | админ, руководитель | `review_assignments`: назначено/заполнено по циклам (без оценок) |
 | `enps_trend` | performance | админ | **только закрытые** волны с вопросом eNPS; `Pulse\Contracts\ResponseRepository::answersOf` + `Pulse\Support\Enps`; ответов меньше `min_group_size` — `enps` и `responses` = `null` |
 | `mood_trend` | performance | админ, руководитель | `Pulse\Services\MoodService::team` (только завершённые недели, группы меньше минимума скрыты, комментарии не выводятся) |
-| `channel_effectiveness` | recruiting | все (по филиалам) | `Recruiting\Services\ReportService::channels`: кандидаты периода по каналу привлечения → заявки → дошли до отбора → наняты, конверсия; расходы (пропорционально дням) и цена найма — только админам ([acquisition-channels.md](acquisition-channels.md)) |
+| `channel_effectiveness` | recruiting | все (по филиалам) | `Recruiting\Services\ReportService::channels`: кандидаты периода по каналу привлечения → заявки → дошли до отбора → наняты, конверсия; расходы (пропорционально дням) и цена найма — только superadmin/admin (`RecruitingScope::canManage`); `hr_manager` видит отчёт, но `cost` и `cost_per_hire` = `null` ([acquisition-channels.md](acquisition-channels.md)) |
 | `time_by_employee` | hr | админ, руководитель | `Time\Services\TimeReportService::weekly` (целые недели, ≤ 26): очікувано / відпрацьовано / понаднормово / бракує / відсутності по сотруднику ([time.md](time.md)) |
 | `time_by_department` | hr | админ, руководитель | те же недели, сумма по отделу |
 | `time_overtime` | hr | админ, руководитель | недели со сверхурочными (сотрудник × неделя) |
@@ -119,6 +132,12 @@ count/sum, `none` для avg; сырые строки — только коло�
 в %. Группа меньше 5 человек скрыта (`GenderPayGapReport::MIN_GROUP`), разрыв без обеих групп не считается. Фильтр: филиал.
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Каталог — группа отчётов как ветка: станции-кольца на одной линии, ссылки 44px на телефоне. Таблица отчёта — шапка-подпись, строки на «треке», числа моно, строка «Разом» — на тихой заливке с линией сверху. Диаграмма — линии рампы графиков, прорисовываются один раз («трасса», 600мс, transform), при `prefers-reduced-motion` статичны. Тест вида — `features/reports/reports.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
+### Общие хелперы Core (2026-10-02)
+- `Csv` (защита от формул) перенесён из `Reports\Support` в `Core\Support\Export\Csv`, его же использует выгрузка People; `Content-Disposition` CSV — `Core\Http\Responses\Download::disposition()`;
+- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (`ESCAPE '!'`, `Like::contains(…, Like::PORTABLE)`) (оператор `contains` конструктора).
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
 ## Как проверить
 `php artisan test --filter=Reports` — состав каталога по ролям (26 отчётов у админа, включая `gender_pay_gap`), область People и

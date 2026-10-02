@@ -118,10 +118,33 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 (env `APP_USER_TIMEZONE`, по умолчанию `Europe/Kyiv`, летнее/зимнее время учитывает сам пояс). Значение проверяется по
 `timezone_identifiers_list()`: пусто, опечатка или не-IANA (`GMT+3`) → `Europe/Kyiv`, без исключения. `UserTime::timezone()`,
 `UserTime::now(?Carbon)` — момент в поясе пользователя (его `startOfDay()/endOfDay()` — день пользователя),
+`UserTime::today(?Carbon)` — дата пользователя в полночь пояса хранения (замена `Carbon::today()` там, где значение —
+дата: колонка `date`, `toDateString()`, сравнение с датой; используют Assets, People, TimeOff, Workflows),
 `UserTime::toStorage(Carbon)` — тот же момент в поясе хранения; **обязателен** перед передачей Carbon в привязку запроса:
 построитель запросов форматирует дату `Y-m-d H:i:s` без перевода, и местное время сравнилось бы с UTC.
 Используют Scripts ([scripts.md](scripts.md)) и Overview ([overview.md](overview.md)). Тест: `tests/Unit/Core/UserTimeTest.php`
 (23:30/00:30 UTC зимой и летом, день перехода на летнее время 29.03.2026 — 23 часа, начало `+02:00`, конец `+03:00`).
+
+### Общие хелперы модулей (2026-10-02)
+Раньше эти куски жили копиями в модулях (или в Recruiting/Reports, и другие модули тянули зависимость на них). Теперь —
+в Core; поведение API то же, перенос без изменения ответов, кроме ночной границы «сегодня» (см. `UserTime::today()` выше).
+
+| Хелпер | Что делает | Кто использует |
+|---|---|---|
+| `Http/Concerns/ResolvesActor` | `actor(Request): User` — пользователь запроса за `auth:sanctum` (`assert`, гость сюда не доходит) | контроллеры 20 модулей (было 31 приватная копия + трейт Recruiting `Actor`, удалён) |
+| `Support/Database/Like` | `escape/contains/startsWith`: экранирует `%`, `_` и сам символ экранирования; `Like::BACKSLASH` (по умолчанию) для `like ?` без `ESCAPE` (Postgres), `Like::PORTABLE` (`!`) для `like ? escape '!'` | репозитории Assets, Directory, Knowledge, People, Recruiting (3), Reports, Scripts, Users |
+| `Http/Requests/Concerns/Paginates` | `perPageRules($max = 200)` → `nullable, integer, between:1,$max`; `perPageOr($default = 50)` — `integer('perPage')`, строка `"20"` → 20 | 11 FormRequest: Audit (2, `1..100`/20), Users (`1..100`/20), Directory, People (2), Recruiting (4), TimeOff |
+| `Support/ModuleServiceProvider::defineRoleGate($ability, $roles)` | gate «активный пользователь с одной из ролей»; `UserRole::hrStaff()` = набор `PeopleScope::isAdmin` | 17 gate: `*-manage` 11 HR-модулей, superadmin-only (audit, modules, integrations, users), superadmin+admin (directory, privacy) |
+| `Http/Responses/Download` | `file()` — загруженный файл как attachment (ASCII-имя + `filename*`, `nosniff`, `private, no-store`, `Content-Length`); `disposition($name)` — `attachment; filename="…"` для своих имён | Desk, Documents (`file`); Privacy, People, Reports (`disposition`) |
+| `Support/Export/Csv` | CSV без формул (`= + - @ \t \r` → префикс `'`), BOM, строка «Total» | Reports (`CsvResponse`), People (`bulk` export) — перенесён из `Reports/Support` |
+| `Support/UserTime::today()` | «сегодня» пользователя (см. выше) | Assets, People, TimeOff, Workflows (13 вызовов `Carbon::today()`) |
+
+Тесты: `tests/Unit/Core/{LikeTest,DownloadTest,CsvTest,ResolvesActorTest,UserTimeTest}`, `tests/Feature/Core/{PaginatesTest,RoleGateTest}`
+(каждый gate × каждая роль, заблокированный пользователь, совпадение HR-gate с `PeopleScope::isAdmin`).
+Не перенесены: `actor()` в Ai (там `abort(401)`, другое поведение) и Assistant (статические, модуль в ожидании решения по MCP);
+~49 inline `assert($user instanceof User)` в методах — переводятся при следующих правках этих файлов.
+
+**Границы модулей** — `tests/Unit/Core/ModuleBoundariesTest` (правило и базовый список — [architecture/overview.md](../architecture/overview.md)).
 
 ### Фоновые задачи (`Contracts/ScheduledJob`)
 У vercel-php нет воркеров и постоянных процессов, а cron Vercel Hobby — раз в сутки. Поэтому GitHub Actions
