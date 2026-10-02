@@ -100,6 +100,40 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 `/api/health` превращается в `/health` (404). API-only: страниц нет; единственные маршруты группы `web` — `/api/auth/google/*` (модуль Auth); на `sinhrm-api.vercel.app/` — 404. Публичный `sinhrm.vercel.app/` — это фронтенд.
 Контракт проверки здоровья — `/api/health` (зависимости); `/up` — встроенная проверка Laravel «процесс жив», без БД.
 
+## IP клиента за Vercel (доверенные прокси, 2026-10-03)
+**Проблема.** Рантайм `vercel-php@0.9.0` запускает встроенный сервер PHP и сам шлёт ему запрос из Node-лаунчера по
+`localhost:3000` (`src/launchers/builtin.ts`), поэтому `REMOTE_ADDR` всегда `127.0.0.1`, а заголовки запроса от
+края Vercel передаются как есть. Без доверия к прокси `$request->ip()` = `127.0.0.1` у всех: лимиты «по IP» общие на
+всех (Safe Speak 5 в час, карьерная страница 5 в час, лимитеры Assistant/Channels/Observability, `ops:ip` в
+`RequireOpsSecret`) — один человек мог исчерпать лимит за всех.
+
+**Решение.** Встроенный глобальный middleware Laravel `TrustProxies` читает `config('trustedproxy.proxies')`
+(`config/trustedproxy.php`, env `TRUSTED_PROXIES`); в `bootstrap/app.php` доверяем **только** заголовку
+`X-Forwarded-For` (`trustProxies(headers: HEADER_X_FORWARDED_FOR)`) — Host/Proto/Port/Prefix из заголовков не берутся.
+В `backend/vercel.json` `TRUSTED_PROXIES=127.0.0.1,::1` (только loopback-лаунчер). Все места берут IP через
+`$request->ip()`, поэтому отдельного хелпера нет — источник один, middleware.
+
+**Почему клиент не подделает IP.** (1) Доверяем только адресу loopback: прямой собеседник с другим `REMOTE_ADDR`
+(например, локальный запуск без Vercel) заголовок не меняет. (2) Документация Vercel
+([Request headers](https://vercel.com/docs/headers/request-headers), `x-forwarded-for`): край Vercel **перезаписывает**
+`X-Forwarded-For` публичным IP клиента и не пересылает внешние значения «to prevent IP spoofing». (3) Если цепочка всё же
+придёт, Symfony берёт самый правый недоверенный адрес — дописанный прокси, а не первый от клиента.
+**Дефолт безопасный:** `TRUSTED_PROXIES` не задан → не доверяем никому, `ip()` = `REMOTE_ADDR`. Значение `*` не
+использовать: оно доверяет заголовку от любого собеседника.
+
+**Анонимность Safe Speak не меняется:** IP по-прежнему не хранится и не логируется, дальше контроллера идёт только
+`ClientBucket` (HMAC с `APP_KEY`); меняется лишь то, что корзины разных людей теперь разные.
+
+**Не проверено на проде (оговорка).** SPA ходит в API через внешний rewrite `sinhrm.vercel.app/api/*` →
+`sinhrm-api.vercel.app` (`frontend/vercel.json`). Что при таком rewrite Vercel кладёт в `X-Forwarded-For` у API —
+IP клиента или адрес края фронтенд-проекта — документация прямо не говорит. Во втором случае лимиты для запросов через
+фронтенд останутся общими (как сейчас, без регрессии), а прямые запросы к `sinhrm-api.vercel.app` уже разделятся.
+Проверка после деплоя (ничего не создаёт): из сети A 11 раз
+`POST https://sinhrm.vercel.app/api/safe-speak/public/follow-up` с заведомо неверным кодом — 10 × 404 `invalid_code`,
+11-й 429; сразу же из другой сети B (мобильный интернет) один такой же запрос — ожидается 404, а не 429. 429 в сети B
+значит, что через rewrite IP клиента не доходит; повторить то же напрямую на `sinhrm-api.vercel.app` (корзина A на
+15 минут). Тест: `tests/Feature/Core/TrustedProxiesTest.php`.
+
 ## Служебные эндпоинты `/api/ops/*`
 **Зачем.** Vercel не отдаёт защищённый `DATABASE_URL` наружу (`vercel pull` получает маску), поэтому миграции
 запускает сам API — доступ к БД не покидает Vercel.
