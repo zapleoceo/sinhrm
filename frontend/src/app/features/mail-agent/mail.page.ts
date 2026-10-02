@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -10,13 +11,14 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { MAIL_OUTCOMES, PARSER_KEYS, ParserKey, ProcessedMail, SENDER_KINDS, SenderKind, SenderRule, UnknownSender, isSenderPattern } from './mail.model';
 import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { oneOfParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
+import { MAIL_OUTCOMES, PARSER_KEYS, ParserKey, ProcessedMail, SENDER_KINDS, SenderKind, SenderRule, UnknownSender, isSenderPattern } from './mail.model';
 import { MailStore } from './mail.store';
 
 /** Columns of the processed-mail log (all rows are on the page: sorted and filtered here, state in the URL). */
@@ -26,6 +28,22 @@ export const MAIL_LOG_COLUMNS: readonly ClientColumn<ProcessedMail>[] = [
   { key: 'subject', value: (m) => m.subject, filter: 'text' },
   { key: 'outcome', value: (m) => MAIL_OUTCOMES.indexOf(m.outcome), filter: 'select', filterValue: (m) => m.outcome },
 ];
+
+/** Tabs of the page in their order; the URL keeps the open one (`?tab=rules`, none = the first). */
+export const MAIL_TABS = ['unknown', 'rules', 'log'] as const;
+export type MailTab = (typeof MAIL_TABS)[number];
+
+/**
+ * Open tab of the URL. Without `tab`, a link carrying the log table state (`?sort=sender`, `?outcome=…`) opens the log:
+ * those params mean nothing on the other tabs.
+ */
+export function mailTabFromParams(params: ParamMap): MailTab {
+  const tab = oneOfParam(params, 'tab', MAIL_TABS);
+  if (tab) return tab;
+  const logParam = (name: string): boolean =>
+    name === 'sort' || name === 'dir' || MAIL_LOG_COLUMNS.some((c) => name === c.key || name === `${c.key}_from` || name === `${c.key}_to`);
+  return params.keys.some(logParam) ? 'log' : 'unknown';
+}
 
 /** Choice in the unknown-senders row before "Assign". */
 interface Draft {
@@ -66,6 +84,10 @@ export class MailPage implements OnInit {
   protected readonly store = inject(MailStore);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
+  private readonly url = inject(TableUrlState);
+  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  /** Open tab (in the URL, so a shared link or «back» lands on the same tab). */
+  protected readonly tabIndex = computed(() => MAIL_TABS.indexOf(mailTabFromParams(this.params())));
 
   protected readonly kinds = SENDER_KINDS;
   protected readonly parsers = PARSER_KEYS;
@@ -90,6 +112,11 @@ export class MailPage implements OnInit {
 
   ngOnInit(): void {
     this.store.load();
+  }
+
+  protected setTab(index: number): void {
+    // Always named: without it the log params left in the URL (`?sort=…`) would bring the log back.
+    if (index !== this.tabIndex()) this.url.update({ tab: MAIL_TABS[index] });
   }
 
   protected sync(): void {

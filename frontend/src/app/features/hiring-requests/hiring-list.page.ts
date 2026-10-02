@@ -8,11 +8,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { HIRING_STATUSES, HiringRequest, HiringStatus, PILL_TONE, statusTone } from './hiring-requests.model';
 import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
+import { LatestRequest } from '../../core/ui/table/latest-request';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { oneOfParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
+import { HIRING_STATUSES, HiringRequest, HiringStatus, PILL_TONE, statusTone } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 
 type ListMode = 'all' | 'mine' | 'inbox';
@@ -33,9 +35,9 @@ export const HIRING_COLUMNS: readonly ClientColumn<HiringRequest>[] = [
 
 /** Status of the URL for the API (anything else is dropped). */
 export function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
-  const s = params.get('status');
-  return s && (HIRING_STATUSES as readonly string[]).includes(s) ? (s as HiringStatus) : null;
+  return oneOfParam(params, 'status', HIRING_STATUSES) ?? null;
 }
+
 /**
  * Hiring requests (tz2 "Вакансії → Заявки"): registry with author, status, current step and progress;
  * /hiring-requests/inbox — requests waiting for my decision (the same page in "inbox" mode).
@@ -146,6 +148,7 @@ export class HiringListPage implements OnInit {
   private started = false;
   /** Status the shown list was loaded with (undefined = not loaded yet). */
   private loadedStatus: HiringStatus | null | undefined;
+  private readonly request = new LatestRequest();
   protected readonly table = new ClientTable({ rows: this.items, columns: HIRING_COLUMNS });
   protected readonly textFilter = TEXT_FILTER;
   protected readonly dateFilter = DATE_RANGE;
@@ -176,7 +179,8 @@ export class HiringListPage implements OnInit {
     const mode = this.mode();
     this.loadedStatus = this.status();
     const call = mode === 'inbox' ? this.api.inbox() : this.api.list({ status: this.loadedStatus ?? undefined, mine: mode === 'mine' });
-    call.subscribe({
+    // A newer mode or status wins: the previous request is cancelled, so an older answer never overwrites the list.
+    this.request.run(call, {
       next: (list) => {
         this.items.set(list);
         this.loading.set(false);

@@ -61,4 +61,20 @@ describe('AssetsPage: sortable / filterable headers bound to the URL', () => {
     await open('/?status=lost&type=abc');
     expect(queries).toEqual([{ q: undefined, status: undefined, type_id: undefined }]);
   });
+  it('the search box shows the URL text, but never overwrites what the user is typing (the space between two words stays)', async () => {
+    await open('/?q=mac');
+    const input = page.el.querySelector<HTMLInputElement>('input[type=search]')!;
+    expect(input.value).toBe('mac');
+    input.focus();
+    input.value = 'mac ';
+    input.dispatchEvent(new Event('input'));
+    await new Promise((r) => setTimeout(r, 350)); // search debounce → the URL gets the trimmed text
+    await page.settle();
+    expect(new URL(page.router.url, 'http://x').searchParams.get('q')).toBe('mac');
+    expect(input.value).toBe('mac ');
+    input.blur();
+    await page.router.navigateByUrl('/?q=dell');
+    await page.settle();
+    expect(input.value).toBe('dell');
+  });
 });

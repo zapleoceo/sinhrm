@@ -71,7 +71,7 @@
 
 <p class="muted small"><mat-icon inline>info</mat-icon> {{ 'mail.parsersNote' | transloco }}</p>
 
-<mat-tab-group mat-stretch-tabs="false">
+<mat-tab-group [selectedIndex]="tabIndex()" (selectedIndexChange)="setTab($event)" mat-stretch-tabs="false">
   <mat-tab [label]="'mail.tabs.unknown' | transloco">
     <section class="panel">
       @for (u of store.unknown(); track u.id) {

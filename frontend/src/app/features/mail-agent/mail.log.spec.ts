@@ -62,4 +62,24 @@ describe('MailPage «Журнал»: sortable / filterable headers bound to the 
     expect(cells(2, 'table.log')).toEqual(['Тема 1']);
     expect(header(table(), 'mail.log.outcome').querySelector('.dot')).not.toBeNull();
   });
+  it('the open tab lives in the URL: a link with the log sort opens the log, a tab click writes ?tab=', async () => {
+    page = await openTablePage(MailPage, '/?sort=sender&dir=asc', [
+      { provide: MailService, useValue: { status: () => of({ connection: { connected: true, account_email: 'hr@example.com', error: null }, last_sync: null, counts: { rules: 0, unknown: 0, processed_24h: 0 } }), rules: () => of([]), unknown: () => of([]), messages: () => of(MESSAGES) } },
+      { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+    ]);
+    await page.settle();
+    const tabs = () => [...page.el.querySelectorAll<HTMLElement>('[role="tab"]')];
+    expect(tabs()[2].getAttribute('aria-selected')).toBe('true');
+    expect(cells(1, 'table.log')).toEqual(['a@djinni.co', 'b@work.ua', '—']);
+    tabs()[1].click();
+    await page.settle();
+    expect(params().get('tab')).toBe('rules');
+    tabs()[0].click();
+    await page.settle();
+    expect(params().get('tab')).toBe('unknown'); // named, or the leftover ?sort= would bring the log back
+    expect(tabs()[0].getAttribute('aria-selected')).toBe('true');
+    await page.router.navigateByUrl('/?tab=log');
+    await page.settle();
+    expect(tabs()[2].getAttribute('aria-selected')).toBe('true');
+  });
 });

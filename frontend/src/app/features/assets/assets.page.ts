@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,16 +12,17 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
-import { PersonPicker, PickerValue } from '../people/picker/person-picker';
-import { ASSET_STATUSES, ASSET_STATUS_TONE, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
-import { AssetsService, assetsErrorKey } from './assets.service';
+import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
+import { LatestRequest } from '../../core/ui/table/latest-request';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
-import { ColumnFilter, textParam } from '../../core/ui/table/table-state';
+import { ColumnFilter, intParam, oneOfParam, sameQuery, textParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
+import { PersonPicker, PickerValue } from '../people/picker/person-picker';
+import { ASSET_STATUSES, ASSET_STATUS_TONE, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
+import { AssetsService, assetsErrorKey } from './assets.service';
 
 /**
  * Columns of the inventory table (sorted and filtered on the page). Status and type also go to the API as server
@@ -38,18 +39,9 @@ export const ASSET_COLUMNS: readonly ClientColumn<Asset>[] = [
 
 /** API query of the URL: search, status and type (junk values are dropped, never sent). */
 export function assetQueryFromParams(params: ParamMap): AssetQuery {
-  const status = params.get('status') as AssetStatus | null;
-  const type = params.get('type');
-  return {
-    q: textParam(params, 'q'),
-    status: status && ASSET_STATUSES.includes(status) ? status : undefined,
-    type_id: type && /^\d+$/.test(type) ? Number(type) : undefined,
-  };
+  return { q: textParam(params, 'q'), status: oneOfParam(params, 'status', ASSET_STATUSES), type_id: intParam(params, 'type') };
 }
 
-export function sameAssetQuery(a: AssetQuery, b: AssetQuery): boolean {
-  return a.q === b.q && a.status === b.status && a.type_id === b.type_id;
-}
 /**
  * Inventory (/admin/assets): search on top, sortable / filterable column headers (state in the URL), new asset,
  * hand out / take back with history.
@@ -112,7 +104,7 @@ export function sameAssetQuery(a: AssetQuery, b: AssetQuery): boolean {
       <mat-form-field class="grow" subscriptSizing="dynamic">
         <mat-label>{{ 'assets.search' | transloco }}</mat-label>
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput type="search" #q [value]="search()" (input)="search$.next(q.value)" />
+        <input matInput type="search" #q (input)="search$.next(q.value)" />
       </mat-form-field>
     </div>
     @if (loading()) {
@@ -235,39 +227,28 @@ export class AssetsPage implements OnInit {
   private readonly url = inject(TableUrlState);
   private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
   /** Server part of the URL (search, status, type): only its change reloads the list, not sort or page filters. */
-  private readonly query = computed(() => assetQueryFromParams(this.params()), { equal: sameAssetQuery });
-  private readonly reload = new Subject<AssetQuery>();
+  private readonly query = computed(() => assetQueryFromParams(this.params()), { equal: sameQuery });
+  private readonly request = new LatestRequest();
   protected readonly search$ = new Subject<string>();
   /** Search box value from the URL. */
   protected readonly search = computed(() => this.query().q ?? '');
+  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('q');
   protected readonly table = new ClientTable({ rows: this.items, columns: ASSET_COLUMNS, defaultSort: { key: 'inventory', dir: 'asc' } });
   protected readonly textFilter = TEXT_FILTER;
   protected readonly statusFilter = translatedSelect(() => ASSET_STATUSES, (s) => 'assets.status.' + s);
   protected readonly typeFilter = computed<ColumnFilter>(() => ({ type: 'select', options: this.types().map((t) => ({ value: String(t.id), label: t.name })) }));
 
   constructor() {
-    this.reload
-      .pipe(
-        debounceTime(200),
-        switchMap((query) => {
-          this.loading.set(true);
-          return this.api.list(query);
-        }),
-        takeUntilDestroyed(),
-      )
-      .subscribe({
-        next: (list) => {
-          this.items.set(list);
-          this.loading.set(false);
-        },
-        error: (e: unknown) => {
-          this.loading.set(false);
-          this.toast(assetsErrorKey(e));
-        },
-      });
     effect(() => {
       const query = this.query();
-      untracked(() => this.reload.next(query));
+      untracked(() => this.load(query));
+    });
+    // URL → search box («back», a link), but never while the user types in it: the URL holds the trimmed text, and
+    // writing it back would eat the space between two words typed after a debounce pause.
+    effect(() => {
+      const value = this.search();
+      const input = this.searchInput()?.nativeElement;
+      if (input && input !== input.ownerDocument.activeElement && input.value !== value) input.value = value;
     });
   }
 
@@ -332,6 +313,21 @@ export class AssetsPage implements OnInit {
       return;
     }
     this.api.get(a.id).subscribe({ next: (full) => this.opened.set(full), error: (e: unknown) => this.toast(assetsErrorKey(e)) });
+  }
+
+  private load(query: AssetQuery): void {
+    this.loading.set(true);
+    // A newer query wins: the previous request is cancelled, so an older answer never overwrites the list.
+    this.request.run(this.api.list(query), {
+      next: (list) => {
+        this.items.set(list);
+        this.loading.set(false);
+      },
+      error: (e: unknown) => {
+        this.loading.set(false);
+        this.toast(assetsErrorKey(e));
+      },
+    });
   }
 
   private apply(call: Observable<Asset>): void {

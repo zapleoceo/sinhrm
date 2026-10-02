@@ -11,11 +11,11 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { SCRIPT_CHANNELS, Script, ScriptChannel } from '../scripts.model';
 import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../../core/ui/table/client-table';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
+import { SCRIPT_CHANNELS, Script, ScriptChannel } from '../scripts.model';
 
 const PRESENCE = ['yes', 'no'] as const;
 const presence = (v: unknown): 'yes' | 'no' => (v ? 'yes' : 'no');
