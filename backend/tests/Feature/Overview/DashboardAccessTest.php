@@ -50,7 +50,11 @@ final class DashboardAccessTest extends TestCase
         $this->actingAs($user)->getJson('/api/dashboard')->assertOk()
             ->assertJsonPath('data.counts.active', $active)
             ->assertJsonPath('data.counts.new_today', $active)
-            ->assertJsonStructure(['data' => ['counts' => ['active', 'stale', 'unmatched_inbox', 'new_today'], 'stale_days', 'stale', 'my_tasks' => ['total', 'overdue', 'items'], 'funnel', 'touches' => ['days', 'by_channel']]]);
+            ->assertJsonStructure(['data' => ['counts' => ['active', 'stale', 'unmatched_inbox', 'new_today'], 'stale_days', 'stale', 'my_tasks' => ['total', 'overdue', 'items'], 'funnel', 'touches' => ['days', 'by_channel'],
+                'funnel_insights' => ['period_days', 'min_sample', 'min_offer_observations', 'bottleneck', 'offer_path'],
+                'day_route' => ['date', 'interviews', 'tasks', 'items']]])
+            ->assertJsonPath('data.day_route.items', [])
+            ->assertJsonPath('data.funnel_insights.bottleneck', null);
     }
 
     public function test_user_without_any_role_gets_empty_scope(): void

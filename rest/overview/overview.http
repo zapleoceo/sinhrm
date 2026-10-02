@@ -3,6 +3,8 @@
 # Full list of Overview operations: /api/docs (tag "Overview").
 
 ### GET /api/dashboard — overview.dashboard
+# data: counts, stale_days, my_tasks, stale, warnings, funnel, funnel_insights {bottleneck|null, offer_path|null},
+# day_route {date, interviews, tasks, items[]}, touches {days, by_channel}, timeoff/hiring/time blocks.
 GET {{host}}/api/dashboard
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

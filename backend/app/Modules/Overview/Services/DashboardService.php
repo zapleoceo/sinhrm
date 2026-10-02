@@ -20,7 +20,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * The home page in one request: counters, my tasks for today (overdue included), the 10 most stale applications,
- * the funnel of active applications and touches of the last 7 days by channel — all within the user's scope.
+ * the funnel of active applications with its two captions (bottleneck, average path to the offer), today's route
+ * (interviews + tasks) and touches of the last 7 days by channel — all within the user's scope.
  * Other modules add blocks through the DashboardSection tag (TimeOff: data.timeoff).
  */
 final readonly class DashboardService
@@ -36,6 +37,8 @@ final readonly class DashboardService
         private ApplicationRepository $applications,
         private RecruitingScope $scope,
         private TaskService $tasks,
+        private DayRouteService $dayRoute,
+        private FunnelInsightsService $funnelInsights,
         /** @var iterable<DashboardNotices> */
         private iterable $notices = [],
         /** @var iterable<DashboardSection> */
@@ -76,6 +79,8 @@ final readonly class DashboardService
             ])->values()->all(),
             'warnings' => $this->warnings($actor),
             'funnel' => $this->dashboard->funnel($scope),
+            'funnel_insights' => $this->funnelInsights->build($scope, $now),
+            'day_route' => $this->dayRoute->build($scope, $tasks, $now),
             'touches' => [
                 'days' => self::TOUCH_DAYS,
                 'by_channel' => $this->dashboard->touchesByChannel($scope, $now->copy()->subDays(self::TOUCH_DAYS)),
