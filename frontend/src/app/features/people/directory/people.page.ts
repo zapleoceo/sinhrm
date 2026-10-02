@@ -27,6 +27,7 @@ import { EMPLOYEE_STATUSES, Employee } from '../people.model';
 import { EmployeeDialog, EmployeeDialogData } from '../profile/employee.dialog';
 import { PeopleStore, PeopleView } from './people.store';
 import { wideDialog } from '../../../core/ui/dialog';
+import { ActiveFilter, ActiveFilters } from '../../../core/ui/table/active-filters';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { ColumnFilter, FilterValue, TableSort, filterToParam, sortToParams } from '../../../core/ui/table/table-state';
@@ -35,6 +36,13 @@ import { peopleQueryFromParams } from './people.query';
 
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 
+type TextFilterKey = 'name' | 'contact' | 'manager';
+const TEXT_FILTERS: readonly { key: TextFilterKey; column: string }[] = [
+  { key: 'name', column: 'people.fields.fullName' },
+  { key: 'contact', column: 'people.fields.contacts' },
+  { key: 'manager', column: 'people.fields.manager' },
+];
+
 /** Header filter of a dictionary column: choose one item (value = id as in the URL). */
 function selectFilter(items: DictionaryItem[]): ColumnFilter {
   return { type: 'select', options: items.map((i) => ({ value: String(i.id), label: i.name })) };
@@ -42,7 +50,8 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
 
 /**
  * People directory: search, status, table or cards; admins add people. Table headers sort and filter
- * (core/ui/table); branch / department / position also sit above the cards. All of it lives in the URL query.
+ * (core/ui/table); branch / department / position also sit above the cards, switched-on text filters of hideable
+ * columns show as chips (core/ui/table/active-filters). All of it lives in the URL query.
  */
 @Component({
   selector: 'app-people-page',
@@ -59,6 +68,7 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
     RouterLink,
     TableSortDirective,
     ColumnHeader,
+    ActiveFilters,
     TranslocoPipe,
   ],
   providers: [PeopleStore, TableUrlState],
@@ -134,6 +144,15 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
         <mat-button-toggle value="cards" [attr.aria-label]="'people.directory.cards' | transloco"><mat-icon>grid_view</mat-icon></mat-button-toggle>
       </mat-button-toggle-group>
     </div>
+    <!-- Text filters of name / contacts / manager: their columns are hidden in the cards view and on narrow screens
+         (contacts, manager), so a switched-on filter stays visible and removable here. -->
+    <app-active-filters
+      class="active"
+      [class.in-table]="store.view() === 'table'"
+      [filters]="textFilters()"
+      (remove)="clearTextFilter($event)"
+      (clearAll)="clearTextFilters()"
+    />
 
     <section class="panel" aria-live="polite">
       @if (store.loading()) {
@@ -144,8 +163,6 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
           <p>{{ 'people.loadError' | transloco }}</p>
           <button mat-stroked-button type="button" (click)="store.load()">{{ 'common.retry' | transloco }}</button>
         </div>
-      } @else if (!store.loading() && store.items().length === 0) {
-        <p class="state muted">{{ 'people.directory.empty' | transloco }}</p>
       } @else if (store.view() === 'table') {
         @if (canManage() && selected().size > 0) {
           <div class="bulk-bar">
@@ -209,9 +226,16 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
                   }
                 </td>
               </tr>
+            } @empty {
+              <!-- The headers stay when nothing matches: the filters that emptied the list are cleared right there. -->
+              <tr>
+                <td class="state muted" [attr.colspan]="canManage() ? 7 : 6">{{ store.loading() ? '' : ('people.directory.empty' | transloco) }}</td>
+              </tr>
             }
           </tbody>
         </table>
+      } @else if (!store.loading() && store.items().length === 0) {
+        <p class="state muted">{{ 'people.directory.empty' | transloco }}</p>
       } @else {
         <ul class="cards">
           @for (e of store.items(); track e.id) {
@@ -269,7 +293,7 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
     .card:hover, .card:focus-visible { border-color: var(--mat-sys-primary); transform: translateY(-1px); }
     .small { font-size: 0.8rem; }
     .dict { display: contents; }
-    @media (min-width: 901px) { .dict.in-table { display: none; } }
+    @media (min-width: 901px) { .dict.in-table, .active.in-table { display: none; } }
     @media (max-width: 900px) { .wide { display: none; } }
     @media (max-width: 600px) {
       .filters .grow { flex-basis: 100%; }
@@ -300,6 +324,11 @@ export class PeoplePage implements OnInit {
   protected readonly canManage = computed(() => canManagePeople(this.auth.user()?.roles ?? []));
 
   protected readonly textFilter: ColumnFilter = { type: 'text' };
+  /** Switched-on text filters of the columns that can be hidden (chips above the list). */
+  protected readonly textFilters = computed<ActiveFilter[]>(() => {
+    const q = this.store.query();
+    return TEXT_FILTERS.filter((f) => q[f.key]).map((f) => ({ key: f.key, column: f.column, value: q[f.key] ?? '' }));
+  });
   protected readonly branchFilter = computed(() => selectFilter(this.branches()));
   protected readonly departmentFilter = computed(() => selectFilter(this.departments()));
   protected readonly positionFilter = computed(() => selectFilter(this.positions()));
@@ -343,6 +372,15 @@ export class PeoplePage implements OnInit {
   /** Header filters: text or the chosen id; cleared → removed from the URL. */
   protected setFilter(name: 'name' | 'contact' | 'manager' | 'branch_id' | 'department_id' | 'position_id', value: FilterValue): void {
     this.url.update({ [name]: filterToParam(value) });
+  }
+
+  protected clearTextFilter(key: string): void {
+    const filter = TEXT_FILTERS.find((f) => f.key === key);
+    if (filter) this.url.update({ [filter.key]: null });
+  }
+
+  protected clearTextFilters(): void {
+    this.url.update({ name: null, contact: null, manager: null });
   }
 
   protected idValue(id: number | undefined): string | null {

@@ -88,7 +88,7 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 ### Эндпоинты
 | Метод и путь | Доступ | Параметры | Ответ |
 |---|---|---|---|
-| `GET /api/audit` | суперадмин (`can:view-audit-log`) | `user_id`, `entity_type`, `action`, `from`, `to` (`YYYY-MM-DD`, включительно), `page`, `perPage` 1..100 | `{data: [entry], links, meta}` |
+| `GET /api/audit` | суперадмин (`can:view-audit-log`) | `user_id`, `entity_type`, `action`, `from`, `to` (`YYYY-MM-DD`, включительно), `sort` = `time\|user\|action\|entity` (без `sort` — новые сверху), `dir` = `asc\|desc`, `page`, `perPage` 1..100 (строки принимаются) | `{data: [entry], links, meta}` |
 | `GET /api/audit/options` | суперадмин | — | `{entity_types[], actions[], users[{id, name}]}` |
 | `GET /api/people/{id}/history` | `can:people-manage` (HR) | `page`, `perPage` | как выше |
 | `GET /api/candidates/{id}/history` | политика `view` кандидата | `page`, `perPage` | кандидат + все его отклики |
@@ -96,8 +96,18 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 `entry`: `id, action, entity_type, entity_id, user {id, name} | null, changes, meta, created_at`.
 Гость → 401, нет прав → 403, неверный фильтр → 422.
 
+### Сортировка журнала (2026-10-02)
+`ListAuditRequest` проверяет `sort` по `Enums/AuditSort` и `dir` (белый список, иначе 422). `EloquentAuditLogRepository::sort()`:
+время — `created_at`, затем `id` в том же направлении; пользователь — коррелированный подзапрос имени (без `join`),
+системные записи (без пользователя) в конце при обоих направлениях (`nulls last`); действие — код действия; объект —
+тип, затем id объекта; равные — новее сверху по `id`. История сущности (`history`) по-прежнему всегда новые сверху.
+
 ### Фронтенд
-`features/audit`: страница `/admin/audit` (`roleGuard('superadmin')`), сервис, модель, `audit.format.ts` (ссылка
+`features/audit`: страница `/admin/audit` (`roleGuard('superadmin')`) — заголовки колонок общим `th[app-column-header]`
+([core.md](core.md#заголовок-таблицы-сортировка-и-фильтр)): «Час» (сортировка, диапазон дат `from`/`to`), «Користувач»
+(сортировка, выбор), «Дія» и «Обʼєкт» (сортировка, выбор с переводом кодов); «Зміни» — без сортировки. Все прежние
+фильтры сверху переехали в заголовки; состояние — в адресе (`audit.query.ts`), обратный диапазон дат меняется местами,
+неизвестные коды отбрасываются, новый запрос отменяет незавершённый; при пустом результате заголовки остаются. Сервис, модель, `audit.format.ts` (ссылка
 на запись и строки «поле: было → стало»), компонент `audit-history.ts` для вкладок профиля и карточки кандидата.
 
 ### Выбор решения
@@ -124,7 +134,9 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 
 ## Как проверить
 - `php artisan test tests/Feature/Audit tests/Unit/Audit`: запись и автор, маскирование, ключ без значения,
-  смена роли, перевод по воронке, доступ к журналу и вкладкам, исключение анонимных модулей, хранение.
+  смена роли, перевод по воронке, доступ к журналу и вкладкам, исключение анонимных модулей, хранение;
+  `AuditSortFilterApiTest` — сортировка по колонкам, системные записи в конце, фильтры, строковые `perPage`/`page`, 422.
+- Фронт: `features/audit/audit.page.spec.ts` — адрес → запрос, клик по названию → `sort/dir` и страница 1, диапазон дат.
 - Вручную: поменяйте роль пользователю → «Журнал дій» → строка «Зміна ролі» с «было → стало».
 
 ## Доступ к модулю

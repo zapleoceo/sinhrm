@@ -143,7 +143,7 @@ describe('People helpers', () => {
 });
 
 describe('PeopleStore', () => {
-  it('drops stale answers and does not reload the same query', () => {
+  it('cancels the stale request (not only its answer) and does not reload the same query', () => {
     const first = new Subject<Paged<Employee>>();
     const second = new Subject<Paged<Employee>>();
     const calls = [first, second];
@@ -154,6 +154,9 @@ describe('PeopleStore', () => {
     store.apply({ page: 3, perPage: 20 });
     store.apply({ q: 'ann', page: 1, perPage: 20 });
     expect(store.query().page).toBe(1);
+    // The first request is unsubscribed (HttpClient aborts it), the second one is live.
+    expect(first.observed).toBe(false);
+    expect(second.observed).toBe(true);
     second.next({ data: [employee()], meta: { current_page: 1, per_page: 20, total: 1, last_page: 1 } });
     first.next({ data: [], meta: { current_page: 3, per_page: 20, total: 0, last_page: 1 } });
     expect(store.items().length).toBe(1);
@@ -195,6 +198,8 @@ describe('people query in the URL', () => {
     expect(junk.page).toBe(1);
     expect(junk.perPage).toBe(200);
     expect(peopleQueryFromParams(convertToParamMap({})).perPage).toBe(PEOPLE_PAGE_SIZE);
+    // A hand-edited URL longer than the API limit (max:100) is cut, so the API never answers 422.
+    expect(peopleQueryFromParams(convertToParamMap({ manager: 'x'.repeat(150) })).manager).toHaveLength(100);
   });
 
   it('compares queries by value', () => {

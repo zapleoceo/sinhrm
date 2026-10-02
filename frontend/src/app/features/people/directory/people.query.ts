@@ -1,5 +1,5 @@
 import { ParamMap } from '@angular/router';
-import { intParam, sortFromParams, textParam } from '../../../core/ui/table/table-state';
+import { intParam, sameQuery as sameFlatQuery, sortFromParams, textParam } from '../../../core/ui/table/table-state';
 import { EMPLOYEE_STATUSES, EmployeeStatus, PEOPLE_SORT_KEYS, PeopleQuery, PeopleSortKey } from '../people.model';
 
 export const PEOPLE_PAGE_SIZE = 50;
@@ -29,6 +29,5 @@ export function peopleQueryFromParams(params: ParamMap): PeopleQuery {
 
 /** Same query? (the URL emits again on navigations that do not change it — no second request). */
 export function sameQuery(a: PeopleQuery, b: PeopleQuery): boolean {
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)] as (keyof PeopleQuery)[]);
-  return [...keys].every((k) => a[k] === b[k]);
+  return sameFlatQuery(a, b);
 }
