@@ -19,6 +19,10 @@ export interface Dashboard {
   }[];
   funnel: { stage_name: string; stage_kind: StageKind; position: number; count: number }[];
   touches: { days: number; by_channel: { channel: Channel; count: number }[] };
+  /** Captions under the funnel; null parts = too little data (not shown). May be absent on older API versions. */
+  funnel_insights?: FunnelInsights;
+  /** «Маршрут дня»: today's interviews and my tasks. May be absent on older API versions. */
+  day_route?: DayRoute;
   /** Notices of other modules (e.g. Google needs reconnecting); may be absent on older API versions. */
   warnings?: DashboardWarning[];
   /** TimeOff block (DashboardSection "timeoff"): who is out today and my pending approvals, in the user's scope. */
@@ -27,6 +31,94 @@ export interface Dashboard {
   hiring?: HiringDashboard;
   /** Time block (DashboardSection "time"): my current week and timesheets waiting for my approval. */
   time?: TimeDashboard;
+}
+
+/** backend Overview FunnelInsightsService. */
+export interface FunnelInsights {
+  period_days: number;
+  min_sample: number;
+  min_offer_observations: number;
+  bottleneck: { from: string; to: string; from_kind: StageKind; to_kind: StageKind; conversion: number; passed: number; decided: number } | null;
+  offer_path: { days: number; observations: number } | null;
+}
+
+/** backend Overview DayRouteService. */
+export interface DayRoute {
+  date: string;
+  interviews: number;
+  tasks: number;
+  items: DayRouteItem[];
+}
+
+export interface DayRouteItem {
+  kind: 'interview' | 'task';
+  id: number;
+  at: string;
+  end: string | null;
+  title: string | null;
+  meeting_type?: string | null;
+  type?: string;
+  candidate: { id: number; name: string } | null;
+}
+
+/** A station on the day line: position in % of the visible hours. */
+export interface RouteStop extends DayRouteItem {
+  left: number;
+  time: string;
+}
+
+/** The visible hours of the day line: 9:00–19:00, widened to whole hours around the earliest/latest event. */
+export interface RouteScale {
+  from: number;
+  to: number;
+  hours: { h: number; left: number }[];
+  /** «Now» in % of the line, null when outside the visible hours or not today. */
+  now: number | null;
+  nowLabel: string;
+}
+
+const pad = (n: number): string => String(n).padStart(2, '0');
+
+/** Local hour (with fraction) of an ISO time. */
+function hourOf(iso: string): number {
+  const d = new Date(iso);
+  return d.getHours() + d.getMinutes() / 60;
+}
+
+export function routeScale(items: DayRouteItem[], now: Date, date: string): RouteScale {
+  const hrs = items.map((i) => hourOf(i.at));
+  const from = Math.max(0, Math.min(9, Math.floor(Math.min(9, ...hrs))));
+  const to = Math.min(24, Math.max(19, Math.ceil(Math.max(19, ...hrs))));
+  const span = to - from;
+  const pct = (h: number): number => Math.round(((h - from) / span) * 1000) / 10;
+  const hours: { h: number; left: number }[] = [];
+  const step = span > 12 ? 3 : 2;
+  for (let h = from; h <= to; h += step) {
+    hours.push({ h, left: pct(h) });
+  }
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const n = now.getHours() + now.getMinutes() / 60;
+  return {
+    from,
+    to,
+    hours,
+    now: today === date && n >= from && n <= to ? pct(n) : null,
+    nowLabel: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+  };
+}
+
+export function routeStops(items: DayRouteItem[], scale: RouteScale): RouteStop[] {
+  const span = scale.to - scale.from;
+  return items.map((i) => {
+    const d = new Date(i.at);
+    return { ...i, left: Math.round(((hourOf(i.at) - scale.from) / span) * 1000) / 10, time: `${pad(d.getHours())}:${pad(d.getMinutes())}` };
+  });
+}
+
+/** Segments of the «touches» stacked bar: share of the total, a fixed colour slot by order (legend carries the text). */
+export function touchSegments(rows: { channel: Channel; count: number }[]): { channel: Channel; count: number; share: number; slot: number }[] {
+  const total = rows.reduce((s, r) => s + r.count, 0);
+  return rows.filter((r) => r.count > 0).map((r, i) => ({ ...r, share: total ? Math.round((r.count / total) * 1000) / 10 : 0, slot: i % 7 }));
 }
 
 export interface HiringDashboard {
@@ -91,3 +183,6 @@ export function statTiles(d: Dashboard): StatTile[] {
     { key: 'new_today', value: d.counts.new_today, link: '/vacancies', icon: 'person_add', tone: 'neutral' },
   ];
 }
+
+/** «Маршрут дня» ready for the view: the API block plus the visible hours and positioned stations. */
+export type DayRouteView = DayRoute & { scale: RouteScale; stops: RouteStop[] };

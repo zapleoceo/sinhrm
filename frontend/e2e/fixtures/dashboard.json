@@ -190,6 +190,55 @@
       "count": 5
      }
     ],
+    "funnel_insights": {
+     "period_days": 90,
+     "min_sample": 10,
+     "min_offer_observations": 3,
+     "bottleneck": {
+      "from": "Зустріч у філії",
+      "to": "Фінал з керівником",
+      "from_kind": "select",
+      "to_kind": "select",
+      "conversion": 38,
+      "passed": 5,
+      "decided": 13
+     },
+     "offer_path": {
+      "days": 21,
+      "observations": 5
+     }
+    },
+    "day_route": {
+     "date": "2026-10-01",
+     "interviews": 2,
+     "tasks": 0,
+     "items": [
+      {
+       "kind": "interview",
+       "id": 9001,
+       "at": "2026-10-01T08:00:00+00:00",
+       "end": "2026-10-01T09:00:00+00:00",
+       "title": "Співбесіда [ТЕСТ]",
+       "meeting_type": "online",
+       "candidate": {
+        "id": 74,
+        "name": "Бондаренко Віктор [ТЕСТ]"
+       }
+      },
+      {
+       "kind": "interview",
+       "id": 9002,
+       "at": "2026-10-01T11:30:00+00:00",
+       "end": "2026-10-01T12:00:00+00:00",
+       "title": "Зустріч у філії [ТЕСТ]",
+       "meeting_type": "branch",
+       "candidate": {
+        "id": 46,
+        "name": "Руденко Олег [ТЕСТ]"
+       }
+      }
+     ]
+    },
     "touches": {
      "days": 7,
      "by_channel": [
