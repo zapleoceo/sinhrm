@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { barWidth } from '../recruiting/reports/reports.store';
-import { Dashboard, statTiles } from './overview.model';
+import { Dashboard, routeScale, routeStops, statTiles, touchSegments } from './overview.model';
 import { OverviewService } from './overview.service';
 
 /** Home page state: one request, derived tiles and bar widths. */
@@ -11,6 +11,8 @@ export class OverviewStore {
   readonly data = signal<Dashboard | null>(null);
   readonly loading = signal(false);
   readonly failed = signal(false);
+  /** Moment of the last successful load: «now» on the day line. */
+  readonly loadedAt = signal(new Date());
 
   readonly tiles = computed(() => {
     const d = this.data();
@@ -26,6 +28,16 @@ export class OverviewStore {
     const max = Math.max(0, ...rows.map((r) => r.count));
     return rows.map((r) => ({ ...r, width: barWidth(r.count, max) }));
   });
+  readonly touchSegments = computed(() => touchSegments(this.data()?.touches.by_channel ?? []));
+  /** «Маршрут дня»: visible hours, stations and the «now» marker. */
+  readonly route = computed(() => {
+    const r = this.data()?.day_route;
+    if (!r) {
+      return null;
+    }
+    const scale = routeScale(r.items, this.loadedAt(), r.date);
+    return { ...r, scale, stops: routeStops(r.items, scale) };
+  });
   readonly touchesTotal = computed(() => (this.data()?.touches.by_channel ?? []).reduce((sum, r) => sum + r.count, 0));
 
   load(): void {
@@ -33,6 +45,7 @@ export class OverviewStore {
     this.failed.set(false);
     this.api.dashboard().subscribe({
       next: (d) => {
+        this.loadedAt.set(new Date());
         this.data.set(d);
         this.loading.set(false);
       },

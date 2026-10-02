@@ -1,11 +1,24 @@
 <header class="page-head">
-  <div>
+  <div class="head-text">
+    <p class="crumb">
+      <span>{{ 'overview.crumb' | transloco }}</span><i aria-hidden="true"></i><time [attr.datetime]="todayIso()">{{ todayLabel() }}</time>
+    </p>
     <h1>{{ 'overview.greeting' | transloco: { name: firstName() } }}</h1>
     <p class="muted">{{ 'overview.subtitle' | transloco }}</p>
   </div>
-  <button mat-button type="button" (click)="store.load()" [disabled]="store.loading()">
-    <mat-icon>refresh</mat-icon>{{ 'overview.refresh' | transloco }}
-  </button>
+  <div class="tools">
+    @if (store.data(); as d) {
+      <a mat-stroked-button routerLink="/tasks" class="tool">{{ 'overview.myTasksButton' | transloco: { n: d.my_tasks.total } }}</a>
+    }
+    @if (canCreateCandidate()) {
+      <button mat-flat-button type="button" class="tool" (click)="createCandidate()">
+        <mat-icon>add</mat-icon>{{ 'overview.newCandidate' | transloco }}
+      </button>
+    }
+    <button mat-button type="button" class="tool" (click)="store.load()" [disabled]="store.loading()">
+      <mat-icon>refresh</mat-icon>{{ 'overview.refresh' | transloco }}
+    </button>
+  </div>
 </header>
 
 @if (store.loading() && !store.data()) {
@@ -28,6 +41,55 @@
       }
     </p>
   }
+
+  @if (store.route(); as r) {
+    <section class="panel card route" aria-labelledby="route-title">
+      <div class="card-head">
+        <h2 id="route-title">{{ 'overview.route.title' | transloco }}</h2>
+        <span class="app-num muted summary">{{ 'overview.route.summary' | transloco: { i: r.interviews, t: r.tasks } }}</span>
+      </div>
+      @if (r.stops.length) {
+        <div class="line" aria-hidden="true">
+          <span class="rail"></span>
+          @if (r.scale.now !== null) {
+            <span class="done" [style.width.%]="r.scale.now"></span>
+          }
+          @for (h of r.scale.hours; track h.h; let odd = $odd) {
+            <span class="hr app-num" [class.minor]="odd" [style.left.%]="h.left">{{ h.h }}:00</span>
+          }
+          @for (s of r.stops; track s.kind + s.id) {
+            <span class="app-station stop" [attr.data-kind]="s.kind === 'interview' ? 'interview' : 'screen'" [style.left.%]="s.left"></span>
+          }
+          @if (r.scale.now !== null) {
+            <span class="now" [style.left.%]="r.scale.now"><span class="now-label app-num">{{ 'overview.route.now' | transloco: { time: r.scale.nowLabel } }}</span></span>
+          }
+        </div>
+        <ol class="stops">
+          @for (s of r.stops; track s.kind + s.id) {
+            <li [attr.data-kind]="s.kind">
+              <span class="app-station" [attr.data-kind]="s.kind === 'interview' ? 'interview' : 'screen'" aria-hidden="true"></span>
+              <time class="app-num" [attr.datetime]="s.at">{{ s.time }}</time>
+              <span class="kind">{{ (s.kind === 'interview' ? 'overview.route.interview' : 'overview.route.task') | transloco }}</span>
+              @if (s.candidate; as c) {
+                <a [routerLink]="['/candidates', c.id]">{{ c.name }}</a>
+              }
+              @if (s.kind === 'task' && s.type === 'new_applicant') {
+                <span class="muted">{{ 'scripts.tasks.newApplicantTitle' | transloco }}</span>
+              } @else if (s.title) {
+                <span class="muted">{{ s.title }}</span>
+              }
+              @if (s.meeting_type === 'online' || s.meeting_type === 'branch') {
+                <span class="app-pill" data-tone="info">{{ 'overview.route.' + s.meeting_type | transloco }}</span>
+              }
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="app-empty"><b>{{ 'overview.route.empty' | transloco }}</b>{{ 'overview.route.emptyHint' | transloco }}</p>
+      }
+    </section>
+  }
+
   <section class="tiles" [attr.aria-label]="'overview.countersLabel' | transloco">
     @for (t of store.tiles(); track t.key) {
       <a class="tile" [routerLink]="t.link" [attr.data-tone]="t.tone" [attr.data-key]="t.key">
@@ -38,9 +100,61 @@
     }
   </section>
 
-  <div class="grid">
-    <app-mood-checkin />
-    <section class="panel card">
+  <div class="grid main">
+    <section class="panel card s7">
+      <h2>{{ 'overview.funnel' | transloco }}</h2>
+      <table class="metro">
+        <tbody>
+          @for (r of store.funnel(); track r.position + r.stage_name) {
+            <tr [attr.data-kind]="r.stage_kind">
+              <th scope="row"><span class="app-station" [attr.data-kind]="r.stage_kind" [style.--share]="r.width / 100" aria-hidden="true"></span>{{ r.stage_name }}</th>
+              <td class="barcell"><span class="track"><span class="bar" [attr.data-kind]="r.stage_kind" [style.width.%]="r.width"></span></span><span class="num app-num">{{ r.count }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td class="muted" colspan="2">{{ 'overview.empty' | transloco }}</td></tr>
+          }
+        </tbody>
+      </table>
+      @if (d.funnel_insights; as fi) {
+        <div class="mfoot">
+          @if (fi.bottleneck; as b) {
+            <p class="insight" data-insight="bottleneck">
+              {{ 'overview.insights.bottleneck' | transloco }} <b>{{ b.from }} → {{ b.to }}</b>
+              <span class="app-num muted">{{ 'overview.insights.bottleneckRate' | transloco: { p: b.conversion, days: fi.period_days } }}</span>
+            </p>
+          }
+          @if (fi.offer_path; as o) {
+            <p class="insight" data-insight="offer">
+              {{ 'overview.insights.offerPath' | transloco }} <b class="app-num">{{ 'overview.insights.offerDays' | transloco: { n: o.days } }}</b>
+            </p>
+          }
+          @if (!fi.bottleneck && !fi.offer_path) {
+            <p class="insight muted" data-insight="none">{{ 'overview.insights.notEnough' | transloco: { n: fi.min_sample, days: fi.period_days } }}</p>
+          }
+        </div>
+      }
+      <a mat-button routerLink="/vacancies">{{ 'overview.toBoards' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+    </section>
+
+    <section class="panel card s5">
+      <div class="card-head">
+        <h2>{{ 'overview.stale' | transloco: { days: d.stale_days } }}</h2>
+        <span class="app-num muted">{{ d.stale.length }}</span>
+      </div>
+      <ul class="rows">
+        @for (s of d.stale; track s.application_id) {
+          <li>
+            <a [routerLink]="['/candidates', s.candidate.id]">{{ s.candidate.name }}</a>
+            <span class="muted">{{ s.vacancy.title }} · {{ s.stage }}</span>
+            <span class="days app-num"><mat-icon inline>schedule</mat-icon>{{ 'overview.days' | transloco: { n: s.days } }}</span>
+          </li>
+        } @empty {
+          <li class="muted">{{ 'overview.noStale' | transloco }}</li>
+        }
+      </ul>
+    </section>
+
+    <section class="panel card s7">
       <h2>
         {{ 'overview.myTasks' | transloco }}
         @if (d.my_tasks.overdue) {
@@ -50,9 +164,30 @@
       <app-tasks-widget [query]="myTasks" />
     </section>
 
-    @if (d.timeoff; as t) {
-      <section class="panel card">
-        <h2>{{ 'overview.outToday' | transloco: { n: t.out_today.length } }}</h2>
+    <section class="panel card s5">
+      <h2>{{ 'overview.touches' | transloco: { days: d.touches.days, n: store.touchesTotal() } }}</h2>
+      @if (store.touchSegments().length) {
+        <div class="stackbar" aria-hidden="true">
+          @for (s of store.touchSegments(); track s.channel) {
+            <i [style.flex-grow]="s.count" [attr.data-slot]="s.slot"></i>
+          }
+        </div>
+        <ul class="legend">
+          @for (s of store.touchSegments(); track s.channel) {
+            <li>
+              <i class="swatch" [attr.data-slot]="s.slot" aria-hidden="true"></i>
+              <app-channel-icon [key]="s.channel" />
+              {{ 'recruiting.channel.' + s.channel | transloco }} <b class="app-num">{{ s.count }}</b>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">{{ 'overview.empty' | transloco }}</p>
+      }
+      <a mat-button routerLink="/reports">{{ 'overview.toReports' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+
+      @if (d.timeoff; as t) {
+        <h2 class="sub">{{ 'overview.outToday' | transloco: { n: t.out_today.length } }}</h2>
         <ul class="rows">
           @for (a of t.out_today; track a.id) {
             <li>
@@ -65,7 +200,15 @@
           }
         </ul>
         <a mat-button routerLink="/timeoff/calendar">{{ 'overview.toCalendar' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
-      </section>
+      }
+    </section>
+  </div>
+
+  <!-- Blocks that are not in the layout mock-up: below the main grid, unchanged. -->
+  <div class="grid more">
+    <app-mood-checkin />
+
+    @if (d.timeoff; as t) {
       @if (t.my_approvals.count > 0) {
         <section class="panel card">
           <h2>{{ 'overview.myApprovals' | transloco: { n: t.my_approvals.count } }}</h2>
@@ -131,54 +274,5 @@
         </section>
       }
     }
-
-    <section class="panel card">
-      <h2>{{ 'overview.stale' | transloco: { days: d.stale_days } }}</h2>
-      <ul class="rows">
-        @for (s of d.stale; track s.application_id) {
-          <li>
-            <a [routerLink]="['/candidates', s.candidate.id]">{{ s.candidate.name }}</a>
-            <span class="muted">{{ s.vacancy.title }} · {{ s.stage }}</span>
-            <span class="days app-num"><mat-icon inline>schedule</mat-icon>{{ 'overview.days' | transloco: { n: s.days } }}</span>
-          </li>
-        } @empty {
-          <li class="muted">{{ 'overview.noStale' | transloco }}</li>
-        }
-      </ul>
-    </section>
-
-    <section class="panel card">
-      <h2>{{ 'overview.funnel' | transloco }}</h2>
-      <table class="metro">
-        <tbody>
-          @for (r of store.funnel(); track r.position + r.stage_name) {
-            <tr [attr.data-kind]="r.stage_kind">
-              <th scope="row"><span class="app-station" [attr.data-kind]="r.stage_kind" [style.--share]="r.width / 100" aria-hidden="true"></span>{{ r.stage_name }}</th>
-              <td class="barcell"><span class="track"><span class="bar" [attr.data-kind]="r.stage_kind" [style.width.%]="r.width"></span></span><span class="num app-num">{{ r.count }}</span></td>
-            </tr>
-          } @empty {
-            <tr><td class="muted" colspan="2">{{ 'overview.empty' | transloco }}</td></tr>
-          }
-        </tbody>
-      </table>
-      <a mat-button routerLink="/vacancies">{{ 'overview.toBoards' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
-    </section>
-
-    <section class="panel card">
-      <h2>{{ 'overview.touches' | transloco: { days: d.touches.days, n: store.touchesTotal() } }}</h2>
-      <table>
-        <tbody>
-          @for (r of store.touches(); track r.channel) {
-            <tr>
-              <th scope="row"><app-channel-icon [key]="r.channel" /> {{ 'recruiting.channel.' + r.channel | transloco }}</th>
-              <td class="barcell"><span class="track"><span class="bar" [style.width.%]="r.width"></span></span><span class="num app-num">{{ r.count }}</span></td>
-            </tr>
-          } @empty {
-            <tr><td class="muted" colspan="2">{{ 'overview.empty' | transloco }}</td></tr>
-          }
-        </tbody>
-      </table>
-      <a mat-button routerLink="/reports">{{ 'overview.toReports' | transloco }}<mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
-    </section>
   </div>
 }

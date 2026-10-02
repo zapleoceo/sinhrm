@@ -1,5 +1,50 @@
-// Restyle C «Маршрут»: KPI tiles with a coloured «sleeper» on top, the funnel as a metro line (station size = share of
+// Restyle C «Маршрут» (mock-up dir-c, screen dash): header with a date crumb, «Маршрут дня» on top, KPI tiles with a coloured «sleeper» on top, the funnel as a metro line (station size = share of
 // the largest stage, colour = stage TYPE via data-kind), bars as lines on a track. Tokens only (styles.scss), no hex.
+
+// Header: crumb «Огляд —○ date», greeting, tools (44px targets).
+.page-head { align-items: flex-end; }
+.crumb {
+  display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.25rem;
+  font: var(--mat-sys-label-large); color: var(--app-muted);
+  i {
+    position: relative; width: 1.4rem; height: 2px; background: var(--app-track);
+    &::after {
+      content: ''; position: absolute; right: -0.25rem; top: -0.2rem; width: 0.5rem; height: 0.5rem; box-sizing: border-box;
+      border-radius: 50%; border: 2px solid var(--app-brand-text); background: var(--app-canvas);
+    }
+  }
+}
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.tool { min-height: 44px; }
+
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.card-head h2 { margin-bottom: 0.75rem; }
+
+// «Маршрут дня»: a rail with hour ticks, stations of the day's events, the passed part and «now».
+.route { margin-bottom: var(--app-gap); overflow: visible; }
+.route .summary { font-size: 0.8rem; }
+.line { position: relative; height: 4.5rem; margin: 0.25rem 1.5rem 0.5rem; }
+.line .rail, .line .done { position: absolute; left: 0; top: 1.5rem; height: 6px; border-radius: 3px; }
+.line .rail { right: 0; background: var(--app-track); }
+.line .done { background: var(--app-brand-text); transform-origin: left center; }
+.line .hr { position: absolute; top: 2.6rem; translate: -50% 0; font-size: 0.7rem; color: var(--app-muted); white-space: nowrap; }
+.line .stop {
+  position: absolute; top: calc(1.5rem + 3px); translate: -50% -50%;
+  width: 1.1rem; height: 1.1rem; border-width: 4px; box-shadow: 0 0 0 2px var(--app-card);
+}
+.line .now { position: absolute; top: 0.6rem; height: 1.8rem; width: 2px; translate: -50% 0; background: var(--app-ink); }
+.now-label {
+  position: absolute; top: -0.9rem; left: 50%; translate: -50% 0; padding: 0.1rem 0.35rem; border-radius: 4px;
+  font-size: 0.65rem; line-height: 1.2; white-space: nowrap; background: var(--app-ink); color: var(--app-on-ink);
+}
+.stops { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0 1.5rem; }
+.stops li {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.6rem; min-height: 44px; padding: 0.35rem 0;
+  border-bottom: var(--app-border-w) solid var(--app-track);
+  a { color: inherit; font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
+  .kind { font: var(--mat-sys-label-medium); color: var(--app-muted); }
+  time { min-width: 3rem; }
+}
 
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: var(--app-gap); }
 .tile {
@@ -26,6 +71,11 @@
 }
 
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--app-gap); }
+// Main grid of the mock-up: 12 columns, 7 + 5.
+.grid.main { grid-template-columns: repeat(12, minmax(0, 1fr)); margin-bottom: var(--app-gap); }
+.s7 { grid-column: span 7; }
+.s5 { grid-column: span 5; }
+h2.sub { margin-top: 1rem; }
 .card { padding: 1.1rem 1.25rem; }
 h2 { font: var(--mat-sys-title-medium); font-family: var(--app-font-display); margin: 0 0 0.75rem; }
 .warn { color: var(--app-warn-text); font: var(--mat-sys-body-medium); }
@@ -75,26 +125,65 @@ tbody tr:last-child > * { border-bottom: 0; }
 .bar[data-kind='closed'] { background: var(--app-stage-closed); }
 .bar[data-kind='hire'] { background: var(--app-stage-hire); }
 
-// The one «route» animation: funnel lines draw from the left on load (transform only).
+// Funnel footer: the narrowest point and the average path to the offer (only when the API has enough data).
+.mfoot {
+  display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; margin: 0.25rem 0 0.5rem; padding-top: 0.75rem;
+  border-top: var(--app-border-w) dashed var(--app-track); font: var(--mat-sys-body-medium); color: var(--app-muted);
+  p { margin: 0; }
+  b { color: var(--mat-sys-on-surface); }
+}
+
+// Touches of the last 7 days: stacked bar + legend (the legend carries channel name and number, colour is never alone).
+.stackbar { display: flex; gap: 3px; height: 0.75rem; margin: 0.25rem 0 0.6rem; }
+.stackbar i { flex: 1 1 0; min-width: 4px; border-radius: 3px; background: var(--slot); }
+.legend { list-style: none; display: flex; flex-wrap: wrap; gap: 0.35rem 1rem; margin: 0 0 0.25rem; padding: 0; font: var(--mat-sys-body-medium); color: var(--app-muted); }
+.legend li { display: inline-flex; align-items: center; gap: 0.35rem; }
+.legend b { color: var(--mat-sys-on-surface); }
+.swatch { width: 0.65rem; height: 0.65rem; border-radius: 50%; background: var(--slot); flex: none; }
+[data-slot='0'] { --slot: var(--app-brand-text); }
+[data-slot='1'] { --slot: var(--app-accent); }
+[data-slot='2'] { --slot: var(--app-warning); }
+[data-slot='3'] { --slot: var(--app-stage-new); }
+[data-slot='4'] { --slot: var(--app-success); }
+[data-slot='5'] { --slot: var(--app-danger); }
+[data-slot='6'] { --slot: var(--app-muted); }
+
+// Motion budget of the brief: one «route» (the passed part of the day line draws from the left, 600 ms) and one
+// «pop» (cards of the main grid rise in, 280 ms). Transform/opacity only; static with prefers-reduced-motion.
 @media (prefers-reduced-motion: no-preference) {
-  .metro .bar { animation: route-draw 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .line .done { animation: route-draw 600ms cubic-bezier(0.3, 0.7, 0.2, 1) both; }
+  .grid.main > * { animation: pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .grid.main > :nth-child(n + 3) { animation-delay: 60ms; }
 }
 @keyframes route-draw {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
+@keyframes pop {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
 
 @media (max-width: 1100px) {
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+@media (max-width: 1200px) {
+  .s7, .s5 { grid-column: span 12; }
+}
 @media (max-width: 900px) {
   .grid { grid-template-columns: 1fr; }
+  .grid.main { grid-template-columns: 1fr; }
+  .s7, .s5 { grid-column: auto; }
 }
 @media (max-width: 600px) {
   .tiles { gap: 0.75rem; }
   .tile { padding: 0.8rem 0.9rem 0.75rem; }
   .tile .value { font-size: 1.6rem; }
   .card { padding: 1rem; }
+  .line { margin: 0.25rem 0.75rem 0.5rem; }
+  .line .hr.minor { visibility: hidden; } // every other hour on phones: labels never collide
+  .stops { grid-template-columns: 1fr; }
+  .tools { width: 100%; }
 }
 
 .warning-banner {
