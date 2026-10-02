@@ -13,19 +13,18 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { CYCLE_STATUSES, Competency, REVIEW_TYPES, RatingScale, ReviewCycle, ReviewType, parseIds } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { toIsoDate } from '../../../core/date/iso-date';
-import { ClientColumns, ClientTable, enumFilter } from '../../../core/ui/table/client-table';
+import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../../core/ui/table/client-table';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
-import { ColumnFilter } from '../../../core/ui/table/table-state';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 
 /** Columns of the cycles list (all on the page). Period filters by its start; progress sorts by the submitted share. */
-export const CYCLE_COLUMNS: ClientColumns<ReviewCycle> = {
-  name: { sort: (c) => c.name, filter: 'text', match: (c) => c.name },
-  period: { sort: (c) => c.period_start, filter: 'range', match: (c) => c.period_start },
-  status: { sort: (c) => CYCLE_STATUSES.indexOf(c.status), filter: 'select', values: CYCLE_STATUSES, match: (c) => c.status },
-  progress: { sort: (c) => (c.progress.total ? c.progress.submitted / c.progress.total : null) },
-};
+export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
+  { key: 'name', value: (c) => c.name, filter: 'text' },
+  { key: 'period', value: (c) => c.period_start, filter: 'date' },
+  { key: 'status', value: (c) => CYCLE_STATUSES.indexOf(c.status), filter: 'select', filterValue: (c) => c.status },
+  { key: 'progress', value: (c) => (c.progress.total ? c.progress.submitted / c.progress.total : null) },
+];
 
 /**
  * Review setup (/admin/perform/reviews, admins): rating scales, competencies, and the cycle wizard —
@@ -163,17 +162,17 @@ export const CYCLE_COLUMNS: ClientColumns<ReviewCycle> = {
         <thead>
           <tr>
             <th scope="col" app-column-header key="name" [label]="'perform.fields.name' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('name')" (filterChange)="table.setFilter('name', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('name')" (filterChange)="table.setFilter('name', $event)"></th>
             <th scope="col" app-column-header key="period" [label]="'perform.fields.period' | transloco"
-              [filter]="dateFilter" [filterValue]="table.filter('period')" (filterChange)="table.setFilter('period', $event)"></th>
+              [filter]="dateFilter" [filterValue]="table.filterValue('period')" (filterChange)="table.setFilter('period', $event)"></th>
             <th scope="col" app-column-header key="status" [label]="'perform.fields.status' | transloco"
-              [filter]="statusFilter()" [filterValue]="table.filter('status')" (filterChange)="table.setFilter('status', $event)"></th>
+              [filter]="statusFilter()" [filterValue]="table.filterValue('status')" (filterChange)="table.setFilter('status', $event)"></th>
             <th scope="col" app-column-header key="progress" [label]="'perform.admin.progress' | transloco"></th>
-            <th scope="col"><span class="visually-hidden">{{ 'perform.admin.actions' | transloco }}</span></th>
+            <th scope="col"><span class="visually-hidden">{{ 'table.actions' | transloco }}</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (c of rows(); track c.id) {
+          @for (c of table.rows(); track c.id) {
             <tr>
               <th scope="row">{{ c.name }}</th>
               <td class="muted app-num">{{ c.period_start }} — {{ c.period_end }}</td>
@@ -225,11 +224,10 @@ export class ReviewAdminPage implements OnInit {
   protected readonly scales = signal<RatingScale[]>([]);
   protected readonly competencies = signal<Competency[]>([]);
   protected readonly cycles = signal<ReviewCycle[]>([]);
-  protected readonly table = new ClientTable(CYCLE_COLUMNS);
-  protected readonly rows = this.table.rows(this.cycles);
-  protected readonly textFilter: ColumnFilter = { type: 'text' };
-  protected readonly dateFilter: ColumnFilter = { type: 'range', input: 'date' };
-  protected readonly statusFilter = enumFilter(CYCLE_STATUSES, 'perform.cycleStatus.');
+  protected readonly table = new ClientTable({ rows: this.cycles, columns: CYCLE_COLUMNS });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly dateFilter = DATE_RANGE;
+  protected readonly statusFilter = translatedSelect(() => CYCLE_STATUSES, (s) => 'perform.cycleStatus.' + s);
   protected scaleName = '';
   protected scaleLevels = '1 Very weak; 2 Weak; 3 OK; 4 Strong; 5 Very strong';
   protected competencyName = '';

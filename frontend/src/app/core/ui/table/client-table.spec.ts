@@ -1,131 +1,197 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, convertToParamMap, provideRouter } from '@angular/router';
-import { RouterTestingHarness } from '@angular/router/testing';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { ClientColumns, ClientTable, clientFilterParams, clientQueryFromParams, compareCells, filterRows, sortRows } from './client-table';
+import {
+  ClientColumn,
+  ClientTable,
+  applyClientTable,
+  clientStateFromParams,
+  distinctValues,
+  matchesFilter,
+  sortRows,
+  translatedSelect,
+} from './client-table';
+import { ColumnHeader } from './column-header';
+import { TableSortDirective } from './table-sort.directive';
+import { prefixed, sortFromParams, sortToParams } from './table-state';
 import { TableUrlState } from './table-url-state';
 
-interface Row {
+interface R {
   id: number;
   name: string | null;
-  status: 'new' | 'done';
-  hours: number | null;
+  n: number | null;
   day: string | null;
+  kind: string;
 }
 
-const COLUMNS: ClientColumns<Row> = {
-  name: { sort: (r) => r.name, filter: 'text', match: (r) => r.name },
-  status: { sort: (r) => ['new', 'done'].indexOf(r.status), filter: 'select', values: ['new', 'done'], match: (r) => r.status },
-  hours: { sort: (r) => r.hours, filter: 'range', match: (r) => r.hours },
-  day: { sort: (r) => r.day, filter: 'range', match: (r) => r.day },
-  /** Server filter: parsed from the URL, never applied on the page. */
-  owner: { filter: 'select' },
-};
-
-const ROWS: Row[] = [
-  { id: 1, name: 'Ярема', status: 'done', hours: 8, day: '2026-09-28' },
-  { id: 2, name: null, status: 'new', hours: null, day: null },
-  { id: 3, name: 'Анна', status: 'new', hours: 40, day: '2026-10-01T09:00:00Z' },
-  { id: 4, name: 'Єва', status: 'done', hours: 8, day: '2026-09-30' },
-  { id: 5, name: 'пункт 10', status: 'new', hours: 0, day: '2026-10-02' },
-  { id: 6, name: 'пункт 9', status: 'new', hours: 2.5, day: '2026-10-05' },
+const rows: R[] = [
+  { id: 1, name: 'Ярема', n: 10, day: '2026-03-01', kind: 'a' },
+  { id: 2, name: 'Антон', n: 2, day: null, kind: 'b' },
+  { id: 3, name: null, n: null, day: '2026-01-15', kind: 'a' },
+  { id: 4, name: 'Єва', n: 2, day: '2026-02-10T08:00:00Z', kind: 'b' },
+  { id: 5, name: 'антон', n: 33, day: '2026-02-11', kind: 'a' },
 ];
-const ids = (rows: Row[]) => rows.map((r) => r.id);
+const ids = (list: R[]): number[] => list.map((r) => r.id);
 
-describe('client table: sort and filter on the page', () => {
-  it('reads the URL defensively: unknown sort, values outside the list and junk ranges are dropped', () => {
-    const q = clientQueryFromParams(
-      convertToParamMap({ sort: 'hours', dir: 'desc', name: '  Ann ', status: 'deleted', hours_from: '2', hours_to: 'abc', day_to: '2026-10-01', owner: '7' }),
-      COLUMNS,
-    );
-    expect(q.sort).toEqual({ key: 'hours', dir: 'desc' });
-    expect(q.filters).toEqual({ name: 'Ann', hours: { from: '2', to: null }, day: { from: null, to: '2026-10-01' }, owner: '7' });
-    expect(clientQueryFromParams(convertToParamMap({ sort: 'owner' }), COLUMNS).sort).toBeNull(); // not sortable
-    expect(clientQueryFromParams(convertToParamMap({ sort: 'id; drop' }), COLUMNS).sort).toBeNull();
-    expect(clientQueryFromParams(convertToParamMap({ name: 'x'.repeat(300) }), COLUMNS).filters['name']).toHaveLength(100);
+const columns: ClientColumn<R>[] = [
+  { key: 'name', value: (r) => r.name, filter: 'text' },
+  { key: 'n', value: (r) => r.n, filter: 'number' },
+  { key: 'day', value: (r) => r.day, filter: 'date' },
+  { key: 'kind', value: (r) => r.kind, filter: 'select' },
+  { key: 'only', value: (r) => r.id, sortable: false },
+];
+
+describe('client table helpers', () => {
+  it('sorts by the interface language with empties last in both directions and keeps ties in API order', () => {
+    // Ukrainian alphabet: А … Є … Я; case does not split equal names, and ties (2, 5) keep the API order.
+    expect(ids(sortRows(rows, (r) => r.name, 'asc', 'uk'))).toEqual([2, 5, 4, 1, 3]);
+    expect(ids(sortRows(rows, (r) => r.name, 'desc', 'uk'))).toEqual([1, 4, 2, 5, 3]);
+    // Numbers as numbers (2 < 10 < 33), not as text; the equal 2s keep the order 2, 4.
+    expect(ids(sortRows(rows, (r) => r.n, 'asc', 'uk'))).toEqual([2, 4, 1, 5, 3]);
+    expect(ids(sortRows(rows, (r) => r.n, 'desc', 'uk'))).toEqual([5, 1, 2, 4, 3]);
+    expect(ids(sortRows(rows, (r) => r.day, 'desc', 'uk'))).toEqual([1, 5, 4, 3, 2]);
+    expect(rows.map((r) => r.id)).toEqual([1, 2, 3, 4, 5]); // the input is not mutated
   });
 
-  it('writes filters to the URL: text/select as one param, range as _from/_to, empty removes', () => {
-    expect(clientFilterParams(COLUMNS, 'name', ' Ann ')).toEqual({ name: 'Ann' });
-    expect(clientFilterParams(COLUMNS, 'name', null)).toEqual({ name: null });
-    expect(clientFilterParams(COLUMNS, 'hours', { from: '1', to: null })).toEqual({ hours_from: '1', hours_to: null });
-    expect(clientFilterParams(COLUMNS, 'hours', null)).toEqual({ hours_from: null, hours_to: null });
+  it('matches header filters: text contains any case, select equals, ranges are inclusive, empties fail', () => {
+    expect(matchesFilter('Антон', 'text', 'НТО')).toBe(true);
+    expect(matchesFilter('Антон', 'text', 'x')).toBe(false);
+    expect(matchesFilter(null, 'text', 'a')).toBe(false);
+    expect(matchesFilter(null, 'text', null)).toBe(true);
+    expect(matchesFilter('ab', 'select', 'a')).toBe(false);
+    expect(matchesFilter(true, 'select', 'true')).toBe(true);
+    expect(matchesFilter(5, 'number', { from: '5', to: '5' })).toBe(true);
+    expect(matchesFilter(5, 'number', { from: '6', to: null })).toBe(false);
+    expect(matchesFilter(5, 'number', { from: 'abc', to: null })).toBe(true); // junk bound is ignored
+    expect(matchesFilter('2026-02-10T23:59:00Z', 'date', { from: null, to: '2026-02-10' })).toBe(true);
+    expect(matchesFilter('2026-02-11', 'date', { from: null, to: '2026-02-10' })).toBe(false);
   });
 
-  it('compares text in the interface language with natural numbers', () => {
-    expect(compareCells('Єва', 'Ярема', 'uk')).toBeLessThan(0);
-    expect(compareCells('Анна', 'Єва', 'uk')).toBeLessThan(0);
-    expect(compareCells('пункт 9', 'пункт 10', 'uk')).toBeLessThan(0);
-    expect(compareCells(2, 10, 'uk')).toBeLessThan(0);
+  it('filters then sorts; a non-sortable or unknown column keeps the API order', () => {
+    const filters = { name: 'а', n: { from: '2', to: '20' } };
+    expect(ids(applyClientTable(rows, columns, { key: 'n', dir: 'desc' }, filters, 'uk'))).toEqual([1, 2, 4]);
+    expect(ids(applyClientTable(rows, columns, { key: 'only', dir: 'desc' }, {}, 'uk'))).toEqual([1, 2, 3, 4, 5]);
+    expect(ids(applyClientTable(rows, columns, null, { kind: 'b' }, 'uk'))).toEqual([2, 4]);
   });
 
-  it('sorts both ways with empty cells last and ties in the API order', () => {
-    expect(ids(sortRows(ROWS, { key: 'name', dir: 'asc' }, COLUMNS, 'uk'))).toEqual([3, 4, 6, 5, 1, 2]);
-    expect(ids(sortRows(ROWS, { key: 'name', dir: 'desc' }, COLUMNS, 'uk'))).toEqual([1, 5, 6, 4, 3, 2]);
-    expect(ids(sortRows(ROWS, { key: 'hours', dir: 'asc' }, COLUMNS, 'uk'))).toEqual([5, 6, 1, 4, 3, 2]);
-    expect(ids(sortRows(ROWS, { key: 'hours', dir: 'desc' }, COLUMNS, 'uk'))).toEqual([3, 1, 4, 6, 5, 2]);
-    expect(ids(sortRows(ROWS, null, COLUMNS, 'uk'))).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(ids(sortRows(ROWS, { key: 'owner', dir: 'asc' }, COLUMNS, 'uk'))).toEqual([1, 2, 3, 4, 5, 6]);
+  it('reads the state from prefixed URL params and drops unknown sort keys', () => {
+    const params = convertToParamMap({ t_sort: 'n', t_dir: 'desc', t_name: ' ан ', t_day_from: '2026-02-01', sort: 'name', t_kind: '' });
+    expect(clientStateFromParams(params, columns, 't')).toEqual({
+      sort: { key: 'n', dir: 'desc' },
+      filters: { name: 'ан', n: null, day: { from: '2026-02-01', to: null }, kind: null },
+    });
+    expect(clientStateFromParams(convertToParamMap({ t_sort: 'only' }), columns, 't').sort).toBeNull();
+    expect(clientStateFromParams(convertToParamMap({ sort: 'name' }), columns).sort).toEqual({ key: 'name', dir: 'asc' });
   });
 
-  it('filters: text contains (any case), select equals, number and date ranges inclusive; server filters skipped', () => {
-    expect(ids(filterRows(ROWS, { name: 'ПУНКТ' }, COLUMNS, 'uk'))).toEqual([5, 6]);
-    expect(ids(filterRows(ROWS, { status: 'done' }, COLUMNS, 'uk'))).toEqual([1, 4]);
-    expect(ids(filterRows(ROWS, { hours: { from: '0', to: '8' } }, COLUMNS, 'uk'))).toEqual([1, 4, 5, 6]);
-    expect(ids(filterRows(ROWS, { hours: { from: '10', to: null } }, COLUMNS, 'uk'))).toEqual([3]);
-    expect(ids(filterRows(ROWS, { day: { from: '2026-09-30', to: '2026-10-01' } }, COLUMNS, 'uk'))).toEqual([3, 4]);
-    expect(ids(filterRows(ROWS, { owner: '7', status: 'new' }, COLUMNS, 'uk'))).toEqual([2, 3, 5, 6]);
-    expect(ids(filterRows(ROWS, {}, COLUMNS, 'uk'))).toEqual([1, 2, 3, 4, 5, 6]);
+  it('prefixes sort params only when asked (the unprefixed form stays as before)', () => {
+    expect(prefixed(undefined, 'sort')).toBe('sort');
+    expect(prefixed('src', 'sort')).toBe('src_sort');
+    expect(sortToParams({ key: 'count', dir: 'desc' }, 'src')).toEqual({ src_sort: 'count', src_dir: 'desc' });
+    expect(sortFromParams(convertToParamMap({ src_sort: 'count', src_dir: 'desc' }), ['count'], 'src')).toEqual({ key: 'count', dir: 'desc' });
+    expect(sortFromParams(convertToParamMap({ src_sort: 'count' }), ['count'])).toBeNull();
+  });
+
+  it('lists distinct non-empty values in first-seen order', () => {
+    expect(distinctValues(rows, (r) => r.kind)).toEqual(['a', 'b']);
+    expect(distinctValues(rows, (r) => r.name)).toEqual(['Ярема', 'Антон', 'Єва', 'антон']);
   });
 });
 
-@Component({ template: '', providers: [TableUrlState] })
-class HostPage {
-  readonly items = signal<Row[]>(ROWS);
-  readonly queries: unknown[] = [];
-  readonly table = new ClientTable(COLUMNS, { key: 'name', dir: 'asc' }, (q) => this.queries.push(q));
-  readonly rows = this.table.rows(this.items);
+@Component({
+  imports: [TableSortDirective, ColumnHeader],
+  providers: [TableUrlState],
+  template: `
+    <table [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <thead>
+        <tr>
+          <th scope="col" app-column-header key="name" label="Name" [filter]="{ type: 'text' }" [filterValue]="table.filterValue('name')"
+            (filterChange)="table.setFilter('name', $event)"><i class="lead-icon">*</i></th>
+          <th scope="col" app-column-header key="n" label="N" [filter]="kinds()"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of table.rows(); track r.id) {
+          <tr><td>{{ r.id }}</td></tr>
+        }
+      </tbody>
+    </table>
+  `,
+})
+class HostComponent {
+  readonly data = signal(rows);
+  readonly table = new ClientTable<R>({ rows: this.data, columns, prefix: 't', defaultSort: { key: 'n', dir: 'asc' } });
+  readonly kinds = translatedSelect(() => ['a', 'b'], (v) => 'kind.' + v);
 }
 
-describe('ClientTable: state in the URL', () => {
-  let harness: RouterTestingHarness;
-  let page: HostPage;
-  const url = () => new URL(TestBed.inject(Router).url, 'http://x');
-
-  beforeEach(async () => {
+describe('ClientTable bound to the URL', () => {
+  async function setup(url: string): Promise<{ el: HTMLElement; host: HostComponent; router: Router; detect: () => Promise<void> }> {
     TestBed.configureTestingModule({
-      imports: [TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
-      providers: [provideRouter([{ path: 'list', component: HostPage }])],
+      imports: [HostComponent, TranslocoTestingModule.forRoot({ langs: { uk: { kind: { a: 'Альфа', b: 'Бета' } } }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [provideRouter([])],
     });
-    harness = await RouterTestingHarness.create();
-    page = await harness.navigateByUrl('/list?status=new&page=3', HostPage);
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl(url);
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const detect = async (): Promise<void> => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    return { el: fixture.nativeElement as HTMLElement, host: fixture.componentInstance, router, detect };
+  }
+
+  const shown = (el: HTMLElement): number[] => [...el.querySelectorAll('tbody td')].map((td) => Number(td.textContent));
+
+  it('URL → rows: prefixed sort and filter apply; without them the API order shows and the default arrow stays', async () => {
+    const { el, host } = await setup('/?t_sort=name&t_dir=desc&t_name=%D0%B0');
+    expect(shown(el)).toEqual([1, 4, 2, 5]);
+    expect(host.table.filtered()).toBe(true);
+    TestBed.resetTestingModule();
+    const plain = await setup('/');
+    expect(shown(plain.el)).toEqual([1, 2, 3, 4, 5]);
+    expect(plain.host.table.sort()).toEqual({ key: 'n', dir: 'asc' });
+    expect(plain.el.querySelectorAll('th')[1].getAttribute('aria-sort')).toBe('ascending');
+    expect(plain.host.table.touched()).toBe(false);
   });
 
-  it('applies the URL on open: default sort shown, filter applied, callback called once', () => {
-    expect(page.table.sort()).toEqual({ key: 'name', dir: 'asc' });
-    expect(page.table.filter('status')).toBe('new');
-    expect(page.table.filtered()).toBe(true);
-    expect(ids(page.rows())).toEqual([3, 6, 5, 2]);
-    expect(page.queries).toHaveLength(1);
+  it('a click on a title writes the prefixed sort to the URL and keeps other params', async () => {
+    const { el, router, detect } = await setup('/?tab=2&page=3');
+    (el.querySelector('th button.title') as HTMLButtonElement).click();
+    await detect();
+    expect(router.url).toBe('/?tab=2&page=3&t_sort=name&t_dir=asc');
+    expect(shown(el)).toEqual([2, 5, 4, 1, 3]);
+    (el.querySelector('th button.title') as HTMLButtonElement).click();
+    await detect();
+    expect(router.url).toContain('t_dir=desc');
   });
 
-  it('sort and filters go to the URL (page dropped), the rows follow', async () => {
-    page.table.setSort({ key: 'hours', dir: 'desc' });
-    await harness.fixture.whenStable();
-    expect(url().searchParams.get('sort')).toBe('hours');
-    expect(url().searchParams.get('dir')).toBe('desc');
-    expect(url().searchParams.has('page')).toBe(false);
-    expect(ids(page.rows())).toEqual([3, 6, 5, 2]);
+  it('setFilter writes text and range params, null clears them; unknown columns are ignored', async () => {
+    const { host, router, detect } = await setup('/');
+    host.table.setFilter('n', { from: '3', to: null });
+    await detect();
+    expect(router.url).toBe('/?t_n_from=3');
+    host.table.setFilter('name', 'Єва');
+    await detect();
+    expect(decodeURIComponent(router.url)).toBe('/?t_n_from=3&t_name=Єва');
+    host.table.setFilter('n', null);
+    host.table.setFilter('only', 'x');
+    await detect();
+    expect(decodeURIComponent(router.url)).toBe('/?t_name=Єва');
+  });
 
-    page.table.setFilter('hours', { from: '1', to: null });
-    await harness.fixture.whenStable();
-    expect(url().searchParams.get('hours_from')).toBe('1');
-    expect(ids(page.rows())).toEqual([3, 6]);
-
-    page.table.setFilter('status', null);
-    await harness.fixture.whenStable();
-    expect(url().searchParams.has('status')).toBe(false);
-    expect(ids(page.rows())).toEqual([3, 1, 4, 6]);
+  it('the header shows projected lead content inside the sort button; select labels are translated', async () => {
+    const { el, host } = await setup('/');
+    const button = el.querySelector('th button.title') as HTMLButtonElement;
+    expect(button.querySelector('.lead-icon')).not.toBeNull();
+    expect(el.querySelector('th')?.getAttribute('aria-label')).toBe('Name');
+    const filter = host.kinds();
+    expect(filter.type === 'select' ? filter.options : []).toEqual([
+      { value: 'a', label: 'Альфа' },
+      { value: 'b', label: 'Бета' },
+    ]);
   });
 });

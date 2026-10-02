@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,13 +9,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Subscription } from 'rxjs';
 import { CASE_STATUSES, CASE_STATUS_TONE, CaseStatus, DeskCase, DeskCategory, QueueQuery, slaState } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
-import { ClientColumns, ClientTable, ClientTableQuery, enumFilter } from '../../core/ui/table/client-table';
+import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { ColumnFilter, FilterValue } from '../../core/ui/table/table-state';
@@ -25,28 +26,33 @@ const SLA_STATES = ['breached', 'due', 'ok'] as const;
 const ALL = 'all';
 
 /**
- * Columns of the queue. Status and category are server filters (the API caps the list); the other filters and every
- * sort work on the page. Status sorts in workflow order, SLA from breached to met.
+ * Columns of the queue (sorted and filtered on the page). Status sorts in workflow order, SLA from breached to met.
+ * Status is a server filter only (`open` / `all` are not case statuses); category also goes to the API (the list is
+ * capped at 300).
  */
-export const QUEUE_COLUMNS: ClientColumns<DeskCase> = {
-  id: { sort: (c) => c.id },
-  subject: { sort: (c) => c.subject, filter: 'text', match: (c) => c.subject },
-  employee: { sort: (c) => c.employee.full_name, filter: 'text', match: (c) => c.employee.full_name },
-  category: { sort: (c) => c.category.name, filter: 'select' },
-  assignee: { sort: (c) => c.assignee?.name, filter: 'text', match: (c) => c.assignee?.name },
-  status: { sort: (c) => CASE_STATUSES.indexOf(c.status), filter: 'select', values: [...CASE_STATUSES, ALL] },
-  sla: { sort: (c) => SLA_STATES.indexOf(slaState(c)), filter: 'select', values: SLA_STATES, match: (c) => slaState(c) },
-};
+export const QUEUE_COLUMNS: readonly ClientColumn<DeskCase>[] = [
+  { key: 'id', value: (c) => c.id },
+  { key: 'subject', value: (c) => c.subject, filter: 'text' },
+  { key: 'employee', value: (c) => c.employee.full_name, filter: 'text' },
+  { key: 'category', value: (c) => c.category.name, filter: 'select', filterValue: (c) => String(c.category.id) },
+  { key: 'assignee', value: (c) => c.assignee?.name, filter: 'text' },
+  { key: 'status', value: (c) => CASE_STATUSES.indexOf(c.status) },
+  { key: 'sla', value: (c) => SLA_STATES.indexOf(slaState(c)), filter: 'select', filterValue: (c) => slaState(c) },
+];
 
-/** API query of the table state: no status = open cases, ll = every case; junk category ids are dropped. */
-export function queueQueryOf(q: ClientTableQuery): QueueQuery {
-  const status = q.filters['status'];
-  const category = q.filters['category'];
-  const categoryId = typeof category === 'string' && /^\d+$/.test(category) ? Number(category) : undefined;
-  if (typeof status !== 'string') return { open: true, category_id: categoryId };
-  return status === ALL ? { category_id: categoryId } : { status: status as CaseStatus, category_id: categoryId };
+/** API query of the URL: no status = open cases, `all` = every case; junk statuses and category ids are dropped. */
+export function queueQueryFromParams(params: ParamMap): QueueQuery {
+  const status = params.get('status');
+  const category = params.get('category');
+  const categoryId = category && /^\d+$/.test(category) ? Number(category) : undefined;
+  if (status === ALL) return { category_id: categoryId };
+  if (status && (CASE_STATUSES as readonly string[]).includes(status)) return { status: status as CaseStatus, category_id: categoryId };
+  return { open: true, category_id: categoryId };
 }
 
+export function sameQueueQuery(a: QueueQuery, b: QueueQuery): boolean {
+  return a.open === b.open && a.status === b.status && a.category_id === b.category_id;
+}
 /**
  * HR queue (/desk/queue): open cases by default with SLA badges, sortable / filterable column headers (state in the URL);
  * categories with their SLA hours.
@@ -88,21 +94,21 @@ export function queueQueryOf(q: ClientTableQuery): QueueQuery {
           <tr>
             <th scope="col" app-column-header key="id" label="#"></th>
             <th scope="col" app-column-header key="subject" [label]="'desk.subject' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('subject')" (filterChange)="table.setFilter('subject', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('subject')" (filterChange)="table.setFilter('subject', $event)"></th>
             <th scope="col" app-column-header key="employee" [label]="'desk.employee' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('employee')" (filterChange)="table.setFilter('employee', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('employee')" (filterChange)="table.setFilter('employee', $event)"></th>
             <th scope="col" app-column-header key="category" [label]="'desk.category' | transloco"
-              [filter]="categoryFilter()" [filterValue]="table.filter('category')" (filterChange)="table.setFilter('category', $event)"></th>
+              [filter]="categoryFilter()" [filterValue]="table.filterValue('category')" (filterChange)="table.setFilter('category', $event)"></th>
             <th scope="col" app-column-header key="assignee" [label]="'desk.assignee' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('assignee')" (filterChange)="table.setFilter('assignee', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('assignee')" (filterChange)="table.setFilter('assignee', $event)"></th>
             <th scope="col" app-column-header key="status" [label]="'desk.statusLabel' | transloco"
               [filter]="statusFilter()" [filterValue]="statusValue()" (filterChange)="setStatus($event)"></th>
             <th scope="col" app-column-header key="sla" label="SLA"
-              [filter]="slaFilter()" [filterValue]="table.filter('sla')" (filterChange)="table.setFilter('sla', $event)"></th>
+              [filter]="slaFilter()" [filterValue]="table.filterValue('sla')" (filterChange)="table.setFilter('sla', $event)"></th>
           </tr>
         </thead>
         <tbody>
-          @for (c of rows(); track c.id) {
+          @for (c of table.rows(); track c.id) {
             <tr [attr.data-sla]="sla(c)">
               <td class="app-num">{{ c.id }}</td>
               <td><a [routerLink]="['/desk/cases', c.id]">{{ c.subject }}</a><br /><span class="muted small app-num">{{ c.created_at | date: 'dd.MM HH:mm' }}</span></td>
@@ -175,21 +181,31 @@ export class DeskQueuePage implements OnInit {
   protected readonly categories = signal<DeskCategory[]>([]);
   protected readonly loading = signal(false);
   protected readonly breached = computed(() => this.items().filter((c) => slaState(c) === 'breached').length);
-  private apiQuery: QueueQuery | null = null;
+  private readonly url = inject(TableUrlState);
+  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  /** Server part of the URL (status, category): only its change reloads the queue. */
+  private readonly query = computed(() => queueQueryFromParams(this.params()), { equal: sameQueueQuery });
   private request?: Subscription;
-  // Declared after the fields the URL callback uses: the URL is read right away.
-  protected readonly table = new ClientTable(QUEUE_COLUMNS, null, (q) => this.onQuery(q));
-  protected readonly rows = this.table.rows(this.items);
-  protected readonly textFilter: ColumnFilter = { type: 'text' };
-  protected readonly statusFilter = enumFilter(CASE_STATUSES, 'desk.status.', [{ value: 'open', key: 'desk.queue.open' }]);
-  protected readonly slaFilter = enumFilter(SLA_STATES, 'desk.sla.');
+  protected readonly table = new ClientTable({ rows: this.items, columns: QUEUE_COLUMNS });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly statusFilter = translatedSelect(
+    () => ['open', ...CASE_STATUSES],
+    (s) => (s === 'open' ? 'desk.queue.open' : 'desk.status.' + s),
+  );
+  protected readonly slaFilter = translatedSelect(() => SLA_STATES, (s) => 'desk.sla.' + s);
   protected readonly categoryFilter = computed<ColumnFilter>(() => ({ type: 'select', options: this.categories().map((k) => ({ value: String(k.id), label: k.name })) }));
-  /** Status shown in the header: «open» by default, null (= «all») for `?status=all`. */
+  /** Status shown in the header: «open» by default, a status, or null («all») for `?status=all`. */
   protected readonly statusValue = computed<FilterValue>(() => {
-    const s = this.table.filter('status');
-    return s === null ? 'open' : s === ALL ? null : s;
+    const q = this.query();
+    return q.open ? 'open' : (q.status ?? null);
   });
 
+  constructor() {
+    effect(() => {
+      const query = this.query();
+      untracked(() => this.load(query));
+    });
+  }
   ngOnInit(): void {
     this.api.categories(true).subscribe({ next: (list) => this.categories.set(list), error: () => this.categories.set([]) });
   }
@@ -200,7 +216,7 @@ export class DeskQueuePage implements OnInit {
 
   /** Header status: «open» = default (no param), «all» (cleared) = `?status=all`, else the status. */
   protected setStatus(value: FilterValue): void {
-    this.table.setFilter('status', value === 'open' ? null : value === null ? ALL : value);
+    this.url.update({ status: value === 'open' ? null : value === null ? ALL : value });
   }
 
   protected addCategory(name: string, first: string, resolve: string): void {
@@ -221,15 +237,11 @@ export class DeskQueuePage implements OnInit {
     });
   }
 
-  /** URL changed: reload when a server filter (status, category) changed; sort and page filters need no request. */
-  private onQuery(q: ClientTableQuery): void {
-    const next = queueQueryOf(q);
-    if (this.apiQuery && JSON.stringify(next) === JSON.stringify(this.apiQuery)) return;
-    this.apiQuery = next;
+  private load(query: QueueQuery): void {
     this.loading.set(true);
     // A newer filter wins: the previous request is dropped, so an older answer never overwrites the list.
     this.request?.unsubscribe();
-    this.request = this.api.queue(next).subscribe({
+    this.request = this.api.queue(query).subscribe({
       next: (list) => {
         this.items.set(list);
         this.loading.set(false);
@@ -240,7 +252,6 @@ export class DeskQueuePage implements OnInit {
       },
     });
   }
-
   private toast(key: string): void {
     this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }

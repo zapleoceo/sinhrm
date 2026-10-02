@@ -14,21 +14,20 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDialog, ConfirmDialogData } from '../confirm.dialog';
 import { WORKFLOW_KINDS, WORKFLOW_TRIGGERS, WorkflowKind, WorkflowTemplate, WorkflowTrigger } from '../workflows.model';
 import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
-import { ClientColumns, ClientTable, enumFilter } from '../../../core/ui/table/client-table';
+import { ClientColumn, ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER, translatedSelect } from '../../../core/ui/table/client-table';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
-import { ColumnFilter } from '../../../core/ui/table/table-state';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 
 /** Columns of the templates list (all rows are on the page). Kind and trigger sort in their list order. */
-export const TEMPLATE_COLUMNS: ClientColumns<WorkflowTemplate> = {
-  name: { sort: (t) => t.name, filter: 'text', match: (t) => t.name },
-  kind: { sort: (t) => WORKFLOW_KINDS.indexOf(t.kind), filter: 'select', values: WORKFLOW_KINDS, match: (t) => t.kind },
-  trigger: { sort: (t) => WORKFLOW_TRIGGERS.indexOf(t.trigger), filter: 'select', values: WORKFLOW_TRIGGERS, match: (t) => t.trigger },
-  steps: { sort: (t) => t.steps.length, filter: 'range', match: (t) => t.steps.length },
-  runs: { sort: (t) => t.runs_count, filter: 'range', match: (t) => t.runs_count },
-  updated: { sort: (t) => t.updated_at, filter: 'range', match: (t) => t.updated_at },
-};
+export const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
+  { key: 'name', value: (t) => t.name, filter: 'text' },
+  { key: 'kind', value: (t) => WORKFLOW_KINDS.indexOf(t.kind), filter: 'select', filterValue: (t) => t.kind },
+  { key: 'trigger', value: (t) => WORKFLOW_TRIGGERS.indexOf(t.trigger), filter: 'select', filterValue: (t) => t.trigger },
+  { key: 'steps', value: (t) => t.steps.length, filter: 'number' },
+  { key: 'runs', value: (t) => t.runs_count, filter: 'number' },
+  { key: 'updated', value: (t) => t.updated_at, filter: 'date' },
+];
 
 /** Admin → Воркфлоу: onboarding/offboarding templates, creation of a new one and deletion (only without runs). */
 @Component({
@@ -96,22 +95,22 @@ export const TEMPLATE_COLUMNS: ClientColumns<WorkflowTemplate> = {
         <thead>
           <tr>
             <th scope="col" app-column-header key="name" [label]="'workflows.fields.name' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('name')" (filterChange)="table.setFilter('name', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('name')" (filterChange)="table.setFilter('name', $event)"></th>
             <th scope="col" app-column-header key="kind" [label]="'workflows.fields.kind' | transloco"
-              [filter]="kindFilter()" [filterValue]="table.filter('kind')" (filterChange)="table.setFilter('kind', $event)"></th>
+              [filter]="kindFilter()" [filterValue]="table.filterValue('kind')" (filterChange)="table.setFilter('kind', $event)"></th>
             <th scope="col" app-column-header key="trigger" [label]="'workflows.fields.trigger' | transloco"
-              [filter]="triggerFilter()" [filterValue]="table.filter('trigger')" (filterChange)="table.setFilter('trigger', $event)"></th>
+              [filter]="triggerFilter()" [filterValue]="table.filterValue('trigger')" (filterChange)="table.setFilter('trigger', $event)"></th>
             <th scope="col" class="num" app-column-header key="steps" [label]="'workflows.fields.steps' | transloco"
-              [filter]="numberFilter" [filterValue]="table.filter('steps')" (filterChange)="table.setFilter('steps', $event)"></th>
+              [filter]="numberFilter" [filterValue]="table.filterValue('steps')" (filterChange)="table.setFilter('steps', $event)"></th>
             <th scope="col" class="num" app-column-header key="runs" [label]="'workflows.fields.runs' | transloco"
-              [filter]="numberFilter" [filterValue]="table.filter('runs')" (filterChange)="table.setFilter('runs', $event)"></th>
+              [filter]="numberFilter" [filterValue]="table.filterValue('runs')" (filterChange)="table.setFilter('runs', $event)"></th>
             <th scope="col" app-column-header key="updated" [label]="'workflows.fields.updated' | transloco"
-              [filter]="dateFilter" [filterValue]="table.filter('updated')" (filterChange)="table.setFilter('updated', $event)"></th>
+              [filter]="dateFilter" [filterValue]="table.filterValue('updated')" (filterChange)="table.setFilter('updated', $event)"></th>
             <th scope="col"><span class="visually-hidden">{{ 'workflows.templates.delete' | transloco }}</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (t of rows(); track t.id) {
+          @for (t of table.rows(); track t.id) {
             <tr [class.inactive]="!t.active">
               <th scope="row">
                 <a [routerLink]="['/admin/workflows', t.id]">{{ t.name }}</a>
@@ -168,13 +167,12 @@ export class WorkflowTemplatesPage implements OnInit {
     kind: ['onboarding' as WorkflowKind],
     trigger: ['manual' as WorkflowTrigger],
   });
-  protected readonly table = new ClientTable(TEMPLATE_COLUMNS);
-  protected readonly rows = this.table.rows(this.templates);
-  protected readonly textFilter: ColumnFilter = { type: 'text' };
-  protected readonly numberFilter: ColumnFilter = { type: 'range', input: 'number' };
-  protected readonly dateFilter: ColumnFilter = { type: 'range', input: 'date' };
-  protected readonly kindFilter = enumFilter(WORKFLOW_KINDS, 'workflows.kind.');
-  protected readonly triggerFilter = enumFilter(WORKFLOW_TRIGGERS, 'workflows.trigger.');
+  protected readonly table = new ClientTable({ rows: this.templates, columns: TEMPLATE_COLUMNS });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberFilter = NUMBER_RANGE;
+  protected readonly dateFilter = DATE_RANGE;
+  protected readonly kindFilter = translatedSelect(() => WORKFLOW_KINDS, (k) => 'workflows.kind.' + k);
+  protected readonly triggerFilter = translatedSelect(() => WORKFLOW_TRIGGERS, (t) => 'workflows.trigger.' + t);
 
   ngOnInit(): void {
     this.load();

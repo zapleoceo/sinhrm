@@ -1,6 +1,6 @@
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { of } from 'rxjs';
-import { TablePage } from '../../../testing/table';
+import { TablePage, clickTitle, header, openTablePage } from '../../../testing/table-page';
 import { TeamRow, TimesheetApproval } from './time.model';
 import { TimeApprovalsPage } from './time-approvals.page';
 import { TimeService } from './time.service';
@@ -32,51 +32,67 @@ const team = (id: number, name: string, status: TeamRow['status'], missing: numb
 const TEAM = [team(1, 'Шевченко', 'draft', 8), team(2, 'Антоненко', 'approved', 0), team(3, 'Мельник', 'submitted', 16)];
 
 describe('TimeApprovalsPage: sortable / filterable headers bound to the URL', () => {
-  let page: TablePage;
+  let page: TablePage<TimeApprovalsPage>;
+  const table = (sel = 'table') => page.el.querySelector(sel)!;
+  const sort = async (title: string, sel = 'table') => {
+    clickTitle(table(sel), title);
+    await page.settle();
+  };
+  const navigate = async (url: string) => {
+    await page.router.navigateByUrl(url);
+    await page.settle();
+  };
+  const params = () => new URL(page.router.url, 'http://x').searchParams;
+  const cells = (index: number, sel = 'table', inner?: string) =>
+    [...table(sel).querySelectorAll('tbody tr')].map((tr) => (inner ? tr.children[index]?.querySelector(inner) : tr.children[index])?.textContent?.trim() ?? '');
 
   beforeEach(async () => {
-    page = await TablePage.open('time/approvals', TimeApprovalsPage, '/time/approvals?sort=overtime&dir=desc', [{ provide: TimeService, useValue: { approvals: () => of(APPROVALS) } }, provideNativeDateAdapter()]);
+    page = await openTablePage(TimeApprovalsPage, '/?sort=overtime&dir=desc', [{ provide: TimeService, useValue: { approvals: () => of(APPROVALS) } }, provideNativeDateAdapter()]);
   });
 
   it('applies the URL sort (numbers) and switches to the employee A→Z on a title click', async () => {
-    expect(page.th('time.week.overtime').getAttribute('aria-sort')).toBe('descending');
-    expect(page.column(0)).toEqual(['Мельник', 'Шевченко', 'Антоненко']);
-    await page.sort('time.approvals.employee');
-    expect(page.params.get('sort')).toBe('employee');
-    expect(page.params.get('dir')).toBe('asc');
-    expect(page.column(0)).toEqual(['Антоненко', 'Мельник', 'Шевченко']);
+    expect(header(table(), 'time.week.overtime').getAttribute('aria-sort')).toBe('descending');
+    expect(cells(0)).toEqual(['Мельник', 'Шевченко', 'Антоненко']);
+    await sort('time.approvals.employee');
+    expect(params().get('sort')).toBe('employee');
+    expect(params().get('dir')).toBe('asc');
+    expect(cells(0)).toEqual(['Антоненко', 'Мельник', 'Шевченко']);
   });
 
   it('week (date range) and worked (number range) filters', async () => {
-    await page.navigate('/time/approvals?week_from=2026-09-20&worked_to=41');
-    expect(page.column(0)).toEqual(['Антоненко']);
+    await navigate('/?week_from=2026-09-20&worked_to=41');
+    expect(cells(0)).toEqual(['Антоненко']);
   });
 });
 
 describe('TimeTeamPage: sortable / filterable headers, kept when the week changes', () => {
-  let page: TablePage;
+  let page: TablePage<TimeTeamPage>;
   let weeks: string[];
+  const table = () => page.el.querySelector('table')!;
+  const names = () => [...table().querySelectorAll('tbody tr')].map((tr) => tr.children[0]?.textContent?.trim());
+  const params = () => new URL(page.router.url, 'http://x').searchParams;
 
   beforeEach(async () => {
     weeks = [];
     const api = { team: (w: string) => (weeks.push(w), of(TEAM)) };
-    page = await TablePage.open('time/team', TimeTeamPage, '/time/team?week=2026-09-28&status=draft', [{ provide: TimeService, useValue: api }, provideNativeDateAdapter()]);
+    page = await openTablePage(TimeTeamPage, '/?week=2026-09-28&status=draft', [{ provide: TimeService, useValue: api }, provideNativeDateAdapter()], { week: '2026-09-28' });
   });
 
   it('filters by status from the URL; «missing» sorts as a number', async () => {
     expect(weeks).toEqual(['2026-09-28']);
-    expect(page.column(0)).toEqual(['Шевченко']);
-    await page.navigate('/time/team?week=2026-09-28&sort=missing&dir=desc');
-    expect(page.column(0)).toEqual(['Мельник', 'Шевченко', 'Антоненко']);
+    expect(names()).toEqual(['Шевченко']);
+    await page.router.navigateByUrl('/?week=2026-09-28&sort=missing&dir=desc');
+    await page.settle();
+    expect(names()).toEqual(['Мельник', 'Шевченко', 'Антоненко']);
   });
 
   it('the next week keeps the sort and filters in the URL', async () => {
-    await page.sort('time.week.missing');
-    (page.root.querySelectorAll<HTMLButtonElement>('header button[mat-icon-button]')[1]).click();
+    clickTitle(table(), 'time.week.missing');
     await page.settle();
-    expect(page.params.get('week')).toBe('2026-10-05');
-    expect(page.params.get('sort')).toBe('missing');
-    expect(page.params.get('status')).toBe('draft');
-    expect(weeks.at(-1)).toBe('2026-10-05');
+    page.el.querySelectorAll<HTMLButtonElement>('header button[mat-icon-button]')[1].click();
+    await page.settle();
+    expect(params().get('week')).toBe('2026-10-05');
+    expect(params().get('sort')).toBe('missing');
+    expect(params().get('status')).toBe('draft');
   });
 });

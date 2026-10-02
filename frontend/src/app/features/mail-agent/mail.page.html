@@ -211,17 +211,17 @@
         <thead>
           <tr>
             <th scope="col" app-column-header key="received" [label]="'mail.log.received' | transloco"
-              [filter]="dateFilter" [filterValue]="log.filter('received')" (filterChange)="log.setFilter('received', $event)"></th>
+              [filter]="dateFilter" [filterValue]="log.filterValue('received')" (filterChange)="log.setFilter('received', $event)"></th>
             <th scope="col" app-column-header key="sender" [label]="'mail.log.sender' | transloco"
-              [filter]="textFilter" [filterValue]="log.filter('sender')" (filterChange)="log.setFilter('sender', $event)"></th>
+              [filter]="textFilter" [filterValue]="log.filterValue('sender')" (filterChange)="log.setFilter('sender', $event)"></th>
             <th scope="col" app-column-header key="subject" [label]="'mail.log.subject' | transloco"
-              [filter]="textFilter" [filterValue]="log.filter('subject')" (filterChange)="log.setFilter('subject', $event)"></th>
+              [filter]="textFilter" [filterValue]="log.filterValue('subject')" (filterChange)="log.setFilter('subject', $event)"></th>
             <th scope="col" app-column-header key="outcome" [label]="'mail.log.outcome' | transloco"
-              [filter]="outcomeFilter()" [filterValue]="log.filter('outcome')" (filterChange)="log.setFilter('outcome', $event)"></th>
+              [filter]="outcomeFilter()" [filterValue]="log.filterValue('outcome')" (filterChange)="log.setFilter('outcome', $event)"></th>
           </tr>
         </thead>
         <tbody>
-          @for (m of logRows(); track m.id) {
+          @for (m of log.rows(); track m.id) {
             <tr>
               <td class="muted">{{ m.received_at | date: 'dd.MM HH:mm' }}</td>
               <td>{{ m.sender ?? '—' }}</td>

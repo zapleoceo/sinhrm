@@ -1,40 +1,41 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { HIRING_STATUSES, HiringRequest, HiringStatus, PILL_TONE, statusTone } from './hiring-requests.model';
-import { ClientColumns, ClientTable, ClientTableQuery, enumFilter } from '../../core/ui/table/client-table';
+import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
-import { ColumnFilter } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 
 type ListMode = 'all' | 'mine' | 'inbox';
 
 /**
- * Columns of the registry. Status is also sent to the API outside the inbox (the list is capped), and matched on the
- * page for the inbox (its API has no status filter). Status sorts in workflow order, progress by the hired share.
+ * Columns of the registry (sorted and filtered on the page). Status is also sent to the API outside the inbox (the
+ * list is capped at 300); the inbox API has no status filter, so the page match covers it. Status sorts in workflow
+ * order, progress by the hired share.
  */
-export const HIRING_COLUMNS: ClientColumns<HiringRequest> = {
-  title: { sort: (r) => r.title, filter: 'text', match: (r) => r.title },
-  requester: { sort: (r) => r.requester?.name, filter: 'text', match: (r) => r.requester?.name },
-  status: { sort: (r) => HIRING_STATUSES.indexOf(r.status), filter: 'select', values: HIRING_STATUSES, match: (r) => r.status },
-  step: { sort: (r) => r.current_step?.name, filter: 'text', match: (r) => r.current_step?.name },
-  progress: { sort: (r) => (r.progress && r.vacancy ? r.progress.percent : null) },
-  created: { sort: (r) => r.created_at, filter: 'range', match: (r) => r.created_at },
-};
+export const HIRING_COLUMNS: readonly ClientColumn<HiringRequest>[] = [
+  { key: 'title', value: (r) => r.title, filter: 'text' },
+  { key: 'requester', value: (r) => r.requester?.name, filter: 'text' },
+  { key: 'status', value: (r) => HIRING_STATUSES.indexOf(r.status), filter: 'select', filterValue: (r) => r.status },
+  { key: 'step', value: (r) => r.current_step?.name, filter: 'text' },
+  { key: 'progress', value: (r) => (r.progress && r.vacancy ? r.progress.percent : null) },
+  { key: 'created', value: (r) => r.created_at, filter: 'date' },
+];
 
-function statusOf(q: ClientTableQuery): HiringStatus | null {
-  const s = q.filters['status'];
-  return typeof s === 'string' ? (s as HiringStatus) : null;
+/** Status of the URL for the API (anything else is dropped). */
+export function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
+  const s = params.get('status');
+  return s && (HIRING_STATUSES as readonly string[]).includes(s) ? (s as HiringStatus) : null;
 }
-
 /**
  * Hiring requests (tz2 "Вакансії → Заявки"): registry with author, status, current step and progress;
  * /hiring-requests/inbox — requests waiting for my decision (the same page in "inbox" mode).
@@ -70,20 +71,20 @@ function statusOf(q: ClientTableQuery): HiringStatus | null {
         <thead>
           <tr>
             <th scope="col" app-column-header key="title" [label]="'hiring.fields.title' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('title')" (filterChange)="table.setFilter('title', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('title')" (filterChange)="table.setFilter('title', $event)"></th>
             <th scope="col" app-column-header key="requester" [label]="'hiring.fields.requester' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('requester')" (filterChange)="table.setFilter('requester', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('requester')" (filterChange)="table.setFilter('requester', $event)"></th>
             <th scope="col" app-column-header key="status" [label]="'hiring.fields.status' | transloco"
-              [filter]="statusFilter()" [filterValue]="table.filter('status')" (filterChange)="table.setFilter('status', $event)"></th>
+              [filter]="statusFilter()" [filterValue]="table.filterValue('status')" (filterChange)="table.setFilter('status', $event)"></th>
             <th scope="col" app-column-header key="step" [label]="'hiring.fields.step' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('step')" (filterChange)="table.setFilter('step', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('step')" (filterChange)="table.setFilter('step', $event)"></th>
             <th scope="col" app-column-header key="progress" [label]="'hiring.fields.progress' | transloco"></th>
             <th scope="col" app-column-header key="created" [label]="'hiring.fields.created' | transloco"
-              [filter]="dateFilter" [filterValue]="table.filter('created')" (filterChange)="table.setFilter('created', $event)"></th>
+              [filter]="dateFilter" [filterValue]="table.filterValue('created')" (filterChange)="table.setFilter('created', $event)"></th>
           </tr>
         </thead>
         <tbody>
-          @for (r of rows(); track r.id) {
+          @for (r of table.rows(); track r.id) {
             <tr [attr.data-overdue]="r.overdue">
               <td>
                 <a [routerLink]="['/hiring-requests', r.id]">{{ r.title }}</a>
@@ -134,43 +135,47 @@ export class HiringListPage implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly mode = signal<ListMode>('all');
-  protected readonly status = signal<HiringStatus | null>(null);
   protected readonly items = signal<HiringRequest[]>([]);
   protected readonly loading = signal(false);
   protected readonly canCreate = signal(false);
   protected readonly tone = statusTone;
   protected readonly pill = PILL_TONE;
+  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  /** Status of the URL: sent to the API outside the inbox; a change reloads. */
+  private readonly status = computed(() => hiringStatusFromParams(this.params()));
   private started = false;
-  // Declared after the fields the URL callback uses: the URL is read right away.
-  protected readonly table = new ClientTable(HIRING_COLUMNS, null, (q) => this.onQuery(q));
-  protected readonly rows = this.table.rows(this.items);
-  protected readonly textFilter: ColumnFilter = { type: 'text' };
-  protected readonly dateFilter: ColumnFilter = { type: 'range', input: 'date' };
-  protected readonly statusFilter = enumFilter(HIRING_STATUSES, 'hiring.status.');
+  /** Status the shown list was loaded with (undefined = not loaded yet). */
+  private loadedStatus: HiringStatus | null | undefined;
+  protected readonly table = new ClientTable({ rows: this.items, columns: HIRING_COLUMNS });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly dateFilter = DATE_RANGE;
+  protected readonly statusFilter = translatedSelect(() => HIRING_STATUSES, (s) => 'hiring.status.' + s);
+
+  constructor() {
+    effect(() => {
+      const status = this.status();
+      untracked(() => {
+        if (this.started && this.mode() !== 'inbox' && status !== this.loadedStatus) this.load();
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.mode.set(this.view());
     this.api.meta().subscribe({ next: (m) => this.canCreate.set(m.can_create), error: () => this.canCreate.set(false) });
-    this.started = true;
     this.load();
+    this.started = true;
   }
 
   protected setMode(mode: ListMode): void {
     this.mode.set(mode);
     this.load();
   }
-
-  /** URL changed: a new status reloads the list (outside the inbox the API filters by it). */
-  private onQuery(q: ClientTableQuery): void {
-    const status = statusOf(q);
-    if (status === this.status()) return;
-    this.status.set(status);
-    if (this.started && this.mode() !== 'inbox') this.load();
-  }
   private load(): void {
     this.loading.set(true);
     const mode = this.mode();
-    const call = mode === 'inbox' ? this.api.inbox() : this.api.list({ status: this.status() ?? undefined, mine: mode === 'mine' });
+    this.loadedStatus = this.status();
+    const call = mode === 'inbox' ? this.api.inbox() : this.api.list({ status: this.loadedStatus ?? undefined, mine: mode === 'mine' });
     call.subscribe({
       next: (list) => {
         this.items.set(list);

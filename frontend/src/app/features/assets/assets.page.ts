@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,42 +10,45 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { PersonPicker, PickerValue } from '../people/picker/person-picker';
 import { ASSET_STATUSES, ASSET_STATUS_TONE, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
 import { AssetsService, assetsErrorKey } from './assets.service';
 import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
-import { ClientColumns, ClientTable, ClientTableQuery, enumFilter } from '../../core/ui/table/client-table';
+import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
-import { ColumnFilter } from '../../core/ui/table/table-state';
+import { ColumnFilter, textParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 
 /**
- * Columns of the inventory table. Status and type are server filters (the API caps the list at 500 rows, so they
- * must narrow the query, not the page); `q` is the search above the table, also sent to the API.
+ * Columns of the inventory table (sorted and filtered on the page). Status and type also go to the API as server
+ * filters (it returns at most 500 rows, so they must narrow the query, not only the page).
  */
-export const ASSET_COLUMNS: ClientColumns<Asset> = {
-  q: { filter: 'text' },
-  inventory: { sort: (a) => a.inventory_number, filter: 'text', match: (a) => a.inventory_number },
-  name: { sort: (a) => a.name, filter: 'text', match: (a) => a.name },
-  type: { sort: (a) => a.type?.name, filter: 'select' },
-  serial: { sort: (a) => a.serial, filter: 'text', match: (a) => a.serial },
-  status: { sort: (a) => ASSET_STATUSES.indexOf(a.status), filter: 'select', values: ASSET_STATUSES },
-  holder: { sort: (a) => a.employee?.full_name, filter: 'text', match: (a) => a.employee?.full_name },
-};
+export const ASSET_COLUMNS: readonly ClientColumn<Asset>[] = [
+  { key: 'inventory', value: (a) => a.inventory_number, filter: 'text' },
+  { key: 'name', value: (a) => a.name, filter: 'text' },
+  { key: 'type', value: (a) => a.type?.name, filter: 'select', filterValue: (a) => (a.type ? String(a.type.id) : null) },
+  { key: 'serial', value: (a) => a.serial, filter: 'text' },
+  { key: 'status', value: (a) => ASSET_STATUSES.indexOf(a.status), filter: 'select', filterValue: (a) => a.status },
+  { key: 'holder', value: (a) => a.employee?.full_name, filter: 'text' },
+];
 
-/** API query of the table state: only the server filters (junk type ids are dropped, not sent). */
-export function assetQueryOf(q: ClientTableQuery): AssetQuery {
-  const text = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
-  const type = text(q.filters['type']);
+/** API query of the URL: search, status and type (junk values are dropped, never sent). */
+export function assetQueryFromParams(params: ParamMap): AssetQuery {
+  const status = params.get('status') as AssetStatus | null;
+  const type = params.get('type');
   return {
-    q: text(q.filters['q']),
-    status: text(q.filters['status']) as AssetStatus | undefined,
+    q: textParam(params, 'q'),
+    status: status && ASSET_STATUSES.includes(status) ? status : undefined,
     type_id: type && /^\d+$/.test(type) ? Number(type) : undefined,
   };
+}
+
+export function sameAssetQuery(a: AssetQuery, b: AssetQuery): boolean {
+  return a.q === b.q && a.status === b.status && a.type_id === b.type_id;
 }
 /**
  * Inventory (/admin/assets): search on top, sortable / filterable column headers (state in the URL), new asset,
@@ -109,7 +112,7 @@ export function assetQueryOf(q: ClientTableQuery): AssetQuery {
       <mat-form-field class="grow" subscriptSizing="dynamic">
         <mat-label>{{ 'assets.search' | transloco }}</mat-label>
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput type="search" #q [value]="table.filter('q') ?? ''" (input)="search$.next(q.value)" />
+        <input matInput type="search" #q [value]="search()" (input)="search$.next(q.value)" />
       </mat-form-field>
     </div>
     @if (loading()) {
@@ -120,22 +123,22 @@ export function assetQueryOf(q: ClientTableQuery): AssetQuery {
         <thead>
           <tr>
             <th scope="col" app-column-header key="inventory" [label]="'assets.inventoryNumber' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('inventory')" (filterChange)="table.setFilter('inventory', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('inventory')" (filterChange)="table.setFilter('inventory', $event)"></th>
             <th scope="col" app-column-header key="name" [label]="'assets.name' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('name')" (filterChange)="table.setFilter('name', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('name')" (filterChange)="table.setFilter('name', $event)"></th>
             <th scope="col" app-column-header key="type" [label]="'assets.type' | transloco"
-              [filter]="typeFilter()" [filterValue]="table.filter('type')" (filterChange)="table.setFilter('type', $event)"></th>
+              [filter]="typeFilter()" [filterValue]="table.filterValue('type')" (filterChange)="table.setFilter('type', $event)"></th>
             <th scope="col" app-column-header key="serial" [label]="'assets.serial' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('serial')" (filterChange)="table.setFilter('serial', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('serial')" (filterChange)="table.setFilter('serial', $event)"></th>
             <th scope="col" app-column-header key="status" [label]="'assets.statusLabel' | transloco"
-              [filter]="statusFilter()" [filterValue]="table.filter('status')" (filterChange)="table.setFilter('status', $event)"></th>
+              [filter]="statusFilter()" [filterValue]="table.filterValue('status')" (filterChange)="table.setFilter('status', $event)"></th>
             <th scope="col" app-column-header key="holder" [label]="'assets.holder' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('holder')" (filterChange)="table.setFilter('holder', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('holder')" (filterChange)="table.setFilter('holder', $event)"></th>
             <th scope="col"><span class="visually-hidden">{{ 'assets.actions' | transloco }}</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (a of rows(); track a.id) {
+          @for (a of table.rows(); track a.id) {
             <tr>
               <td><strong class="app-num">{{ a.inventory_number }}</strong></td>
               <td>{{ a.name }}</td>
@@ -222,8 +225,6 @@ export class AssetsPage implements OnInit {
   protected readonly returnStatuses = RETURN_STATUSES;
   protected readonly items = signal<Asset[]>([]);
   protected readonly types = signal<AssetType[]>([]);
-  /** Server part of the table state (search, status, type): a change reloads the list. */
-  private readonly query = signal<AssetQuery>({});
   protected readonly loading = signal(false);
   protected readonly formOpen = signal(false);
   protected readonly newType = signal<number | null>(null);
@@ -231,23 +232,26 @@ export class AssetsPage implements OnInit {
   protected readonly opened = signal<Asset | null>(null);
   protected readonly employeeId = signal<number | null>(null);
   protected readonly returnStatus = signal<AssetStatus>('in_stock');
-  private readonly reload = new Subject<void>();
+  private readonly url = inject(TableUrlState);
+  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  /** Server part of the URL (search, status, type): only its change reloads the list, not sort or page filters. */
+  private readonly query = computed(() => assetQueryFromParams(this.params()), { equal: sameAssetQuery });
+  private readonly reload = new Subject<AssetQuery>();
   protected readonly search$ = new Subject<string>();
-  // Declared after `query` and `reload`: the URL is read right away.
-  protected readonly table = new ClientTable(ASSET_COLUMNS, { key: 'inventory', dir: 'asc' }, (q) => this.onQuery(q));
-  protected readonly rows = this.table.rows(this.items);
-  protected readonly textFilter: ColumnFilter = { type: 'text' };
-  protected readonly statusFilter = enumFilter(ASSET_STATUSES, 'assets.status.');
-
+  /** Search box value from the URL. */
+  protected readonly search = computed(() => this.query().q ?? '');
+  protected readonly table = new ClientTable({ rows: this.items, columns: ASSET_COLUMNS, defaultSort: { key: 'inventory', dir: 'asc' } });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly statusFilter = translatedSelect(() => ASSET_STATUSES, (s) => 'assets.status.' + s);
   protected readonly typeFilter = computed<ColumnFilter>(() => ({ type: 'select', options: this.types().map((t) => ({ value: String(t.id), label: t.name })) }));
 
   constructor() {
     this.reload
       .pipe(
         debounceTime(200),
-        switchMap(() => {
+        switchMap((query) => {
           this.loading.set(true);
-          return this.api.list(this.query());
+          return this.api.list(query);
         }),
         takeUntilDestroyed(),
       )
@@ -261,27 +265,21 @@ export class AssetsPage implements OnInit {
           this.toast(assetsErrorKey(e));
         },
       });
+    effect(() => {
+      const query = this.query();
+      untracked(() => this.reload.next(query));
+    });
   }
 
   ngOnInit(): void {
     this.search$
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe((q) => this.table.setFilter('q', q.trim() || null));
-    this.reload.next();
+      .subscribe((q) => this.url.update({ q: q.trim() || null }));
     this.api.types().subscribe({ next: (list) => this.types.set(list), error: () => this.types.set([]) });
   }
 
   protected asId(value: PickerValue): number | null {
     return typeof value === 'number' ? value : null;
-  }
-
-  /** URL changed: reload only when a server filter changed (sort and page-side filters need no request). */
-  private onQuery(q: ClientTableQuery): void {
-    const next = assetQueryOf(q);
-    const prev = this.query();
-    if (next.q === prev.q && next.status === prev.status && next.type_id === prev.type_id) return;
-    this.query.set(next);
-    this.reload.next();
   }
   protected addType(name: string): void {
     if (name.trim() !== '') {

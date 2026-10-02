@@ -10,20 +10,19 @@ import { TIMESHEET_STATUSES, TIMESHEET_STATUS_TONE, TeamRow, addWeeks, mondayOf 
 import { TimeService, timeErrorKey } from './time.service';
 import { toIsoDate } from '../../core/date/iso-date';
 import { WeekPicker } from './week-picker';
-import { ClientColumns, ClientTable, enumFilter } from '../../core/ui/table/client-table';
+import { ClientColumn, ClientTable, NUMBER_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
-import { ColumnFilter } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 
 const NUMBER_KEYS = ['expected', 'worked', 'overtime', 'missing', 'absence'] as const;
 
 /** Columns of the team week (all rows are on the page); hour columns sort and filter by range. */
-export const TEAM_COLUMNS: ClientColumns<TeamRow> = {
-  employee: { sort: (r) => r.employee.full_name, filter: 'text', match: (r) => r.employee.full_name },
-  status: { sort: (r) => TIMESHEET_STATUSES.indexOf(r.status), filter: 'select', values: TIMESHEET_STATUSES, match: (r) => r.status },
-  ...Object.fromEntries(NUMBER_KEYS.map((k) => [k, { sort: (r: TeamRow) => r[k], filter: 'range' as const, match: (r: TeamRow) => r[k] }])),
-};
+export const TEAM_COLUMNS: readonly ClientColumn<TeamRow>[] = [
+  { key: 'employee', value: (r) => r.employee.full_name, filter: 'text' },
+  { key: 'status', value: (r) => TIMESHEET_STATUSES.indexOf(r.status), filter: 'select', filterValue: (r) => r.status },
+  ...NUMBER_KEYS.map((k): ClientColumn<TeamRow> => ({ key: k, value: (r) => r[k], filter: 'number' })),
+];
 
 /**
  * Team overview (/time/team?week=): every visible employee's week — status, expected, worked, overtime, missing;
@@ -54,17 +53,17 @@ export const TEAM_COLUMNS: ClientColumns<TeamRow> = {
         <thead>
           <tr>
             <th scope="col" app-column-header key="employee" [label]="'time.approvals.employee' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('employee')" (filterChange)="table.setFilter('employee', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('employee')" (filterChange)="table.setFilter('employee', $event)"></th>
             <th scope="col" app-column-header key="status" [label]="'time.team.status' | transloco"
-              [filter]="statusFilter()" [filterValue]="table.filter('status')" (filterChange)="table.setFilter('status', $event)"></th>
+              [filter]="statusFilter()" [filterValue]="table.filterValue('status')" (filterChange)="table.setFilter('status', $event)"></th>
             @for (k of numberKeys; track k) {
               <th scope="col" class="num" app-column-header [key]="k" [label]="'time.week.' + k | transloco"
-                [filter]="numberFilter" [filterValue]="table.filter(k)" (filterChange)="table.setFilter(k, $event)"></th>
+                [filter]="numberFilter" [filterValue]="table.filterValue(k)" (filterChange)="table.setFilter(k, $event)"></th>
             }
           </tr>
         </thead>
         <tbody>
-          @for (r of shown(); track r.employee.id) {
+          @for (r of table.rows(); track r.employee.id) {
             <tr>
               <td><a routerLink="/time" [queryParams]="{ week: weekStart(), employee_id: r.employee.id }">{{ r.employee.full_name }}</a></td>
               <td><span class="app-pill" [attr.data-tone]="statusTone[r.status]">{{ 'time.status.' + r.status | transloco }}</span></td>
@@ -99,12 +98,11 @@ export class TimeTeamPage {
   protected readonly rows = signal<TeamRow[]>([]);
   protected readonly loading = signal(false);
   protected readonly weekStart = computed(() => mondayOf(this.week() ?? toIsoDate(new Date())));
-  protected readonly table = new ClientTable(TEAM_COLUMNS);
-  protected readonly shown = this.table.rows(this.rows);
+  protected readonly table = new ClientTable({ rows: this.rows, columns: TEAM_COLUMNS });
   protected readonly numberKeys = NUMBER_KEYS;
-  protected readonly textFilter: ColumnFilter = { type: 'text' };
-  protected readonly numberFilter: ColumnFilter = { type: 'range', input: 'number' };
-  protected readonly statusFilter = enumFilter(TIMESHEET_STATUSES, 'time.status.');
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberFilter = NUMBER_RANGE;
+  protected readonly statusFilter = translatedSelect(() => TIMESHEET_STATUSES, (s) => 'time.status.' + s);
   protected readonly missingCount = computed(() => this.rows().filter((r) => r.missing > 0 && r.status !== 'submitted' && r.status !== 'approved').length);
 
   constructor() {

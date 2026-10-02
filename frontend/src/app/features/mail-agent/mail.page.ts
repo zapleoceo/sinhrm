@@ -13,20 +13,19 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { MAIL_OUTCOMES, PARSER_KEYS, ParserKey, ProcessedMail, SENDER_KINDS, SenderKind, SenderRule, UnknownSender, isSenderPattern } from './mail.model';
-import { ClientColumns, ClientTable, enumFilter } from '../../core/ui/table/client-table';
+import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
-import { ColumnFilter } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { MailStore } from './mail.store';
 
 /** Columns of the processed-mail log (all rows are on the page: sorted and filtered here, state in the URL). */
-export const MAIL_LOG_COLUMNS: ClientColumns<ProcessedMail> = {
-  received: { sort: (m) => m.received_at, filter: 'range', match: (m) => m.received_at },
-  sender: { sort: (m) => m.sender, filter: 'text', match: (m) => m.sender },
-  subject: { sort: (m) => m.subject, filter: 'text', match: (m) => m.subject },
-  outcome: { sort: (m) => MAIL_OUTCOMES.indexOf(m.outcome), filter: 'select', values: MAIL_OUTCOMES, match: (m) => m.outcome },
-};
+export const MAIL_LOG_COLUMNS: readonly ClientColumn<ProcessedMail>[] = [
+  { key: 'received', value: (m) => m.received_at, filter: 'date' },
+  { key: 'sender', value: (m) => m.sender, filter: 'text' },
+  { key: 'subject', value: (m) => m.subject, filter: 'text' },
+  { key: 'outcome', value: (m) => MAIL_OUTCOMES.indexOf(m.outcome), filter: 'select', filterValue: (m) => m.outcome },
+];
 
 /** Choice in the unknown-senders row before "Assign". */
 interface Draft {
@@ -76,11 +75,10 @@ export class MailPage implements OnInit {
   protected readonly drafts = signal<Record<number, Draft>>({});
   protected readonly isPattern = isSenderPattern;
   /** «Журнал» tab: newest first by default; header sort / filters in the URL. */
-  protected readonly log = new ClientTable(MAIL_LOG_COLUMNS, { key: 'received', dir: 'desc' });
-  protected readonly logRows = this.log.rows(this.store.messages);
-  protected readonly textFilter: ColumnFilter = { type: 'text' };
-  protected readonly dateFilter: ColumnFilter = { type: 'range', input: 'date' };
-  protected readonly outcomeFilter = enumFilter(MAIL_OUTCOMES, 'mail.outcomes.');
+  protected readonly log = new ClientTable({ rows: this.store.messages, columns: MAIL_LOG_COLUMNS, defaultSort: { key: 'received', dir: 'desc' } });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly dateFilter = DATE_RANGE;
+  protected readonly outcomeFilter = translatedSelect(() => MAIL_OUTCOMES, (o) => 'mail.outcomes.' + o);
   /** Outcome counters of the last manual sync, for the notice. */
   protected readonly syncSummary = computed(() => {
     const counts = this.store.lastSync() ?? {};

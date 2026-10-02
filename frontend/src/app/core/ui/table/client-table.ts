@@ -1,198 +1,212 @@
-import { Signal, computed, inject, signal } from '@angular/core';
+import { Signal, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ParamMap, Params } from '@angular/router';
+import { ActivatedRoute, ParamMap, Params, convertToParamMap } from '@angular/router';
 import { TranslocoService } from '@jsverse/transloco';
-import { ColumnFilter, FilterOption, FilterValue, RangeValue, TableSort, filterToParam, rangeFromParams, rangeToParams, sortFromParams, sortToParams, textParam } from './table-state';
+import {
+  ColumnFilter,
+  FilterValue,
+  RangeValue,
+  SortDir,
+  TableSort,
+  filterToParam,
+  isFilterActive,
+  prefixed,
+  rangeFromParams,
+  rangeToParams,
+  sortFromParams,
+  sortToParams,
+  textParam,
+} from './table-state';
 import { TableUrlState } from './table-url-state';
 
 /**
- * Tables without server paging (all rows already came from the API): sort and filter on the page, state in the URL
- * (docs/guides/tables.md → «без пагинации»). The header markup is the same `th[app-column-header]` as on /people.
+ * Sorting and filtering of a table whose rows all came at once (no server paging) — docs/guides/tables.md, step 1
+ * «без пагинации». The same header component (`th[app-column-header]`) drives it; the state lives in the URL like
+ * the server tables, with a prefix when a page has several tables (`?src_sort=count&src_dir=desc&src_channel=tg`).
  */
 
-/** What a cell sorts / matches by: text, a number (amounts, enum order), an ISO date string; empty = null. */
-export type CellValue = string | number | null | undefined;
+/** A cell value as the table sorts and filters it. null / undefined / '' = empty: always at the end. */
+export type CellValue = string | number | boolean | null | undefined;
+
+/** How a header filter matches: text — contains (any case); select — equals; number / date — inclusive range. */
+export type ClientFilterKind = 'text' | 'select' | 'number' | 'date';
 
 export interface ClientColumn<T> {
-  /** Sort value of a row; omitted = the column does not sort. */
-  sort?: (row: T) => CellValue;
-  /** Filter kind of the column header (the URL param is the column key; a range uses `{key}_from` / `{key}_to`). */
-  filter?: 'text' | 'select' | 'range';
-  /** Allowed values of a select filter (anything else in the URL is dropped). */
-  values?: readonly string[];
-  /**
-   * Value the filter matches on the page (text: «contains», case-insensitive; select: equal; range: from ≤ v ≤ to).
-   * Omitted = the page sends the filter to the API (a server filter, e.g. status), the rows come already filtered.
-   */
-  match?: (row: T) => CellValue;
+  /** Column key: the URL name and `key` of its header. */
+  key: string;
+  /** Value to sort by (numbers for numbers, ISO strings for dates, the shown text for text). */
+  value: (row: T) => CellValue;
+  /** Filter of the column, if any (the header gets the matching `[filter]`). */
+  filter?: ClientFilterKind;
+  /** Value to filter by when it differs from the sort value (e.g. a code for a select). */
+  filterValue?: (row: T) => CellValue;
+  /** false = the column filters but does not sort. */
+  sortable?: boolean;
 }
 
-export type ClientColumns<T> = Readonly<Record<string, ClientColumn<T>>>;
-
-export interface ClientTableQuery {
-  sort: TableSort | null;
-  filters: Readonly<Record<string, FilterValue>>;
-}
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const NUMBER = /^-?\d+(\.\d+)?$/;
+/** Header filters for the range kinds (text and select are built by the page: a select needs its options). */
+export const TEXT_FILTER: ColumnFilter = { type: 'text' };
+export const NUMBER_RANGE: ColumnFilter = { type: 'range', input: 'number' };
+export const DATE_RANGE: ColumnFilter = { type: 'range', input: 'date' };
 
 function isEmpty(v: CellValue): v is null | undefined | '' {
   return v === null || v === undefined || v === '';
 }
 
-/** Junk-free range from the URL: dates as YYYY-MM-DD, numbers as plain decimals. */
-function cleanRange(range: RangeValue | null): RangeValue | null {
-  if (!range) return null;
-  const ok = (v: string | null): string | null => (v !== null && (ISO_DATE.test(v) || NUMBER.test(v)) ? v : null);
-  const from = ok(range.from);
-  const to = ok(range.to);
-  return from || to ? { from, to } : null;
-}
-
-/** Sort and filters from the URL; unknown columns and values outside the allowed list are dropped. */
-export function clientQueryFromParams<T>(params: ParamMap, columns: ClientColumns<T>): ClientTableQuery {
-  const sortable = Object.keys(columns).filter((k) => columns[k].sort);
-  const filters: Record<string, FilterValue> = {};
-  for (const [key, col] of Object.entries(columns)) {
-    if (col.filter === 'range') {
-      const range = cleanRange(rangeFromParams(params, key));
-      if (range) filters[key] = range;
-    } else if (col.filter) {
-      const value = textParam(params, key);
-      if (value !== undefined && (!col.values || col.values.includes(value))) filters[key] = value.slice(0, 100);
-    }
-  }
-  return { sort: sortFromParams(params, sortable), filters };
-}
-
-/** URL params of one column filter (null / empty removes them). */
-export function clientFilterParams<T>(columns: ClientColumns<T>, key: string, value: FilterValue): Params {
-  return columns[key]?.filter === 'range' ? rangeToParams(key, value) : { [key]: filterToParam(value) };
-}
-
-/** Compares two non-empty cells: numbers as numbers, text with the interface language (natural order of digits). */
-export function compareCells(a: string | number, b: string | number, lang: string): number {
+/** Comparator of two non-empty cells: numbers as numbers, everything else by the interface language. */
+export function compareCells(a: CellValue, b: CellValue, collator: Intl.Collator): number {
   if (typeof a === 'number' && typeof b === 'number') return a - b;
-  return String(a).localeCompare(String(b), lang, { numeric: true, sensitivity: 'base' });
+  if (typeof a === 'boolean' && typeof b === 'boolean') return Number(a) - Number(b);
+  return collator.compare(String(a), String(b));
 }
 
 /**
- * Rows in the order of `sort`: empty cells always last (in both directions); equal cells keep the API order
- * (stable sort), so the order never jumps between renders.
+ * Rows sorted by one column. Empty cells go last in both directions; equal cells keep the order of the API
+ * (Array.prototype.sort is stable), so the tie-breaker is the server order.
  */
-export function sortRows<T>(rows: readonly T[], sort: TableSort | null, columns: ClientColumns<T>, lang: string): T[] {
-  const value = sort ? columns[sort.key]?.sort : undefined;
-  if (!sort || !value) return [...rows];
-  const sign = sort.dir === 'desc' ? -1 : 1;
-  return rows
-    .map((row, i) => ({ row, i, v: value(row) }))
-    .sort((x, y) => {
-      const ex = isEmpty(x.v);
-      const ey = isEmpty(y.v);
-      if (ex || ey) return ex === ey ? x.i - y.i : ex ? 1 : -1;
-      return sign * compareCells(x.v as string | number, y.v as string | number, lang) || x.i - y.i;
-    })
-    .map((x) => x.row);
-}
-
-function matches(cell: CellValue, kind: ClientColumn<unknown>['filter'], value: FilterValue, lang: string): boolean {
-  if (value === null) return true;
-  if (typeof value === 'string') {
-    if (isEmpty(cell)) return false;
-    return kind === 'text' ? String(cell).toLocaleLowerCase(lang).includes(value.toLocaleLowerCase(lang)) : String(cell) === value;
-  }
-  if (isEmpty(cell)) return false;
-  // Range: numbers compare as numbers; dates by the day (an ISO date-time cell is cut to YYYY-MM-DD).
-  const num = typeof cell === 'number';
-  const v = num ? cell : String(cell).slice(0, 10);
-  const edge = (e: string | null): number | string | null => (e === null ? null : num ? Number(e) : e);
-  const from = edge(value.from);
-  const to = edge(value.to);
-  return (from === null || v >= from) && (to === null || v <= to);
-}
-
-/** Rows that pass every page-side filter (filters without `match` are the API's job). */
-export function filterRows<T>(rows: readonly T[], filters: ClientTableQuery['filters'], columns: ClientColumns<T>, lang: string): T[] {
-  const active = Object.entries(filters).filter(([key, value]) => value !== null && columns[key]?.match);
-  if (active.length === 0) return [...rows];
-  return rows.filter((row) => active.every(([key, value]) => matches(columns[key].match!(row), columns[key].filter, value, lang)));
-}
-
-/**
- * Select filter of an enum column with translated labels (`'assets.status.' + value`), re-labelled when the
- * language or its translations load. Call in an injection context (a field initializer).
- */
-export function enumFilter(values: readonly string[], prefix: string, extra: readonly { value: string; key: string }[] = []): Signal<ColumnFilter> {
-  const i18n = inject(TranslocoService);
-  const loaded = toSignal(i18n.selectTranslation(), { initialValue: {} });
-  return computed(() => {
-    loaded();
-    const options: FilterOption[] = [
-      ...extra.map((o) => ({ value: o.value, label: i18n.translate(o.key) })),
-      ...values.map((v) => ({ value: v, label: i18n.translate(prefix + v) })),
-    ];
-    return { type: 'select', options };
+export function sortRows<T>(rows: readonly T[], value: (row: T) => CellValue, dir: SortDir, lang: string): T[] {
+  const collator = new Intl.Collator(lang, { numeric: true, sensitivity: 'base' });
+  const sign = dir === 'desc' ? -1 : 1;
+  return [...rows].sort((x, y) => {
+    const a = value(x);
+    const b = value(y);
+    if (isEmpty(a) || isEmpty(b)) return Number(isEmpty(a)) - Number(isEmpty(b));
+    return sign * compareCells(a, b, collator);
   });
 }
 
+/** Does a cell pass a header filter? An inactive filter passes everything; an empty cell fails an active one. */
+export function matchesFilter(value: CellValue, kind: ClientFilterKind, filter: FilterValue): boolean {
+  if (!isFilterActive(filter)) return true;
+  if (isEmpty(value)) return false;
+  if (typeof filter === 'string') {
+    const text = String(value);
+    return kind === 'select' ? text === filter : text.toLocaleLowerCase().includes(filter.trim().toLocaleLowerCase());
+  }
+  const range = filter as RangeValue;
+  if (kind === 'date') {
+    const day = String(value).slice(0, 10);
+    return (!range.from || day >= range.from) && (!range.to || day <= range.to);
+  }
+  const n = Number(value);
+  const from = range.from === null ? NaN : Number(range.from);
+  const to = range.to === null ? NaN : Number(range.to);
+  return Number.isFinite(n) && (!Number.isFinite(from) || n >= from) && (!Number.isFinite(to) || n <= to);
+}
+
+/** Filters, then sorts (pure: the page's `computed` and the unit tests use the same function). */
+export function applyClientTable<T>(
+  rows: readonly T[],
+  columns: readonly ClientColumn<T>[],
+  sort: TableSort | null,
+  filters: Readonly<Record<string, FilterValue>>,
+  lang: string,
+): T[] {
+  const active = columns.filter((c) => c.filter && isFilterActive(filters[c.key] ?? null));
+  const filtered = active.length
+    ? rows.filter((r) => active.every((c) => matchesFilter((c.filterValue ?? c.value)(r), c.filter!, filters[c.key] ?? null)))
+    : [...rows];
+  const column = sort ? columns.find((c) => c.key === sort.key && c.sortable !== false) : undefined;
+  return column && sort ? sortRows(filtered, column.value, sort.dir, lang) : filtered;
+}
+
+/** Table state of a client table from the URL; unknown sort keys are dropped (an old link shows the default order). */
+export function clientStateFromParams<T>(
+  params: ParamMap,
+  columns: readonly ClientColumn<T>[],
+  prefix?: string,
+): { sort: TableSort | null; filters: Record<string, FilterValue> } {
+  const keys = columns.filter((c) => c.sortable !== false).map((c) => c.key);
+  const filters: Record<string, FilterValue> = {};
+  for (const c of columns) {
+    if (!c.filter) continue;
+    const name = prefixed(prefix, c.key);
+    filters[c.key] = c.filter === 'number' || c.filter === 'date' ? rangeFromParams(params, name) : (textParam(params, name) ?? null);
+  }
+  return { sort: sortFromParams(params, keys, prefix), filters };
+}
+
+/** Distinct non-empty values of a column, in first-seen order (options of a select filter built from the rows). */
+export function distinctValues<T>(rows: readonly T[], value: (row: T) => CellValue): string[] {
+  const seen = new Set<string>();
+  for (const r of rows) {
+    const v = value(r);
+    if (!isEmpty(v)) seen.add(String(v));
+  }
+  return [...seen];
+}
+
 /**
- * Sort + filter state of one page-side table, bound to the URL. Create it in a field initializer of a page that
- * provides `TableUrlState`:
- * `protected readonly table = new ClientTable(COLUMNS, { key: 'name', dir: 'asc' });`
- * `protected readonly rows = this.table.rows(this.items);`
- * and in the template `[appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)"`,
- * `[filterValue]="table.filter('name')" (filterChange)="table.setFilter('name', $event)"`.
+ * Select filter with translated labels (`label(value)` returns a translation key), rebuilt when the values change,
+ * the language switches or its translations finish loading. Call it in a field initializer (injection context).
+ */
+export function translatedSelect(values: () => readonly string[], label: (value: string) => string): Signal<ColumnFilter> {
+  const i18n = inject(TranslocoService);
+  const translation = toSignal(i18n.selectTranslation(), { initialValue: null });
+  return computed(() => {
+    translation();
+    return { type: 'select', options: values().map((value) => ({ value, label: i18n.translate(label(value)) })) };
+  });
+}
+
+export interface ClientTableOptions<T> {
+  /** All rows as the API returned them. */
+  rows: () => readonly T[];
+  /** Columns; a signal when they come with the data (a report describes its own columns). */
+  columns: readonly ClientColumn<T>[] | (() => readonly ClientColumn<T>[]);
+  /** URL prefix when the page has more than one table (`src` → `src_sort`, `src_dir`, `src_<key>`). */
+  prefix?: string;
+  /** Order of the API, shown with an arrow while the URL has none; null = the API order is not a column. */
+  defaultSort?: TableSort | null;
+}
+
+/**
+ * Client table bound to the URL. Create it in a field of a component that provides `TableUrlState`:
+ * `protected readonly table = new ClientTable({ rows: this.items, columns: [...], prefix: 'cat' });`
+ * then `[appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)"`, rows — `table.rows()`,
+ * a header filter — `[filterValue]="table.filterValue('name')" (filterChange)="table.setFilter('name', $event)"`.
  */
 export class ClientTable<T> {
   private readonly url = inject(TableUrlState);
+  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
   private readonly i18n = inject(TranslocoService);
   private readonly lang = toSignal(this.i18n.langChanges$, { initialValue: this.i18n.getActiveLang() });
-  /** Parsed URL state (sort as in the URL: null = default order). */
-  readonly query = signal<ClientTableQuery>({ sort: null, filters: {} });
-  /** Shown sort: the URL one or the default (so its column carries the arrow). */
-  readonly sort = computed<TableSort | null>(() => this.query().sort ?? this.defaultSort);
-  /** True when any filter (page-side or server) is set. */
-  readonly filtered = computed(() => Object.keys(this.query().filters).length > 0);
-  private readonly columns: ClientColumns<T>;
-  private readonly defaultSort: TableSort | null;
+  private readonly columns = computed(() => {
+    const c = this.options.columns;
+    return typeof c === 'function' ? c() : c;
+  });
+  private readonly state = computed(() => clientStateFromParams(this.params(), this.columns(), this.options.prefix));
 
-  /**
-   * @param columns     sortable / filterable columns by key (the key is the URL param and the header `key`)
-   * @param defaultSort order without `?sort=` (null = keep the API order, no arrow)
-   * @param onQuery     called after every URL change (e.g. to reload when a server filter changed)
-   */
-  constructor(columns: ClientColumns<T>, defaultSort: TableSort | null = null, onQuery?: (query: ClientTableQuery) => void) {
-    this.columns = columns;
-    this.defaultSort = defaultSort;
-    this.url.watch(
-      (params) => clientQueryFromParams(params, columns),
-      (query) => {
-        this.query.set(query);
-        onQuery?.(query);
-      },
-    );
+  /** Sort shown on the headers: the URL one or the API default. */
+  readonly sort: Signal<TableSort | null> = computed(() => this.state().sort ?? this.options.defaultSort ?? null);
+  /** True when a header filter narrows the rows (e.g. a «Total» row then covers more than is shown). */
+  readonly filtered = computed(() => Object.values(this.state().filters).some((f) => isFilterActive(f)));
+  /** True when the URL holds any sort or filter of this table. */
+  readonly touched = computed(() => this.filtered() || this.state().sort !== null);
+  /** Filtered and sorted rows. Without a sort in the URL the API order stays as is. */
+  readonly rows: Signal<T[]> = computed(() =>
+    applyClientTable(this.options.rows(), this.columns(), this.state().sort, this.state().filters, this.lang()),
+  );
+
+  private readonly options: ClientTableOptions<T>;
+
+  constructor(options: ClientTableOptions<T>) {
+    this.options = options;
   }
 
-  /** Visible rows: filtered on the page, then sorted. */
-  rows(source: Signal<readonly T[]>): Signal<T[]> {
-    return computed(() => {
-      const q = this.query();
-      const lang = this.lang();
-      return sortRows(filterRows(source(), q.filters, this.columns, lang), this.sort(), this.columns, lang);
-    });
-  }
-
-  /** Current filter of a column (header `[filterValue]`). */
-  filter(key: string): FilterValue {
-    return this.query().filters[key] ?? null;
+  filterValue(key: string): FilterValue {
+    return this.state().filters[key] ?? null;
   }
 
   setSort(sort: TableSort | null): void {
-    this.url.update(sortToParams(sort));
+    this.url.update(sortToParams(sort, this.options.prefix), { paging: true });
   }
 
   setFilter(key: string, value: FilterValue): void {
-    this.url.update(clientFilterParams(this.columns, key, value));
+    const column = this.columns().find((c) => c.key === key);
+    if (!column?.filter) return;
+    const name = prefixed(this.options.prefix, key);
+    const params: Params = column.filter === 'number' || column.filter === 'date' ? rangeToParams(name, value) : { [name]: filterToParam(value) };
+    this.url.update(params, { paging: true });
   }
 }

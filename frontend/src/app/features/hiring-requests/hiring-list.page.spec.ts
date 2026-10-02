@@ -1,5 +1,5 @@
 import { of } from 'rxjs';
-import { TablePage } from '../../../testing/table';
+import { TablePage, clickTitle, header, openTablePage } from '../../../testing/table-page';
 import { HiringListPage } from './hiring-list.page';
 import { HiringRequest, HiringStatus } from './hiring-requests.model';
 import { HiringRequestsService } from './hiring-requests.service';
@@ -24,7 +24,9 @@ const LIST = [request(1, 'Бухгалтер', 'pending', '2026-09-10T08:00:00Z'
 
 describe('HiringListPage: sortable / filterable headers bound to the URL', () => {
   let calls: { status?: HiringStatus; mine?: boolean }[];
-  let page: TablePage;
+  let page: TablePage<HiringListPage>;
+  const table = () => page.el.querySelector('table')!;
+  const titles = () => [...table().querySelectorAll('tbody tr td:first-child a')].map((a) => a.textContent?.trim());
 
   beforeEach(async () => {
     calls = [];
@@ -33,22 +35,24 @@ describe('HiringListPage: sortable / filterable headers bound to the URL', () =>
       inbox: () => of(LIST),
       meta: () => of({ can_create: false, can_manage: false, form_fields: [] }),
     };
-    page = await TablePage.open('hiring-requests', HiringListPage, '/hiring-requests?status=pending&sort=created&dir=desc', [{ provide: HiringRequestsService, useValue: api }]);
+    page = await openTablePage(HiringListPage, '/?status=pending&sort=created&dir=desc', [{ provide: HiringRequestsService, useValue: api }]);
   });
 
   it('sends the status from the URL to the API once and shows the sort on its header', () => {
     expect(calls).toEqual([{ status: 'pending', mine: false }]);
-    expect(page.th('hiring.fields.created').getAttribute('aria-sort')).toBe('descending');
+    expect(header(table(), 'hiring.fields.created').getAttribute('aria-sort')).toBe('descending');
     // The mock ignores the status: the page also matches it (the inbox API has no status filter).
-    expect(page.column(0, 'table', 'a')).toEqual(['Бухгалтер', 'Юрист']);
+    expect(titles()).toEqual(['Бухгалтер', 'Юрист']);
   });
 
   it('a title click sorts by that column; the date range filters on the page', async () => {
-    await page.sort('hiring.fields.title');
-    expect(page.params.get('sort')).toBe('title');
-    expect(page.column(0, 'table', 'a')).toEqual(['Бухгалтер', 'Юрист']);
-    await page.navigate('/hiring-requests?created_from=2026-09-01');
+    clickTitle(table(), 'hiring.fields.title');
+    await page.settle();
+    expect(new URL(page.router.url, 'http://x').searchParams.get('sort')).toBe('title');
+    expect(titles()).toEqual(['Бухгалтер', 'Юрист']);
+    await page.router.navigateByUrl('/?created_from=2026-09-01');
+    await page.settle();
     expect(calls.at(-1)).toEqual({ status: undefined, mine: false });
-    expect(page.column(0, 'table', 'a')).toEqual(['Бухгалтер', 'Аналітик']);
+    expect(titles()).toEqual(['Бухгалтер', 'Аналітик']);
   });
 });

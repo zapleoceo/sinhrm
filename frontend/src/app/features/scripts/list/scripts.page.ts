@@ -12,10 +12,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { SCRIPT_CHANNELS, Script, ScriptChannel } from '../scripts.model';
-import { ClientColumns, ClientTable, enumFilter } from '../../../core/ui/table/client-table';
+import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../../core/ui/table/client-table';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
-import { ColumnFilter } from '../../../core/ui/table/table-state';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 
 const PRESENCE = ['yes', 'no'] as const;
@@ -25,12 +24,12 @@ const presence = (v: unknown): 'yes' | 'no' => (v ? 'yes' : 'no');
  * Columns of the scripts list (all rows are on the page). Versions sort by their date (published / last saved),
  * a script without one goes last; their filter is «есть / нет».
  */
-export const SCRIPT_COLUMNS: ClientColumns<Script> = {
-  name: { sort: (s) => s.name, filter: 'text', match: (s) => s.name },
-  channel: { sort: (s) => SCRIPT_CHANNELS.indexOf(s.channel), filter: 'select', values: SCRIPT_CHANNELS, match: (s) => s.channel },
-  active: { sort: (s) => s.active_version?.published_at, filter: 'select', values: PRESENCE, match: (s) => presence(s.active_version) },
-  draft: { sort: (s) => s.draft?.updated_at, filter: 'select', values: PRESENCE, match: (s) => presence(s.draft) },
-};
+export const SCRIPT_COLUMNS: readonly ClientColumn<Script>[] = [
+  { key: 'name', value: (s) => s.name, filter: 'text' },
+  { key: 'channel', value: (s) => SCRIPT_CHANNELS.indexOf(s.channel), filter: 'select', filterValue: (s) => s.channel },
+  { key: 'active', value: (s) => s.active_version?.published_at, filter: 'select', filterValue: (s) => presence(s.active_version) },
+  { key: 'draft', value: (s) => s.draft?.updated_at, filter: 'select', filterValue: (s) => presence(s.draft) },
+];
 import { ScriptsService, scriptsErrorKey } from '../scripts.service';
 
 /** Admin → Скрипти: all scripts with their active version / draft state (sortable / filterable headers), creation of a new one. */
@@ -89,17 +88,17 @@ import { ScriptsService, scriptsErrorKey } from '../scripts.service';
         <thead>
           <tr>
             <th scope="col" app-column-header key="name" [label]="'scripts.name' | transloco"
-              [filter]="textFilter" [filterValue]="table.filter('name')" (filterChange)="table.setFilter('name', $event)"></th>
+              [filter]="textFilter" [filterValue]="table.filterValue('name')" (filterChange)="table.setFilter('name', $event)"></th>
             <th scope="col" app-column-header key="channel" [label]="'scripts.channelLabel' | transloco"
-              [filter]="channelFilter()" [filterValue]="table.filter('channel')" (filterChange)="table.setFilter('channel', $event)"></th>
+              [filter]="channelFilter()" [filterValue]="table.filterValue('channel')" (filterChange)="table.setFilter('channel', $event)"></th>
             <th scope="col" app-column-header key="active" [label]="'scripts.activeVersion' | transloco"
-              [filter]="presenceFilter()" [filterValue]="table.filter('active')" (filterChange)="table.setFilter('active', $event)"></th>
+              [filter]="presenceFilter()" [filterValue]="table.filterValue('active')" (filterChange)="table.setFilter('active', $event)"></th>
             <th scope="col" app-column-header key="draft" [label]="'scripts.draft' | transloco"
-              [filter]="presenceFilter()" [filterValue]="table.filter('draft')" (filterChange)="table.setFilter('draft', $event)"></th>
+              [filter]="presenceFilter()" [filterValue]="table.filterValue('draft')" (filterChange)="table.setFilter('draft', $event)"></th>
           </tr>
         </thead>
         <tbody>
-          @for (s of rows(); track s.id) {
+          @for (s of table.rows(); track s.id) {
             <tr [class.archived]="s.archived">
               <th scope="row"><a [routerLink]="['/admin/scripts', s.id]">{{ s.name }}</a>
                 @if (s.archived) {
@@ -154,11 +153,10 @@ export class ScriptsPage implements OnInit {
     name: ['', [Validators.required, Validators.maxLength(200)]],
     channel: ['call' as ScriptChannel],
   });
-  protected readonly table = new ClientTable(SCRIPT_COLUMNS);
-  protected readonly rows = this.table.rows(this.scripts);
-  protected readonly textFilter: ColumnFilter = { type: 'text' };
-  protected readonly channelFilter = enumFilter(SCRIPT_CHANNELS, 'scripts.channel.');
-  protected readonly presenceFilter = enumFilter(PRESENCE, 'table.filter.');
+  protected readonly table = new ClientTable({ rows: this.scripts, columns: SCRIPT_COLUMNS });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly channelFilter = translatedSelect(() => SCRIPT_CHANNELS, (c) => 'scripts.channel.' + c);
+  protected readonly presenceFilter = translatedSelect(() => PRESENCE, (v) => 'table.' + v);
 
   ngOnInit(): void {
     this.load();
