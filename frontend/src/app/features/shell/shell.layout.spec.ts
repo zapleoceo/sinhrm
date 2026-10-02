@@ -10,6 +10,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
+import { HOVER_QUERY } from './nav-rail';
 import { ShellLayout } from './shell.layout';
 
 @Component({ template: '' })
@@ -32,7 +33,8 @@ async function setup(modules?: string[], narrow = false, user: object = USER): P
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: AuthService, useValue: { user: signal(user), logout, setActiveRole, hasModule: (k: string) => modules === undefined || modules.includes(k) } },
-      { provide: BreakpointObserver, useValue: { observe: () => of({ matches: narrow, breakpoints: {} }) } },
+      // A wide screen comes with a mouse (hover), a narrow one is a touch phone.
+      { provide: BreakpointObserver, useValue: { observe: (q: string) => of({ matches: q === HOVER_QUERY ? !narrow : narrow, breakpoints: {} }) } },
       { provide: LanguageService, useValue: { current: signal('uk'), use: langUse } },
     ],
   });
@@ -373,6 +375,28 @@ describe('ShellLayout collapsible sidebar (icon rail)', () => {
     await detect();
     expect(header(el, 'perform').classList.contains('current')).toBe(true);
     expect(header(el, 'people').classList.contains('current')).toBe(false);
+    // Screen readers: the items are hidden on the rail, so the group header says it holds the current page.
+    expect(header(el, 'perform').getAttribute('aria-current')).toBe('true');
+    expect(header(el, 'people').hasAttribute('aria-current')).toBe(false);
+
+    toggle(el).click();
+    await detect();
+    // Expanded: the item itself is aria-current="page", the header is not marked.
+    expect(header(el, 'perform').hasAttribute('aria-current')).toBe(false);
+  });
+
+  it('rail tooltips do not repeat the name for screen readers; the user button keeps the name as its description', async () => {
+    localStorage.setItem('sinhrm.nav.collapsed', '1');
+    const { el, detect } = await setup();
+    await detect();
+    await detect();
+    const tasks = el.querySelector('a[href="/tasks"]') as HTMLElement;
+    expect(tasks.hasAttribute('aria-describedby')).toBe(false);
+    expect(header(el, 'people').hasAttribute('aria-describedby')).toBe(false);
+    const user = el.querySelector('.sidebar-footer button.user') as HTMLElement;
+    const ids = user.getAttribute('aria-describedby') ?? '';
+    expect(ids).not.toBe('');
+    expect(document.getElementById(ids)?.textContent).toBe('U');
   });
 
   it('shows a name tooltip on the right only while the sidebar is a rail', async () => {
@@ -388,8 +412,71 @@ describe('ShellLayout collapsible sidebar (icon rail)', () => {
 
   it('never applies on the mobile drawer: no toggle, no rail', async () => {
     localStorage.setItem('sinhrm.nav.collapsed', '1');
+    localStorage.setItem('sinhrm.nav.autohide', '1');
     const { el } = await setup(undefined, true);
     expect(toggle(el)).toBeNull();
+    expect(el.querySelector('button.auto-hide')).toBeNull();
     expect(isRail(el)).toBe(false);
+    expect(el.querySelector('.shell')?.classList.contains('autohide')).toBe(false);
+  });
+});
+
+describe('ShellLayout auto-hide sidebar', () => {
+  beforeEach(() => localStorage.clear());
+
+  const autoHide = (el: HTMLElement): HTMLButtonElement => el.querySelector('button.auto-hide') as HTMLButtonElement;
+  const shell = (el: HTMLElement): DOMTokenList => (el.querySelector('.shell') as HTMLElement).classList;
+  const aside = (el: HTMLElement): HTMLElement => el.querySelector('#app-sidebar') as HTMLElement;
+
+  it('a pressed switch next to the collapse button; on: a rail that opens over the content under the pointer', async () => {
+    const { el, detect } = await setup();
+    expect(autoHide(el).getAttribute('aria-pressed')).toBe('false');
+    expect(autoHide(el).getAttribute('aria-label')).toBe('shell.nav.autoHide');
+
+    autoHide(el).click();
+    await detect();
+    expect(autoHide(el).getAttribute('aria-pressed')).toBe('true');
+    expect(localStorage.getItem('sinhrm.nav.autohide')).toBe('1');
+    expect([shell(el).contains('autohide'), shell(el).contains('rail'), shell(el).contains('peek')]).toEqual([true, true, false]);
+    // The collapse toggle has nothing to do while auto-hide is on.
+    expect(el.querySelector('button.rail-toggle:not(.auto-hide)')).toBeNull();
+
+    aside(el).dispatchEvent(new MouseEvent('mouseenter'));
+    await detect();
+    expect([shell(el).contains('autohide'), shell(el).contains('rail'), shell(el).contains('peek')]).toEqual([true, false, true]);
+    aside(el).dispatchEvent(new MouseEvent('mouseleave'));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await detect();
+    expect([shell(el).contains('rail'), shell(el).contains('peek')]).toEqual([true, false]);
+  });
+
+  it('remembers auto-hide after a reload; Esc folds the open sidebar', async () => {
+    localStorage.setItem('sinhrm.nav.autohide', '1');
+    const { el, detect } = await setup();
+    expect(autoHide(el).getAttribute('aria-pressed')).toBe('true');
+    aside(el).dispatchEvent(new MouseEvent('mouseenter'));
+    await detect();
+    expect(shell(el).contains('peek')).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await detect();
+    expect(shell(el).contains('peek')).toBe(false);
+  });
+
+  it('keyboard focus inside opens and holds it, focus leaving folds it', async () => {
+    localStorage.setItem('sinhrm.nav.autohide', '1');
+    const { el, detect } = await setup();
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    try {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      (el.querySelector('a[href="/tasks"]') as HTMLElement).focus();
+      await detect();
+      expect(shell(el).contains('peek')).toBe(true);
+      outside.focus();
+      await detect();
+      expect(shell(el).contains('peek')).toBe(false);
+    } finally {
+      outside.remove();
+    }
   });
 });

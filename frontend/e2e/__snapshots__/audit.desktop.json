@@ -14,6 +14,7 @@
   "button \"Open calendar\"",
   "button \"Open calendar\"",
   "button \"Previous page\" [disabled]",
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування\" [expanded]",
   "button \"Згорнути меню\" [expanded]",
   "button \"Люди 70 нових\"",

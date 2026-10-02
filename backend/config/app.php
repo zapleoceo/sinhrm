@@ -74,6 +74,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Day boundaries the user sees ("today" of tasks and of "Маршрут дня"); storage stays UTC. Core\Support\UserTime.
+    'user_timezone' => env('APP_USER_TIMEZONE', 'Europe/Kyiv'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

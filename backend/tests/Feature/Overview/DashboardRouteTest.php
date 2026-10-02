@@ -16,6 +16,7 @@ use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
 
@@ -40,6 +41,8 @@ final class DashboardRouteTest extends TestCase
         $recruiter = $this->userWith(UserRole::Recruiter, [$mine]);
         $colleague = $this->userWith(UserRole::Recruiter, [$other]);
         $interviewer = $this->userWith(UserRole::Employee);
+        // The user's zone = UTC here: the filters and visibility rules alone (the Kyiv day: the test below).
+        config(['app.user_timezone' => 'UTC']);
 
         Carbon::setTestNow('2026-09-30 08:00:00');
         $visible = $this->applied($this->vacancyIn($mine), ['full_name' => 'Route Visible [TEST]', 'phone' => '+380670000301']);
@@ -85,7 +88,56 @@ final class DashboardRouteTest extends TestCase
 
         // Admin sees everything in Recruiting, but the route is personal: only meetings they are involved in.
         $this->actingAs($this->userWith(UserRole::Admin))->getJson('/api/dashboard')->assertOk()
-            ->assertJsonPath('data.day_route', ['date' => '2026-09-30', 'interviews' => 0, 'tasks' => 0, 'items' => []]);
+            ->assertJsonPath('data.day_route', ['date' => '2026-09-30', 'timezone' => 'UTC', 'interviews' => 0, 'tasks' => 0, 'items' => []]);
+    }
+
+    /** @return array<string, array{string, string, string}> now (UTC) → the user's date in Kyiv and its offset */
+    public static function kyivDayBoundaries(): array
+    {
+        return [
+            'winter 23:30 UTC = 01:30 next day' => ['2026-01-15 23:30:00', '2026-01-16', '+02:00'],
+            'winter 00:30 UTC = 02:30' => ['2026-01-16 00:30:00', '2026-01-16', '+02:00'],
+            'summer 23:30 UTC = 02:30 next day' => ['2026-07-15 23:30:00', '2026-07-16', '+03:00'],
+            'summer 00:30 UTC = 03:30' => ['2026-07-16 00:30:00', '2026-07-16', '+03:00'],
+        ];
+    }
+
+    /**
+     * Around midnight UTC the server's day and the user's (Kyiv) day differ: the route, "my tasks" and the overdue
+     * count follow the Kyiv day — the same day the header shows — in winter (+02:00) and in summer (+03:00).
+     */
+    #[DataProvider('kyivDayBoundaries')]
+    public function test_day_route_follows_the_users_day_not_the_utc_day(string $nowUtc, string $localDate, string $offset): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+        $branch = Branch::factory()->create();
+        $recruiter = $this->userWith(UserRole::Recruiter, [$branch]);
+        $app = $this->applied($this->vacancyIn($branch), ['full_name' => 'Route Midnight [TEST]', 'phone' => '+380670000311']);
+
+        $day = Carbon::parse("{$localDate} 00:00:00", 'Europe/Kyiv');
+        $this->meeting($recruiter, $app, $day->copy()->subMinutes(15)->toIso8601String(), ['title' => 'Yesterday late [TEST]']);
+        $this->meeting($recruiter, $app, $day->copy()->addMinutes(15)->toIso8601String(), ['title' => 'Just after midnight [TEST]']);
+        $this->meeting($recruiter, $app, $day->copy()->setTime(23, 45)->toIso8601String(), ['title' => 'Late tonight [TEST]']);
+        $this->meeting($recruiter, $app, $day->copy()->addDay()->addMinutes(15)->toIso8601String(), ['title' => 'Tomorrow [TEST]']);
+        $task = static fn (string $title, Carbon $due): Task => Task::query()->create(
+            ['assignee_id' => $recruiter->id, 'type' => 'manual', 'title' => $title, 'due_at' => $due->copy()->utc()],
+        );
+        $task('Yesterday evening [TEST]', $day->copy()->subHours(2));          // overdue: before the Kyiv day
+        $task('Tonight [TEST]', $day->copy()->setTime(23, 30));                // today in Kyiv, may be "tomorrow" in UTC
+        $task('Tomorrow morning [TEST]', $day->copy()->addDay()->addMinutes(30));
+        Carbon::setTestNow($nowUtc);
+
+        $this->actingAs($recruiter)->getJson('/api/dashboard')->assertOk()
+            ->assertJsonPath('data.day_route.date', $localDate)
+            ->assertJsonPath('data.day_route.timezone', 'Europe/Kyiv')
+            ->assertJsonPath('data.day_route.interviews', 2)
+            ->assertJsonPath('data.day_route.tasks', 1)
+            ->assertJsonPath('data.day_route.items.*.title', ['Just after midnight [TEST]', 'Tonight [TEST]', 'Late tonight [TEST]'])
+            ->assertJsonPath('data.day_route.items.0.at', "{$localDate}T00:15:00{$offset}")
+            ->assertJsonPath('data.day_route.items.1.at', "{$localDate}T23:30:00{$offset}")
+            ->assertJsonPath('data.day_route.items.2.at', "{$localDate}T23:45:00{$offset}")
+            ->assertJsonPath('data.my_tasks.total', 2)
+            ->assertJsonPath('data.my_tasks.overdue', 1);
     }
 
     public function test_funnel_insights_come_from_the_stage_history_in_my_scope(): void

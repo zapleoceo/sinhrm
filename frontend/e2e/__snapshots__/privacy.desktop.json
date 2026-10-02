@@ -10,6 +10,7 @@
   "navigation \"Головне меню\""
  ],
  "interactive": [
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування\" [expanded]",
   "button \"Зберегти\"",
   "button \"Згорнути меню\" [expanded]",

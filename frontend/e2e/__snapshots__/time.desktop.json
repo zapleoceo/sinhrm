@@ -11,6 +11,7 @@
  ],
  "interactive": [
   "button \"Open calendar\"",
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування 9 нових\"",
   "button \"Видалити\"",
   "button \"Додати рядок\"",

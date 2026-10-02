@@ -11,6 +11,7 @@
   "navigation \"Головне меню\""
  ],
  "interactive": [
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування\" [expanded]",
   "button \"Додати\"",
   "button \"Згорнути меню\" [expanded]",

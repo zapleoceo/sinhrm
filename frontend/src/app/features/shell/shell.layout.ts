@@ -1,10 +1,10 @@
 import { Logo } from '../../core/ui/logo';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { UserRole, isHrStaff } from '../../core/auth/auth.model';
-import { A11yModule } from '@angular/cdk/a11y';
+import { A11yModule, FocusMonitor } from '@angular/cdk/a11y';
 import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -47,7 +47,7 @@ interface RoleChoice {
     RailTip,
   ],
   providers: [NavRail],
-  host: { '(document:keydown.escape)': 'closeDrawer()' },
+  host: { '(document:keydown.escape)': 'onEscape()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.layout.html',
   styleUrl: './shell.layout.scss',
@@ -96,6 +96,11 @@ export class ShellLayout {
   protected readonly narrow = this.rail.narrow;
   /** Desktop sidebar folded to an icon-only rail (remembered in this browser). */
   protected readonly collapsed = this.rail.collapsed;
+  /** «Auto-hide»: a rail that opens over the content under the pointer / keyboard focus (wide screens with a mouse). */
+  protected readonly autoHide = this.rail.autoHide;
+  protected readonly autoHideAvailable = this.rail.autoHideAvailable;
+  protected readonly peek = this.rail.peek;
+  private readonly sidebar = viewChild.required<ElementRef<HTMLElement>>('sidebar');
   protected readonly railToggleLabel = computed(() => (this.collapsed() ? 'shell.nav.expandMenu' : 'shell.nav.collapseMenu'));
   protected readonly drawerOpen = signal(false);
   /** Sum of all counters, shown on the burger button. */
@@ -129,6 +134,17 @@ export class ShellLayout {
       const id = this.user()?.id;
       this.expanded.set(id === undefined ? new Set() : loadExpanded(id));
     });
+    // Auto-hide: keyboard focus inside the sidebar keeps it open, focus leaving it folds it (a click does not hold it).
+    const focus = inject(FocusMonitor);
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const el = this.sidebar().nativeElement;
+      const sub = focus.monitor(el, true).subscribe((origin) => (origin === null ? this.rail.focusOut() : this.rail.focusIn(origin === 'keyboard')));
+      destroyRef.onDestroy(() => {
+        sub.unsubscribe();
+        focus.stopMonitoring(el);
+      });
+    });
     // Navigating into a group opens it (and keeps it open afterwards).
     effect(() => {
       const group = this.activeGroup();
@@ -152,6 +168,14 @@ export class ShellLayout {
     return !this.collapsed() && this.expanded().has(group);
   }
 
+  /**
+   * On the rail the items of a group are hidden, so the group header of the current page says so to screen readers
+   * (aria-current="true"; the expanded sidebar marks the item itself with aria-current="page").
+   */
+  protected groupCurrent(group: NavGroupId): 'true' | null {
+    return this.collapsed() && this.activeGroup() === group ? 'true' : null;
+  }
+
   /** A group header whose items are hidden shows the sum of their counters. */
   protected groupBadge(group: NavGroupId): number {
     return this.isOpen(group) ? 0 : groupBadgeSum(this.badges(), group);
@@ -169,6 +193,28 @@ export class ShellLayout {
 
   protected toggleRail(): void {
     this.rail.toggle();
+  }
+
+  protected toggleAutoHide(): void {
+    this.rail.toggleAutoHide();
+  }
+
+  protected pointerEnter(): void {
+    this.rail.pointerEnter();
+  }
+
+  protected pointerLeave(): void {
+    this.rail.pointerLeave();
+  }
+
+  /** The user menu (an overlay outside the sidebar) keeps the auto-hide sidebar open while it is open. */
+  protected holdSidebar(on: boolean): void {
+    this.rail.hold(on);
+  }
+
+  protected onEscape(): void {
+    this.closeDrawer();
+    this.rail.escape();
   }
 
   private setExpanded(group: NavGroupId, open: boolean): void {

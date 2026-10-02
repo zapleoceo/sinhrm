@@ -12,6 +12,7 @@
  "interactive": [
   "button \"25\"",
   "button \"7\" [pressed]",
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування 9 нових\"",
   "button \"Згорнути меню\" [expanded]",
   "button \"Люди 70 нових\"",

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Overview\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Overview\Contracts\DashboardNotices;
 use App\Modules\Overview\Contracts\DashboardRepository;
 use App\Modules\Overview\Contracts\DashboardSection;
@@ -49,18 +50,21 @@ final readonly class DashboardService
     public function build(User $actor, ?Carbon $now = null): array
     {
         $now ??= Carbon::now();
+        // "Today" (new today, my tasks, the day route) is the user's day, not the server's UTC day: the UI shows local time.
+        $today = UserTime::now($now);
+        $todayStart = UserTime::toStorage($today->copy()->startOfDay());
         $scope = $this->scope->for($actor);
         $staleBefore = $now->copy()->subDays(StalenessService::DEFAULT_DAYS);
 
-        $tasks = $this->tasks->list($actor, new TaskFilter(mine: true, due: TaskDue::Today), $now);
+        $tasks = $this->tasks->list($actor, new TaskFilter(mine: true, due: TaskDue::Today), $today);
         $stale = $this->applications->stale($scope, $staleBefore, self::STALE_LIST);
 
         $data = [
-            'counts' => $this->dashboard->counts($scope, $staleBefore, $now->copy()->startOfDay()),
+            'counts' => $this->dashboard->counts($scope, $staleBefore, $todayStart),
             'stale_days' => StalenessService::DEFAULT_DAYS,
             'my_tasks' => [
                 'total' => $tasks->count(),
-                'overdue' => $tasks->filter(static fn (Task $t): bool => $t->due_at->lt($now->copy()->startOfDay()))->count(),
+                'overdue' => $tasks->filter(static fn (Task $t): bool => $t->due_at->lt($todayStart))->count(),
                 'items' => $tasks->take(self::TASKS_LIST)->map(static fn (Task $t): array => [
                     'id' => $t->id,
                     'title' => $t->title,
@@ -80,7 +84,7 @@ final readonly class DashboardService
             'warnings' => $this->warnings($actor),
             'funnel' => $this->dashboard->funnel($scope),
             'funnel_insights' => $this->funnelInsights->build($scope, $now),
-            'day_route' => $this->dayRoute->build($scope, $tasks, $now),
+            'day_route' => $this->dayRoute->build($scope, $tasks, $today),
             'touches' => [
                 'days' => self::TOUCH_DAYS,
                 'by_channel' => $this->dashboard->touchesByChannel($scope, $now->copy()->subDays(self::TOUCH_DAYS)),

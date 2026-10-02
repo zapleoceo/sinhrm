@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Scripts\Http\Resources;
 
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Scripts\Enums\TaskType;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Http\Request;
@@ -35,9 +36,10 @@ final class TaskResource extends JsonResource
             'template_key' => $this->template_key,
             'due_at' => $this->due_at->toIso8601String(),
             'done_at' => $this->done_at?->toIso8601String(),
-            // Day-granular for follow-ups; the 1-hour "call the new applicant" task is overdue by the minute.
+            // Day-granular (the user's day, as due=overdue) for follow-ups; the 1-hour "call the new applicant" task
+            // is overdue by the minute.
             'is_overdue' => $this->done_at === null && $this->due_at->lt(
-                $this->type === TaskType::NewApplicant ? now() : now()->startOfDay(),
+                $this->type === TaskType::NewApplicant ? now() : UserTime::now()->startOfDay(),
             ),
         ];
     }

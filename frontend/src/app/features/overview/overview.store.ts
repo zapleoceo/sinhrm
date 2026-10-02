@@ -35,8 +35,8 @@ export class OverviewStore {
     if (!r) {
       return null;
     }
-    const scale = routeScale(r.items, this.loadedAt(), r.date);
-    return { ...r, scale, stops: routeStops(r.items, scale) };
+    const scale = routeScale(r.items, this.loadedAt(), r.date, r.timezone);
+    return { ...r, scale, stops: routeStops(r.items, scale, r.timezone) };
   });
   readonly touchesTotal = computed(() => (this.data()?.touches.by_channel ?? []).reduce((sum, r) => sum + r.count, 0));
 

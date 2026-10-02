@@ -12,6 +12,7 @@
  "interactive": [
   "button \"Next page\"",
   "button \"Previous page\" [disabled]",
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування\" [expanded]",
   "button \"Заблокувати\"",
   "button \"Заблокувати\"",
