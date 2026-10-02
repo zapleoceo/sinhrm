@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
@@ -12,6 +12,7 @@ import {
   SheetInspection,
   SheetMapping,
 } from './google.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 const API = '/api/google';
 
@@ -59,14 +60,5 @@ export class GoogleService {
 
 /** i18n key for a failed Google call. */
 export function googleErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (GOOGLE_ERROR_CODES as readonly string[]).includes(code)) {
-      return `google.errors.${code}`;
-    }
-    if (error.status === 422) {
-      return 'google.errors.validation';
-    }
-  }
-  return 'google.errors.generic';
+  return apiErrorKey(error, 'google', GOOGLE_ERROR_CODES, { statuses: [422], fallback: 'google.errors.generic' });
 }

@@ -11,7 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AcquisitionChannel, CHANNEL_TYPES, ChannelType } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
-import { ChannelsService, UtmInput, channelErrorKey, ruleLabel } from './channels.service';
+import { ChannelsService, UtmInput, acquisitionChannelErrorKey, ruleLabel } from './channels.service';
 import { toIsoDate } from '../../../core/date/iso-date';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { hasChannelIcon } from '../../../core/ui/channel-icons';
@@ -212,6 +212,6 @@ export class AcquisitionChannelsPage implements OnInit {
   }
 
   private toast(e: unknown): void {
-    this.snack.open(this.i18n.translate(channelErrorKey(e)), undefined, { duration: 4000 });
+    this.snack.open(this.i18n.translate(acquisitionChannelErrorKey(e)), undefined, { duration: 4000 });
   }
 }

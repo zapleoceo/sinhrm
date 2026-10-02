@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { toParams } from '../recruiting/recruiting.service';
@@ -18,6 +18,7 @@ import {
   WaveCompare,
   WaveResults,
 } from './pulse.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 const API = '/api/pulse';
 
@@ -106,20 +107,5 @@ export class PulseService {
 
 /** i18n key for a failed Pulse API call. */
 export function pulseErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (PULSE_ERROR_CODES as readonly string[]).includes(code)) {
-      return `pulse.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'pulse.errors.forbidden';
-    }
-    if (error.status === 404) {
-      return 'pulse.errors.not_found';
-    }
-    if (error.status === 422) {
-      return 'pulse.errors.validation';
-    }
-  }
-  return 'common.error';
+  return apiErrorKey(error, 'pulse', PULSE_ERROR_CODES, { statuses: [403, 404, 422] });
 }

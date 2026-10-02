@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { apiErrorKey } from '../../core/http/api-error';
+import { apiErrorKey } from '../../core/api/api-error';
 import { toParams } from '../recruiting/recruiting.service';
 import { FormField, HIRING_ERROR_CODES, HiringMeta, HiringRequest, HiringSettings, HiringStatus, RouteStep, SaveHiringRequest } from './hiring-requests.model';
 

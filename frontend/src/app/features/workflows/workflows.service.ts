@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { toParams } from '../recruiting/recruiting.service';
 import { RunQuery, SaveTemplate, StepCommand, StepOutcome, WORKFLOW_ERROR_CODES, WorkflowRun, WorkflowTemplate } from './workflows.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 const API = '/api/workflows';
 
@@ -65,22 +66,7 @@ export class WorkflowsService {
 
 /** i18n key for a failed Workflows API call. */
 export function workflowsErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (WORKFLOW_ERROR_CODES as readonly string[]).includes(code)) {
-      return `workflows.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'workflows.errors.forbidden';
-    }
-    if (error.status === 404) {
-      return 'workflows.errors.not_found';
-    }
-    if (error.status === 422) {
-      return 'workflows.errors.validation';
-    }
-  }
-  return 'common.error';
+  return apiErrorKey(error, 'workflows', WORKFLOW_ERROR_CODES, { statuses: [403, 404, 422] });
 }
 
 /** First server validation message for a field path (e.g. steps.0.config.url), if any. */

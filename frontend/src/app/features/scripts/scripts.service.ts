@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { toParams } from '../recruiting/recruiting.service';
@@ -15,6 +15,7 @@ import {
   TaskQuery,
   TouchEvaluation,
 } from './scripts.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 /** HTTP client of the Scripts API (/api/scripts, /candidates/{id}/templates, /touchpoints/{id}/evaluation, /tasks). */
 @Injectable({ providedIn: 'root' })
@@ -88,17 +89,5 @@ export class ScriptsService {
 
 /** i18n key for a failed Scripts API call. */
 export function scriptsErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (SCRIPT_ERROR_CODES as readonly string[]).includes(code)) {
-      return `scripts.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'scripts.errors.forbidden';
-    }
-    if (error.status === 422) {
-      return 'scripts.errors.validation';
-    }
-  }
-  return 'scripts.errors.generic';
+  return apiErrorKey(error, 'scripts', SCRIPT_ERROR_CODES, { statuses: [403, 422], fallback: 'scripts.errors.generic' });
 }

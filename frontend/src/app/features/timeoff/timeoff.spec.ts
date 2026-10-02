@@ -105,6 +105,8 @@ describe('TimeOffService', () => {
     expect(timeoffErrorKey(err(409, 'invalid_status'))).toBe('timeoff.errors.invalid_status');
     expect(timeoffErrorKey(err(422))).toBe('timeoff.errors.validation');
     expect(timeoffErrorKey(err(500))).toBe('common.error');
+    expect(timeoffErrorKey(err(403))).toBe('timeoff.errors.forbidden');
+    expect(timeoffErrorKey(err(404))).toBe('common.error');
   });
 });
 

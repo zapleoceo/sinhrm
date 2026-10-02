@@ -12,6 +12,7 @@ import {
   TemplatePreview,
   UpdateDocument,
 } from './documents.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 /** HTTP client of the Documents API (/api/documents, /api/documents/templates, /api/me/documents). */
 @Injectable({ providedIn: 'root' })
@@ -83,22 +84,7 @@ export class DocumentsService {
 
 /** i18n key for a failed Documents API call. */
 export function documentsErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (DOCUMENT_ERROR_CODES as readonly string[]).includes(code)) {
-      return `documents.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'documents.errors.forbidden';
-    }
-    if (error.status === 404) {
-      return 'documents.errors.not_found';
-    }
-    if (error.status === 422) {
-      return 'documents.errors.validation';
-    }
-  }
-  return 'common.error';
+  return apiErrorKey(error, 'documents', DOCUMENT_ERROR_CODES, { statuses: [403, 404, 422] });
 }
 
 /** Unknown {tokens} reported by a 422 unknown_variables answer. */

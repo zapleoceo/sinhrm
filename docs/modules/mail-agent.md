@@ -164,6 +164,10 @@ Auth — `UserRepository::find` (фоновый actor).
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `mailErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+
 ## Как проверить
 Бэкенд (Gmail подменён `Http::fake`, письма **выдуманы**, `tests/Support/MailFixtures`):
 - `tests/Feature/MailAgent/MailSyncTest` — все виды писем за один запуск (отклик → кандидат + заявка + касание + задача со

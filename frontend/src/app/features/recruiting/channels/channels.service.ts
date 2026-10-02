@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { apiErrorKey } from '../../../core/http/api-error';
+import { apiErrorKey } from '../../../core/api/api-error';
 import { AcquisitionChannel, ChannelCost, ChannelType, UtmRule } from '../recruiting.model';
 
 export const CHANNEL_ERROR_CODES = ['channel_code_taken', 'channel_inactive', 'empty_utm_rule'] as const;
@@ -43,7 +43,8 @@ export class ChannelsService {
   }
 }
 
-export function channelErrorKey(error: unknown): string {
+/** i18n key for a failed acquisition-channels API call (not to be confused with the messaging channels' channelErrorKey). */
+export function acquisitionChannelErrorKey(error: unknown): string {
   return apiErrorKey(error, 'recruiting.channels', CHANNEL_ERROR_CODES);
 }
 

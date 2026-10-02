@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
@@ -12,6 +12,7 @@ import {
   ManualStatus,
   UpdateIntegration,
 } from './integrations.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 const API = '/api/integrations';
 
@@ -46,13 +47,7 @@ export class IntegrationsService {
 
 /** i18n key for a failed integrations API call. */
 export function integrationErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (INTEGRATION_ERROR_CODES as readonly string[]).includes(code)) {
-      return `integrations.errors.${code}`;
-    }
-  }
-  return 'integrations.errors.generic';
+  return apiErrorKey(error, 'integrations', INTEGRATION_ERROR_CODES, { statuses: [], fallback: 'integrations.errors.generic' });
 }
 
 /** i18n key for last_error ("missing_secret:bot_token" → integrations.check.missing_secret), null if unknown. */

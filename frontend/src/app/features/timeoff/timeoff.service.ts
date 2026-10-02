@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { toParams } from '../recruiting/recruiting.service';
@@ -15,6 +15,7 @@ import {
   Paged,
   TIMEOFF_ERROR_CODES,
 } from './timeoff.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 /** HTTP client of the TimeOff API (/api/timeoff/*). */
 @Injectable({ providedIn: 'root' })
@@ -86,17 +87,5 @@ export class TimeOffService {
 
 /** i18n key for a TimeOff API error. */
 export function timeoffErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (TIMEOFF_ERROR_CODES as readonly string[]).includes(code)) {
-      return `timeoff.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'timeoff.errors.forbidden';
-    }
-    if (error.status === 422) {
-      return 'timeoff.errors.validation';
-    }
-  }
-  return 'common.error';
+  return apiErrorKey(error, 'timeoff', TIMEOFF_ERROR_CODES, { statuses: [403, 422] });
 }

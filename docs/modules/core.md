@@ -38,7 +38,7 @@
 | `ui/channel-icon.ts`, `ui/channel-icons.ts` | `<app-channel-icon [key] [label]>` — иконка Font Awesome Free канала / источника / интеграции в цвете бренда: telegram, whatsapp, viber, linkedin, meta_ads, google/gmail/sheets/calendar — брендовые; work_ua/robota_ua/djinni/dou — портфель с буквой (в FA Free их нет); телефония — `faPhoneVolume`, AI — робот/мозг, Deepgram — волна; неизвестный ключ — нейтральный знак вопроса. С `label` — `role=img` + `aria-label` + подсказка, без — декоративная (`aria-hidden`), когда название написано рядом. Используется в карточке кандидата (контакты, чипы источника, фильтры и лента), композере, «Вхідних», дашборде, отчётах, каналах залучення, интеграциях, Google-подключении, странице расширения |
 | `ui/dialog.ts` | `provideAppDialogDefaults()` в `app.config.ts` (`MAT_DIALOG_DEFAULT_OPTIONS`: `maxWidth: 95vw`, фокус на первое поле или `cdkFocusInitial`, возврат фокуса после закрытия) и `wideDialog(data, width = '720px')` — конфиг для диалога шире 560px (стандартный потолок Material M3): класс панели `app-dialog-wide` (`styles.scss`) снимает потолок, на экранах ≤600px диалог на всю ширину. Диалогам не задаём `min-width` на `mat-dialog-content` больше 560px — это даёт горизонтальную прокрутку; нужен широкий — открываем через `wideDialog()` |
 | `errors/error-reporter.service.ts`, `errors/global-error-handler.ts`, `errors/server-error.interceptor.ts` | журнал ошибок браузера: `GlobalErrorHandler` (исключения JS) и `serverErrorInterceptor` (ответы 5xx) отправляют `POST /api/errors/client` — только вошедший пользователь, без повторов, не больше 20 за загрузку; [architecture/observability.md](../architecture/observability.md) |
-| `http/api-error.ts` | `apiErrorKey(error, prefix, codes)` — i18n-ключ ошибки API: известный `{code}` → `<prefix>.errors.<code>`, иначе по статусу (`forbidden` 403, `not_found` 404, `validation` 422, `rate_limited` 429), иначе `common.error`; `saveBlob(blob, name)` — скачать ответ-Blob (CSV). Используют Desk, Safe Speak, Knowledge, Assets, Reports |
+| `http/api-error.ts` | `saveBlob(blob, name)` — скачать ответ-Blob (CSV). Маппер ошибок API переехал в `api/api-error.ts` — раздел «Общие примитивы API и UI» ниже |
 
 | `ui/table/*` | общий заголовок таблицы с сортировкой и фильтром — раздел ниже |
 
@@ -64,9 +64,16 @@
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Страницы `features/core` (модули, статус, «модуль выключен»): матрица модулей в карточке `.panel`, строки разделены «треком» 1.5px, шапка — подпись `label-medium` приглушённым цветом, hover строки; заголовки — `headline-small` с трекингом темы; иконка «модуль выключен» приглушена цветом, а не прозрачностью. Тест вида — `features/core/core.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
+### Фронтенд: общие примитивы API и UI
+Код, который раньше копировался в каждую фичу (аудит фронта 02.10.2026), — один раз в `core`; фичи его только вызывают.
+
+| Файл | Что делает |
+|---|---|
+| `api/api-error.ts` | `apiErrorKey(error, prefix, codes, { statuses?, fallback? })` — i18n-ключ ошибки API: известный `{code}` → `<prefix>.errors.<code>`, иначе статус из списка `statuses` (по умолчанию все: `forbidden` 403, `not_found` 404, `validation` 422, `rate_limited` 429) → `<prefix>.errors.<имя>`, иначе `fallback` (по умолчанию `common.error`). `apiErrorCode(e)` / `apiErrorStatus(e)` — код и статус ответа или `null`. Ключи каждой фичи (`performErrorKey`, `scriptsErrorKey`, …) — однострочные обёртки с её списком статусов и запасным ключом, тексты не менялись |
+
 ## Как проверить
 Тесты: `iso-date.spec.ts`, `app-date-adapter.spec.ts`, `datepicker-intl.spec.ts`, `channel-icon.spec.ts`, `tests/Feature/Core/HealthTest.php`, `tests/Feature/Core/OpsJobsTest.php`, `tests/Feature/Core/SecurityHeadersTest.php`, `error-reporter.spec.ts`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
-`auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.
+`api-error.spec.ts`, `auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.
 Вручную: `curl -i https://sinhrm.vercel.app/api/health`.
 
 ## Подключение к Neon из Vercel

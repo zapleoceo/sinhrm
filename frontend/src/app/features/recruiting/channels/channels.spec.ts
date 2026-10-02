@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { RecruitingService } from '../recruiting.service';
-import { ChannelsService, channelErrorKey, ruleLabel } from './channels.service';
+import { ChannelsService, acquisitionChannelErrorKey, ruleLabel } from './channels.service';
 
 describe('ChannelsService', () => {
   let api: ChannelsService;
@@ -44,6 +44,6 @@ describe('ChannelsService', () => {
 
   it('labels rules and maps errors', () => {
     expect(ruleLabel({ utm_source: 'facebook', utm_medium: 'paid', utm_campaign: null })).toBe('utm_source=facebook · utm_medium=paid');
-    expect(channelErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'channel_code_taken' } }))).toBe('recruiting.channels.errors.channel_code_taken');
+    expect(acquisitionChannelErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'channel_code_taken' } }))).toBe('recruiting.channels.errors.channel_code_taken');
   });
 });

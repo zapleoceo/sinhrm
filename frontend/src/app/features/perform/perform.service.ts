@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { toParams } from '../recruiting/recruiting.service';
@@ -24,6 +24,7 @@ import {
   SaveCycle,
   SaveObjective,
 } from './perform.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 const API = '/api/perform';
 
@@ -167,20 +168,5 @@ export class PerformService {
 
 /** i18n key for a failed Perform API call. */
 export function performErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (PERFORM_ERROR_CODES as readonly string[]).includes(code)) {
-      return `perform.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'perform.errors.forbidden';
-    }
-    if (error.status === 404) {
-      return 'perform.errors.not_found';
-    }
-    if (error.status === 422) {
-      return 'perform.errors.validation';
-    }
-  }
-  return 'common.error';
+  return apiErrorKey(error, 'perform', PERFORM_ERROR_CODES, { statuses: [403, 404, 422] });
 }

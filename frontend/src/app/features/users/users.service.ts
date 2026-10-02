@@ -1,7 +1,8 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { AdminUser, InviteUser, UpdateUser, USER_ERROR_CODES, UsersPage, UsersQuery } from './users.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 const API = '/api/users';
 
@@ -30,11 +31,5 @@ export class UsersService {
 
 /** i18n key for a failed users API call. */
 export function userErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (USER_ERROR_CODES as readonly string[]).includes(code)) {
-      return `users.errors.${code}`;
-    }
-  }
-  return 'users.errors.generic';
+  return apiErrorKey(error, 'users', USER_ERROR_CODES, { statuses: [], fallback: 'users.errors.generic' });
 }

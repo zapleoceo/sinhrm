@@ -2,7 +2,8 @@ import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { UserRole } from '../../core/auth/auth.model';
-import { apiErrorKey, saveBlob } from '../../core/http/api-error';
+import { apiErrorKey } from '../../core/api/api-error';
+import { saveBlob } from '../../core/http/api-error';
 
 export type DataSubjectType = 'candidate' | 'employee';
 export type ExportFormat = 'json' | 'html';

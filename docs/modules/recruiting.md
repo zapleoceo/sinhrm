@@ -448,6 +448,10 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 остаются; при удалении пользователя, вакансии или отклика удаляются каскадом. Фронт: `board/board.page.ts` с входом
 `personal`, `board/board.store.ts` (оптимистичный перенос с откатом), `candidates/candidates-view.ts`.
 
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `recruitingErrorKey` — свой случай `duplicate_restricted`, остальное через общий `apiErrorKey` (`core/api/api-error.ts`; статусы 403/422, запасной `recruiting.errors.generic`). Ключ каналов привлечения переименован в `acquisitionChannelErrorKey` (было `channelErrorKey`, совпадало с именем в фиче channels). Подсказка ИИ под разделом вакансии — `aiTextErrorKey` из `features/ai/ai.service.ts` (раньше функция `aiErrorKey` жила в `vacancy-form.page.ts` и дублировала имя из фичи ai).
+
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,
 дубль 409 по трём ключам, скрытие id для чужого филиала, уникальные индексы в БД, поиск, карточка с маршрутом и длительностями, права), перемещения (stage_change + системное

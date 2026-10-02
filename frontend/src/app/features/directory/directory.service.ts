@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
@@ -8,6 +8,7 @@ import {
   DictionaryType,
   SaveDictionaryItem,
 } from './directory.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 const API = '/api/directory';
 
@@ -44,10 +45,5 @@ export class DirectoryService {
 
 /** i18n key for a failed directory API call. */
 export function directoryErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    if (error.status === 422) {
-      return 'directory.errors.validation';
-    }
-  }
-  return 'directory.errors.generic';
+  return apiErrorKey(error, 'directory', [], { statuses: [422], fallback: 'directory.errors.generic' });
 }

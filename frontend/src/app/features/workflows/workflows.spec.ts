@@ -149,6 +149,7 @@ describe('WorkflowsService', () => {
     expect(workflowsErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('workflows.errors.not_found');
     expect(workflowsErrorKey(new HttpErrorResponse({ status: 422, error: {} }))).toBe('workflows.errors.validation');
     expect(workflowsErrorKey(new Error('x'))).toBe('common.error');
+    expect(workflowsErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('common.error');
 
     const e = new HttpErrorResponse({ status: 422, error: { errors: { 'steps.0.config.url': ['Bad URL'], name: ['Required'] } } });
     expect(fieldErrors(e)).toEqual({ 'steps.0.config.url': 'Bad URL', name: 'Required' });

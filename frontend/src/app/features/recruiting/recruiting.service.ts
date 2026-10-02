@@ -40,6 +40,7 @@ import {
   VacancyTextDraft,
   VacancyTextSection,
 } from './recruiting.model';
+import { apiErrorCode, apiErrorKey } from '../../core/api/api-error';
 
 type Params = Record<string, string | number | boolean | undefined | null>;
 
@@ -268,23 +269,11 @@ export class RecruitingService {
 
 /** i18n key for a failed Recruiting API call. */
 export function recruitingErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const body = error.error as { code?: unknown; restricted?: unknown } | null;
-    const code: unknown = body?.code;
-    if (code === 'duplicate_candidate' && body?.restricted === true) {
-      return 'recruiting.errors.duplicate_restricted';
-    }
-    if (typeof code === 'string' && (RECRUITING_ERROR_CODES as readonly string[]).includes(code)) {
-      return `recruiting.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'recruiting.errors.forbidden';
-    }
-    if (error.status === 422) {
-      return 'recruiting.errors.validation';
-    }
+  // A duplicate the user may not open (out of scope) gets its own text without a link to the card.
+  if (apiErrorCode(error) === 'duplicate_candidate' && error instanceof HttpErrorResponse && (error.error as { restricted?: unknown }).restricted === true) {
+    return 'recruiting.errors.duplicate_restricted';
   }
-  return 'recruiting.errors.generic';
+  return apiErrorKey(error, 'recruiting', RECRUITING_ERROR_CODES, { statuses: [403, 422], fallback: 'recruiting.errors.generic' });
 }
 
 /** The existing candidate from a 409 duplicate_candidate answer, or null. */

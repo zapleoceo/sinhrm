@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { apiErrorKey } from '../../core/http/api-error';
+import { apiErrorKey } from '../../core/api/api-error';
 import { toParams } from '../recruiting/recruiting.service';
 import { AnonymousReport, HandledReport, ReportStatus, SAFE_SPEAK_ERROR_CODES, SubmitReport } from './safe-speak.model';
 

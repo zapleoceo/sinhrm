@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
@@ -11,6 +11,7 @@ import {
   SyncCounts,
   UnknownSender,
 } from './mail.model';
+import { apiErrorKey } from '../../core/api/api-error';
 
 const API = '/api/mail';
 
@@ -62,14 +63,5 @@ export class MailService {
 
 /** i18n key for a failed mail API call. */
 export function mailErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (MAIL_ERROR_CODES as readonly string[]).includes(code)) {
-      return `mail.errors.${code}`;
-    }
-    if (error.status === 422) {
-      return 'mail.errors.validation';
-    }
-  }
-  return 'mail.errors.generic';
+  return apiErrorKey(error, 'mail', MAIL_ERROR_CODES, { statuses: [422], fallback: 'mail.errors.generic' });
 }

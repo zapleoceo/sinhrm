@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { apiErrorKey } from '../../core/http/api-error';
+import { apiErrorKey } from '../../core/api/api-error';
 import { toParams } from '../recruiting/recruiting.service';
 import { ASSET_ERROR_CODES, Asset, AssetHistory, AssetQuery, AssetStatus, AssetType, SaveAsset } from './assets.model';
 
