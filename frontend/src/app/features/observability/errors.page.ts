@@ -56,10 +56,11 @@ import { ErrorGroup, ErrorStatusFilter, ErrorsService } from './errors.service';
   `,
   styles: `
     h1 { font: var(--mat-sys-headline-small); margin: 0 0 0.5rem; }
-    .groups { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.5rem; }
+    .groups { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.5rem; }
     li { border: 1px solid var(--mat-sys-outline-variant); border-radius: 8px; padding: 0.5rem 0.75rem; }
     li.resolved { opacity: 0.6; }
     summary { display: flex; gap: 0.75rem; align-items: baseline; cursor: pointer; flex-wrap: wrap; }
+    summary strong { min-width: 0; overflow-wrap: anywhere; } /* long exception class names wrap on phones */
     .msg { flex: 1 1 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .count { font-weight: 500; }
     .source { font: var(--mat-sys-label-small); text-transform: uppercase; }

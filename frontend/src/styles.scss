@@ -351,14 +351,10 @@ body {
   outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+// prefers-reduced-motion: Angular Material turns its own animations off; every app animation/transition carries its
+// own `@media (prefers-reduced-motion: reduce)` rule next to it (login background, shell drawer, …). No blanket
+// `* { transition-duration }` here: it gave EVERY property change (incl. inherited visibility) a transition and
+// left freshly opened overlay content hidden for a frame.
 
 .muted {
   color: var(--app-muted);

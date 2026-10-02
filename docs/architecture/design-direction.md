@@ -203,7 +203,7 @@
 | `--app-chart-1..3` | brand → teal → amber | | рампа графиков |
 
 **Шрифты** — Google Fonts (`<link>` в `index.html`, `preconnect`, `display=swap`, подмножества cyrillic/cyrillic-ext
-есть у всех трёх; CSP уже разрешает только `fonts.googleapis.com` / `fonts.gstatic.com`): заголовки —
+есть у всех трёх; для ui-parity те же гарнитуры — devDependencies `@fontsource/wix-madefor-text`, `-display`, `@fontsource/ibm-plex-mono` (OFL-1.1), без них CI рисует широким системным фолбэком; CSP уже разрешает только `fonts.googleapis.com` / `fonts.gstatic.com`): заголовки —
 **Wix Madefor Display** 700/800, текст — **Wix Madefor Text** 400–700, цифры — **IBM Plex Mono** 500/600
 (`--app-font-mono`, утилита `.app-num`/`.mono` с `tabular-nums`; существующий `.num` страниц — выравнивание, его не трогаем). Фолбэки: `'Segoe UI', system-ui, -apple-system,
 Roboto, 'Noto Sans', sans-serif` / `ui-monospace, 'Cascadia Mono', Consolas, monospace`. Onest 600 остаётся
@@ -238,7 +238,7 @@ Google Fonts; при переходе проверить `@fontsource/*`.)
 | Табы | индикатор бренд 3px со скруглённым верхом, разделитель — линия |
 | Цели касания | на ≤ 600px: сегментный переключатель (`mat-button-toggle`) и интерактивные чипы (`chip-option`, `chip-row`) — 44px, пункты меню-ящика — 44px; кнопки, иконки-кнопки, чекбоксы, радио — штатные цели Material 48px; переключатель на десктопе — 40px |
 | Фокус | бирюзовое кольцо 2px с отступом 2px: `:focus-visible` для всего + `mat.strong-focus-indicators` для Material |
-| Движение | hover 120мс (`--app-fast`); `prefers-reduced-motion` гасит все анимации и переходы глобально |
+| Движение | hover 120мс (`--app-fast`); `prefers-reduced-motion`: Material выключает свои анимации сам, у каждой анимации/перехода приложения — своё правило `@media (prefers-reduced-motion: reduce)` рядом. **Не** ставить глобальное `* { transition-duration }`: оно даёт переход КАЖДОМУ изменению свойства (вкл. наследуемое `visibility`) и на кадр прячет содержимое только что открытых оверлеев (ловит ui-parity, «выбор человека») |
 
 **Хрупкое место — приватные классы MDC.** Вид полей (белое поле, кольцо фокуса/ошибки через inset `box-shadow`) задан
 селекторами `.mat-mdc-text-field-wrapper`, `.mdc-text-field--filled`, `.mdc-text-field--outlined`, `.mat-focused`,
