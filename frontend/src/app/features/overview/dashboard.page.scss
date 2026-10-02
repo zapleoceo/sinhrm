@@ -51,7 +51,7 @@
 .s7 { grid-column: span 7; }
 .s5 { grid-column: span 5; }
 h2.sub { margin-top: 1rem; }
-.card { padding: 1.1rem 1.25rem; }
+.card { padding: var(--app-card-pad); }
 h2 { font: var(--mat-sys-title-medium); font-family: var(--app-font-display); margin: 0 0 0.75rem; }
 .warn { color: var(--app-warn-text); font: var(--mat-sys-body-medium); }
 
@@ -150,7 +150,6 @@ tbody tr:last-child > * { border-bottom: 0; }
   .tiles { gap: 0.75rem; }
   .tile { padding: 0.8rem 0.9rem 0.75rem; }
   .tile .value { font-size: 1.6rem; }
-  .card { padding: 1rem; }
   .tools { width: 100%; }
 }
 

@@ -9,6 +9,7 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
 import { MoodCheckinWidget } from '../pulse/mood/mood-checkin.widget';
 import { TasksWidget } from '../scripts/tasks/tasks-widget';
 import { DashboardPage } from './dashboard.page';
+import { DayRouteCard } from './day-route';
 import { Dashboard, DayRouteItem, routeScale, routeStops, statTiles, touchSegments, wallClock } from './overview.model';
 import { OverviewService } from './overview.service';
 import { OverviewStore } from './overview.store';
@@ -262,5 +263,21 @@ describe('DashboardPage (route look)', () => {
     // Row headers keep only the stage name (the station is decorative).
     expect(Array.from(el.querySelectorAll('.metro th')).map((th) => th.textContent?.trim())).toEqual(['New', 'Interview']);
     expect(Array.from(el.querySelectorAll<HTMLElement>('a.tile')).map((t) => t.dataset['key'])).toEqual(['active', 'stale', 'unmatched_inbox', 'new_today']);
+  });
+});
+
+describe('DayRouteCard (card padding)', () => {
+  it('takes its inner padding from the shared --app-card-pad token like the sibling cards (not flush to the border)', () => {
+    TestBed.configureTestingModule({
+      imports: [DayRouteCard, TranslocoTestingModule.forRoot({ langs: { uk: {} }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [provideRouter([])],
+    });
+    const fixture = TestBed.createComponent(DayRouteCard);
+    fixture.componentRef.setInput('route', { date: '2026-10-03', timezone: 'Europe/Kyiv', interviews: 0, tasks: 0, items: [], stops: [], scale: { from: 9, to: 19, hours: [], now: null, nowLabel: '' } });
+    fixture.detectChanges();
+    // jsdom does not resolve var() in shorthands, so assert on the component's own emitted rule instead.
+    const css = Array.from(document.head.querySelectorAll('style')).map((st) => st.textContent ?? '').join(' ');
+    expect(css).toMatch(/\.card[^{]*\{\s*padding:\s*var\(--app-card-pad\)/);
+    expect((fixture.nativeElement as HTMLElement).querySelector('section.panel.card')).not.toBeNull();
   });
 });
