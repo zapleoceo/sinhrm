@@ -68,7 +68,7 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   display: inline-grid;
   place-content: center;
   flex: none;
-  width: 2.5rem;
+  width: 2.25rem; // two toggles + the full logo fit the 240px head (44px on touch screens, below)
   height: 2.5rem;
   margin: 0;
   padding: 0;

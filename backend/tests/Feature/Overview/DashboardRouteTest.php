@@ -91,14 +91,17 @@ final class DashboardRouteTest extends TestCase
             ->assertJsonPath('data.day_route', ['date' => '2026-09-30', 'timezone' => 'UTC', 'interviews' => 0, 'tasks' => 0, 'items' => []]);
     }
 
-    /** @return array<string, array{string, string, string}> now (UTC) → the user's date in Kyiv and its offset */
+    /** @return array<string, array{string, string, string, string}> now (UTC) → the Kyiv date, offset at 00:15 and at 23:30 */
     public static function kyivDayBoundaries(): array
     {
         return [
-            'winter 23:30 UTC = 01:30 next day' => ['2026-01-15 23:30:00', '2026-01-16', '+02:00'],
-            'winter 00:30 UTC = 02:30' => ['2026-01-16 00:30:00', '2026-01-16', '+02:00'],
-            'summer 23:30 UTC = 02:30 next day' => ['2026-07-15 23:30:00', '2026-07-16', '+03:00'],
-            'summer 00:30 UTC = 03:30' => ['2026-07-16 00:30:00', '2026-07-16', '+03:00'],
+            'winter 23:30 UTC = 01:30 next day' => ['2026-01-15 23:30:00', '2026-01-16', '+02:00', '+02:00'],
+            'winter 00:30 UTC = 02:30' => ['2026-01-16 00:30:00', '2026-01-16', '+02:00', '+02:00'],
+            'summer 23:30 UTC = 02:30 next day' => ['2026-07-15 23:30:00', '2026-07-16', '+03:00', '+03:00'],
+            'summer 00:30 UTC = 03:30' => ['2026-07-16 00:30:00', '2026-07-16', '+03:00', '+03:00'],
+            // 29 Mar 2026, clocks 03:00 → 04:00: the day starts at +02:00 and ends at +03:00 (23 hours).
+            'spring DST day, 23:30 UTC = 01:30' => ['2026-03-28 23:30:00', '2026-03-29', '+02:00', '+03:00'],
+            'spring DST day, 00:30 UTC = 02:30' => ['2026-03-29 00:30:00', '2026-03-29', '+02:00', '+03:00'],
         ];
     }
 
@@ -107,7 +110,7 @@ final class DashboardRouteTest extends TestCase
      * count follow the Kyiv day — the same day the header shows — in winter (+02:00) and in summer (+03:00).
      */
     #[DataProvider('kyivDayBoundaries')]
-    public function test_day_route_follows_the_users_day_not_the_utc_day(string $nowUtc, string $localDate, string $offset): void
+    public function test_day_route_follows_the_users_day_not_the_utc_day(string $nowUtc, string $localDate, string $morning, string $evening): void
     {
         config(['app.user_timezone' => 'Europe/Kyiv']);
         $branch = Branch::factory()->create();
@@ -133,9 +136,9 @@ final class DashboardRouteTest extends TestCase
             ->assertJsonPath('data.day_route.interviews', 2)
             ->assertJsonPath('data.day_route.tasks', 1)
             ->assertJsonPath('data.day_route.items.*.title', ['Just after midnight [TEST]', 'Tonight [TEST]', 'Late tonight [TEST]'])
-            ->assertJsonPath('data.day_route.items.0.at', "{$localDate}T00:15:00{$offset}")
-            ->assertJsonPath('data.day_route.items.1.at', "{$localDate}T23:30:00{$offset}")
-            ->assertJsonPath('data.day_route.items.2.at', "{$localDate}T23:45:00{$offset}")
+            ->assertJsonPath('data.day_route.items.0.at', "{$localDate}T00:15:00{$morning}")
+            ->assertJsonPath('data.day_route.items.1.at', "{$localDate}T23:30:00{$evening}")
+            ->assertJsonPath('data.day_route.items.2.at', "{$localDate}T23:45:00{$evening}")
             ->assertJsonPath('data.my_tasks.total', 2)
             ->assertJsonPath('data.my_tasks.overdue', 1);
     }

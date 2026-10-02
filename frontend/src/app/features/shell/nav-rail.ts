@@ -18,6 +18,9 @@ export const NARROW_QUERY = '(max-width: 767.98px)';
 export const HOVER_QUERY = '(hover: hover) and (pointer: fine)';
 /** The pointer may leave the open sidebar for this long (an accidental overshoot) before it folds back. */
 export const AUTO_HIDE_DELAY_MS = 250;
+/** Width animation of the sidebar ($rail-motion in shell.layout.scss): labels appear only after it, so they do not jump. */
+export const RAIL_MOTION_MS = 180;
+export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 function load(key: string): boolean {
   try {
@@ -61,6 +64,7 @@ export class NavRail {
   /** Narrow screens: the sidebar is a drawer behind a top bar. */
   readonly narrow = toSignal(this.breakpoints.observe(NARROW_QUERY).pipe(map((s) => s.matches)), { initialValue: false });
   private readonly canHover = toSignal(this.breakpoints.observe(HOVER_QUERY).pipe(map((s) => s.matches)), { initialValue: false });
+  private readonly reducedMotion = toSignal(this.breakpoints.observe(REDUCED_MOTION_QUERY).pipe(map((s) => s.matches)), { initialValue: false });
   /** What the user chose (kept while the screen is narrow, applied again on a wide screen). */
   private readonly chosen = signal(loadCollapsed());
   private readonly autoHideChosen = signal(loadAutoHide());
@@ -68,10 +72,17 @@ export class NavRail {
   readonly autoHideAvailable = computed(() => !this.narrow() && this.canHover());
   /** Auto-hide is on: the layout keeps a rail-wide column, the sidebar opens over the content («peek»). */
   readonly autoHide = computed(() => this.autoHideChosen() && this.autoHideAvailable());
-  /** In auto-hide mode: the sidebar is open over the content right now. */
+  /** In auto-hide mode: the sidebar is open (or opening) over the content right now — drives its width. */
   readonly peek = signal(false);
+  /**
+   * The open sidebar shows its full content (labels, full logo). On opening it lags the width by the animation, so
+   * the labels do not wrap and jump while the sidebar widens; on folding it goes first (icons, then the width shrinks).
+   */
+  private readonly peekContent = signal(false);
   /** The sidebar is shown as an icon-only rail right now. */
-  readonly collapsed = computed(() => !this.narrow() && (this.autoHide() ? !this.peek() : this.chosen()));
+  readonly collapsed = computed(() => !this.narrow() && (this.autoHide() ? !this.peekContent() : this.chosen()));
+  /** Name tooltips on the icons: only on the pinned rail (in auto-hide, pointer or focus on an icon opens the sidebar). */
+  readonly tooltips = computed(() => this.collapsed() && !this.autoHide());
 
   // What keeps the auto-hide sidebar open: the pointer over it, keyboard focus in it, a menu opened from it.
   // Tracked in both modes, so switching auto-hide on under the pointer keeps the sidebar open.
@@ -79,9 +90,13 @@ export class NavRail {
   private focused = false;
   private held = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private contentTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.cancel());
+    inject(DestroyRef).onDestroy(() => {
+      this.cancel();
+      clearTimeout(this.contentTimer);
+    });
   }
 
   toggle(): void {
@@ -103,7 +118,7 @@ export class NavRail {
     saveAutoHide(on);
     this.cancel();
     // Switched on with the pointer (or focus) on the sidebar: it stays open until they leave.
-    this.peek.set(on && (this.hovered || this.focused || this.held));
+    this.setPeek(on && (this.hovered || this.focused || this.held));
   }
 
   pointerEnter(): void {
@@ -142,8 +157,9 @@ export class NavRail {
     }
   }
 
-  /** Esc folds the auto-hide sidebar (until the pointer or focus comes back). */
+  /** Esc folds the auto-hide sidebar (until the pointer or focus comes back) — not while the user menu holds it. */
   escape(): void {
+    if (this.held) return;
     this.hovered = this.focused = false;
     this.close();
   }
@@ -151,12 +167,32 @@ export class NavRail {
   private open(): void {
     if (!this.autoHide()) return;
     this.cancel();
-    this.peek.set(true);
+    this.setPeek(true);
   }
 
   private close(): void {
     this.cancel();
-    this.peek.set(false);
+    this.setPeek(false);
+  }
+
+  private setPeek(on: boolean): void {
+    if (!on) {
+      clearTimeout(this.contentTimer);
+      this.contentTimer = undefined;
+      this.peek.set(false);
+      this.peekContent.set(false);
+      return;
+    }
+    if (this.peek()) return; // already open or opening
+    this.peek.set(true);
+    if (this.reducedMotion()) {
+      this.peekContent.set(true);
+      return;
+    }
+    this.contentTimer = setTimeout(() => {
+      this.contentTimer = undefined;
+      this.peekContent.set(true);
+    }, RAIL_MOTION_MS);
   }
 
   private closeSoon(): void {
@@ -164,7 +200,7 @@ export class NavRail {
     this.cancel();
     this.timer = setTimeout(() => {
       this.timer = undefined;
-      if (!this.hovered && !this.focused && !this.held) this.peek.set(false);
+      if (!this.hovered && !this.focused && !this.held) this.setPeek(false);
     }, AUTO_HIDE_DELAY_MS);
   }
 
@@ -237,7 +273,7 @@ export class RailTip {
     this.tip.position = 'right';
     effect(() => {
       this.tip.message = this.appRailTip();
-      this.tip.disabled = !this.rail.collapsed();
+      this.tip.disabled = !this.rail.tooltips();
     });
   }
 }

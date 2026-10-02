@@ -207,6 +207,13 @@ test.describe('desktop flows', () => {
     const mainX = async (): Promise<number> => (await main.boundingBox())!.x;
     const away = (): Promise<void> => page.mouse.move(900, 400);
 
+    // Pinned 240px sidebar: logo + both toggles fit in the head (no overflow, buttons inside the sidebar).
+    const head = page.locator('.nav-head');
+    expect(await head.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
+    const box = (await sidebar.boundingBox())!;
+    const btn = (await autoHide.boundingBox())!;
+    expect(btn.x + btn.width).toBeLessThanOrEqual(box.x + box.width);
+
     await expect(autoHide).toHaveAttribute('aria-pressed', 'false');
     await autoHide.click();
     await expect(autoHide).toHaveAttribute('aria-pressed', 'true');

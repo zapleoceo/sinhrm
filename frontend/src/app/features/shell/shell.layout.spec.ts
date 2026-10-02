@@ -443,6 +443,10 @@ describe('ShellLayout auto-hide sidebar', () => {
 
     aside(el).dispatchEvent(new MouseEvent('mouseenter'));
     await detect();
+    // Width first (peek), labels after the 180ms width animation (rail off).
+    expect([shell(el).contains('autohide'), shell(el).contains('rail'), shell(el).contains('peek')]).toEqual([true, true, true]);
+    await new Promise((resolve) => setTimeout(resolve, 220));
+    await detect();
     expect([shell(el).contains('autohide'), shell(el).contains('rail'), shell(el).contains('peek')]).toEqual([true, false, true]);
     aside(el).dispatchEvent(new MouseEvent('mouseleave'));
     await new Promise((resolve) => setTimeout(resolve, 300));

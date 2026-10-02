@@ -14,11 +14,14 @@ use Illuminate\Support\Carbon;
  */
 final class UserTime
 {
+    public const string DEFAULT_TIMEZONE = 'Europe/Kyiv';
+
+    /** The configured zone if it is a valid IANA identifier (typo, empty, missing → Europe/Kyiv, never an exception). */
     public static function timezone(): string
     {
         $tz = config('app.user_timezone');
 
-        return is_string($tz) && $tz !== '' ? $tz : 'Europe/Kyiv';
+        return is_string($tz) && in_array($tz, timezone_identifiers_list(), true) ? $tz : self::DEFAULT_TIMEZONE;
     }
 
     /** $now (or the current moment) in the user's time zone: startOfDay()/endOfDay() of it are the user's day. */

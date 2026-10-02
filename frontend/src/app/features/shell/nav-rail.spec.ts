@@ -1,7 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { AUTO_HIDE_DELAY_MS, HOVER_QUERY, NARROW_QUERY, NavRail, loadAutoHide, loadCollapsed, namedBy, saveAutoHide, saveCollapsed } from './nav-rail';
+import { AUTO_HIDE_DELAY_MS, HOVER_QUERY, NARROW_QUERY, NavRail, RAIL_MOTION_MS, REDUCED_MOTION_QUERY, loadAutoHide, loadCollapsed, namedBy, saveAutoHide, saveCollapsed } from './nav-rail';
 
 describe('nav rail state', () => {
   beforeEach(() => localStorage.clear());
@@ -50,12 +50,13 @@ describe('nav rail state', () => {
 });
 
 describe('nav rail auto-hide', () => {
-  function rail(opts: { narrow?: boolean; hover?: boolean } = {}): NavRail {
-    const { narrow = false, hover = true } = opts;
+  function rail(opts: { narrow?: boolean; hover?: boolean; reduced?: boolean } = {}): NavRail {
+    const { narrow = false, hover = true, reduced = false } = opts;
+    const matches: Record<string, boolean> = { [NARROW_QUERY]: narrow, [HOVER_QUERY]: hover, [REDUCED_MOTION_QUERY]: reduced };
     TestBed.configureTestingModule({
       providers: [
         NavRail,
-        { provide: BreakpointObserver, useValue: { observe: (q: string) => of({ matches: q === NARROW_QUERY ? narrow : q === HOVER_QUERY ? hover : false, breakpoints: {} }) } },
+        { provide: BreakpointObserver, useValue: { observe: (q: string) => of({ matches: matches[q] ?? false, breakpoints: {} }) } },
       ],
     });
     return TestBed.inject(NavRail);
@@ -75,7 +76,10 @@ describe('nav rail auto-hide', () => {
     expect([r.autoHide(), r.peek(), r.collapsed()]).toEqual([true, false, true]);
 
     r.pointerEnter();
-    expect([r.peek(), r.collapsed()]).toEqual([true, false]);
+    // The width opens at once; the labels follow when the 180ms width animation is over (no jumping labels).
+    expect([r.peek(), r.collapsed()]).toEqual([true, true]);
+    vi.advanceTimersByTime(RAIL_MOTION_MS);
+    expect([r.peek(), r.collapsed(), r.tooltips()]).toEqual([true, false, false]);
     r.pointerLeave();
     vi.advanceTimersByTime(AUTO_HIDE_DELAY_MS - 50);
     expect(r.peek()).toBe(true);
@@ -124,6 +128,38 @@ describe('nav rail auto-hide', () => {
     expect(r.peek()).toBe(true);
     r.hold(false);
     vi.advanceTimersByTime(AUTO_HIDE_DELAY_MS);
+    expect(r.peek()).toBe(false);
+  });
+
+  it('with reduced motion the labels show at once; on the pinned rail only there are name tooltips', () => {
+    let r = rail({ reduced: true });
+    r.toggle();
+    expect([r.collapsed(), r.tooltips()]).toEqual([true, true]);
+    r.toggleAutoHide();
+    expect([r.collapsed(), r.tooltips()]).toEqual([true, false]);
+    r.pointerEnter();
+    expect([r.peek(), r.collapsed()]).toEqual([true, false]);
+
+    TestBed.resetTestingModule();
+    localStorage.clear();
+    r = rail();
+    r.toggleAutoHide();
+    r.pointerEnter();
+    r.pointerLeave();
+    vi.advanceTimersByTime(AUTO_HIDE_DELAY_MS); // folded before the labels came: they never show
+    vi.advanceTimersByTime(RAIL_MOTION_MS);
+    expect([r.peek(), r.collapsed()]).toEqual([false, true]);
+  });
+
+  it('Esc does not fold the sidebar while the user menu holds it', () => {
+    localStorage.setItem('sinhrm.nav.autohide', '1');
+    const r = rail();
+    r.pointerEnter();
+    r.hold(true);
+    r.escape();
+    expect(r.peek()).toBe(true);
+    r.hold(false);
+    r.escape();
     expect(r.peek()).toBe(false);
   });
 

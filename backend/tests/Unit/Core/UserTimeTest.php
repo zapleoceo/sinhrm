@@ -40,9 +40,24 @@ final class UserTimeTest extends TestCase
         $this->assertSame('UTC', UserTime::timezone());
         $this->assertSame('2026-07-15', UserTime::now($now)->toDateString());
 
-        config(['app.user_timezone' => '']);
-        $this->assertSame('Europe/Kyiv', UserTime::timezone());
+        // Empty, a typo or a non-IANA value → Europe/Kyiv, never an exception.
+        foreach (['', 'Europe/Kiev ', 'Mars/Olympus', 'GMT+3'] as $broken) {
+            config(['app.user_timezone' => $broken]);
+            $this->assertSame('Europe/Kyiv', UserTime::timezone(), $broken);
+        }
         $this->assertSame('2026-07-16', UserTime::now($now)->toDateString());
         $this->assertSame('UTC', $now->getTimezone()->getName());
+    }
+
+    public function test_the_spring_dst_day_is_23_hours_long(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+
+        // 29 Mar 2026: clocks go 03:00 → 04:00 in Kyiv (01:00 UTC). The day starts at +02:00 and ends at +03:00.
+        $day = UserTime::now(Carbon::parse('2026-03-28 23:30:00', 'UTC'));
+        $this->assertSame('2026-03-29T01:30:00+02:00', $day->toIso8601String());
+        $this->assertSame('2026-03-28 22:00:00', UserTime::toStorage($day->copy()->startOfDay())->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-03-29 20:59:59', UserTime::toStorage($day->copy()->endOfDay())->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-03-29T05:00:00+03:00', UserTime::now(Carbon::parse('2026-03-29 02:00:00', 'UTC'))->toIso8601String());
     }
 }
