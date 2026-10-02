@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
@@ -13,18 +12,36 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus, isHrStaff } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
+import { ColumnHeader } from '../../core/ui/table/column-header';
+import { LatestRequest } from '../../core/ui/table/latest-request';
+import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import {
+  ColumnFilter,
+  FilterValue,
+  RangeValue,
+  TableSort,
+  dateRangeToParams,
+  filterToParam,
+  sameQuery,
+  sortToParams,
+} from '../../core/ui/table/table-state';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { DictionaryItem } from '../directory/directory.model';
 import { DirectoryService } from '../directory/directory.service';
 import { InviteUserDialog } from './invite-user.dialog';
 import { AdminUser, UpdateUser, UsersQuery, nextRoles } from './users.model';
+import { USERS_PAGE_SIZE, usersQueryFromParams } from './users.query';
 import { UsersService, userErrorKey } from './users.service';
 
-const SEARCH_DEBOUNCE_MS = 300;
+/** API order without ?sort (by name, A→Z): the name column carries the arrow. */
+const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 
-/** Superadmin users admin: search/filter, invite, change role, block/unblock (optimistic with rollback). */
+/**
+ * Superadmin users admin: invite, change roles / branches, block/unblock (optimistic with rollback). Column headers
+ * sort and filter (core/ui/table): user (name or e-mail), role, status, last sign-in; the state lives in the URL.
+ */
 @Component({
   selector: 'app-users-page',
   imports: [
@@ -38,8 +55,11 @@ const SEARCH_DEBOUNCE_MS = 300;
     MatProgressBarModule,
     MatSelectModule,
     MatTableModule,
+    TableSortDirective,
+    ColumnHeader,
     TranslocoPipe,
   ],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './users.page.html',
   styleUrl: './users.page.scss',
@@ -49,13 +69,12 @@ export class UsersPage implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly search$ = new Subject<string>();
+  private readonly url = inject(TableUrlState);
+  private readonly request = new LatestRequest();
+  private loaded = false;
 
-  protected readonly roles = USER_ROLES;
   /** Superadmin is bootstrap-only (SUPERADMIN_EMAIL) and cannot be assigned from the UI. */
   protected readonly assignableRoles = INVITABLE_ROLES;
-  protected readonly statuses = USER_STATUSES;
   protected readonly columns = ['user', 'role', 'branches', 'status', 'lastLogin', 'actions'];
   private readonly auth = inject(AuthService);
   private readonly directory = inject(DirectoryService);
@@ -63,7 +82,23 @@ export class UsersPage implements OnInit {
   protected readonly branchOptions = signal<DictionaryItem[]>([]);
   protected readonly meId = computed(() => this.auth.user()?.id ?? null);
 
-  protected readonly query = signal<UsersQuery>({ page: 1, perPage: 20 });
+  protected readonly query = signal<UsersQuery>({ page: 1, perPage: USERS_PAGE_SIZE });
+  protected readonly textFilter: ColumnFilter = { type: 'text' };
+  protected readonly dateFilter: ColumnFilter = { type: 'range', input: 'date' };
+  protected readonly roleFilter: ColumnFilter = { type: 'select', options: USER_ROLES.map((r) => ({ value: r, label: `roles.${r}`, i18n: true })) };
+  protected readonly statusFilter: ColumnFilter = {
+    type: 'select',
+    options: USER_STATUSES.map((s) => ({ value: s, label: `statuses.${s}`, i18n: true })),
+  };
+  /** Shown sort: the URL one, or the API default. */
+  protected readonly sort = computed<TableSort>(() => {
+    const q = this.query();
+    return q.sort ? { key: q.sort, dir: q.dir ?? 'asc' } : DEFAULT_SORT;
+  });
+  protected readonly lastLogin = computed<RangeValue | null>(() => {
+    const q = this.query();
+    return q.last_login_from || q.last_login_to ? { from: q.last_login_from ?? null, to: q.last_login_to ?? null } : null;
+  });
   protected readonly users = signal<AdminUser[]>([]);
   protected readonly total = signal(0);
   protected readonly loading = signal(false);
@@ -83,10 +118,7 @@ export class UsersPage implements OnInit {
   );
 
   ngOnInit(): void {
-    this.search$
-      .pipe(debounceTime(SEARCH_DEBOUNCE_MS), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe((q) => this.patchQuery({ q: q.trim() || undefined }));
-    this.load();
+    this.url.watch(usersQueryFromParams, (query) => this.apply(query));
     this.directory.active('branches').subscribe({
       next: (list) => this.branchOptions.set(list),
       error: () => this.branchOptions.set([]),
@@ -94,9 +126,11 @@ export class UsersPage implements OnInit {
   }
 
   protected load(): void {
+    this.loaded = true;
     this.loading.set(true);
     this.failed.set(false);
-    this.api.list(this.query()).subscribe({
+    // A newer query cancels the request still in flight: an old answer never lands over the new filters.
+    this.request.run(this.api.list(this.query()), {
       next: (page) => {
         this.users.set(page.data);
         this.total.set(page.meta.total);
@@ -109,21 +143,21 @@ export class UsersPage implements OnInit {
     });
   }
 
-  protected onSearch(value: string): void {
-    this.search$.next(value);
-  }
-
-  protected onRoleFilter(role: UserRole | undefined): void {
-    this.patchQuery({ role });
-  }
-
-  protected onStatusFilter(status: UserStatus | undefined): void {
-    this.patchQuery({ status });
-  }
-
   protected onPage(e: PageEvent): void {
-    this.query.update((q) => ({ ...q, page: e.pageIndex + 1, perPage: e.pageSize }));
-    this.load();
+    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+  }
+
+  protected onSort(sort: TableSort | null): void {
+    this.url.update(sortToParams(sort));
+  }
+
+  /** Header filters: text / chosen value; cleared → removed from the URL (and the page goes back to 1). */
+  protected setFilter(name: 'q' | 'role' | 'status', value: FilterValue): void {
+    this.url.update({ [name]: filterToParam(value) });
+  }
+
+  protected setLastLogin(value: FilterValue): void {
+    this.url.update(dateRangeToParams(value, 'last_login_from', 'last_login_to'));
   }
 
   /**
@@ -216,8 +250,10 @@ export class UsersPage implements OnInit {
     });
   }
 
-  private patchQuery(patch: Partial<UsersQuery>): void {
-    this.query.update((q) => ({ ...q, ...patch, page: 1 }));
+  /** New query from the URL: loads unless it is the one already shown. */
+  private apply(query: UsersQuery): void {
+    if (this.loaded && sameQuery(query, this.query())) return;
+    this.query.set(query);
     this.load();
   }
 

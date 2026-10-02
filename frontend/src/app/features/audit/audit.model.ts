@@ -57,6 +57,11 @@ export interface AuditPaging {
   perPage: number;
 }
 
+/** Sortable columns of GET /api/audit (backend App\Modules\Audit\Enums\AuditSort); without sort — newest first. */
+export const AUDIT_SORT_KEYS = ['time', 'user', 'action', 'entity'] as const;
+export type AuditSortKey = (typeof AUDIT_SORT_KEYS)[number];
+
+/** GET /api/audit query; URL names = API names (audit.query.ts). */
 export interface AuditQuery extends Partial<AuditPaging> {
   user_id?: number;
   entity_type?: string;
@@ -65,6 +70,8 @@ export interface AuditQuery extends Partial<AuditPaging> {
   from?: string;
   /** YYYY-MM-DD */
   to?: string;
+  sort?: AuditSortKey;
+  dir?: 'asc' | 'desc';
 }
 
 export interface AuditOptions {

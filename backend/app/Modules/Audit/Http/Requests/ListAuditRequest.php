@@ -6,6 +6,7 @@ namespace App\Modules\Audit\Http\Requests;
 
 use App\Modules\Audit\DTO\AuditFilter;
 use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Audit\Enums\AuditSort;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -21,6 +22,9 @@ final class ListAuditRequest extends FormRequest
             'action' => ['nullable', 'string', Rule::in(AuditAction::values())],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            // sort/dir: closed lists (unknown column or direction → 422). Without sort: newest first.
+            'sort' => ['nullable', Rule::enum(AuditSort::class)],
+            'dir' => ['nullable', Rule::in(['asc', 'desc'])],
             'page' => ['nullable', 'integer', 'min:1'],
             'perPage' => ['nullable', 'integer', 'between:1,100'],
         ];
@@ -40,6 +44,9 @@ final class ListAuditRequest extends FormRequest
             to: $to !== '' ? Carbon::createFromFormat('Y-m-d', $to)?->startOfDay()->addDay() : null,
             page: $this->integer('page', 1),
             perPage: $this->integer('perPage', 20),
+            sort: $this->enum('sort', AuditSort::class) ?? AuditSort::Time,
+            // The log reads newest first: no sort, or a sort without dir, is descending by time; dir=asc flips it.
+            descending: $this->filled('sort') ? $this->input('dir') === 'desc' : $this->input('dir') !== 'asc',
         );
     }
 }

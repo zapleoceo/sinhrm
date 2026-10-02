@@ -34,7 +34,7 @@ Gate `manage-users` (`Providers\UsersServiceProvider::MANAGE_USERS`): актив
 ### Эндпоинты (`/api/users`)
 | Метод и путь | Тело / параметры | Ответ |
 |---|---|---|
-| `GET /` | `q`, `status` (`active\|blocked`), `role`, `perPage` 1..100 (строка `"20"` тоже принимается), `page` | `{data: [...], links, meta}` |
+| `GET /` | `q` (имя или e-mail содержит), `status` (`active\|blocked`), `role`, `last_login_from` / `last_login_to` (`YYYY-MM-DD`, включительно), `sort` = `name\|status\|last_login` (по умолчанию `name`), `dir` = `asc\|desc`, `perPage` 1..100 и `page` (строки `"20"` принимаются); другая колонка, направление, дата или `page=abc` → 422 | `{data: [...], links, meta}` |
 | `POST /` | `{email, name, role: admin\|recruiter\|viewer}` | 201 `{data: user}`; e-mail занят → 409 `{code: "email_taken"}`; ошибки полей → 422 |
 | `PATCH /{id}` | `{roles?: [..] \| role?, status?, branch_ids?, safe_speak_handler?}` — `roles` = полный новый набор (минимум одна, без повторов); старое поле `role` работает как `roles: [role]`; оба сразу → 422 | 200 `{data: user}`; выдать `superadmin` тому, у кого его нет → 422 `superadmin_not_assignable`; себя (роль/статус/филиалы) → 422 `self_change_forbidden`; последний активный суперадмин → 422 `last_superadmin`; флаг обработчика не админу → 422 `handler_requires_admin`; нет id → 404 |
 
@@ -74,16 +74,30 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
 Бизнес-ошибки — `Exceptions/UserAdminException` (сам отдаёт JSON `{message, code}` с нужным статусом).
 Роли и статусы — enum модуля Auth.
 
+### Сортировка и фильтры списка (2026-10-02)
+`ListUsersRequest` проверяет `sort` по `Enums/UserSort` и `dir` по `asc|desc` (белый список). `EloquentUserAdminRepository::sort()`
+переводит колонку в свой `ORDER BY` (`name`, `status`, `last_login_at`) с `nulls last` — «ещё не входил» в конце при
+обоих направлениях; равные — по имени и `id` (страницы стабильны). Роли и филиалы многозначные — по ним не сортируем.
+Фильтр `q` включается проверкой `!== null` (`"0"` — настоящий поиск), `like` — биндингом с экранированием `% _ \`.
+Права не меняются: весь список по-прежнему только у `can:manage-users`.
+
 ### Фронтенд (`features/users`)
 `users.page.ts` — таблица (Angular Material), состояния «загрузка / пусто / ошибка с повтором», оптимистичные
-изменения с откатом; `invite-user.dialog.ts` — форма приглашения; колонка «Філії» берёт список активных филиалов через
+изменения с откатом; заголовки колонок — общий `th[app-column-header]` ([core.md](core.md#заголовок-таблицы-сортировка-и-фильтр)):
+«Користувач» (сортировка по имени, фильтр-текст `q` — бывший поиск сверху), «Роль» (только фильтр-выбор), «Статус»
+(сортировка и выбор), «Останній вхід» (сортировка и диапазон дат); состояние в адресе (`users.query.ts`:
+`?role=viewer&sort=last_login&dir=desc&page=2`), мусор из адреса отбрасывается, смена фильтра или сортировки — страница 1,
+новый запрос отменяет незавершённый (`LatestRequest`); при пустом результате заголовки остаются; `invite-user.dialog.ts` — форма приглашения; колонка «Філії» берёт список активных филиалов через
 `features/directory/directory.service.ts` (`active('branches')`); `users.service.ts` — HTTP и перевод кодов ошибок
 в i18n-ключи. Маршрут `/admin/users` защищён `roleGuard('superadmin')`.
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Статус пользователя — пилюля `.app-pill` (активен ● good, заблокирован ■ bad) вместо чипа с перекрашенным текстом; рамка таблицы — от общего `.panel`. Тест вида — `features/users/users.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
 ## Как проверить
-Тесты: `tests/Feature/Users/UsersAdminTest.php` (401/403, пагинация и `perPage` строкой, фильтры, приглашение,
+Тесты: `tests/Feature/Users/UsersSortFilterApiTest.php` (сортировка по колонкам и `nulls last`, фильтры с датами,
+`"0"`, строковые `perPage`/`page`, 422 на чужую колонку/направление/дату, 403 другой роли), `frontend/.../users.page.spec.ts`
+(адрес → запрос, клик → `sort/dir` и страница 1, отмена устаревшего запроса),
+`tests/Feature/Users/UsersAdminTest.php` (401/403, пагинация и `perPage` строкой, фильтры, приглашение,
 422/409, смена роли/статуса, запрет менять себя, 404, назначение/замена/снятие филиалов, валидация `branch_ids`), `tests/Unit/Users/UserAdminServiceTest.php`
 (правило последнего суперадмина, филиалы только когда переданы), `frontend/.../users.service.spec.ts`.
 

@@ -17,9 +17,18 @@ export interface DictionaryItem {
   city?: { id: number; name: string } | null;
 }
 
+/** Sortable columns of GET /api/directory/{type} (backend DictionarySort); `city` — branches only. */
+export const DICTIONARY_SORT_KEYS = ['name', 'city', 'status'] as const;
+export type DictionarySortKey = (typeof DICTIONARY_SORT_KEYS)[number];
+
 export interface DictionaryQuery {
+  /** Name contains (the «name» column filter). */
   q?: string;
   status?: DirectoryStatus;
+  /** Branches only. */
+  city_id?: number;
+  sort?: DictionarySortKey;
+  dir?: 'asc' | 'desc';
   page?: number;
   perPage?: number;
 }

@@ -40,21 +40,32 @@ describe('DirectoryStore', () => {
     store = TestBed.inject(DirectoryStore);
   });
 
-  it('loads the active tab and switches tabs with a fresh query', () => {
+  it('loads the tab and query from the URL; another tab starts with no rows; the same view is not reloaded', () => {
     api.list$ = of(page([item(1, 'A')]));
-    store.load();
+    store.apply({ type: 'branches', query: { q: 'x', page: 1, perPage: 50 } });
     expect(store.items().length).toBe(1);
     expect(store.total()).toBe(1);
+    expect(api.calls.at(-1)).toEqual({ type: 'branches', query: { q: 'x', page: 1, perPage: 50 } });
 
-    store.patchQuery({ q: 'x' });
-    store.selectType('positions');
-    expect(api.calls.at(-1)).toEqual({ type: 'positions', query: { page: 1, perPage: 50 } });
+    store.apply({ type: 'branches', query: { q: 'x', page: 1, perPage: 50 } });
+    expect(api.calls).toHaveLength(1);
+
+    api.list$ = new Subject<DictionaryPage>();
+    store.apply({ type: 'positions', query: { page: 1, perPage: 50, sort: 'status', dir: 'desc' } });
+    expect(store.items()).toEqual([]);
+    expect(store.type()).toBe('positions');
+    expect(api.calls.at(-1)).toEqual({ type: 'positions', query: { page: 1, perPage: 50, sort: 'status', dir: 'desc' } });
   });
 
-  it('filters reset the page', () => {
-    store.setPage(3, 20);
-    store.patchQuery({ status: 'disabled' });
-    expect(store.query()).toEqual({ page: 1, perPage: 20, status: 'disabled' });
+  it('a newer view cancels the request still in flight', () => {
+    const first = new Subject<DictionaryPage>();
+    api.list$ = first;
+    store.apply({ type: 'branches', query: { page: 1, perPage: 50 } });
+    expect(first.observed).toBe(true);
+    api.list$ = of(page([item(2, 'B')]));
+    store.apply({ type: 'cities', query: { page: 1, perPage: 50 } });
+    expect(first.observed).toBe(false);
+    expect(store.items().map((i) => i.name)).toEqual(['B']);
   });
 
   it('flags a load error', () => {

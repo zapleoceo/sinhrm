@@ -100,7 +100,7 @@ const POSITIONS: ConnectedPosition[] = [
                 <mat-radio-group class="options" [attr.aria-label]="label()" [value]="draftText()" (change)="draftText.set($event.value)">
                   <mat-radio-button value="">{{ 'table.filter.all' | transloco }}</mat-radio-button>
                   @for (o of options(); track o.value) {
-                    <mat-radio-button [value]="o.value">{{ o.label }}</mat-radio-button>
+                    <mat-radio-button [value]="o.value">{{ o.i18n ? (o.label | transloco) : o.label }}</mat-radio-button>
                   }
                 </mat-radio-group>
               }
@@ -127,7 +127,8 @@ const POSITIONS: ConnectedPosition[] = [
     </span>
   `,
   styles: `
-    :host { vertical-align: middle; }
+    /* One line, as in .app-table: a wrapped title would outgrow the cell (mat-table cells clip). */
+    :host { vertical-align: middle; white-space: nowrap; }
     .cell { display: inline-flex; align-items: center; gap: 0.125rem; }
     .title {
       display: inline-flex; align-items: center; gap: 0.25rem; min-height: 2rem; margin: -0.25rem -0.375rem; padding: 0.25rem 0.375rem;

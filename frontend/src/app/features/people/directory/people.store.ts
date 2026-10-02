@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { safeStorage } from '../../../core/storage/safe-storage';
+import { LatestRequest } from '../../../core/ui/table/latest-request';
 import { Employee, PeopleQuery } from '../people.model';
 import { PeopleService } from '../people.service';
 import { PEOPLE_PAGE_SIZE, sameQuery } from './people.query';
@@ -10,12 +11,13 @@ const DEFAULT_QUERY: PeopleQuery = { page: 1, perPage: PEOPLE_PAGE_SIZE };
 
 /**
  * Directory page state (provided per page). The query comes from the URL (people.query.ts): the page calls
- * `apply()` on every URL change. Stale answers after a filter change are dropped.
+ * `apply()` on every URL change. A newer query cancels the request still in flight (LatestRequest), so an old
+ * answer never lands over the new filters.
  */
 @Injectable()
 export class PeopleStore {
   private readonly api = inject(PeopleService);
-  private seq = 0;
+  private readonly request = new LatestRequest();
   private loaded = false;
 
   readonly query = signal<PeopleQuery>(DEFAULT_QUERY);
@@ -35,24 +37,18 @@ export class PeopleStore {
   }
 
   load(): void {
-    const seq = ++this.seq;
     this.loaded = true;
     this.loading.set(true);
     this.failed.set(false);
-    this.api.list(this.query()).subscribe({
+    this.request.run(this.api.list(this.query()), {
       next: (page) => {
-        if (seq !== this.seq) {
-          return;
-        }
         this.items.set(page.data);
         this.total.set(page.meta.total);
         this.loading.set(false);
       },
       error: () => {
-        if (seq === this.seq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
+        this.failed.set(true);
+        this.loading.set(false);
       },
     });
   }

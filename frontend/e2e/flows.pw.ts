@@ -221,6 +221,75 @@ test.describe('desktop flows', () => {
     expect(d.x + d.width).toBeLessThanOrEqual(390);
   });
 
+  test('people (390 px): a filter of a hidden column stays visible as a chip and is removed from there', async ({ page, context }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, context, '/people?manager=%D0%9A%D0%BE');
+    const chips = page.getByRole('group', { name: 'Активні фільтри' });
+    await expect(chips).toContainText('Керівник: Ко');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    await chips.getByRole('button', { name: 'Прибрати фільтр «Керівник»' }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.has('manager')).toBe(false);
+    await expect(chips).toBeHidden();
+  });
+
+  test('admin users: titles sort via the URL, the role filter sits in its header, the API gets sort/dir and role', async ({ page, context }) => {
+    const sent: URLSearchParams[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/users') sent.push(u.searchParams);
+    });
+    await open(page, context, '/admin/users');
+    const user = page.getByRole('columnheader', { name: 'Користувач', exact: true });
+    const lastLogin = page.getByRole('columnheader', { name: 'Останній вхід', exact: true });
+    const role = page.getByRole('columnheader', { name: 'Роль', exact: true });
+    await expect(user).toHaveAttribute('aria-sort', 'ascending');
+    // Roles are many-valued: filter only, no sort.
+    await expect(role).not.toHaveAttribute('aria-sort', /.*/);
+
+    await lastLogin.getByRole('button', { name: 'Останній вхід', exact: true }).click();
+    await expect(page).toHaveURL(/[?&]sort=last_login&dir=asc(&|$)/);
+    await expect.poll(() => sent.at(-1)?.get('sort')).toBe('last_login');
+    await lastLogin.getByRole('button', { name: 'Останній вхід', exact: true }).press('Enter');
+    await expect(lastLogin).toHaveAttribute('aria-sort', 'descending');
+    await expect.poll(() => sent.at(-1)?.get('dir')).toBe('desc');
+
+    await role.getByRole('button', { name: 'Фільтр стовпця «Роль»' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Роль»' });
+    await dialog.getByRole('radio', { name: 'Спостерігач' }).check();
+    await dialog.getByRole('button', { name: 'Застосувати' }).click();
+    await expect(page).toHaveURL(/[?&]role=viewer(&|$)/);
+    await expect.poll(() => sent.at(-1)?.get('role')).toBe('viewer');
+    expect(sent.at(-1)?.get('page')).toBe('1');
+    await expect(role.getByRole('button', { name: 'Фільтр стовпця «Роль», увімкнено' })).toBeVisible();
+  });
+
+  test('audit log: newest first by default, the user title sorts, the time column filters a date range', async ({ page, context }) => {
+    const sent: URLSearchParams[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/audit') sent.push(u.searchParams);
+    });
+    await open(page, context, '/admin/audit');
+    const time = page.getByRole('columnheader', { name: 'Час', exact: true });
+    const user = page.getByRole('columnheader', { name: 'Користувач', exact: true });
+    await expect(time).toHaveAttribute('aria-sort', 'descending');
+
+    await user.getByRole('button', { name: 'Користувач', exact: true }).click();
+    await expect(user).toHaveAttribute('aria-sort', 'ascending');
+    await expect(time).toHaveAttribute('aria-sort', 'none');
+    await expect.poll(() => sent.at(-1)?.get('sort')).toBe('user');
+
+    await time.getByRole('button', { name: 'Фільтр стовпця «Час»' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Час»' });
+    await dialog.getByLabel('Від').fill('2026-09-01');
+    await dialog.getByLabel('До').fill('2026-09-30');
+    await dialog.getByRole('button', { name: 'Застосувати' }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('from')).toBe('2026-09-01');
+    expect(new URL(page.url()).searchParams.get('to')).toBe('2026-09-30');
+    await expect.poll(() => sent.at(-1)?.get('to')).toBe('2026-09-30');
+    expect(sent.at(-1)?.get('sort')).toBe('user');
+  });
+
   test('report view: the table has a «Разом» row', async ({ page, context }) => {
     await open(page, context, '/reports/catalog/desk_sla');
     await expect(page.getByRole('row', { name: /^Разом/ })).toBeVisible();

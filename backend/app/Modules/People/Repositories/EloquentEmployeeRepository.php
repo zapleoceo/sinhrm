@@ -31,20 +31,22 @@ final class EloquentEmployeeRepository implements EmployeeRepository
                         ->orWhereIn('id', $filter->terminatedWithin ?? [])),
                 },
             )
-            ->when($filter->q, function (Builder $q, string $term): void {
-                $like = self::like($term);
+            // !== null, not truthy: a search or filter for "0" is a real one (when() skips falsy values).
+            ->when($filter->q !== null, function (Builder $q) use ($filter): void {
+                $like = self::like((string) $filter->q);
                 $q->where(fn (Builder $w) => $w->whereRaw('lower(full_name) like ?', [$like])
                     ->orWhereRaw('lower(work_email) like ?', [$like])
                     ->orWhere('phone', 'like', $like));
             })
             // Column filters of the table headers: "contains", case-insensitive, values only as bindings.
-            ->when($filter->name, fn (Builder $q, string $term) => $q->whereRaw('lower(full_name) like ?', [self::like($term)]))
-            ->when($filter->contact, fn (Builder $q, string $term) => $q->where(
-                fn (Builder $w) => $w->whereRaw('lower(work_email) like ?', [self::like($term)])->orWhere('phone', 'like', self::like($term)),
+            ->when($filter->name !== null, fn (Builder $q) => $q->whereRaw('lower(full_name) like ?', [self::like((string) $filter->name)]))
+            ->when($filter->contact !== null, fn (Builder $q) => $q->where(
+                fn (Builder $w) => $w->whereRaw('lower(work_email) like ?', [self::like((string) $filter->contact)])
+                    ->orWhere('phone', 'like', self::like((string) $filter->contact)),
             ))
-            ->when($filter->manager, fn (Builder $q, string $term) => $q->whereHas(
+            ->when($filter->manager !== null, fn (Builder $q) => $q->whereHas(
                 'manager',
-                fn (Builder $m) => $m->whereRaw('lower(full_name) like ?', [self::like($term)]),
+                fn (Builder $m) => $m->whereRaw('lower(full_name) like ?', [self::like((string) $filter->manager)]),
             ))
             ->when($filter->onlyIds !== null, fn (Builder $q) => $q->whereIn('id', $filter->onlyIds ?? []))
             ->when($filter->branchId, fn (Builder $q, int $id) => $q->where('branch_id', $id))

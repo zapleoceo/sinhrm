@@ -25,10 +25,22 @@ export interface UserBranch {
   status: 'active' | 'disabled';
 }
 
+/** Sortable columns of GET /api/users (backend App\Modules\Users\Enums\UserSort). */
+export const USER_SORT_KEYS = ['name', 'status', 'last_login'] as const;
+export type UserSortKey = (typeof USER_SORT_KEYS)[number];
+
+/** GET /api/users query; URL names = API names (users.query.ts). */
 export interface UsersQuery {
+  /** Name or e-mail contains (the «user» column filter). */
   q?: string;
   role?: UserRole;
   status?: UserStatus;
+  /** YYYY-MM-DD, inclusive. */
+  last_login_from?: string;
+  /** YYYY-MM-DD, inclusive. */
+  last_login_to?: string;
+  sort?: UserSortKey;
+  dir?: 'asc' | 'desc';
   page?: number;
   perPage?: number;
 }

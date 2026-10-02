@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Audit\DTO;
 
+use App\Modules\Audit\Enums\AuditSort;
 use Illuminate\Support\Carbon;
 
+/** Audit log search; sort/descending order the page (default: newest first). */
 final readonly class AuditFilter
 {
     public function __construct(
@@ -16,5 +18,7 @@ final readonly class AuditFilter
         public ?Carbon $to = null,
         public int $page = 1,
         public int $perPage = 20,
+        public AuditSort $sort = AuditSort::Time,
+        public bool $descending = true,
     ) {}
 }

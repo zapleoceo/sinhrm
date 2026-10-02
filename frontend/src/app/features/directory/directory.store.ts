@@ -1,17 +1,23 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
+import { LatestRequest } from '../../core/ui/table/latest-request';
+import { sameQuery } from '../../core/ui/table/table-state';
 import { DictionaryItem, DictionaryQuery, DictionaryType, SaveDictionaryItem } from './directory.model';
+import { DIRECTORY_PAGE_SIZE, DirectoryView } from './directory.query';
 import { DirectoryService, directoryErrorKey } from './directory.service';
 
-const DEFAULT_QUERY: DictionaryQuery = { page: 1, perPage: 50 };
+const DEFAULT_QUERY: DictionaryQuery = { page: 1, perPage: DIRECTORY_PAGE_SIZE };
 
 /**
- * State of the directory page (provided per page): the active dictionary tab, its filters and rows.
+ * State of the directory page (provided per page): the active dictionary tab, its filters and rows. Tab and query
+ * come from the URL (directory.query.ts) through `apply()`; a newer one cancels the request still in flight.
  * Rename and enable/disable are optimistic with rollback; onError gets an i18n key.
  */
 @Injectable()
 export class DirectoryStore {
   private readonly api = inject(DirectoryService);
+  private readonly request = new LatestRequest();
+  private loaded = false;
 
   readonly type = signal<DictionaryType>('branches');
   readonly query = signal<DictionaryQuery>(DEFAULT_QUERY);
@@ -21,15 +27,25 @@ export class DirectoryStore {
   readonly failed = signal(false);
   readonly pending = signal<ReadonlySet<number>>(new Set());
 
+  /** New tab / query from the URL: loads unless it is the one already shown; another tab starts with no rows. */
+  apply(view: DirectoryView): void {
+    if (this.loaded && view.type === this.type() && sameQuery(view.query, this.query())) {
+      return;
+    }
+    if (view.type !== this.type()) {
+      this.items.set([]);
+    }
+    this.type.set(view.type);
+    this.query.set(view.query);
+    this.load();
+  }
+
   load(): void {
+    this.loaded = true;
     this.loading.set(true);
     this.failed.set(false);
-    const type = this.type();
-    this.api.list(type, this.query()).subscribe({
+    this.request.run(this.api.list(this.type(), this.query()), {
       next: (page) => {
-        if (type !== this.type()) {
-          return; // a stale answer after a tab switch
-        }
         this.items.set(page.data);
         this.total.set(page.meta.total);
         this.loading.set(false);
@@ -39,24 +55,6 @@ export class DirectoryStore {
         this.loading.set(false);
       },
     });
-  }
-
-  selectType(type: DictionaryType): void {
-    this.type.set(type);
-    this.items.set([]);
-    this.query.set(DEFAULT_QUERY);
-    this.load();
-  }
-
-  /** Filters reset the page to 1. */
-  patchQuery(patch: Partial<DictionaryQuery>): void {
-    this.query.update((q) => ({ ...q, ...patch, page: 1 }));
-    this.load();
-  }
-
-  setPage(page: number, perPage: number): void {
-    this.query.update((q) => ({ ...q, page, perPage }));
-    this.load();
   }
 
   rename(item: DictionaryItem, name: string, onError: (key: string) => void): void {
