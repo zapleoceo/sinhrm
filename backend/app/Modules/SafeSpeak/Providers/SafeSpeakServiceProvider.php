@@ -27,7 +27,7 @@ final class SafeSpeakServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'services';
 
-    /** Read and answer reports: active superadmin/admin with users.safe_speak_handler = true. */
+    /** Read and answer reports: active HR staff (superadmin, admin, hr_manager) with users.safe_speak_handler = true. */
     public const string HANDLE = 'safe-speak-handle';
 
     protected string $prefix = 'safe-speak';

@@ -248,6 +248,29 @@ final class DocumentsApiTest extends TestCase
         $this->assertStringNotContainsString(base64_encode(self::PDF), (string) $this->actingAs($admin)->getJson("/api/documents/{$doc->id}")->getContent());
     }
 
+    /** Regression guard for Core Download::file: the full header set and an RFC 6266 name for a non-ASCII filename. */
+    public function test_file_download_sends_full_attachment_headers_and_utf8_filename(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $doc = $this->document($this->employee()->id);
+        $name = 'Наказ 7.pdf';
+        $this->actingAs($admin)->post("/api/documents/{$doc->id}/file", ['file' => UploadedFile::fake()->createWithContent($name, self::PDF)], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $download = $this->actingAs($admin)->get("/api/documents/{$doc->id}/file")->assertOk();
+
+        $this->assertSame(self::PDF, $download->getContent());
+        $this->assertSame('application/pdf', $download->headers->get('Content-Type'));
+        $this->assertSame((string) strlen(self::PDF), $download->headers->get('Content-Length'));
+        $this->assertSame('nosniff', $download->headers->get('X-Content-Type-Options'));
+        $cache = (string) $download->headers->get('Cache-Control');
+        $this->assertStringContainsString('no-store', $cache);
+        $this->assertStringContainsString('private', $cache);
+        $disposition = (string) $download->headers->get('Content-Disposition');
+        $this->assertStringStartsWith('attachment;', $disposition);
+        $this->assertStringContainsString("filename*=utf-8''".rawurlencode($name), $disposition);
+    }
+
     /** @param  array<string, mixed>  $attributes */
     private function document(int $employeeId, array $attributes = []): Document
     {

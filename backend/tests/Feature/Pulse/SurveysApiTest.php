@@ -45,6 +45,45 @@ final class SurveysApiTest extends TestCase
         $this->actingAs($admin)->getJson("/api/pulse/surveys/{$id}")->assertOk()->assertJsonPath('data.waves_count', 0);
     }
 
+    public function test_admin_lists_surveys_newest_first_with_wave_counts(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $older = $this->survey(['title' => 'Older pulse']);
+        $this->wave($older);
+        $this->wave($older, ['status' => 'closed']);
+        $newer = $this->survey(['title' => 'Newer pulse', 'type' => 'custom', 'description' => 'Synthetic description']);
+
+        $this->actingAs($admin)->getJson('/api/pulse/surveys')->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonStructure(['data' => [['id', 'title', 'type', 'description', 'questions', 'lifecycle_trigger', 'active', 'waves_count', 'updated_at']]])
+            ->assertJsonPath('data.0.id', $newer->id)
+            ->assertJsonPath('data.0.title', 'Newer pulse')
+            ->assertJsonPath('data.0.type', 'custom')
+            ->assertJsonPath('data.0.description', 'Synthetic description')
+            ->assertJsonPath('data.0.waves_count', 0)
+            ->assertJsonPath('data.0.active', true)
+            ->assertJsonPath('data.1.id', $older->id)
+            ->assertJsonPath('data.1.waves_count', 2)
+            ->assertJsonCount(count($this->questions), 'data.1.questions');
+    }
+
+    public function test_admin_deletes_a_survey_without_responses(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $survey = $this->survey();
+        $wave = $this->wave($survey);
+        $kept = $this->survey(['title' => 'Kept pulse']);
+
+        $this->actingAs($this->login())->deleteJson("/api/pulse/surveys/{$survey->id}")->assertForbidden();
+        $this->assertDatabaseHas('surveys', ['id' => $survey->id]);
+
+        $this->actingAs($admin)->deleteJson("/api/pulse/surveys/{$survey->id}")->assertNoContent();
+        $this->assertDatabaseMissing('surveys', ['id' => $survey->id]);
+        $this->assertDatabaseMissing('survey_waves', ['id' => $wave->id]);
+        $this->actingAs($admin)->getJson('/api/pulse/surveys')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $kept->id);
+        $this->actingAs($admin)->deleteJson("/api/pulse/surveys/{$survey->id}")->assertNotFound();
+    }
+
     public function test_wave_rules_and_question_freeze(): void
     {
         $admin = $this->login(UserRole::Admin);

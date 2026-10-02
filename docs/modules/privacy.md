@@ -73,6 +73,13 @@
 карточку кандидата и профиль сотрудника, видна только superadmin/admin), `erase.dialog.ts` (предупреждение, причина,
 галочка), `privacy-settings.page.ts` (`/admin/privacy`, `roleGuard('superadmin', 'admin')`). Тексты — `privacy.*` в трёх языках.
 
+### Общие хелперы Core (2026-10-02)
+- имя файла выгрузки в `Content-Disposition` строит `Core\Http\Responses\Download::disposition()` (`attachment; filename="personal-data-<type>-<id>.json|html"`, как раньше);
+- gate `privacy-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, [UserRole::Superadmin, UserRole::Admin])`: активный superadmin или admin;
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
 ## Как проверить
 `php artisan test tests/Feature/Privacy` — доступ по ролям, полнота выгрузки (JSON и HTML), удаление стирает каждое
 персональное поле (включая файлы документов), отчётные строки остаются, отказ для нанятого/работающего, правило хранения.

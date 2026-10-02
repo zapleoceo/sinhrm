@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace App\Modules\Users\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Users\Http\Requests\InviteUserRequest;
 use App\Modules\Users\Http\Requests\ListUsersRequest;
 use App\Modules\Users\Http\Requests\UpdateUserRequest;
 use App\Modules\Users\Http\Resources\UserResource;
 use App\Modules\Users\Services\UserAdminService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /** Users admin. Access: Gate "manage-users" (routes.php). */
 final class UsersController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly UserAdminService $service) {}
 
     public function index(ListUsersRequest $request): AnonymousResourceCollection
@@ -41,13 +43,5 @@ final class UsersController
             $request->branchIds(),
             $request->safeSpeakHandler(),
         ));
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

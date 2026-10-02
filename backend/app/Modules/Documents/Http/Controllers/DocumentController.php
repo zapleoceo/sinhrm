@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Documents\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
+use App\Modules\Core\Http\Responses\Download;
 use App\Modules\Documents\Http\Requests\CreateDocumentRequest;
 use App\Modules\Documents\Http\Requests\ListDocumentsRequest;
 use App\Modules\Documents\Http\Requests\RejectDocumentRequest;
@@ -21,7 +22,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Symfony\Component\HttpFoundation\HeaderUtils;
 
 /**
  * Employee documents. Reading: admin, the employee (not drafts), managers above the employee; writing: admin
@@ -29,6 +29,8 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
  */
 final class DocumentController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly DocumentService $documents,
         private readonly DocumentTemplateService $templates,
@@ -92,15 +94,8 @@ final class DocumentController
     {
         $file = $this->documents->file($this->documents->findVisible($this->context($request), $document->id));
         abort_if($file === null, 404);
-        $fallback = preg_replace('/[^A-Za-z0-9._-]+/', '_', $file->filename) ?: 'file';
 
-        return new Response($file->content, 200, [
-            'Content-Type' => $file->mime,
-            'Content-Length' => (string) $file->size,
-            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $file->filename, $fallback),
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'private, no-store',
-        ]);
+        return Download::file($file->content, $file->filename, $file->mime, $file->size);
     }
 
     public function send(Request $request, Document $document): DocumentResource
@@ -136,13 +131,5 @@ final class DocumentController
     private function context(Request $request): PeopleContext
     {
         return $this->scope->for($this->actor($request));
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

@@ -92,6 +92,27 @@ final class TimeRoutesTest extends TestCase
         }
     }
 
+    /**
+     * time-manage is a role gate (ModuleServiceProvider::defineRoleGate, hrStaff), not "manages people": a line
+     * manager with the employee role is refused; hr_manager's schedule is what everyone then reads.
+     */
+    public function test_line_manager_is_not_time_manage_but_hr_manager_is(): void
+    {
+        $branch = Branch::factory()->create();
+        $manager = $this->login(UserRole::Employee);
+        $lead = $this->employee(['full_name' => 'Team Lead'], $manager);
+        $this->employee(['full_name' => 'Team Member', 'manager_id' => $lead->id], $this->login(UserRole::Employee));
+        $body = ['branch_id' => (string) $branch->id, 'days' => ['1', '2', '3'], 'hours_per_day' => '6'];
+
+        $this->actingAs($manager)->putJson('/api/time/schedules', $body)->assertForbidden();
+        $this->actingAs($manager)->deleteJson("/api/time/schedules/{$branch->id}")->assertForbidden();
+        $this->assertDatabaseMissing('work_schedules', ['branch_id' => $branch->id]);
+
+        $this->actingAs($this->login(UserRole::HrManager))->putJson('/api/time/schedules', $body)->assertOk()->assertJsonPath('data.days', [1, 2, 3]);
+        $listed = (array) $this->actingAs($manager)->getJson('/api/time/schedules')->assertOk()->json('data');
+        $this->assertContains($branch->id, array_column(array_column($listed, 'branch'), 'id'));
+    }
+
     /** @return iterable<string, array{array<string, mixed>, string}> */
     public static function invalidSchedules(): iterable
     {

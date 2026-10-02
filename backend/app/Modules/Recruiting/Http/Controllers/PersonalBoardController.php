@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Http\Requests\BoardColumnRequest;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\BoardColumn;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\Gate;
  */
 final class PersonalBoardController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly PersonalBoardService $board) {}
 
     public function show(Request $request, Vacancy $vacancy): JsonResponse
@@ -96,13 +99,5 @@ final class PersonalBoardController
         Gate::forUser($actor)->authorize('view', $vacancy);
 
         return $actor;
-    }
-
-    private function actor(Request $request): User
-    {
-        $user = $request->user();
-        assert($user instanceof User);
-
-        return $user;
     }
 }

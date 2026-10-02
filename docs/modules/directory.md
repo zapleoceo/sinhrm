@@ -81,6 +81,14 @@ if ($ids !== null) {
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Статус записи справочника — пилюля `.app-pill` (активна ● good, отключена — пунктирный ○ neutral) вместо чипа с перекрашенным текстом; рамка таблицы — от общего `.panel`; уведомление об ошибке импорта — линия 1.5px и красная «рельса» 4px. Тест вида — `features/directory/directory.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
+### Общие хелперы Core (2026-10-02)
+- `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..200`, по умолчанию 50, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListDictionaryRequest`);
+- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (обратный слеш, `Like::contains`) (поиск по названию);
+- gate `manage-directory` задаётся `ModuleServiceProvider::defineRoleGate(…, [UserRole::Superadmin, UserRole::Admin])`: активный superadmin или admin;
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
 ## Как проверить
 Тесты: `tests/Feature/Directory/DirectoryApiTest.php` (401/403/404, чтение любым активным, сортировка, фильтры,
 `perPage` строкой и границы, создание/правка/выключение админом, `city_id` только у филиалов, запрет записи

@@ -157,6 +157,29 @@ final class AuditLogTest extends TestCase
         }
     }
 
+    public function test_per_page_comes_as_a_query_string_and_is_bounded_to_100(): void
+    {
+        $this->actingAs($this->superadmin);
+        $employee = Employee::factory()->create();
+        $employee->update(['status' => 'terminated']);
+
+        // Global log (ListAuditRequest): default 20, "1" → 1, max 100.
+        $this->getJson('/api/audit')->assertOk()->assertJsonPath('meta.per_page', 20);
+        $this->getJson('/api/audit?perPage=1')->assertOk()->assertJsonPath('meta.per_page', 1)->assertJsonCount(1, 'data');
+        $this->getJson('/api/audit?perPage=100')->assertOk()->assertJsonPath('meta.per_page', 100);
+        foreach (['perPage=0', 'perPage=abc', 'perPage=101', 'perPage=-1'] as $query) {
+            $this->getJson('/api/audit?'.$query)->assertUnprocessable()->assertJsonValidationErrors(['perPage']);
+        }
+
+        // Entity history (HistoryRequest): the same bounds.
+        $url = "/api/people/{$employee->id}/history";
+        $this->getJson($url)->assertOk()->assertJsonPath('meta.per_page', 20);
+        $this->getJson($url.'?perPage=1')->assertOk()->assertJsonPath('meta.per_page', 1)->assertJsonCount(1, 'data');
+        foreach (['perPage=0', 'perPage=abc', 'perPage=101'] as $query) {
+            $this->getJson($url.'?'.$query)->assertUnprocessable()->assertJsonValidationErrors(['perPage']);
+        }
+    }
+
     public function test_retention_job_deletes_rows_older_than_a_year(): void
     {
         AuditEntry::query()->delete();

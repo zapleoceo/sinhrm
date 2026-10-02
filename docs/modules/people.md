@@ -60,7 +60,7 @@
 | `employee_change_requests` | `employee_id`, `requested_by?`, `changes jsonb`, `status` (`pending\|approved\|rejected`), `decided_by?`, `decided_at?`, `comment?`, `decision_comment?` | только поля из белого списка `Enums/ChangeableField`: `phone, personal_email, address, emergency_contact` |
 
 ### Доступ (`Services/PeopleScope` → `DTO/PeopleContext`)
-`PeopleScope::for(User)` один раз на запрос строит контекст: `admin` (активный superadmin/admin), `selfId` (запись,
+`PeopleScope::for(User)` один раз на запрос строит контекст: `admin` (активный superadmin/admin/hr_manager — `PeopleScope::isAdmin` → `UserRole::hrStaff()`), `selfId` (запись,
 связанная с пользователем), `subtreeIds` — все сотрудники ниже по `manager_id` (обход в `Support/ReportingTree`,
 устойчив к циклам в данных). Флаги по сотруднику: `job` (admin, сам, руководитель выше), `pii` (admin, сам),
 `decide` (admin или руководитель выше; своё не решает никто, кроме админа), `manage` (admin). Ответ профиля
@@ -81,7 +81,7 @@
 | `POST /api/me/employee/change-requests` | сам | `{changes: {phone?, personal_email?, address?, emergency_contact?}, comment?}`; другой ключ → 422 | 201 |
 | `GET /api/people/change-requests` | любой активный | `status?, employee_id?, perPage` | admin — все; остальные — свои и людей ниже себя; `can_decide` в строке |
 | `POST /api/people/change-requests/{id}/approve\|reject` | admin или руководитель выше | `{comment?}` | 200; чужой → 403; уже решён → 409 `already_decided`. Одобрение применяет значения (белый список проверяется ещё раз при применении) |
-| `POST /api/applications/{id}/hire` | кто может двигать заявку (`ApplicationPolicy::move`: admin, recruiter своего филиала) | `{hired_at?}` (`Y-m-d`, по умолч. сегодня) | 201 `{data: employee, meta: {created: true}}`; уже есть сотрудник для заявки/кандидата → 200 `created: false`; заявка не на этапе найма → 422 `not_hired` |
+| `POST /api/applications/{id}/hire` | кто может двигать заявку (`ApplicationPolicy::move` → `RecruitingScope::canWorkVacancy`: superadmin, admin, recruiter — в своей области филиалов — или нанимающий менеджер вакансии; `hr_manager` сам по себе нанять не может) | `{hired_at?}` (`Y-m-d`, по умолч. сегодня) | 201 `{data: employee, meta: {created: true}}`; уже есть сотрудник для заявки/кандидата → 200 `created: false`; заявка не на этапе найма → 422 `not_hired` |
 
 Найм (`Services/HireService`): ФИО и телефон — из кандидата, e-mail кандидата → `personal_email` (рабочий задаёт админ),
 филиал/отдел/должность — из вакансии, `employment_type = full_time`. Гонка двух кликов ловится уникальным индексом и
@@ -221,6 +221,16 @@
   Privacy: `CompensationPersonalData` — экспорт всех записей; при удалении данных записи сохраняются как трудовой документ (как подписанные документы).
 - **Пол** (`employees.gender`: female|male, необязательный): видит и редактирует только HR (`access.manage`), в справочнике не показывается;
   нужен лишь для отчёта «Розрив в оплаті» ([reports.md](reports.md)). В аудите маскируется; при удалении данных стирается.
+
+### Общие хелперы Core (2026-10-02)
+- CSV-выгрузка `POST /people/bulk` (`action=export`) пишет общий `Core\Support\Export\Csv` (BOM, заголовок, защита от формул `= + - @ \t \r` — как в Reports), имя файла — `Download::disposition('employees.csv')`;
+- `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..200`, по умолчанию 50, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListPeopleRequest`, `ListChangeRequestsRequest`);
+- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (обратный слеш, `Like::contains`) (ФИО, рабочий email, телефон);
+- «сегодня» по умолчанию (`hired_at` найма без даты) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
+- gate `people-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
+
+Поведение API не менялось, кроме ночной границы «сегодня» (пункт выше); подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
 ### Сортировка и фильтры истории оплаты (2026-10-02)
 Клик по названию колонки сортирует (повторный — в обратную сторону), воронка рядом — фильтр колонки; общий компонент `core/ui/table` (клиентская таблица `ClientTable`: все строки уже пришли, сравнение строк по языку интерфейса, пустые — в конце). Состояние — в адресе страницы с префиксом таблицы, ссылкой можно поделиться. Подключение — [guides/tables.md](../guides/tables.md).

@@ -54,6 +54,19 @@ final class MessagesApiTest extends TestCase
         $this->actingAs($this->recruiter)->postJson('/api/candidates/999999/messages', ['channel' => 'telegram', 'text' => 'x'])->assertNotFound();
     }
 
+    /** ResolvesActor in ChannelMessageController: guests get 401 on call; the touch is authored by whoever sent it. */
+    public function test_guest_401_on_call_and_author_is_the_current_user(): void
+    {
+        $this->postJson('/api/candidates/'.$this->application->candidate_id.'/call')->assertUnauthorized();
+
+        $this->telegram(IntegrationStatus::Demo);
+        $colleague = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'telegram', 'text' => 'First'])
+            ->assertCreated()->assertJsonPath('data.author.id', $this->recruiter->id);
+        $this->actingAs($colleague)->postJson($this->url(), ['channel' => 'telegram', 'text' => 'Second'])
+            ->assertCreated()->assertJsonPath('data.author.id', $colleague->id);
+    }
+
     public function test_validation(): void
     {
         $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'note', 'text' => 'x'])->assertUnprocessable();

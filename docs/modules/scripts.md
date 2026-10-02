@@ -174,7 +174,7 @@ viewer — например, новый сотрудник) и, как рань�
 | `GET /api/candidates/{id}/templates` | кто видит карточку | заполненные шаблоны `{script_id, script_name, channel, key, title, text, missing[]}` |
 | `GET /api/touchpoints/{id}/evaluation` | кто видит кандидата (или сообщение во «Вхідних») | полная оценка; не оценено → 404 `not_evaluated` |
 | `GET /api/reports/scripts` | все, в пределах филиалов | `from, to` (как у отчётов Recruiting) → `recruiters[{avg_score, next_step_fixed_pct, evaluations}]`, `steps[{title, total, missed, miss_rate_pct}]` (шаги группируются по названию), `totals` |
-| `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents\|pulse`, `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
+| `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents\|pulse\|desk\|hiring\|time` (`Enums/TaskSource`; иное → 422), `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
 | `PATCH /api/tasks/{id}` | исполнитель задачи (любая роль); superadmin, admin, recruiter (видящие задачу) | `{done: bool}`; чужая задача у viewer / чужой филиал → 403 |
 
 Доступ к задачам: без ограничений — superadmin/admin; остальные видят задачи, назначенные им, и задачи по заявкам вакансий
@@ -211,6 +211,12 @@ viewer — например, новый сотрудник) и, как рань�
 цитаты) удаляются, заголовок задачи становится «Видалений кандидат #id» / «Видалений співробітник #id». [privacy.md](privacy.md).
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Чип оценки разговора — линия и иконка цвета диапазона (оценка всегда есть числом), 44px на телефоне; балл в разборе — моно-пилюля AA-цветом. Виджет задач — строки на «треке», время — моно, просрочка — AA-цвет `--app-warn-text`, пустой список — `.app-empty`. Редактор скрипта: перетаскиваемый шаг — тень перетаскивания темы, место падения — пунктирный слот бренда. Тест вида — `features/scripts/scripts.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
+### Общие хелперы Core (2026-10-02)
+- закрытие задач по префиксу правила (`closeByRulePrefix`) строит шаблон `Like::startsWith(…, Like::PORTABLE)` — `_` и `%` в префиксе буквальные;
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (`ScriptController`, `CandidateScriptController`).
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
 ### Сортировка и фильтры версий (2026-10-02)
 Клик по названию колонки сортирует (повторный — в обратную сторону), воронка рядом — фильтр колонки; общий компонент `core/ui/table` (клиентская таблица `ClientTable`: все строки уже пришли, сравнение строк по языку интерфейса, пустые — в конце). Состояние — в адресе страницы с префиксом таблицы, ссылкой можно поделиться. Подключение — [guides/tables.md](../guides/tables.md).

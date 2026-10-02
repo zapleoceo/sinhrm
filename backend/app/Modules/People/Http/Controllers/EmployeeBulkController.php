@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\People\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Responses\Download;
+use App\Modules\Core\Support\Export\Csv;
 use App\Modules\People\Http\Requests\BulkEmployeesRequest;
 use App\Modules\People\Services\EmployeeBulkService;
 use Illuminate\Http\JsonResponse;
@@ -25,14 +27,14 @@ final class EmployeeBulkController
                 if ($out === false) {
                     return;
                 }
-                fwrite($out, "\xEF\xBB\xBF");
-                fputcsv($out, self::CSV_COLUMNS, ',', '"', '');
+                $keyed = [];
                 foreach ($rows as $row) {
-                    // Formula injection guard, as in Reports CSV.
-                    fputcsv($out, array_map(static fn (string|int|null $v): string => is_string($v) && preg_match('/^[=+\-@\t\r]/', $v) === 1 ? "'".$v : (string) $v, $row), ',', '"', '');
+                    $keyed[] = array_combine(self::CSV_COLUMNS, $row);
                 }
+                // The shared CSV writer: UTF-8 BOM, header, formula-injection guard (as in Reports).
+                Csv::write($out, self::CSV_COLUMNS, $keyed);
                 fclose($out);
-            }, 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="employees.csv"']);
+            }, 200, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => Download::disposition('employees.csv')]);
         }
         $actor = $request->user();
         assert($actor instanceof User);

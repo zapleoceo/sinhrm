@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Reports\Support;
+namespace App\Modules\Core\Support\Export;
 
 /**
  * CSV output that spreadsheets cannot execute (CSV / formula injection, OWASP): a text cell starting with
  * =, +, -, @ (or a tab / carriage return, which some programs strip before evaluating) is prefixed with a single
  * quote, so it is shown as text. Numbers stay numbers (a negative amount is not text and is not prefixed).
+ * Shared by every CSV export (Reports, People bulk export).
  */
 final class Csv
 {

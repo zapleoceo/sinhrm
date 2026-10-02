@@ -79,7 +79,7 @@
 | view `unmatched_messages` | `SELECT * FROM touchpoints WHERE candidate_id IS NULL` | для SQL/BI; API читает саму таблицу. ⚠ `SELECT *` фиксирует колонки при создании: изменение `touchpoints` потребует пересоздать view в той же миграции |
 
 Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MANUAL` — каналы ручной записи, `isTouch()` = не `system`),
-`Direction`, `CandidateSource` (`manual, work_ua, robota_ua, djinni, linkedin, dou, meta_ads, site, referral, telegram, import, inbox, other`), `TimelineItemType`, `ClipperSite` (сайты расширения: допустимые хосты, нормализация URL, соответствие `CandidateSource`), `AcquisitionChannelType`, `AddedVia` (`manual, import, mail, extension, webhook, sheets`). Поле `source` оставлено для совместимости API; аналитика — по каналу.
+`Direction`, `CandidateSource` (`manual, work_ua, robota_ua, djinni, linkedin, dou, meta_ads, site, referral, telegram, import, inbox, other`), `TimelineItemType`, `ClipperSite` (сайты расширения: допустимые хосты, нормализация URL, соответствие `CandidateSource`), `AcquisitionChannelType`, `AddedVia` (`manual, import, mail, extension, webhook, sheets, career_site` — последнее ставит публичная страница вакансий `/jobs`, `CareerSiteService`). Поле `source` оставлено для совместимости API; аналитика — по каналу.
 
 ### Правила
 - **Статус заявки = тип этапа.** Терминальный `closed` → `rejected` (нужен `reject_reason_id`, иначе 422 `reject_reason_required`),
@@ -341,6 +341,13 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 падения, подписи) не менялось. Стрелка подсказки — `content: '›' / ''` (пустой альтернативный текст: читалка её не
 произносит); поле названия своей колонки — рамка `--app-border-w` и радиус `--app-radius-sm` вместо 1px/6px.
 Тесты — `board.page.spec.ts` («route look»), `recruiting.restyle.spec.ts`.
+
+### Общие хелперы Core (2026-10-02)
+- трейт `Recruiting\Http\Controllers\Actor` перенесён в Core: текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`;
+- `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..200`, по умолчанию 50, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListCandidatesRequest`, `ListVacanciesRequest`, `TimelineRequest`, `PerPageRequest` «Вхідних»);
+- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (обратный слеш, `Like::contains`) (кандидаты, вакансии, команда найма).
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
 ## Страница вакансий и офферы
 

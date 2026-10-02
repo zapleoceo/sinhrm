@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\GoogleWorkspace\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\GoogleWorkspace\Contracts\SheetImportRepository;
 use App\Modules\GoogleWorkspace\Http\Requests\InspectSheetRequest;
 use App\Modules\GoogleWorkspace\Http\Requests\UpdateSheetImportRequest;
@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
 /** Admin → "Import from Google Sheets" (superadmin). */
 final readonly class SheetsImportController
 {
+    use ResolvesActor;
+
     public function __construct(private SheetsImportService $service, private SheetImportRepository $imports) {}
 
     public function inspect(InspectSheetRequest $request): JsonResponse
@@ -67,13 +69,5 @@ final readonly class SheetsImportController
             'last_synced_at' => $import->last_synced_at?->toIso8601String(),
             'last_report' => $import->last_report,
         ];
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Workflows\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Workflows\Http\Requests\ReorderStepsRequest;
 use App\Modules\Workflows\Http\Requests\SaveWorkflowTemplateRequest;
 use App\Modules\Workflows\Http\Requests\WebhookSecretRequest;
@@ -19,6 +19,8 @@ use Illuminate\Http\Response;
 /** Workflow templates (route gate workflows-manage: superadmin, admin). */
 final class WorkflowTemplateController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly WorkflowTemplateService $templates,
         private readonly WebhookSecrets $secrets,
@@ -75,13 +77,5 @@ final class WorkflowTemplateController
     private function resource(WorkflowTemplate $template): WorkflowTemplateResource
     {
         return WorkflowTemplateResource::withSecret($template, $this->secrets->describe($template->id));
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

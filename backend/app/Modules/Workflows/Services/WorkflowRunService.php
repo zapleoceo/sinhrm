@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Workflows\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
 use App\Modules\Scripts\Services\TaskService;
@@ -75,7 +76,7 @@ final readonly class WorkflowRunService
     /** Manual start from the employee profile (anchor = the chosen date, today by default). Always a new run. */
     public function start(User $actor, WorkflowTemplate $template, Employee $employee, ?Carbon $anchor = null): WorkflowRun
     {
-        $run = $this->starter->start($template, $employee, $anchor ?? Carbon::today(), $actor);
+        $run = $this->starter->start($template, $employee, $anchor ?? UserTime::today(), $actor);
         assert($run !== null);
 
         return $this->find($run->id);

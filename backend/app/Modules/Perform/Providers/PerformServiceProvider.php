@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Perform\Providers;
 
-use App\Models\User;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Support\ModuleServiceProvider;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\Perform\Contracts\DevelopmentPlanRepository;
 use App\Modules\Perform\Contracts\FeedbackRepository;
 use App\Modules\Perform\Contracts\KpiRepository;
@@ -19,7 +18,6 @@ use App\Modules\Perform\Repositories\EloquentKpiRepository;
 use App\Modules\Perform\Repositories\EloquentObjectiveRepository;
 use App\Modules\Perform\Repositories\EloquentOneOnOneRepository;
 use App\Modules\Perform\Repositories\EloquentReviewRepository;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Perform: 1:1s, objectives (OKR) with check-ins, KPIs, continuous feedback, review cycles (competencies, rating
@@ -51,6 +49,6 @@ final class PerformServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(PeopleScope::class)->isAdmin($user));
+        $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
     }
 }

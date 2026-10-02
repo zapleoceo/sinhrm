@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Requests;
 
+use App\Modules\Core\Http\Requests\Concerns\Paginates;
 use App\Modules\Recruiting\DTO\CandidateFilter;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Enums\CandidateSource;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 final class ListCandidatesRequest extends FormRequest
 {
+    use Paginates;
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -23,7 +26,7 @@ final class ListCandidatesRequest extends FormRequest
             'source' => ['nullable', Rule::enum(CandidateSource::class)],
             'owner_id' => ['nullable', 'integer', 'min:1'],
             'channel_id' => ['nullable', 'integer', 'min:1'],
-            'perPage' => ['nullable', 'integer', 'between:1,200'],
+            'perPage' => $this->perPageRules(),
         ];
     }
 
@@ -39,7 +42,7 @@ final class ListCandidatesRequest extends FormRequest
             source: $this->enum('source', CandidateSource::class),
             ownerId: $int('owner_id'),
             channelId: $int('channel_id'),
-            perPage: $this->integer('perPage', 50),
+            perPage: $this->perPageOr(),
         );
     }
 }

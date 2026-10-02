@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Http\Requests;
 
+use App\Modules\Core\Support\UserTime;
 use App\Modules\TimeOff\DTO\LeaveRequestData;
 use App\Modules\TimeOff\Enums\HalfDay;
 use App\Modules\TimeOff\Models\LeaveType;
@@ -55,6 +56,6 @@ final class LeaveRequestFormRequest extends FormRequest
 
     private function day(string $key): Carbon
     {
-        return Carbon::createFromFormat('Y-m-d', $this->string($key)->toString())?->startOfDay() ?? Carbon::today();
+        return Carbon::createFromFormat('Y-m-d', $this->string($key)->toString())?->startOfDay() ?? UserTime::today();
     }
 }

@@ -53,6 +53,29 @@ final class ChangeRequestApiTest extends TestCase
         $this->actingAs($this->login(UserRole::Admin))->getJson('/api/people/change-requests?status=nope')->assertUnprocessable();
     }
 
+    public function test_per_page_comes_as_a_query_string_and_is_bounded_to_200(): void
+    {
+        $org = $this->org();
+        $this->actingAs($this->userOf($org['worker']))->postJson('/api/me/employee/change-requests', ['changes' => ['phone' => '1']])->assertCreated();
+        $this->actingAs($this->userOf($org['other']))->postJson('/api/me/employee/change-requests', ['changes' => ['phone' => '2']])->assertCreated();
+        $admin = $this->login(UserRole::Admin);
+
+        // Change requests (ListChangeRequestsRequest): default 50, "1" → 1, max 200.
+        $this->actingAs($admin)->getJson('/api/people/change-requests')->assertOk()->assertJsonPath('meta.per_page', 50);
+        $this->actingAs($admin)->getJson('/api/people/change-requests?perPage=1')->assertOk()
+            ->assertJsonPath('meta.per_page', 1)->assertJsonPath('meta.total', 2)->assertJsonCount(1, 'data');
+        $this->actingAs($admin)->getJson('/api/people/change-requests?perPage=200')->assertOk()->assertJsonPath('meta.per_page', 200);
+        foreach (['perPage=0', 'perPage=abc', 'perPage=201'] as $query) {
+            $this->actingAs($admin)->getJson('/api/people/change-requests?'.$query)
+                ->assertUnprocessable()->assertJsonValidationErrors(['perPage']);
+        }
+
+        // People list (ListPeopleRequest): the same default and cast.
+        $this->actingAs($admin)->getJson('/api/people')->assertOk()->assertJsonPath('meta.per_page', 50);
+        $this->actingAs($admin)->getJson('/api/people?perPage=1')->assertOk()->assertJsonPath('meta.per_page', 1)->assertJsonCount(1, 'data');
+        $this->actingAs($admin)->getJson('/api/people?perPage=200')->assertOk()->assertJsonPath('meta.per_page', 200);
+    }
+
     public function test_manager_approves_and_changes_apply_once(): void
     {
         $org = $this->org();

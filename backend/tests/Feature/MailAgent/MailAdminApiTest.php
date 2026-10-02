@@ -40,6 +40,26 @@ final class MailAdminApiTest extends TestCase
         $this->actingAs($admin)->postJson('/api/mail/rules', ['pattern' => '@x.example.test', 'kind' => 'ignore'])->assertForbidden();
     }
 
+    /** ResolvesActor in MailAgentController: guests get 401 on writes; a rule is authored by the requesting superadmin. */
+    public function test_guest_401_on_writes_and_rule_author_is_the_current_user(): void
+    {
+        $this->postJson('/api/mail/sync')->assertUnauthorized();
+        $this->postJson('/api/mail/rules', ['pattern' => '@x.example.test', 'kind' => 'ignore'])->assertUnauthorized();
+        $this->patchJson('/api/mail/rules/1', ['kind' => 'ignore'])->assertUnauthorized();
+        $this->deleteJson('/api/mail/rules/1')->assertUnauthorized();
+        $this->postJson('/api/mail/unknown-senders/1/assign', ['kind' => 'candidate'])->assertUnauthorized();
+
+        $second = User::factory()->withRole(UserRole::Superadmin)->create();
+        $byHand = $this->actingAs($second)->postJson('/api/mail/rules', ['pattern' => '@news.example.test', 'kind' => 'newsletter'])
+            ->assertCreated()->json('data.id');
+        $sender = $this->unknown('person@author.example.test', 1);
+        $assigned = $this->actingAs($this->superadmin)->postJson('/api/mail/unknown-senders/'.$sender->id.'/assign', ['kind' => 'candidate'])
+            ->assertCreated()->json('data.id');
+
+        $this->assertSame($second->id, SenderRule::query()->findOrFail($byHand)->created_by);
+        $this->assertSame($this->superadmin->id, SenderRule::query()->findOrFail($assigned)->created_by);
+    }
+
     public function test_rules_crud(): void
     {
         $id = $this->actingAs($this->superadmin)->postJson('/api/mail/rules', ['pattern' => ' @Jobs.Example.Test ', 'kind' => 'job_board'])

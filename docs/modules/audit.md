@@ -112,6 +112,12 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** История изменений (`app-audit-history`) читается как лента на одной линии: каждое событие — «станция» (кольцо бренда) на вертикальном треке, время — моно. Таблица журнала: рамка от общего `.panel`, время — моно. Тест вида — `features/audit/audit.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
+### Общие хелперы Core (2026-10-02)
+- `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..100`, по умолчанию 20, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListAuditRequest`, `HistoryRequest` — вкладка «История» People/Recruiting);
+- gate `view-audit-log` задаётся `ModuleServiceProvider::defineRoleGate(…, [UserRole::Superadmin])`: только активный superadmin.
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
 ## Как проверить
 - `php artisan test tests/Feature/Audit tests/Unit/Audit`: запись и автор, маскирование, ключ без значения,
   смена роли, перевод по воронке, доступ к журналу и вкладкам, исключение анонимных модулей, хранение.

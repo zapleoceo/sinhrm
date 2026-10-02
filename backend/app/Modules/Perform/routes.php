@@ -14,7 +14,7 @@ use App\Modules\Perform\Providers\PerformServiceProvider;
 use Illuminate\Support\Facades\Route;
 
 // /api/perform/* — every active user; the services scope data (admin all, managers their subtree, employees own items).
-// Review setup and 1:1 template writes: gate perform-manage (superadmin, admin).
+// Review setup and 1:1 template writes: gate perform-manage (superadmin, admin, hr_manager).
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('one-on-ones', [OneOnOneController::class, 'index'])->name('perform.one-on-ones.index');
     Route::post('one-on-ones', [OneOnOneController::class, 'store'])->name('perform.one-on-ones.store');

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Integrations\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Integrations\Contracts\AiPolicy;
 use App\Modules\Integrations\Contracts\IntegrationDefinition;
 use App\Modules\Integrations\Http\Requests\SetStatusRequest;
@@ -24,6 +24,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 final class IntegrationsController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly IntegrationService $service,
         private readonly AiPolicyService $aiPolicy,
@@ -62,13 +64,5 @@ final class IntegrationsController
         $enabled = $this->aiPolicy->set($this->actor($request), $request->enabled());
 
         return new JsonResponse(['data' => ['enabled' => $enabled]]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

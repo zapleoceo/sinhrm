@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Reports;
+namespace Tests\Unit\Core;
 
-use App\Modules\Reports\Support\Csv;
+use App\Modules\Core\Support\Export\Csv;
 use PHPUnit\Framework\TestCase;
 
 final class CsvTest extends TestCase

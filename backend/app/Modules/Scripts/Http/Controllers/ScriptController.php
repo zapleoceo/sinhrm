@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Scripts\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Scripts\Http\Requests\SaveDraftRequest;
 use App\Modules\Scripts\Http\Requests\SaveScriptRequest;
 use App\Modules\Scripts\Http\Requests\TestScriptRequest;
@@ -21,6 +21,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 /** Scripts: reading for every active user, changes for superadmin/admin (route gate scripts-manage). */
 final class ScriptController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly ScriptService $scripts, private readonly EvaluationService $evaluations) {}
 
     /** ?archived=1 — include archived scripts. */
@@ -88,13 +90,5 @@ final class ScriptController
     private function full(Script $script): ScriptResource
     {
         return (new ScriptResource($this->scripts->find($script->id)))->withContent();
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

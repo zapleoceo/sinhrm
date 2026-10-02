@@ -57,6 +57,27 @@ final class IntegrationsApiTest extends TestCase
         $this->actingAs($blocked)->getJson('/api/integrations/telegram_business/logs')->assertForbidden();
     }
 
+    /**
+     * manage-integrations via ModuleServiceProvider::defineRoleGate([Superadmin]) on the list, and the actor
+     * (ResolvesActor) is the requesting superadmin, not some other one.
+     */
+    public function test_list_gate_and_actor_is_the_current_superadmin(): void
+    {
+        $blocked = User::factory()->withRole(UserRole::Superadmin)->blocked()->create();
+        $this->actingAs($blocked)->getJson('/api/integrations')->assertForbidden();
+        foreach ([UserRole::Admin, UserRole::HrManager] as $role) {
+            $this->actingAs(User::factory()->withRole($role)->create())->getJson('/api/integrations')->assertForbidden();
+        }
+
+        $second = User::factory()->withRole(UserRole::Superadmin)->create();
+        $this->actingAs($second)->getJson('/api/integrations')->assertOk()->assertJsonPath('ai_policy.enabled', false);
+        $this->actingAs($second)->postJson('/api/integrations/viber/status', ['status' => 'demo'])->assertOk();
+
+        $this->actingAs($this->superadmin)->getJson('/api/integrations/viber/logs')->assertOk()
+            ->assertJsonPath('data.0.message', 'status_changed')
+            ->assertJsonPath('data.0.context.user_id', $second->id);
+    }
+
     public function test_unknown_key_is_404(): void
     {
         $this->actingAs($this->superadmin)->putJson('/api/integrations/nope', [])->assertNotFound();

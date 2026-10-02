@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\People\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Http\Requests\SubmitChangeRequestRequest;
 use App\Modules\People\Http\Resources\ChangeRequestResource;
@@ -19,6 +20,8 @@ use Illuminate\Http\Request;
 /** Self-service: /api/me/employee (own profile incl. PII) and change requests. 404 no_employee without a link. */
 final class MyEmployeeController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly PeopleScope $scope,
         private readonly EmployeeService $employees,
@@ -42,13 +45,5 @@ final class MyEmployeeController
     private function own(User $actor): Employee
     {
         return $this->scope->employeeOf($actor) ?? throw PeopleException::noEmployee();
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

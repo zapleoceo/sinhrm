@@ -30,7 +30,7 @@ SinHRM — вручную, импорт, почта, расширение, Googl
 | `acquisition_channels` | `code (unique, lowercase), name, type, active` | удаления нет — выключение |
 | `channel_utm_rules` | `channel_id, utm_source?, utm_medium?, utm_campaign?, priority` | значения в нижнем регистре |
 | `acquisition_channel_costs` | `channel_id, period_start, period_end, amount, currency, note?` | |
-| `candidates` + `channel_id?`, `added_via?` | `added_via`: `manual\|import\|mail\|extension\|webhook\|sheets` | поле API `source` осталось (совместимость) |
+| `candidates` + `channel_id?`, `added_via?` | `added_via`: `manual\|import\|mail\|extension\|webhook\|sheets\|career_site` (`Enums/AddedVia`) | поле API `source` осталось (совместимость) |
 
 ### Определение канала (`Services/AcquisitionChannelService::resolve`, `Support/UtmMatcher`)
 Порядок: 1) явный `channel_id` (должен быть активным, иначе 422 `channel_inactive`); 2) правило UTM — подходит, если
@@ -46,6 +46,7 @@ SinHRM — вручную, импорт, почта, расширение, Googl
 | импорт из Google Sheets | `sheets` | колонки UTM / колонка «Джерело» |
 | расширение браузера | `extension` | сайт профиля (`linkedin`, `work_ua`, `djinni`, `dou`) |
 | прочий машинный импорт (`createOrMatch`) | `import` | UTM / источник |
+| отклик с публичной страницы вакансий `/jobs` (`CareerSiteService`) | `career_site` | источник `site` → канал с кодом `site` |
 | вебхук лид-формы | `webhook` | значение зарезервировано — такого входа пока нет |
 
 ### Миграция источника в каналы (`…200002_seed_channels_from_sources.php`, повторяемая)

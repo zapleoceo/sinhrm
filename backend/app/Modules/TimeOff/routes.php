@@ -9,7 +9,7 @@ use App\Modules\TimeOff\Http\Controllers\SettingsController;
 use App\Modules\TimeOff\Providers\TimeOffServiceProvider;
 use Illuminate\Support\Facades\Route;
 
-// /api/timeoff/*. Settings writes: gate timeoff-manage (superadmin, admin). Requests and balances: PeopleScope
+// /api/timeoff/*. Settings writes: gate timeoff-manage (superadmin, admin, hr_manager). Requests and balances: PeopleScope
 // (self, managers above, admins) checked in the services/resolver.
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('types', [SettingsController::class, 'types'])->name('timeoff.types.index');
