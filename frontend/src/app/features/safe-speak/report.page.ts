@@ -68,6 +68,7 @@ import { SafeSpeakThread } from './thread';
       }
     } @else {
       <form class="panel form" (submit)="$event.preventDefault(); open()">
+        <p class="muted small" data-testid="code-hint">{{ 'safeSpeak.codeHint' | transloco }}</p>
         <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'safeSpeak.code' | transloco }}</mat-label>
           <input matInput autocomplete="off" maxlength="40" [value]="code()" (input)="code.set(val($event))" placeholder="XXXX-XXXX-XXXX-XXXX" />
