@@ -255,18 +255,25 @@
 
     <!-- Versions -->
     <mat-tab [label]="'scripts.tabs.versions' | transloco">
-      <table class="versions">
+      <!-- Versions: sort and filter in the headers (core/ui/table), URL ver_sort / ver_<column>; drafts have no
+           publish date, so they sort last by it. -->
+      <div class="versions-scroll">
+      <table class="app-table versions" [appTableSort]="versions.sort()" (appTableSortChange)="versions.setSort($event)">
         <thead>
           <tr>
-            <th scope="col">{{ 'scripts.versions.version' | transloco }}</th>
-            <th scope="col">{{ 'scripts.versions.published' | transloco }}</th>
-            <th scope="col">{{ 'scripts.versions.author' | transloco }}</th>
-            <th scope="col">{{ 'scripts.versions.steps' | transloco }}</th>
-            <th scope="col"></th>
+            <th scope="col" app-column-header key="version" [label]="'scripts.versions.version' | transloco"
+              [filter]="numberRange" [filterValue]="versions.filterValue('version')" (filterChange)="versions.setFilter('version', $event)"></th>
+            <th scope="col" app-column-header key="published" [label]="'scripts.versions.published' | transloco"
+              [filter]="dateRange" [filterValue]="versions.filterValue('published')" (filterChange)="versions.setFilter('published', $event)"></th>
+            <th scope="col" app-column-header key="author" [label]="'scripts.versions.author' | transloco"
+              [filter]="textFilter" [filterValue]="versions.filterValue('author')" (filterChange)="versions.setFilter('author', $event)"></th>
+            <th scope="col" app-column-header key="steps" [label]="'scripts.versions.steps' | transloco"
+              [filter]="numberRange" [filterValue]="versions.filterValue('steps')" (filterChange)="versions.setFilter('steps', $event)"></th>
+            <th scope="col" app-column-header key="actions" [sortable]="false" [label]="'table.actions' | transloco"></th>
           </tr>
         </thead>
         <tbody>
-          @for (v of store.versions(); track v.id) {
+          @for (v of versions.rows(); track v.id) {
             <tr [class.active]="v.id === store.activeVersionId()">
               <th scope="row">v{{ v.version }}</th>
               <td>
@@ -286,9 +293,14 @@
                 }
               </td>
             </tr>
+          } @empty {
+            @if (store.versions().length) {
+              <tr><td colspan="5" class="muted">{{ 'table.noMatches' | transloco }}</td></tr>
+            }
           }
         </tbody>
       </table>
+      </div>
     </mat-tab>
   </mat-tab-group>
 }

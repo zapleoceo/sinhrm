@@ -1,4 +1,5 @@
 import { A11yModule } from '@angular/cdk/a11y';
+import { NgTemplateOutlet } from '@angular/common';
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import {
   ChangeDetectionStrategy,
@@ -36,26 +37,30 @@ const POSITIONS: ConnectedPosition[] = [
  * inside `<table [appTableSort]="sort()" (appTableSortChange)="…">`.
  * The title is a button (Enter/Space sort; aria-sort on the th); the funnel button opens a small dialog with the
  * filter field (text / choice / range); Esc closes it and returns focus. A dot marks an active filter.
+ * Content between the tags (e.g. a channel icon) is shown before the title, inside the sort button.
  */
 @Component({
   // An attribute on the real <th>: aria-sort and the column name must sit on the header cell itself (an element
   // inside it would break the table semantics), like Material's th[mat-sort-header].
   // eslint-disable-next-line @angular-eslint/component-selector
   selector: 'th[app-column-header]',
-  imports: [A11yModule, CdkConnectedOverlay, CdkOverlayOrigin, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatRadioModule, TranslocoPipe],
+  imports: [A11yModule, NgTemplateOutlet, CdkConnectedOverlay, CdkOverlayOrigin, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatRadioModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   // aria-label = the plain title, so a screen reader names the column «Посада», not «Посада, Фільтр…» (the buttons
   // inside keep their own names).
   host: { class: 'app-th', '[attr.aria-sort]': 'ariaSortValue()', '[attr.aria-label]': 'label()' },
   template: `
+    <!-- Optional lead content (an icon before the title): projected once, shown in either title variant. -->
+    <ng-template #lead><ng-content /></ng-template>
     <span class="cell">
       @if (canSort()) {
         <button type="button" class="title" (click)="toggleSort()">
+          <ng-container [ngTemplateOutlet]="lead" />
           <span class="text">{{ label() }}</span>
           <mat-icon class="arrow" aria-hidden="true" [attr.data-dir]="dir()">{{ dir() === 'desc' ? 'arrow_downward' : dir() === 'asc' ? 'arrow_upward' : 'swap_vert' }}</mat-icon>
         </button>
       } @else {
-        <span class="title static">{{ label() }}</span>
+        <span class="title static"><ng-container [ngTemplateOutlet]="lead" />{{ label() }}</span>
       }
       @if (filter()) {
         <button

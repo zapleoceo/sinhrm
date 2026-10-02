@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of } from 'rxjs';
 import { FunnelRow, TouchesRow } from '../recruiting.model';
@@ -17,6 +18,7 @@ function render(rows: FunnelRow[]): { el: HTMLElement; detect: () => void } {
   TestBed.configureTestingModule({
     imports: [ReportsPage, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     providers: [
+      provideRouter([]),
       provideNativeDateAdapter(),
       {
         provide: RecruitingService,
@@ -87,6 +89,84 @@ describe('ReportsPage funnel cards', () => {
     const { el } = render([]);
     const footers = [...el.querySelectorAll('tfoot tr')].map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent?.trim()));
     expect(footers).toEqual([['5', '1']]);
+  });
+});
+
+describe('ReportsPage tables: header sort and filter (core/ui/table)', () => {
+  async function open(url: string): Promise<{ el: HTMLElement; router: Router; detect: () => Promise<void> }> {
+    TestBed.configureTestingModule({
+      imports: [ReportsPage, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [
+        provideRouter([]),
+        provideNativeDateAdapter(),
+        {
+          provide: RecruitingService,
+          useValue: {
+            touchesReport: () =>
+              of({
+                range,
+                rows: [
+                  { author_id: 1, author_name: 'Ann', channel: 'telegram', via_product: true, count: 2 },
+                  { author_id: 2, author_name: 'Bob', channel: 'email', via_product: false, count: 5 },
+                ],
+                totals: { total: 7, via_product: 2, captured: 5 },
+              }),
+            funnelReport: () => of({ range, rows: [], totals: { total: 0 } }),
+            sourcesReport: () => of({ range, rows: [{ source: 'work_ua', candidates: 3, hired: 1 }, { source: 'referral', candidates: 2, hired: 0 }], totals: { candidates: 5, hired: 1 } }),
+            rejectReasonsReport: () =>
+              of({
+                range,
+                rows: [
+                  { reject_reason_id: 1, name: 'Salary', count: 4 },
+                  { reject_reason_id: 2, name: 'Accepted another offer', count: 1 },
+                ],
+                totals: { total: 5 },
+              }),
+          },
+        },
+      ],
+    });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl(url);
+    const fixture = TestBed.createComponent(ReportsPage);
+    fixture.detectChanges();
+    const detect = async (): Promise<void> => {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    return { el: fixture.nativeElement as HTMLElement, router, detect };
+  }
+
+  const table = (el: HTMLElement, index: number): HTMLTableElement => el.querySelectorAll('table')[index] as HTMLTableElement;
+  const rowNames = (t: HTMLTableElement): string[] => [...t.querySelectorAll('tbody th')].map((th) => th.textContent?.trim() ?? '');
+
+  it('default arrows follow the API order: touches by total, reasons by count; sources have none', async () => {
+    const { el } = await open('/');
+    const sorted = (t: HTMLTableElement): string[] => [...t.querySelectorAll('thead th[aria-sort]:not([aria-sort="none"])')].map((th) => th.getAttribute('aria-label') ?? '');
+    expect(sorted(table(el, 0))).toEqual(['recruiting.reports.total']);
+    expect(sorted(table(el, 1))).toEqual([]);
+    expect(sorted(table(el, 2))).toEqual(['recruiting.reports.count']);
+    expect(rowNames(table(el, 0))).toEqual(['Bob', 'Ann']);
+    // Channel headers keep their icon inside the sort button.
+    expect(table(el, 0).querySelector('thead th button.title app-channel-icon')).not.toBeNull();
+  });
+
+  it('a click sorts one table only (prefixed URL) and the «Разом» row stays last', async () => {
+    const { el, router, detect } = await open('/');
+    const reasons = table(el, 2);
+    const countTitle = reasons.querySelectorAll('thead th')[1].querySelector('button.title') as HTMLButtonElement;
+    countTitle.click(); // count desc (default) → asc
+    await detect();
+    expect(router.url).toBe('/?rej_sort=count&rej_dir=asc');
+    expect(rowNames(reasons)).toEqual(['Accepted another offer', 'Salary']);
+    expect(reasons.querySelector('tfoot th')?.textContent?.trim()).toBe('recruiting.reports.grandTotal');
+    expect(rowNames(table(el, 0))).toEqual(['Bob', 'Ann']);
+  });
+
+  it('address → view: recruiter filter and source sort come from the URL', async () => {
+    const { el } = await open('/?tch_recruiter=an&src_sort=candidates&src_dir=asc');
+    expect(rowNames(table(el, 0))).toEqual(['Ann']);
+    expect([...table(el, 1).querySelectorAll('tbody td.barcell .num')].map((n) => n.textContent?.trim())).toEqual(['2', '3']);
   });
 });
 

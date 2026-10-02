@@ -35,20 +35,24 @@
         {{ 'recruiting.reports.touchesTotals' | transloco: { total: t.totals.total, via: t.totals.via_product, captured: t.totals.captured } }}
       </p>
     }
-    <table>
+    <!-- Header sort / filter: core/ui/table; URL tch_*, sources src_*, reasons rej_*. «Разом» stays in tfoot. -->
+    <div class="scroll">
+    <table class="app-table" [appTableSort]="touches.sort()" (appTableSortChange)="touches.setSort($event)">
       <thead>
         <tr>
-          <th scope="col">{{ 'recruiting.reports.recruiter' | transloco }}</th>
+          <th scope="col" app-column-header key="recruiter" [label]="'recruiting.reports.recruiter' | transloco"
+            [filter]="textFilter" [filterValue]="touches.filterValue('recruiter')" (filterChange)="touches.setFilter('recruiter', $event)"></th>
           @for (c of channels; track c) {
-            <th scope="col" class="num"><app-channel-icon [key]="c" /> {{ 'recruiting.channel.' + c | transloco }}</th>
+            <th scope="col" class="num" app-column-header [key]="c" [label]="'recruiting.channel.' + c | transloco"><app-channel-icon [key]="c" /></th>
           }
-          <th scope="col" class="num">{{ 'recruiting.card.viaProduct' | transloco }}</th>
-          <th scope="col" class="num">{{ 'recruiting.card.captured' | transloco }}</th>
-          <th scope="col">{{ 'recruiting.reports.total' | transloco }}</th>
+          <th scope="col" class="num" app-column-header key="via" [label]="'recruiting.card.viaProduct' | transloco"></th>
+          <th scope="col" class="num" app-column-header key="captured" [label]="'recruiting.card.captured' | transloco"></th>
+          <th scope="col" app-column-header key="total" [label]="'recruiting.reports.total' | transloco"
+            [filter]="numberRange" [filterValue]="touches.filterValue('total')" (filterChange)="touches.setFilter('total', $event)"></th>
         </tr>
       </thead>
       <tbody>
-        @for (r of store.recruiters(); track r.name) {
+        @for (r of touches.rows(); track r.name) {
           <tr>
             <th scope="row">{{ r.name }}</th>
             @for (c of channels; track c) {
@@ -59,7 +63,7 @@
             <td class="barcell"><span class="bar" [style.width.%]="bar(r.total, maxRecruiter())"></span><span class="num">{{ r.total }}</span></td>
           </tr>
         } @empty {
-          <tr><td class="muted" [attr.colspan]="channels.length + 4">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
+          <tr><td class="muted" [attr.colspan]="channels.length + 4">{{ (store.recruiters().length ? 'table.noMatches' : 'recruiting.reports.empty') | transloco }}</td></tr>
         }
       </tbody>
       @if (store.recruiters().length >= 2) {
@@ -77,27 +81,32 @@
         </tfoot>
       }
     </table>
+    </div>
   </section>
 
   <section class="panel card">
     <h2>{{ 'recruiting.reports.sources' | transloco }}</h2>
-    <table>
+    <div class="scroll">
+    <table class="app-table" [appTableSort]="sources.sort()" (appTableSortChange)="sources.setSort($event)">
       <thead>
         <tr>
-          <th scope="col">{{ 'recruiting.candidates.fields.source' | transloco }}</th>
-          <th scope="col">{{ 'recruiting.reports.candidates' | transloco }}</th>
-          <th scope="col" class="num">{{ 'recruiting.reports.hired' | transloco }}</th>
+          <th scope="col" app-column-header key="source" [label]="'recruiting.candidates.fields.source' | transloco"
+            [filter]="sourceFilter()" [filterValue]="sources.filterValue('source')" (filterChange)="sources.setFilter('source', $event)"></th>
+          <th scope="col" app-column-header key="candidates" [label]="'recruiting.reports.candidates' | transloco"
+            [filter]="numberRange" [filterValue]="sources.filterValue('candidates')" (filterChange)="sources.setFilter('candidates', $event)"></th>
+          <th scope="col" class="num" app-column-header key="hired" [label]="'recruiting.reports.hired' | transloco"
+            [filter]="numberRange" [filterValue]="sources.filterValue('hired')" (filterChange)="sources.setFilter('hired', $event)"></th>
         </tr>
       </thead>
       <tbody>
-        @for (r of store.sources()?.rows ?? []; track r.source) {
+        @for (r of sources.rows(); track r.source) {
           <tr>
             <th scope="row"><app-channel-icon [key]="r.source" /> {{ 'recruiting.source.' + r.source | transloco }}</th>
             <td class="barcell"><span class="bar" [style.width.%]="bar(r.candidates, maxSource())"></span><span class="num">{{ r.candidates }}</span></td>
             <td class="num">{{ r.hired }}</td>
           </tr>
         } @empty {
-          <tr><td class="muted" colspan="3">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
+          <tr><td class="muted" colspan="3">{{ (store.sources()?.rows?.length ? 'table.noMatches' : 'recruiting.reports.empty') | transloco }}</td></tr>
         }
       </tbody>
       @if (store.sources(); as s) {
@@ -112,19 +121,29 @@
         }
       }
     </table>
+    </div>
   </section>
 
   <section class="panel card">
     <h2>{{ 'recruiting.reports.rejectReasons' | transloco }}</h2>
-    <table>
+    <div class="scroll">
+    <table class="app-table" [appTableSort]="reasons.sort()" (appTableSortChange)="reasons.setSort($event)">
+      <thead>
+        <tr>
+          <th scope="col" app-column-header key="reason" [label]="'recruiting.reports.reason' | transloco"
+            [filter]="textFilter" [filterValue]="reasons.filterValue('reason')" (filterChange)="reasons.setFilter('reason', $event)"></th>
+          <th scope="col" app-column-header key="count" [label]="'recruiting.reports.count' | transloco"
+            [filter]="numberRange" [filterValue]="reasons.filterValue('count')" (filterChange)="reasons.setFilter('count', $event)"></th>
+        </tr>
+      </thead>
       <tbody>
-        @for (r of store.rejectReasons()?.rows ?? []; track r.reject_reason_id) {
+        @for (r of reasons.rows(); track r.reject_reason_id) {
           <tr>
             <th scope="row">{{ r.name ?? '—' }}</th>
             <td class="barcell"><span class="bar danger" [style.width.%]="bar(r.count, maxReason())"></span><span class="num">{{ r.count }}</span></td>
           </tr>
         } @empty {
-          <tr><td class="muted" colspan="2">{{ 'recruiting.reports.empty' | transloco }}</td></tr>
+          <tr><td class="muted" colspan="2">{{ (store.rejectReasons()?.rows?.length ? 'table.noMatches' : 'recruiting.reports.empty') | transloco }}</td></tr>
         }
       </tbody>
       @if (store.rejectReasons(); as rr) {
@@ -138,6 +157,7 @@
         }
       }
     </table>
+    </div>
   </section>
 
   <section class="funnel wide">

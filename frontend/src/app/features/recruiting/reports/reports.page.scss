@@ -7,9 +7,12 @@
 h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.5rem; }
 h3 { font: var(--mat-sys-title-small); margin: 1rem 0 0.25rem; }
 
-table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
-thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); }
+/* Tables: the shared .app-table look; row headers (recruiter, source, reason) read like cells. */
+.scroll { overflow-x: auto; }
+.app-table tbody th, .app-table tfoot th { font: inherit; color: inherit; white-space: normal; padding: 0.6rem 1rem; }
+.app-table tbody th { border-bottom: var(--app-border-w) solid var(--app-track); }
+.app-table tbody tr:last-child th { border-bottom: 0; }
+.app-table tfoot td { padding: 0.6rem 1rem; }
 .num { text-align: right; font-family: var(--app-font-mono); font-variant-numeric: tabular-nums; }
 
 .barcell { display: flex; align-items: center; gap: 0.5rem; min-width: 8rem; }
@@ -18,7 +21,7 @@ thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weig
 .bar.danger, .bar[data-kind='closed'] { background: var(--app-stage-closed); }
 .bar[data-kind='hire'] { background: var(--app-stage-hire); }
 
-tfoot th, tfoot td { font-weight: 700; border-top: var(--app-border-w) solid var(--app-border); border-bottom: 0; background: var(--app-table-head); }
+.app-table tfoot th, .app-table tfoot td { font-weight: 700; border-top: var(--app-border-w) solid var(--app-border); border-bottom: 0; background: var(--app-table-head); }
 
 .funnel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; }
 .funnel-head h2 { margin: 0; }

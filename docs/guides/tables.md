@@ -21,8 +21,12 @@
      `% _ \`. Скоупы доступа (филиалы, уволенные, роли) не трогаем — сортировка их не расширяет. Feature-тест: asc, desc,
      фильтр, недопустимая колонка → 422, `perPage` строкой. Образец — `People/Http/Requests/ListPeopleRequest.php`,
      `People/Repositories/EloquentEmployeeRepository.php`, `tests/Feature/People/PeopleSortFilterApiTest.php`.
-   - **без пагинации** (все строки уже пришли) → сортировать и фильтровать на фронте: `computed` от строк, `sort` и
-     фильтров (сравнение строк — `localeCompare` с языком интерфейса, пустые — в конце).
+   - **без пагинации** (все строки уже пришли) → сортировать и фильтровать на фронте: `ClientTable` из
+     `core/ui/table/client-table.ts` (`computed` от строк, сортировки и фильтров из адреса; сравнение строк — по языку
+     интерфейса, пустые — в конце, равные — в порядке API). Образец — `features/desk/queue.page.ts` (категории),
+     несколько таблиц на странице — `features/recruiting/reports/reports.page.ts` (у каждой свой префикс адреса),
+     колонки из данных — `features/reports/report-table.ts`. Строка итога («Разом») — в `tfoot`, в сортировке не
+     участвует.
 2. **Состояние в адресе:** `providers: [TableUrlState]`, функция «адрес → запрос» (как `peopleQueryFromParams`: мусор из
    адреса отбрасывается, а не уходит в API), в `ngOnInit` — `url.watch(parse, q => store.apply(q))`; изменения — только
    через `url.update({...})` (страница сама вернётся на 1; листание — `{ paging: true }`). Store не грузит повторно тот же
@@ -72,17 +76,17 @@
 | 11 | `/time/approvals` | `time/time-approvals.page.ts` | табели на погодження: сотрудник, неделя, норма, факт, переработка | клиентская | — | средний |
 | 12 | `/time/team` | `time/time-team.page.ts` | неделя команды: сотрудник, статус, норма, факт, переработка, недоработка, отсутствие | клиентская | неделя в API | средний |
 | 13 | `/admin/perform/reviews` | `perform/reviews/review-admin.page.ts` | циклы оценивания: название, период, статус, прогресс (без `thead`) | клиентская | — | средний |
-| 14 | `/reports/catalog/:key`, `/reports/builder` | `reports/report-table.ts` | универсальный отчёт: колонки из описания отчёта, итог | клиентская | фильтры отчёта в API | средний (одна правка — все отчёты) |
-| 15 | `/desk/queue` | `desk/queue.page.ts` (таблица 2) | категории обращений: название, сроки, активна | клиентская | — | низкий |
-| 16 | `/people/:id`, `/me` → Компенсація | `people/profile/compensation.tab.ts` | история оплаты (без `thead`) | клиентская | — | низкий |
-| 17 | `/people/:id`, `/me` → Продуктивність | `perform/profile/performance.tab.ts` | KPI (без `thead`) | клиентская | — | низкий |
-| 18 | `/admin/pulse` | `pulse/surveys/surveys.page.ts` | волны опроса (без `thead`) | клиентская | опрос слева | низкий |
-| 19 | `/pulse/waves/:id/results` | `pulse/results/wave-results.page.ts` (таблица 1) | ответы по сегментам | клиентская | сегмент в API | низкий |
-| 20 | `/vacancies/:id` (панель источников) | `recruiting/board/vacancy-sources.ts` | источники кандидатов вакансии: канал, способ, количество, доля | клиентская | — | низкий |
-| 21 | `/reports` | `recruiting/reports/reports.page.html` (касания) | рекрутер × канал, итог | клиентская | период в API; уже по убыванию итога | низкий (только сортировка) |
-| 22 | `/reports` | `recruiting/reports/reports.page.html` (источники) | источник, кандидаты, наняты, итог | клиентская | период в API | низкий |
-| 23 | `/admin/scripts/:id` → Версії | `scripts/editor/script-editor.page.html` | версии скрипта | клиентская | — | низкий |
-| 24 | `/reports` | `recruiting/reports/reports.page.html` (причины отказа, без `thead`) | причина, количество | клиентская | период в API | — |
+| 14 | `/reports/catalog/:key`, `/reports/builder` | `reports/report-table.ts` | универсальный отчёт: колонки из описания отчёта, итог | клиентская | **готово** (2026-10-02): все колонки сортируют, фильтр по типу; «Разом» внизу; `r_*` | средний (одна правка — все отчёты) |
+| 15 | `/desk/queue` | `desk/queue.page.ts` (таблица 2) | категории обращений: название, сроки, активна | клиентская | **готово**: `cat_*` | низкий |
+| 16 | `/people/:id`, `/me` → Компенсація | `people/profile/compensation.tab.ts` | история оплаты (без `thead`) | клиентская | **готово**: строка заголовков, колонки сумма/валюта/период; `comp_*` | низкий |
+| 17 | `/people/:id`, `/me` → Продуктивність | `perform/profile/performance.tab.ts` | KPI (без `thead`) | клиентская | **готово**: строка заголовков; `kpi_*` | низкий |
+| 18 | `/admin/pulse` | `pulse/surveys/surveys.page.ts` | волны опроса (без `thead`) | клиентская | **готово**: строка заголовков; опрос слева остаётся; `wave_*` | низкий |
+| 19 | `/pulse/waves/:id/results` | `pulse/results/wave-results.page.ts` (таблица 1) | ответы по сегментам | клиентская | **готово**: сегмент в API остаётся; `seg_*` | низкий |
+| 20 | `/vacancies/:id` (панель источников) | `recruiting/board/vacancy-sources.ts` | источники кандидатов вакансии: канал, способ, количество, доля | клиентская | **готово**: `src_*`, ссылка раскрывает панель | низкий |
+| 21 | `/reports` | `recruiting/reports/reports.page.html` (касания) | рекрутер × канал, итог | клиентская | **готово**: период в API; по умолчанию по убыванию итога; `tch_*` | низкий (только сортировка) |
+| 22 | `/reports` | `recruiting/reports/reports.page.html` (источники) | источник, кандидаты, наняты, итог | клиентская | **готово**: `src_*` | низкий |
+| 23 | `/admin/scripts/:id` → Версії | `scripts/editor/script-editor.page.html` | версии скрипта | клиентская | **готово**: `ver_*` | низкий |
+| 24 | `/reports` | `recruiting/reports/reports.page.html` (причины отказа, без `thead`) | причина, количество | клиентская | **готово**: строка заголовков; `rej_*` | низкий |
 | 25 | `/admin/modules` | `core/modules.page.ts` | модуль × роль (переключатели) | — | — | — (форма) |
 | 26 | `/admin/sheets-import` | `google-workspace/sheets-import.page.ts` | предпросмотр строк таблицы Google | — | — | — (предпросмотр) |
 | 27 | `/` | `overview/dashboard.page.html` | виджет воронки | — | — | — (виджет) |

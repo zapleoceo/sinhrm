@@ -1,5 +1,9 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ClientTable, NUMBER_RANGE, TEXT_FILTER } from '../../../core/ui/table/client-table';
+import { ColumnHeader } from '../../../core/ui/table/column-header';
+import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
+import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -20,7 +24,21 @@ import { toIsoDate } from '../../../core/date/iso-date';
  */
 @Component({
   selector: 'app-performance-tab',
-  imports: [DatePipe, FormsModule, MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule, RouterLink, TranslocoPipe, ReviewResults],
+  imports: [
+    DatePipe,
+    FormsModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    RouterLink,
+    TranslocoPipe,
+    ReviewResults,
+    TableSortDirective,
+    ColumnHeader,
+  ],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="grid">
@@ -40,20 +58,35 @@ import { toIsoDate } from '../../../core/date/iso-date';
 
       <section class="panel box">
         <h3>{{ 'perform.kpis.title' | transloco }}</h3>
-        <table class="kpis">
-          <tbody>
-            @for (k of kpis(); track k.id) {
+        <!-- KPI: sort and filter in the headers (core/ui/table), URL kpi_sort / kpi_<column>. -->
+        <div class="scroll">
+          <table class="app-table kpis" [appTableSort]="kpiTable.sort()" (appTableSortChange)="kpiTable.setSort($event)">
+            <thead>
               <tr>
-                <th scope="row">{{ k.metric }}</th>
-                <td class="muted">{{ k.period }}</td>
-                <td class="app-num">{{ k.actual ?? '—' }} / {{ k.target }} {{ k.unit ?? '' }}</td>
-                <td class="app-num">{{ k.attainment === null ? '—' : k.attainment + '%' }}</td>
+                <th scope="col" app-column-header key="metric" [label]="'perform.kpis.metric' | transloco"
+                  [filter]="textFilter" [filterValue]="kpiTable.filterValue('metric')" (filterChange)="kpiTable.setFilter('metric', $event)"></th>
+                <th scope="col" app-column-header key="period" [label]="'perform.fields.period' | transloco"
+                  [filter]="textFilter" [filterValue]="kpiTable.filterValue('period')" (filterChange)="kpiTable.setFilter('period', $event)"></th>
+                <th scope="col" app-column-header key="actual" [label]="'perform.kpis.result' | transloco"
+                  [filter]="numberRange" [filterValue]="kpiTable.filterValue('actual')" (filterChange)="kpiTable.setFilter('actual', $event)"></th>
+                <th scope="col" app-column-header key="attainment" [label]="'perform.kpis.attainment' | transloco"
+                  [filter]="numberRange" [filterValue]="kpiTable.filterValue('attainment')" (filterChange)="kpiTable.setFilter('attainment', $event)"></th>
               </tr>
-            } @empty {
-              <tr><td class="muted">{{ 'perform.kpis.empty' | transloco }}</td></tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (k of kpiTable.rows(); track k.id) {
+                <tr>
+                  <th scope="row">{{ k.metric }}</th>
+                  <td class="muted">{{ k.period }}</td>
+                  <td class="app-num">{{ k.actual ?? '—' }} / {{ k.target }} {{ k.unit ?? '' }}</td>
+                  <td class="app-num">{{ k.attainment === null ? '—' : k.attainment + '%' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="4" class="muted">{{ (kpis().length ? 'table.noMatches' : 'perform.kpis.empty') | transloco }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
         @if (canManage()) {
           <form class="filters" (ngSubmit)="addKpi()">
             <mat-form-field subscriptSizing="dynamic" class="grow">
@@ -143,9 +176,10 @@ import { toIsoDate } from '../../../core/date/iso-date';
     @media (prefers-reduced-motion: reduce) { .bar span { animation: none; } }
     .bar span[data-tone='danger'] { background: var(--app-danger); }
     .bar span[data-tone='warning'] { background: var(--app-warning); }
-    .kpis { width: 100%; border-collapse: collapse; }
-    .kpis th, .kpis td { text-align: left; padding: 0.4rem 0.5rem 0.4rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
-    .kpis tr:last-child th, .kpis tr:last-child td { border-bottom: 0; }
+    .scroll { overflow-x: auto; }
+    /* Row headers (metric) read like cells; the column headers keep the .app-table look. */
+    .kpis tbody th { font: inherit; color: inherit; white-space: normal; padding: 0.6rem 1rem; border-bottom: var(--app-border-w) solid var(--app-track); }
+    .kpis tbody tr:last-child th { border-bottom: 0; }
     .app-num { font-size: 0.8rem; }
     .plan { margin-bottom: 0.75rem; display: flex; flex-direction: column; }
     .plan ul { margin: 0.25rem 0; padding-left: 1.25rem; }
@@ -167,6 +201,18 @@ export class PerformanceTab {
   protected readonly meetings = signal<OneOnOne[]>([]);
   protected readonly results = signal<ReviewResult[]>([]);
   protected readonly tone = progressTone;
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberRange = NUMBER_RANGE;
+  protected readonly kpiTable = new ClientTable<Kpi>({
+    rows: this.kpis,
+    prefix: 'kpi',
+    columns: [
+      { key: 'metric', value: (k) => k.metric, filter: 'text' },
+      { key: 'period', value: (k) => k.period, filter: 'text' },
+      { key: 'actual', value: (k) => k.actual, filter: 'number' },
+      { key: 'attainment', value: (k) => k.attainment, filter: 'number' },
+    ],
+  });
   protected metric = '';
   protected period = toIsoDate(new Date()).slice(0, 7);
   protected target: number | null = null;

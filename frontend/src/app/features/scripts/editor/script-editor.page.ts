@@ -18,9 +18,13 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { EvaluationView } from '../evaluation/evaluation-view';
 import { canManageScripts } from '../scripts.access';
-import { FOLLOWUP_CONDITIONS, NextStepPatterns, PREVIEW_VALUES, ScriptStep, TEMPLATE_VARIABLES, renderTemplate, splitList, unknownTokens } from '../scripts.model';
+import { FOLLOWUP_CONDITIONS, NextStepPatterns, ScriptVersion, PREVIEW_VALUES, ScriptStep, TEMPLATE_VARIABLES, renderTemplate, splitList, unknownTokens } from '../scripts.model';
 import { scriptsErrorKey } from '../scripts.service';
 import { ScriptEditorStore } from './script-editor.store';
+import { ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER } from '../../../core/ui/table/client-table';
+import { ColumnHeader } from '../../../core/ui/table/column-header';
+import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
+import { TableUrlState } from '../../../core/ui/table/table-url-state';
 
 /**
  * Script editor (Admin → Скрипти → script): tabs for steps (drag to reorder), objections, message templates
@@ -48,8 +52,10 @@ import { ScriptEditorStore } from './script-editor.store';
     RouterLink,
     TranslocoPipe,
     EvaluationView,
+    TableSortDirective,
+    ColumnHeader,
   ],
-  providers: [ScriptEditorStore],
+  providers: [ScriptEditorStore, TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './script-editor.page.html',
   styleUrl: './script-editor.page.scss',
@@ -67,6 +73,21 @@ export class ScriptEditorPage {
   protected readonly canEdit = computed(() => canManageScripts(this.auth.user()?.roles ?? []) && !this.store.script()?.archived);
   protected readonly testText = signal('');
   protected readonly testVersion = signal<'draft' | 'active'>('draft');
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberRange = NUMBER_RANGE;
+  protected readonly dateRange = DATE_RANGE;
+  /** Versions tab: API order is newest version first. */
+  protected readonly versions = new ClientTable<ScriptVersion>({
+    rows: this.store.versions,
+    prefix: 'ver',
+    defaultSort: { key: 'version', dir: 'desc' },
+    columns: [
+      { key: 'version', value: (v) => v.version, filter: 'number' },
+      { key: 'published', value: (v) => (v.is_draft ? null : v.published_at), filter: 'date' },
+      { key: 'author', value: (v) => v.author?.name, filter: 'text' },
+      { key: 'steps', value: (v) => v.content.steps.length, filter: 'number' },
+    ],
+  });
 
   constructor() {
     effect(() => this.store.load(this.id()));
