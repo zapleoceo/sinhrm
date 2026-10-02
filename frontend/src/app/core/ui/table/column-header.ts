@@ -4,6 +4,7 @@ import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angul
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -19,11 +20,16 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
-import { TranslocoPipe } from '@jsverse/transloco';
-import { ColumnFilter, FilterOption, FilterValue, RangeValue, ariaSort, isFilterActive } from './table-state';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { ColumnFilter, FilterValue, RangeValue, ariaSort, isFilterActive } from './table-state';
 import { TableSortDirective } from './table-sort.directive';
+import { LIVE_FILTER_DEBOUNCE_MS, TableUrlState } from './table-url-state';
 
 let nextId = 0;
+
+/** A choice list longer than this gets a search field over its options. */
+export const SELECT_SEARCH_MIN = 8;
 
 const POSITIONS: ConnectedPosition[] = [
   { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
@@ -36,7 +42,11 @@ const POSITIONS: ConnectedPosition[] = [
  * `<th scope="col" app-column-header key="position" [label]="…" [filter]="…" [filterValue]="…" (filterChange)="…">`
  * inside `<table [appTableSort]="sort()" (appTableSortChange)="…">`.
  * The title is a button (Enter/Space sort; aria-sort on the th); the funnel button opens a small dialog with the
- * filter field (text / choice / range); Esc closes it and returns focus. A dot marks an active filter.
+ * filter field (text / choice / range). Filters are live, there is no «apply»: text follows the typing (contains,
+ * any case), a choice applies on click, a range on change / blur. Through the page's `TableUrlState` the URL (and a
+ * server request) follows after LIVE_FILTER_DEBOUNCE_MS; without it the header debounces its output itself.
+ * Enter or Esc close the dialog keeping the value and return focus; «Очистити» removes it. A dot marks an active
+ * filter; a long choice list (> SELECT_SEARCH_MIN options) gets a search field over its options.
  * Content between the tags (e.g. a channel icon) is shown before the title, inside the sort button.
  */
 @Component({
@@ -91,21 +101,35 @@ const POSITIONS: ConnectedPosition[] = [
           (overlayOutsideClick)="onOutsideClick($event)"
           (overlayKeydown)="onKeydown($event)"
           (attach)="focusFirstField()"
-          (detach)="open.set(false)"
+          (detach)="onDetach()"
         >
-          <form #panel class="popover" role="dialog" [id]="panelId" [attr.aria-label]="'table.filter.title' | transloco: { column: label() }" cdkTrapFocus (submit)="apply($event)">
+          <form #panel class="popover" role="dialog" [id]="panelId" [attr.aria-label]="'table.filter.title' | transloco: { column: label() }" cdkTrapFocus
+            (submit)="commit($event)" (keydown.enter)="onEnter($event)">
             @switch (filter()?.type) {
               @case ('text') {
                 <mat-form-field subscriptSizing="dynamic">
                   <mat-label>{{ 'table.filter.contains' | transloco }}</mat-label>
-                  <input matInput #text type="search" autocomplete="off" maxlength="100" [value]="draftText()" (input)="draftText.set(text.value)" />
+                  <!-- Live: the list follows the typing (TableUrlState.live → one URL change / request after a pause). -->
+                  <input matInput #text type="search" autocomplete="off" maxlength="100" [value]="draftText()"
+                    [attr.aria-label]="'table.filter.field' | transloco: { column: label() }"
+                    (input)="typeText(text.value)" />
                 </mat-form-field>
               }
               @case ('select') {
-                <mat-radio-group class="options" [attr.aria-label]="label()" [value]="draftText()" (change)="draftText.set($event.value)">
+                @if (searchable()) {
+                  <mat-form-field subscriptSizing="dynamic">
+                    <mat-label>{{ 'table.filter.searchOptions' | transloco }}</mat-label>
+                    <input matInput #search type="search" autocomplete="off" maxlength="100" class="option-search"
+                      [attr.aria-controls]="listId" [value]="optionQuery()"
+                      (input)="optionQuery.set(search.value)" (keydown)="onSearchKeydown($event)" />
+                  </mat-form-field>
+                }
+                <mat-radio-group class="options" [id]="listId" [attr.aria-label]="label()" [value]="draftText()" (change)="pick($event.value)">
                   <mat-radio-button value="">{{ 'table.filter.all' | transloco }}</mat-radio-button>
-                  @for (o of options(); track o.value) {
-                    <mat-radio-button [value]="o.value">{{ o.i18n ? (o.label | transloco) : o.label }}</mat-radio-button>
+                  @for (o of visibleOptions(); track o.value) {
+                    <mat-radio-button [value]="o.value">{{ o.text }}</mat-radio-button>
+                  } @empty {
+                    <p class="none muted">{{ 'table.filter.noOptions' | transloco }}</p>
                   }
                 </mat-radio-group>
               }
@@ -113,18 +137,21 @@ const POSITIONS: ConnectedPosition[] = [
                 <div class="range">
                   <mat-form-field subscriptSizing="dynamic">
                     <mat-label>{{ 'table.filter.from' | transloco }}</mat-label>
-                    <input matInput #from [type]="rangeInput()" [value]="draftRange().from ?? ''" (input)="setRange('from', from.value)" />
+                    <input matInput #from [type]="rangeInput()" [value]="draftRange().from ?? ''"
+                      (input)="setRange('from', from.value)" (change)="commitRange()" (blur)="commitRange()" />
                   </mat-form-field>
                   <mat-form-field subscriptSizing="dynamic">
                     <mat-label>{{ 'table.filter.to' | transloco }}</mat-label>
-                    <input matInput #to [type]="rangeInput()" [value]="draftRange().to ?? ''" (input)="setRange('to', to.value)" />
+                    <input matInput #to [type]="rangeInput()" [value]="draftRange().to ?? ''"
+                      (input)="setRange('to', to.value)" (change)="commitRange()" (blur)="commitRange()" />
                   </mat-form-field>
                 </div>
               }
             }
+            <!-- Always in the DOM (a live region added later is not announced); empty while the count is unknown. -->
+            <p class="count" role="status" aria-live="polite">@if (count() !== null) { {{ 'table.filter.found' | transloco: { n: count() } }} }</p>
             <div class="buttons">
-              <button mat-button type="button" class="clear" (click)="clear()" [disabled]="!active()">{{ 'table.filter.clear' | transloco }}</button>
-              <button mat-flat-button type="submit">{{ 'table.filter.apply' | transloco }}</button>
+              <button mat-button type="button" class="clear" (click)="clear()" [disabled]="!clearable()">{{ 'table.filter.clear' | transloco }}</button>
             </div>
           </form>
         </ng-template>
@@ -168,14 +195,25 @@ const POSITIONS: ConnectedPosition[] = [
       box-shadow: var(--app-overlay-shadow); color: var(--mat-sys-on-surface); font: var(--mat-sys-body-medium); white-space: normal;
     }
     .options { display: flex; flex-direction: column; max-height: 16rem; overflow-y: auto; }
+    .none { margin: 0.5rem 0.75rem; }
     .range { display: flex; flex-direction: column; gap: 0.5rem; }
+    .count { margin: 0; color: var(--mat-sys-on-surface-variant); font: var(--mat-sys-body-small); }
+    .count:empty { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     .buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    @media (pointer: coarse) {
+      .options mat-radio-button { display: flex; align-items: center; min-height: 2.75rem; }
+      .buttons button { min-height: 2.75rem; }
+    }
     @media (prefers-reduced-motion: reduce) { .arrow { transition: none; } }
   `,
 })
 export class ColumnHeader {
   private readonly table = inject(TableSortDirective, { optional: true });
+  private readonly url = inject(TableUrlState, { optional: true });
   private readonly injector = inject(Injector);
+  private readonly i18n = inject(TranslocoService);
+  /** Translations of the active language (emits again when they load or the language changes). */
+  private readonly translations = toSignal(this.i18n.selectTranslation(), { initialValue: {} });
 
   /** Column key (the API sort / filter name). */
   readonly key = input.required<string>();
@@ -189,12 +227,24 @@ export class ColumnHeader {
 
   protected readonly positions = POSITIONS;
   protected readonly panelId = `app-th-filter-${++nextId}`;
+  protected readonly listId = `${this.panelId}-options`;
   protected readonly open = signal(false);
   protected readonly draftText = signal('');
   protected readonly draftRange = signal<RangeValue>({ from: null, to: null });
+  /** Search over the options of a long choice list. */
+  protected readonly optionQuery = signal('');
 
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
   private readonly panel = viewChild<ElementRef<HTMLFormElement>>('panel');
+
+  /** Last value sent in this filter session (no repeated output for the same value). */
+  private sent: FilterValue = null;
+  /** True once this session has sent a value: later edits replace its history entry instead of adding more. */
+  private wrote = false;
+  /** Own debounce of the output when the page has no TableUrlState. */
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private queued: { value: FilterValue } | null = null;
+  private destroyed = false;
 
   protected readonly canSort = computed(() => this.sortable() && this.table !== null);
   protected readonly dir = computed(() => {
@@ -203,14 +253,34 @@ export class ColumnHeader {
   });
   protected readonly ariaSortValue = computed(() => (this.canSort() ? ariaSort(this.table?.sort() ?? null, this.key()) : null));
   protected readonly active = computed(() => isFilterActive(this.filterValue()));
-  protected readonly options = computed<readonly FilterOption[]>(() => {
+  /** «Очистити» works for an applied value and for one still being typed. */
+  protected readonly clearable = computed(() => this.active() || this.draftText().trim() !== '' || isFilterActive(this.draftRange()));
+  /** Rows the table shows now (the table's `appTableSortCount`), announced in the dialog; null = not known. */
+  protected readonly count = computed(() => this.table?.count() ?? null);
+  /** Options with the text shown (a translation key is translated in the current language). */
+  private readonly options = computed<readonly ShownOption[]>(() => {
     const f = this.filter();
-    return f?.type === 'select' ? f.options : [];
+    this.translations();
+    return f?.type === 'select' ? f.options.map((o) => ({ value: o.value, text: o.i18n ? this.i18n.translate(o.label) : o.label })) : [];
+  });
+  protected readonly searchable = computed(() => this.options().length > SELECT_SEARCH_MIN);
+  /** Options matching the search: contains, any case. «All» is outside the list and always shown. */
+  protected readonly visibleOptions = computed(() => {
+    const q = this.optionQuery().trim().toLocaleLowerCase();
+    return q ? this.options().filter((o) => o.text.toLocaleLowerCase().includes(q)) : this.options();
   });
   protected readonly rangeInput = computed(() => {
     const f = this.filter();
     return f?.type === 'range' ? f.input : 'text';
   });
+
+  constructor() {
+    // A header that goes away (page left) drops a value still waiting; TableUrlState drops its own the same way.
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.clearTimer();
+    });
+  }
 
   protected toggleSort(): void {
     this.table?.toggle(this.key());
@@ -224,22 +294,70 @@ export class ColumnHeader {
     const value = this.filterValue();
     this.draftText.set(typeof value === 'string' ? value : '');
     this.draftRange.set(value !== null && typeof value === 'object' ? { ...value } : { from: null, to: null });
+    this.optionQuery.set('');
+    this.sent = normalize(value);
+    this.wrote = false;
     this.open.set(true);
+  }
+
+  /** Typing in the text filter: the value goes out after a pause, no Enter needed. */
+  protected typeText(value: string): void {
+    this.draftText.set(value);
+    this.send(value, LIVE_FILTER_DEBOUNCE_MS);
+  }
+
+  /** A choice applies at once; the dialog stays open (arrows move through the list, Enter / Esc close it). */
+  protected pick(value: string): void {
+    this.draftText.set(value);
+    this.send(value, 0);
   }
 
   protected setRange(edge: keyof RangeValue, value: string): void {
     this.draftRange.update((r) => ({ ...r, [edge]: value || null }));
   }
 
-  protected apply(event: Event): void {
+  /** Range: applied on change / blur of a field after a short pause (the other field is often next). */
+  protected commitRange(): void {
+    this.send(this.draftRange(), LIVE_FILTER_DEBOUNCE_MS);
+  }
+
+  /** Enter in a field: the current value goes out now and the dialog closes (the value stays applied). */
+  protected onEnter(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return; // Enter on «Очистити» stays that button's click
+    if (target.classList.contains('option-search')) {
+      const first = this.visibleOptions()[0];
+      if (first && this.optionQuery().trim() !== '') this.pick(first.value);
+    }
+    this.commit(event);
+  }
+
+  /** Form submit: sends the draft at once and closes. */
+  protected commit(event: Event): void {
     event.preventDefault();
     const type = this.filter()?.type;
-    const value: FilterValue = type === 'range' ? this.draftRange() : this.draftText().trim();
-    this.filterChange.emit(isFilterActive(value) ? value : null);
+    if (type === 'range') this.send(this.draftRange(), 0);
+    else if (type === 'text') this.send(this.draftText(), 0);
     this.close();
   }
 
+  /** Arrow down from the option search moves into the list: onto the chosen option, or the first one shown. */
+  protected onSearchKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'ArrowDown') return;
+    const list = this.panel()?.nativeElement.querySelector(`#${this.listId}`);
+    const radio = list?.querySelector<HTMLInputElement>('input[type=radio]:checked') ?? list?.querySelector<HTMLInputElement>('input[type=radio]');
+    if (radio) {
+      event.preventDefault();
+      radio.focus();
+    }
+  }
+
   protected clear(): void {
+    this.clearTimer();
+    this.queued = null;
+    this.sent = null;
+    this.draftText.set('');
+    this.draftRange.set({ from: null, to: null });
     this.filterChange.emit(null);
     this.close();
   }
@@ -256,6 +374,14 @@ export class ColumnHeader {
   protected onOutsideClick(event: MouseEvent): void {
     const target = event.target as Node | null;
     if (target && this.trigger()?.nativeElement.contains(target)) return;
+    this.flush();
+    this.open.set(false);
+  }
+
+  /** Overlay detached (closed from outside): a value still waiting goes out now. */
+  protected onDetach(): void {
+    if (this.destroyed) return; // the overlay goes with the page: nothing is sent while leaving
+    this.flush();
     this.open.set(false);
   }
 
@@ -270,8 +396,63 @@ export class ColumnHeader {
     );
   }
 
+  /**
+   * Sends a filter value unless it is the one already sent. With the page's TableUrlState the output goes at once
+   * inside `url.live()` (the page's `update()` waits `delay` ms there; a ClientTable shows the rows meanwhile);
+   * without it the header waits `delay` ms itself.
+   */
+  private send(raw: FilterValue, delay: number): void {
+    const value = normalize(raw);
+    if (sameFilter(value, this.sent)) {
+      if (delay === 0) this.flush();
+      return;
+    }
+    this.sent = value;
+    if (this.url) {
+      const replace = this.wrote;
+      this.wrote = true;
+      this.url.live(() => this.filterChange.emit(value), { delay, replace });
+      return;
+    }
+    this.clearTimer();
+    this.queued = { value };
+    if (delay === 0) this.flush();
+    else this.timer = setTimeout(() => this.flush(), delay);
+  }
+
+  /** Sends what waits now: the header's own queued value, or the live edit queued in TableUrlState. */
+  private flush(): void {
+    this.clearTimer();
+    const queued = this.queued;
+    this.queued = null;
+    if (queued) this.filterChange.emit(queued.value);
+    this.url?.flush();
+  }
+
+  private clearTimer(): void {
+    if (this.timer !== null) clearTimeout(this.timer);
+    this.timer = null;
+  }
+
   private close(): void {
+    this.flush();
     this.open.set(false);
     this.trigger()?.nativeElement.focus();
   }
+}
+
+interface ShownOption {
+  value: string;
+  text: string;
+}
+
+/** Trimmed text, or a range with an edge set; anything empty → null (the filter is off). */
+function normalize(value: FilterValue): FilterValue {
+  if (!isFilterActive(value)) return null;
+  return typeof value === 'string' ? value.trim() : value;
+}
+
+function sameFilter(a: FilterValue, b: FilterValue): boolean {
+  if (a === null || b === null || typeof a === 'string' || typeof b === 'string') return a === b;
+  return (a.from ?? null) === (b.from ?? null) && (a.to ?? null) === (b.to ?? null);
 }

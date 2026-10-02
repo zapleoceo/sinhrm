@@ -22,7 +22,7 @@ import { TableUrlState } from '../../../core/ui/table/table-url-state';
     <details class="panel" [open]="table.touched()">
       <summary>{{ 'recruiting.channels.vacancySources' | transloco: { n: total() } }}</summary>
       <div class="scroll">
-      <table class="app-table" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <table class="app-table" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="channel" [label]="'recruiting.channels.channel' | transloco"

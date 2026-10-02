@@ -38,7 +38,7 @@
     <!-- Header sort / filter: core/ui/table; URL tch_*, sources src_*, reasons rej_*. «Разом» stays in tfoot and counts the
          whole report (API / all recruiters), so with a column filter on it says «усі рядки звіту», as in reports/report-table.ts. -->
     <div class="scroll">
-    <table class="app-table dense" [appTableSort]="touches.sort()" (appTableSortChange)="touches.setSort($event)">
+    <table class="app-table dense" [appTableSort]="touches.sort()" [appTableSortCount]="touches.rows().length" (appTableSortChange)="touches.setSort($event)">
       <thead>
         <tr>
           <th scope="col" app-column-header key="recruiter" [label]="'recruiting.reports.recruiter' | transloco"
@@ -88,7 +88,7 @@
   <section class="panel card">
     <h2>{{ 'recruiting.reports.sources' | transloco }}</h2>
     <div class="scroll">
-    <table class="app-table" [appTableSort]="sources.sort()" (appTableSortChange)="sources.setSort($event)">
+    <table class="app-table" [appTableSort]="sources.sort()" [appTableSortCount]="sources.rows().length" (appTableSortChange)="sources.setSort($event)">
       <thead>
         <tr>
           <th scope="col" app-column-header key="source" [label]="'recruiting.candidates.fields.source' | transloco"
@@ -128,7 +128,7 @@
   <section class="panel card">
     <h2>{{ 'recruiting.reports.rejectReasons' | transloco }}</h2>
     <div class="scroll">
-    <table class="app-table" [appTableSort]="reasons.sort()" (appTableSortChange)="reasons.setSort($event)">
+    <table class="app-table" [appTableSort]="reasons.sort()" [appTableSortCount]="reasons.rows().length" (appTableSortChange)="reasons.setSort($event)">
       <thead>
         <tr>
           <th scope="col" app-column-header key="reason" [label]="'recruiting.reports.reason' | transloco"

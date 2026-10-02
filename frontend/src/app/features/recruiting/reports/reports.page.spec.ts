@@ -3,6 +3,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of } from 'rxjs';
+import { LIVE_FILTER_DEBOUNCE_MS } from '../../../core/ui/table/table-url-state';
 import { FunnelRow, TouchesRow } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
 import { ReportsPage } from './reports.page';
@@ -179,6 +180,26 @@ describe('ReportsPage tables: header sort and filter (core/ui/table)', () => {
     expect(footer(table(el, 2))).toBe('recruiting.reports.grandTotalAll');
     expect(table(el, 2).querySelector('tfoot td')?.textContent?.trim()).toBe('5');
     expect(footer(table(el, 1))).toBe('recruiting.reports.grandTotal');
+  });
+  it('live «Рекрутер» filter: rows narrow while typing (contains, any case, no Enter); the URL follows after the pause', async () => {
+    const { el, router, detect } = await open('/');
+    const touches = table(el, 0);
+    (touches.querySelector('thead th button.filter') as HTMLButtonElement).click();
+    await detect();
+    const input = document.querySelector<HTMLInputElement>('.popover input[type=search]')!;
+    input.value = 'AN';
+    input.dispatchEvent(new Event('input'));
+    await detect();
+    expect(rowNames(touches)).toEqual(['Ann']);
+    expect(router.url).toBe('/');
+    expect(document.querySelector('.popover .count')?.textContent?.trim()).toBe('table.filter.found');
+
+    await new Promise((resolve) => setTimeout(resolve, LIVE_FILTER_DEBOUNCE_MS + 50));
+    await detect();
+    expect(router.url).toBe('/?tch_recruiter=AN');
+    expect(rowNames(touches)).toEqual(['Ann']);
+    expect(rowNames(table(el, 2))).toEqual(['Salary', 'Accepted another offer']); // other tables untouched
+    document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = ''));
   });
 });
 
