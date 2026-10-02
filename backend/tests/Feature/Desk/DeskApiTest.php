@@ -179,4 +179,30 @@ final class DeskApiTest extends TestCase
         $this->assertSame(self::PDF, $response->getContent());
         $this->actingAs($this->login())->get("/api/desk/cases/$id/attachments/{$data['id']}")->assertNotFound();
     }
+
+    /** Regression guard for Core Download::file: the full header set and an RFC 6266 name for a non-ASCII filename. */
+    public function test_download_sends_full_attachment_headers_and_utf8_filename(): void
+    {
+        $category = $this->category();
+        $user = $this->login();
+        $this->employee([], $user);
+        $id = $this->actingAs($user)->postJson('/api/desk/cases', ['category_id' => $category->id, 'subject' => 'Certificate', 'body' => 'Please'])->json('data.id');
+        $name = 'Довідка 1.pdf';
+        $data = $this->actingAs($user)->post("/api/desk/cases/$id/attachments", ['file' => UploadedFile::fake()->createWithContent($name, self::PDF)], ['Accept' => 'application/json'])
+            ->assertCreated()->json('data.attachments.0');
+        $this->assertSame($name, $data['filename']);
+
+        $response = $this->actingAs($user)->get("/api/desk/cases/$id/attachments/{$data['id']}")->assertOk();
+
+        $this->assertSame(self::PDF, $response->getContent());
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertSame((string) strlen(self::PDF), $response->headers->get('Content-Length'));
+        $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
+        $cache = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('no-store', $cache);
+        $this->assertStringContainsString('private', $cache);
+        $disposition = (string) $response->headers->get('Content-Disposition');
+        $this->assertStringStartsWith('attachment;', $disposition);
+        $this->assertStringContainsString("filename*=utf-8''".rawurlencode($name), $disposition);
+    }
 }

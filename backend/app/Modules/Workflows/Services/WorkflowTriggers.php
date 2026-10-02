@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Workflows\Services;
 
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Models\Employee;
 use App\Modules\Workflows\Contracts\WorkflowTemplateRepository;
@@ -37,7 +38,7 @@ final readonly class WorkflowTriggers
 
     public function employeeTerminated(Employee $employee): int
     {
-        return $this->startAll(WorkflowTrigger::EmployeeTerminated, $employee, $employee->fired_at ?? Carbon::today());
+        return $this->startAll(WorkflowTrigger::EmployeeTerminated, $employee, $employee->fired_at ?? UserTime::today());
     }
 
     /** Called by the tick job. @return int runs started */

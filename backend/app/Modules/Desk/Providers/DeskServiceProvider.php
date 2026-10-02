@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Desk\Providers;
 
-use App\Models\User;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
@@ -12,8 +12,6 @@ use App\Modules\Desk\Contracts\DeskRepository;
 use App\Modules\Desk\Repositories\EloquentDeskRepository;
 use App\Modules\Desk\Services\DeskNavBadges;
 use App\Modules\Desk\Services\DeskSlaJob;
-use App\Modules\People\Services\PeopleScope;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Desk: HR helpdesk cases (categories with SLA, thread with internal notes, attachments), the "desk.sla" job.
@@ -41,6 +39,6 @@ final class DeskServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(PeopleScope::class)->isAdmin($user));
+        $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
     }
 }

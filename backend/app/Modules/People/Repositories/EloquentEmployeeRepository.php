@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\Enums\EmployeeStatus;
@@ -31,7 +32,7 @@ final class EloquentEmployeeRepository implements EmployeeRepository
                 },
             )
             ->when($filter->q, function (Builder $q, string $term): void {
-                $like = '%'.addcslashes(mb_strtolower($term), '%_\\').'%';
+                $like = Like::contains(mb_strtolower($term));
                 $q->where(fn (Builder $w) => $w->whereRaw('lower(full_name) like ?', [$like])
                     ->orWhereRaw('lower(work_email) like ?', [$like])
                     ->orWhere('phone', 'like', $like));

@@ -6,12 +6,15 @@ namespace App\Modules\Users\Http\Requests;
 
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
+use App\Modules\Core\Http\Requests\Concerns\Paginates;
 use App\Modules\Users\DTO\UserFilter;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 final class ListUsersRequest extends FormRequest
 {
+    use Paginates;
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -20,7 +23,7 @@ final class ListUsersRequest extends FormRequest
             'status' => ['nullable', Rule::enum(UserStatus::class)],
             'role' => ['nullable', Rule::enum(UserRole::class)],
             // Query strings arrive as strings ("20"): 'integer' accepts numeric strings, the DTO casts.
-            'perPage' => ['nullable', 'integer', 'between:1,100'],
+            'perPage' => $this->perPageRules(100),
         ];
     }
 
@@ -30,7 +33,7 @@ final class ListUsersRequest extends FormRequest
             q: $this->filled('q') ? $this->string('q')->trim()->toString() : null,
             status: $this->enum('status', UserStatus::class),
             role: $this->enum('role', UserRole::class),
-            perPage: $this->integer('perPage', 20),
+            perPage: $this->perPageOr(20),
         );
     }
 }

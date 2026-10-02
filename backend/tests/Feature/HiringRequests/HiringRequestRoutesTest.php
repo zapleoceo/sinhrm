@@ -253,6 +253,25 @@ final class HiringRequestRoutesTest extends TestCase
     }
 
     /**
+     * hiring-manage (ModuleServiceProvider::defineRoleGate, hrStaff) on link-vacancy: hr_manager links; the vacancy's
+     * own recruiter and an employee are refused by the gate and the request does not change.
+     */
+    public function test_link_vacancy_is_behind_the_hiring_manage_gate(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $id = $this->approved($admin);
+        $recruiter = $this->login(UserRole::Recruiter);
+        $vacancy = $this->vacancyIn($this->branch, $recruiter);
+
+        $this->actingAs($recruiter)->postJson("/api/hiring-requests/$id/link-vacancy", ['vacancy_id' => $vacancy->id])->assertForbidden();
+        $this->actingAs($this->login(UserRole::Employee))->postJson("/api/hiring-requests/$id/link-vacancy", ['vacancy_id' => $vacancy->id])->assertForbidden();
+        $this->assertNull(HiringRequest::query()->findOrFail($id)->vacancy_id);
+
+        $this->actingAs($this->login(UserRole::HrManager))->postJson("/api/hiring-requests/$id/link-vacancy", ['vacancy_id' => (string) $vacancy->id])->assertOk()
+            ->assertJsonPath('data.vacancy.id', $vacancy->id)->assertJsonPath('data.status', 'in_progress');
+    }
+
+    /**
      * Regression: the API linked ANY vacancy — a closed one (the SLA job then closed the fresh request at once) or a
      * vacancy of another branch. The rule (docs/modules/hiring-requests.md) is "an existing OPEN vacancy of the
      * request's branch"; only the frontend filtered the choice.

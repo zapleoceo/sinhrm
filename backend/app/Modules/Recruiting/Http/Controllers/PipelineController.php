@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Http\Requests\CreatePipelineRequest;
 use App\Modules\Recruiting\Http\Requests\SaveRejectReasonRequest;
 use App\Modules\Recruiting\Http\Resources\PipelineResource;
@@ -17,7 +18,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 /** Pipelines and reject reasons. Reading: any active user; writing: gate recruiting-manage (routes.php). */
 final class PipelineController
 {
-    use Actor;
+    use ResolvesActor;
 
     public function __construct(private readonly PipelineService $service) {}
 

@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Knowledge\Providers;
 
-use App\Models\User;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Knowledge\Contracts\KnowledgeRepository;
 use App\Modules\Knowledge\Contracts\PublishedArticles;
 use App\Modules\Knowledge\Repositories\EloquentKnowledgeRepository;
-use App\Modules\People\Services\PeopleScope;
-use Illuminate\Support\Facades\Gate;
 
 /** Knowledge base: categories, versioned Markdown articles with an audience, search, votes. Routes: /api/knowledge/*. */
 final class KnowledgeServiceProvider extends ModuleServiceProvider
@@ -19,7 +17,7 @@ final class KnowledgeServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'services';
 
-    /** Categories, articles, drafts, versions: superadmin, admin (HR). */
+    /** Categories, articles, drafts, versions: HR staff (superadmin, admin, hr_manager). */
     public const string MANAGE = 'knowledge-manage';
 
     protected string $prefix = 'knowledge';
@@ -34,6 +32,6 @@ final class KnowledgeServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(PeopleScope::class)->isAdmin($user));
+        $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
     }
 }

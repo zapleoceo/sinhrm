@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Http\Requests;
 
+use App\Modules\Core\Http\Requests\Concerns\Paginates;
 use App\Modules\People\Enums\ChangeRequestStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 final class ListChangeRequestsRequest extends FormRequest
 {
+    use Paginates;
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
         return [
             'status' => ['nullable', Rule::enum(ChangeRequestStatus::class)],
             'employee_id' => ['nullable', 'integer', 'min:1'],
-            'perPage' => ['nullable', 'integer', 'between:1,200'],
+            'perPage' => $this->perPageRules(),
         ];
     }
 
@@ -32,6 +35,6 @@ final class ListChangeRequestsRequest extends FormRequest
 
     public function perPage(): int
     {
-        return $this->integer('perPage', 50);
+        return $this->perPageOr();
     }
 }

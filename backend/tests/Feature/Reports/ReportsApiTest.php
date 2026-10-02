@@ -186,7 +186,11 @@ final class ReportsApiTest extends TestCase
 
         $response = $this->actingAs($admin)->post('/api/reports/builder/csv', ['dataset' => 'employees', 'columns' => ['full_name', 'id']], ['Accept' => 'application/json'])->assertOk();
         $this->assertStringContainsString('text/csv', (string) $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('attachment; filename="employees-', (string) $response->headers->get('Content-Disposition'));
+        // Core Download::disposition: the quoted "<name>-<date>.csv" form, plus no sniffing and no caching.
+        $this->assertSame('attachment; filename="employees-'.date('Y-m-d').'.csv"', $response->headers->get('Content-Disposition'));
+        $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));
         $csv = $response->streamedContent();
         $this->assertStringStartsWith("\xEF\xBB\xBFfull_name,id\n", $csv);
         $this->assertStringContainsString("'+SUM(A1:A2)", $csv);

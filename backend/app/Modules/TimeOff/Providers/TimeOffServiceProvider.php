@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Providers;
 
-use App\Models\User;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Contracts\WorkingCalendar;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Overview\Contracts\DashboardSection;
 use App\Modules\People\Events\EmployeeHired;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\TimeOff\Contracts\LeaveRequestRepository;
 use App\Modules\TimeOff\Contracts\LeaveSettingsRepository;
 use App\Modules\TimeOff\Contracts\LedgerRepository;
@@ -24,12 +23,11 @@ use App\Modules\TimeOff\Services\HolidayWorkingCalendar;
 use App\Modules\TimeOff\Services\TimeOffDashboardSection;
 use App\Modules\TimeOff\Services\TimeOffNavBadges;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * TimeOff (leave): types, policies, holidays, balance ledger, requests with approval, team calendar, accrual job
  * ("timeoff.accrue"), dashboard block "timeoff",
- * WorkingCalendar (working days = Mon–Fri minus holidays) for SLA deadlines of all modules. Routes: /api/timeoff/*. Access rules come from People (PeopleScope).
+ * WorkingCalendar (working days = Mon–Fri minus holidays) for SLA deadlines of all modules. Routes: /api/timeoff/*. Access rules come from People (PeopleScope); the manage gate is the HR-staff role gate.
  */
 final class TimeOffServiceProvider extends ModuleServiceProvider
 {
@@ -37,7 +35,7 @@ final class TimeOffServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'people';
 
-    /** Leave types, policies, holidays, balance adjustments: superadmin, admin. */
+    /** Leave types, policies, holidays, balance adjustments: HR staff (superadmin, admin, hr_manager). */
     public const string MANAGE = 'timeoff-manage';
 
     protected string $prefix = 'timeoff';
@@ -57,7 +55,7 @@ final class TimeOffServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(PeopleScope::class)->isAdmin($user));
+        $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
         Event::listen(EmployeeHired::class, GrantAccrualOnHire::class);
     }
 }

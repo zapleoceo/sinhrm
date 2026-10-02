@@ -7,6 +7,7 @@ namespace App\Modules\Users\Repositories;
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\Users\Contracts\UserAdminRepository;
 use App\Modules\Users\DTO\UserFilter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -20,7 +21,7 @@ final class EloquentUserAdminRepository implements UserAdminRepository
         return User::query()
             ->with(['roles', 'branches'])
             ->when($filter->q, function (Builder $query, string $q): void {
-                $like = '%'.addcslashes(mb_strtolower($q), '%_\\').'%';
+                $like = Like::contains(mb_strtolower($q));
                 $query->where(fn (Builder $w) => $w
                     ->whereRaw('lower(name) like ?', [$like])
                     ->orWhereRaw('lower(email) like ?', [$like]));

@@ -47,6 +47,23 @@ final class ChannelAdminApiTest extends TestCase
         $this->actingAs($this->superadmin)->postJson('/api/channels/unknown/simulate')->assertNotFound();
     }
 
+    /** ResolvesActor in ChannelAdminController: guests get 401 on every write; the log names the requesting superadmin. */
+    public function test_guest_401_and_test_message_is_logged_for_the_current_superadmin(): void
+    {
+        $this->postJson('/api/channels/telegram_business/register-webhook')->assertUnauthorized();
+        $this->postJson('/api/channels/telegram_business/test', ['to' => '12345'])->assertUnauthorized();
+        $this->postJson('/api/channels/telegram_business/simulate')->assertUnauthorized();
+
+        $this->telegram();
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 7]])]);
+        $second = User::factory()->withRole(UserRole::Superadmin)->create();
+        $this->actingAs($second)->postJson('/api/channels/telegram_business/test', ['to' => '12345', 'text' => 'ping'])
+            ->assertOk()->assertJsonPath('data.sent', true);
+
+        $log = IntegrationLog::query()->where('message', 'test_sent')->sole();
+        $this->assertSame($second->id, $log->context['user_id'] ?? null);
+    }
+
     public function test_overview_lists_webhook_urls_and_capabilities(): void
     {
         $this->telegram(IntegrationStatus::Demo);

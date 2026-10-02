@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Reports\Http\Resources;
 
-use App\Modules\Reports\Support\Csv;
+use App\Modules\Core\Http\Responses\Download;
+use App\Modules\Core\Support\Export\Csv;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /** A streamed CSV download (rows are written as they are produced; never inline). */
@@ -28,7 +29,7 @@ final class CsvResponse
             fclose($out);
         }, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Content-Disposition' => Download::disposition($filename),
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
         ]);

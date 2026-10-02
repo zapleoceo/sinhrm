@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Channels\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Channels\Contracts\ChannelAdapter;
 use App\Modules\Channels\Http\Requests\SendTestRequest;
 use App\Modules\Channels\Http\Requests\SimulateRequest;
@@ -12,6 +11,7 @@ use App\Modules\Channels\Http\Resources\ChannelInfoResource;
 use App\Modules\Channels\Services\ChannelAdminService;
 use App\Modules\Channels\Services\DemoSeedFactory;
 use App\Modules\Channels\Services\WebhookService;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Http\Resources\TouchpointResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +20,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 /** Channels part of the Integrations page (superadmin): webhook URLs, registration, test message, demo events. */
 final class ChannelAdminController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly ChannelAdminService $service) {}
 
     public function index(): AnonymousResourceCollection
@@ -54,13 +56,5 @@ final class ChannelAdminController
             'created' => $result->created,
             'touchpoints' => TouchpointResource::collection($result->touchpoints)->toArray($request),
         ]], 201);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

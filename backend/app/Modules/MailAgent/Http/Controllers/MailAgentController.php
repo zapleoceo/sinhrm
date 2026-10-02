@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\MailAgent\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\MailAgent\Contracts\MailLogRepository;
 use App\Modules\MailAgent\Contracts\SenderRuleRepository;
 use App\Modules\MailAgent\Contracts\UnknownSenderRepository;
@@ -26,6 +26,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 /** Admin → Mail (superadmin): status, "Sync now", sender rules, unknown senders, processed log. */
 final readonly class MailAgentController
 {
+    use ResolvesActor;
+
     public const int LIST_LIMIT = 50;
 
     public function __construct(
@@ -100,13 +102,5 @@ final readonly class MailAgentController
     public function messages(): AnonymousResourceCollection
     {
         return MailMessageResource::collection($this->log->recent(self::LIST_LIMIT));
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Http\Requests\AssignableUsersRequest;
 use App\Modules\Recruiting\Http\Requests\AssignInterviewersRequest;
 use App\Modules\Recruiting\Http\Requests\MoveApplicationRequest;
@@ -18,7 +19,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 final class ApplicationController
 {
-    use Actor;
+    use ResolvesActor;
 
     public function move(MoveApplicationRequest $request, Application $application, ApplicationService $service): ApplicationResource
     {

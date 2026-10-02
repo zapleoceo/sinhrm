@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Http\Resources;
 
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\TimeOff\Enums\LeaveRequestStatus;
 use App\Modules\TimeOff\Models\LeaveRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Carbon;
 
 /** @mixin LeaveRequest */
 final class LeaveRequestResource extends JsonResource
@@ -31,7 +31,7 @@ final class LeaveRequestResource extends JsonResource
         $open = in_array($this->status, [LeaveRequestStatus::Pending, LeaveRequestStatus::Approved], true);
         $decider = $ctx !== null && $ctx->canDecideFor($this->employee_id);
         $ownCancellable = $ctx !== null && $ctx->isSelf($this->employee_id)
-            && ($this->status === LeaveRequestStatus::Pending || $this->starts_on->gt(Carbon::today()));
+            && ($this->status === LeaveRequestStatus::Pending || $this->starts_on->gt(UserTime::today()));
 
         return [
             'id' => $this->id,
