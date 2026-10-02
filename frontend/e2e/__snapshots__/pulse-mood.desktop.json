@@ -1,0 +1,56 @@
+{
+ "path": "/pulse/mood",
+ "state": null,
+ "headings": [
+  "Моя історія (лише я)",
+  "Налаштування настрою",
+  "Настрій",
+  "Настрій команди по тижнях",
+  "Як ваш настрій сьогодні?"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Зберегти\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\" [expanded]",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\"",
+  "checkbox \"Вт\" [checked]",
+  "checkbox \"Нд\"",
+  "checkbox \"Обов’язкове\"",
+  "checkbox \"Пн\" [checked]",
+  "checkbox \"Пт\" [checked]",
+  "checkbox \"Сб\"",
+  "checkbox \"Ср\" [checked]",
+  "checkbox \"Чт\" [checked]",
+  "link \"SinHRM\" -> /",
+  "link \"Довідка\" -> /docs",
+  "link \"Зустрічі 1:1\" -> /perform/one-on-ones",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мої оцінювання\" -> /perform/reviews",
+  "link \"Мій настрій\" -> /pulse/mood",
+  "link \"Настрій\" -> /pulse/mood",
+  "link \"Огляд\" -> /",
+  "link \"Опитування\" -> /pulse",
+  "link \"Фідбек\" -> /perform/feedback",
+  "link \"Цілі (OKR)\" -> /perform/objectives",
+  "radio \"Добре\"",
+  "radio \"Нормально\"",
+  "radio \"Погано\"",
+  "radio \"Так собі\"",
+  "radio \"Чудово\"",
+  "spinbutton \"Мінімальна група\"",
+  "spinbutton \"Сповіщати, якщо середнє впало на\"",
+  "textbox \"Питання\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 5
+ }
+}

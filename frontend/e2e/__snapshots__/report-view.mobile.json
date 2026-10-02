@@ -1,0 +1,36 @@
+{
+ "path": "/reports/catalog/desk_sla",
+ "state": null,
+ "headings": [
+  "SLA звернень"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"CSV\"",
+  "button \"Open calendar\"",
+  "button \"Open calendar\"",
+  "button \"Головне меню\"",
+  "button \"Застосувати\"",
+  "button \"Зберегти\"",
+  "link \"Огляд\" -> /",
+  "link \"← Каталог звітів\" -> /reports/catalog",
+  "textbox \"З\"",
+  "textbox \"По\""
+ ],
+ "columns": [
+  "SLA порушено, %",
+  "Вирішення із запізненням",
+  "Відкриті",
+  "Звернення",
+  "Категорія",
+  "Перша відповідь із запізненням"
+ ],
+ "counts": {
+  "cell": 24,
+  "img": 3,
+  "row": 5
+ }
+}

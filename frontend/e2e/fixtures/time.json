@@ -1,0 +1,939 @@
+{
+ "GET /api/time/approvals": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 16,
+     "employee": {
+      "id": 4,
+      "full_name": "Марченко Сергій [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 40,
+     "overtime": 0,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 24,
+     "employee": {
+      "id": 7,
+      "full_name": "Олійник Софія [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 32,
+     "employee": {
+      "id": 13,
+      "full_name": "Руденко Олена [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 40,
+     "employee": {
+      "id": 16,
+      "full_name": "Олійник Сергій [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 48,
+     "employee": {
+      "id": 19,
+      "full_name": "Павленко Софія [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 56,
+     "employee": {
+      "id": 22,
+      "full_name": "Руденко Павло [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 41,
+     "overtime": 1,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 64,
+     "employee": {
+      "id": 25,
+      "full_name": "Кравченко Марія [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 41,
+     "overtime": 1,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 72,
+     "employee": {
+      "id": 28,
+      "full_name": "Гончаренко Максим [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 43,
+     "overtime": 3,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 80,
+     "employee": {
+      "id": 31,
+      "full_name": "Руденко Катерина [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 43,
+     "overtime": 3,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 88,
+     "employee": {
+      "id": 34,
+      "full_name": "Кравченко Тарас [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 43,
+     "overtime": 3,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 96,
+     "employee": {
+      "id": 37,
+      "full_name": "Гончаренко Марія [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 104,
+     "employee": {
+      "id": 40,
+      "full_name": "Савченко Максим [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 112,
+     "employee": {
+      "id": 43,
+      "full_name": "Кравченко Катерина [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 40,
+     "overtime": 0,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 120,
+     "employee": {
+      "id": 46,
+      "full_name": "Гончаренко Тарас [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 40,
+     "overtime": 0,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 128,
+     "employee": {
+      "id": 49,
+      "full_name": "Савченко Ірина [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 136,
+     "employee": {
+      "id": 52,
+      "full_name": "Ткаченко Богдан [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 144,
+     "employee": {
+      "id": 55,
+      "full_name": "Лисенко Анна [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 43,
+     "overtime": 3,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 152,
+     "employee": {
+      "id": 58,
+      "full_name": "Савченко Євген [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 43,
+     "overtime": 3,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 160,
+     "employee": {
+      "id": 61,
+      "full_name": "Ткаченко Ірина [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 43,
+     "overtime": 3,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 168,
+     "employee": {
+      "id": 64,
+      "full_name": "Лисенко Богдан [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 41,
+     "overtime": 1,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 176,
+     "employee": {
+      "id": 67,
+      "full_name": "Поліщук Анна [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 41,
+     "overtime": 1,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 184,
+     "employee": {
+      "id": 70,
+      "full_name": "Бондаренко Євген [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 192,
+     "employee": {
+      "id": 73,
+      "full_name": "Лисенко Наталія [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 200,
+     "employee": {
+      "id": 76,
+      "full_name": "Поліщук Віктор [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 208,
+     "employee": {
+      "id": 79,
+      "full_name": "Бондаренко Вікторія [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 216,
+     "employee": {
+      "id": 82,
+      "full_name": "Мороз Андрій [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 42,
+     "overtime": 2,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 224,
+     "employee": {
+      "id": 85,
+      "full_name": "Поліщук Наталія [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 40,
+     "overtime": 0,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 232,
+     "employee": {
+      "id": 88,
+      "full_name": "Бондаренко Віктор [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 41,
+     "overtime": 1,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 240,
+     "employee": {
+      "id": 91,
+      "full_name": "Мороз Вікторія [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 43,
+     "overtime": 3,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    },
+    {
+     "id": 248,
+     "employee": {
+      "id": 94,
+      "full_name": "Шевчук Андрій [ТЕСТ]"
+     },
+     "week_start": "2026-09-21",
+     "status": "submitted",
+     "expected": 40,
+     "worked": 43,
+     "overtime": 3,
+     "submitted_at": "2026-09-25T18:00:00+00:00",
+     "entries": 5
+    }
+   ]
+  }
+ },
+ "GET /api/time/team?week=2026-09-28": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "employee": {
+      "id": 70,
+      "full_name": "Бондаренко Євген [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 120,
+      "full_name": "Бондаренко Євген [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 111,
+      "full_name": "Бондаренко Ірина [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 38,
+      "full_name": "Бондаренко Віктор [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 88,
+      "full_name": "Бондаренко Віктор [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 79,
+      "full_name": "Бондаренко Вікторія [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 6,
+      "full_name": "Бондаренко Дмитро [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 47,
+      "full_name": "Бондаренко Наталія [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 15,
+      "full_name": "Бондаренко Оксана [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 5,
+      "full_name": "Гончаренко Анна [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 28,
+      "full_name": "Гончаренко Максим [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 78,
+      "full_name": "Гончаренко Максим [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 128,
+      "full_name": "Гончаренко Максим [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 37,
+      "full_name": "Гончаренко Марія [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 87,
+      "full_name": "Гончаренко Марія [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 110,
+      "full_name": "Гончаренко Павло [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 69,
+      "full_name": "Гончаренко Софія [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 119,
+      "full_name": "Гончаренко Софія [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 46,
+      "full_name": "Гончаренко Тарас [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 74,
+      "full_name": "Коваленко Ігор [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 56,
+      "full_name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 106,
+      "full_name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 65,
+      "full_name": "Коваленко Оксана [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 115,
+      "full_name": "Коваленко Оксана [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 24,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 24,
+     "absence": 16
+    },
+    {
+     "employee": {
+      "id": 1,
+      "full_name": "Коваленко Олена [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 24,
+      "full_name": "Коваленко Роман [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 33,
+      "full_name": "Коваленко Тетяна [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 97,
+      "full_name": "Коваленко Юлія [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 2,
+      "full_name": "Кравченко Богдан [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    {
+     "employee": {
+      "id": 43,
+      "full_name": "Кравченко Катерина [ТЕСТ]"
+     },
+     "timesheet_id": null,
+     "status": "draft",
+     "expected": 24,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 24,
+     "absence": 16
+    }
+   ]
+  }
+ },
+ "GET /api/time/week?week=2026-09-28": {
+  "status": 200,
+  "body": {
+   "data": {
+    "employee": {
+     "id": 1,
+     "full_name": "Коваленко Олена [ТЕСТ]"
+    },
+    "week_start": "2026-09-28",
+    "timesheet_id": null,
+    "status": "draft",
+    "schedule": {
+     "days": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "hours_per_day": 8,
+     "source": "company"
+    },
+    "days": [
+     {
+      "date": "2026-09-28",
+      "weekday": 1,
+      "scheduled": 8,
+      "expected": 8,
+      "worked": 0,
+      "holiday": false,
+      "leave": null,
+      "absence": 0
+     },
+     {
+      "date": "2026-09-29",
+      "weekday": 2,
+      "scheduled": 8,
+      "expected": 8,
+      "worked": 0,
+      "holiday": false,
+      "leave": null,
+      "absence": 0
+     },
+     {
+      "date": "2026-09-30",
+      "weekday": 3,
+      "scheduled": 8,
+      "expected": 8,
+      "worked": 0,
+      "holiday": false,
+      "leave": null,
+      "absence": 0
+     },
+     {
+      "date": "2026-10-01",
+      "weekday": 4,
+      "scheduled": 8,
+      "expected": 8,
+      "worked": 0,
+      "holiday": false,
+      "leave": null,
+      "absence": 0
+     },
+     {
+      "date": "2026-10-02",
+      "weekday": 5,
+      "scheduled": 8,
+      "expected": 8,
+      "worked": 0,
+      "holiday": false,
+      "leave": null,
+      "absence": 0
+     },
+     {
+      "date": "2026-10-03",
+      "weekday": 6,
+      "scheduled": 0,
+      "expected": 0,
+      "worked": 0,
+      "holiday": false,
+      "leave": null,
+      "absence": 0
+     },
+     {
+      "date": "2026-10-04",
+      "weekday": 7,
+      "scheduled": 0,
+      "expected": 0,
+      "worked": 0,
+      "holiday": false,
+      "leave": null,
+      "absence": 0
+     }
+    ],
+    "totals": {
+     "expected": 40,
+     "worked": 0,
+     "overtime": 0,
+     "missing": 40,
+     "absence": 0
+    },
+    "entries": [],
+    "submitted_at": null,
+    "decided_by": null,
+    "decided_at": null,
+    "decision_comment": null,
+    "can": {
+     "edit": true,
+     "decide": false
+    }
+   }
+  }
+ }
+}

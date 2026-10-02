@@ -1,0 +1,43 @@
+{
+ "path": "/knowledge",
+ "state": null,
+ "headings": [
+  "База знань"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"#тест\"",
+  "button \"#тест\"",
+  "button \"#тест\"",
+  "button \"#тест\"",
+  "button \"#тест\"",
+  "button \"#тест\"",
+  "button \"#тест\"",
+  "button \"#тест\"",
+  "button \"Головне меню\"",
+  "link \"Нова стаття\" -> /admin/knowledge/new",
+  "link \"Огляд\" -> /",
+  "link \"📄 Графік виплат [ТЕСТ]\" -> /knowledge/2",
+  "link \"📄 Доступ до пошти [ТЕСТ]\" -> /knowledge/3",
+  "link \"📄 Лікарняний [ТЕСТ]\" -> /knowledge/7",
+  "link \"📄 Онбординг новачка [ТЕСТ]\" -> /knowledge/6",
+  "link \"📄 Правила відряджень [ТЕСТ]\" -> /knowledge/4",
+  "link \"📄 Техніка та обладнання [ТЕСТ]\" -> /knowledge/8",
+  "link \"📄 Як отримати довідку [ТЕСТ]\" -> /knowledge/5",
+  "link \"📄 Як оформити відпустку [ТЕСТ]\" -> /knowledge/1",
+  "listbox \"Категорії\"",
+  "option \"ІТ [ТЕСТ]\"",
+  "option \"Кадрові питання [ТЕСТ]\"",
+  "option \"Усі\" [selected]",
+  "searchbox \"Пошук\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "listitem": 8,
+  "option": 3
+ }
+}

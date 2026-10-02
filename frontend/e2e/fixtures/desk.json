@@ -1,0 +1,394 @@
+{
+ "GET /api/desk/cases?open=1": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 42,
+     "subject": "Звернення №42 [ТЕСТ]",
+     "status": "new",
+     "category": {
+      "id": 3,
+      "name": "ІТ та доступи [ТЕСТ]"
+     },
+     "employee": {
+      "id": 32,
+      "full_name": "Лисенко Андрій [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-07-20T02:02:00+00:00",
+     "first_response_at": "2026-07-20T02:50:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-07-20T04:02:00+00:00",
+      "resolve_due": "2026-07-20T18:02:00+00:00",
+      "first_response_breached": false,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    },
+    {
+     "id": 37,
+     "subject": "Звернення №37 [ТЕСТ]",
+     "status": "in_progress",
+     "category": {
+      "id": 1,
+      "name": "Довідки та документи [ТЕСТ]"
+     },
+     "employee": {
+      "id": 125,
+      "full_name": "Ткаченко Марія [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-08-07T01:02:00+00:00",
+     "first_response_at": "2026-08-07T07:26:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-08-07T05:02:00+00:00",
+      "resolve_due": "2026-08-08T01:02:00+00:00",
+      "first_response_breached": true,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    },
+    {
+     "id": 32,
+     "subject": "Звернення №32 [ТЕСТ]",
+     "status": "new",
+     "category": {
+      "id": 2,
+      "name": "Зарплата [ТЕСТ]"
+     },
+     "employee": {
+      "id": 90,
+      "full_name": "Савченко Максим [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-08-06T14:02:00+00:00",
+     "first_response_at": "2026-08-06T17:14:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-08-06T22:02:00+00:00",
+      "resolve_due": "2026-08-08T14:02:00+00:00",
+      "first_response_breached": false,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    },
+    {
+     "id": 27,
+     "subject": "Звернення №27 [ТЕСТ]",
+     "status": "in_progress",
+     "category": {
+      "id": 3,
+      "name": "ІТ та доступи [ТЕСТ]"
+     },
+     "employee": {
+      "id": 55,
+      "full_name": "Лисенко Анна [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-07-18T12:02:00+00:00",
+     "first_response_at": "2026-07-18T12:50:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-07-18T14:02:00+00:00",
+      "resolve_due": "2026-07-19T04:02:00+00:00",
+      "first_response_breached": false,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    },
+    {
+     "id": 22,
+     "subject": "Звернення №22 [ТЕСТ]",
+     "status": "new",
+     "category": {
+      "id": 1,
+      "name": "Довідки та документи [ТЕСТ]"
+     },
+     "employee": {
+      "id": 20,
+      "full_name": "Ткаченко Євген [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-09-22T09:02:00+00:00",
+     "first_response_at": "2026-09-22T10:38:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-09-22T13:02:00+00:00",
+      "resolve_due": "2026-09-23T09:02:00+00:00",
+      "first_response_breached": false,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    },
+    {
+     "id": 17,
+     "subject": "Звернення №17 [ТЕСТ]",
+     "status": "in_progress",
+     "category": {
+      "id": 2,
+      "name": "Зарплата [ТЕСТ]"
+     },
+     "employee": {
+      "id": 113,
+      "full_name": "Руденко Олена [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-07-27T21:02:00+00:00",
+     "first_response_at": "2026-07-28T09:50:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-07-28T05:02:00+00:00",
+      "resolve_due": "2026-07-29T21:02:00+00:00",
+      "first_response_breached": true,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    },
+    {
+     "id": 12,
+     "subject": "Звернення №12 [ТЕСТ]",
+     "status": "new",
+     "category": {
+      "id": 3,
+      "name": "ІТ та доступи [ТЕСТ]"
+     },
+     "employee": {
+      "id": 78,
+      "full_name": "Гончаренко Максим [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-09-21T23:02:00+00:00",
+     "first_response_at": "2026-09-21T23:50:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-09-22T01:02:00+00:00",
+      "resolve_due": "2026-09-22T15:02:00+00:00",
+      "first_response_breached": false,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    },
+    {
+     "id": 7,
+     "subject": "Звернення №7 [ТЕСТ]",
+     "status": "in_progress",
+     "category": {
+      "id": 1,
+      "name": "Довідки та документи [ТЕСТ]"
+     },
+     "employee": {
+      "id": 43,
+      "full_name": "Кравченко Катерина [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-08-17T19:02:00+00:00",
+     "first_response_at": "2026-08-17T20:38:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-08-17T23:02:00+00:00",
+      "resolve_due": "2026-08-18T19:02:00+00:00",
+      "first_response_breached": false,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    },
+    {
+     "id": 2,
+     "subject": "Звернення №2 [ТЕСТ]",
+     "status": "new",
+     "category": {
+      "id": 2,
+      "name": "Зарплата [ТЕСТ]"
+     },
+     "employee": {
+      "id": 8,
+      "full_name": "Савченко Євген [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-07-10T23:02:00+00:00",
+     "first_response_at": "2026-07-11T02:14:00+00:00",
+     "resolved_at": null,
+     "closed_at": null,
+     "sla": {
+      "first_response_due": "2026-07-11T07:02:00+00:00",
+      "resolve_due": "2026-07-12T23:02:00+00:00",
+      "first_response_breached": false,
+      "resolve_breached": true
+     },
+     "can_manage": true
+    }
+   ]
+  }
+ },
+ "GET /api/desk/cases/1": {
+  "status": 200,
+  "body": {
+   "data": {
+    "id": 1,
+    "subject": "Звернення №1 [ТЕСТ]",
+    "status": "closed",
+    "category": {
+     "id": 1,
+     "name": "Довідки та документи [ТЕСТ]"
+    },
+    "employee": {
+     "id": 1,
+     "full_name": "Коваленко Олена [ТЕСТ]"
+    },
+    "assignee": {
+     "id": 2,
+     "name": "Адміністратор [ТЕСТ]"
+    },
+    "created_at": "2026-09-11T05:02:00+00:00",
+    "first_response_at": "2026-09-11T11:26:00+00:00",
+    "resolved_at": "2026-09-12T17:02:00+00:00",
+    "closed_at": "2026-09-12T17:02:00+00:00",
+    "sla": {
+     "first_response_due": "2026-09-11T09:02:00+00:00",
+     "resolve_due": "2026-09-12T05:02:00+00:00",
+     "first_response_breached": true,
+     "resolve_breached": true
+    },
+    "can_manage": true,
+    "body": "Тестове звернення.",
+    "comments": [],
+    "attachments": []
+   }
+  }
+ },
+ "GET /api/desk/cases/mine": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "subject": "Звернення №1 [ТЕСТ]",
+     "status": "closed",
+     "category": {
+      "id": 1,
+      "name": "Довідки та документи [ТЕСТ]"
+     },
+     "employee": {
+      "id": 1,
+      "full_name": "Коваленко Олена [ТЕСТ]"
+     },
+     "assignee": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "created_at": "2026-09-11T05:02:00+00:00",
+     "first_response_at": "2026-09-11T11:26:00+00:00",
+     "resolved_at": "2026-09-12T17:02:00+00:00",
+     "closed_at": "2026-09-12T17:02:00+00:00",
+     "sla": {
+      "first_response_due": "2026-09-11T09:02:00+00:00",
+      "resolve_due": "2026-09-12T05:02:00+00:00",
+      "first_response_breached": true,
+      "resolve_breached": true
+     },
+     "can_manage": false
+    }
+   ]
+  }
+ },
+ "GET /api/desk/categories": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 3,
+     "name": "ІТ та доступи [ТЕСТ]",
+     "first_response_hours": 2,
+     "resolve_hours": 16,
+     "default_assignee_id": 2,
+     "active": true
+    },
+    {
+     "id": 1,
+     "name": "Довідки та документи [ТЕСТ]",
+     "first_response_hours": 4,
+     "resolve_hours": 24,
+     "default_assignee_id": 2,
+     "active": true
+    },
+    {
+     "id": 2,
+     "name": "Зарплата [ТЕСТ]",
+     "first_response_hours": 8,
+     "resolve_hours": 48,
+     "default_assignee_id": 2,
+     "active": true
+    }
+   ]
+  }
+ },
+ "GET /api/desk/categories?all=1": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 3,
+     "name": "ІТ та доступи [ТЕСТ]",
+     "first_response_hours": 2,
+     "resolve_hours": 16,
+     "default_assignee_id": 2,
+     "active": true
+    },
+    {
+     "id": 1,
+     "name": "Довідки та документи [ТЕСТ]",
+     "first_response_hours": 4,
+     "resolve_hours": 24,
+     "default_assignee_id": 2,
+     "active": true
+    },
+    {
+     "id": 2,
+     "name": "Зарплата [ТЕСТ]",
+     "first_response_hours": 8,
+     "resolve_hours": 48,
+     "default_assignee_id": 2,
+     "active": true
+    }
+   ]
+  }
+ }
+}

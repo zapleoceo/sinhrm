@@ -1,0 +1,10 @@
+{
+ "GET /api/privacy/settings": {
+  "status": 200,
+  "body": {
+   "data": {
+    "retention_rejected_months": null
+   }
+  }
+ }
+}

@@ -1,0 +1,52 @@
+{
+ "path": "/timeoff",
+ "state": null,
+ "headings": [
+  "Баланси",
+  "Запити",
+  "Мої відсутності",
+  "Новий запит"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Open calendar\"",
+  "button \"Адміністрування 9 нових\"",
+  "button \"Люди\" [expanded]",
+  "button \"Меню користувача\"",
+  "button \"Надіслати запит\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\"",
+  "button \"Скасувати запит\"",
+  "button \"Скасувати запит\"",
+  "combobox \"Пів дня\"",
+  "combobox \"Тип відсутності\"",
+  "link \"SinHRM\" -> /",
+  "link \"Воркфлоу\" -> /workflows/runs",
+  "link \"Довідка\" -> /docs",
+  "link \"Календар команди\" -> /timeoff/calendar",
+  "link \"Календар команди\" -> /timeoff/calendar",
+  "link \"Мої відсутності\" -> /timeoff",
+  "link \"Мої документи\" -> /me/documents",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мій табель\" -> /time",
+  "link \"Огляд\" -> /",
+  "link \"Оргструктура\" -> /people/org-chart",
+  "link \"Погодження 30 нових\" -> /timeoff/approvals",
+  "link \"Погодження табелів 40 нових\" -> /time/approvals",
+  "link \"Співробітники\" -> /people",
+  "link \"Табелі команди\" -> /time/team",
+  "textbox \"З\"",
+  "textbox \"Коментар\"",
+  "textbox \"По\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 5,
+  "listitem": 5
+ }
+}

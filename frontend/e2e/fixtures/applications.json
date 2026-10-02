@@ -1,0 +1,8 @@
+{
+ "GET /api/applications/1/offer": {
+  "status": 200,
+  "body": {
+   "data": null
+  }
+ }
+}

@@ -1,0 +1,644 @@
+{
+ "GET /api/integrations": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "key": "ai_broker",
+     "group": "ai",
+     "status": "off",
+     "supports_check": true,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "base_url",
+       "type": "url",
+       "required": true,
+       "options": [],
+       "default": "https://aib.zapleo.com",
+       "value": null
+      },
+      {
+       "name": "project_key",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      },
+      {
+       "name": "capability",
+       "type": "select",
+       "required": false,
+       "options": [
+        "chat:fast",
+        "chat:smart",
+        "chat:sales",
+        "structured"
+       ],
+       "default": "chat:fast",
+       "value": null
+      },
+      {
+       "name": "capability_script_evaluation",
+       "type": "select",
+       "required": false,
+       "options": [
+        "chat:fast",
+        "chat:smart",
+        "chat:sales",
+        "structured"
+       ],
+       "default": "chat:fast",
+       "value": null
+      },
+      {
+       "name": "capability_mail_classification",
+       "type": "select",
+       "required": false,
+       "options": [
+        "chat:fast",
+        "chat:smart",
+        "chat:sales",
+        "structured"
+       ],
+       "default": "chat:fast",
+       "value": null
+      },
+      {
+       "name": "capability_candidate_screening",
+       "type": "select",
+       "required": false,
+       "options": [
+        "chat:fast",
+        "chat:smart",
+        "chat:sales",
+        "structured"
+       ],
+       "default": "chat:fast",
+       "value": null
+      },
+      {
+       "name": "capability_vacancy_text",
+       "type": "select",
+       "required": false,
+       "options": [
+        "chat:fast",
+        "chat:smart",
+        "chat:sales",
+        "structured"
+       ],
+       "default": "chat:fast",
+       "value": null
+      },
+      {
+       "name": "capability_assistant_chat",
+       "type": "select",
+       "required": false,
+       "options": [
+        "chat:fast",
+        "chat:smart",
+        "chat:sales",
+        "structured"
+       ],
+       "default": "chat:fast",
+       "value": null
+      },
+      {
+       "name": "model",
+       "type": "text",
+       "required": false,
+       "options": [],
+       "default": null,
+       "value": null
+      },
+      {
+       "name": "max_requests_per_day",
+       "type": "text",
+       "required": false,
+       "options": [],
+       "default": "200",
+       "value": null
+      },
+      {
+       "name": "daily_cap_usd",
+       "type": "text",
+       "required": false,
+       "options": [],
+       "default": "2",
+       "value": null
+      },
+      {
+       "name": "ai_script_evaluation",
+       "type": "select",
+       "required": false,
+       "options": [
+        "on",
+        "off"
+       ],
+       "default": "on",
+       "value": null
+      },
+      {
+       "name": "ai_mail_classification",
+       "type": "select",
+       "required": false,
+       "options": [
+        "on",
+        "off"
+       ],
+       "default": "on",
+       "value": null
+      },
+      {
+       "name": "ai_candidate_screening",
+       "type": "select",
+       "required": false,
+       "options": [
+        "on",
+        "off"
+       ],
+       "default": "on",
+       "value": null
+      },
+      {
+       "name": "ai_vacancy_text",
+       "type": "select",
+       "required": false,
+       "options": [
+        "on",
+        "off"
+       ],
+       "default": "on",
+       "value": null
+      },
+      {
+       "name": "ai_assistant_chat",
+       "type": "select",
+       "required": false,
+       "options": [
+        "on",
+        "off"
+       ],
+       "default": "on",
+       "value": null
+      },
+      {
+       "name": "ai_screening_auto",
+       "type": "select",
+       "required": false,
+       "options": [
+        "on",
+        "off"
+       ],
+       "default": "off",
+       "value": null
+      },
+      {
+       "name": "native_tools",
+       "type": "select",
+       "required": false,
+       "options": [
+        "on",
+        "off"
+       ],
+       "default": "off",
+       "value": null
+      }
+     ]
+    },
+    {
+     "key": "openrouter",
+     "group": "ai",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "api_key",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "deepgram",
+     "group": "ai",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "api_key",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "google_gmail",
+     "group": "google",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": []
+    },
+    {
+     "key": "google_calendar",
+     "group": "google",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": []
+    },
+    {
+     "key": "google_sheets",
+     "group": "google",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": []
+    },
+    {
+     "key": "telegram_business",
+     "group": "messengers",
+     "status": "off",
+     "supports_check": true,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "bot_token",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      },
+      {
+       "name": "webhook_secret",
+       "type": "secret",
+       "required": false,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "whatsapp_cloud",
+     "group": "messengers",
+     "status": "off",
+     "supports_check": true,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "phone_number_id",
+       "type": "text",
+       "required": true,
+       "options": [],
+       "default": null,
+       "value": null
+      },
+      {
+       "name": "waba_id",
+       "type": "text",
+       "required": true,
+       "options": [],
+       "default": null,
+       "value": null
+      },
+      {
+       "name": "access_token",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      },
+      {
+       "name": "app_secret",
+       "type": "secret",
+       "required": false,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      },
+      {
+       "name": "verify_token",
+       "type": "secret",
+       "required": false,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "viber",
+     "group": "messengers",
+     "status": "off",
+     "supports_check": true,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "token",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "wazzup",
+     "group": "messengers",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "token",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "phonet",
+     "group": "telephony",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "domain",
+       "type": "text",
+       "required": true,
+       "options": [],
+       "default": null,
+       "value": null
+      },
+      {
+       "name": "api_key",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      },
+      {
+       "name": "webhook_token",
+       "type": "secret",
+       "required": false,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "ringostat",
+     "group": "telephony",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "project_id",
+       "type": "text",
+       "required": true,
+       "options": [],
+       "default": null,
+       "value": null
+      },
+      {
+       "name": "api_key",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      },
+      {
+       "name": "callback_extension",
+       "type": "text",
+       "required": false,
+       "options": [],
+       "default": null,
+       "value": null
+      },
+      {
+       "name": "webhook_token",
+       "type": "secret",
+       "required": false,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "binotel",
+     "group": "telephony",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "domain",
+       "type": "text",
+       "required": false,
+       "options": [],
+       "default": null,
+       "value": null
+      },
+      {
+       "name": "api_key",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      },
+      {
+       "name": "webhook_token",
+       "type": "secret",
+       "required": false,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "meta_lead_ads",
+     "group": "sources",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "page_id",
+       "type": "text",
+       "required": true,
+       "options": [],
+       "default": null,
+       "value": null
+      },
+      {
+       "name": "access_token",
+       "type": "secret",
+       "required": true,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    },
+    {
+     "key": "kep_signing",
+     "group": "documents",
+     "status": "off",
+     "supports_check": false,
+     "last_checked_at": null,
+     "last_error": null,
+     "updated_at": null,
+     "fields": [
+      {
+       "name": "provider",
+       "type": "select",
+       "required": false,
+       "options": [
+        "diia_signature",
+        "vchasno"
+       ],
+       "default": "diia_signature",
+       "value": null
+      },
+      {
+       "name": "api_token",
+       "type": "secret",
+       "required": false,
+       "options": [],
+       "default": null,
+       "secret": {
+        "is_set": false,
+        "updated_at": null,
+        "masked": null
+       }
+      }
+     ]
+    }
+   ],
+   "ai_policy": {
+    "enabled": false
+   }
+  }
+ }
+}

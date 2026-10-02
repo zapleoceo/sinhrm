@@ -1,0 +1,38 @@
+{
+ "path": "/admin/audit",
+ "state": null,
+ "headings": [
+  "Журнал дій"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Next page\"",
+  "button \"Open calendar\"",
+  "button \"Open calendar\"",
+  "button \"Previous page\" [disabled]",
+  "button \"Головне меню\"",
+  "combobox \"Items per page:\"",
+  "combobox \"Дія\"",
+  "combobox \"Користувач\"",
+  "combobox \"Обʼєкт\"",
+  "link \"Огляд\" -> /",
+  "textbox \"З дати\"",
+  "textbox \"По дату\""
+ ],
+ "columns": [
+  "Дія",
+  "Зміни",
+  "Користувач",
+  "Обʼєкт",
+  "Час"
+ ],
+ "counts": {
+  "cell": 60,
+  "img": 2,
+  "listitem": 95,
+  "row": 1
+ }
+}

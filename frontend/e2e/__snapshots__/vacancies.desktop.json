@@ -1,0 +1,55 @@
+{
+ "path": "/vacancies",
+ "state": null,
+ "headings": [
+  "Вакансії"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Next page\" [disabled]",
+  "button \"Previous page\" [disabled]",
+  "button \"Адміністрування 9 нових\"",
+  "button \"Активні (0)\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг\" [expanded]",
+  "button \"Сервіси\"",
+  "combobox \"Items per page:\"",
+  "combobox \"Статус\"",
+  "link \"SMM-менеджер [ТЕСТ] Тестовий філіал · Поліщук Євген [ТЕСТ]\" -> /vacancies/4",
+  "link \"SinHRM\" -> /",
+  "link \"Адміністратор філії [ТЕСТ] Тестовий філіал · Кравченко Софія [ТЕСТ]\" -> /vacancies/3",
+  "link \"Бухгалтер [ТЕСТ] Тестовий філіал · Коваленко Дмитро [ТЕСТ]\" -> /vacancies/6",
+  "link \"Вакансії\" -> /vacancies",
+  "link \"Викладач англійської [ТЕСТ] Тестовий філіал · Коваленко Дмитро [ТЕСТ]\" -> /vacancies/2",
+  "link \"Вхідні\" -> /inbox",
+  "link \"Довідка\" -> /docs",
+  "link \"Заявки на підбір 2 нових\" -> /hiring-requests",
+  "link \"Звіти\" -> /reports",
+  "link \"Кандидати\" -> /candidates",
+  "link \"Менеджер з продажу (вечірня зміна) [ТЕСТ] Тестовий філіал · Кравченко Софія [ТЕСТ]\" -> /vacancies/7",
+  "link \"Менеджер з продажу [ТЕСТ] Тестовий філіал · Лисенко Анна [ТЕСТ]\" -> /vacancies/1",
+  "link \"Методист [ТЕСТ] Тестовий філіал · Лисенко Анна [ТЕСТ]\" -> /vacancies/5",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Нова вакансія\" -> /vacancies/create",
+  "link \"Огляд\" -> /",
+  "link \"Редагувати вакансію\" -> /vacancies/1/edit",
+  "link \"Редагувати вакансію\" -> /vacancies/2/edit",
+  "link \"Редагувати вакансію\" -> /vacancies/3/edit",
+  "link \"Редагувати вакансію\" -> /vacancies/4/edit",
+  "link \"Редагувати вакансію\" -> /vacancies/5/edit",
+  "link \"Редагувати вакансію\" -> /vacancies/6/edit",
+  "link \"Редагувати вакансію\" -> /vacancies/7/edit",
+  "searchbox \"Пошук\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 4,
+  "listitem": 7
+ }
+}

@@ -1,0 +1,29 @@
+{
+ "GET /api/assistant/quips?locale=uk&situation=fall": {
+  "status": 200,
+  "body": {
+   "data": {
+    "jokes": [],
+    "source": "none"
+   }
+  }
+ },
+ "GET /api/assistant/quips?locale=uk&situation=slip": {
+  "status": 200,
+  "body": {
+   "data": {
+    "jokes": [],
+    "source": "none"
+   }
+  }
+ },
+ "GET /api/assistant/quips?locale=uk&situation=thrown": {
+  "status": 200,
+  "body": {
+   "data": {
+    "jokes": [],
+    "source": "none"
+   }
+  }
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "path": "/knowledge/1",
+ "state": null,
+ "headings": [
+  "Як оформити відпустку [ТЕСТ]"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"25\"",
+  "button \"7\" [pressed]",
+  "button \"Адміністрування 9 нових\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\" [expanded]",
+  "link \"Safe Speak\" -> /safe-speak",
+  "link \"SinHRM\" -> /",
+  "link \"База знань\" -> /knowledge",
+  "link \"Довідка\" -> /docs",
+  "link \"Каталог звітів\" -> /reports/catalog",
+  "link \"Конструктор звітів\" -> /reports/builder",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мої звернення\" -> /desk",
+  "link \"Огляд\" -> /",
+  "link \"Редагувати\" -> /admin/knowledge/1",
+  "link \"← База знань\" -> /knowledge"
+ ],
+ "columns": [],
+ "counts": {
+  "article": 1,
+  "img": 4
+ }
+}

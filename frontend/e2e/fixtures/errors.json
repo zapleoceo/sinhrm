@@ -1,0 +1,69 @@
+{
+ "GET /api/errors?status=open": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 6,
+     "source": "server",
+     "exception_class": "App\\Modules\\People\\Exceptions\\PeopleException",
+     "message": "no_employee",
+     "file": "app/Modules/People/Exceptions/PeopleException.php",
+     "line": 22,
+     "route": "people.me",
+     "last_user_id": 1,
+     "count": 4,
+     "first_seen_at": "2026-10-01T18:11:38+00:00",
+     "last_seen_at": "2026-10-01T18:14:43+00:00",
+     "resolved": false,
+     "resolved_at": null
+    },
+    {
+     "id": 7,
+     "source": "server",
+     "exception_class": "App\\Modules\\Time\\Exceptions\\TimeException",
+     "message": "no_employee",
+     "file": "app/Modules/Time/Exceptions/TimeException.php",
+     "line": 22,
+     "route": "time.week",
+     "last_user_id": 1,
+     "count": 2,
+     "first_seen_at": "2026-10-01T18:11:41+00:00",
+     "last_seen_at": "2026-10-01T18:14:11+00:00",
+     "resolved": false,
+     "resolved_at": null
+    },
+    {
+     "id": 5,
+     "source": "server",
+     "exception_class": "ErrorException",
+     "message": "Undefined variable $u",
+     "file": "/app/file",
+     "line": 6,
+     "route": null,
+     "last_user_id": null,
+     "count": 1,
+     "first_seen_at": "2026-10-01T18:10:29+00:00",
+     "last_seen_at": "2026-10-01T18:10:29+00:00",
+     "resolved": false,
+     "resolved_at": null
+    },
+    {
+     "id": 1,
+     "source": "server",
+     "exception_class": "Error",
+     "message": "Class \"App\\Modules\\Users\\Models\\User\" not found",
+     "file": "/app/file",
+     "line": 6,
+     "route": null,
+     "last_user_id": null,
+     "count": 4,
+     "first_seen_at": "2026-10-01T18:10:09+00:00",
+     "last_seen_at": "2026-10-01T18:10:21+00:00",
+     "resolved": false,
+     "resolved_at": null
+    }
+   ]
+  }
+ }
+}

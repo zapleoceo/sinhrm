@@ -1,0 +1,59 @@
+{
+ "GET /api/me/documents": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/me/employee": {
+  "status": 200,
+  "body": {
+   "data": {
+    "id": 1,
+    "full_name": "Коваленко Олена [ТЕСТ]",
+    "avatar_url": null,
+    "work_email": "demo+emp-01@sinhrm.test",
+    "phone": "+380503000000",
+    "status": "active",
+    "branch": {
+     "id": 1,
+     "name": "Тестовий філіал"
+    },
+    "department": {
+     "id": 1,
+     "name": "Дирекція [ТЕСТ]"
+    },
+    "position": {
+     "id": 1,
+     "name": "Генеральний директор [ТЕСТ]"
+    },
+    "manager": null,
+    "access": {
+     "job": true,
+     "pii": true,
+     "decide": true,
+     "manage": true,
+     "self": true
+    },
+    "user_id": 3,
+    "branch_id": 1,
+    "department_id": 1,
+    "position_id": 1,
+    "manager_id": null,
+    "hired_at": "2021-02-24",
+    "fired_at": null,
+    "termination_reason": null,
+    "gender": "female",
+    "employment_type": "full_time",
+    "work_schedule": null,
+    "reports_count": 6,
+    "candidate_id": null,
+    "birth_date": "1977-06-13",
+    "personal_email": null,
+    "address": null,
+    "emergency_contact": null,
+    "custom_fields": {}
+   }
+  }
+ }
+}

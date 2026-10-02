@@ -1,0 +1,22 @@
+{
+ "path": "/desk",
+ "state": null,
+ "headings": [
+  "Мої звернення"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "button \"Нове звернення\"",
+  "link \"#1 Звернення №1 [ТЕСТ] Довідки та документи [ТЕСТ] · 11.09.2026 08:02\" -> /desk/cases/1",
+  "link \"Огляд\" -> /"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "listitem": 1
+ }
+}

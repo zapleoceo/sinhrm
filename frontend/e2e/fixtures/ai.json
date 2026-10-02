@@ -1,0 +1,67 @@
+{
+ "GET /api/ai/stats?period=today": {
+  "status": 200,
+  "body": {
+   "data": {
+    "period": "today",
+    "since": "2026-10-01T00:00:00+00:00",
+    "bucket": "hour",
+    "purposes": {
+     "script_evaluation": null,
+     "mail_classification": null,
+     "candidate_screening": null,
+     "vacancy_text": null,
+     "test": null,
+     "prompt_trial": null
+    }
+   }
+  }
+ },
+ "GET /api/ai/status": {
+  "status": 200,
+  "body": {
+   "data": {
+    "provider": "ai_broker",
+    "capability": "chat:fast",
+    "capabilities": {
+     "script_evaluation": "chat:fast",
+     "mail_classification": "chat:fast",
+     "candidate_screening": "chat:fast",
+     "vacancy_text": "chat:fast",
+     "test": "chat:fast",
+     "prompt_trial": "chat:fast",
+     "assistant_chat": "chat:fast",
+     "assistant_voice": "chat:fast",
+     "assistant_quips": "chat:fast"
+    },
+    "model": null,
+    "configured": true,
+    "available": false,
+    "purposes": {
+     "script_evaluation": "ai_disabled",
+     "mail_classification": "ai_disabled",
+     "candidate_screening": "ai_disabled",
+     "vacancy_text": "ai_disabled"
+    },
+    "prompt_versions": {
+     "script_evaluation": null,
+     "mail_classification": null,
+     "candidate_screening": null,
+     "vacancy_text": null
+    },
+    "auto_screening": false,
+    "usage": {
+     "requests": 0,
+     "cost_usd": 0,
+     "tokens_in": 0,
+     "tokens_out": 0,
+     "tokens_cached": 0
+    },
+    "limits": {
+     "requests": 200,
+     "cost_usd": 2
+    }
+   }
+  }
+ }
+}

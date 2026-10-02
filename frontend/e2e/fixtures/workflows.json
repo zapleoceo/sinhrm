@@ -1,0 +1,20 @@
+{
+ "GET /api/workflows/runs?employee_id=1": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/workflows/runs?status=running": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/workflows/templates": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ }
+}

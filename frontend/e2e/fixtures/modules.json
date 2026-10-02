@@ -1,0 +1,667 @@
+{
+ "GET /api/modules": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "key": "core",
+     "name_key": "modules.names.core",
+     "icon": "extension",
+     "group": "core",
+     "core": true,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "auth",
+     "name_key": "modules.names.auth",
+     "icon": "extension",
+     "group": "core",
+     "core": true,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "users",
+     "name_key": "modules.names.users",
+     "icon": "extension",
+     "group": "core",
+     "core": true,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "integrations",
+     "name_key": "modules.names.integrations",
+     "icon": "extension",
+     "group": "core",
+     "core": true,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "ai",
+     "name_key": "modules.names.ai",
+     "icon": "smart_toy",
+     "group": "admin",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin"
+     ],
+     "default_roles": [
+      "superadmin"
+     ]
+    },
+    {
+     "key": "directory",
+     "name_key": "modules.names.directory",
+     "icon": "extension",
+     "group": "core",
+     "core": true,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "recruiting",
+     "name_key": "modules.names.recruiting",
+     "icon": "person_search",
+     "group": "recruiting",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "scripts",
+     "name_key": "modules.names.scripts",
+     "icon": "record_voice_over",
+     "group": "recruiting",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "google-workspace",
+     "name_key": "modules.names.google-workspace",
+     "icon": "table_chart",
+     "group": "admin",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "mail-agent",
+     "name_key": "modules.names.mail-agent",
+     "icon": "mark_email_unread",
+     "group": "admin",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin"
+     ],
+     "default_roles": [
+      "superadmin"
+     ]
+    },
+    {
+     "key": "channels",
+     "name_key": "modules.names.channels",
+     "icon": "forum",
+     "group": "recruiting",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "people",
+     "name_key": "modules.names.people",
+     "icon": "groups",
+     "group": "people",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "time-off",
+     "name_key": "modules.names.time-off",
+     "icon": "beach_access",
+     "group": "people",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "documents",
+     "name_key": "modules.names.documents",
+     "icon": "description",
+     "group": "people",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "workflows",
+     "name_key": "modules.names.workflows",
+     "icon": "checklist",
+     "group": "people",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "perform",
+     "name_key": "modules.names.perform",
+     "icon": "flag",
+     "group": "perform",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "pulse",
+     "name_key": "modules.names.pulse",
+     "icon": "poll",
+     "group": "perform",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "knowledge",
+     "name_key": "modules.names.knowledge",
+     "icon": "menu_book",
+     "group": "services",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "desk",
+     "name_key": "modules.names.desk",
+     "icon": "support_agent",
+     "group": "services",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "safe-speak",
+     "name_key": "modules.names.safe-speak",
+     "icon": "shield",
+     "group": "services",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "assets",
+     "name_key": "modules.names.assets",
+     "icon": "devices",
+     "group": "admin",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "hiring-requests",
+     "name_key": "modules.names.hiring-requests",
+     "icon": "assignment_add",
+     "group": "recruiting",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "time",
+     "name_key": "modules.names.time",
+     "icon": "schedule",
+     "group": "people",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "reports",
+     "name_key": "modules.names.reports",
+     "icon": "analytics",
+     "group": "services",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "overview",
+     "name_key": "modules.names.overview",
+     "icon": "extension",
+     "group": "core",
+     "core": true,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "audit",
+     "name_key": "modules.names.audit",
+     "icon": "history",
+     "group": "admin",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin"
+     ],
+     "default_roles": [
+      "superadmin"
+     ]
+    },
+    {
+     "key": "privacy",
+     "name_key": "modules.names.privacy",
+     "icon": "shield_person",
+     "group": "admin",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin"
+     ]
+    },
+    {
+     "key": "observability",
+     "name_key": "modules.names.observability",
+     "icon": "bug_report",
+     "group": "core",
+     "core": true,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    },
+    {
+     "key": "assistant",
+     "name_key": "modules.names.assistant",
+     "icon": "emoji_people",
+     "group": "services",
+     "core": false,
+     "enabled": true,
+     "roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ],
+     "default_roles": [
+      "superadmin",
+      "admin",
+      "hr_manager",
+      "recruiter",
+      "employee",
+      "viewer"
+     ]
+    }
+   ]
+  }
+ }
+}

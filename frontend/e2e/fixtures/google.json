@@ -1,0 +1,54 @@
+{
+ "GET /api/google/calendar": {
+  "status": 200,
+  "body": {
+   "data": {
+    "connected": false
+   }
+  }
+ },
+ "GET /api/google/status": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "service": "gmail",
+     "integration_key": "google_gmail",
+     "status": "off",
+     "connected": false,
+     "account_email": null,
+     "scopes": [],
+     "can_send": false,
+     "error": null,
+     "connected_at": null
+    },
+    {
+     "service": "calendar",
+     "integration_key": "google_calendar",
+     "status": "off",
+     "connected": false,
+     "account_email": null,
+     "scopes": [],
+     "can_send": false,
+     "error": null,
+     "connected_at": null
+    },
+    {
+     "service": "sheets",
+     "integration_key": "google_sheets",
+     "status": "off",
+     "connected": false,
+     "account_email": null,
+     "scopes": [],
+     "can_send": false,
+     "error": null,
+     "connected_at": null
+    }
+   ],
+   "meta": {
+    "redirect_uri": "https://sinhrm.vercel.app/api/google/connect/callback",
+    "oauth_configured": false
+   }
+  }
+ }
+}

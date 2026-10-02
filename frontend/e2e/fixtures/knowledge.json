@@ -1,0 +1,252 @@
+{
+ "GET /api/knowledge/articles": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 8,
+     "title": "Техніка та обладнання [ТЕСТ]",
+     "category": {
+      "id": 2,
+      "name": "ІТ [ТЕСТ]",
+      "emoji": null
+     },
+     "tags": [
+      "тест"
+     ],
+     "status": "published",
+     "version": 1,
+     "votes": {
+      "helpful": 26,
+      "not_helpful": 6
+     },
+     "published_at": "2026-08-17T18:02:00+00:00",
+     "updated_at": "2026-08-17T18:02:00+00:00",
+     "can_edit": true,
+     "audience": {
+      "type": "all"
+     }
+    },
+    {
+     "id": 7,
+     "title": "Лікарняний [ТЕСТ]",
+     "category": {
+      "id": 1,
+      "name": "Кадрові питання [ТЕСТ]",
+      "emoji": null
+     },
+     "tags": [
+      "тест"
+     ],
+     "status": "published",
+     "version": 1,
+     "votes": {
+      "helpful": 26,
+      "not_helpful": 6
+     },
+     "published_at": "2026-08-02T18:02:00+00:00",
+     "updated_at": "2026-08-02T18:02:00+00:00",
+     "can_edit": true,
+     "audience": {
+      "type": "all"
+     }
+    },
+    {
+     "id": 6,
+     "title": "Онбординг новачка [ТЕСТ]",
+     "category": {
+      "id": 2,
+      "name": "ІТ [ТЕСТ]",
+      "emoji": null
+     },
+     "tags": [
+      "тест"
+     ],
+     "status": "published",
+     "version": 1,
+     "votes": {
+      "helpful": 26,
+      "not_helpful": 6
+     },
+     "published_at": "2026-07-18T18:02:00+00:00",
+     "updated_at": "2026-07-18T18:02:00+00:00",
+     "can_edit": true,
+     "audience": {
+      "type": "all"
+     }
+    },
+    {
+     "id": 5,
+     "title": "Як отримати довідку [ТЕСТ]",
+     "category": {
+      "id": 1,
+      "name": "Кадрові питання [ТЕСТ]",
+      "emoji": null
+     },
+     "tags": [
+      "тест"
+     ],
+     "status": "published",
+     "version": 1,
+     "votes": {
+      "helpful": 26,
+      "not_helpful": 6
+     },
+     "published_at": "2026-07-03T18:02:00+00:00",
+     "updated_at": "2026-07-03T18:02:00+00:00",
+     "can_edit": true,
+     "audience": {
+      "type": "all"
+     }
+    },
+    {
+     "id": 4,
+     "title": "Правила відряджень [ТЕСТ]",
+     "category": {
+      "id": 2,
+      "name": "ІТ [ТЕСТ]",
+      "emoji": null
+     },
+     "tags": [
+      "тест"
+     ],
+     "status": "published",
+     "version": 1,
+     "votes": {
+      "helpful": 26,
+      "not_helpful": 6
+     },
+     "published_at": "2026-06-18T18:02:00+00:00",
+     "updated_at": "2026-06-18T18:02:00+00:00",
+     "can_edit": true,
+     "audience": {
+      "type": "all"
+     }
+    },
+    {
+     "id": 3,
+     "title": "Доступ до пошти [ТЕСТ]",
+     "category": {
+      "id": 1,
+      "name": "Кадрові питання [ТЕСТ]",
+      "emoji": null
+     },
+     "tags": [
+      "тест"
+     ],
+     "status": "published",
+     "version": 1,
+     "votes": {
+      "helpful": 26,
+      "not_helpful": 6
+     },
+     "published_at": "2026-06-03T18:02:00+00:00",
+     "updated_at": "2026-06-03T18:02:00+00:00",
+     "can_edit": true,
+     "audience": {
+      "type": "all"
+     }
+    },
+    {
+     "id": 2,
+     "title": "Графік виплат [ТЕСТ]",
+     "category": {
+      "id": 2,
+      "name": "ІТ [ТЕСТ]",
+      "emoji": null
+     },
+     "tags": [
+      "тест"
+     ],
+     "status": "published",
+     "version": 1,
+     "votes": {
+      "helpful": 26,
+      "not_helpful": 6
+     },
+     "published_at": "2026-05-19T18:02:00+00:00",
+     "updated_at": "2026-05-19T18:02:00+00:00",
+     "can_edit": true,
+     "audience": {
+      "type": "all"
+     }
+    },
+    {
+     "id": 1,
+     "title": "Як оформити відпустку [ТЕСТ]",
+     "category": {
+      "id": 1,
+      "name": "Кадрові питання [ТЕСТ]",
+      "emoji": null
+     },
+     "tags": [
+      "тест"
+     ],
+     "status": "published",
+     "version": 1,
+     "votes": {
+      "helpful": 25,
+      "not_helpful": 7
+     },
+     "published_at": "2026-05-04T18:02:00+00:00",
+     "updated_at": "2026-05-04T18:02:00+00:00",
+     "can_edit": true,
+     "audience": {
+      "type": "all"
+     }
+    }
+   ]
+  }
+ },
+ "GET /api/knowledge/articles/1": {
+  "status": 200,
+  "body": {
+   "data": {
+    "id": 1,
+    "title": "Як оформити відпустку [ТЕСТ]",
+    "category": {
+     "id": 1,
+     "name": "Кадрові питання [ТЕСТ]",
+     "emoji": null
+    },
+    "tags": [
+     "тест"
+    ],
+    "status": "published",
+    "version": 1,
+    "votes": {
+     "helpful": 25,
+     "not_helpful": 7
+    },
+    "published_at": "2026-05-04T18:02:00+00:00",
+    "updated_at": "2026-05-04T18:02:00+00:00",
+    "can_edit": true,
+    "audience": {
+     "type": "all"
+    },
+    "html": "<p>Тестова стаття.</p>",
+    "body_md": "Тестова стаття.",
+    "my_vote": false
+   }
+  }
+ },
+ "GET /api/knowledge/categories": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "name": "Кадрові питання [ТЕСТ]",
+     "emoji": null,
+     "position": 100
+    },
+    {
+     "id": 2,
+     "name": "ІТ [ТЕСТ]",
+     "emoji": null,
+     "position": 101
+    }
+   ]
+  }
+ }
+}

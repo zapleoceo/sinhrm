@@ -1,0 +1,52 @@
+{
+ "path": "/time",
+ "state": null,
+ "headings": [
+  "Мій табель"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Open calendar\"",
+  "button \"Видалити\"",
+  "button \"Головне меню\"",
+  "button \"Додати рядок\"",
+  "button \"Заповнити за графіком\"",
+  "button \"Зберегти\"",
+  "button \"Надіслати на погодження\"",
+  "button \"Наступний тиждень\"",
+  "button \"Попередній тиждень\"",
+  "button \"Поточний\"",
+  "link \"Огляд\" -> /",
+  "spinbutton \"Вт\"",
+  "spinbutton \"Нд\"",
+  "spinbutton \"Пн\"",
+  "spinbutton \"Пт\"",
+  "spinbutton \"Сб\"",
+  "spinbutton \"Ср\"",
+  "spinbutton \"Чт\"",
+  "textbox \"Категорія\"",
+  "textbox \"Проєкт\"",
+  "textbox \"Тиждень\""
+ ],
+ "columns": [
+  "Σ",
+  "Видалити",
+  "Вт 29.09",
+  "Категорія",
+  "Нд 04.10",
+  "Пн 28.09",
+  "Проєкт",
+  "Пт 02.10",
+  "Сб 03.10",
+  "Ср 30.09",
+  "Чт 01.10"
+ ],
+ "counts": {
+  "cell": 29,
+  "img": 2,
+  "row": 4
+ }
+}

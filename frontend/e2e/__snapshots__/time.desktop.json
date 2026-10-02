@@ -1,0 +1,71 @@
+{
+ "path": "/time",
+ "state": null,
+ "headings": [
+  "Мій табель"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Open calendar\"",
+  "button \"Адміністрування 9 нових\"",
+  "button \"Видалити\"",
+  "button \"Додати рядок\"",
+  "button \"Заповнити за графіком\"",
+  "button \"Зберегти\"",
+  "button \"Люди\" [expanded]",
+  "button \"Меню користувача\"",
+  "button \"Надіслати на погодження\"",
+  "button \"Наступний тиждень\"",
+  "button \"Попередній тиждень\"",
+  "button \"Поточний\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\"",
+  "link \"SinHRM\" -> /",
+  "link \"Воркфлоу\" -> /workflows/runs",
+  "link \"Довідка\" -> /docs",
+  "link \"Календар команди\" -> /timeoff/calendar",
+  "link \"Мої відсутності\" -> /timeoff",
+  "link \"Мої документи\" -> /me/documents",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мій табель\" -> /time",
+  "link \"Огляд\" -> /",
+  "link \"Оргструктура\" -> /people/org-chart",
+  "link \"Погодження 30 нових\" -> /timeoff/approvals",
+  "link \"Погодження табелів 40 нових\" -> /time/approvals",
+  "link \"Співробітники\" -> /people",
+  "link \"Табелі команди\" -> /time/team",
+  "spinbutton \"Вт\"",
+  "spinbutton \"Нд\"",
+  "spinbutton \"Пн\"",
+  "spinbutton \"Пт\"",
+  "spinbutton \"Сб\"",
+  "spinbutton \"Ср\"",
+  "spinbutton \"Чт\"",
+  "textbox \"Категорія\"",
+  "textbox \"Проєкт\"",
+  "textbox \"Тиждень\""
+ ],
+ "columns": [
+  "Σ",
+  "Видалити",
+  "Вт 29.09",
+  "Категорія",
+  "Нд 04.10",
+  "Пн 28.09",
+  "Проєкт",
+  "Пт 02.10",
+  "Сб 03.10",
+  "Ср 30.09",
+  "Чт 01.10"
+ ],
+ "counts": {
+  "cell": 29,
+  "img": 5,
+  "row": 4
+ }
+}

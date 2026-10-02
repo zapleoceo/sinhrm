@@ -1,0 +1,560 @@
+{
+ "GET /api/assets": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "inventory_number": "DEMO-0001",
+     "serial": "SN-DEMO-00000",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "32000.00",
+     "purchased_at": "2024-10-19",
+     "notes": null,
+     "employee": {
+      "id": 1,
+      "full_name": "Коваленко Олена [ТЕСТ]"
+     }
+    },
+    {
+     "id": 2,
+     "inventory_number": "DEMO-0002",
+     "serial": "SN-DEMO-00131",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "8000.00",
+     "purchased_at": "2024-07-05",
+     "notes": null,
+     "employee": {
+      "id": 2,
+      "full_name": "Кравченко Богдан [ТЕСТ]"
+     }
+    },
+    {
+     "id": 3,
+     "inventory_number": "DEMO-0003",
+     "serial": "SN-DEMO-00262",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "15000.00",
+     "purchased_at": "2025-09-23",
+     "notes": null,
+     "employee": {
+      "id": 3,
+      "full_name": "Поліщук Оксана [ТЕСТ]"
+     }
+    },
+    {
+     "id": 4,
+     "inventory_number": "DEMO-0004",
+     "serial": "SN-DEMO-00393",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "32000.00",
+     "purchased_at": "2025-06-24",
+     "notes": null,
+     "employee": {
+      "id": 4,
+      "full_name": "Марченко Сергій [ТЕСТ]"
+     }
+    },
+    {
+     "id": 5,
+     "inventory_number": "DEMO-0005",
+     "serial": "SN-DEMO-00524",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "8000.00",
+     "purchased_at": "2026-06-27",
+     "notes": null,
+     "employee": {
+      "id": 5,
+      "full_name": "Гончаренко Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 6,
+     "inventory_number": "DEMO-0006",
+     "serial": "SN-DEMO-00655",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "15000.00",
+     "purchased_at": "2025-12-16",
+     "notes": null,
+     "employee": {
+      "id": 6,
+      "full_name": "Бондаренко Дмитро [ТЕСТ]"
+     }
+    },
+    {
+     "id": 7,
+     "inventory_number": "DEMO-0007",
+     "serial": "SN-DEMO-00786",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "32000.00",
+     "purchased_at": "2024-06-15",
+     "notes": null,
+     "employee": {
+      "id": 7,
+      "full_name": "Олійник Софія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 8,
+     "inventory_number": "DEMO-0008",
+     "serial": "SN-DEMO-00917",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "8000.00",
+     "purchased_at": "2024-07-08",
+     "notes": null,
+     "employee": {
+      "id": 8,
+      "full_name": "Савченко Євген [ТЕСТ]"
+     }
+    },
+    {
+     "id": 9,
+     "inventory_number": "DEMO-0009",
+     "serial": "SN-DEMO-01048",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "15000.00",
+     "purchased_at": "2025-06-16",
+     "notes": null,
+     "employee": {
+      "id": 9,
+      "full_name": "Мороз Юлія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 10,
+     "inventory_number": "DEMO-0010",
+     "serial": "SN-DEMO-01179",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "in_stock",
+     "cost": "32000.00",
+     "purchased_at": "2024-06-14",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 11,
+     "inventory_number": "DEMO-0011",
+     "serial": "SN-DEMO-01310",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "8000.00",
+     "purchased_at": "2026-01-14",
+     "notes": null,
+     "employee": {
+      "id": 11,
+      "full_name": "Ткаченко Ірина [ТЕСТ]"
+     }
+    },
+    {
+     "id": 12,
+     "inventory_number": "DEMO-0012",
+     "serial": "SN-DEMO-01441",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "15000.00",
+     "purchased_at": "2025-08-23",
+     "notes": null,
+     "employee": {
+      "id": 12,
+      "full_name": "Шевчук Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 13,
+     "inventory_number": "DEMO-0013",
+     "serial": "SN-DEMO-01572",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "32000.00",
+     "purchased_at": "2025-08-24",
+     "notes": null,
+     "employee": {
+      "id": 13,
+      "full_name": "Руденко Олена [ТЕСТ]"
+     }
+    },
+    {
+     "id": 14,
+     "inventory_number": "DEMO-0014",
+     "serial": "SN-DEMO-01703",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "8000.00",
+     "purchased_at": "2025-01-02",
+     "notes": null,
+     "employee": {
+      "id": 14,
+      "full_name": "Лисенко Богдан [ТЕСТ]"
+     }
+    },
+    {
+     "id": 15,
+     "inventory_number": "DEMO-0015",
+     "serial": "SN-DEMO-01834",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "15000.00",
+     "purchased_at": "2025-05-15",
+     "notes": null,
+     "employee": {
+      "id": 15,
+      "full_name": "Бондаренко Оксана [ТЕСТ]"
+     }
+    },
+    {
+     "id": 16,
+     "inventory_number": "DEMO-0016",
+     "serial": "SN-DEMO-01965",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "32000.00",
+     "purchased_at": "2025-11-05",
+     "notes": null,
+     "employee": {
+      "id": 16,
+      "full_name": "Олійник Сергій [ТЕСТ]"
+     }
+    },
+    {
+     "id": 17,
+     "inventory_number": "DEMO-0017",
+     "serial": "SN-DEMO-02096",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "8000.00",
+     "purchased_at": "2025-10-03",
+     "notes": null,
+     "employee": {
+      "id": 17,
+      "full_name": "Савченко Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 18,
+     "inventory_number": "DEMO-0018",
+     "serial": "SN-DEMO-02227",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "15000.00",
+     "purchased_at": "2026-04-26",
+     "notes": null,
+     "employee": {
+      "id": 18,
+      "full_name": "Мороз Дмитро [ТЕСТ]"
+     }
+    },
+    {
+     "id": 19,
+     "inventory_number": "DEMO-0019",
+     "serial": "SN-DEMO-02358",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "32000.00",
+     "purchased_at": "2025-09-02",
+     "notes": null,
+     "employee": {
+      "id": 19,
+      "full_name": "Павленко Софія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 20,
+     "inventory_number": "DEMO-0020",
+     "serial": "SN-DEMO-02489",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "assigned",
+     "cost": "8000.00",
+     "purchased_at": "2024-06-12",
+     "notes": null,
+     "employee": {
+      "id": 20,
+      "full_name": "Ткаченко Євген [ТЕСТ]"
+     }
+    },
+    {
+     "id": 21,
+     "inventory_number": "DEMO-0021",
+     "serial": "SN-DEMO-02620",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "written_off",
+     "cost": "15000.00",
+     "purchased_at": "2024-06-07",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 22,
+     "inventory_number": "DEMO-0022",
+     "serial": "SN-DEMO-02751",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "in_stock",
+     "cost": "32000.00",
+     "purchased_at": "2024-12-15",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 23,
+     "inventory_number": "DEMO-0023",
+     "serial": "SN-DEMO-02882",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "repair",
+     "cost": "8000.00",
+     "purchased_at": "2025-06-28",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 24,
+     "inventory_number": "DEMO-0024",
+     "serial": "SN-DEMO-03013",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "written_off",
+     "cost": "15000.00",
+     "purchased_at": "2026-06-16",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 25,
+     "inventory_number": "DEMO-0025",
+     "serial": "SN-DEMO-03144",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "in_stock",
+     "cost": "32000.00",
+     "purchased_at": "2024-05-23",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 26,
+     "inventory_number": "DEMO-0026",
+     "serial": "SN-DEMO-03275",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "repair",
+     "cost": "8000.00",
+     "purchased_at": "2025-03-17",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 27,
+     "inventory_number": "DEMO-0027",
+     "serial": "SN-DEMO-03406",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "written_off",
+     "cost": "15000.00",
+     "purchased_at": "2024-10-21",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 28,
+     "inventory_number": "DEMO-0028",
+     "serial": "SN-DEMO-03537",
+     "name": "Ноутбук [ТЕСТ]",
+     "type": {
+      "id": 1,
+      "name": "Ноутбук [ТЕСТ]"
+     },
+     "status": "in_stock",
+     "cost": "32000.00",
+     "purchased_at": "2025-03-13",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 29,
+     "inventory_number": "DEMO-0029",
+     "serial": "SN-DEMO-03668",
+     "name": "Монітор [ТЕСТ]",
+     "type": {
+      "id": 2,
+      "name": "Монітор [ТЕСТ]"
+     },
+     "status": "repair",
+     "cost": "8000.00",
+     "purchased_at": "2025-09-14",
+     "notes": null,
+     "employee": null
+    },
+    {
+     "id": 30,
+     "inventory_number": "DEMO-0030",
+     "serial": "SN-DEMO-03799",
+     "name": "Телефон [ТЕСТ]",
+     "type": {
+      "id": 3,
+      "name": "Телефон [ТЕСТ]"
+     },
+     "status": "written_off",
+     "cost": "15000.00",
+     "purchased_at": "2025-12-10",
+     "notes": null,
+     "employee": null
+    }
+   ]
+  }
+ },
+ "GET /api/assets/types": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 2,
+     "name": "Монітор [ТЕСТ]"
+    },
+    {
+     "id": 1,
+     "name": "Ноутбук [ТЕСТ]"
+    },
+    {
+     "id": 3,
+     "name": "Телефон [ТЕСТ]"
+    }
+   ]
+  }
+ },
+ "GET /api/assets/employee/1": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "employee": {
+      "id": 1
+     },
+     "assigned_at": "2024-10-22",
+     "returned_at": null,
+     "condition_out": "good",
+     "condition_in": null,
+     "asset": {
+      "id": 1,
+      "inventory_number": "DEMO-0001",
+      "name": "Ноутбук [ТЕСТ]",
+      "serial": "SN-DEMO-00000",
+      "type": "Ноутбук [ТЕСТ]",
+      "status": "assigned"
+     }
+    }
+   ]
+  }
+ }
+}

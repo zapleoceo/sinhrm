@@ -1,0 +1,28 @@
+{
+ "path": "/hiring-requests/new",
+ "state": null,
+ "headings": [
+  "Нова заявка на підбір"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "button \"Далі\" [disabled]",
+  "combobox \"Відділ\"",
+  "combobox \"Посада (довідник)\"",
+  "combobox \"Пріоритет\"",
+  "combobox \"Філія\"",
+  "link \"Заявки на підбір\" -> /hiring-requests",
+  "link \"Огляд\" -> /",
+  "spinbutton \"Кількість позицій\"",
+  "textbox \"Посада / назва\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "listitem": 3
+ }
+}

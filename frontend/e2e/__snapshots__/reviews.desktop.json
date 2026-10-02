@@ -1,0 +1,37 @@
+{
+ "path": "/perform/reviews",
+ "state": null,
+ "headings": [
+  "Мої оцінювання"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Бондаренко Дмитро [ТЕСТ] Оцінка 360 2026-Q2 [ТЕСТ] · Керівник Надіслано\"",
+  "button \"Кравченко Богдан [ТЕСТ] Оцінка 360 2026-Q2 [ТЕСТ] · Керівник Надіслано\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\" [expanded]",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\"",
+  "link \"SinHRM\" -> /",
+  "link \"Довідка\" -> /docs",
+  "link \"Зустрічі 1:1\" -> /perform/one-on-ones",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мої оцінювання\" -> /perform/reviews",
+  "link \"Настрій\" -> /pulse/mood",
+  "link \"Огляд\" -> /",
+  "link \"Опитування\" -> /pulse",
+  "link \"Фідбек\" -> /perform/feedback",
+  "link \"Цілі (OKR)\" -> /perform/objectives"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 4,
+  "listitem": 2
+ }
+}

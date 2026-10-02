@@ -1,0 +1,21 @@
+{
+ "path": "/pulse",
+ "state": null,
+ "headings": [
+  "Мої опитування"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "link \"Настрій\" -> /pulse/mood",
+  "link \"Огляд\" -> /"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "listitem": 1
+ }
+}

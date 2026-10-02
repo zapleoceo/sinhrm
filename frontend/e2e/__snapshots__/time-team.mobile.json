@@ -1,0 +1,63 @@
+{
+ "path": "/time/team",
+ "state": null,
+ "headings": [
+  "Табелі команди"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Open calendar\"",
+  "button \"Головне меню\"",
+  "button \"Наступний тиждень\"",
+  "button \"Попередній тиждень\"",
+  "link \"Бондаренко Євген [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=120",
+  "link \"Бондаренко Євген [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=70",
+  "link \"Бондаренко Ірина [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=111",
+  "link \"Бондаренко Віктор [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=38",
+  "link \"Бондаренко Віктор [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=88",
+  "link \"Бондаренко Вікторія [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=79",
+  "link \"Бондаренко Дмитро [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=6",
+  "link \"Бондаренко Наталія [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=47",
+  "link \"Бондаренко Оксана [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=15",
+  "link \"Гончаренко Анна [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=5",
+  "link \"Гончаренко Максим [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=128",
+  "link \"Гончаренко Максим [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=28",
+  "link \"Гончаренко Максим [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=78",
+  "link \"Гончаренко Марія [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=37",
+  "link \"Гончаренко Марія [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=87",
+  "link \"Гончаренко Павло [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=110",
+  "link \"Гончаренко Софія [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=119",
+  "link \"Гончаренко Софія [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=69",
+  "link \"Гончаренко Тарас [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=46",
+  "link \"Коваленко Ігор [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=74",
+  "link \"Коваленко Дмитро [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=106",
+  "link \"Коваленко Дмитро [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=56",
+  "link \"Коваленко Оксана [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=115",
+  "link \"Коваленко Оксана [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=65",
+  "link \"Коваленко Олена [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=1",
+  "link \"Коваленко Роман [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=24",
+  "link \"Коваленко Тетяна [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=33",
+  "link \"Коваленко Юлія [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=97",
+  "link \"Кравченко Богдан [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=2",
+  "link \"Кравченко Катерина [ТЕСТ]\" -> /time?week=2026-09-28&employee_id=43",
+  "link \"Огляд\" -> /",
+  "textbox \"Тиждень\""
+ ],
+ "columns": [
+  "Бракує",
+  "Відпрацьовано",
+  "Відсутності",
+  "Очікувано",
+  "Понаднормово",
+  "Співробітник",
+  "Статус"
+ ],
+ "counts": {
+  "cell": 210,
+  "img": 2,
+  "row": 31
+ }
+}

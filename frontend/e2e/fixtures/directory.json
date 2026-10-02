@@ -1,0 +1,552 @@
+{
+ "GET /api/directory/branches?perPage=200&status=active": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "name": "Тестовий філіал",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null,
+     "city_id": 1,
+     "city": {
+      "id": 1,
+      "name": "Київ [ТЕСТ]"
+     }
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/directory/branches?page=1",
+    "last": "https://sinhrm.test/api/directory/branches?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/directory/branches?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/directory/branches",
+    "per_page": 200,
+    "to": 1,
+    "total": 1
+   }
+  }
+ },
+ "GET /api/directory/cities?perPage=200&status=active": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "name": "Київ [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/directory/cities?page=1",
+    "last": "https://sinhrm.test/api/directory/cities?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/directory/cities?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/directory/cities",
+    "per_page": 200,
+    "to": 1,
+    "total": 1
+   }
+  }
+ },
+ "GET /api/directory/departments?perPage=200&status=active": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 5,
+     "name": "HR [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 7,
+     "name": "IT [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 16,
+     "name": "Відділ продажів Дніпро [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 10,
+     "name": "Відділ продажів Київ [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 13,
+     "name": "Відділ продажів Львів [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 1,
+     "name": "Дирекція [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 14,
+     "name": "Дирекція філії Дніпро [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 8,
+     "name": "Дирекція філії Київ [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 11,
+     "name": "Дирекція філії Львів [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 3,
+     "name": "Контакт-центр [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 2,
+     "name": "Маркетинг [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 6,
+     "name": "Методичний центр [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 15,
+     "name": "Навчальний відділ Дніпро [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 9,
+     "name": "Навчальний відділ Київ [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 12,
+     "name": "Навчальний відділ Львів [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 4,
+     "name": "Фінанси та бухгалтерія [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/directory/departments?page=1",
+    "last": "https://sinhrm.test/api/directory/departments?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/directory/departments?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/directory/departments",
+    "per_page": 200,
+    "to": 16,
+    "total": 16
+   }
+  }
+ },
+ "GET /api/directory/positions?perPage=200&status=active": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 24,
+     "name": "HR-генераліст [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 5,
+     "name": "HR-директор [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 7,
+     "name": "IT-директор [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 9,
+     "name": "Адміністратор філії [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 20,
+     "name": "Бухгалтер [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 12,
+     "name": "Викладач [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 1,
+     "name": "Генеральний директор [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 19,
+     "name": "Головний бухгалтер [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 6,
+     "name": "Директор з навчання [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 8,
+     "name": "Директор філії [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 13,
+     "name": "Керівник відділу продажів [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 15,
+     "name": "Керівник з маркетингу [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 17,
+     "name": "Керівник контакт-центру [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 26,
+     "name": "Керівник методичного центру [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 10,
+     "name": "Керівник навчального відділу [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 31,
+     "name": "Керівник служби підтримки [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 3,
+     "name": "Комерційний директор [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 16,
+     "name": "Маркетолог [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 14,
+     "name": "Менеджер з продажу [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 27,
+     "name": "Методист [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 18,
+     "name": "Оператор контакт-центру [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 2,
+     "name": "Операційний директор [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 23,
+     "name": "Рекрутер [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 30,
+     "name": "Розробник [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 32,
+     "name": "Системний адміністратор [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 28,
+     "name": "Спеціаліст з контролю якості [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 25,
+     "name": "Спеціаліст з навчання та розвитку [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 11,
+     "name": "Старший методист [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 22,
+     "name": "Тімлід рекрутингу [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    },
+    {
+     "id": 29,
+     "name": "Тімлід розробки [ТЕСТ]",
+     "status": "active",
+     "created_at": null,
+     "updated_at": null
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/directory/positions?page=1",
+    "last": "https://sinhrm.test/api/directory/positions?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/directory/positions?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/directory/positions",
+    "per_page": 200,
+    "to": 32,
+    "total": 32
+   }
+  }
+ },
+ "GET /api/directory/vacancy_categories?perPage=200&status=active": {
+  "status": 200,
+  "body": {
+   "data": [],
+   "links": {
+    "first": "https://sinhrm.test/api/directory/vacancy_categories?page=1",
+    "last": "https://sinhrm.test/api/directory/vacancy_categories?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": null,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/directory/vacancy_categories?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/directory/vacancy_categories",
+    "per_page": 200,
+    "to": null,
+    "total": 0
+   }
+  }
+ }
+}

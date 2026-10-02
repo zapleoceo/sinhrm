@@ -1,0 +1,622 @@
+{
+ "GET /api/acquisition-channels": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 11,
+     "code": "site",
+     "name": "Career site",
+     "type": "site",
+     "active": true,
+     "utm_rules": [],
+     "costs": [
+      {
+       "id": 42,
+       "period_start": "2026-10-01",
+       "period_end": "2026-10-31",
+       "amount": 13000,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 41,
+       "period_start": "2026-09-01",
+       "period_end": "2026-09-30",
+       "amount": 13400,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 40,
+       "period_start": "2026-08-01",
+       "period_end": "2026-08-31",
+       "amount": 14800,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 39,
+       "period_start": "2026-07-01",
+       "period_end": "2026-07-31",
+       "amount": 11200,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 38,
+       "period_start": "2026-06-01",
+       "period_end": "2026-06-30",
+       "amount": 14200,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 37,
+       "period_start": "2026-05-01",
+       "period_end": "2026-05-31",
+       "amount": 12000,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "code": "dou",
+     "name": "DOU",
+     "type": "job_board",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 5,
+       "utm_source": "dou",
+       "utm_medium": null,
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": []
+    },
+    {
+     "id": 3,
+     "code": "djinni",
+     "name": "Djinni",
+     "type": "job_board",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 4,
+       "utm_source": "djinni",
+       "utm_medium": null,
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": [
+      {
+       "id": 18,
+       "period_start": "2026-10-01",
+       "period_end": "2026-10-31",
+       "amount": 8700,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 17,
+       "period_start": "2026-09-01",
+       "period_end": "2026-09-30",
+       "amount": 5900,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 16,
+       "period_start": "2026-08-01",
+       "period_end": "2026-08-31",
+       "amount": 6900,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 15,
+       "period_start": "2026-07-01",
+       "period_end": "2026-07-31",
+       "amount": 5400,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 14,
+       "period_start": "2026-06-01",
+       "period_end": "2026-06-30",
+       "amount": 8300,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 13,
+       "period_start": "2026-05-01",
+       "period_end": "2026-05-31",
+       "amount": 7700,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "code": "referral",
+     "name": "Employee referral",
+     "type": "referral",
+     "active": true,
+     "utm_rules": [],
+     "costs": [
+      {
+       "id": 48,
+       "period_start": "2026-10-01",
+       "period_end": "2026-10-31",
+       "amount": 12600,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 47,
+       "period_start": "2026-09-01",
+       "period_end": "2026-09-30",
+       "amount": 13800,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 46,
+       "period_start": "2026-08-01",
+       "period_end": "2026-08-31",
+       "amount": 15500,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 45,
+       "period_start": "2026-07-01",
+       "period_end": "2026-07-31",
+       "amount": 14400,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 44,
+       "period_start": "2026-06-01",
+       "period_end": "2026-06-30",
+       "amount": 13000,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 43,
+       "period_start": "2026-05-01",
+       "period_end": "2026-05-31",
+       "amount": 16500,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "code": "grc_ua",
+     "name": "GRC.ua",
+     "type": "job_board",
+     "active": true,
+     "utm_rules": [],
+     "costs": []
+    },
+    {
+     "id": 10,
+     "code": "google_ads",
+     "name": "Google Ads",
+     "type": "ads",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 11,
+       "utm_source": "google",
+       "utm_medium": "cpc",
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": []
+    },
+    {
+     "id": 8,
+     "code": "instagram",
+     "name": "Instagram",
+     "type": "social",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 8,
+       "utm_source": "instagram",
+       "utm_medium": null,
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": []
+    },
+    {
+     "id": 13,
+     "code": "job_fair",
+     "name": "Job fair",
+     "type": "event",
+     "active": true,
+     "utm_rules": [],
+     "costs": []
+    },
+    {
+     "id": 6,
+     "code": "linkedin",
+     "name": "LinkedIn",
+     "type": "social",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 6,
+       "utm_source": "linkedin",
+       "utm_medium": null,
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": [
+      {
+       "id": 24,
+       "period_start": "2026-10-01",
+       "period_end": "2026-10-31",
+       "amount": 7500,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 23,
+       "period_start": "2026-09-01",
+       "period_end": "2026-09-30",
+       "amount": 6500,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 22,
+       "period_start": "2026-08-01",
+       "period_end": "2026-08-31",
+       "amount": 7200,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 21,
+       "period_start": "2026-07-01",
+       "period_end": "2026-07-31",
+       "amount": 7600,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 20,
+       "period_start": "2026-06-01",
+       "period_end": "2026-06-30",
+       "amount": 7300,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 19,
+       "period_start": "2026-05-01",
+       "period_end": "2026-05-31",
+       "amount": 9100,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "code": "meta_ads",
+     "name": "Meta Ads (Facebook/Instagram)",
+     "type": "ads",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 9,
+       "utm_source": "facebook",
+       "utm_medium": "paid",
+       "utm_campaign": null,
+       "priority": 100
+      },
+      {
+       "id": 10,
+       "utm_source": "instagram",
+       "utm_medium": "paid",
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": [
+      {
+       "id": 36,
+       "period_start": "2026-10-01",
+       "period_end": "2026-10-31",
+       "amount": 13100,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 35,
+       "period_start": "2026-09-01",
+       "period_end": "2026-09-30",
+       "amount": 10800,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 34,
+       "period_start": "2026-08-01",
+       "period_end": "2026-08-31",
+       "amount": 12400,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 33,
+       "period_start": "2026-07-01",
+       "period_end": "2026-07-31",
+       "amount": 11100,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 32,
+       "period_start": "2026-06-01",
+       "period_end": "2026-06-30",
+       "amount": 12700,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 31,
+       "period_start": "2026-05-01",
+       "period_end": "2026-05-31",
+       "amount": 10500,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "code": "other",
+     "name": "Other",
+     "type": "other",
+     "active": true,
+     "utm_rules": [],
+     "costs": []
+    },
+    {
+     "id": 14,
+     "code": "agency",
+     "name": "Recruiting agency",
+     "type": "agency",
+     "active": true,
+     "utm_rules": [],
+     "costs": []
+    },
+    {
+     "id": 2,
+     "code": "robota_ua",
+     "name": "Robota.ua",
+     "type": "job_board",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 3,
+       "utm_source": "robota.ua",
+       "utm_medium": null,
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": [
+      {
+       "id": 12,
+       "period_start": "2026-10-01",
+       "period_end": "2026-10-31",
+       "amount": 6000,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 11,
+       "period_start": "2026-09-01",
+       "period_end": "2026-09-30",
+       "amount": 3600,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 10,
+       "period_start": "2026-08-01",
+       "period_end": "2026-08-31",
+       "amount": 7300,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 9,
+       "period_start": "2026-07-01",
+       "period_end": "2026-07-31",
+       "amount": 5400,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 8,
+       "period_start": "2026-06-01",
+       "period_end": "2026-06-30",
+       "amount": 6500,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 7,
+       "period_start": "2026-05-01",
+       "period_end": "2026-05-31",
+       "amount": 5600,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "code": "telegram",
+     "name": "Telegram",
+     "type": "social",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 7,
+       "utm_source": "telegram",
+       "utm_medium": null,
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": [
+      {
+       "id": 30,
+       "period_start": "2026-10-01",
+       "period_end": "2026-10-31",
+       "amount": 10100,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 29,
+       "period_start": "2026-09-01",
+       "period_end": "2026-09-30",
+       "amount": 11200,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 28,
+       "period_start": "2026-08-01",
+       "period_end": "2026-08-31",
+       "amount": 10100,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 27,
+       "period_start": "2026-07-01",
+       "period_end": "2026-07-31",
+       "amount": 11300,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 26,
+       "period_start": "2026-06-01",
+       "period_end": "2026-06-30",
+       "amount": 10500,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 25,
+       "period_start": "2026-05-01",
+       "period_end": "2026-05-31",
+       "amount": 10300,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      }
+     ]
+    },
+    {
+     "id": 1,
+     "code": "work_ua",
+     "name": "Work.ua",
+     "type": "job_board",
+     "active": true,
+     "utm_rules": [
+      {
+       "id": 1,
+       "utm_source": "work.ua",
+       "utm_medium": null,
+       "utm_campaign": null,
+       "priority": 100
+      },
+      {
+       "id": 2,
+       "utm_source": "workua",
+       "utm_medium": null,
+       "utm_campaign": null,
+       "priority": 100
+      }
+     ],
+     "costs": [
+      {
+       "id": 6,
+       "period_start": "2026-10-01",
+       "period_end": "2026-10-31",
+       "amount": 5000,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 5,
+       "period_start": "2026-09-01",
+       "period_end": "2026-09-30",
+       "amount": 3500,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 4,
+       "period_start": "2026-08-01",
+       "period_end": "2026-08-31",
+       "amount": 2200,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 3,
+       "period_start": "2026-07-01",
+       "period_end": "2026-07-31",
+       "amount": 5200,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 2,
+       "period_start": "2026-06-01",
+       "period_end": "2026-06-30",
+       "amount": 2100,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      },
+      {
+       "id": 1,
+       "period_start": "2026-05-01",
+       "period_end": "2026-05-31",
+       "amount": 4800,
+       "currency": "UAH",
+       "note": "витрати [ТЕСТ]"
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

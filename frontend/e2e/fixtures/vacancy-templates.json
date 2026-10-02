@@ -1,0 +1,8 @@
+{
+ "GET /api/vacancy-templates": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ }
+}

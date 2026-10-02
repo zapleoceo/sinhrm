@@ -1,0 +1,1545 @@
+{
+ "GET /api/timeoff/approvals": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 158,
+     "employee": {
+      "id": 118,
+      "full_name": "Марченко Дмитро [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-04-14",
+     "ends_on": "2026-04-23",
+     "half_day": "none",
+     "days": 10,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-04-04T18:02:00+00:00"
+    },
+    {
+     "id": 152,
+     "employee": {
+      "id": 114,
+      "full_name": "Лисенко Богдан [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "color": "#8a8f98"
+     },
+     "starts_on": "2026-05-01",
+     "ends_on": "2026-05-08",
+     "half_day": "none",
+     "days": 8,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-04-21T18:02:00+00:00"
+    },
+    {
+     "id": 52,
+     "employee": {
+      "id": 39,
+      "full_name": "Олійник Дарина [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "color": "#8a8f98"
+     },
+     "starts_on": "2026-05-05",
+     "ends_on": "2026-05-07",
+     "half_day": "none",
+     "days": 3,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-04-25T18:02:00+00:00"
+    },
+    {
+     "id": 92,
+     "employee": {
+      "id": 69,
+      "full_name": "Гончаренко Софія [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "color": "#8a8f98"
+     },
+     "starts_on": "2026-06-14",
+     "ends_on": "2026-06-18",
+     "half_day": "none",
+     "days": 5,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-06-04T18:02:00+00:00"
+    },
+    {
+     "id": 99,
+     "employee": {
+      "id": 74,
+      "full_name": "Коваленко Ігор [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-06-19",
+     "ends_on": "2026-06-23",
+     "half_day": "none",
+     "days": 5,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-06-09T18:02:00+00:00"
+    },
+    {
+     "id": 165,
+     "employee": {
+      "id": 124,
+      "full_name": "Павленко Ігор [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-06-22",
+     "ends_on": "2026-06-22",
+     "half_day": "none",
+     "days": 1,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-06-12T18:02:00+00:00"
+    },
+    {
+     "id": 5,
+     "employee": {
+      "id": 4,
+      "full_name": "Марченко Сергій [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-07-01",
+     "ends_on": "2026-07-03",
+     "half_day": "none",
+     "days": 3,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-06-21T18:02:00+00:00"
+    },
+    {
+     "id": 159,
+     "employee": {
+      "id": 119,
+      "full_name": "Гончаренко Софія [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-07-09",
+     "ends_on": "2026-07-17",
+     "half_day": "none",
+     "days": 9,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-06-29T18:02:00+00:00"
+    },
+    {
+     "id": 72,
+     "employee": {
+      "id": 54,
+      "full_name": "Руденко Сергій [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "color": "#8a8f98"
+     },
+     "starts_on": "2026-07-10",
+     "ends_on": "2026-07-13",
+     "half_day": "none",
+     "days": 4,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-06-30T18:02:00+00:00"
+    },
+    {
+     "id": 98,
+     "employee": {
+      "id": 73,
+      "full_name": "Лисенко Наталія [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-07-13",
+     "ends_on": "2026-07-18",
+     "half_day": "none",
+     "days": 6,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-07-03T18:02:00+00:00"
+    },
+    {
+     "id": 19,
+     "employee": {
+      "id": 14,
+      "full_name": "Лисенко Богдан [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-07-31",
+     "ends_on": "2026-08-04",
+     "half_day": "none",
+     "days": 5,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-07-21T18:02:00+00:00"
+    },
+    {
+     "id": 59,
+     "employee": {
+      "id": 44,
+      "full_name": "Поліщук Андрій [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-07-31",
+     "ends_on": "2026-08-08",
+     "half_day": "none",
+     "days": 9,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-07-21T18:02:00+00:00"
+    },
+    {
+     "id": 112,
+     "employee": {
+      "id": 84,
+      "full_name": "Ткаченко Тарас [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "color": "#8a8f98"
+     },
+     "starts_on": "2026-08-09",
+     "ends_on": "2026-08-18",
+     "half_day": "none",
+     "days": 10,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-07-30T18:02:00+00:00"
+    },
+    {
+     "id": 45,
+     "employee": {
+      "id": 34,
+      "full_name": "Кравченко Тарас [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-08-14",
+     "ends_on": "2026-08-21",
+     "half_day": "none",
+     "days": 8,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-08-04T18:02:00+00:00"
+    },
+    {
+     "id": 58,
+     "employee": {
+      "id": 43,
+      "full_name": "Кравченко Катерина [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-08-15",
+     "ends_on": "2026-08-19",
+     "half_day": "none",
+     "days": 5,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-08-05T18:02:00+00:00"
+    },
+    {
+     "id": 138,
+     "employee": {
+      "id": 103,
+      "full_name": "Шевчук Оксана [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-08-20",
+     "ends_on": "2026-08-29",
+     "half_day": "none",
+     "days": 10,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-08-10T18:02:00+00:00"
+    },
+    {
+     "id": 18,
+     "employee": {
+      "id": 13,
+      "full_name": "Руденко Олена [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-08-23",
+     "ends_on": "2026-08-28",
+     "half_day": "none",
+     "days": 6,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-08-13T18:02:00+00:00"
+    },
+    {
+     "id": 139,
+     "employee": {
+      "id": 104,
+      "full_name": "Руденко Сергій [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-08-24",
+     "ends_on": "2026-08-28",
+     "half_day": "none",
+     "days": 5,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-08-14T18:02:00+00:00"
+    },
+    {
+     "id": 119,
+     "employee": {
+      "id": 89,
+      "full_name": "Олійник Дарина [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-09-01",
+     "ends_on": "2026-09-06",
+     "half_day": "none",
+     "days": 6,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-08-22T18:02:00+00:00"
+    },
+    {
+     "id": 65,
+     "employee": {
+      "id": 49,
+      "full_name": "Савченко Ірина [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-09-02",
+     "ends_on": "2026-09-08",
+     "half_day": "none",
+     "days": 7,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-08-23T18:02:00+00:00"
+    },
+    {
+     "id": 39,
+     "employee": {
+      "id": 29,
+      "full_name": "Ткаченко Вікторія [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-09-14",
+     "ends_on": "2026-09-22",
+     "half_day": "none",
+     "days": 9,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-09-04T18:02:00+00:00"
+    },
+    {
+     "id": 145,
+     "employee": {
+      "id": 109,
+      "full_name": "Марченко Юлія [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-09-18",
+     "ends_on": "2026-09-23",
+     "half_day": "none",
+     "days": 6,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-09-08T18:02:00+00:00"
+    },
+    {
+     "id": 85,
+     "employee": {
+      "id": 64,
+      "full_name": "Лисенко Богдан [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-09-21",
+     "ends_on": "2026-09-21",
+     "half_day": "none",
+     "days": 1,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-09-11T18:02:00+00:00"
+    },
+    {
+     "id": 78,
+     "employee": {
+      "id": 58,
+      "full_name": "Савченко Євген [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-09-29",
+     "ends_on": "2026-10-06",
+     "half_day": "none",
+     "days": 8,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-09-19T18:02:00+00:00"
+    },
+    {
+     "id": 118,
+     "employee": {
+      "id": 88,
+      "full_name": "Бондаренко Віктор [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-09-29",
+     "ends_on": "2026-09-30",
+     "half_day": "none",
+     "days": 2,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-09-19T18:02:00+00:00"
+    },
+    {
+     "id": 12,
+     "employee": {
+      "id": 9,
+      "full_name": "Мороз Юлія [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "color": "#8a8f98"
+     },
+     "starts_on": "2026-10-02",
+     "ends_on": "2026-10-11",
+     "half_day": "none",
+     "days": 10,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-09-22T18:02:00+00:00"
+    },
+    {
+     "id": 32,
+     "employee": {
+      "id": 24,
+      "full_name": "Коваленко Роман [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "color": "#8a8f98"
+     },
+     "starts_on": "2026-10-05",
+     "ends_on": "2026-10-13",
+     "half_day": "none",
+     "days": 9,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-09-25T18:02:00+00:00"
+    },
+    {
+     "id": 38,
+     "employee": {
+      "id": 28,
+      "full_name": "Гончаренко Максим [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-10-06",
+     "ends_on": "2026-10-08",
+     "half_day": "none",
+     "days": 3,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-09-26T18:02:00+00:00"
+    },
+    {
+     "id": 125,
+     "employee": {
+      "id": 94,
+      "full_name": "Шевчук Андрій [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-10-17",
+     "ends_on": "2026-10-20",
+     "half_day": "none",
+     "days": 4,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-10-07T18:02:00+00:00"
+    },
+    {
+     "id": 105,
+     "employee": {
+      "id": 79,
+      "full_name": "Бондаренко Вікторія [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-10-21",
+     "ends_on": "2026-10-28",
+     "half_day": "none",
+     "days": 8,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "pending",
+     "balance_override": false,
+     "approver": null,
+     "decided_at": null,
+     "decision_comment": null,
+     "can_decide": true,
+     "can_cancel": true,
+     "created_at": "2026-10-11T18:02:00+00:00"
+    }
+   ]
+  }
+ },
+ "GET /api/timeoff/balances": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "code": "vacation",
+      "color": "#4f7cff",
+      "paid": true
+     },
+     "tracked": true,
+     "balance": 0,
+     "pending": 0,
+     "available": 0,
+     "used_this_year": 3,
+     "policy": {
+      "id": 1,
+      "accrual_mode": "yearly_upfront",
+      "annual_days": 24,
+      "carry_over_max": null,
+      "branch_id": null
+     }
+    },
+    {
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "code": "sick",
+      "color": "#e0625a",
+      "paid": true
+     },
+     "tracked": false,
+     "balance": null,
+     "pending": 0,
+     "available": null,
+     "used_this_year": 3,
+     "policy": null
+    },
+    {
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "code": "day_off",
+      "color": "#8a8f98",
+      "paid": false
+     },
+     "tracked": false,
+     "balance": null,
+     "pending": 0,
+     "available": null,
+     "used_this_year": 0,
+     "policy": null
+    }
+   ],
+   "meta": {
+    "employee": {
+     "id": 1,
+     "full_name": "Коваленко Олена [ТЕСТ]"
+    }
+   }
+  }
+ },
+ "GET /api/timeoff/balances?employee_id=1": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "code": "vacation",
+      "color": "#4f7cff",
+      "paid": true
+     },
+     "tracked": true,
+     "balance": 0,
+     "pending": 0,
+     "available": 0,
+     "used_this_year": 3,
+     "policy": {
+      "id": 1,
+      "accrual_mode": "yearly_upfront",
+      "annual_days": 24,
+      "carry_over_max": null,
+      "branch_id": null
+     }
+    },
+    {
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "code": "sick",
+      "color": "#e0625a",
+      "paid": true
+     },
+     "tracked": false,
+     "balance": null,
+     "pending": 0,
+     "available": null,
+     "used_this_year": 3,
+     "policy": null
+    },
+    {
+     "leave_type": {
+      "id": 3,
+      "name": "Day off (unpaid)",
+      "code": "day_off",
+      "color": "#8a8f98",
+      "paid": false
+     },
+     "tracked": false,
+     "balance": null,
+     "pending": 0,
+     "available": null,
+     "used_this_year": 0,
+     "policy": null
+    }
+   ],
+   "meta": {
+    "employee": {
+     "id": 1,
+     "full_name": "Коваленко Олена [ТЕСТ]"
+    }
+   }
+  }
+ },
+ "GET /api/timeoff/calendar?from=2026-10-01&to=2026-10-31": {
+  "status": 200,
+  "body": {
+   "data": {
+    "absences": [
+     {
+      "id": 36,
+      "employee": {
+       "id": 27,
+       "full_name": "Марченко Дарина [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-09-28",
+      "ends_on": "2026-10-07",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 100,
+      "employee": {
+       "id": 75,
+       "full_name": "Кравченко Марія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-09-28",
+      "ends_on": "2026-10-04",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 47,
+      "employee": {
+       "id": 35,
+       "full_name": "Поліщук Наталія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-09-29",
+      "ends_on": "2026-10-03",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 78,
+      "employee": {
+       "id": 58,
+       "full_name": "Савченко Євген [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-09-29",
+      "ends_on": "2026-10-06",
+      "half_day": "none",
+      "status": "pending"
+     },
+     {
+      "id": 4,
+      "employee": {
+       "id": 3,
+       "full_name": "Поліщук Оксана [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-09-30",
+      "ends_on": "2026-10-06",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 68,
+      "employee": {
+       "id": 51,
+       "full_name": "Павленко Олена [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-09-30",
+      "ends_on": "2026-10-01",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 111,
+      "employee": {
+       "id": 83,
+       "full_name": "Павленко Тетяна [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-09-30",
+      "ends_on": "2026-10-07",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 143,
+      "employee": {
+       "id": 107,
+       "full_name": "Кравченко Софія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-09-30",
+      "ends_on": "2026-10-03",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 164,
+      "employee": {
+       "id": 123,
+       "full_name": "Мороз Наталія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-09-30",
+      "ends_on": "2026-10-04",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 15,
+      "employee": {
+       "id": 11,
+       "full_name": "Ткаченко Ірина [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-10-01",
+      "ends_on": "2026-10-03",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 57,
+      "employee": {
+       "id": 43,
+       "full_name": "Кравченко Катерина [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 1,
+       "name": "Vacation",
+       "color": "#4f7cff"
+      },
+      "starts_on": "2026-10-01",
+      "ends_on": "2026-10-10",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 121,
+      "employee": {
+       "id": 91,
+       "full_name": "Мороз Вікторія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 1,
+       "name": "Vacation",
+       "color": "#4f7cff"
+      },
+      "starts_on": "2026-10-01",
+      "ends_on": "2026-10-07",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 132,
+      "employee": {
+       "id": 99,
+       "full_name": "Савченко Ірина [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-10-01",
+      "ends_on": "2026-10-04",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 153,
+      "employee": {
+       "id": 115,
+       "full_name": "Коваленко Оксана [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 1,
+       "name": "Vacation",
+       "color": "#4f7cff"
+      },
+      "starts_on": "2026-10-01",
+      "ends_on": "2026-10-08",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 12,
+      "employee": {
+       "id": 9,
+       "full_name": "Мороз Юлія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-10-02",
+      "ends_on": "2026-10-11",
+      "half_day": "none",
+      "status": "pending"
+     },
+     {
+      "id": 154,
+      "employee": {
+       "id": 115,
+       "full_name": "Коваленко Оксана [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-10-02",
+      "ends_on": "2026-10-10",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 136,
+      "employee": {
+       "id": 102,
+       "full_name": "Ткаченко Богдан [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-10-03",
+      "ends_on": "2026-10-04",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 88,
+      "employee": {
+       "id": 66,
+       "full_name": "Кравченко Сергій [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-10-04",
+      "ends_on": "2026-10-12",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 32,
+      "employee": {
+       "id": 24,
+       "full_name": "Коваленко Роман [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-10-05",
+      "ends_on": "2026-10-13",
+      "half_day": "none",
+      "status": "pending"
+     },
+     {
+      "id": 38,
+      "employee": {
+       "id": 28,
+       "full_name": "Гончаренко Максим [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-10-06",
+      "ends_on": "2026-10-08",
+      "half_day": "none",
+      "status": "pending"
+     },
+     {
+      "id": 141,
+      "employee": {
+       "id": 106,
+       "full_name": "Коваленко Дмитро [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 1,
+       "name": "Vacation",
+       "color": "#4f7cff"
+      },
+      "starts_on": "2026-10-07",
+      "ends_on": "2026-10-11",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 129,
+      "employee": {
+       "id": 97,
+       "full_name": "Коваленко Юлія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 1,
+       "name": "Vacation",
+       "color": "#4f7cff"
+      },
+      "starts_on": "2026-10-08",
+      "ends_on": "2026-10-11",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 135,
+      "employee": {
+       "id": 101,
+       "full_name": "Павленко Олена [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-10-11",
+      "ends_on": "2026-10-16",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 134,
+      "employee": {
+       "id": 100,
+       "full_name": "Мороз Роман [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-10-16",
+      "ends_on": "2026-10-22",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 125,
+      "employee": {
+       "id": 94,
+       "full_name": "Шевчук Андрій [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 1,
+       "name": "Vacation",
+       "color": "#4f7cff"
+      },
+      "starts_on": "2026-10-17",
+      "ends_on": "2026-10-20",
+      "half_day": "none",
+      "status": "pending"
+     },
+     {
+      "id": 144,
+      "employee": {
+       "id": 108,
+       "full_name": "Поліщук Євген [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-10-18",
+      "ends_on": "2026-10-22",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 54,
+      "employee": {
+       "id": 40,
+       "full_name": "Савченко Максим [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 2,
+       "name": "Sick leave",
+       "color": "#e0625a"
+      },
+      "starts_on": "2026-10-19",
+      "ends_on": "2026-10-25",
+      "half_day": "none",
+      "status": "approved"
+     },
+     {
+      "id": 105,
+      "employee": {
+       "id": 79,
+       "full_name": "Бондаренко Вікторія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 1,
+       "name": "Vacation",
+       "color": "#4f7cff"
+      },
+      "starts_on": "2026-10-21",
+      "ends_on": "2026-10-28",
+      "half_day": "none",
+      "status": "pending"
+     },
+     {
+      "id": 116,
+      "employee": {
+       "id": 87,
+       "full_name": "Гончаренко Марія [ТЕСТ]",
+       "avatar_url": null
+      },
+      "leave_type": {
+       "id": 3,
+       "name": "Day off (unpaid)",
+       "color": "#8a8f98"
+      },
+      "starts_on": "2026-10-21",
+      "ends_on": "2026-10-24",
+      "half_day": "none",
+      "status": "approved"
+     }
+    ],
+    "holidays": []
+   },
+   "meta": {
+    "from": "2026-10-01",
+    "to": "2026-10-31"
+   }
+  }
+ },
+ "GET /api/timeoff/requests?employee_id=1&perPage=50": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "employee": {
+      "id": 1,
+      "full_name": "Коваленко Олена [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 1,
+      "name": "Vacation",
+      "color": "#4f7cff"
+     },
+     "starts_on": "2026-09-09",
+     "ends_on": "2026-09-11",
+     "half_day": "none",
+     "days": 3,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "approved",
+     "balance_override": false,
+     "approver": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "decided_at": "2026-09-02T18:02:00+00:00",
+     "decision_comment": null,
+     "can_decide": false,
+     "can_cancel": true,
+     "created_at": "2026-08-30T18:02:00+00:00"
+    },
+    {
+     "id": 2,
+     "employee": {
+      "id": 1,
+      "full_name": "Коваленко Олена [ТЕСТ]"
+     },
+     "leave_type": {
+      "id": 2,
+      "name": "Sick leave",
+      "color": "#e0625a"
+     },
+     "starts_on": "2026-07-23",
+     "ends_on": "2026-07-25",
+     "half_day": "none",
+     "days": 3,
+     "comment": "відпустка [ТЕСТ]",
+     "status": "approved",
+     "balance_override": false,
+     "approver": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "decided_at": "2026-07-16T18:02:00+00:00",
+     "decision_comment": null,
+     "can_decide": false,
+     "can_cancel": true,
+     "created_at": "2026-07-13T18:02:00+00:00"
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/timeoff/requests?page=1",
+    "last": "https://sinhrm.test/api/timeoff/requests?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/timeoff/requests?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/timeoff/requests",
+    "per_page": 50,
+    "to": 2,
+    "total": 2
+   }
+  }
+ },
+ "GET /api/timeoff/requests/preview?ends_on=2026-10-01&half_day=none&leave_type_id=1&starts_on=2026-10-01": {
+  "status": 200,
+  "body": {
+   "data": {
+    "days": 1,
+    "holidays": [],
+    "tracked": true,
+    "available": 0,
+    "sufficient": false,
+    "overlap": false
+   }
+  }
+ },
+ "GET /api/timeoff/types": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "name": "Vacation",
+     "code": "vacation",
+     "paid": true,
+     "unit": "days",
+     "color": "#4f7cff",
+     "requires_approval": true,
+     "tracks_balance": true,
+     "active": true
+    },
+    {
+     "id": 2,
+     "name": "Sick leave",
+     "code": "sick",
+     "paid": true,
+     "unit": "days",
+     "color": "#e0625a",
+     "requires_approval": true,
+     "tracks_balance": false,
+     "active": true
+    },
+    {
+     "id": 3,
+     "name": "Day off (unpaid)",
+     "code": "day_off",
+     "paid": false,
+     "unit": "days",
+     "color": "#8a8f98",
+     "requires_approval": true,
+     "tracks_balance": false,
+     "active": true
+    }
+   ]
+  }
+ }
+}

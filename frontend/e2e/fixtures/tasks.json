@@ -1,0 +1,20 @@
+{
+ "GET /api/tasks?candidate_id=1": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/tasks?due=today&mine=1": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/tasks?mine=1": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ }
+}
