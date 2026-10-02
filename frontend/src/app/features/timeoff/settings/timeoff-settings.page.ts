@@ -8,15 +8,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
 import { ACCRUAL_MODES, AccrualMode, Holiday, LeavePolicy, LeaveType } from '../timeoff.model';
 import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
 import { toIsoDate } from '../../../core/date/iso-date';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Leave settings (superadmin, admin): leave types, policies (company default + per branch,
@@ -170,8 +170,7 @@ import { toIsoDate } from '../../../core/date/iso-date';
 export class TimeOffSettingsPage implements OnInit {
   private readonly api = inject(TimeOffService);
   private readonly directory = inject(DirectoryService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly fb = inject(NonNullableFormBuilder);
 
   protected readonly modes = ACCRUAL_MODES;
@@ -276,7 +275,7 @@ export class TimeOffSettingsPage implements OnInit {
   private run<T>(call: Observable<T>, done: (value: T) => void): void {
     call.subscribe({
       next: done,
-      error: (e: unknown) => this.snack.open(this.i18n.translate(timeoffErrorKey(e)), undefined, { duration: 4000 }),
+      error: (e: unknown) => this.notify.show(timeoffErrorKey(e)),
     });
   }
 }

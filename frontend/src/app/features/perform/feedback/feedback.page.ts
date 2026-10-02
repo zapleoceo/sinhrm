@@ -9,10 +9,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { FEEDBACK_BOXES, FEEDBACK_TONE, FEEDBACK_TYPES, FEEDBACK_VISIBILITIES, Feedback, FeedbackBox, FeedbackType, FeedbackVisibility } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Continuous feedback (/perform/feedback): give or ask for feedback; boxes received / given / requests to me /
@@ -114,8 +114,7 @@ import { PerformService, performErrorKey } from '../perform.service';
 })
 export class FeedbackPage implements OnInit {
   private readonly api = inject(PerformService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly boxes = FEEDBACK_BOXES;
   protected readonly types = FEEDBACK_TYPES;
   protected readonly typeTone = FEEDBACK_TONE;
@@ -147,7 +146,7 @@ export class FeedbackPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(performErrorKey(e));
+        this.notify.show(performErrorKey(e));
       },
     });
   }
@@ -166,14 +165,10 @@ export class FeedbackPage implements OnInit {
       next: () => {
         this.text = '';
         this.answering.set(null);
-        this.toast(this.type === 'request' ? 'perform.feedback.requested' : 'perform.feedback.sent');
+        this.notify.show(this.type === 'request' ? 'perform.feedback.requested' : 'perform.feedback.sent');
         this.load();
       },
-      error: (e: unknown) => this.toast(performErrorKey(e)),
+      error: (e: unknown) => this.notify.show(performErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

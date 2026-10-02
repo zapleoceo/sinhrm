@@ -7,14 +7,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { RUN_STATUSES, RunQuery, RunStatus, WorkflowRun, WorkflowTemplate } from '../workflows.model';
 import { WorkflowsService } from '../workflows.service';
 import { PersonPicker, PickerValue } from '../../people/picker/person-picker';
 import { RunCard, StepAction } from './run-card';
 import { RunsStore } from './runs.store';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Board of workflow runs (/workflows/runs): admins see all, managers their people; filters by status, template, employee. */
 @Component({
@@ -82,8 +82,7 @@ export class WorkflowRunsPage implements OnInit {
   protected readonly store = inject(RunsStore);
   private readonly api = inject(WorkflowsService);
   private readonly auth = inject(AuthService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly statuses = RUN_STATUSES;
   protected readonly status = signal<RunStatus | null>('running');
@@ -115,11 +114,11 @@ export class WorkflowRunsPage implements OnInit {
   }
 
   protected act(a: StepAction): void {
-    this.store.command(a.run, a.step, a.command, (key) => this.toast(key), a.reason);
+    this.store.command(a.run, a.step, a.command, (key) => this.notify.show(key), a.reason);
   }
 
   protected cancel(run: WorkflowRun): void {
-    this.store.cancel(run, (key) => this.toast(key));
+    this.store.cancel(run, (key) => this.notify.show(key));
   }
 
   private reload(): void {
@@ -137,9 +136,5 @@ export class WorkflowRunsPage implements OnInit {
       query.employee_id = employeeId;
     }
     this.store.load(query);
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

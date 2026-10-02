@@ -10,16 +10,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
+import { clearAssistantHistory } from '../assistant/assistant-conversation';
 import { AssistantSettings } from '../assistant/assistant-settings';
 import { AssistantMascot } from '../assistant/mascot/assistant-mascot';
 import { LanguageSwitcher } from './language-switcher';
 import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
 import { NavRail, RailTip } from './nav-rail';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** One radio item of "Працювати як": a role, or null = all roles. */
 interface RoleChoice {
@@ -58,7 +59,7 @@ export class ShellLayout {
   private readonly navBadges = inject(NavBadgesService);
   private readonly assistant = inject(AssistantSettings);
   protected readonly theme = inject(ThemeService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
 
   protected readonly user = this.auth.user;
@@ -245,16 +246,20 @@ export class ShellLayout {
     try {
       await this.auth.setActiveRole(role);
     } catch {
-      this.snack.open(this.i18n.translate('common.error'), undefined, { duration: 4000 });
+      this.notify.show('common.error');
       return;
     }
     await this.router.navigateByUrl('/');
     const name = this.i18n.translate(role === null ? 'shell.menu.allRoles' : `roles.${role}`);
-    this.snack.open(this.i18n.translate('shell.menu.workingAs', { role: name }), undefined, { duration: 4000 });
+    this.notify.show('shell.menu.workingAs', { params: { role: name } });
   }
 
   protected async logout(): Promise<void> {
-    await this.auth.logout();
+    try {
+      await this.auth.logout();
+    } finally {
+      clearAssistantHistory();
+    }
     await this.router.navigateByUrl('/login');
   }
 }

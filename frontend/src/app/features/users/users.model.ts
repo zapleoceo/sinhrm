@@ -1,4 +1,5 @@
 import { AppLang, USER_ROLES, UserRole, UserStatus } from '../../core/auth/auth.model';
+import { Paged } from '../../core/api/api.model';
 
 /** Item of GET /api/users (backend App\Modules\Users\Http\Resources\UserResource). */
 export interface AdminUser {
@@ -33,10 +34,7 @@ export interface UsersQuery {
   perPage?: number;
 }
 
-export interface UsersPage {
-  data: AdminUser[];
-  meta: { current_page: number; per_page: number; total: number; last_page: number };
-}
+export type UsersPage = Paged<AdminUser>;
 
 export interface InviteUser {
   email: string;

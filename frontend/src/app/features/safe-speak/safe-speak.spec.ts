@@ -50,5 +50,6 @@ describe('SafeSpeakService', () => {
     expect(safeSpeakErrorKey(new HttpErrorResponse({ status: 429, error: { code: 'too_many_attempts' } }))).toBe('safeSpeak.errors.too_many_attempts');
     expect(safeSpeakErrorKey(new HttpErrorResponse({ status: 404, error: { code: 'invalid_code' } }))).toBe('safeSpeak.errors.invalid_code');
     expect(safeSpeakErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('safeSpeak.errors.rate_limited');
+    expect(safeSpeakErrorKey(new Error('x'))).toBe('common.error');
   });
 });

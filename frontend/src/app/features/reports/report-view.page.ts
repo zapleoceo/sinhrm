@@ -6,7 +6,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { saveBlob } from '../../core/http/api-error';
@@ -16,6 +15,7 @@ import { ReportFilter, ReportResult } from './reports.model';
 import { ReportTable } from './report-table';
 import { ReportsService, reportsErrorKey } from './reports.service';
 import { fromIsoDate, toIsoDate } from '../../core/date/iso-date';
+import { NotifyService } from '../../core/ui/notify.service';
 
 type Filters = Partial<Record<ReportFilter, string>>;
 
@@ -98,7 +98,7 @@ export class ReportViewPage implements OnInit {
 
   private readonly api = inject(ReportsService);
   private readonly directory = inject(DirectoryService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   protected readonly String = String;
   protected readonly result = signal<ReportResult | null>(null);
@@ -141,13 +141,13 @@ export class ReportViewPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(reportsErrorKey(e));
+        this.notify.show(reportsErrorKey(e));
       },
     });
   }
 
   protected csv(): void {
-    this.api.csv(this.key(), this.filters()).subscribe({ next: (blob) => saveBlob(blob, `${this.key()}.csv`), error: (e: unknown) => this.toast(reportsErrorKey(e)) });
+    this.api.csv(this.key(), this.filters()).subscribe({ next: (blob) => saveBlob(blob, `${this.key()}.csv`), error: (e: unknown) => this.notify.show(reportsErrorKey(e)) });
   }
 
   protected save(): void {
@@ -159,12 +159,8 @@ export class ReportViewPage implements OnInit {
       }
     }
     this.api.save(null, name, 'catalog', { key: this.key(), filters }).subscribe({
-      next: () => this.toast('reports.saved.done'),
-      error: (e: unknown) => this.toast(reportsErrorKey(e)),
+      next: () => this.notify.show('reports.saved.done'),
+      error: (e: unknown) => this.notify.show(reportsErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

@@ -5,9 +5,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { saveBlob } from '../../core/http/api-error';
 import {
   BUILDER_AGGREGATES,
@@ -22,6 +21,7 @@ import {
 } from './reports.model';
 import { ReportTable } from './report-table';
 import { ReportsService, reportsErrorKey } from './reports.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * Custom report builder (/reports/builder[?saved=id]): dataset → columns → filters → group by + aggregate.
@@ -152,8 +152,7 @@ export class ReportBuilderPage implements OnInit {
   readonly saved = input(undefined, { transform: (v: unknown) => (v === undefined || v === null || v === '' ? undefined : numberAttribute(v)) });
 
   private readonly api = inject(ReportsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly operators = BUILDER_OPERATORS;
   protected readonly aggregates = BUILDER_AGGREGATES;
   protected readonly datasets = signal<DatasetInfo[]>([]);
@@ -188,7 +187,7 @@ export class ReportBuilderPage implements OnInit {
               this.savedId.set(found.id);
             }
           },
-          error: (e: unknown) => this.toast(reportsErrorKey(e)),
+          error: (e: unknown) => this.notify.show(reportsErrorKey(e)),
         });
       }
     });
@@ -202,7 +201,7 @@ export class ReportBuilderPage implements OnInit {
           this.dataset.set(list[0].key);
         }
       },
-      error: (e: unknown) => this.toast(reportsErrorKey(e)),
+      error: (e: unknown) => this.notify.show(reportsErrorKey(e)),
     });
   }
 
@@ -250,22 +249,22 @@ export class ReportBuilderPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(reportsErrorKey(e));
+        this.notify.show(reportsErrorKey(e));
       },
     });
   }
 
   protected csv(): void {
-    this.api.buildCsv(this.spec()).subscribe({ next: (blob) => saveBlob(blob, `${this.dataset()}.csv`), error: (e: unknown) => this.toast(reportsErrorKey(e)) });
+    this.api.buildCsv(this.spec()).subscribe({ next: (blob) => saveBlob(blob, `${this.dataset()}.csv`), error: (e: unknown) => this.notify.show(reportsErrorKey(e)) });
   }
 
   protected save(): void {
     this.api.save(this.savedId(), this.name().trim(), 'builder', this.spec()).subscribe({
       next: (s) => {
         this.savedId.set(s.id);
-        this.toast('reports.saved.done');
+        this.notify.show('reports.saved.done');
       },
-      error: (e: unknown) => this.toast(reportsErrorKey(e)),
+      error: (e: unknown) => this.notify.show(reportsErrorKey(e)),
     });
   }
 
@@ -276,9 +275,5 @@ export class ReportBuilderPage implements OnInit {
     this.groupBy.set(spec.group_by ?? null);
     this.aggregate.set(spec.aggregate?.fn ?? 'count');
     this.aggregateColumn.set(spec.aggregate?.column ?? null);
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

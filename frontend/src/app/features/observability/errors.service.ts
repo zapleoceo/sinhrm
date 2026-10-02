@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 export type ErrorStatusFilter = 'open' | 'resolved' | 'all';
 
@@ -29,10 +31,10 @@ export class ErrorsService {
   private readonly http = inject(HttpClient);
 
   list(status: ErrorStatusFilter): Observable<ErrorGroup[]> {
-    return this.http.get<{ data: ErrorGroup[] }>(API, { params: { status } }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<ErrorGroup[]>>(API, { params: { status } }).pipe(unwrapData());
   }
 
   setResolved(id: number, resolved: boolean): Observable<ErrorGroup> {
-    return this.http.patch<{ data: ErrorGroup }>(`${API}/${id}`, { resolved }).pipe(map((r) => r.data));
+    return this.http.patch<DataEnvelope<ErrorGroup>>(`${API}/${id}`, { resolved }).pipe(unwrapData());
   }
 }

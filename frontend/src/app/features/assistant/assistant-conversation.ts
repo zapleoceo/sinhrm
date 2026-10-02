@@ -40,6 +40,25 @@ export interface MoodEvent {
  * Last `limit` messages without cutting a tool exchange: the window starts at a user message
  * (or, when there is none, at least not with orphaned tool replies).
  */
+/**
+ * Removes the saved chats (they hold API answers of the assistant's tools, possibly personal data) of every user except
+ * `keepUserId`; `null` removes all — on logout. Storage unavailable → nothing to remove.
+ */
+export function clearAssistantHistory(keepUserId: number | null = null): void {
+  try {
+    const storage = globalThis.sessionStorage;
+    const keep = keepUserId === null ? null : STORAGE_PREFIX + keepUserId;
+    for (let i = (storage?.length ?? 0) - 1; i >= 0; i--) {
+      const key = storage.key(i);
+      if (key !== null && key.startsWith(STORAGE_PREFIX) && key !== keep) {
+        storage.removeItem(key);
+      }
+    }
+  } catch {
+    // storage unavailable — there is no saved history
+  }
+}
+
 export function trimHistory(history: readonly ChatMessage[], limit = HISTORY_LIMIT): ChatMessage[] {
   if (history.length <= limit) {
     return [...history];
@@ -116,6 +135,8 @@ export class AssistantConversation {
   private readonly moodState = signal<MoodEvent>({ mood: 'idle', seq: 0 });
   private readonly statusState = signal<AssistantStatus | null>(null);
   private resolveWrite: ((ok: boolean) => void) | null = null;
+  /** User whose history is shown; null before the session is known (a reload must not wipe the saved chat). */
+  private shownFor: number | null = null;
 
   readonly history = this.messages.asReadonly();
   readonly busy = this.working.asReadonly();
@@ -138,7 +159,15 @@ export class AssistantConversation {
   );
 
   constructor() {
-    effect(() => this.messages.set(this.load(this.userId())));
+    effect(() => {
+      const userId = this.userId();
+      if (this.shownFor !== null && this.shownFor !== userId) {
+        // Logout (null) or another user signed in: the previous user's chat must not stay in this tab.
+        clearAssistantHistory(userId);
+      }
+      this.shownFor = userId;
+      this.messages.set(this.load(userId));
+    });
   }
 
   /** GET /status; a failed call counts as "unavailable" with no reason. */

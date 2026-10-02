@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,26 +5,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Application } from '../recruiting.model';
 import { recruitingErrorKey } from '../recruiting.service';
-
-export type OfferStatus = 'draft' | 'sent' | 'accepted' | 'declined';
-
-export interface Offer {
-  id: number;
-  position: string;
-  salary: string;
-  start_date: string | null;
-  conditions: string | null;
-  content_md: string;
-  status: OfferStatus;
-}
-
-interface TemplateRef {
-  id: number;
-  name: string;
-}
+import { Offer, OfferStatus, OfferTemplateRef, OffersService } from './offers.service';
 
 /**
  * Offer of an application in the offer stage (kind "hire", not terminal). Shown only to recruiting writers
@@ -100,9 +83,9 @@ interface TemplateRef {
 export class OfferPanel implements OnInit {
   readonly application = input.required<Application>();
 
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(OffersService);
   protected readonly offer = signal<Offer | null>(null);
-  protected readonly templates = signal<TemplateRef[]>([]);
+  protected readonly templates = signal<OfferTemplateRef[]>([]);
   protected readonly formOpen = signal(false);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -118,12 +101,8 @@ export class OfferPanel implements OnInit {
     conditions: [''],
   });
 
-  private get url(): string {
-    return `/api/applications/${this.application().id}/offer`;
-  }
-
   ngOnInit(): void {
-    this.http.get<{ data: Offer | null }>(this.url).pipe(map((r) => r.data)).subscribe({
+    this.api.offer(this.application().id).subscribe({
       next: (o) => this.offer.set(o),
       error: () => undefined,
     });
@@ -132,8 +111,8 @@ export class OfferPanel implements OnInit {
   protected open(): void {
     this.formOpen.set(true);
     this.form.patchValue({ position: this.application().vacancy?.title ?? '' });
-    this.http.get<{ data: TemplateRef[] }>('/api/offer-templates').subscribe({
-      next: (r) => this.templates.set(r.data),
+    this.api.templates().subscribe({
+      next: (list) => this.templates.set(list),
       error: () => undefined,
     });
   }
@@ -144,19 +123,19 @@ export class OfferPanel implements OnInit {
       return;
     }
     const v = this.form.getRawValue();
-    this.run(this.http.post<{ data: Offer }>(this.url, { ...v, start_date: v.start_date || null, conditions: v.conditions.trim() || null }));
+    this.run(this.api.create(this.application().id, { ...v, start_date: v.start_date || null, conditions: v.conditions.trim() || null }));
   }
 
   protected act(path: 'send' | 'decision', status?: OfferStatus): void {
-    this.run(this.http.post<{ data: Offer }>(`${this.url}/${path}`, status ? { status } : {}));
+    this.run(this.api.act(this.application().id, path, status));
   }
 
-  private run(request: ReturnType<HttpClient['post']>): void {
+  private run(request: Observable<Offer>): void {
     this.busy.set(true);
     this.error.set(null);
     request.subscribe({
       next: (r) => {
-        this.offer.set((r as { data: Offer }).data);
+        this.offer.set(r);
         this.busy.set(false);
       },
       error: (e: unknown) => {

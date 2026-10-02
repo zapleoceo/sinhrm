@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { helpfulPercent, parseTags } from './knowledge.model';
-import { KnowledgeService } from './knowledge.service';
+import { KnowledgeService, knowledgeErrorKey } from './knowledge.service';
 import { audienceOf } from './editor.page';
 
 describe('KnowledgeService', () => {
@@ -45,5 +45,14 @@ describe('knowledge helpers', () => {
     expect(audienceOf('all', [1], ['admin'])).toEqual({ type: 'all' });
     expect(audienceOf('branches', [1, 2], [])).toEqual({ type: 'branches', ids: [1, 2] });
     expect(audienceOf('roles', [], ['recruiter'])).toEqual({ type: 'roles', roles: ['recruiter'] });
+  });
+});
+
+describe('knowledgeErrorKey', () => {
+  it('maps statuses to knowledge.errors.*, anything else to common.error', () => {
+    expect(knowledgeErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('knowledge.errors.forbidden');
+    expect(knowledgeErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('knowledge.errors.not_found');
+    expect(knowledgeErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'unknown' } }))).toBe('knowledge.errors.validation');
+    expect(knowledgeErrorKey(new HttpErrorResponse({ status: 500 }))).toBe('common.error');
   });
 });

@@ -77,5 +77,6 @@ describe('ScriptsService', () => {
     expect(scriptsErrorKey(new HttpErrorResponse({ status: 422, error: { errors: {} } }))).toBe('scripts.errors.validation');
     expect(scriptsErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('scripts.errors.forbidden');
     expect(scriptsErrorKey(new Error('x'))).toBe('scripts.errors.generic');
+    expect(scriptsErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('scripts.errors.generic');
   });
 });

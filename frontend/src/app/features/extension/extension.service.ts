@@ -1,7 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ExtensionTokenStatus } from './extension.model';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 const API = '/api/me/extension-token';
 
@@ -11,11 +13,11 @@ export class ExtensionService {
   private readonly http = inject(HttpClient);
 
   status(): Observable<ExtensionTokenStatus> {
-    return this.http.get<{ data: ExtensionTokenStatus }>(API).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<ExtensionTokenStatus>>(API).pipe(unwrapData());
   }
 
   issue(): Observable<ExtensionTokenStatus> {
-    return this.http.post<{ data: ExtensionTokenStatus }>(API, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<ExtensionTokenStatus>>(API, {}).pipe(unwrapData());
   }
 
   revoke(): Observable<void> {

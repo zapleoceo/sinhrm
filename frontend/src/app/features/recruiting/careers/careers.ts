@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,25 +10,7 @@ import { AppLang } from '../../../core/auth/auth.model';
 import { LanguageService } from '../../../core/i18n/language.service';
 import { Logo } from '../../../core/ui/logo';
 import { salaryRange } from '../../hiring-requests/hiring-requests.model';
-
-/** Public fields of a published vacancy (GET /api/public/vacancies[/{slug}]). */
-export interface PublicVacancy {
-  slug: string;
-  title: string;
-  branch?: string | null;
-  position?: string | null;
-  opened_at?: string | null;
-  description?: string | null;
-  city?: string | null;
-  employment_type?: string | null;
-  work_format?: string | null;
-  /** Present only when the recruiter ticked «Показувати кандидатам» (salary_visible). */
-  salary?: { min: number | null; max: number | null; currency: string } | null;
-  /** Markdown sections rendered to HTML on the server (raw HTML escaped); bound via [innerHTML], i.e. Angular-sanitized. */
-  requirements_html?: string | null;
-  responsibilities_html?: string | null;
-  additional_info_html?: string | null;
-}
+import { PublicCareersService, PublicVacancy } from './careers.service';
 
 /** Public sections of the vacancy page, in display order. */
 export const PUBLIC_SECTIONS = [
@@ -93,14 +74,14 @@ export class CareersHeader {
   `,
 })
 export class JobsPage implements OnInit {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(PublicCareersService);
   protected readonly vacancies = signal<PublicVacancy[]>([]);
   protected readonly loaded = signal(false);
 
   ngOnInit(): void {
-    this.http.get<{ data: PublicVacancy[] }>('/api/public/vacancies').subscribe({
-      next: (r) => {
-        this.vacancies.set(r.data);
+    this.api.vacancies().subscribe({
+      next: (list) => {
+        this.vacancies.set(list);
         this.loaded.set(true);
       },
       error: () => this.loaded.set(true),
@@ -204,7 +185,7 @@ export class JobsPage implements OnInit {
 export class JobPage implements OnInit {
   readonly slug = input.required<string>();
 
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(PublicCareersService);
   protected readonly vacancy = signal<PublicVacancy | null>(null);
   protected readonly sections = PUBLIC_SECTIONS;
   protected readonly salary = computed(() => {
@@ -226,8 +207,8 @@ export class JobPage implements OnInit {
   });
 
   ngOnInit(): void {
-    this.http.get<{ data: PublicVacancy }>(`/api/public/vacancies/${encodeURIComponent(this.slug())}`).subscribe({
-      next: (r) => this.vacancy.set(r.data),
+    this.api.vacancy(this.slug()).subscribe({
+      next: (v) => this.vacancy.set(v),
       error: () => this.missing.set(true),
     });
   }
@@ -259,7 +240,7 @@ export class JobPage implements OnInit {
     }
     this.busy.set(true);
     this.error.set(null);
-    this.http.post(`/api/public/vacancies/${encodeURIComponent(this.slug())}/apply`, body).subscribe({
+    this.api.apply(this.slug(), body).subscribe({
       next: () => this.sent.set(true),
       error: (e: { status?: number }) => {
         this.busy.set(false);

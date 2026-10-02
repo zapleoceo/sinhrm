@@ -1,6 +1,6 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   AiPolicy,
   CHECK_RESULT_CODES,
@@ -12,6 +12,9 @@ import {
   ManualStatus,
   UpdateIntegration,
 } from './integrations.model';
+import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 const API = '/api/integrations';
 
@@ -24,35 +27,29 @@ export class IntegrationsService {
   }
 
   update(key: string, body: UpdateIntegration): Observable<Integration> {
-    return this.http.put<{ data: Integration }>(`${API}/${key}`, body).pipe(map((r) => r.data));
+    return this.http.put<DataEnvelope<Integration>>(`${API}/${key}`, body).pipe(unwrapData());
   }
 
   check(key: string): Observable<Integration> {
-    return this.http.post<{ data: Integration }>(`${API}/${key}/check`, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<Integration>>(`${API}/${key}/check`, {}).pipe(unwrapData());
   }
 
   setStatus(key: string, status: ManualStatus): Observable<Integration> {
-    return this.http.post<{ data: Integration }>(`${API}/${key}/status`, { status }).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<Integration>>(`${API}/${key}/status`, { status }).pipe(unwrapData());
   }
 
   logs(key: string): Observable<IntegrationLog[]> {
-    return this.http.get<{ data: IntegrationLog[] }>(`${API}/${key}/logs`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<IntegrationLog[]>>(`${API}/${key}/logs`).pipe(unwrapData());
   }
 
   setAiPolicy(enabled: boolean): Observable<AiPolicy> {
-    return this.http.put<{ data: AiPolicy }>(`${API}/ai-policy`, { enabled }).pipe(map((r) => r.data));
+    return this.http.put<DataEnvelope<AiPolicy>>(`${API}/ai-policy`, { enabled }).pipe(unwrapData());
   }
 }
 
 /** i18n key for a failed integrations API call. */
 export function integrationErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (INTEGRATION_ERROR_CODES as readonly string[]).includes(code)) {
-      return `integrations.errors.${code}`;
-    }
-  }
-  return 'integrations.errors.generic';
+  return apiErrorKey(error, 'integrations', INTEGRATION_ERROR_CODES, { statuses: [], fallback: 'integrations.errors.generic' });
 }
 
 /** i18n key for last_error ("missing_secret:bot_token" → integrations.check.missing_secret), null if unknown. */

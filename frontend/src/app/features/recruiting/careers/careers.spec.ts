@@ -3,7 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { JobPage, PublicVacancy } from './careers';
+import { JobPage } from './careers';
+import { PublicVacancy } from './careers.service';
 
 function render(data: PublicVacancy): HTMLElement {
   TestBed.configureTestingModule({
