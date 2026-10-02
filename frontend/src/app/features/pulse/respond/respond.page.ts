@@ -22,12 +22,13 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (error(); as key) {
-      <div class="state">
+      <div class="state end" data-tone="bad">
+        <span class="stop" aria-hidden="true"></span>
         <p>{{ key | transloco }}</p>
         <a mat-stroked-button routerLink="/pulse">{{ 'pulse.my.title' | transloco }}</a>
       </div>
     } @else if (done()) {
-      <div class="state">
+      <div class="state end" data-tone="good">
         <mat-icon class="big">task_alt</mat-icon>
         <p>{{ 'pulse.respond.thanks' | transloco }}</p>
         <a mat-stroked-button routerLink="/pulse">{{ 'pulse.my.title' | transloco }}</a>
@@ -89,22 +90,42 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
     }
   `,
   styles: `
-    .wrap { max-width: 40rem; margin: 0 auto; display: flex; flex-direction: column; gap: 0.75rem; }
-    h1 { font: var(--mat-sys-headline-small); margin: 0; }
-    .note { padding: 0.5rem 0.75rem; border-radius: 8px; background: var(--mat-sys-surface-container); margin: 0; }
-    .note.anon { background: color-mix(in srgb, var(--app-success) 12%, transparent); }
-    fieldset { border: 1px solid var(--app-border); border-radius: var(--app-radius); padding: 0.75rem 1rem; margin: 0; }
-    fieldset.missing { border-color: var(--app-danger); }
-    legend { font-weight: 500; padding: 0 0.25rem; }
+    .wrap { max-width: 40rem; margin: 0 auto; display: flex; flex-direction: column; gap: 0.875rem; }
+    h1 { font: var(--mat-sys-headline-small); letter-spacing: var(--mat-sys-headline-small-tracking); margin: 0; overflow-wrap: anywhere; }
+    /* Who sees the answers: a note with a rule — teal «hint» for named, green for anonymous (+ icon and text). */
+    .note {
+      display: flex; align-items: center; gap: 0.4rem; margin: 0; padding: 0.5rem 0.75rem;
+      border-left: 3px solid var(--app-accent); border-radius: 0 var(--app-radius-sm) var(--app-radius-sm) 0;
+      background: var(--app-card-2); font: var(--mat-sys-body-small);
+    }
+    .note.anon { border-left-color: var(--app-success); background: var(--app-good-bg); color: var(--app-good-text); }
+    fieldset { border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius); padding: 0.875rem 1rem 1rem; margin: 0; background: var(--app-card); min-width: 0; }
+    fieldset.missing { border-color: var(--app-danger); box-shadow: inset 4px 0 0 var(--app-danger); }
+    legend { font: var(--mat-sys-title-small); padding: 0 0.375rem; overflow-wrap: anywhere; }
     .scale { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .pt { min-width: 2.75rem; min-height: 2.75rem; border-radius: 8px; border: 1px solid var(--app-border); background: none; color: inherit; font: inherit; cursor: pointer; }
-    .pt.on { background: var(--mat-sys-primary); color: var(--mat-sys-on-primary); border-color: var(--mat-sys-primary); }
-    .ends { display: flex; justify-content: space-between; font-size: 0.8rem; margin: 0.25rem 0 0; }
+    /* Scale points: 44px pills with mono digits; the picked one is filled with ink (aria-checked carries it too). */
+    .pt {
+      min-width: 2.75rem; min-height: 2.75rem; border-radius: var(--app-radius-pill); border: var(--app-border-w) solid var(--mat-sys-outline);
+      background: var(--app-card); color: inherit; font: 600 0.9375rem var(--app-font-mono); font-variant-numeric: tabular-nums; cursor: pointer;
+      transition: border-color var(--app-fast) ease, background-color var(--app-fast) ease;
+    }
+    .pt:hover { border-color: var(--app-ink); }
+    .pt.on { background: var(--app-ink); color: var(--app-on-ink); border-color: var(--app-ink); }
+    .ends { display: flex; justify-content: space-between; gap: 1rem; font: var(--mat-sys-body-small); margin: 0.375rem 0 0; }
     .options { display: flex; flex-direction: column; gap: 0.25rem; }
     .full { width: 100%; }
-    .err { color: var(--app-danger); margin: 0; }
+    .err { display: flex; align-items: center; gap: 0.5rem; color: var(--app-bad-text); margin: 0; }
+    .err::before { content: ''; flex: none; width: 0.55rem; height: 0.55rem; border-radius: 1px; background: currentColor; }
     .send { align-self: stretch; min-height: 3rem; }
+    /* End states (sent / cannot answer): a centred card with a final «station». */
+    .end {
+      display: flex; flex-direction: column; align-items: center; gap: 0.75rem; max-width: 30rem; margin: 2rem auto; padding: 2rem 1.25rem;
+      border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius); background: var(--app-card); color: var(--mat-sys-on-surface);
+    }
+    .end p { margin: 0; text-align: center; }
     .big { font-size: 3rem; width: 3rem; height: 3rem; color: var(--app-success); }
+    .stop { width: 1.25rem; height: 1.25rem; box-sizing: border-box; border-radius: 3px; border: 3px solid var(--app-danger); }
+    @media (prefers-reduced-motion: reduce) { .pt { transition: none; } }
   `,
 })
 export class RespondPage {

@@ -66,7 +66,7 @@ import { toIsoDate, today } from '../../../core/date/iso-date';
             <span class="muted">{{ 'pulse.surveyType.' + s.type | transloco }} · {{ 'pulse.surveys.waves' | transloco: { n: s.waves_count } }}@if (!s.active) { · {{ 'pulse.surveys.inactive' | transloco }}}</span>
           </button>
         } @empty {
-          <p class="muted">{{ 'pulse.surveys.empty' | transloco }}</p>
+          <p class="app-empty">{{ 'pulse.surveys.empty' | transloco }}</p>
         }
       </nav>
 
@@ -199,18 +199,24 @@ import { toIsoDate, today } from '../../../core/date/iso-date';
     .layout { display: grid; grid-template-columns: minmax(14rem, 18rem) 1fr; gap: 1rem; }
     @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
     .list { display: flex; flex-direction: column; gap: 0.25rem; }
-    .row { display: flex; flex-direction: column; align-items: flex-start; padding: 0.5rem 0.75rem; border: 1px solid var(--app-border); border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-    .row.active { border-color: var(--mat-sys-primary); background: var(--mat-sys-secondary-container); }
+    .row {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; min-height: 44px; box-sizing: border-box; padding: 0.55rem 0.875rem;
+      border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius-sm); background: var(--app-card); color: inherit; font: inherit; cursor: pointer; text-align: left;
+    }
+    .row:hover { background: var(--app-row-hover); }
+    /* Selected survey: tint + a brand bar on the left (position, not colour alone). */
+    .row.active { border-color: var(--mat-sys-primary); background: var(--app-row-selected); box-shadow: inset 4px 0 0 var(--mat-sys-primary); }
+    .list .app-empty { border: var(--app-border-w) dashed var(--app-border); border-radius: var(--app-radius); }
     .main { display: flex; flex-direction: column; gap: 1rem; }
     .box { padding: 1rem; }
     .box h2 { font: var(--mat-sys-title-medium); margin: 0.75rem 0 0.5rem; }
     .full { width: 100%; }
-    .question { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; padding: 0.25rem 0; border-bottom: 1px dashed var(--app-border); }
-    .qid { font-family: monospace; color: var(--app-muted); min-width: 2.5rem; }
+    .question { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; padding: 0.375rem 0; border-bottom: var(--app-border-w) dashed var(--app-track); }
+    .qid { font: 500 0.8125rem var(--app-font-mono); color: var(--app-muted); min-width: 2.5rem; }
     .grow { flex: 1 1 14rem; }
     .num { width: 7rem; }
     .waves { width: 100%; border-collapse: collapse; }
-    .waves td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--app-border); }
+    .waves td { padding: 0.5rem 0.75rem; border-bottom: var(--app-border-w) solid var(--app-track); }
   `,
 })
 export class SurveysPage implements OnInit {

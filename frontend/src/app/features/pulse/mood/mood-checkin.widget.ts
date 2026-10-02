@@ -11,6 +11,7 @@ import { PulseService } from '../pulse.service';
 /**
  * Home-page mood check-in: "How is your mood today?" with five emoji and an optional comment, once a day on the
  * configured weekdays. After answering it shows today's mood. Hidden for users without an employee record.
+ * Faces are 44px touch targets; the picked one is a filled ring (shape + aria-checked, not colour alone).
  */
 @Component({
   selector: 'app-mood-checkin',
@@ -47,14 +48,23 @@ import { PulseService } from '../pulse.service';
   `,
   styles: `
     :host { display: contents; }
-    .mood { padding: 1rem; }
-    .mood h2 { margin: 0 0 0.5rem; font: var(--mat-sys-title-medium); }
+    .mood { padding: 1.25rem; }
+    .mood h2 { margin: 0 0 0.75rem; font: var(--mat-sys-title-medium); }
     .faces { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .face { font-size: 2rem; line-height: 1; padding: 0.35rem; border-radius: 50%; border: 2px solid transparent; background: none; cursor: pointer; }
-    .face.on, .face:focus-visible { border-color: var(--mat-sys-primary); }
-    .full { width: 100%; margin-top: 0.5rem; }
-    .today { display: flex; align-items: center; gap: 0.5rem; margin: 0; }
+    .face {
+      display: grid; place-items: center; width: 3rem; height: 3rem; min-width: 44px; min-height: 44px; padding: 0; box-sizing: border-box;
+      font-size: 1.75rem; line-height: 1; border-radius: 50%; border: var(--app-border-w) solid var(--app-border); background: var(--app-card); cursor: pointer;
+      transition: border-color var(--app-fast) ease, transform var(--app-fast) ease;
+    }
+    .face:hover { border-color: var(--mat-sys-outline); transform: translateY(-1px); }
+    .face.on { border: 3px solid var(--mat-sys-primary); background: color-mix(in srgb, var(--mat-sys-primary) 12%, var(--app-card)); }
+    .full { width: 100%; margin: 0.75rem 0 0.5rem; }
+    .today { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 0.25rem; }
     .emoji { font-size: 2rem; }
+    @media (prefers-reduced-motion: reduce) {
+      .face { transition: none; }
+      .face:hover { transform: none; }
+    }
   `,
 })
 export class MoodCheckinWidget implements OnInit {
