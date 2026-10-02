@@ -37,7 +37,7 @@
     }
     <!-- Header sort / filter: core/ui/table; URL tch_*, sources src_*, reasons rej_*. «Разом» stays in tfoot. -->
     <div class="scroll">
-    <table class="app-table" [appTableSort]="touches.sort()" (appTableSortChange)="touches.setSort($event)">
+    <table class="app-table dense" [appTableSort]="touches.sort()" (appTableSortChange)="touches.setSort($event)">
       <thead>
         <tr>
           <th scope="col" app-column-header key="recruiter" [label]="'recruiting.reports.recruiter' | transloco"

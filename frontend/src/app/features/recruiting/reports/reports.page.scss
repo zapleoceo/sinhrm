@@ -14,6 +14,8 @@ h3 { font: var(--mat-sys-title-small); margin: 1rem 0 0.25rem; }
 .app-table tbody tr:last-child th { border-bottom: 0; }
 .app-table tfoot td { padding: 0.6rem 1rem; }
 .num { text-align: right; font-family: var(--app-font-mono); font-variant-numeric: tabular-nums; }
+/* Recruiter × channel: many short numeric columns — narrower side padding so the matrix fits a desktop card. */
+.app-table.dense th, .app-table.dense td { padding-left: 0.5rem; padding-right: 0.5rem; }
 
 .barcell { display: flex; align-items: center; gap: 0.5rem; min-width: 8rem; }
 .bar { display: inline-block; height: 0.5rem; border-radius: var(--app-radius-pill); background: var(--app-stage-screen); min-width: 2px; }
