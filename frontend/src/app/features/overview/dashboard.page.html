@@ -32,7 +32,7 @@
     @for (t of store.tiles(); track t.key) {
       <a class="tile" [routerLink]="t.link" [attr.data-tone]="t.tone" [attr.data-key]="t.key">
         <mat-icon>{{ t.icon }}</mat-icon>
-        <span class="value">{{ t.value }}</span>
+        <span class="value app-num">{{ t.value }}</span>
         <span class="label">{{ 'overview.counts.' + t.key | transloco: { days: d.stale_days } }}</span>
       </a>
     }
@@ -139,7 +139,7 @@
           <li>
             <a [routerLink]="['/candidates', s.candidate.id]">{{ s.candidate.name }}</a>
             <span class="muted">{{ s.vacancy.title }} · {{ s.stage }}</span>
-            <span class="days"><mat-icon inline>schedule</mat-icon>{{ 'overview.days' | transloco: { n: s.days } }}</span>
+            <span class="days app-num"><mat-icon inline>schedule</mat-icon>{{ 'overview.days' | transloco: { n: s.days } }}</span>
           </li>
         } @empty {
           <li class="muted">{{ 'overview.noStale' | transloco }}</li>
@@ -149,12 +149,12 @@
 
     <section class="panel card">
       <h2>{{ 'overview.funnel' | transloco }}</h2>
-      <table>
+      <table class="metro">
         <tbody>
           @for (r of store.funnel(); track r.position + r.stage_name) {
-            <tr>
-              <th scope="row"><span class="app-station" [attr.data-kind]="r.stage_kind" aria-hidden="true"></span>{{ r.stage_name }}</th>
-              <td class="barcell"><span class="bar" [attr.data-kind]="r.stage_kind" [style.width.%]="r.width"></span><span class="num">{{ r.count }}</span></td>
+            <tr [attr.data-kind]="r.stage_kind">
+              <th scope="row"><span class="app-station" [attr.data-kind]="r.stage_kind" [style.--share]="r.width / 100" aria-hidden="true"></span>{{ r.stage_name }}</th>
+              <td class="barcell"><span class="track"><span class="bar" [attr.data-kind]="r.stage_kind" [style.width.%]="r.width"></span></span><span class="num app-num">{{ r.count }}</span></td>
             </tr>
           } @empty {
             <tr><td class="muted" colspan="2">{{ 'overview.empty' | transloco }}</td></tr>
@@ -171,7 +171,7 @@
           @for (r of store.touches(); track r.channel) {
             <tr>
               <th scope="row"><app-channel-icon [key]="r.channel" /> {{ 'recruiting.channel.' + r.channel | transloco }}</th>
-              <td class="barcell"><span class="bar" [style.width.%]="r.width"></span><span class="num">{{ r.count }}</span></td>
+              <td class="barcell"><span class="track"><span class="bar" [style.width.%]="r.width"></span></span><span class="num app-num">{{ r.count }}</span></td>
             </tr>
           } @empty {
             <tr><td class="muted" colspan="2">{{ 'overview.empty' | transloco }}</td></tr>

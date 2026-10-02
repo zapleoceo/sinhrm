@@ -7,7 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { AnonymousReport, REPORT_CATEGORIES, ReportCategory } from './safe-speak.model';
+import { AnonymousReport, REPORT_CATEGORIES, ReportCategory, reportStatusTone } from './safe-speak.model';
 import { SafeSpeakService, safeSpeakErrorKey } from './safe-speak.service';
 import { SafeSpeakThread } from './thread';
 
@@ -34,17 +34,19 @@ import { SafeSpeakThread } from './thread';
     @if (mode() === 'new') {
       @if (issuedCode(); as code) {
         <section class="panel code" role="alert">
-          <mat-icon>key</mat-icon>
-          <div>
-            <p>{{ 'safeSpeak.codeOnce' | transloco }}</p>
-            <p class="value" data-testid="access-code">{{ code }}</p>
-            <button mat-stroked-button type="button" (click)="copy(code)"><mat-icon>content_copy</mat-icon>{{ 'safeSpeak.copy' | transloco }}</button>
-            <button mat-button type="button" (click)="issuedCode.set(null)">{{ 'safeSpeak.saved' | transloco }}</button>
+          <span class="key" aria-hidden="true"><mat-icon>key</mat-icon></span>
+          <div class="body">
+            <p class="once">{{ 'safeSpeak.codeOnce' | transloco }}</p>
+            <p class="value mono" data-testid="access-code">{{ code }}</p>
+            <div class="code-actions">
+              <button mat-stroked-button type="button" (click)="copy(code)"><mat-icon>content_copy</mat-icon>{{ 'safeSpeak.copy' | transloco }}</button>
+              <button mat-button type="button" (click)="issuedCode.set(null)">{{ 'safeSpeak.saved' | transloco }}</button>
+            </div>
           </div>
         </section>
       } @else {
         <form class="panel form" (submit)="$event.preventDefault(); submit()">
-          <p class="muted small"><mat-icon inline>visibility_off</mat-icon> {{ 'safeSpeak.privacy' | transloco }}</p>
+          <p class="note"><mat-icon inline>visibility_off</mat-icon> {{ 'safeSpeak.privacy' | transloco }}</p>
           <mat-form-field subscriptSizing="dynamic">
             <mat-label>{{ 'safeSpeak.category' | transloco }}</mat-label>
             <mat-select [value]="category()" (valueChange)="category.set($event)" required>
@@ -68,7 +70,7 @@ import { SafeSpeakThread } from './thread';
       }
     } @else {
       <form class="panel form" (submit)="$event.preventDefault(); open()">
-        <p class="muted small" data-testid="code-hint">{{ 'safeSpeak.codeHint' | transloco }}</p>
+        <p class="note" data-testid="code-hint">{{ 'safeSpeak.codeHint' | transloco }}</p>
         <mat-form-field subscriptSizing="dynamic">
           <mat-label>{{ 'safeSpeak.code' | transloco }}</mat-label>
           <input matInput autocomplete="off" maxlength="40" [value]="code()" (input)="code.set(val($event))" placeholder="XXXX-XXXX-XXXX-XXXX" />
@@ -78,7 +80,7 @@ import { SafeSpeakThread } from './thread';
       @if (report(); as r) {
         <section class="panel view">
           <h2>{{ r.subject }}</h2>
-          <p class="muted">{{ 'safeSpeak.categories.' + r.category | transloco }} · {{ 'safeSpeak.status.' + r.status | transloco }}</p>
+          <p class="muted meta">{{ 'safeSpeak.categories.' + r.category | transloco }} · <span class="app-pill" [attr.data-tone]="tone(r.status)">{{ 'safeSpeak.status.' + r.status | transloco }}</span></p>
           <app-safe-speak-thread [messages]="r.messages" />
           @if (r.status !== 'closed') {
             <form class="reply" (submit)="$event.preventDefault(); reply()">
@@ -94,14 +96,38 @@ import { SafeSpeakThread } from './thread';
     }
   `,
   styles: `
-    mat-button-toggle-group { margin-bottom: 1rem; }
-    .form, .view { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; margin-bottom: 1rem; }
-    .view h2 { font: var(--mat-sys-title-medium); margin: 0; }
-    .reply { display: flex; flex-direction: column; gap: 0.5rem; }
+    mat-button-toggle-group { margin-bottom: 1rem; max-width: 100%; }
+    .form, .view { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; max-width: 48rem; box-sizing: border-box; }
+    .view h2 { font: var(--mat-sys-title-medium); margin: 0; overflow-wrap: anywhere; }
+    .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0; }
+    .reply { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.75rem; border-top: var(--app-border-w) dashed var(--app-track); }
     .actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
-    .code { display: flex; gap: 1rem; padding: 1rem; border-color: var(--app-warning); }
-    .value { font: var(--mat-sys-headline-small); font-family: ui-monospace, monospace; letter-spacing: 0.08em; user-select: all; }
-    .small { font-size: 0.85rem; }
+    /* Privacy / code hint: a quiet note with a teal rule (the «hint» colour), not a muted afterthought. */
+    .note {
+      margin: 0; padding: 0.5rem 0.75rem; border-left: 3px solid var(--app-accent); border-radius: 0 var(--app-radius-sm) var(--app-radius-sm) 0;
+      background: var(--app-card-2); color: var(--app-muted); font: var(--mat-sys-body-small);
+    }
+    /* Access code (shown once): a dashed «ticket» in the warning colour; key in a ring, the code in mono. */
+    .code {
+      display: flex; gap: 1rem; align-items: flex-start; padding: 1.25rem; margin-bottom: 1rem; max-width: 48rem; box-sizing: border-box;
+      border: var(--app-border-w) dashed var(--app-warning); background: var(--app-warn-bg);
+    }
+    .key {
+      flex: none; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; box-sizing: border-box;
+      border-radius: 50%; border: 3px solid var(--app-warning); background: var(--app-card); color: var(--app-warn-text);
+    }
+    .body { min-width: 0; flex: 1; }
+    .once { margin: 0; font: var(--mat-sys-title-small); color: var(--mat-sys-on-surface); }
+    .value {
+      margin: 0.5rem 0 0.75rem; font-size: clamp(1.05rem, 4.2vw, 1.5rem); line-height: 1.3; letter-spacing: 0.06em;
+      color: var(--mat-sys-on-surface); user-select: all; overflow-wrap: anywhere;
+    }
+    .code-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    @media (max-width: 600px) {
+      .form, .view, .code { padding: 1rem; }
+      .code { gap: 0.75rem; }
+      .key { width: 2.25rem; height: 2.25rem; }
+    }
   `,
 })
 export class SafeSpeakPage {
@@ -119,6 +145,7 @@ export class SafeSpeakPage {
   protected readonly report = signal<AnonymousReport | null>(null);
   protected readonly replyText = signal('');
   protected readonly busy = signal(false);
+  protected readonly tone = reportStatusTone;
 
   protected val(event: Event): string {
     return (event.target as HTMLInputElement | HTMLTextAreaElement).value;

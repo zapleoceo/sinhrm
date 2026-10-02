@@ -102,16 +102,15 @@ export type OrgChartAction =
       flex-direction: column;
       gap: 2px;
       padding: 4px;
-      border-radius: 14px;
-      background: color-mix(in srgb, var(--mat-sys-surface-container) 88%, transparent);
-      backdrop-filter: blur(6px);
-      border: 1px solid var(--app-border);
+      border-radius: var(--app-radius-pill);
+      background: var(--app-card);
+      border: var(--app-border-w) solid var(--app-border);
       cursor: default;
     }
     .sep {
-      height: 1px;
+      height: var(--app-border-w);
       margin: 2px 8px;
-      background: var(--app-border);
+      background: var(--app-track);
     }
     .rot {
       rotate: -90deg;
@@ -190,17 +189,17 @@ export interface LegendItem {
       cursor: pointer;
       font: 0.75rem/1.4 inherit;
       color: var(--mat-sys-on-surface);
-      border: 1px solid var(--app-border);
-      background: color-mix(in srgb, var(--mat-sys-surface-container) 88%, transparent);
+      border: var(--app-border-w) solid var(--app-border);
+      background: var(--app-card);
     }
     button.active {
       border-color: var(--dept);
       background: color-mix(in srgb, var(--dept) 14%, transparent);
     }
     i {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
+      width: 12px;
+      height: 3px;
+      border-radius: 2px;
       background: var(--dept);
     }
     @media (max-width: 720px) {

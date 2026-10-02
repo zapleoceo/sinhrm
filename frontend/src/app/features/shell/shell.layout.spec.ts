@@ -210,6 +210,30 @@ describe('ShellLayout user menu in sidebar footer', () => {
   });
 });
 
+describe('ShellLayout route rail (current station)', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('marks only the current page link with aria-current="page" (not by colour alone)', async () => {
+    const { el, router, detect } = await setup();
+    await router.navigateByUrl('/perform/objectives');
+    await detect();
+    const current = [...el.querySelectorAll('a.nav-link[aria-current="page"]')].map((a) => a.getAttribute('href'));
+    expect(current).toEqual(['/perform/objectives']);
+    expect(el.querySelector('a[href="/perform/objectives"]')?.classList.contains('active')).toBe(true);
+
+    await router.navigateByUrl('/');
+    await detect();
+    expect([...el.querySelectorAll('a.nav-link[aria-current="page"]')].map((a) => a.getAttribute('href'))).toEqual(['/']);
+  });
+
+  it('keeps every station icon out of the accessible name', async () => {
+    const { el } = await setup();
+    const icons = [...el.querySelectorAll('.sidebar-nav a.nav-link mat-icon')];
+    expect(icons.length).toBeGreaterThan(10);
+    expect(icons.every((i) => i.getAttribute('aria-hidden') === 'true')).toBe(true);
+  });
+});
+
 describe('ShellLayout module access', () => {
   beforeEach(() => localStorage.clear());
 

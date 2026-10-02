@@ -1,6 +1,14 @@
+import { Component, input, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
+import { TranslocoTestingModule } from '@jsverse/transloco';
+import { AuthService } from '../../core/auth/auth.service';
+import { ChannelIcon } from '../../core/ui/channel-icon';
+import { MoodCheckinWidget } from '../pulse/mood/mood-checkin.widget';
+import { TasksWidget } from '../scripts/tasks/tasks-widget';
+import { DashboardPage } from './dashboard.page';
 import { Dashboard, statTiles } from './overview.model';
 import { OverviewService } from './overview.service';
 import { OverviewStore } from './overview.store';
@@ -51,5 +59,43 @@ describe('Overview', () => {
 
   it('tiles link to the right pages', () => {
     expect(statTiles(DASHBOARD).map((t) => t.link)).toEqual(['/candidates', '/candidates', '/inbox', '/vacancies']);
+  });
+});
+
+@Component({ selector: 'app-mood-checkin', template: '' })
+class MoodStub {}
+@Component({ selector: 'app-tasks-widget', template: '' })
+class TasksStub {
+  readonly query = input<unknown>();
+}
+@Component({ selector: 'app-channel-icon', template: '' })
+class ChannelStub {
+  readonly key = input<unknown>();
+}
+
+describe('DashboardPage (route look)', () => {
+  it('funnel is a metro line: a station per stage in the colour of its type, sized by share; tiles keyed for the sleeper', async () => {
+    TestBed.configureTestingModule({
+      imports: [DashboardPage, TranslocoTestingModule.forRoot({ langs: { uk: {} }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: AuthService, useValue: { user: signal({ name: 'Olena K' }) } }],
+    });
+    TestBed.overrideComponent(DashboardPage, {
+      remove: { imports: [MoodCheckinWidget, TasksWidget, ChannelIcon] },
+      add: { imports: [MoodStub, TasksStub, ChannelStub] },
+    });
+    const fixture = TestBed.createComponent(DashboardPage);
+    fixture.detectChanges();
+    TestBed.inject(HttpTestingController).expectOne('/api/dashboard').flush({ data: DASHBOARD });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+
+    const stations = Array.from(el.querySelectorAll<HTMLElement>('.metro th .app-station'));
+    expect(stations.map((s) => s.dataset['kind'])).toEqual(['attract', 'select']);
+    expect(stations.map((s) => s.style.getPropertyValue('--share'))).toEqual(['1', '0.25']);
+    expect(stations.every((s) => s.getAttribute('aria-hidden') === 'true')).toBe(true);
+    // Row headers keep only the stage name (the station is decorative).
+    expect(Array.from(el.querySelectorAll('.metro th')).map((th) => th.textContent?.trim())).toEqual(['New', 'Interview']);
+    expect(Array.from(el.querySelectorAll<HTMLElement>('a.tile')).map((t) => t.dataset['key'])).toEqual(['active', 'stale', 'unmatched_inbox', 'new_today']);
   });
 });

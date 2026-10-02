@@ -307,17 +307,12 @@ const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
       display: flex;
       height: calc(100dvh - 15rem);
       min-height: 26rem;
-      border: 1px solid var(--app-border);
+      border: var(--app-border-w) solid var(--app-border);
       border-radius: var(--app-radius);
       overflow: hidden;
       background:
-        radial-gradient(
-            circle,
-            color-mix(in srgb, var(--app-border) 70%, transparent) 1px,
-            transparent 1.2px
-          )
-          0 0 / 22px 22px,
-        var(--mat-sys-surface);
+        radial-gradient(circle, var(--app-track) 1px, transparent 1.2px) 0 0 / 22px 22px,
+        var(--app-canvas);
     }
     .viewport {
       position: relative;
@@ -359,13 +354,15 @@ const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
     }
     .links path {
       fill: none;
-      stroke: var(--app-border);
+      stroke: var(--app-muted);
+      stroke-opacity: 0.45;
       stroke-width: 1.5;
       transition: stroke 200ms;
     }
     .links path.on-path {
-      stroke: #2ec4b6;
-      stroke-width: 2.5;
+      stroke: var(--app-accent);
+      stroke-opacity: 1;
+      stroke-width: 3;
     }
 
     .card {
@@ -379,66 +376,63 @@ const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
       gap: 0.7rem;
       padding: 0 0.9rem 0 1rem;
       cursor: pointer;
-      border-radius: 14px;
-      border: 1px solid var(--app-border);
-      background: var(--mat-sys-surface-container-lowest);
-      box-shadow:
-        0 1px 2px rgb(0 0 0 / 0.04),
-        0 2px 8px rgb(0 0 0 / 0.04);
+      border-radius: var(--app-radius);
+      border: var(--app-border-w) solid var(--app-border);
+      background: var(--app-card);
       transition:
         left 350ms cubic-bezier(0.2, 0.8, 0.2, 1),
         top 350ms cubic-bezier(0.2, 0.8, 0.2, 1),
-        transform 160ms,
-        box-shadow 160ms,
-        border-color 160ms;
+        transform var(--app-fast),
+        border-color var(--app-fast);
       animation: pop 260ms ease-out;
     }
     .card::before {
       content: '';
       position: absolute;
-      left: 0;
-      top: 14px;
-      bottom: 14px;
+      left: -1.5px;
+      top: 16px;
+      bottom: 16px;
       width: 4px;
-      border-radius: 0 3px 3px 0;
+      border-radius: 0 2px 2px 0;
       background: var(--dept);
     }
     .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgb(0 0 0 / 0.1);
+      transform: translateY(-1px);
+      border-color: var(--dept);
     }
     .card:focus-visible {
-      outline: 2px solid var(--app-brand);
-      outline-offset: 3px;
-    }
-    .card.selected {
-      border-color: var(--app-brand);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-brand) 22%, transparent);
+      outline: 2px solid var(--app-focus-ring);
+      outline-offset: 2px;
     }
     .card.on-path {
-      border-color: #2ec4b6;
+      border-color: var(--app-accent);
     }
+    .card.selected {
+      border-color: var(--mat-sys-primary);
+      box-shadow: inset 0 0 0 1px var(--mat-sys-primary); /* 2.5px line, not a shadow */
+    }
+    /* Search hit: a static teal ring + the one «pop» (no pulsing glow — effects budget). */
     .card.hit {
-      animation:
-        pop 260ms ease-out,
-        pulse 1.2s ease-out 2;
+      outline: 2px dashed var(--app-accent);
+      outline-offset: 3px;
     }
     .card.me .avatar {
       box-shadow:
-        0 0 0 2px var(--mat-sys-surface-container-lowest),
-        0 0 0 4px #2ec4b6;
+        0 0 0 2px var(--app-card),
+        0 0 0 4px var(--app-accent);
     }
     .avatar {
       display: grid;
       place-items: center;
       width: 2.6rem;
       height: 2.6rem;
+      box-sizing: border-box;
       border-radius: 50%;
       flex: none;
       overflow: hidden;
-      font-size: 0.85rem;
-      font-weight: 600;
-      background: color-mix(in srgb, var(--dept) 16%, transparent);
+      font: 700 0.8rem/1 var(--app-font-text);
+      border: 2.5px solid var(--dept);
+      background: var(--app-card);
       color: var(--dept);
     }
     .avatar img {
@@ -459,8 +453,8 @@ const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
       text-overflow: ellipsis;
     }
     .name {
-      font-weight: 600;
-      font-size: 0.92rem;
+      font-weight: 700;
+      font-size: 0.875rem;
     }
     .pos {
       font-size: 0.8rem;
@@ -477,7 +471,7 @@ const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
       display: inline-flex;
       align-items: center;
       gap: 2px;
-      font-size: 0.7rem;
+      font: 500 0.7rem/1 var(--app-font-mono);
       color: var(--app-muted);
     }
     .count mat-icon {
@@ -498,13 +492,20 @@ const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
       border-radius: 999px;
       cursor: pointer;
       font: 600 0.72rem/1 inherit;
-      border: 1px solid var(--app-border);
-      background: var(--mat-sys-surface-container-lowest);
+      border: var(--app-border-w) solid var(--app-border);
+      background: var(--app-card);
       color: var(--app-muted);
+      font-family: var(--app-font-mono);
+    }
+    /* 24px visual, 44px hit area for touch. */
+    .toggle::after {
+      content: '';
+      position: absolute;
+      inset: -10px;
     }
     .toggle:hover {
       color: var(--app-brand-text);
-      border-color: var(--app-brand);
+      border-color: var(--mat-sys-primary);
     }
     .toggle mat-icon {
       width: 16px;
@@ -528,14 +529,6 @@ const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRi
       from {
         opacity: 0;
         transform: scale(0.94);
-      }
-    }
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgb(46 196 182 / 0.55);
-      }
-      100% {
-        box-shadow: 0 0 0 16px rgb(46 196 182 / 0);
       }
     }
 

@@ -118,10 +118,9 @@ import { departmentHue } from './org-layout';
       gap: 0.75rem;
       padding: 1rem 1.25rem 1.25rem;
       overflow-y: auto;
-      background: var(--mat-sys-surface-container-low);
+      background: var(--app-card);
       color: var(--mat-sys-on-surface);
-      border-left: 1px solid var(--app-border);
-      box-shadow: -8px 0 32px rgb(0 0 0 / 0.08);
+      border-left: var(--app-border-w) solid var(--app-border);
       width: 22rem;
       flex: none;
       animation: slide 220ms ease-out;
@@ -141,14 +140,12 @@ import { departmentHue } from './org-layout';
     }
     h2 {
       margin: 0;
-      font-size: 1.1rem;
+      font: var(--mat-sys-title-large);
+      overflow-wrap: anywhere;
     }
     h3 {
       margin: 0.25rem 0 0;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--app-muted);
+      font: var(--mat-sys-title-small);
     }
     p {
       margin: 0;
@@ -158,11 +155,13 @@ import { departmentHue } from './org-layout';
       place-items: center;
       width: 3rem;
       height: 3rem;
+      box-sizing: border-box;
       border-radius: 50%;
       overflow: hidden;
       flex: none;
-      font-weight: 600;
-      background: color-mix(in srgb, var(--dept) 16%, transparent);
+      font: 800 1rem/1 var(--app-font-display);
+      border: 3px solid var(--dept);
+      background: var(--app-card);
       color: var(--dept);
     }
     .avatar img {
@@ -180,16 +179,30 @@ import { departmentHue } from './org-layout';
     dt {
       color: var(--app-muted);
     }
+    dd a[href^='tel:'] {
+      font-family: var(--app-font-mono);
+      font-size: 0.8125rem;
+    }
     dd {
       margin: 0;
       min-width: 0;
       overflow-wrap: anywhere;
     }
     .chip {
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      background: color-mix(in srgb, var(--dept) 14%, transparent);
-      color: var(--dept);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.1rem 0.6rem;
+      border-radius: var(--app-radius-pill);
+      border: var(--app-border-w) solid var(--dept);
+      color: var(--mat-sys-on-surface);
+    }
+    .chip::before {
+      content: '';
+      width: 0.75rem;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--dept);
     }
     .link {
       all: unset;
@@ -200,17 +213,42 @@ import { departmentHue } from './org-layout';
     .link:focus-visible {
       text-decoration: underline;
     }
+    /* Direct reports hang off one vertical line, each on its own small station. */
     .reports {
       list-style: none;
       margin: 0;
-      padding: 0;
+      padding: 0 0 0 1.25rem;
       display: grid;
-      gap: 0.35rem;
+      gap: 0.5rem;
       font-size: 0.9rem;
+      position: relative;
+    }
+    .reports::before {
+      content: '';
+      position: absolute;
+      left: 0.3rem;
+      top: 0.5rem;
+      bottom: 0.5rem;
+      width: 2px;
+      background: var(--dept);
+      opacity: 0.5;
     }
     .reports li {
+      position: relative;
       display: flex;
       flex-direction: column;
+    }
+    .reports li::before {
+      content: '';
+      position: absolute;
+      left: -1.25rem;
+      top: 0.3rem;
+      width: 0.6rem;
+      height: 0.6rem;
+      box-sizing: border-box;
+      border-radius: 50%;
+      border: 2px solid var(--dept);
+      background: var(--app-card);
     }
     .profile {
       align-self: flex-start;
@@ -244,9 +282,21 @@ import { departmentHue } from './org-layout';
         box-sizing: border-box;
         animation-name: rise;
         border-left: 0;
-        border-top: 1px solid var(--app-border);
-        border-radius: 16px 16px 0 0;
-        box-shadow: 0 -8px 32px rgb(0 0 0 / 0.12);
+        border-top: var(--app-border-w) solid var(--app-border);
+        border-radius: 14px 14px 0 0;
+        box-shadow: var(--app-overlay-shadow);
+      }
+      .link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+      }
+      .reports::before {
+        top: 1.1rem;
+        bottom: 1.1rem;
+      }
+      .reports li::before {
+        top: calc(22px - 0.3rem);
       }
       .grip {
         display: block;

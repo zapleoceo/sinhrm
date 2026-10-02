@@ -233,3 +233,21 @@ describe('dropHint', () => {
     expect(dropHint({ key: 'col:7', kind: 'personal', column: personal.columns[0], items: [] }, app(1, 1), false, t).text).toBe('dropPersonal:Mine');
   });
 });
+
+describe('BoardPage route look', () => {
+  it('each column head is a station on the line: stage colour by kind, own column without a kind; decorative only', async () => {
+    const f = await render(['recruiter']);
+    const el = f.nativeElement as HTMLElement;
+    const heads = Array.from(el.querySelectorAll<HTMLElement>('section.column .col-head'));
+    const stations = heads.map((h) => h.querySelector<HTMLElement>('.app-station'));
+    expect(stations.every((s) => s?.getAttribute('aria-hidden') === 'true')).toBe(true);
+    expect(stations.map((s) => s?.dataset['kind'] ?? null)).toEqual(['attract', null, 'select', 'closed']);
+    expect(heads.map((h) => h.querySelector('.col-count')?.textContent?.trim())).toEqual(['2', '0', '1', '0']);
+  });
+
+  it('cards carry no per-card progress dots; the board sits in the scroll-hint wrapper (CSS-only hint)', async () => {
+    const el = (await render(['recruiter'])).nativeElement as HTMLElement;
+    expect(el.querySelectorAll('article.card .app-station').length).toBe(0);
+    expect(el.querySelector('.board-wrap > .board')).not.toBeNull();
+  });
+});

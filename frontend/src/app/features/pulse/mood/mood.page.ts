@@ -38,10 +38,10 @@ import { MoodCheckinWidget } from './mood-checkin.widget';
           @for (e of history(); track e.day) {
             <span class="day" [title]="(e.day | date: 'dd.MM') + (e.comment ? ' — ' + e.comment : '')">
               <span class="emoji">{{ emoji(e.score) }}</span>
-              <span class="muted small">{{ e.day | date: 'dd.MM' }}</span>
+              <span class="muted small mono">{{ e.day | date: 'dd.MM' }}</span>
             </span>
           } @empty {
-            <p class="muted">{{ 'pulse.mood.noHistory' | transloco }}</p>
+            <p class="app-empty">{{ 'pulse.mood.noHistory' | transloco }}</p>
           }
         </div>
       </section>
@@ -58,9 +58,9 @@ import { MoodCheckinWidget } from './mood-checkin.widget';
         <div class="trend" role="img" [attr.aria-label]="'pulse.mood.team' | transloco">
           @for (w of t.weeks; track w.week_start) {
             <div class="wk">
-              <span class="val">{{ w.average ?? '—' }}</span>
+              <span class="val mono">{{ w.average ?? '—' }}</span>
               <span class="col" [class.hidden]="w.suppressed" [style.height.%]="w.average ? (w.average / 5) * 100 : 4"></span>
-              <span class="muted small">{{ w.week_start | date: 'dd.MM' }}</span>
+              <span class="muted small mono">{{ w.week_start | date: 'dd.MM' }}</span>
             </div>
           }
         </div>
@@ -103,19 +103,23 @@ import { MoodCheckinWidget } from './mood-checkin.widget';
     }
   `,
   styles: `
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-    .box { padding: 1rem; margin-bottom: 1rem; }
-    .box h2 { margin: 0 0 0.5rem; font: var(--mat-sys-title-medium); }
-    .strip { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .day { display: flex; flex-direction: column; align-items: center; }
-    .emoji { font-size: 1.5rem; }
-    .small { font-size: 0.7rem; }
-    .trend { display: flex; align-items: flex-end; gap: 0.5rem; height: 10rem; }
-    .wk { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
-    .col { width: 100%; max-width: 2.5rem; background: var(--mat-sys-primary); border-radius: 4px 4px 0 0; }
-    .col.hidden { background: repeating-linear-gradient(45deg, var(--app-border) 0 4px, transparent 4px 8px); }
-    .val { font-size: 0.8rem; }
-    .comments { margin: 0; padding-left: 1.25rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .box { padding: 1.25rem; margin-bottom: 1rem; }
+    .box h2 { margin: 0 0 0.75rem; font: var(--mat-sys-title-medium); }
+    .box h3 { margin: 1rem 0 0.5rem; font: var(--mat-sys-title-small); }
+    /* My history: a row of «stations» on a track — emoji over a mono date. */
+    .strip { display: flex; gap: 0.25rem 0.5rem; flex-wrap: wrap; }
+    .strip .app-empty { flex: 1; padding: 1rem; }
+    .day { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; min-width: 2.5rem; padding: 0.25rem 0; border-bottom: 3px solid var(--app-track); }
+    .emoji { font-size: 1.5rem; line-height: 1.2; }
+    .small { font-size: 0.6875rem; }
+    /* Team trend by week: columns on a baseline track; suppressed weeks are hatched (pattern, not colour alone). */
+    .trend { display: flex; align-items: flex-end; gap: 0.5rem; height: 10rem; padding-bottom: 0.25rem; border-bottom: var(--app-border-w) solid var(--app-border); }
+    .wk { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 0.2rem; height: 100%; }
+    .col { width: 100%; max-width: 2.25rem; background: var(--mat-sys-primary); border-radius: 6px 6px 2px 2px; }
+    .col.hidden { background: repeating-linear-gradient(45deg, var(--app-muted) 0 2px, transparent 2px 7px); opacity: 0.6; }
+    .val { font-size: 0.75rem; }
+    .comments { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
     .num { width: 9rem; }
   `,
 })

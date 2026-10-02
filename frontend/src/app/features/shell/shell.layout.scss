@@ -1,3 +1,12 @@
+/* Restyle C «Маршрут», step 3 — wide rail (240px) drawn as a route: every menu item is a station (ring with its icon)
+   on one vertical line, group headers are junctions on the same line, the current page is a filled station with a halo.
+   Colours are tokens from styles.scss only (no hex here). Station geometry: */
+$station: 28px; // ring diameter
+$station-x: 0.375rem; // inset of the ring inside a row
+$line-x: calc(#{$station-x} + #{$station} / 2 - 1px); // left edge of the 2px line = centre of the ring
+$junction-gap: 0.625rem; // from the line to a group header label (headers start left of item labels, like a branch name)
+$header-x: calc(#{$station-x} + #{$station} / 2 + #{$junction-gap});
+
 .shell {
   display: grid;
   grid-template-columns: var(--app-sidebar-width) 1fr;
@@ -11,115 +20,167 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  border-right: 1px solid var(--app-border);
+  border-right: var(--app-border-w) solid var(--app-border);
   background: var(--app-sidebar-bg);
 }
 
+/* No gaps between rows: each row draws its own piece of the line edge to edge, so the route stays continuous
+   (collapsed groups are 0px tall and add nothing). Spacing comes from row heights. */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   // Scrolling the menu to its end must not scroll the page behind it.
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  padding: var(--app-gap) 0.75rem;
+  padding: var(--app-gap) 0.5rem var(--app-gap) 0.75rem;
 }
 
 .sidebar-footer {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  padding: 0.5rem 0.75rem 0.75rem;
-  border-top: 1px solid var(--app-border);
+  padding: 0.5rem 0.5rem 0.75rem 0.75rem;
+  border-top: var(--app-border-w) solid var(--app-border);
 }
 
-.user {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-
-  &:hover { background: var(--app-nav-hover); }
-  &:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
-}
-
-.user-text {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.name, .email {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.email {
-  font: var(--mat-sys-body-small);
-  color: var(--app-muted);
-}
-
-.role-chip {
-  align-self: flex-start;
-  max-width: 100%;
-  margin-top: 0.125rem;
-  padding: 0 0.5rem;
-  border-radius: 999px;
-  background: var(--mat-sys-secondary-container);
-  color: var(--mat-sys-on-secondary-container);
-  font: var(--mat-sys-label-small);
-  line-height: 1.25rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.work-as { padding-bottom: 0; }
-
-.user-chevron { color: var(--app-muted); flex-shrink: 0; }
-
+/* Logo sits at the head of the line. */
 .brand {
   display: flex;
   text-decoration: none;
-  --app-logo-size: 28px;
-  padding: 0 0.75rem 1.25rem;
+  --app-logo-size: #{$station};
+  padding: 0 0 1rem $station-x;
+  border-radius: var(--app-radius-sm);
 }
 
+/* ---------- the line ---------- */
+.nav-link, .nav-section {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: $line-x;
+    width: 2px;
+    background: var(--app-border);
+    pointer-events: none;
+  }
+}
+// The route starts at the first station (under the logo), not above it.
+.brand + .nav-link::before { top: 50%; }
+
+/* ---------- stations (menu items) ---------- */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.5rem;
+  box-sizing: border-box;
+  padding: 0.25rem 0.5rem 0.25rem $station-x;
+  border-radius: var(--app-radius-sm);
+  color: inherit;
+  font: var(--mat-sys-body-medium);
+  text-decoration: none;
+  transition: background-color var(--app-fast) ease;
+
+  > span { min-width: 0; overflow-wrap: break-word; } // long uk/ru labels wrap, never clip
+
+  // The icon is the station: a ring on the line.
+  mat-icon {
+    position: relative; // above the line
+    display: inline-grid;
+    place-content: center;
+    flex: none;
+    width: $station;
+    height: $station;
+    box-sizing: border-box;
+    border: var(--app-border-w) solid var(--app-border);
+    border-radius: 50%;
+    background: var(--app-sidebar-bg);
+    color: var(--app-muted);
+    font-size: 16px;
+    line-height: 1;
+    transition: border-color var(--app-fast) ease, color var(--app-fast) ease;
+  }
+
+  &:hover {
+    background: var(--app-nav-hover);
+    mat-icon { border-color: var(--app-muted); color: var(--mat-sys-on-surface); }
+  }
+
+  // Current page: filled station with a halo + bold label (state is not carried by colour alone).
+  &.active {
+    background: var(--app-nav-active-bg);
+    color: var(--app-nav-active-text);
+    font-weight: 700;
+
+    mat-icon {
+      border-color: var(--mat-sys-primary);
+      background: var(--mat-sys-primary);
+      color: var(--mat-sys-on-primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-primary) 22%, transparent);
+      animation: shell-station-pop 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+  }
+}
+
+/* «Pop» — the one appearance animation of the shell: the station of the page you arrive at. transform/opacity only. */
+@keyframes shell-station-pop {
+  from { transform: scale(0.6); opacity: 0.4; }
+  to { transform: none; opacity: 1; }
+}
+
+/* ---------- junctions (group headers) ---------- */
 .nav-section {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: calc(100% - 0.75rem);
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.5rem;
   box-sizing: border-box;
-  font: var(--mat-sys-label-small);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--app-nav-heading);
-  margin: 1rem 0 0.125rem 0.75rem;
-  padding: 0.25rem 0.5rem 0.25rem 0;
+  margin: 0;
+  padding: 0.75rem 0.5rem 0.25rem $header-x;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--app-radius-sm);
   background: none;
-  cursor: pointer;
+  color: var(--app-nav-heading);
+  font: var(--mat-sys-label-medium);
+  font-weight: 700;
+  letter-spacing: 0.01em; // sentence case, not uppercase: «Адміністрування» + counter + chevron fit 240px without breaking the word
   text-align: left;
+  cursor: pointer;
+
+  > span:first-child {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: break-word;
+
+    // Junction marker on the line, level with the label: a small ring (smaller than a station → a branch point).
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: calc(-#{$junction-gap} - 5px);
+      width: 10px;
+      height: 10px;
+      box-sizing: border-box;
+      border: 2px solid var(--app-muted);
+      border-radius: 50%;
+      background: var(--app-sidebar-bg);
+      transform: translateY(-50%);
+    }
+  }
 
   &:hover { color: var(--mat-sys-on-surface); }
-  &:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
+  &[aria-expanded='true'] > span:first-child::before { background: var(--app-muted); }
 
   .chevron {
+    flex: none;
     font-size: 18px;
     width: 18px;
     height: 18px;
@@ -146,48 +207,97 @@
 .nav-group-inner {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
   min-height: 0;
   overflow: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-group, .nav-section .chevron { transition: none; }
+  .nav-group, .nav-section .chevron, .nav-link, .nav-link mat-icon { transition: none; }
+  .nav-link.active mat-icon { animation: none; }
 }
 
-.nav-link {
+/* ---------- footer: help + user ---------- */
+.sidebar-footer .nav-link::before { content: none; } // off the route
+
+.user {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  padding: 0.375rem 0.5rem 0.375rem 0.25rem;
+  border: 0;
+  border-radius: var(--app-radius-sm);
+  background: none;
   color: inherit;
-  text-decoration: none;
-
-  mat-icon { color: var(--app-muted); }
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--app-fast) ease;
 
   &:hover { background: var(--app-nav-hover); }
-  &.active {
-    background: var(--app-nav-active-bg);
-    color: var(--app-nav-active-text);
-    mat-icon { color: inherit; }
-  }
+  &:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
 }
 
-.main { display: flex; flex-direction: column; min-width: 0; }
+.user-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
 
+.name, .email {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.name { font: var(--mat-sys-title-small); }
+
+.email {
+  font: var(--mat-sys-body-small);
+  font-family: var(--app-font-mono);
+  color: var(--app-muted);
+}
+
+/* Active role («Працювати як»): a neutral line pill, like .app-pill. */
+.role-chip {
+  align-self: flex-start;
+  max-width: 100%;
+  margin-top: 0.25rem;
+  padding: 0 0.5rem;
+  box-sizing: border-box;
+  border: var(--app-border-w) solid var(--app-border);
+  border-radius: var(--app-radius-pill);
+  color: var(--app-muted);
+  font: var(--mat-sys-label-small);
+  line-height: 1.125rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.work-as { padding-bottom: 0; }
+
+.user-chevron { color: var(--app-muted); flex-shrink: 0; }
+
+/* Avatar = a station ring in the brand colour. */
 .avatar {
   width: 32px;
   height: 32px;
   flex-shrink: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--mat-sys-primary);
   border-radius: 50%;
 }
 
 .fallback {
   display: inline-grid;
   place-content: center;
-  background: var(--mat-sys-primary-container);
-  color: var(--mat-sys-on-primary-container);
+  background: var(--app-sidebar-bg);
+  color: var(--app-nav-active-text);
+  font: var(--mat-sys-label-large);
 }
 
 .menu-head, .menu-lang {
@@ -197,6 +307,8 @@
   padding: 0.75rem 1rem;
 }
 
+.main { display: flex; flex-direction: column; min-width: 0; }
+
 .content {
   padding: var(--app-gap);
   max-width: 96rem;
@@ -204,7 +316,12 @@
   box-sizing: border-box;
 }
 
-/* Narrow screens (< 768px): compact sticky top bar + off-canvas drawer with the same groups and footer. */
+/* Touch screens: every row of the rail is at least 44px. */
+@media (pointer: coarse) {
+  .nav-link, .nav-section { min-height: 2.75rem; }
+}
+
+/* Narrow screens (< 768px): compact sticky top bar + off-canvas drawer with the same route, groups and footer. */
 @media (max-width: 767.98px) {
   .shell { grid-template-columns: minmax(0, 1fr); align-content: start; } /* short pages: no stretched top bar */
   .sidebar {
@@ -216,12 +333,12 @@
     transform: translateX(-100%);
     visibility: hidden;
     transition: transform 200ms ease, visibility 200ms;
-    box-shadow: var(--mat-sys-level3, 0 8px 24px rgb(0 0 0 / 0.25));
+    box-shadow: var(--app-overlay-shadow);
 
     &.open { transform: none; visibility: visible; }
   }
   .content { padding: 0.75rem; }
-  .nav-link, .nav-section, .user { min-height: 2.75rem; box-sizing: border-box; } /* 44px touch targets */
+  .nav-link, .nav-section, .user { min-height: 2.75rem; } /* 44px touch targets */
 }
 
 .topbar {
@@ -233,11 +350,11 @@
   gap: 0.5rem;
   min-width: 0;
   padding: 0.25rem 0.25rem 0.25rem 0.75rem;
-  border-bottom: 1px solid var(--app-border);
+  border-bottom: var(--app-border-w) solid var(--app-border);
   background: var(--app-sidebar-bg);
 }
 
-.topbar-brand { display: flex; text-decoration: none; --app-logo-size: 24px; }
+.topbar-brand { display: flex; text-decoration: none; --app-logo-size: 24px; border-radius: var(--app-radius-sm); }
 
 .topbar-title {
   flex: 1;

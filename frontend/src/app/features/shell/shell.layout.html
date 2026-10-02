@@ -15,11 +15,11 @@
   <aside class="sidebar" id="app-sidebar" [class.open]="drawerOpen()" [attr.inert]="narrow() && !drawerOpen() ? '' : null" [cdkTrapFocus]="narrow() && drawerOpen()" [cdkTrapFocusAutoCapture]="narrow() && drawerOpen()">
   <nav class="sidebar-nav" [attr.aria-label]="'shell.nav.label' | transloco">
     <a class="brand" routerLink="/"><app-logo /></a>
-    <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a class="nav-link" routerLink="/" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>dashboard</mat-icon>
       <span>{{ 'shell.nav.overview' | transloco }}</span>
     </a>
-    <a class="nav-link" routerLink="/tasks" routerLinkActive="active">
+    <a class="nav-link" routerLink="/tasks" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>task_alt</mat-icon>
       <span>{{ 'shell.nav.tasks' | transloco }}</span>
       <app-nav-badge [count]="badges()['tasks'] ?? 0" />
@@ -32,33 +32,33 @@
     </button>
     <div class="nav-group" id="nav-group-recruiting" [class.open]="isOpen('recruiting')"><div class="nav-group-inner">
     @if (can('recruiting')) {
-    <a class="nav-link" routerLink="/candidates" routerLinkActive="active">
+    <a class="nav-link" routerLink="/candidates" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>person_search</mat-icon>
       <span>{{ 'shell.nav.candidates' | transloco }}</span>
     </a>
     }
     @if (can('recruiting')) {
-    <a class="nav-link" routerLink="/vacancies" routerLinkActive="active">
+    <a class="nav-link" routerLink="/vacancies" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>work</mat-icon>
       <span>{{ 'shell.nav.vacancies' | transloco }}</span>
     </a>
     }
     @if (can('recruiting')) {
-    <a class="nav-link" routerLink="/inbox" routerLinkActive="active">
+    <a class="nav-link" routerLink="/inbox" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>inbox</mat-icon>
       <span>{{ 'shell.nav.inbox' | transloco }}</span>
       <app-nav-badge [count]="badges()['inbox'] ?? 0" />
     </a>
     }
     @if (can('hiring-requests')) {
-    <a class="nav-link" routerLink="/hiring-requests" routerLinkActive="active">
+    <a class="nav-link" routerLink="/hiring-requests" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>assignment_add</mat-icon>
       <span>{{ 'shell.nav.hiringRequests' | transloco }}</span>
       <app-nav-badge [count]="badges()['hiring_inbox'] ?? 0" />
     </a>
     }
     @if (can('recruiting')) {
-    <a class="nav-link" routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a class="nav-link" routerLink="/reports" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>bar_chart</mat-icon>
       <span>{{ 'shell.nav.reports' | transloco }}</span>
     </a>
@@ -73,64 +73,64 @@
     </button>
     <div class="nav-group" id="nav-group-people" [class.open]="isOpen('people')"><div class="nav-group-inner">
     @if (can('people')) {
-    <a class="nav-link" routerLink="/people" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a class="nav-link" routerLink="/people" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>groups</mat-icon>
       <span>{{ 'shell.nav.peopleList' | transloco }}</span>
     </a>
     }
     @if (can('people')) {
-    <a class="nav-link" routerLink="/people/org-chart" routerLinkActive="active">
+    <a class="nav-link" routerLink="/people/org-chart" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>account_tree</mat-icon>
       <span>{{ 'shell.nav.orgChart' | transloco }}</span>
     </a>
     }
     @if (can('time-off')) {
-    <a class="nav-link" routerLink="/timeoff" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a class="nav-link" routerLink="/timeoff" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>beach_access</mat-icon>
       <span>{{ 'shell.nav.timeoff' | transloco }}</span>
     </a>
     }
     @if (can('time-off')) {
-    <a class="nav-link" routerLink="/timeoff/calendar" routerLinkActive="active">
+    <a class="nav-link" routerLink="/timeoff/calendar" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>calendar_month</mat-icon>
       <span>{{ 'shell.nav.teamCalendar' | transloco }}</span>
     </a>
     }
     @if (can('time-off')) {
-    <a class="nav-link" routerLink="/timeoff/approvals" routerLinkActive="active">
+    <a class="nav-link" routerLink="/timeoff/approvals" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>fact_check</mat-icon>
       <span>{{ 'shell.nav.approvals' | transloco }}</span>
       <app-nav-badge [count]="badges()['timeoff_approvals'] ?? 0" />
     </a>
     }
     @if (can('time')) {
-    <a class="nav-link" routerLink="/time" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a class="nav-link" routerLink="/time" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>schedule</mat-icon>
       <span>{{ 'shell.nav.time' | transloco }}</span>
     </a>
     }
     @if (can('time')) {
-    <a class="nav-link" routerLink="/time/approvals" routerLinkActive="active">
+    <a class="nav-link" routerLink="/time/approvals" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>pending_actions</mat-icon>
       <span>{{ 'shell.nav.timeApprovals' | transloco }}</span>
       <app-nav-badge [count]="badges()['time_approvals'] ?? 0" />
     </a>
     }
     @if (can('time')) {
-    <a class="nav-link" routerLink="/time/team" routerLinkActive="active">
+    <a class="nav-link" routerLink="/time/team" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>groups_2</mat-icon>
       <span>{{ 'shell.nav.timeTeam' | transloco }}</span>
     </a>
     }
     @if (can('documents')) {
-    <a class="nav-link" routerLink="/me/documents" routerLinkActive="active">
+    <a class="nav-link" routerLink="/me/documents" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>description</mat-icon>
       <span>{{ 'shell.nav.myDocuments' | transloco }}</span>
       <app-nav-badge [count]="badges()['my_documents'] ?? 0" />
     </a>
     }
     @if (can('workflows')) {
-    <a class="nav-link" routerLink="/workflows/runs" routerLinkActive="active">
+    <a class="nav-link" routerLink="/workflows/runs" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>checklist</mat-icon>
       <span>{{ 'shell.nav.workflowRuns' | transloco }}</span>
     </a>
@@ -145,38 +145,38 @@
     </button>
     <div class="nav-group" id="nav-group-perform" [class.open]="isOpen('perform')"><div class="nav-group-inner">
     @if (can('perform')) {
-    <a class="nav-link" routerLink="/perform/objectives" routerLinkActive="active">
+    <a class="nav-link" routerLink="/perform/objectives" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>flag</mat-icon>
       <span>{{ 'shell.nav.objectives' | transloco }}</span>
     </a>
     }
     @if (can('perform')) {
-    <a class="nav-link" routerLink="/perform/one-on-ones" routerLinkActive="active">
+    <a class="nav-link" routerLink="/perform/one-on-ones" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>forum</mat-icon>
       <span>{{ 'shell.nav.oneOnOnes' | transloco }}</span>
     </a>
     }
     @if (can('perform')) {
-    <a class="nav-link" routerLink="/perform/feedback" routerLinkActive="active">
+    <a class="nav-link" routerLink="/perform/feedback" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>rate_review</mat-icon>
       <span>{{ 'shell.nav.feedback' | transloco }}</span>
     </a>
     }
     @if (can('perform')) {
-    <a class="nav-link" routerLink="/perform/reviews" routerLinkActive="active">
+    <a class="nav-link" routerLink="/perform/reviews" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>grading</mat-icon>
       <span>{{ 'shell.nav.reviews' | transloco }}</span>
     </a>
     }
     @if (can('pulse')) {
-    <a class="nav-link" routerLink="/pulse" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a class="nav-link" routerLink="/pulse" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>poll</mat-icon>
       <span>{{ 'shell.nav.surveys' | transloco }}</span>
       <app-nav-badge [count]="badges()['surveys'] ?? 0" />
     </a>
     }
     @if (can('pulse')) {
-    <a class="nav-link" routerLink="/pulse/mood" routerLinkActive="active">
+    <a class="nav-link" routerLink="/pulse/mood" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>mood</mat-icon>
       <span>{{ 'shell.nav.mood' | transloco }}</span>
     </a>
@@ -191,32 +191,32 @@
     </button>
     <div class="nav-group" id="nav-group-services" [class.open]="isOpen('services')"><div class="nav-group-inner">
     @if (can('desk')) {
-    <a class="nav-link" routerLink="/desk" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a class="nav-link" routerLink="/desk" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>support_agent</mat-icon>
       <span>{{ 'shell.nav.desk' | transloco }}</span>
       <app-nav-badge [count]="badges()['desk_mine'] ?? 0" />
     </a>
     }
     @if (can('knowledge')) {
-    <a class="nav-link" routerLink="/knowledge" routerLinkActive="active">
+    <a class="nav-link" routerLink="/knowledge" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>menu_book</mat-icon>
       <span>{{ 'shell.nav.knowledge' | transloco }}</span>
     </a>
     }
     @if (can('safe-speak')) {
-    <a class="nav-link" routerLink="/safe-speak" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+    <a class="nav-link" routerLink="/safe-speak" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }">
       <mat-icon>shield</mat-icon>
       <span>{{ 'shell.nav.safeSpeak' | transloco }}</span>
     </a>
     }
     @if (can('reports')) {
-    <a class="nav-link" routerLink="/reports/catalog" routerLinkActive="active">
+    <a class="nav-link" routerLink="/reports/catalog" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>analytics</mat-icon>
       <span>{{ 'shell.nav.reportCatalog' | transloco }}</span>
     </a>
     }
     @if (can('reports')) {
-    <a class="nav-link" routerLink="/reports/builder" routerLinkActive="active">
+    <a class="nav-link" routerLink="/reports/builder" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>tune</mat-icon>
       <span>{{ 'shell.nav.reportBuilder' | transloco }}</span>
     </a>
@@ -232,116 +232,116 @@
       <div class="nav-group" id="nav-group-admin" [class.open]="isOpen('admin')"><div class="nav-group-inner">
       @if (isHr()) {
         @if (can('desk')) {
-        <a class="nav-link" routerLink="/desk/queue" routerLinkActive="active">
+        <a class="nav-link" routerLink="/desk/queue" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>inbox</mat-icon>
           <span>{{ 'shell.nav.deskQueue' | transloco }}</span>
           <app-nav-badge [count]="badges()['desk_queue'] ?? 0" />
         </a>
         }
         @if (can('safe-speak')) {
-        <a class="nav-link" routerLink="/safe-speak/inbox" routerLinkActive="active">
+        <a class="nav-link" routerLink="/safe-speak/inbox" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>policy</mat-icon>
           <span>{{ 'shell.nav.safeSpeakInbox' | transloco }}</span>
           <app-nav-badge [count]="badges()['safe_speak'] ?? 0" />
         </a>
         }
         @if (can('hiring-requests')) {
-        <a class="nav-link" routerLink="/admin/hiring-requests" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/hiring-requests" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>rule</mat-icon>
           <span>{{ 'shell.nav.hiringSettings' | transloco }}</span>
         </a>
         }
         @if (isAdmin()) {
           @if (can('recruiting')) {
-          <a class="nav-link" routerLink="/admin/acquisition-channels" routerLinkActive="active">
+          <a class="nav-link" routerLink="/admin/acquisition-channels" routerLinkActive="active" ariaCurrentWhenActive="page">
             <mat-icon>campaign</mat-icon>
             <span>{{ 'shell.nav.acquisitionChannels' | transloco }}</span>
           </a>
           }
           @if (can('privacy')) {
-          <a class="nav-link" routerLink="/admin/privacy" routerLinkActive="active">
+          <a class="nav-link" routerLink="/admin/privacy" routerLinkActive="active" ariaCurrentWhenActive="page">
             <mat-icon>shield_person</mat-icon>
             <span>{{ 'shell.nav.privacy' | transloco }}</span>
           </a>
           }
         }
         @if (can('time')) {
-        <a class="nav-link" routerLink="/admin/time" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/time" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>calendar_view_week</mat-icon>
           <span>{{ 'shell.nav.timeSchedules' | transloco }}</span>
         </a>
         }
         @if (can('assets')) {
-        <a class="nav-link" routerLink="/admin/assets" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/assets" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>devices</mat-icon>
           <span>{{ 'shell.nav.assets' | transloco }}</span>
         </a>
         }
       }
       @if (isSuperadmin()) {
-        <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/users" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>group</mat-icon>
           <span>{{ 'shell.nav.users' | transloco }}</span>
         </a>
-        <a class="nav-link" routerLink="/admin/modules" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/modules" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>toggle_on</mat-icon>
           <span>{{ 'shell.nav.modules' | transloco }}</span>
         </a>
-        <a class="nav-link" routerLink="/admin/integrations" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/integrations" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>hub</mat-icon>
           <span>{{ 'shell.nav.integrations' | transloco }}</span>
         </a>
         @if (can('audit')) {
-        <a class="nav-link" routerLink="/admin/audit" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/audit" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>history</mat-icon>
           <span>{{ 'shell.nav.audit' | transloco }}</span>
         </a>
         }
         @if (can('mail-agent')) {
-        <a class="nav-link" routerLink="/admin/mail" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/mail" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>mark_email_unread</mat-icon>
           <span>{{ 'shell.nav.mail' | transloco }}</span>
           <app-nav-badge [count]="badges()['mail_unknown'] ?? 0" />
         </a>
         }
         @if (can('google-workspace')) {
-        <a class="nav-link" routerLink="/admin/sheets-import" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/sheets-import" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>table_chart</mat-icon>
           <span>{{ 'shell.nav.sheetsImport' | transloco }}</span>
         </a>
         }
-        <a class="nav-link" routerLink="/admin/errors" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/errors" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>bug_report</mat-icon>
           <span>{{ 'shell.nav.errors' | transloco }}</span>
         </a>
       }
       @if (isHr()) {
         @if (can('time-off')) {
-        <a class="nav-link" routerLink="/admin/timeoff" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/timeoff" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>event_available</mat-icon>
           <span>{{ 'shell.nav.timeoffSettings' | transloco }}</span>
         </a>
         }
         @if (can('workflows')) {
-        <a class="nav-link" routerLink="/admin/workflows" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/workflows" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>account_tree</mat-icon>
           <span>{{ 'shell.nav.workflows' | transloco }}</span>
         </a>
         }
         @if (can('perform')) {
-        <a class="nav-link" routerLink="/admin/perform/reviews" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/perform/reviews" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>workspace_premium</mat-icon>
           <span>{{ 'shell.nav.reviewSetup' | transloco }}</span>
         </a>
         }
         @if (can('pulse')) {
-        <a class="nav-link" routerLink="/admin/pulse" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/pulse" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>ballot</mat-icon>
           <span>{{ 'shell.nav.surveyBuilder' | transloco }}</span>
         </a>
         }
         @if (can('documents')) {
-        <a class="nav-link" routerLink="/admin/documents/templates" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/documents/templates" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>article</mat-icon>
           <span>{{ 'shell.nav.documentTemplates' | transloco }}</span>
         </a>
@@ -349,16 +349,16 @@
       }
       @if (isAdmin()) {
         @if (can('scripts')) {
-        <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/scripts" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>record_voice_over</mat-icon>
           <span>{{ 'shell.nav.scripts' | transloco }}</span>
         </a>
         }
-        <a class="nav-link" routerLink="/admin/directory" routerLinkActive="active">
+        <a class="nav-link" routerLink="/admin/directory" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>menu_book</mat-icon>
           <span>{{ 'shell.nav.directory' | transloco }}</span>
         </a>
-        <a class="nav-link" routerLink="/status" routerLinkActive="active">
+        <a class="nav-link" routerLink="/status" routerLinkActive="active" ariaCurrentWhenActive="page">
           <mat-icon>monitor_heart</mat-icon>
           <span>{{ 'shell.nav.status' | transloco }}</span>
         </a>
@@ -367,7 +367,7 @@
     }
   </nav>
   <div class="sidebar-footer">
-    <a class="nav-link" routerLink="/docs" routerLinkActive="active">
+    <a class="nav-link" routerLink="/docs" routerLinkActive="active" ariaCurrentWhenActive="page">
       <mat-icon>help_outline</mat-icon>
       <span>{{ 'shell.nav.docs' | transloco }}</span>
     </a>
