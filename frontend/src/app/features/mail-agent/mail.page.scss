@@ -23,10 +23,10 @@
 .wide { flex: 1; min-width: min(18rem, 100%); }
 .pattern { min-width: 12rem; }
 .spacer { flex: 1; }
-.log { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.log th, .log td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: var(--app-border-w) solid var(--app-track); }
+/* Log = global .app-table (header sorts / filters); the panel keeps its own padding, so the table sits flush. */
+.panel:has(> .log) { padding: 0; }
 td[data-outcome='parse_failed'], td[data-outcome='unknown'] { color: var(--app-warn-text); }
-.log thead th { font: var(--mat-sys-label-medium); font-weight: 700; color: var(--app-muted); border-bottom-color: var(--app-border); }
+
 .state { padding: 1rem 0; }
 .ai, .ai-rule { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; color: var(--app-muted); }
 .ai[data-status='failed'] { color: var(--app-warn-text); }

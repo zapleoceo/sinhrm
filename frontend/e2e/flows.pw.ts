@@ -221,6 +221,78 @@ test.describe('desktop flows', () => {
     expect(d.x + d.width).toBeLessThanOrEqual(390);
   });
 
+  test('assets: page-side sort without a request, the status filter from the keyboard goes to the API, «back» restores', async ({ page, context }) => {
+    const sent: URLSearchParams[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/assets') sent.push(u.searchParams);
+    });
+    await open(page, context, '/admin/assets');
+    const inventory = page.getByRole('columnheader', { name: /^Інв\. номер/ });
+    const holder = page.getByRole('columnheader', { name: /^У кого/ });
+    const status = page.getByRole('columnheader', { name: /^Статус/ });
+    // Default order (by inventory number) carries the arrow.
+    await expect(inventory).toHaveAttribute('aria-sort', 'ascending');
+    await expect.poll(() => sent.length).toBe(1);
+
+    // Title click: sorted on the page (no request), URL updated; Enter on the title reverses.
+    await holder.getByRole('button', { name: 'У кого', exact: true }).click();
+    await expect(holder).toHaveAttribute('aria-sort', 'ascending');
+    await expect(page).toHaveURL(/[?&]sort=holder&dir=asc(&|$)/);
+    await holder.getByRole('button', { name: 'У кого', exact: true }).press('Enter');
+    await expect(holder).toHaveAttribute('aria-sort', 'descending');
+    const names = await page.locator('table.app-table tbody tr td:nth-child(6)').allInnerTexts();
+    const filled = names.map((n) => n.trim()).filter((n) => n !== '—');
+    expect(filled).toEqual([...filled].sort((a, b) => b.localeCompare(a, 'uk', { numeric: true, sensitivity: 'base' })));
+    expect(names.slice(filled.length).every((n) => n.trim() === '—')).toBe(true); // empty holders last
+    expect(sent).toHaveLength(1);
+
+    // Status filter from the keyboard: a server filter — status= in the URL and in the request.
+    const funnel = status.getByRole('button', { name: 'Фільтр стовпця «Статус»' });
+    await funnel.focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Статус»' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('radio', { name: 'Видано' }).check();
+    await dialog.getByRole('button', { name: 'Застосувати' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/[?&]status=assigned(&|$)/);
+    await expect.poll(() => sent.at(-1)?.get('status')).toBe('assigned');
+    await expect(status.getByRole('button', { name: 'Фільтр стовпця «Статус», увімкнено' })).toBeVisible();
+
+    // «Back» drops the filter, the sort stays.
+    await page.goBack();
+    await expect(status.getByRole('button', { name: 'Фільтр стовпця «Статус»', exact: true })).toBeVisible();
+    await expect(holder).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  test('desk queue: «open» is the default status in the header, clearing it shows every case, SLA sorts', async ({ page, context }) => {
+    const sent: URLSearchParams[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/desk/cases') sent.push(u.searchParams);
+    });
+    await open(page, context, '/desk/queue');
+    await expect.poll(() => sent.at(-1)?.get('open')).toBe('1');
+    const status = page.getByRole('columnheader', { name: /^Статус/ });
+    const active = status.getByRole('button', { name: 'Фільтр стовпця «Статус», увімкнено' });
+    await expect(active).toBeVisible();
+    await active.click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Статус»' });
+    await expect(dialog.getByRole('radio', { name: 'Відкриті' })).toBeChecked();
+    await dialog.getByRole('button', { name: 'Очистити' }).click();
+    await expect(page).toHaveURL(/[?&]status=all(&|$)/);
+    await expect.poll(() => sent.length).toBe(2);
+    expect(sent.at(-1)?.has('open')).toBe(false);
+    expect(sent.at(-1)?.has('status')).toBe(false);
+
+    const sla = page.getByRole('columnheader', { name: /^SLA/ });
+    await sla.getByRole('button', { name: 'SLA', exact: true }).click();
+    await expect(sla).toHaveAttribute('aria-sort', 'ascending');
+    await expect(page).toHaveURL(/[?&]sort=sla&dir=asc(&|$)/);
+    expect(sent).toHaveLength(2);
+  });
+
   test('report view: the table has a «Разом» row', async ({ page, context }) => {
     await open(page, context, '/reports/catalog/desk_sla');
     await expect(page.getByRole('row', { name: /^Разом/ })).toBeVisible();

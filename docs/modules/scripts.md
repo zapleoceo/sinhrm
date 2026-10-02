@@ -197,7 +197,7 @@ viewer — например, новый сотрудник) и, как рань�
 | Файл | Что |
 |---|---|
 | `scripts.model.ts`, `scripts.service.ts`, `scripts.access.ts` | типы API, HTTP-клиент, `scriptsErrorKey`, `renderTemplate` (предпросмотр, те же правила, что на бэкенде), `canManageScripts` |
-| `list/scripts.page.ts` | `/admin/scripts`: список, создание, архивные |
+| `list/scripts.page.ts` | `/admin/scripts`: список, создание, архивные; заголовки сортируют и фильтруют на странице (название — текст, канал — выбор, активная версия и черновик — «є / немає», сортировка по их дате), состояние в адресе |
 | `editor/script-editor.page.*`, `editor/script-editor.store.ts` | `/admin/scripts/:id`: вкладки, CDK drag&drop шагов, чипы переменных, «перевірка на тексті», версии |
 | `evaluation/evaluation-view.ts`, `evaluation/evaluation-badge.ts` | детали оценки (у ШІ — комментарий под шагом и советы с пометкой «ШІ»); значок в ленте карточки с движком «правила» / «ШІ» (детали грузятся по клику) |
 | `templates/template-menu.ts` | кнопка «Шаблон» в `TouchComposer` карточки |

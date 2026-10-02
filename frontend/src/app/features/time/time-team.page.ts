@@ -6,15 +6,33 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { TIMESHEET_STATUS_TONE, TeamRow, addWeeks, mondayOf } from './time.model';
+import { TIMESHEET_STATUSES, TIMESHEET_STATUS_TONE, TeamRow, addWeeks, mondayOf } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
 import { toIsoDate } from '../../core/date/iso-date';
 import { WeekPicker } from './week-picker';
+import { ClientColumns, ClientTable, enumFilter } from '../../core/ui/table/client-table';
+import { ColumnHeader } from '../../core/ui/table/column-header';
+import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { ColumnFilter } from '../../core/ui/table/table-state';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
 
-/** Team overview (/time/team?week=): every visible employee's week — status, expected, worked, overtime, missing. */
+const NUMBER_KEYS = ['expected', 'worked', 'overtime', 'missing', 'absence'] as const;
+
+/** Columns of the team week (all rows are on the page); hour columns sort and filter by range. */
+export const TEAM_COLUMNS: ClientColumns<TeamRow> = {
+  employee: { sort: (r) => r.employee.full_name, filter: 'text', match: (r) => r.employee.full_name },
+  status: { sort: (r) => TIMESHEET_STATUSES.indexOf(r.status), filter: 'select', values: TIMESHEET_STATUSES, match: (r) => r.status },
+  ...Object.fromEntries(NUMBER_KEYS.map((k) => [k, { sort: (r: TeamRow) => r[k], filter: 'range' as const, match: (r: TeamRow) => r[k] }])),
+};
+
+/**
+ * Team overview (/time/team?week=): every visible employee's week — status, expected, worked, overtime, missing;
+ * sortable / filterable column headers (state in the URL, kept when the week changes).
+ */
 @Component({
   selector: 'app-time-team-page',
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, WeekPicker],
+  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, WeekPicker, TableSortDirective, ColumnHeader],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -32,20 +50,21 @@ import { WeekPicker } from './week-picker';
       <mat-progress-bar mode="indeterminate" />
     }
     <div class="panel">
-      <table>
+      <table class="app-table" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
-            <th scope="col">{{ 'time.approvals.employee' | transloco }}</th>
-            <th scope="col">{{ 'time.team.status' | transloco }}</th>
-            <th scope="col" class="num">{{ 'time.week.expected' | transloco }}</th>
-            <th scope="col" class="num">{{ 'time.week.worked' | transloco }}</th>
-            <th scope="col" class="num">{{ 'time.week.overtime' | transloco }}</th>
-            <th scope="col" class="num">{{ 'time.week.missing' | transloco }}</th>
-            <th scope="col" class="num">{{ 'time.week.absence' | transloco }}</th>
+            <th scope="col" app-column-header key="employee" [label]="'time.approvals.employee' | transloco"
+              [filter]="textFilter" [filterValue]="table.filter('employee')" (filterChange)="table.setFilter('employee', $event)"></th>
+            <th scope="col" app-column-header key="status" [label]="'time.team.status' | transloco"
+              [filter]="statusFilter()" [filterValue]="table.filter('status')" (filterChange)="table.setFilter('status', $event)"></th>
+            @for (k of numberKeys; track k) {
+              <th scope="col" class="num" app-column-header [key]="k" [label]="'time.week.' + k | transloco"
+                [filter]="numberFilter" [filterValue]="table.filter(k)" (filterChange)="table.setFilter(k, $event)"></th>
+            }
           </tr>
         </thead>
         <tbody>
-          @for (r of rows(); track r.employee.id) {
+          @for (r of shown(); track r.employee.id) {
             <tr>
               <td><a routerLink="/time" [queryParams]="{ week: weekStart(), employee_id: r.employee.id }">{{ r.employee.full_name }}</a></td>
               <td><span class="app-pill" [attr.data-tone]="statusTone[r.status]">{{ 'time.status.' + r.status | transloco }}</span></td>
@@ -56,7 +75,7 @@ import { WeekPicker } from './week-picker';
               <td class="num">{{ r.absence | number: '1.0-2' }}</td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="muted">{{ 'time.team.empty' | transloco }}</td></tr>
+            <tr><td colspan="7" class="muted">{{ (rows().length ? 'table.noMatches' : 'time.team.empty') | transloco }}</td></tr>
           }
         </tbody>
       </table>
@@ -64,15 +83,10 @@ import { WeekPicker } from './week-picker';
   `,
   styles: `
     .row { display: flex; gap: 0.25rem; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
-    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     td.num { font-family: var(--app-font-mono); font-size: 0.8rem; font-weight: 500; }
-    tbody tr:hover { background: var(--app-row-hover); }
     .over { color: var(--app-warn-text); }
     .short { color: var(--app-bad-text); }
-    .panel { overflow-x: auto; }
   `,
 })
 export class TimeTeamPage {
@@ -85,6 +99,12 @@ export class TimeTeamPage {
   protected readonly rows = signal<TeamRow[]>([]);
   protected readonly loading = signal(false);
   protected readonly weekStart = computed(() => mondayOf(this.week() ?? toIsoDate(new Date())));
+  protected readonly table = new ClientTable(TEAM_COLUMNS);
+  protected readonly shown = this.table.rows(this.rows);
+  protected readonly numberKeys = NUMBER_KEYS;
+  protected readonly textFilter: ColumnFilter = { type: 'text' };
+  protected readonly numberFilter: ColumnFilter = { type: 'range', input: 'number' };
+  protected readonly statusFilter = enumFilter(TIMESHEET_STATUSES, 'time.status.');
   protected readonly missingCount = computed(() => this.rows().filter((r) => r.missing > 0 && r.status !== 'submitted' && r.status !== 'approved').length);
 
   constructor() {
@@ -96,7 +116,8 @@ export class TimeTeamPage {
   }
 
   protected goTo(week: string): void {
-    void this.router.navigate([], { queryParams: { week } });
+    // Merge: the header sort and filters stay when the week changes.
+    void this.router.navigate([], { queryParams: { week }, queryParamsHandling: 'merge' });
   }
 
   private load(week: string): void {

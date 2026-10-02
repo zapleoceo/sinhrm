@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,16 +12,64 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { Observable, Subject, debounceTime, switchMap } from 'rxjs';
+import { Observable, Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { PersonPicker, PickerValue } from '../people/picker/person-picker';
 import { ASSET_STATUSES, ASSET_STATUS_TONE, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
 import { AssetsService, assetsErrorKey } from './assets.service';
 import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
+import { ClientColumns, ClientTable, ClientTableQuery, enumFilter } from '../../core/ui/table/client-table';
+import { ColumnHeader } from '../../core/ui/table/column-header';
+import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { ColumnFilter } from '../../core/ui/table/table-state';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
 
-/** Inventory (/admin/assets): table with search and status, new asset, hand out / take back with history. */
+/**
+ * Columns of the inventory table. Status and type are server filters (the API caps the list at 500 rows, so they
+ * must narrow the query, not the page); `q` is the search above the table, also sent to the API.
+ */
+export const ASSET_COLUMNS: ClientColumns<Asset> = {
+  q: { filter: 'text' },
+  inventory: { sort: (a) => a.inventory_number, filter: 'text', match: (a) => a.inventory_number },
+  name: { sort: (a) => a.name, filter: 'text', match: (a) => a.name },
+  type: { sort: (a) => a.type?.name, filter: 'select' },
+  serial: { sort: (a) => a.serial, filter: 'text', match: (a) => a.serial },
+  status: { sort: (a) => ASSET_STATUSES.indexOf(a.status), filter: 'select', values: ASSET_STATUSES },
+  holder: { sort: (a) => a.employee?.full_name, filter: 'text', match: (a) => a.employee?.full_name },
+};
+
+/** API query of the table state: only the server filters (junk type ids are dropped, not sent). */
+export function assetQueryOf(q: ClientTableQuery): AssetQuery {
+  const text = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
+  const type = text(q.filters['type']);
+  return {
+    q: text(q.filters['q']),
+    status: text(q.filters['status']) as AssetStatus | undefined,
+    type_id: type && /^\d+$/.test(type) ? Number(type) : undefined,
+  };
+}
+/**
+ * Inventory (/admin/assets): search on top, sortable / filterable column headers (state in the URL), new asset,
+ * hand out / take back with history.
+ */
 @Component({
   selector: 'app-assets-page',
-  imports: [DatePipe, FormsModule, PersonPicker, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, RouterLink, TranslocoPipe],
+  imports: [
+    DatePipe,
+    FormsModule,
+    PersonPicker,
+    MatButtonModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatSelectModule,
+    RouterLink,
+    TranslocoPipe,
+    TableSortDirective,
+    ColumnHeader,
+  ],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -55,39 +103,39 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
       </form>
     }
 
+    <!-- Search (number, name, serial at once) is not one column, so it stays on top; status and type are filtered in
+         their column headers (sent to the API), the other columns on the page. All of it lives in the URL. -->
     <div class="filters">
-      <mat-form-field subscriptSizing="dynamic">
+      <mat-form-field class="grow" subscriptSizing="dynamic">
         <mat-label>{{ 'assets.search' | transloco }}</mat-label>
-        <input matInput type="search" (input)="patch({ q: val($event) || undefined })" />
-      </mat-form-field>
-      <mat-form-field subscriptSizing="dynamic">
-        <mat-label>{{ 'assets.statusLabel' | transloco }}</mat-label>
-        <mat-select [value]="query().status ?? null" (valueChange)="patch({ status: $event ?? undefined })">
-          <mat-option [value]="null">{{ 'common.all' | transloco }}</mat-option>
-          @for (s of statuses; track s) {
-            <mat-option [value]="s">{{ 'assets.status.' + s | transloco }}</mat-option>
-          }
-        </mat-select>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="search" #q [value]="table.filter('q') ?? ''" (input)="search$.next(q.value)" />
       </mat-form-field>
     </div>
     @if (loading()) {
       <mat-progress-bar mode="indeterminate" />
     }
-    <div class="panel scroll">
-      <table>
+    <div class="panel">
+      <table class="app-table assets" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
-            <th scope="col">{{ 'assets.inventoryNumber' | transloco }}</th>
-            <th scope="col">{{ 'assets.name' | transloco }}</th>
-            <th scope="col">{{ 'assets.type' | transloco }}</th>
-            <th scope="col">{{ 'assets.serial' | transloco }}</th>
-            <th scope="col">{{ 'assets.statusLabel' | transloco }}</th>
-            <th scope="col">{{ 'assets.holder' | transloco }}</th>
+            <th scope="col" app-column-header key="inventory" [label]="'assets.inventoryNumber' | transloco"
+              [filter]="textFilter" [filterValue]="table.filter('inventory')" (filterChange)="table.setFilter('inventory', $event)"></th>
+            <th scope="col" app-column-header key="name" [label]="'assets.name' | transloco"
+              [filter]="textFilter" [filterValue]="table.filter('name')" (filterChange)="table.setFilter('name', $event)"></th>
+            <th scope="col" app-column-header key="type" [label]="'assets.type' | transloco"
+              [filter]="typeFilter()" [filterValue]="table.filter('type')" (filterChange)="table.setFilter('type', $event)"></th>
+            <th scope="col" app-column-header key="serial" [label]="'assets.serial' | transloco"
+              [filter]="textFilter" [filterValue]="table.filter('serial')" (filterChange)="table.setFilter('serial', $event)"></th>
+            <th scope="col" app-column-header key="status" [label]="'assets.statusLabel' | transloco"
+              [filter]="statusFilter()" [filterValue]="table.filter('status')" (filterChange)="table.setFilter('status', $event)"></th>
+            <th scope="col" app-column-header key="holder" [label]="'assets.holder' | transloco"
+              [filter]="textFilter" [filterValue]="table.filter('holder')" (filterChange)="table.setFilter('holder', $event)"></th>
             <th scope="col"><span class="visually-hidden">{{ 'assets.actions' | transloco }}</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (a of items(); track a.id) {
+          @for (a of rows(); track a.id) {
             <tr>
               <td><strong class="app-num">{{ a.inventory_number }}</strong></td>
               <td>{{ a.name }}</td>
@@ -146,7 +194,7 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
               </tr>
             }
           } @empty {
-            <tr><td colspan="7" class="muted">{{ 'assets.empty' | transloco }}</td></tr>
+            <tr><td colspan="7" class="muted">{{ (items().length ? 'table.noMatches' : 'assets.empty') | transloco }}</td></tr>
           }
         </tbody>
       </table>
@@ -155,14 +203,12 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
   styles: `
     .form { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; padding: 1rem; margin-bottom: var(--app-gap); }
     .grow { flex: 1 1 12rem; }
-    .scroll { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
-    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
+    /* The hidden «actions» column title is position: absolute — keep it inside the scrolling panel, or it widens the page on phones. */
+    .panel { position: relative; }
+    .assets td { vertical-align: middle; }
     .actions { white-space: nowrap; text-align: right; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .status[data-status='written_off'] { text-decoration: line-through; }
-    tbody tr:hover { background: var(--app-row-hover); }
     .serial { font-size: 0.8rem; }
     .hist { margin: 0; padding-left: 1rem; }
   `,
@@ -171,12 +217,13 @@ export class AssetsPage implements OnInit {
   private readonly api = inject(AssetsService);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
-  protected readonly statuses = ASSET_STATUSES;
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly statusTone = ASSET_STATUS_TONE;
   protected readonly returnStatuses = RETURN_STATUSES;
   protected readonly items = signal<Asset[]>([]);
   protected readonly types = signal<AssetType[]>([]);
-  protected readonly query = signal<AssetQuery>({});
+  /** Server part of the table state (search, status, type): a change reloads the list. */
+  private readonly query = signal<AssetQuery>({});
   protected readonly loading = signal(false);
   protected readonly formOpen = signal(false);
   protected readonly newType = signal<number | null>(null);
@@ -185,6 +232,14 @@ export class AssetsPage implements OnInit {
   protected readonly employeeId = signal<number | null>(null);
   protected readonly returnStatus = signal<AssetStatus>('in_stock');
   private readonly reload = new Subject<void>();
+  protected readonly search$ = new Subject<string>();
+  // Declared after `query` and `reload`: the URL is read right away.
+  protected readonly table = new ClientTable(ASSET_COLUMNS, { key: 'inventory', dir: 'asc' }, (q) => this.onQuery(q));
+  protected readonly rows = this.table.rows(this.items);
+  protected readonly textFilter: ColumnFilter = { type: 'text' };
+  protected readonly statusFilter = enumFilter(ASSET_STATUSES, 'assets.status.');
+
+  protected readonly typeFilter = computed<ColumnFilter>(() => ({ type: 'select', options: this.types().map((t) => ({ value: String(t.id), label: t.name })) }));
 
   constructor() {
     this.reload
@@ -209,6 +264,9 @@ export class AssetsPage implements OnInit {
   }
 
   ngOnInit(): void {
+    this.search$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((q) => this.table.setFilter('q', q.trim() || null));
     this.reload.next();
     this.api.types().subscribe({ next: (list) => this.types.set(list), error: () => this.types.set([]) });
   }
@@ -217,15 +275,14 @@ export class AssetsPage implements OnInit {
     return typeof value === 'number' ? value : null;
   }
 
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement).value;
-  }
-
-  protected patch(p: Partial<AssetQuery>): void {
-    this.query.update((q) => ({ ...q, ...p }));
+  /** URL changed: reload only when a server filter changed (sort and page-side filters need no request). */
+  private onQuery(q: ClientTableQuery): void {
+    const next = assetQueryOf(q);
+    const prev = this.query();
+    if (next.q === prev.q && next.status === prev.status && next.type_id === prev.type_id) return;
+    this.query.set(next);
     this.reload.next();
   }
-
   protected addType(name: string): void {
     if (name.trim() !== '') {
       this.api.createType(name.trim()).subscribe({ next: (t) => this.types.update((l) => [...l, t]), error: (e: unknown) => this.toast(assetsErrorKey(e)) });

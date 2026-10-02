@@ -11,8 +11,8 @@ describe('Assets restyle', () => {
     }
   });
 
-  it('table rows are split by the 1.5px track line, no hex', () => {
-    expect(css(AssetsPage)).toContain('var(--app-track)');
+  it('the table takes the shared .app-table look (no local copy of table rules), no hex', () => {
+    expect(css(AssetsPage)).not.toMatch(/(^|[},])\s*(table|th|td)(\[[^\]]*\])?\s*[,{]/m);
     expect(css(AssetsPage)).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
 });

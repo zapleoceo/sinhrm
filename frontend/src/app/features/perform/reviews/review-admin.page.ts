@@ -10,9 +10,22 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { Competency, REVIEW_TYPES, RatingScale, ReviewCycle, ReviewType, parseIds } from '../perform.model';
+import { CYCLE_STATUSES, Competency, REVIEW_TYPES, RatingScale, ReviewCycle, ReviewType, parseIds } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { toIsoDate } from '../../../core/date/iso-date';
+import { ClientColumns, ClientTable, enumFilter } from '../../../core/ui/table/client-table';
+import { ColumnHeader } from '../../../core/ui/table/column-header';
+import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
+import { ColumnFilter } from '../../../core/ui/table/table-state';
+import { TableUrlState } from '../../../core/ui/table/table-url-state';
+
+/** Columns of the cycles list (all on the page). Period filters by its start; progress sorts by the submitted share. */
+export const CYCLE_COLUMNS: ClientColumns<ReviewCycle> = {
+  name: { sort: (c) => c.name, filter: 'text', match: (c) => c.name },
+  period: { sort: (c) => c.period_start, filter: 'range', match: (c) => c.period_start },
+  status: { sort: (c) => CYCLE_STATUSES.indexOf(c.status), filter: 'select', values: CYCLE_STATUSES, match: (c) => c.status },
+  progress: { sort: (c) => (c.progress.total ? c.progress.submitted / c.progress.total : null) },
+};
 
 /**
  * Review setup (/admin/perform/reviews, admins): rating scales, competencies, and the cycle wizard —
@@ -21,7 +34,21 @@ import { toIsoDate } from '../../../core/date/iso-date';
  */
 @Component({
   selector: 'app-review-admin-page',
-  imports: [FormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, MatStepperModule, TranslocoPipe],
+  imports: [
+    FormsModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+    MatStepperModule,
+    TranslocoPipe,
+    TableSortDirective,
+    ColumnHeader,
+  ],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -132,9 +159,21 @@ import { toIsoDate } from '../../../core/date/iso-date';
 
     <section class="panel box">
       <h2>{{ 'perform.admin.cycles' | transloco }}</h2>
-      <table class="cycles">
+      <table class="app-table cycles" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+        <thead>
+          <tr>
+            <th scope="col" app-column-header key="name" [label]="'perform.fields.name' | transloco"
+              [filter]="textFilter" [filterValue]="table.filter('name')" (filterChange)="table.setFilter('name', $event)"></th>
+            <th scope="col" app-column-header key="period" [label]="'perform.fields.period' | transloco"
+              [filter]="dateFilter" [filterValue]="table.filter('period')" (filterChange)="table.setFilter('period', $event)"></th>
+            <th scope="col" app-column-header key="status" [label]="'perform.fields.status' | transloco"
+              [filter]="statusFilter()" [filterValue]="table.filter('status')" (filterChange)="table.setFilter('status', $event)"></th>
+            <th scope="col" app-column-header key="progress" [label]="'perform.admin.progress' | transloco"></th>
+            <th scope="col"><span class="visually-hidden">{{ 'perform.admin.actions' | transloco }}</span></th>
+          </tr>
+        </thead>
         <tbody>
-          @for (c of cycles(); track c.id) {
+          @for (c of rows(); track c.id) {
             <tr>
               <th scope="row">{{ c.name }}</th>
               <td class="muted app-num">{{ c.period_start }} — {{ c.period_end }}</td>
@@ -152,7 +191,7 @@ import { toIsoDate } from '../../../core/date/iso-date';
               </td>
             </tr>
           } @empty {
-            <tr><td class="muted">{{ 'perform.admin.noCycles' | transloco }}</td></tr>
+            <tr><td colspan="5" class="muted">{{ (cycles().length ? 'table.noMatches' : 'perform.admin.noCycles') | transloco }}</td></tr>
           }
         </tbody>
       </table>
@@ -160,12 +199,14 @@ import { toIsoDate } from '../../../core/date/iso-date';
   `,
   styles: `
     .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    /* The hidden «actions» column title is position: absolute — keep it inside the scrolling panel, or it widens the page on phones. */
+    .box:has(> .cycles) { position: relative; }
     .box { padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .box h2 { margin: 0 0 0.5rem; font: var(--mat-sys-title-medium); }
     .checks { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0.5rem 0; }
-    .cycles { width: 100%; border-collapse: collapse; }
-    .cycles th, .cycles td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); }
-    .cycles tr:last-child th, .cycles tr:last-child td { border-bottom: 0; }
+    /* Row header (the cycle name) reads as a cell, not as a column title of the global .app-table. */
+    .cycles tbody th { font: inherit; font-weight: 600; color: inherit; white-space: normal; padding: 0.6rem 1rem; border-bottom-color: var(--app-track); }
+    .cycles tbody tr:last-child th { border-bottom: 0; }
     .app-num { font-size: 0.8rem; white-space: nowrap; }
     .mini { display: inline-block; width: 5rem; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; vertical-align: middle; margin-right: 0.35rem; }
     .mini span {
@@ -184,6 +225,11 @@ export class ReviewAdminPage implements OnInit {
   protected readonly scales = signal<RatingScale[]>([]);
   protected readonly competencies = signal<Competency[]>([]);
   protected readonly cycles = signal<ReviewCycle[]>([]);
+  protected readonly table = new ClientTable(CYCLE_COLUMNS);
+  protected readonly rows = this.table.rows(this.cycles);
+  protected readonly textFilter: ColumnFilter = { type: 'text' };
+  protected readonly dateFilter: ColumnFilter = { type: 'range', input: 'date' };
+  protected readonly statusFilter = enumFilter(CYCLE_STATUSES, 'perform.cycleStatus.');
   protected scaleName = '';
   protected scaleLevels = '1 Very weak; 2 Weak; 3 OK; 4 Strong; 5 Very strong';
   protected competencyName = '';
