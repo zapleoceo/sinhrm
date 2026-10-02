@@ -198,6 +198,51 @@ final class PersonalDataApiTest extends TestCase
         $this->actingAs($admin)->postJson("/api/privacy/candidate/{$id}/erase", ['reason' => 'again', 'confirm' => true])->assertOk();
     }
 
+    public function test_requests_journal_lists_export_and_erase_newest_first(): void
+    {
+        $id = $this->fullCandidate()->candidate_id;
+        $other = $this->applied($this->vacancyIn($this->branch), ['full_name' => 'Other Synthetic'])->candidate_id;
+        $admin = $this->userWith(UserRole::Admin);
+
+        $this->actingAs($admin)->get("/api/privacy/candidate/{$id}/export")->assertOk();
+        $this->actingAs($admin)->get("/api/privacy/candidate/{$other}/export")->assertOk();
+        $this->actingAs($admin)->postJson("/api/privacy/candidate/{$id}/erase", ['reason' => 'Written request', 'confirm' => true])->assertOk();
+
+        $rows = $this->actingAs($admin)->getJson("/api/privacy/candidate/{$id}/requests")
+            ->assertOk()->assertJsonCount(2, 'data')->json('data');
+        $this->assertIsArray($rows);
+
+        $this->assertSame('erase', $rows[0]['action']);
+        $this->assertSame('manual', $rows[0]['trigger']);
+        $this->assertSame('Written request', $rows[0]['reason']);
+        $this->assertSame($admin->id, $rows[0]['actor_id']);
+        $this->assertIsArray($rows[0]['counts']);
+        $this->assertArrayHasKey('recruiting', $rows[0]['counts']);
+        $this->assertIsString($rows[0]['created_at']);
+
+        $this->assertSame('export', $rows[1]['action']);
+        $this->assertSame('manual', $rows[1]['trigger']);
+        $this->assertNull($rows[1]['reason']);
+        $this->assertNull($rows[1]['counts']);
+        $this->assertSame($admin->id, $rows[1]['actor_id']);
+
+        // Another person's journal holds only their own export.
+        $this->actingAs($admin)->getJson("/api/privacy/candidate/{$other}/requests")
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.action', 'export');
+        // Employee journal for the same numeric id is separate.
+        $this->actingAs($admin)->getJson("/api/privacy/employee/{$id}/requests")->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_requests_journal_is_admin_only(): void
+    {
+        $id = $this->fullCandidate()->candidate_id;
+        $this->getJson("/api/privacy/candidate/{$id}/requests")->assertUnauthorized();
+        foreach ([UserRole::Recruiter, UserRole::HrManager, UserRole::Viewer, UserRole::Employee] as $role) {
+            $this->actingAs($this->userWith($role, [$this->branch]))->getJson("/api/privacy/candidate/{$id}/requests")->assertForbidden();
+        }
+        $this->actingAs($this->userWith(UserRole::Superadmin))->getJson("/api/privacy/candidate/{$id}/requests")->assertOk();
+    }
+
     public function test_hired_candidate_and_active_employee_are_not_erased(): void
     {
         $application = $this->fullCandidate();

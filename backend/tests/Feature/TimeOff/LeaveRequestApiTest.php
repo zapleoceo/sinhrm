@@ -199,6 +199,24 @@ final class LeaveRequestApiTest extends TestCase
             ->assertUnprocessable()->assertJsonPath('code', 'inactive_type');
     }
 
+    public function test_list_per_page_comes_as_a_query_string_and_is_bounded_to_200(): void
+    {
+        foreach (['worker', 'peer'] as $who) {
+            $this->grant($this->org[$who], 10);
+            $this->actingAs($this->userOf($this->org[$who]))->postJson('/api/timeoff/requests', $this->payload('2026-10-12', '2026-10-12'))->assertCreated();
+        }
+        $admin = $this->login(UserRole::Admin);
+
+        $this->actingAs($admin)->getJson('/api/timeoff/requests')->assertOk()->assertJsonPath('meta.per_page', 50);
+        $this->actingAs($admin)->getJson('/api/timeoff/requests?perPage=1')->assertOk()
+            ->assertJsonPath('meta.per_page', 1)->assertJsonPath('meta.total', 2)->assertJsonCount(1, 'data');
+        $this->actingAs($admin)->getJson('/api/timeoff/requests?perPage=200')->assertOk()->assertJsonPath('meta.per_page', 200);
+        foreach (['perPage=0', 'perPage=abc', 'perPage=201'] as $query) {
+            $this->actingAs($admin)->getJson('/api/timeoff/requests?'.$query)
+                ->assertUnprocessable()->assertJsonValidationErrors(['perPage']);
+        }
+    }
+
     public function test_list_balances_and_approvals_are_scoped(): void
     {
         foreach (['worker', 'peer', 'other', 'lead'] as $who) {

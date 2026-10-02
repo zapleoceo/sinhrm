@@ -53,6 +53,18 @@ final class UsersAdminTest extends TestCase
         $this->actingAs($this->superadmin)->getJson('/api/users?perPage=abc')->assertUnprocessable();
     }
 
+    public function test_per_page_default_bounds_and_string_values(): void
+    {
+        $this->actingAs($this->superadmin)->getJson('/api/users')->assertOk()->assertJsonPath('meta.per_page', 20);
+        $this->actingAs($this->superadmin)->getJson('/api/users?perPage=1')->assertOk()
+            ->assertJsonPath('meta.per_page', 1)->assertJsonCount(1, 'data');
+        $this->actingAs($this->superadmin)->getJson('/api/users?perPage=100')->assertOk()->assertJsonPath('meta.per_page', 100);
+        foreach (['perPage=0', 'perPage=-5', 'perPage=1.5', 'perPage=101'] as $query) {
+            $this->actingAs($this->superadmin)->getJson('/api/users?'.$query)
+                ->assertUnprocessable()->assertJsonValidationErrors(['perPage']);
+        }
+    }
+
     public function test_list_filters_by_query_role_and_status(): void
     {
         User::factory()->withRole(UserRole::Recruiter)->create(['name' => 'Rita Recruiter', 'email' => 'rita@example.com']);

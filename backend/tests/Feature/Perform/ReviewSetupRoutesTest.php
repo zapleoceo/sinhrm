@@ -145,6 +145,46 @@ final class ReviewSetupRoutesTest extends TestCase
         $this->actingAs($hr)->getJson('/api/perform/review/cycles')->assertOk()->assertJsonCount(1, 'data');
     }
 
+    public function test_admin_updates_a_scale_and_levels_are_sorted(): void
+    {
+        $this->actingAs($this->admin)->putJson("/api/perform/review/scales/{$this->scale}", [
+            'name' => 'Four', 'levels' => [
+                ['value' => '4', 'label' => 'Top'], ['value' => 1, 'label' => 'Low'], ['value' => 3, 'label' => 'High'], ['value' => 2, 'label' => 'Mid'],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('data.id', $this->scale)
+            ->assertJsonPath('data.name', 'Four')
+            ->assertJsonCount(4, 'data.levels')
+            ->assertJsonPath('data.levels.0.value', 1)->assertJsonPath('data.levels.0.label', 'Low')
+            ->assertJsonPath('data.levels.1.value', 2)->assertJsonPath('data.levels.1.label', 'Mid')
+            ->assertJsonPath('data.levels.2.value', 3)->assertJsonPath('data.levels.2.label', 'High')
+            ->assertJsonPath('data.levels.3.value', 4)->assertJsonPath('data.levels.3.label', 'Top');
+
+        $scales = $this->actingAs($this->admin)->getJson('/api/perform/review/scales')->assertOk()->assertJsonCount(1, 'data')->json('data');
+        $this->assertIsArray($scales);
+        $this->assertSame('Four', $scales[0]['name']);
+        $this->assertCount(4, $scales[0]['levels']);
+    }
+
+    public function test_admin_updates_a_competency(): void
+    {
+        $other = (int) $this->actingAs($this->admin)->postJson('/api/perform/review/scales', [
+            'name' => 'Two', 'levels' => [['value' => 0, 'label' => 'No'], ['value' => 1, 'label' => 'Yes']],
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($this->admin)->putJson("/api/perform/review/competencies/{$this->competencies[0]}", [
+            'name' => 'Focus and delivery', 'description' => 'Finishes what was started', 'scale_id' => (string) $other, 'active' => false,
+        ])->assertOk()
+            ->assertJsonPath('data.id', $this->competencies[0])
+            ->assertJsonPath('data.name', 'Focus and delivery')
+            ->assertJsonPath('data.description', 'Finishes what was started')
+            ->assertJsonPath('data.scale_id', $other)
+            ->assertJsonPath('data.active', false)
+            ->assertJsonPath('data.scale.name', 'Two');
+
+        $this->assertDatabaseHas('competencies', ['id' => $this->competencies[0], 'name' => 'Focus and delivery', 'scale_id' => $other, 'active' => false]);
+    }
+
     public function test_unknown_ids_are_404(): void
     {
         ['worker' => $worker, 'peer' => $peer] = $this->org();

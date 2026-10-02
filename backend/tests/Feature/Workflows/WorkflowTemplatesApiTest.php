@@ -68,6 +68,46 @@ final class WorkflowTemplatesApiTest extends TestCase
             ->assertJsonCount(1, 'data')->assertJsonPath('data.0.runs_count', 0);
     }
 
+    public function test_admin_reads_one_template_with_its_steps(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $template = $this->workflow([
+            ['create_task', 0, 'hr_admin', ['title' => 'Prepare the desk'], 'Prepare desk'],
+            ['webhook', 2, 'hr_admin', ['url' => 'https://hooks.example.test/in'], 'Notify IT'],
+        ], ['name' => 'Show sample']);
+
+        $this->actingAs($admin)->getJson("/api/workflows/templates/{$template->id}")->assertOk()
+            ->assertJsonStructure(['data' => [
+                'id', 'name', 'kind', 'trigger', 'active', 'probation_days', 'runs_count', 'updated_at',
+                'webhook_secret' => ['is_set', 'masked', 'updated_at'],
+                'steps' => [['id', 'position', 'title', 'action', 'offset_days', 'assignee_rule', 'assignee_user_id', 'config']],
+            ]])
+            ->assertJsonPath('data.id', $template->id)
+            ->assertJsonPath('data.name', 'Show sample')
+            ->assertJsonPath('data.kind', 'onboarding')
+            ->assertJsonPath('data.trigger', 'manual')
+            ->assertJsonPath('data.active', true)
+            ->assertJsonPath('data.webhook_secret.is_set', false)
+            ->assertJsonCount(2, 'data.steps')
+            ->assertJsonPath('data.steps.0.title', 'Prepare desk')
+            ->assertJsonPath('data.steps.0.action', 'create_task')
+            ->assertJsonPath('data.steps.0.config.title', 'Prepare the desk')
+            ->assertJsonPath('data.steps.1.action', 'webhook')
+            ->assertJsonPath('data.steps.1.offset_days', 2)
+            ->assertJsonPath('data.steps.1.config.url', 'https://hooks.example.test/in');
+
+        $this->actingAs($admin)->getJson('/api/workflows/templates/999999')->assertNotFound();
+    }
+
+    public function test_one_template_is_admin_only(): void
+    {
+        $template = $this->workflow([['create_task']]);
+        $this->getJson("/api/workflows/templates/{$template->id}")->assertUnauthorized();
+        foreach ([UserRole::Recruiter, UserRole::Viewer] as $role) {
+            $this->actingAs($this->login($role))->getJson("/api/workflows/templates/{$template->id}")->assertForbidden();
+        }
+    }
+
     public function test_step_config_is_validated_by_its_action(): void
     {
         $admin = $this->login(UserRole::Admin);
