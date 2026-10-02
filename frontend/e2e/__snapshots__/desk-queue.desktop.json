@@ -13,6 +13,7 @@
  "interactive": [
   "button \"Адміністрування\" [expanded]",
   "button \"Додати\"",
+  "button \"Згорнути меню\" [expanded]",
   "button \"Люди 70 нових\"",
   "button \"Меню користувача\"",
   "button \"Продуктивність\"",

@@ -79,6 +79,10 @@ export class NavBadgesService {
     :host { display: contents; }
     /* Host is display:contents, so the burger's corner position goes on the pill itself (shell .burger is relative). */
     :host(.burger-badge) .nav-badge { position: absolute; top: 0; right: -6px; margin: 0; pointer-events: none; }
+    /* Icon-only rail (shell .rail): the number sits on the top-right corner of the row's icon (rows are relative). */
+    :host-context(.shell.rail) .nav-badge {
+      position: absolute; top: 1px; right: 1px; min-width: 1rem; margin: 0; padding: 0 0.25rem; line-height: 1rem; pointer-events: none;
+    }
     .nav-badge {
       margin-left: auto;
       min-width: 1.25rem;

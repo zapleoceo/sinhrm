@@ -1,7 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { MatTooltip } from '@angular/material/tooltip';
 import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -19,7 +21,7 @@ const logout = vi.fn().mockResolvedValue(undefined);
 const setActiveRole = vi.fn().mockResolvedValue(undefined);
 const langUse = vi.fn().mockResolvedValue(undefined);
 
-async function setup(modules?: string[], narrow = false, user: object = USER): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void> }> {
+async function setup(modules?: string[], narrow = false, user: object = USER): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void>; fixture: ComponentFixture<ShellLayout> }> {
   logout.mockClear();
   setActiveRole.mockClear();
   langUse.mockClear();
@@ -41,7 +43,7 @@ async function setup(modules?: string[], narrow = false, user: object = USER): P
     fixture.detectChanges();
   };
   await detect();
-  return { el: fixture.nativeElement as HTMLElement, router: TestBed.inject(Router), http: TestBed.inject(HttpTestingController), detect };
+  return { el: fixture.nativeElement as HTMLElement, router: TestBed.inject(Router), http: TestBed.inject(HttpTestingController), detect, fixture };
 }
 
 const header = (el: HTMLElement, g: string): HTMLButtonElement =>
@@ -210,7 +212,7 @@ describe('ShellLayout user menu in sidebar footer', () => {
   });
 });
 
-describe('ShellLayout route rail (current station)', () => {
+describe('ShellLayout current page', () => {
   beforeEach(() => localStorage.clear());
 
   it('marks only the current page link with aria-current="page" (not by colour alone)', async () => {
@@ -226,7 +228,7 @@ describe('ShellLayout route rail (current station)', () => {
     expect([...el.querySelectorAll('a.nav-link[aria-current="page"]')].map((a) => a.getAttribute('href'))).toEqual(['/']);
   });
 
-  it('keeps every station icon out of the accessible name', async () => {
+  it('keeps every menu icon out of the accessible name', async () => {
     const { el } = await setup();
     const icons = [...el.querySelectorAll('.sidebar-nav a.nav-link mat-icon')];
     expect(icons.length).toBeGreaterThan(10);
@@ -302,5 +304,92 @@ describe('ShellLayout mobile drawer', () => {
     await router.navigateByUrl('/tasks');
     await detect();
     expect(el.querySelector('.sidebar')?.classList.contains('open')).toBe(false);
+  });
+});
+
+describe('ShellLayout collapsible sidebar (icon rail)', () => {
+  beforeEach(() => localStorage.clear());
+
+  const toggle = (el: HTMLElement): HTMLButtonElement => el.querySelector('button.rail-toggle') as HTMLButtonElement;
+  const isRail = (el: HTMLElement): boolean => el.querySelector('.shell')?.classList.contains('rail') ?? false;
+
+  it('folds to a rail and back, with aria-expanded, a translated label and the choice remembered', async () => {
+    const { el, detect } = await setup();
+    expect(isRail(el)).toBe(false);
+    expect(toggle(el).getAttribute('aria-expanded')).toBe('true');
+    expect(toggle(el).getAttribute('aria-label')).toBe('shell.nav.collapseMenu');
+    expect(toggle(el).getAttribute('aria-controls')).toBe('app-sidebar');
+
+    toggle(el).click();
+    await detect();
+    expect(isRail(el)).toBe(true);
+    expect(toggle(el).getAttribute('aria-expanded')).toBe('false');
+    expect(toggle(el).getAttribute('aria-label')).toBe('shell.nav.expandMenu');
+    expect(localStorage.getItem('sinhrm.nav.collapsed')).toBe('1');
+
+    toggle(el).click();
+    await detect();
+    expect(isRail(el)).toBe(false);
+    expect(localStorage.getItem('sinhrm.nav.collapsed')).toBe('0');
+  });
+
+  it('restores the rail after a reload', async () => {
+    localStorage.setItem('sinhrm.nav.collapsed', '1');
+    const { el } = await setup();
+    expect(isRail(el)).toBe(true);
+  });
+
+  it('keeps labels as accessible names and the user menu reachable on the rail', async () => {
+    localStorage.setItem('sinhrm.nav.collapsed', '1');
+    const { el } = await setup();
+    expect(el.querySelector('a[href="/tasks"] .label')?.textContent).toContain('shell.nav.tasks');
+    expect(el.querySelector('.sidebar-footer button.user')?.getAttribute('aria-label')).toBe('shell.menu.open');
+  });
+
+  it('shows group icons with the sum of counters; a group click widens the sidebar with that group open', async () => {
+    localStorage.setItem('sinhrm.nav.collapsed', '1');
+    localStorage.setItem('sinhrm.nav.expanded.7', '["people"]');
+    const { el, http, detect } = await setup();
+    await new Promise((resolve) => setTimeout(resolve));
+    for (const req of http.match('/api/nav/badges')) req.flush({ data: { timeoff_approvals: 2, my_documents: 3 } });
+    await detect();
+
+    // On the rail the items are hidden even for a group opened before, so its header carries the counter.
+    expect(header(el, 'people').getAttribute('aria-expanded')).toBe('false');
+    expect(header(el, 'people').querySelector('.section-icon')).not.toBeNull();
+    expect(el.querySelector('button[aria-controls="nav-group-people"] .nav-badge')?.textContent?.trim()).toBe('5');
+
+    header(el, 'perform').click();
+    await detect();
+    expect(isRail(el)).toBe(false);
+    expect(header(el, 'perform').getAttribute('aria-expanded')).toBe('true');
+    expect(localStorage.getItem('sinhrm.nav.collapsed')).toBe('0');
+  });
+
+  it('marks the group of the current page on the rail', async () => {
+    localStorage.setItem('sinhrm.nav.collapsed', '1');
+    const { el, router, detect } = await setup();
+    await router.navigateByUrl('/perform/objectives');
+    await detect();
+    expect(header(el, 'perform').classList.contains('current')).toBe(true);
+    expect(header(el, 'people').classList.contains('current')).toBe(false);
+  });
+
+  it('shows a name tooltip on the right only while the sidebar is a rail', async () => {
+    const { el, detect, fixture } = await setup();
+    const tipOf = (href: string): MatTooltip => fixture.debugElement.query(By.css(`a[href="${href}"]`)).injector.get(MatTooltip);
+    expect(tipOf('/tasks').disabled).toBe(true);
+    toggle(el).click();
+    await detect();
+    expect(tipOf('/tasks').disabled).toBe(false);
+    expect(tipOf('/tasks').message).toBe('shell.nav.tasks');
+    expect(tipOf('/tasks').position).toBe('right');
+  });
+
+  it('never applies on the mobile drawer: no toggle, no rail', async () => {
+    localStorage.setItem('sinhrm.nav.collapsed', '1');
+    const { el } = await setup(undefined, true);
+    expect(toggle(el)).toBeNull();
+    expect(isRail(el)).toBe(false);
   });
 });

@@ -16,6 +16,7 @@
   "button \"Запит на зміну даних\"",
   "button \"Запустити\" [disabled]",
   "button \"Звільнити\"",
+  "button \"Згорнути меню\" [expanded]",
   "button \"Люди\" [expanded]",
   "button \"Меню користувача\"",
   "button \"Персональні дані\"",

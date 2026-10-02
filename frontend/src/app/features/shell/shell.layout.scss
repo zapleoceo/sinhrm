@@ -1,16 +1,15 @@
-/* Restyle C «Маршрут», step 3 — wide rail (240px) drawn as a route: every menu item is a station (ring with its icon)
-   on one vertical line, group headers are junctions on the same line, the current page is a filled station with a halo.
-   Colours are tokens from styles.scss only (no hex here). Station geometry: */
-$station: 28px; // ring diameter
-$station-x: 0.375rem; // inset of the ring inside a row
-$line-x: calc(#{$station-x} + #{$station} / 2 - 1px); // left edge of the 2px line = centre of the ring
-$junction-gap: 0.625rem; // from the line to a group header label (headers start left of item labels, like a branch name)
-$header-x: calc(#{$station-x} + #{$station} / 2 + #{$junction-gap});
+/* Restyle C «Маршрут»: sidebar 240px with plain menu items (icon + label) and collapsible groups; on a wide screen
+   it folds to an icon-only rail (`.rail`, 4rem) with tooltips. Colours are tokens from styles.scss only (no hex here). */
+$rail-width: 4rem; // icon-only rail: 24px icon + padding, 44px+ targets
+$rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-reduced-motion)
 
 .shell {
   display: grid;
-  grid-template-columns: var(--app-sidebar-width) 1fr;
+  grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr);
   min-height: 100vh;
+  transition: grid-template-columns $rail-motion ease;
+
+  &.rail { grid-template-columns: $rail-width minmax(0, 1fr); }
 }
 
 /* Sidebar fills the viewport height: the nav scrolls, the footer (help + user menu) stays pinned. */
@@ -19,18 +18,19 @@ $header-x: calc(#{$station-x} + #{$station} / 2 + #{$junction-gap});
   top: 0;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   height: 100vh;
   border-right: var(--app-border-w) solid var(--app-border);
   background: var(--app-sidebar-bg);
 }
 
-/* No gaps between rows: each row draws its own piece of the line edge to edge, so the route stays continuous
-   (collapsed groups are 0px tall and add nothing). Spacing comes from row heights. */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   // Scrolling the menu to its end must not scroll the page behind it.
   overscroll-behavior: contain;
@@ -46,104 +46,95 @@ $header-x: calc(#{$station-x} + #{$station} / 2 + #{$junction-gap});
   border-top: var(--app-border-w) solid var(--app-border);
 }
 
-/* Logo sits at the head of the line. */
+/* Logo + the rail toggle. */
+.nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding: 0 0 0.75rem;
+}
+
 .brand {
   display: flex;
   text-decoration: none;
-  --app-logo-size: #{$station};
-  padding: 0 0 1rem $station-x;
+  --app-logo-size: 28px;
+  padding: 0 0 0 0.375rem;
   border-radius: var(--app-radius-sm);
 }
 
-/* ---------- the line ---------- */
-.nav-link, .nav-section {
-  position: relative;
+.rail-toggle {
+  display: inline-grid;
+  place-content: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--app-radius-sm);
+  background: none;
+  color: var(--app-muted);
+  cursor: pointer;
+  transition: background-color var(--app-fast) ease, color var(--app-fast) ease;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: $line-x;
-    width: 2px;
-    background: var(--app-border);
-    pointer-events: none;
-  }
+  mat-icon { width: 20px; height: 20px; font-size: 20px; }
+  &:hover { background: var(--app-nav-hover); color: var(--mat-sys-on-surface); }
 }
-// The route starts at the first station (under the logo), not above it.
-.brand + .nav-link::before { top: 50%; }
 
-/* ---------- stations (menu items) ---------- */
+/* ---------- menu items: icon + label ---------- */
 .nav-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.625rem;
   min-height: 2.5rem;
   box-sizing: border-box;
-  padding: 0.25rem 0.5rem 0.25rem $station-x;
+  padding: 0.25rem 0.5rem 0.25rem 0.625rem;
   border-radius: var(--app-radius-sm);
   color: inherit;
   font: var(--mat-sys-body-medium);
   text-decoration: none;
   transition: background-color var(--app-fast) ease;
 
-  > span { min-width: 0; overflow-wrap: break-word; } // long uk/ru labels wrap, never clip
+  > .label { min-width: 0; overflow-wrap: break-word; } // long uk/ru labels wrap, never clip
 
-  // The icon is the station: a ring on the line.
   mat-icon {
-    position: relative; // above the line
-    display: inline-grid;
-    place-content: center;
     flex: none;
-    width: $station;
-    height: $station;
-    box-sizing: border-box;
-    border: var(--app-border-w) solid var(--app-border);
-    border-radius: 50%;
-    background: var(--app-sidebar-bg);
+    width: 20px;
+    height: 20px;
     color: var(--app-muted);
-    font-size: 16px;
+    font-size: 20px;
     line-height: 1;
-    transition: border-color var(--app-fast) ease, color var(--app-fast) ease;
   }
 
   &:hover {
     background: var(--app-nav-hover);
-    mat-icon { border-color: var(--app-muted); color: var(--mat-sys-on-surface); }
+    mat-icon { color: var(--mat-sys-on-surface); }
   }
 
-  // Current page: filled station with a halo + bold label (state is not carried by colour alone).
+  // Current page: fill + a bar on the start edge + bold label + aria-current="page" (not colour alone).
   &.active {
     background: var(--app-nav-active-bg);
+    box-shadow: inset 3px 0 0 var(--mat-sys-primary);
     color: var(--app-nav-active-text);
     font-weight: 700;
 
-    mat-icon {
-      border-color: var(--mat-sys-primary);
-      background: var(--mat-sys-primary);
-      color: var(--mat-sys-on-primary);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-primary) 22%, transparent);
-      animation: shell-station-pop 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
+    mat-icon { color: var(--mat-sys-primary); }
   }
 }
 
-/* «Pop» — the one appearance animation of the shell: the station of the page you arrive at. transform/opacity only. */
-@keyframes shell-station-pop {
-  from { transform: scale(0.6); opacity: 0.4; }
-  to { transform: none; opacity: 1; }
-}
-
-/* ---------- junctions (group headers) ---------- */
+/* ---------- group headers ---------- */
 .nav-section {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
   min-height: 2.5rem;
   box-sizing: border-box;
-  margin: 0;
-  padding: 0.75rem 0.5rem 0.25rem $header-x;
+  margin: 0.5rem 0 0;
+  padding: 0.25rem 0.5rem 0.25rem 0.625rem;
   border: 0;
   border-radius: var(--app-radius-sm);
   background: none;
@@ -154,36 +145,22 @@ $header-x: calc(#{$station-x} + #{$station} / 2 + #{$junction-gap});
   text-align: left;
   cursor: pointer;
 
-  > span:first-child {
-    position: relative;
+  > .label {
     flex: 1;
     min-width: 0;
     overflow-wrap: break-word;
-
-    // Junction marker on the line, level with the label: a small ring (smaller than a station → a branch point).
-    &::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: calc(-#{$junction-gap} - 5px);
-      width: 10px;
-      height: 10px;
-      box-sizing: border-box;
-      border: 2px solid var(--app-muted);
-      border-radius: 50%;
-      background: var(--app-sidebar-bg);
-      transform: translateY(-50%);
-    }
   }
 
+  // The group icon is for the rail only; the wide sidebar keeps text headers.
+  .section-icon { display: none; }
+
   &:hover { color: var(--mat-sys-on-surface); }
-  &[aria-expanded='true'] > span:first-child::before { background: var(--app-muted); }
 
   .chevron {
     flex: none;
-    font-size: 18px;
     width: 18px;
     height: 18px;
+    font-size: 18px;
     transform: rotate(-90deg);
     transition: transform 150ms ease;
   }
@@ -207,17 +184,61 @@ $header-x: calc(#{$station-x} + #{$station} / 2 + #{$junction-gap});
 .nav-group-inner {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-height: 0;
   overflow: hidden;
 }
 
+/* ---------- icon-only rail (wide screens, .rail-toggle) ---------- */
+.shell.rail {
+  .sidebar-nav, .sidebar-footer { padding-right: 0.5rem; padding-left: 0.5rem; }
+  .sidebar-nav { scrollbar-gutter: auto; scrollbar-width: thin; }
+
+  .nav-head { flex-direction: column; padding-bottom: 0.5rem; }
+  .brand { padding: 0.375rem; }
+
+  // Labels leave the screen but stay the accessible name; the tooltip shows them.
+  .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .nav-link, .nav-section {
+    justify-content: center;
+    gap: 0;
+    padding: 0.25rem;
+  }
+  .nav-link mat-icon, .nav-section .section-icon { width: 24px; height: 24px; font-size: 24px; }
+
+  .nav-section {
+    margin: 0;
+    color: var(--app-muted);
+
+    .section-icon { display: block; }
+    .chevron { display: none; }
+    &:hover { background: var(--app-nav-hover); color: var(--mat-sys-on-surface); }
+
+    // Group of the current page: the same marks as the current item (its items are hidden on the rail).
+    &.current {
+      background: var(--app-nav-active-bg);
+      box-shadow: inset 3px 0 0 var(--mat-sys-primary);
+      color: var(--mat-sys-primary);
+    }
+  }
+
+  .user { justify-content: center; padding: 0.375rem 0; }
+  .user-text, .user-chevron { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .nav-group, .nav-section .chevron, .nav-link, .nav-link mat-icon { transition: none; }
-  .nav-link.active mat-icon { animation: none; }
+  .shell, .nav-group, .nav-section .chevron, .nav-link, .rail-toggle { transition: none; }
 }
 
 /* ---------- footer: help + user ---------- */
-.sidebar-footer .nav-link::before { content: none; } // off the route
 
 .user {
   display: flex;
@@ -282,7 +303,7 @@ $header-x: calc(#{$station-x} + #{$station} / 2 + #{$junction-gap});
 
 .user-chevron { color: var(--app-muted); flex-shrink: 0; }
 
-/* Avatar = a station ring in the brand colour. */
+/* Avatar: a ring in the brand colour. */
 .avatar {
   width: 32px;
   height: 32px;
@@ -316,12 +337,13 @@ $header-x: calc(#{$station-x} + #{$station} / 2 + #{$junction-gap});
   box-sizing: border-box;
 }
 
-/* Touch screens: every row of the rail is at least 44px. */
+/* Touch screens: every row and the rail toggle are at least 44px. */
 @media (pointer: coarse) {
   .nav-link, .nav-section { min-height: 2.75rem; }
+  .rail-toggle { width: 2.75rem; height: 2.75rem; }
 }
 
-/* Narrow screens (< 768px): compact sticky top bar + off-canvas drawer with the same route, groups and footer. */
+/* Narrow screens (< 768px): compact sticky top bar + off-canvas drawer with the same menu, groups and footer (never a rail). */
 @media (max-width: 767.98px) {
   .shell { grid-template-columns: minmax(0, 1fr); align-content: start; } /* short pages: no stretched top bar */
   .sidebar {

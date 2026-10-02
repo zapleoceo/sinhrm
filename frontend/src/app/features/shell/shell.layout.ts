@@ -5,7 +5,6 @@ import { filter, map } from 'rxjs';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { UserRole, isHrStaff } from '../../core/auth/auth.model';
 import { A11yModule } from '@angular/cdk/a11y';
-import { BreakpointObserver } from '@angular/cdk/layout';
 import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -20,6 +19,7 @@ import { AssistantMascot } from '../assistant/mascot/assistant-mascot';
 import { LanguageSwitcher } from './language-switcher';
 import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
+import { NavRail, RailTip } from './nav-rail';
 
 /** One radio item of "Працювати як": a role, or null = all roles. */
 interface RoleChoice {
@@ -44,7 +44,9 @@ interface RoleChoice {
     NavBadge,
     A11yModule,
     AssistantMascot,
+    RailTip,
   ],
+  providers: [NavRail],
   host: { '(document:keydown.escape)': 'closeDrawer()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.layout.html',
@@ -89,11 +91,12 @@ export class ShellLayout {
   /** Group of the current page — always shown open. */
   protected readonly activeGroup = computed(() => groupForUrl(this.url()));
 
+  private readonly rail = inject(NavRail);
   /** Below 768px the sidebar is an off-canvas drawer behind a compact top bar. */
-  protected readonly narrow = toSignal(
-    inject(BreakpointObserver).observe('(max-width: 767.98px)').pipe(map((s) => s.matches)),
-    { initialValue: false },
-  );
+  protected readonly narrow = this.rail.narrow;
+  /** Desktop sidebar folded to an icon-only rail (remembered in this browser). */
+  protected readonly collapsed = this.rail.collapsed;
+  protected readonly railToggleLabel = computed(() => (this.collapsed() ? 'shell.nav.expandMenu' : 'shell.nav.collapseMenu'));
   protected readonly drawerOpen = signal(false);
   /** Sum of all counters, shown on the burger button. */
   protected readonly totalBadge = computed(() => Object.values(this.badges()).reduce<number>((a, n) => a + (n ?? 0), 0));
@@ -144,17 +147,28 @@ export class ShellLayout {
     return NAV_GROUP_MODULES[group].some((m) => this.auth.hasModule(m));
   }
 
+  /** Items of a group are shown: opened by the user, and the sidebar is not a rail (a rail shows group icons only). */
   protected isOpen(group: NavGroupId): boolean {
-    return this.expanded().has(group);
+    return !this.collapsed() && this.expanded().has(group);
   }
 
-  /** A collapsed group header shows the sum of its items' counters. */
+  /** A group header whose items are hidden shows the sum of their counters. */
   protected groupBadge(group: NavGroupId): number {
-    return groupBadgeSum(this.badges(), group);
+    return this.isOpen(group) ? 0 : groupBadgeSum(this.badges(), group);
   }
 
+  /** Header click: folds/unfolds the group; on the rail it widens the sidebar with that group open. */
   protected toggle(group: NavGroupId): void {
+    if (this.collapsed()) {
+      this.rail.expand();
+      this.setExpanded(group, true);
+      return;
+    }
     this.setExpanded(group, !this.expanded().has(group));
+  }
+
+  protected toggleRail(): void {
+    this.rail.toggle();
   }
 
   private setExpanded(group: NavGroupId, open: boolean): void {

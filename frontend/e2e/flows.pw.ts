@@ -161,6 +161,43 @@ test.describe('desktop flows', () => {
     expect(sent[0]).toEqual(expect.objectContaining({ method: 'PUT', body: { role: expect.any(String) } }));
   });
 
+  test('sidebar collapses to an icon rail and expands; the state survives a reload', async ({ page, context }) => {
+    await open(page, context, '/');
+    const sidebar = page.locator('#app-sidebar');
+    const nav = page.getByRole('navigation', { name: 'Головне меню' });
+    const collapse = page.getByRole('button', { name: 'Згорнути меню' });
+    const expand = page.getByRole('button', { name: 'Розгорнути меню' });
+    const width = async (): Promise<number> => (await sidebar.boundingBox())!.width;
+    const pageOverflow = (): Promise<number> => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    const wide = await width();
+
+    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
+    await collapse.click();
+    await expect(expand).toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(width).toBeLessThanOrEqual(64);
+    expect(await pageOverflow(), 'horizontal page scroll on the rail').toBeLessThanOrEqual(0);
+    // Items keep their names (labels are visually hidden), a tooltip shows the name next to the icon.
+    const tasks = nav.getByRole('link', { name: 'Мої задачі' });
+    await tasks.hover();
+    await expect(page.locator('.mat-mdc-tooltip').filter({ hasText: 'Мої задачі' })).toBeVisible();
+    // The user menu stays reachable from the avatar.
+    await expect(page.getByRole('button', { name: 'Меню користувача' })).toBeVisible();
+
+    await page.reload();
+    await settle(page);
+    await expect(expand).toHaveAttribute('aria-expanded', 'false');
+    expect(await width()).toBeLessThanOrEqual(64);
+
+    // Keyboard: the toggle is a button (Enter), the sidebar comes back to its full width.
+    await expand.focus();
+    await page.keyboard.press('Enter');
+    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
+    await expect.poll(width).toBe(wide);
+    await page.reload();
+    await settle(page);
+    await expect(collapse).toBeVisible();
+  });
+
   test('login: language switch translates the page', async ({ page, context }) => {
     await open(page, context, '/login', true);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Вхід');
