@@ -172,7 +172,7 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
             <button mat-button type="button" (click)="clear()">{{ 'bulk.clear' | transloco }}</button>
           </div>
         }
-        <table class="people app-table" [appTableSort]="sort()" (appTableSortChange)="onSort($event)">
+        <table class="people app-table" [appTableSort]="sort()" [appTableSortCount]="store.loading() ? null : store.total()" (appTableSortChange)="onSort($event)">
           <thead>
             <tr>
               @if (canManage()) {

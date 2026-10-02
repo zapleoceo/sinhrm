@@ -4,7 +4,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { LIVE_FILTER_DEBOUNCE_MS } from '../../../core/ui/table/table-url-state';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DirectoryService } from '../../directory/directory.service';
 import { Employee, Paged, PeopleQuery } from '../people.model';
@@ -19,15 +20,30 @@ const PAGE: Paged<Employee> = {
 describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
   let queries: PeopleQuery[];
   let empty: boolean;
+  /** true: requests stay in flight (never answer), so a newer one must cancel them. */
+  let hold: boolean;
+  let inflight: { q: PeopleQuery; cancelled: boolean }[];
   let harness: RouterTestingHarness;
 
   const th = (label: string) =>
     Array.from(harness.routeNativeElement!.querySelectorAll<HTMLTableCellElement>('th')).find((t) => t.querySelector('.title .text')?.textContent?.trim() === label)!;
   const url = () => new URL(TestBed.inject(Router).url, 'http://x');
 
+  function list(q: PeopleQuery): Observable<Paged<Employee>> {
+    queries.push(q);
+    if (!hold) return of(empty ? { ...PAGE, data: [] } : PAGE);
+    return new Observable<Paged<Employee>>(() => {
+      const call = { q, cancelled: false };
+      inflight.push(call);
+      return () => (call.cancelled = true);
+    });
+  }
+
   beforeEach(async () => {
     queries = [];
     empty = false;
+    hold = false;
+    inflight = [];
     // The table view is remembered in localStorage; another spec (people.spec.ts → setView('cards')) may leave «cards»
     // behind in a shared test environment, and then there are no headers to test.
     localStorage.removeItem('sinhrm.people.view');
@@ -35,7 +51,7 @@ describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
       imports: [TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
       providers: [
         provideRouter([{ path: 'people', component: PeoplePage }]),
-        { provide: PeopleService, useValue: { list: (q: PeopleQuery) => (queries.push(q), of(empty ? { ...PAGE, data: [] } : PAGE)) } },
+        { provide: PeopleService, useValue: { list } },
         { provide: DirectoryService, useValue: { active: () => of([{ id: 3, name: 'Analyst', status: 'active' }]) } },
         { provide: AuthService, useValue: { user: signal({ roles: ['viewer'] }) } },
         { provide: MatDialog, useValue: {} },
@@ -114,5 +130,42 @@ describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
     harness.detectChanges();
     expect(th('people.fields.fullName')).toBeTruthy();
     expect(harness.routeNativeElement!.textContent).toContain('people.directory.empty');
+  });
+  it('live «ПІБ» filter: typing sends one request after the pause (page 1), a newer one cancels the request in flight', async () => {
+    const pause = () => new Promise((resolve) => setTimeout(resolve, LIVE_FILTER_DEBOUNCE_MS + 50));
+    const settle = async () => {
+      await harness.fixture.whenStable();
+      harness.detectChanges();
+    };
+    hold = true;
+    const loaded = queries.length;
+    (th('people.fields.fullName').querySelector('button.filter') as HTMLButtonElement).click();
+    await settle();
+    const input = document.querySelector<HTMLInputElement>('.popover input[type=search]')!;
+    for (const value of ['К', 'Ко']) {
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    }
+    await settle();
+    expect(queries).toHaveLength(loaded); // no request per keystroke, no Enter pressed
+
+    await pause();
+    await settle();
+    expect(queries).toHaveLength(loaded + 1);
+    expect(queries.at(-1)).toEqual(expect.objectContaining({ name: 'Ко', page: 1, position_id: 3, sort: 'name', dir: 'desc' }));
+    expect(url().searchParams.get('name')).toBe('Ко');
+    expect(url().searchParams.has('page')).toBe(false);
+    expect(inflight.map((c) => c.cancelled)).toEqual([false]);
+
+    // The answer for «Ко» is still pending when the user types on: it is cancelled, not just ignored.
+    input.value = 'Кон';
+    input.dispatchEvent(new Event('input'));
+    await pause();
+    await settle();
+    expect(queries).toHaveLength(loaded + 2);
+    expect(queries.at(-1)?.name).toBe('Кон');
+    expect(inflight.map((c) => c.cancelled)).toEqual([true, false]);
+    expect(document.activeElement).toBe(input); // the dialog stayed open through both URL changes
+    document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = ''));
   });
 });

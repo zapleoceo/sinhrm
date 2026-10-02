@@ -4,6 +4,7 @@ import { convertToParamMap } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { ColumnHeader } from './column-header';
 import { TableSortDirective } from './table-sort.directive';
+import { LIVE_FILTER_DEBOUNCE_MS } from './table-url-state';
 import {
   ColumnFilter,
   FilterValue,
@@ -68,16 +69,18 @@ describe('table state helpers', () => {
   });
 });
 
+
 @Component({
   imports: [TableSortDirective, ColumnHeader],
   template: `
-    <table [appTableSort]="sort()" [appTableSortClearable]="clearable()" (appTableSortChange)="onSort($event)">
+    <table [appTableSort]="sort()" [appTableSortClearable]="clearable()" [appTableSortCount]="count()" (appTableSortChange)="onSort($event)">
       <thead>
         <tr>
-          <th scope="col" app-column-header key="name" label="Name" [filter]="text" [filterValue]="name()" (filterChange)="name.set($event)"></th>
+          <th scope="col" app-column-header key="name" label="Name" [filter]="text" [filterValue]="name()" (filterChange)="onName($event)"></th>
           <th scope="col" app-column-header key="status" label="Status" [filter]="status" [filterValue]="statusValue()" (filterChange)="statusValue.set($event)"></th>
           <th scope="col" app-column-header key="hired" label="Hired" [filter]="range" [filterValue]="hired()" (filterChange)="hired.set($event)"></th>
           <th scope="col" app-column-header key="contact" label="Contact" [sortable]="false"></th>
+          <th scope="col" app-column-header key="city" label="City" [sortable]="false" [filter]="city" [filterValue]="cityValue()" (filterChange)="cityValue.set($event)"></th>
         </tr>
       </thead>
     </table>
@@ -86,17 +89,30 @@ describe('table state helpers', () => {
 class Host {
   readonly sort = signal<TableSort | null>({ key: 'name', dir: 'asc' });
   readonly clearable = signal(false);
+  readonly count = signal<number | null>(null);
   readonly name = signal<FilterValue>(null);
+  readonly names: FilterValue[] = [];
   readonly statusValue = signal<FilterValue>(null);
   readonly hired = signal<FilterValue>(null);
+  readonly cityValue = signal<FilterValue>(null);
   readonly emitted: (TableSort | null)[] = [];
   readonly text: ColumnFilter = { type: 'text' };
   readonly status: ColumnFilter = { type: 'select', options: [{ value: 'active', label: 'Active' }, { value: 'gone', label: 'Gone' }] };
   readonly range: ColumnFilter = { type: 'range', input: 'date' };
+  /** More than SELECT_SEARCH_MIN options: the dialog gets a search over them. */
+  readonly city: ColumnFilter = {
+    type: 'select',
+    options: ['Київ', 'Львів', 'Одеса', 'Дніпро', 'Харків', 'Запоріжжя', 'Вінниця', 'Полтава', 'Чернігів'].map((c, i) => ({ value: String(i + 1), label: c })),
+  };
 
   onSort(sort: TableSort | null): void {
     this.emitted.push(sort);
     this.sort.set(sort);
+  }
+
+  onName(value: FilterValue): void {
+    this.names.push(value);
+    this.name.set(value);
   }
 }
 
@@ -113,6 +129,13 @@ describe('ColumnHeader + appTableSort', () => {
     await fixture.whenStable();
     fixture.detectChanges();
   };
+  const type = (input: HTMLInputElement, value: string) => {
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  };
+  const key = (target: Element, k: string) => target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+  /** Waits past the live-filter pause (real timers: the overlay and afterNextRender need them too). */
+  const pause = (ms = LIVE_FILTER_DEBOUNCE_MS + 50) => new Promise((resolve) => setTimeout(resolve, ms));
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
@@ -164,45 +187,73 @@ describe('ColumnHeader + appTableSort', () => {
     expect(funnelOf(0).getAttribute('aria-label')).toBe('table.filter.open');
   });
 
-  it('opens the text filter, applies on submit (Enter in the field), shows the dot and returns focus', async () => {
+  it('live text filter: typing applies after the pause without Enter, once, trimmed; the field keeps focus and caret', async () => {
     funnelOf(0).focus();
     funnelOf(0).click();
     await settle();
-    const form = panel();
-    expect(form).not.toBeNull();
-    expect(form?.getAttribute('role')).toBe('dialog');
+    const form = panel()!;
+    expect(form.getAttribute('role')).toBe('dialog');
     expect(funnelOf(0).getAttribute('aria-expanded')).toBe('true');
-    expect(funnelOf(0).getAttribute('aria-controls')).toBe(form?.id);
-    expect(document.activeElement).toBe(form?.querySelector('input'));
+    expect(funnelOf(0).getAttribute('aria-controls')).toBe(form.id);
+    const input = form.querySelector('input') as HTMLInputElement;
+    expect(document.activeElement).toBe(input);
+    expect(input.getAttribute('aria-label')).toBe('table.filter.field');
+    expect(form.querySelector('button[type=submit]')).toBeNull(); // no «apply» to press
 
-    const input = form!.querySelector('input') as HTMLInputElement;
-    input.value = '  Ann ';
-    input.dispatchEvent(new Event('input'));
-    form!.dispatchEvent(new Event('submit', { cancelable: true }));
+    type(input, 'A');
+    type(input, 'An');
+    type(input, '  Ann ');
+    input.setSelectionRange(3, 3);
     await settle();
+    expect(host.names).toEqual([]); // still typing: nothing yet
 
+    await pause();
+    await settle();
+    expect(host.names).toEqual(['Ann']); // one output for the whole word
     expect(host.name()).toBe('Ann');
-    expect(panel()).toBeNull();
+    expect(panel()).not.toBeNull(); // the dialog stays open
+    expect(document.activeElement).toBe(input);
+    expect(input.value).toBe('  Ann '); // the URL value does not overwrite the field
+    expect(input.selectionStart).toBe(3);
     expect(th(0).querySelector('.dot')).not.toBeNull();
     expect(funnelOf(0).getAttribute('aria-label')).toBe('table.filter.openActive');
-    expect(document.activeElement).toBe(funnelOf(0));
+
+    // Erasing the text switches the filter off (null, not an empty string).
+    type(input, '');
+    await pause();
+    expect(host.names).toEqual(['Ann', null]);
   });
 
-  it('Esc closes the filter without applying and gives focus back to the funnel', async () => {
+  it('Enter applies the typed value at once and closes; focus goes back to the funnel', async () => {
     funnelOf(0).click();
     await settle();
     const input = panel()!.querySelector('input') as HTMLInputElement;
-    input.value = 'draft';
-    input.dispatchEvent(new Event('input'));
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    type(input, 'Bo');
+    key(input, 'Enter');
+    await settle();
+    expect(host.names).toEqual(['Bo']);
+    expect(panel()).toBeNull();
+    expect(document.activeElement).toBe(funnelOf(0));
+    await pause();
+    expect(host.names).toEqual(['Bo']); // the pending debounce does not send it twice
+  });
+
+  it('Esc closes the dialog and keeps the typed value applied; focus goes back to the funnel', async () => {
+    funnelOf(0).click();
+    await settle();
+    const input = panel()!.querySelector('input') as HTMLInputElement;
+    type(input, 'draft');
+    key(input, 'Escape');
     await settle();
 
     expect(panel()).toBeNull();
-    expect(host.name()).toBeNull();
+    expect(host.name()).toBe('draft');
     expect(document.activeElement).toBe(funnelOf(0));
+    await pause();
+    expect(host.names).toEqual(['draft']);
   });
 
-  it('clears an active filter', async () => {
+  it('clears an active filter, and a value still being typed', async () => {
     host.name.set('Ann');
     await settle();
     funnelOf(0).click();
@@ -210,40 +261,96 @@ describe('ColumnHeader + appTableSort', () => {
     expect((panel()!.querySelector('input') as HTMLInputElement).value).toBe('Ann');
     (panel()!.querySelector('button.clear') as HTMLButtonElement).click();
     await settle();
-
     expect(host.name()).toBeNull();
     expect(th(0).querySelector('.dot')).toBeNull();
+
+    funnelOf(0).click();
+    await settle();
+    const clear = panel()!.querySelector('button.clear') as HTMLButtonElement;
+    expect(clear.disabled).toBe(true);
+    type(panel()!.querySelector('input') as HTMLInputElement, 'Zo');
+    await settle();
+    expect(clear.disabled).toBe(false);
+    clear.click();
+    await pause();
+    expect(host.names.at(-1)).toBeNull(); // the typed «Zo» never went out after the clear
+    expect(host.names).not.toContain('Zo');
   });
 
-  it('select filter: picks one option; «All» clears it', async () => {
+  it('select filter: a click applies at once and the dialog stays open; «All» clears it', async () => {
     funnelOf(1).click();
     await settle();
+    expect(panel()!.querySelector('input[type=search]')).toBeNull(); // short list: no search
     const radios = Array.from(panel()!.querySelectorAll<HTMLInputElement>('input[type=radio]'));
     expect(radios).toHaveLength(3); // All + two options
     radios[2].click();
     await settle();
-    panel()!.dispatchEvent(new Event('submit', { cancelable: true }));
-    await settle();
     expect(host.statusValue()).toBe('gone');
+    expect(panel()).not.toBeNull();
 
-    funnelOf(1).click();
-    await settle();
     (panel()!.querySelectorAll<HTMLInputElement>('input[type=radio]')[0]).click();
-    await settle();
-    panel()!.dispatchEvent(new Event('submit', { cancelable: true }));
     await settle();
     expect(host.statusValue()).toBeNull();
   });
 
-  it('range filter: from / to inputs of the given type', async () => {
+  it('long select: a focused, labelled search narrows the options (contains, any case); arrows and Enter pick', async () => {
+    funnelOf(4).click();
+    await settle();
+    const form = panel()!;
+    const search = form.querySelector('input[type=search]') as HTMLInputElement;
+    const list = form.querySelector('mat-radio-group') as HTMLElement;
+    expect(search).not.toBeNull();
+    expect(document.activeElement).toBe(search);
+    expect(search.getAttribute('aria-controls')).toBe(list.id);
+    expect(form.querySelector(`label[for="${search.id}"]`)?.textContent).toContain('table.filter.searchOptions');
+    const labels = () => Array.from(form.querySelectorAll('mat-radio-button')).map((r) => r.textContent?.trim());
+    expect(labels()).toHaveLength(10); // All + 9
+
+    type(search, 'ІВ');
+    await settle();
+    expect(labels()).toEqual(['table.filter.all', 'Львів', 'Харків', 'Чернігів']);
+    expect(host.cityValue()).toBeNull(); // searching the options is not a filter yet
+
+    key(search, 'ArrowDown');
+    expect(document.activeElement).toBe(form.querySelector('input[type=radio]'));
+
+    type(search, 'zzz');
+    await settle();
+    expect(labels()).toEqual(['table.filter.all']);
+    expect(form.textContent).toContain('table.filter.noOptions');
+
+    type(search, 'одеса');
+    await settle();
+    key(search, 'Enter');
+    await settle();
+    expect(host.cityValue()).toBe('3');
+    expect(panel()).toBeNull();
+  });
+
+  it('range filter: applied on change after a short pause, no button', async () => {
     funnelOf(2).click();
     await settle();
     const [from, to] = Array.from(panel()!.querySelectorAll<HTMLInputElement>('input'));
     expect(from.type).toBe('date');
     to.value = '2026-03-01';
     to.dispatchEvent(new Event('input'));
-    panel()!.dispatchEvent(new Event('submit', { cancelable: true }));
-    await settle();
+    to.dispatchEvent(new Event('change'));
+    expect(host.hired()).toBeNull();
+    await pause();
     expect(host.hired()).toEqual({ from: null, to: '2026-03-01' });
+    to.dispatchEvent(new Event('blur')); // the same value again: no second output
+    expect(panel()).not.toBeNull();
+  });
+
+  it('announces the row count of the table in a polite live region of the dialog', async () => {
+    funnelOf(0).click();
+    await settle();
+    const status = panel()!.querySelector('.count') as HTMLElement;
+    expect(status.getAttribute('aria-live')).toBe('polite');
+    expect(status.textContent?.trim()).toBe(''); // count unknown
+    host.count.set(3);
+    await settle();
+    expect(status.textContent?.trim()).toBe('table.filter.found');
+    expect(panel()!.querySelector('.count')).toBe(status); // the same region, so the change is announced
   });
 });

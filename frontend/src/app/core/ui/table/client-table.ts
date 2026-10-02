@@ -1,4 +1,4 @@
-import { Signal, computed, inject } from '@angular/core';
+import { Signal, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Params, convertToParamMap } from '@angular/router';
 import { TranslocoService } from '@jsverse/transloco';
@@ -171,7 +171,19 @@ export class ClientTable<T> {
     const c = this.options.columns;
     return typeof c === 'function' ? c() : c;
   });
-  private readonly state = computed(() => clientStateFromParams(this.params(), this.columns(), this.options.prefix));
+  /**
+   * Filters typed but not yet in the URL (the header's live edit waits LIVE_FILTER_DEBOUNCE_MS before it writes
+   * the URL): the rows follow every keystroke at once, the URL catches up after the pause. They count only while
+   * the URL is the one they were typed over — after the next URL change it holds the same value (or «back»
+   * replaced it), so nothing has to be cleaned up.
+   */
+  private readonly typed = signal<{ over: ParamMap | null; filters: Readonly<Record<string, FilterValue>> }>({ over: null, filters: {} });
+  private readonly state = computed(() => {
+    const params = this.params();
+    const url = clientStateFromParams(params, this.columns(), this.options.prefix);
+    const typed = this.typed();
+    return typed.over === params ? { ...url, filters: { ...url.filters, ...typed.filters } } : url;
+  });
 
   /** Sort shown on the headers: the URL one or the API default. */
   readonly sort: Signal<TableSort | null> = computed(() => this.state().sort ?? this.options.defaultSort ?? null);
@@ -201,6 +213,8 @@ export class ClientTable<T> {
   setFilter(key: string, value: FilterValue): void {
     const column = this.columns().find((c) => c.key === key);
     if (!column?.filter) return;
+    const params = this.params();
+    this.typed.update((t) => ({ over: params, filters: { ...(t.over === params ? t.filters : {}), [key]: value } }));
     this.url.update(this.filterParams(column, value), { paging: true });
   }
 
@@ -212,6 +226,7 @@ export class ClientTable<T> {
     const params = this.columns()
       .filter((c) => c.filter)
       .reduce<Params>((acc, c) => ({ ...acc, ...this.filterParams(c, null) }), {});
+    this.typed.set({ over: null, filters: {} });
     this.url.update(params, { paging: true });
   }
 

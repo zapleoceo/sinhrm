@@ -1,10 +1,21 @@
 // Interaction smoke of critical flows, with assertions on the requests the UI sends (mock API logs mutations).
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { RECORDED_AT, installMock, type Mock } from './harness';
 import { boardSteps } from './pages.mjs';
 import { runSteps, settle, watchNetwork } from './steps.mjs';
 
 const writes = (mock: Mock) => mock.mutations.filter((m) => m.path !== '/sanctum/csrf-cookie');
+
+/** Recorded first page of /api/people: the live-filter flow answers name= queries from it. */
+interface PeopleList {
+  data: { full_name: string }[];
+  meta: Record<string, unknown>;
+}
+const PEOPLE_PAGE = (JSON.parse(readFileSync(join(__dirname, 'fixtures', 'people.json'), 'utf8')) as Record<string, { body: PeopleList }>)[
+  'GET /api/people?page=1&perPage=50'
+].body;
 
 async function open(page: Page, context: import('@playwright/test').BrowserContext, path: string, guest = false): Promise<Mock> {
   const mock = await installMock(context, { guest });
@@ -179,7 +190,7 @@ test.describe('desktop flows', () => {
     await expect(dialog).toBeHidden();
     await expect(funnel).toBeFocused();
 
-    // Apply: Enter in the field → name= in the URL and the request, the funnel shows the active state.
+    // Enter in the field applies at once and closes → name= in the URL and the request, the funnel shows the active state.
     await page.keyboard.press('Enter');
     await dialog.getByRole('searchbox').fill('Ко');
     await page.keyboard.press('Enter');
@@ -204,6 +215,52 @@ test.describe('desktop flows', () => {
     await expect(dialog).toBeHidden();
     await expect.poll(() => new URL(page.url()).searchParams.has('name')).toBe(false);
     await expect(position).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  test('people: typing in the «ПІБ» filter narrows the list without Enter — one request after the pause, the field keeps focus', async ({ page, context }) => {
+    await open(page, context, '/people');
+    // The recorded API answers one list for any query; here it filters by name like the real one (contains, any case).
+    const all = PEOPLE_PAGE.data;
+    await page.route(
+      (u) => u.pathname === '/api/people' && u.searchParams.has('name'),
+      (route) => {
+        const name = new URL(route.request().url()).searchParams.get('name')!.toLocaleLowerCase();
+        const data = all.filter((p) => p.full_name.toLocaleLowerCase().includes(name));
+        return route.fulfill({ json: { ...PEOPLE_PAGE, data, meta: { ...PEOPLE_PAGE.meta, total: data.length, last_page: 1 } } });
+      },
+    );
+    const named: string[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/people' && u.searchParams.has('name')) named.push(u.searchParams.get('name')!);
+    });
+    const rows = page.locator('table.people tbody tr');
+    await expect(rows).toHaveCount(all.length);
+    const expected = all.filter((p) => p.full_name.toLocaleLowerCase().includes('коваленко')).length;
+    expect(expected).toBeGreaterThan(0);
+    expect(expected).toBeLessThan(all.length);
+
+    await page.getByRole('button', { name: 'Фільтр стовпця «ПІБ»' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «ПІБ»' });
+    const field = dialog.getByRole('searchbox', { name: 'Містить (стовпець «ПІБ»)' });
+    await expect(field).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Застосувати' })).toHaveCount(0);
+    await field.pressSequentially('КОВАЛЕНКО');
+
+    // No Enter: the list narrows on its own, the dialog stays open with the caret in the field.
+    await expect(rows).toHaveCount(expected);
+    await expect(page).toHaveURL(/[?&]name=%D0%9A%D0%9E%D0%92/);
+    expect(named).toEqual(['КОВАЛЕНКО']); // one request for the whole word
+    await expect(dialog).toBeVisible();
+    await expect(field).toBeFocused();
+    await expect(field).toHaveValue('КОВАЛЕНКО');
+    await expect(dialog.getByRole('status')).toHaveText(`Знайдено: ${expected}`);
+
+    // Esc closes and keeps the filter.
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(rows).toHaveCount(expected);
+    await expect(page.getByRole('button', { name: 'Фільтр стовпця «ПІБ», увімкнено' })).toBeFocused();
   });
 
   test('people (390 px): the header filters do not widen the page, the table scrolls inside its panel', async ({ page, context }) => {
@@ -253,10 +310,11 @@ test.describe('desktop flows', () => {
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', { name: 'Фільтр «Статус»' });
     await expect(dialog).toBeVisible();
+    // A choice applies at once (no «apply» button); Esc closes the dialog and keeps it.
     await dialog.getByRole('radio', { name: 'Видано' }).check();
-    await dialog.getByRole('button', { name: 'Застосувати' }).click();
-    await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(/[?&]status=assigned(&|$)/);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
     await expect.poll(() => sent.at(-1)?.get('status')).toBe('assigned');
     await expect(status.getByRole('button', { name: 'Фільтр стовпця «Статус», увімкнено' })).toBeVisible();
 
@@ -328,7 +386,6 @@ test.describe('desktop flows', () => {
     await role.getByRole('button', { name: 'Фільтр стовпця «Роль»' }).click();
     const dialog = page.getByRole('dialog', { name: 'Фільтр «Роль»' });
     await dialog.getByRole('radio', { name: 'Спостерігач' }).check();
-    await dialog.getByRole('button', { name: 'Застосувати' }).click();
     await expect(page).toHaveURL(/[?&]role=viewer(&|$)/);
     await expect.poll(() => sent.at(-1)?.get('role')).toBe('viewer');
     expect(sent.at(-1)?.get('page')).toBe('1');
@@ -353,9 +410,9 @@ test.describe('desktop flows', () => {
 
     await time.getByRole('button', { name: 'Фільтр стовпця «Час»' }).click();
     const dialog = page.getByRole('dialog', { name: 'Фільтр «Час»' });
+    // The range applies on change after a short pause — no button; both edges go in one URL change.
     await dialog.getByLabel('Від').fill('2026-09-01');
     await dialog.getByLabel('До').fill('2026-09-30');
-    await dialog.getByRole('button', { name: 'Застосувати' }).click();
     await expect.poll(() => new URL(page.url()).searchParams.get('from')).toBe('2026-09-01');
     expect(new URL(page.url()).searchParams.get('to')).toBe('2026-09-30');
     await expect.poll(() => sent.at(-1)?.get('to')).toBe('2026-09-30');
@@ -419,6 +476,34 @@ test.describe('desktop flows', () => {
     // The touches table keeps its own default order (by total).
     const touches = page.locator('section', { has: page.getByRole('heading', { name: 'Касання рекрутерів' }) }).locator('table');
     await expect(touches.getByRole('columnheader', { name: 'Усього' })).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  test('recruiting reports: the «Рекрутер» filter narrows the touches table while typing, no Enter, no request', async ({ page, context }) => {
+    let touchesRequests = 0;
+    page.on('request', (r) => {
+      if (new URL(r.url()).pathname === '/api/reports/touches') touchesRequests++;
+    });
+    await open(page, context, '/reports');
+    const touches = page.locator('section', { has: page.getByRole('heading', { name: 'Касання рекрутерів' }) }).locator('table');
+    const names = () => touches.locator('tbody th').allInnerTexts();
+    expect((await names()).length).toBeGreaterThan(1);
+    const before = touchesRequests;
+
+    await touches.getByRole('button', { name: 'Фільтр стовпця «Рекрутер»' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Рекрутер»' });
+    const field = dialog.getByRole('searchbox');
+    await field.pressSequentially('лисенко');
+    await expect.poll(names).toEqual(['Лисенко Анна [ТЕСТ]']); // contains, any case
+    await expect(dialog).toBeVisible();
+    await expect(field).toBeFocused();
+    await expect(page).toHaveURL(/[?&]tch_recruiter=/);
+    expect(touchesRequests).toBe(before); // filtered in the browser
+    await expect(touches.locator('tfoot')).toContainText('Разом (усі рядки звіту)');
+
+    // Erasing the text brings every recruiter back, without Enter either.
+    await field.fill('');
+    await expect.poll(async () => (await names()).length).toBeGreaterThan(1);
+    await expect.poll(() => new URL(page.url()).searchParams.has('tch_recruiter')).toBe(false);
   });
 
   test('recruiting reports (390 px): the header buttons do not widen the page', async ({ page, context }) => {
