@@ -210,10 +210,14 @@ html {
       label-text-weight: 700,
     )
   );
-  // Touch targets on phones (<= 600px): segmented toggles and interactive chips reach 44px; Material keeps its own
-  // 48px touch targets for icon buttons, buttons, checkboxes and radios, menu items are 48px tall.
+  // Touch targets on phones (<= 600px): segmented toggles, interactive chips and the paginator's page-size select
+  // reach 44px. Buttons stay 38px visually, but Material's .mat-mdc-button-touch-target gives every filled /
+  // outlined / text / tonal / icon button a 48px hit area (density 0); fields are 52px; menu items are 48px tall.
+  // Measured at 390px over 12 pages: buttons ≥ 48, selects ≥ 44, toggles 44, interactive chips 44.
   @media (max-width: 600px) {
     @include mat.button-toggle-overrides((height: 44px));
+    // The paginator's page-size select is a compact 40px field by default → 44px on phones.
+    @include mat.paginator-overrides((form-field-container-height: 44px, form-field-container-vertical-padding: 10px));
     .mat-mdc-chip-option, .mat-mdc-chip-row { --mat-chip-container-height: 44px; }
   }
   @include mat.progress-bar-overrides((active-indicator-color: var(--app-accent)));
