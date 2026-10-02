@@ -37,10 +37,6 @@ export interface MoodEvent {
 }
 
 /**
- * Last `limit` messages without cutting a tool exchange: the window starts at a user message
- * (or, when there is none, at least not with orphaned tool replies).
- */
-/**
  * Removes the saved chats (they hold API answers of the assistant's tools, possibly personal data) of every user except
  * `keepUserId`; `null` removes all — on logout. Storage unavailable → nothing to remove.
  */
@@ -59,6 +55,10 @@ export function clearAssistantHistory(keepUserId: number | null = null): void {
   }
 }
 
+/**
+ * Last `limit` messages without cutting a tool exchange: the window starts at a user message
+ * (or, when there is none, at least not with orphaned tool replies).
+ */
 export function trimHistory(history: readonly ChatMessage[], limit = HISTORY_LIMIT): ChatMessage[] {
   if (history.length <= limit) {
     return [...history];
@@ -161,8 +161,9 @@ export class AssistantConversation {
   constructor() {
     effect(() => {
       const userId = this.userId();
-      if (this.shownFor !== null && this.shownFor !== userId) {
-        // Logout (null) or another user signed in: the previous user's chat must not stay in this tab.
+      if (userId !== null || this.shownFor !== null) {
+        // Signed in: every other user's chat goes, even one left by an expired session before a reload (shownFor is
+        // null then). Logout (user → null): all chats go. Not signed in yet (reload) → keep, the same user may return.
         clearAssistantHistory(userId);
       }
       this.shownFor = userId;
