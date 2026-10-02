@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
@@ -9,6 +9,9 @@ import {
   SaveDictionaryItem,
 } from './directory.model';
 import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
+import { toParams } from '../../core/api/http-params';
 
 const API = '/api/directory';
 
@@ -20,13 +23,7 @@ export class DirectoryService {
   private readonly http = inject(HttpClient);
 
   list(type: DictionaryType, query: DictionaryQuery): Observable<DictionaryPage> {
-    let params = new HttpParams();
-    for (const [key, value] of Object.entries(query)) {
-      if (value !== undefined && value !== null && value !== '') {
-        params = params.set(key, String(value));
-      }
-    }
-    return this.http.get<DictionaryPage>(`${API}/${type}`, { params });
+    return this.http.get<DictionaryPage>(`${API}/${type}`, { params: toParams(query) });
   }
 
   /** Active items for pickers (e.g. branches of a user), sorted by name on the server. */
@@ -35,11 +32,11 @@ export class DirectoryService {
   }
 
   create(type: DictionaryType, body: SaveDictionaryItem): Observable<DictionaryItem> {
-    return this.http.post<{ data: DictionaryItem }>(`${API}/${type}`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<DictionaryItem>>(`${API}/${type}`, body).pipe(unwrapData());
   }
 
   update(type: DictionaryType, id: number, body: SaveDictionaryItem): Observable<DictionaryItem> {
-    return this.http.patch<{ data: DictionaryItem }>(`${API}/${type}/${id}`, body).pipe(map((r) => r.data));
+    return this.http.patch<DataEnvelope<DictionaryItem>>(`${API}/${type}/${id}`, body).pipe(unwrapData());
   }
 }
 

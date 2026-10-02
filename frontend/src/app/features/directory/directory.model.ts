@@ -1,3 +1,5 @@
+import { Paged } from '../../core/api/api.model';
+
 /** Mirrors backend App\Modules\Directory\Enums\DictionaryType (URL segment of /api/directory/{type}). */
 export type DictionaryType = 'branches' | 'cities' | 'departments' | 'positions' | 'vacancy_categories';
 export const DICTIONARY_TYPES: readonly DictionaryType[] = ['branches', 'cities', 'departments', 'positions', 'vacancy_categories'];
@@ -24,10 +26,7 @@ export interface DictionaryQuery {
   perPage?: number;
 }
 
-export interface DictionaryPage {
-  data: DictionaryItem[];
-  meta: { current_page: number; per_page: number; total: number; last_page: number };
-}
+export type DictionaryPage = Paged<DictionaryItem>;
 
 export interface SaveDictionaryItem {
   name?: string;

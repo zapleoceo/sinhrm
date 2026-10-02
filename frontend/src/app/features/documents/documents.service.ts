@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { toParams } from '../recruiting/recruiting.service';
+import { Observable } from 'rxjs';
+import { toParams } from '../../core/api/http-params';
 import {
   CreateDocument,
   DOCUMENT_ERROR_CODES,
@@ -13,6 +13,8 @@ import {
   UpdateDocument,
 } from './documents.model';
 import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 /** HTTP client of the Documents API (/api/documents, /api/documents/templates, /api/me/documents). */
 @Injectable({ providedIn: 'root' })
@@ -21,33 +23,33 @@ export class DocumentsService {
 
   templates(withArchived = false): Observable<DocumentTemplate[]> {
     return this.http
-      .get<{ data: DocumentTemplate[] }>('/api/documents/templates', { params: toParams({ archived: withArchived ? 1 : undefined }) })
-      .pipe(map((r) => r.data));
+      .get<DataEnvelope<DocumentTemplate[]>>('/api/documents/templates', { params: toParams({ archived: withArchived ? 1 : undefined }) })
+      .pipe(unwrapData());
   }
 
   createTemplate(body: { name: string; body: string; category?: string | null }): Observable<DocumentTemplate> {
-    return this.http.post<{ data: DocumentTemplate }>('/api/documents/templates', body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<DocumentTemplate>>('/api/documents/templates', body).pipe(unwrapData());
   }
 
   updateTemplate(id: number, body: SaveDocumentTemplate): Observable<DocumentTemplate> {
-    return this.http.patch<{ data: DocumentTemplate }>(`/api/documents/templates/${id}`, body).pipe(map((r) => r.data));
+    return this.http.patch<DataEnvelope<DocumentTemplate>>(`/api/documents/templates/${id}`, body).pipe(unwrapData());
   }
 
   preview(body: string, employeeId?: number): Observable<TemplatePreview> {
     const payload = employeeId === undefined ? { body } : { body, employee_id: employeeId };
-    return this.http.post<{ data: TemplatePreview }>('/api/documents/templates/preview', payload).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<TemplatePreview>>('/api/documents/templates/preview', payload).pipe(unwrapData());
   }
 
   list(query: DocumentQuery = {}): Observable<HrDocument[]> {
-    return this.http.get<{ data: HrDocument[] }>('/api/documents', { params: toParams({ ...query }) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<HrDocument[]>>('/api/documents', { params: toParams({ ...query }) }).pipe(unwrapData());
   }
 
   mine(): Observable<HrDocument[]> {
-    return this.http.get<{ data: HrDocument[] }>('/api/me/documents').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<HrDocument[]>>('/api/me/documents').pipe(unwrapData());
   }
 
   get(id: number): Observable<HrDocument> {
-    return this.http.get<{ data: HrDocument }>(`/api/documents/${id}`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<HrDocument>>(`/api/documents/${id}`).pipe(unwrapData());
   }
 
   /** Same-origin download link (cookie session); the API answers with Content-Disposition: attachment. */
@@ -56,29 +58,29 @@ export class DocumentsService {
   }
 
   create(body: CreateDocument): Observable<HrDocument> {
-    return this.http.post<{ data: HrDocument }>('/api/documents', body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<HrDocument>>('/api/documents', body).pipe(unwrapData());
   }
 
   update(id: number, body: UpdateDocument): Observable<HrDocument> {
-    return this.http.patch<{ data: HrDocument }>(`/api/documents/${id}`, body).pipe(map((r) => r.data));
+    return this.http.patch<DataEnvelope<HrDocument>>(`/api/documents/${id}`, body).pipe(unwrapData());
   }
 
   upload(id: number, file: File): Observable<HrDocument> {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post<{ data: HrDocument }>(`/api/documents/${id}/file`, form).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<HrDocument>>(`/api/documents/${id}/file`, form).pipe(unwrapData());
   }
 
   send(id: number): Observable<HrDocument> {
-    return this.http.post<{ data: HrDocument }>(`/api/documents/${id}/send`, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<HrDocument>>(`/api/documents/${id}/send`, {}).pipe(unwrapData());
   }
 
   acknowledge(id: number): Observable<HrDocument> {
-    return this.http.post<{ data: HrDocument }>(`/api/documents/${id}/acknowledge`, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<HrDocument>>(`/api/documents/${id}/acknowledge`, {}).pipe(unwrapData());
   }
 
   reject(id: number, reason: string | null): Observable<HrDocument> {
-    return this.http.post<{ data: HrDocument }>(`/api/documents/${id}/reject`, reason ? { reason } : {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<HrDocument>>(`/api/documents/${id}/reject`, reason ? { reason } : {}).pipe(unwrapData());
   }
 }
 

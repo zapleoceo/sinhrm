@@ -71,10 +71,13 @@
 |---|---|
 | `api/api-error.ts` | `apiErrorKey(error, prefix, codes, { statuses?, fallback? })` — i18n-ключ ошибки API: известный `{code}` → `<prefix>.errors.<code>`, иначе статус из списка `statuses` (по умолчанию все: `forbidden` 403, `not_found` 404, `validation` 422, `rate_limited` 429) → `<prefix>.errors.<имя>`, иначе `fallback` (по умолчанию `common.error`). `apiErrorCode(e)` / `apiErrorStatus(e)` — код и статус ответа или `null`. Ключи каждой фичи (`performErrorKey`, `scriptsErrorKey`, …) — однострочные обёртки с её списком статусов и запасным ключом, тексты не менялись |
 | `ui/notify.service.ts` | `NotifyService.show(key, { params?, duration? })` — короткое уведомление (Material snack bar) с переведённым текстом; длительность по умолчанию `NOTIFY_DURATION_MS` = 4000 мс, другие (2000/3000/5000) передаются явно там, где они были. Доступность — штатная snack bar: вежливая live-область (`aria-live="polite"`), фокус не уводится. Заменил 30+ локальных `toast()`; пока не переведены страницы с таблицами (их меняет общий заголовок таблиц — отдельная задача) и `features/people` |
+| `api/api.model.ts` | общие типы ответа API: `PageMeta` (`current_page`, `per_page`, `total`, `last_page`), `Paged<T, M = PageMeta>` (`{ data: T[], meta }`; фича может расширить meta, как `VacancyPageMeta`), `DataEnvelope<T>` (`{ data: T }`). Заменили 5 своих определений страницы в фичах (`features/people` пока со своим `Paged`) |
+| `api/unwrap-data.ts` | `unwrapData()` — RxJS-оператор: `http.get<DataEnvelope<T>>(url).pipe(unwrapData())` → `Observable<T>`. Заменил ~215 повторов `map((r) => r.data)` в сервисах фич |
+| `api/http-params.ts` | `toParams(query)` — `HttpParams` без пустых значений (`undefined`, `null`, `''`), числа и булевы — строками (API принимает `"20"`); принимает типизированный интерфейс запроса без `{ ...query }`. Раньше жила в `recruiting.service.ts` (оттуда её импортировали 13 фич) + 3 копии; `recruiting.service.ts` пока реэкспортирует её для `features/people` |
 
 ## Как проверить
 Тесты: `iso-date.spec.ts`, `app-date-adapter.spec.ts`, `datepicker-intl.spec.ts`, `channel-icon.spec.ts`, `tests/Feature/Core/HealthTest.php`, `tests/Feature/Core/OpsJobsTest.php`, `tests/Feature/Core/SecurityHeadersTest.php`, `error-reporter.spec.ts`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
-`api-error.spec.ts`, `notify.service.spec.ts`, `auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.
+`api-error.spec.ts`, `http-params.spec.ts`, `unwrap-data.spec.ts`, `notify.service.spec.ts`, `auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.
 Вручную: `curl -i https://sinhrm.vercel.app/api/health`.
 
 ## Подключение к Neon из Vercel

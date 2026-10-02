@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { toParams } from '../recruiting/recruiting.service';
+import { Observable } from 'rxjs';
+import { toParams } from '../../core/api/http-params';
 import {
   AnswerValue,
   MoodEntry,
@@ -19,12 +19,10 @@ import {
   WaveResults,
 } from './pulse.model';
 import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 const API = '/api/pulse';
-
-interface Data<T> {
-  data: T;
-}
 
 /** HTTP client of the Pulse API (/api/pulse/*). */
 @Injectable({ providedIn: 'root' })
@@ -40,8 +38,8 @@ export class PulseService {
   }
 
   saveSurvey(body: SaveSurvey, id?: number): Observable<Survey> {
-    const req = id ? this.http.put<Data<Survey>>(`${API}/surveys/${id}`, body) : this.http.post<Data<Survey>>(`${API}/surveys`, body);
-    return req.pipe(map((r) => r.data));
+    const req = id ? this.http.put<DataEnvelope<Survey>>(`${API}/surveys/${id}`, body) : this.http.post<DataEnvelope<Survey>>(`${API}/surveys`, body);
+    return req.pipe(unwrapData());
   }
 
   waves(surveyId: number): Observable<Wave[]> {
@@ -49,11 +47,11 @@ export class PulseService {
   }
 
   createWave(surveyId: number, body: NewWave): Observable<Wave> {
-    return this.http.post<Data<Wave>>(`${API}/surveys/${surveyId}/waves`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<Wave>>(`${API}/surveys/${surveyId}/waves`, body).pipe(unwrapData());
   }
 
   closeWave(id: number): Observable<Wave> {
-    return this.http.post<Data<Wave>>(`${API}/waves/${id}/close`, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<Wave>>(`${API}/waves/${id}/close`, {}).pipe(unwrapData());
   }
 
   myWaves(): Observable<MyWave[]> {
@@ -81,7 +79,7 @@ export class PulseService {
   }
 
   checkIn(score: number, comment: string | null): Observable<MoodEntry> {
-    return this.http.post<Data<MoodEntry>>(`${API}/mood`, { score, comment }).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<MoodEntry>>(`${API}/mood`, { score, comment }).pipe(unwrapData());
   }
 
   myMood(days = 30): Observable<MoodEntry[]> {
@@ -97,11 +95,11 @@ export class PulseService {
   }
 
   saveMoodSettings(body: MoodSettings): Observable<MoodSettings> {
-    return this.http.put<Data<MoodSettings>>(`${API}/mood/settings`, body).pipe(map((r) => r.data));
+    return this.http.put<DataEnvelope<MoodSettings>>(`${API}/mood/settings`, body).pipe(unwrapData());
   }
 
   private get<T>(url: string, query: Record<string, string | number | undefined> = {}): Observable<T> {
-    return this.http.get<Data<T>>(url, { params: toParams(query) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<T>>(url, { params: toParams(query) }).pipe(unwrapData());
   }
 }
 

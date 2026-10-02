@@ -400,6 +400,7 @@ AIB_PROJECT_KEY=<ключ, только в своей оболочке> php arti
 ### Общие примитивы фронта
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Ошибки: `aiErrorKey` (панели ИИ, скрининг) и `aiTextErrorKey` (подсказка под разделом вакансии; любой 429 → «throttled», коды провайдера не показываются) живут в `ai.service.ts` и читают код/статус ответа общими `apiErrorCode`/`apiErrorStatus` (`core/api/api-error.ts`). Две функции намеренно разные: на 429 с кодом `ai_budget_exceeded` панель ИИ пишет про бюджет, а форма вакансии — «слишком часто».
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ## Как проверить
 - `tests/Feature/Ai/AiServiceTest` — submit/poll, возможность и модель (пусто → без `model`), бэкофф в пределах 40 с →

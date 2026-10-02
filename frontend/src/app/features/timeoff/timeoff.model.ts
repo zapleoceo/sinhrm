@@ -114,10 +114,7 @@ export interface CalendarData {
   holidays: { date: string; name: string; branch_id: number | null }[];
 }
 
-export interface Paged<T> {
-  data: T[];
-  meta: { current_page: number; per_page: number; total: number; last_page: number };
-}
+export type { Paged } from '../../core/api/api.model';
 
 export interface LeaveRequestQuery {
   employee_id?: number;

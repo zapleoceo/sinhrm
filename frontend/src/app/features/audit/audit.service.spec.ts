@@ -23,6 +23,7 @@ describe('AuditService', () => {
     const req = http.expectOne((r) => r.url === '/api/audit');
     expect(req.request.params.keys().sort()).toEqual(['entity_type', 'from', 'page', 'perPage', 'user_id']);
     expect(req.request.params.get('user_id')).toBe('3');
+    expect(req.request.params.get('page')).toBe('2'); // numbers go as strings (core toParams)
     req.flush(PAGE);
   });
 

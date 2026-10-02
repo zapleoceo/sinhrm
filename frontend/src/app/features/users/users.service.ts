@@ -1,8 +1,11 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { AdminUser, InviteUser, UpdateUser, USER_ERROR_CODES, UsersPage, UsersQuery } from './users.model';
 import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
+import { toParams } from '../../core/api/http-params';
 
 const API = '/api/users';
 
@@ -11,21 +14,15 @@ export class UsersService {
   private readonly http = inject(HttpClient);
 
   list(query: UsersQuery): Observable<UsersPage> {
-    let params = new HttpParams();
-    for (const [key, value] of Object.entries(query)) {
-      if (value !== undefined && value !== null && value !== '') {
-        params = params.set(key, String(value));
-      }
-    }
-    return this.http.get<UsersPage>(API, { params });
+    return this.http.get<UsersPage>(API, { params: toParams(query) });
   }
 
   invite(body: InviteUser): Observable<AdminUser> {
-    return this.http.post<{ data: AdminUser }>(API, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<AdminUser>>(API, body).pipe(unwrapData());
   }
 
   update(id: number, body: UpdateUser): Observable<AdminUser> {
-    return this.http.patch<{ data: AdminUser }>(`${API}/${id}`, body).pipe(map((r) => r.data));
+    return this.http.patch<DataEnvelope<AdminUser>>(`${API}/${id}`, body).pipe(unwrapData());
   }
 }
 

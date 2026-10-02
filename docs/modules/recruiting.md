@@ -452,6 +452,7 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Ошибки API → i18n-ключ: `recruitingErrorKey` — свой случай `duplicate_restricted`, остальное через общий `apiErrorKey` (`core/api/api-error.ts`; статусы 403/422, запасной `recruiting.errors.generic`). Ключ каналов привлечения переименован в `acquisitionChannelErrorKey` (было `channelErrorKey`, совпадало с именем в фиче channels). Подсказка ИИ под разделом вакансии — `aiTextErrorKey` из `features/ai/ai.service.ts` (раньше функция `aiErrorKey` жила в `vacancy-form.page.ts` и дублировала имя из фичи ai).
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,

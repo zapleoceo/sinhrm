@@ -12,6 +12,8 @@ import {
   SimulateResult,
 } from './channels.model';
 import { apiErrorCode, apiErrorStatus } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 /** HTTP client of the Channels API + the channel availability shared by every candidate card. */
 @Injectable({ providedIn: 'root' })
@@ -27,7 +29,7 @@ export class ChannelsService {
       return;
     }
     this.availabilityRequested = true;
-    this.http.get<{ data: ChannelAvailability[] }>('/api/channels').subscribe({
+    this.http.get<DataEnvelope<ChannelAvailability[]>>('/api/channels').subscribe({
       next: (r) => this.availability.set(r.data),
       error: () => {
         this.availabilityRequested = false;
@@ -46,11 +48,11 @@ export class ChannelsService {
   }
 
   send(candidateId: number, body: SendMessage): Observable<Touchpoint> {
-    return this.http.post<{ data: Touchpoint }>(`/api/candidates/${candidateId}/messages`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<Touchpoint>>(`/api/candidates/${candidateId}/messages`, body).pipe(unwrapData());
   }
 
   adminOverview(): Observable<ChannelInfo[]> {
-    return this.http.get<{ data: ChannelInfo[] }>('/api/channels/admin').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<ChannelInfo[]>>('/api/channels/admin').pipe(unwrapData());
   }
 
   registerWebhook(key: string): Observable<void> {
@@ -62,7 +64,7 @@ export class ChannelsService {
   }
 
   simulate(key: string, body: SimulateEvent): Observable<SimulateResult> {
-    return this.http.post<{ data: SimulateResult }>(`/api/channels/${key}/simulate`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<SimulateResult>>(`/api/channels/${key}/simulate`, body).pipe(unwrapData());
   }
 }
 

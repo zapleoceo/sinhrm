@@ -167,6 +167,7 @@ Auth — `UserRepository::find` (фоновый actor).
 ### Общие примитивы фронта
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Ошибки API → i18n-ключ: `mailErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ## Как проверить
 Бэкенд (Gmail подменён `Http::fake`, письма **выдуманы**, `tests/Support/MailFixtures`):

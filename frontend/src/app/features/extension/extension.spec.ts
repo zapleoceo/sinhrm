@@ -26,6 +26,10 @@ describe('ExtensionService', () => {
     service.status().subscribe((s) => (active = s.active));
     http.expectOne({ method: 'GET', url: URL }).flush({ data: ACTIVE });
     expect(active).toBe(true);
+    let status: unknown;
+    service.status().subscribe((s) => (status = s));
+    http.expectOne({ method: 'GET', url: URL }).flush({ data: ACTIVE });
+    expect(status).toEqual(ACTIVE); // the { data } wrapper is dropped (core unwrapData)
 
     let token: string | undefined;
     service.issue().subscribe((s) => (token = s.token));
