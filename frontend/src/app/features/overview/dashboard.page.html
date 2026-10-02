@@ -43,51 +43,7 @@
   }
 
   @if (store.route(); as r) {
-    <section class="panel card route" aria-labelledby="route-title">
-      <div class="card-head">
-        <h2 id="route-title">{{ 'overview.route.title' | transloco }}</h2>
-        <span class="app-num muted summary">{{ 'overview.route.summary' | transloco: { i: r.interviews, t: r.tasks } }}</span>
-      </div>
-      @if (r.stops.length) {
-        <div class="line" aria-hidden="true">
-          <span class="rail"></span>
-          @if (r.scale.now !== null) {
-            <span class="done" [style.width.%]="r.scale.now"></span>
-          }
-          @for (h of r.scale.hours; track h.h; let odd = $odd) {
-            <span class="hr app-num" [class.minor]="odd" [style.left.%]="h.left">{{ h.h }}:00</span>
-          }
-          @for (s of r.stops; track s.kind + s.id) {
-            <span class="app-station stop" [attr.data-kind]="s.kind === 'interview' ? 'interview' : 'screen'" [style.left.%]="s.left"></span>
-          }
-          @if (r.scale.now !== null) {
-            <span class="now" [style.left.%]="r.scale.now"><span class="now-label app-num">{{ 'overview.route.now' | transloco: { time: r.scale.nowLabel } }}</span></span>
-          }
-        </div>
-        <ol class="stops">
-          @for (s of r.stops; track s.kind + s.id) {
-            <li [attr.data-kind]="s.kind">
-              <span class="app-station" [attr.data-kind]="s.kind === 'interview' ? 'interview' : 'screen'" aria-hidden="true"></span>
-              <time class="app-num" [attr.datetime]="s.at">{{ s.time }}</time>
-              <span class="kind">{{ (s.kind === 'interview' ? 'overview.route.interview' : 'overview.route.task') | transloco }}</span>
-              @if (s.candidate; as c) {
-                <a [routerLink]="['/candidates', c.id]">{{ c.name }}</a>
-              }
-              @if (s.kind === 'task' && s.type === 'new_applicant') {
-                <span class="muted">{{ 'scripts.tasks.newApplicantTitle' | transloco }}</span>
-              } @else if (s.title) {
-                <span class="muted">{{ s.title }}</span>
-              }
-              @if (s.meeting_type === 'online' || s.meeting_type === 'branch') {
-                <span class="app-pill" data-tone="info">{{ 'overview.route.' + s.meeting_type | transloco }}</span>
-              }
-            </li>
-          }
-        </ol>
-      } @else {
-        <p class="app-empty"><b>{{ 'overview.route.empty' | transloco }}</b>{{ 'overview.route.emptyHint' | transloco }}</p>
-      }
-    </section>
+    <app-day-route [route]="r" />
   }
 
   <section class="tiles" [attr.aria-label]="'overview.countersLabel' | transloco">

@@ -100,12 +100,14 @@ final class QueryDashboardRepository implements DashboardRepository
 
         $meetings = [];
         foreach ($rows as $r) {
-            $meta = is_string($r->meta) ? json_decode($r->meta, true) : (array) $r->meta;
-            $start = is_array($meta) ? $this->time($meta['start'] ?? null) : null;
+            $meta = is_string($r->meta) ? json_decode($r->meta, true) : null;
+            if (! is_array($meta)) {
+                continue;
+            }
+            $start = $this->time($meta['start'] ?? null);
             if ($start === null || $start->lt($from) || $start->gt($to)) {
                 continue;
             }
-            assert(is_array($meta));
             $meetings[] = [
                 'id' => (int) $r->id,
                 'candidate_id' => (int) $r->candidate_id,

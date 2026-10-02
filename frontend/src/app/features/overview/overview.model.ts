@@ -183,3 +183,6 @@ export function statTiles(d: Dashboard): StatTile[] {
     { key: 'new_today', value: d.counts.new_today, link: '/vacancies', icon: 'person_add', tone: 'neutral' },
   ];
 }
+
+/** «Маршрут дня» ready for the view: the API block plus the visible hours and positioned stations. */
+export type DayRouteView = DayRoute & { scale: RouteScale; stops: RouteStop[] };

@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { barWidth } from '../recruiting/reports/reports.store';
-import { Dashboard, routeScale, routeStops, statTiles, touchSegments } from './overview.model';
+import { Dashboard, DayRouteView, routeScale, routeStops, statTiles, touchSegments } from './overview.model';
 import { OverviewService } from './overview.service';
 
 /** Home page state: one request, derived tiles and bar widths. */
@@ -30,7 +30,7 @@ export class OverviewStore {
   });
   readonly touchSegments = computed(() => touchSegments(this.data()?.touches.by_channel ?? []));
   /** «Маршрут дня»: visible hours, stations and the «now» marker. */
-  readonly route = computed(() => {
+  readonly route = computed((): DayRouteView | null => {
     const r = this.data()?.day_route;
     if (!r) {
       return null;

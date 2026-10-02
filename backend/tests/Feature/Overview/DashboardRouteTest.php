@@ -75,11 +75,12 @@ final class DashboardRouteTest extends TestCase
             ->assertJsonPath('data.day_route.items.1.title', 'Send the test task')
             ->assertJsonPath('data.day_route.items.1.at', '2026-09-30T15:00:00+00:00');
 
-        // An interviewer (employee, no Recruiting role) sees the interview of "their" application — and nothing else.
+        // An interviewer (employee, no Recruiting role) sees both meetings of "their" application — and nothing else.
         $this->actingAs($interviewer)->getJson('/api/dashboard')->assertOk()
-            ->assertJsonPath('data.day_route.interviews', 1)
-            ->assertJsonPath('data.day_route.items.0.title', 'Panel [TEST]')
-            ->assertJsonPath('data.day_route.items.0.candidate.name', 'Route Foreign [TEST]')
+            ->assertJsonPath('data.day_route.interviews', 2)
+            ->assertJsonPath('data.day_route.items.0.at', '2026-09-30T12:00:00+00:00')
+            ->assertJsonPath('data.day_route.items.1.title', 'Panel [TEST]')
+            ->assertJsonPath('data.day_route.items.1.candidate.name', 'Route Foreign [TEST]')
             ->assertJsonPath('data.counts.active', 0);
 
         // Admin sees everything in Recruiting, but the route is personal: only meetings they are involved in.

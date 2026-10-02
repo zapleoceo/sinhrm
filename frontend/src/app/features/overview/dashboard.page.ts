@@ -15,6 +15,7 @@ import { Candidate } from '../recruiting/recruiting.model';
 import { canWriteRecruiting } from '../recruiting/recruiting.access';
 import { TasksWidget } from '../scripts/tasks/tasks-widget';
 import { TaskQuery } from '../scripts/scripts.model';
+import { DayRouteCard } from './day-route';
 import { OverviewStore } from './overview.store';
 
 /**
@@ -25,7 +26,7 @@ import { OverviewStore } from './overview.store';
  */
 @Component({
   selector: 'app-dashboard-page',
-  imports: [ChannelIcon, DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TasksWidget, MoodCheckinWidget],
+  imports: [ChannelIcon, DatePipe, DayRouteCard, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TasksWidget, MoodCheckinWidget],
   providers: [OverviewStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.page.html',
