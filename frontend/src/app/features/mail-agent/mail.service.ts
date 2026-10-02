@@ -1,6 +1,6 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   AssignSender,
   MAIL_ERROR_CODES,
@@ -11,6 +11,9 @@ import {
   SyncCounts,
   UnknownSender,
 } from './mail.model';
+import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 const API = '/api/mail';
 
@@ -20,23 +23,23 @@ export class MailService {
   private readonly http = inject(HttpClient);
 
   status(): Observable<MailStatus> {
-    return this.http.get<{ data: MailStatus }>(`${API}/status`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<MailStatus>>(`${API}/status`).pipe(unwrapData());
   }
 
   sync(): Observable<SyncCounts> {
-    return this.http.post<{ data: SyncCounts }>(`${API}/sync`, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<SyncCounts>>(`${API}/sync`, {}).pipe(unwrapData());
   }
 
   rules(): Observable<SenderRule[]> {
-    return this.http.get<{ data: SenderRule[] }>(`${API}/rules`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<SenderRule[]>>(`${API}/rules`).pipe(unwrapData());
   }
 
   createRule(body: SaveSenderRule): Observable<SenderRule> {
-    return this.http.post<{ data: SenderRule }>(`${API}/rules`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<SenderRule>>(`${API}/rules`, body).pipe(unwrapData());
   }
 
   updateRule(id: number, body: SaveSenderRule): Observable<SenderRule> {
-    return this.http.patch<{ data: SenderRule }>(`${API}/rules/${id}`, body).pipe(map((r) => r.data));
+    return this.http.patch<DataEnvelope<SenderRule>>(`${API}/rules/${id}`, body).pipe(unwrapData());
   }
 
   deleteRule(id: number): Observable<void> {
@@ -44,11 +47,11 @@ export class MailService {
   }
 
   unknown(): Observable<UnknownSender[]> {
-    return this.http.get<{ data: UnknownSender[] }>(`${API}/unknown-senders`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<UnknownSender[]>>(`${API}/unknown-senders`).pipe(unwrapData());
   }
 
   assign(id: number, body: AssignSender): Observable<SenderRule> {
-    return this.http.post<{ data: SenderRule }>(`${API}/unknown-senders/${id}/assign`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<SenderRule>>(`${API}/unknown-senders/${id}/assign`, body).pipe(unwrapData());
   }
 
   dismiss(id: number): Observable<void> {
@@ -56,20 +59,11 @@ export class MailService {
   }
 
   messages(): Observable<ProcessedMail[]> {
-    return this.http.get<{ data: ProcessedMail[] }>(`${API}/messages`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<ProcessedMail[]>>(`${API}/messages`).pipe(unwrapData());
   }
 }
 
 /** i18n key for a failed mail API call. */
 export function mailErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (MAIL_ERROR_CODES as readonly string[]).includes(code)) {
-      return `mail.errors.${code}`;
-    }
-    if (error.status === 422) {
-      return 'mail.errors.validation';
-    }
-  }
-  return 'mail.errors.generic';
+  return apiErrorKey(error, 'mail', MAIL_ERROR_CODES, { statuses: [422], fallback: 'mail.errors.generic' });
 }

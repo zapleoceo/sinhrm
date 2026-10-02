@@ -35,6 +35,8 @@ describe('mail.model', () => {
     expect(mailErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'google_gmail_not_connected' } }))).toBe('mail.errors.google_gmail_not_connected');
     expect(mailErrorKey(new HttpErrorResponse({ status: 422 }))).toBe('mail.errors.validation');
     expect(mailErrorKey(null)).toBe('mail.errors.generic');
+    expect(mailErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('mail.errors.generic');
+    expect(mailErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'unknown' } }))).toBe('mail.errors.validation');
   });
 });
 

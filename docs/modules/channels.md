@@ -136,6 +136,12 @@ Ringostat станет доступен только после появлени
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки: `channelErrorCode`/`channelErrorKey` читают код и статус ответа общими `apiErrorCode`/`apiErrorStatus` (`core/api/api-error.ts`); 403 по-прежнему показывает `recruiting.errors.forbidden` (кандидат вне области доступа).
+- Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
 ## Как проверить
 Бэкенд: `tests/Feature/Channels/WebhookApiTest.php` (404 неизвестного/выключенного, 403 на неверный/отсутствующий секрет
 для каждого провайдера, сопоставление по @username/телефону, «Вхідні», идемпотентность, исходящее от владельца в Telegram,

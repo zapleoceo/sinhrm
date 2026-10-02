@@ -7,13 +7,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ChannelPanel } from '../channels/channel-panel';
 import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
 import { IntegrationsStore } from './integrations.store';
 import { ChannelIcon } from '../../core/ui/channel-icon';
+import { NotifyService } from '../../core/ui/notify.service';
 
 const URL_PATTERN = /^https:\/\/\S+$/i;
 
@@ -40,8 +40,7 @@ const URL_PATTERN = /^https:\/\/\S+$/i;
 export class IntegrationCard {
   private readonly store = inject(IntegrationsStore);
   private readonly api = inject(IntegrationsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   readonly item = input.required<Integration>();
 
@@ -69,7 +68,7 @@ export class IntegrationCard {
   }
 
   protected setStatus(status: ManualStatus): void {
-    this.store.setStatus(this.item(), status, (key) => this.toast(key));
+    this.store.setStatus(this.item(), status, (key) => this.notify.show(key, { duration: 3000 }));
   }
 
   protected clearSecret(field: IntegrationField): void {
@@ -95,9 +94,9 @@ export class IntegrationCard {
       next: () => {
         this.resetForm();
         this.loadLogs();
-        this.toast('integrations.saved');
+        this.notify.show('integrations.saved', { duration: 3000 });
       },
-      error: (e: unknown) => this.toast(integrationErrorKey(e)),
+      error: (e: unknown) => this.notify.show(integrationErrorKey(e), { duration: 3000 }),
     });
   }
 
@@ -105,9 +104,9 @@ export class IntegrationCard {
     this.store.check(this.item().key).subscribe({
       next: (item) => {
         this.loadLogs();
-        this.toast(item.status === 'connected' ? 'integrations.checkOk' : 'integrations.checkFailed');
+        this.notify.show(item.status === 'connected' ? 'integrations.checkOk' : 'integrations.checkFailed', { duration: 3000 });
       },
-      error: (e: unknown) => this.toast(integrationErrorKey(e)),
+      error: (e: unknown) => this.notify.show(integrationErrorKey(e), { duration: 3000 }),
     });
   }
 
@@ -142,9 +141,5 @@ export class IntegrationCard {
       list.push(Validators.pattern(URL_PATTERN));
     }
     return list;
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
   }
 }

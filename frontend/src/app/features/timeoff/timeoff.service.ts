@@ -1,7 +1,7 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { toParams } from '../recruiting/recruiting.service';
+import { Observable } from 'rxjs';
+import { toParams } from '../../core/api/http-params';
 import {
   Balance,
   CalendarData,
@@ -15,6 +15,9 @@ import {
   Paged,
   TIMEOFF_ERROR_CODES,
 } from './timeoff.model';
+import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 /** HTTP client of the TimeOff API (/api/timeoff/*). */
 @Injectable({ providedIn: 'root' })
@@ -22,31 +25,31 @@ export class TimeOffService {
   private readonly http = inject(HttpClient);
 
   types(all = false): Observable<LeaveType[]> {
-    return this.http.get<{ data: LeaveType[] }>('/api/timeoff/types', { params: toParams({ all: all ? 1 : undefined }) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<LeaveType[]>>('/api/timeoff/types', { params: toParams({ all: all ? 1 : undefined }) }).pipe(unwrapData());
   }
 
   saveType(id: number | null, body: Partial<LeaveType>): Observable<LeaveType> {
-    const call = id === null ? this.http.post<{ data: LeaveType }>('/api/timeoff/types', body) : this.http.patch<{ data: LeaveType }>(`/api/timeoff/types/${id}`, body);
-    return call.pipe(map((r) => r.data));
+    const call = id === null ? this.http.post<DataEnvelope<LeaveType>>('/api/timeoff/types', body) : this.http.patch<DataEnvelope<LeaveType>>(`/api/timeoff/types/${id}`, body);
+    return call.pipe(unwrapData());
   }
 
   policies(): Observable<LeavePolicy[]> {
-    return this.http.get<{ data: LeavePolicy[] }>('/api/timeoff/policies').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<LeavePolicy[]>>('/api/timeoff/policies').pipe(unwrapData());
   }
 
   savePolicy(id: number | null, body: Partial<LeavePolicy>): Observable<LeavePolicy> {
     const call =
-      id === null ? this.http.post<{ data: LeavePolicy }>('/api/timeoff/policies', body) : this.http.patch<{ data: LeavePolicy }>(`/api/timeoff/policies/${id}`, body);
-    return call.pipe(map((r) => r.data));
+      id === null ? this.http.post<DataEnvelope<LeavePolicy>>('/api/timeoff/policies', body) : this.http.patch<DataEnvelope<LeavePolicy>>(`/api/timeoff/policies/${id}`, body);
+    return call.pipe(unwrapData());
   }
 
   holidays(year?: number, branchId?: number): Observable<Holiday[]> {
-    return this.http.get<{ data: Holiday[] }>('/api/timeoff/holidays', { params: toParams({ year, branch_id: branchId }) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<Holiday[]>>('/api/timeoff/holidays', { params: toParams({ year, branch_id: branchId }) }).pipe(unwrapData());
   }
 
   saveHoliday(id: number | null, body: Partial<Holiday>): Observable<Holiday> {
-    const call = id === null ? this.http.post<{ data: Holiday }>('/api/timeoff/holidays', body) : this.http.patch<{ data: Holiday }>(`/api/timeoff/holidays/${id}`, body);
-    return call.pipe(map((r) => r.data));
+    const call = id === null ? this.http.post<DataEnvelope<Holiday>>('/api/timeoff/holidays', body) : this.http.patch<DataEnvelope<Holiday>>(`/api/timeoff/holidays/${id}`, body);
+    return call.pipe(unwrapData());
   }
 
   deleteHoliday(id: number): Observable<void> {
@@ -55,7 +58,7 @@ export class TimeOffService {
 
   /** Own balances, or another employee's (admin / manager above). */
   balances(employeeId?: number): Observable<Balance[]> {
-    return this.http.get<{ data: Balance[] }>('/api/timeoff/balances', { params: toParams({ employee_id: employeeId }) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<Balance[]>>('/api/timeoff/balances', { params: toParams({ employee_id: employeeId }) }).pipe(unwrapData());
   }
 
   requests(query: LeaveRequestQuery): Observable<Paged<LeaveRequest>> {
@@ -64,39 +67,27 @@ export class TimeOffService {
 
   preview(body: NewLeaveRequest): Observable<LeavePreview> {
     const query = { leave_type_id: body.leave_type_id, starts_on: body.starts_on, ends_on: body.ends_on, half_day: body.half_day, employee_id: body.employee_id };
-    return this.http.get<{ data: LeavePreview }>('/api/timeoff/requests/preview', { params: toParams(query) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<LeavePreview>>('/api/timeoff/requests/preview', { params: toParams(query) }).pipe(unwrapData());
   }
 
   create(body: NewLeaveRequest): Observable<LeaveRequest> {
-    return this.http.post<{ data: LeaveRequest }>('/api/timeoff/requests', body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<LeaveRequest>>('/api/timeoff/requests', body).pipe(unwrapData());
   }
 
   decide(id: number, action: 'approve' | 'reject' | 'cancel', comment: string | null = null): Observable<LeaveRequest> {
-    return this.http.post<{ data: LeaveRequest }>(`/api/timeoff/requests/${id}/${action}`, action === 'cancel' ? {} : { comment }).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<LeaveRequest>>(`/api/timeoff/requests/${id}/${action}`, action === 'cancel' ? {} : { comment }).pipe(unwrapData());
   }
 
   approvals(): Observable<LeaveRequest[]> {
-    return this.http.get<{ data: LeaveRequest[] }>('/api/timeoff/approvals').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<LeaveRequest[]>>('/api/timeoff/approvals').pipe(unwrapData());
   }
 
   calendar(from: string, to: string, branchId?: number): Observable<CalendarData> {
-    return this.http.get<{ data: CalendarData }>('/api/timeoff/calendar', { params: toParams({ from, to, branch_id: branchId }) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<CalendarData>>('/api/timeoff/calendar', { params: toParams({ from, to, branch_id: branchId }) }).pipe(unwrapData());
   }
 }
 
 /** i18n key for a TimeOff API error. */
 export function timeoffErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (TIMEOFF_ERROR_CODES as readonly string[]).includes(code)) {
-      return `timeoff.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'timeoff.errors.forbidden';
-    }
-    if (error.status === 422) {
-      return 'timeoff.errors.validation';
-    }
-  }
-  return 'common.error';
+  return apiErrorKey(error, 'timeoff', TIMEOFF_ERROR_CODES, { statuses: [403, 422] });
 }

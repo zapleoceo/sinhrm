@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+import { Paged } from '../../core/api/api.model';
 
 /** Audit log (backend Audit module): who changed what and when. */
 
@@ -47,10 +48,7 @@ export interface AuditEntry {
   created_at: string;
 }
 
-export interface AuditPage {
-  data: AuditEntry[];
-  meta: { current_page: number; per_page: number; total: number; last_page: number };
-}
+export type AuditPage = Paged<AuditEntry>;
 
 export interface AuditPaging {
   page: number;

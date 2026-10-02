@@ -13,7 +13,7 @@ import {
   sparklinePath,
   usagePercent,
 } from './ai.model';
-import { AiService, aiCodeKey, aiErrorKey, promptProblemKeys } from './ai.service';
+import { AiService, aiCodeKey, aiErrorKey, aiTextErrorKey, promptProblemKeys } from './ai.service';
 
 const STATUS: AiStatus = {
   provider: 'ai_broker',
@@ -67,6 +67,16 @@ describe('ai helpers', () => {
     ).toBe('ai.errors.ai_budget_exceeded');
     expect(aiErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('ai.errors.throttled');
     expect(aiErrorKey(new HttpErrorResponse({ status: 500 }))).toBe('ai.errors.generic');
+  });
+
+  it('maps text-generation failures: any 429 is throttled, string codes of a finished request, no provider codes', () => {
+    expect(aiTextErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('ai.errors.throttled');
+    expect(aiTextErrorKey(new HttpErrorResponse({ status: 429, error: { code: 'ai_budget_exceeded' } }))).toBe('ai.errors.throttled');
+    expect(aiTextErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'ai_disabled' } }))).toBe('ai.errors.ai_disabled');
+    expect(aiTextErrorKey('ai_budget_exceeded')).toBe('ai.errors.ai_budget_exceeded');
+    expect(aiTextErrorKey('ai_provider_http_401')).toBe('ai.errors.generic');
+    expect(aiTextErrorKey('weird')).toBe('ai.errors.generic');
+    expect(aiTextErrorKey(new Error('x'))).toBe('ai.errors.generic');
   });
 
   it('computes usage bars', () => {

@@ -57,6 +57,7 @@ describe('DeskService', () => {
     expect(deskErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'no_employee' } }))).toBe('desk.errors.no_employee');
     expect(deskErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('desk.errors.not_found');
     expect(deskErrorKey(new HttpErrorResponse({ status: 500 }))).toBe('common.error');
+    expect(deskErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('desk.errors.forbidden');
   });
 });
 

@@ -76,5 +76,6 @@ describe('userErrorKey', () => {
     expect(userErrorKey(err(500, null))).toBe('users.errors.generic');
     expect(userErrorKey(err(422, { code: 'other' }))).toBe('users.errors.generic');
     expect(userErrorKey(new Error('x'))).toBe('users.errors.generic');
+    expect(userErrorKey(err(403, null))).toBe('users.errors.generic');
   });
 });

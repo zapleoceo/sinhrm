@@ -1,7 +1,8 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AuditOptions, AuditPage, AuditPaging, AuditQuery } from './audit.model';
+import { toParams } from '../../core/api/http-params';
 
 const API = '/api/audit';
 
@@ -27,14 +28,4 @@ export class AuditService {
   candidateHistory(id: number, paging: AuditPaging): Observable<AuditPage> {
     return this.http.get<AuditPage>(`/api/candidates/${id}/history`, { params: toParams(paging) });
   }
-}
-
-function toParams(query: AuditQuery): HttpParams {
-  let params = new HttpParams();
-  for (const [key, value] of Object.entries(query) as [string, string | number | undefined][]) {
-    if (value !== undefined && value !== null && value !== '') {
-      params = params.set(key, String(value));
-    }
-  }
-  return params;
 }

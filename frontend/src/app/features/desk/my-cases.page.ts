@@ -6,12 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { CASE_STATUS_TONE, DeskCase, DeskCategory } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** "Мої звернення" (/desk): own helpdesk cases and a form to open a new one. */
 @Component({
@@ -86,8 +86,7 @@ import { SlaBadge } from './sla-badge';
 export class MyCasesPage implements OnInit {
   private readonly api = inject(DeskService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly statusTone = CASE_STATUS_TONE;
   protected readonly items = signal<DeskCase[]>([]);
   protected readonly categories = signal<DeskCategory[]>([]);
@@ -107,7 +106,7 @@ export class MyCasesPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(deskErrorKey(e));
+        this.notify.show(deskErrorKey(e));
       },
     });
     this.api.categories().subscribe({ next: (list) => this.categories.set(list), error: () => this.categories.set([]) });
@@ -134,12 +133,8 @@ export class MyCasesPage implements OnInit {
       },
       error: (e: unknown) => {
         this.saving.set(false);
-        this.toast(deskErrorKey(e));
+        this.notify.show(deskErrorKey(e));
       },
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

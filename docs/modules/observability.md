@@ -23,5 +23,9 @@
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Группа ошибки — карточка с красной «рельсой» 4px; решённая — пунктирная рамка и нейтральная рельса (без opacity: текст не теряет контраст); счётчик «×N» — моно-пилюля, время — моно, пустой список — `.app-empty`. Тест вида — `features/observability/observability.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
 ## Как проверить
 `tests/Feature/Observability/ErrorLogTest.php`, `tests/Feature/Core/ModuleAccessTest.php`, `frontend/src/app/core/errors/error-reporter.spec.ts`.

@@ -162,6 +162,12 @@ hidden_reason: "anonymity"}`, без баллов и комментариев. �
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `performErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
 ## Как проверить
 - `php artisan test --filter=Perform` — Feature: `OneOnOnesTest` (личные заметки не уходят никому, кроме
   руководителя встречи; права по полям), `ObjectivesTest` (прогресс, check-in, циклы выравнивания, видимость),

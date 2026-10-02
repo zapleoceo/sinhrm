@@ -2,15 +2,15 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { PeopleService, peopleErrorKey } from '../../people/people.service';
 import { LeaveRequestsStore } from '../leave-requests.store';
 import { LeaveRequest } from '../timeoff.model';
 import { BalancesPanel } from '../widgets/balances-panel';
 import { LeaveRequestForm } from '../widgets/leave-request-form';
 import { RequestAction, RequestsList } from '../widgets/requests-list';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** My time off: balances, a new request (with the server's day count) and my requests with cancel. */
 @Component({
@@ -57,8 +57,7 @@ import { RequestAction, RequestsList } from '../widgets/requests-list';
 export class MyTimeOffPage implements OnInit {
   protected readonly store = inject(LeaveRequestsStore);
   private readonly people = inject(PeopleService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly employeeId = signal<number | null>(null);
   protected readonly blocked = signal<string | null>(null);
 
@@ -74,10 +73,10 @@ export class MyTimeOffPage implements OnInit {
 
   protected created(request: LeaveRequest): void {
     this.store.added(request);
-    this.snack.open(this.i18n.translate('timeoff.created'), undefined, { duration: 3000 });
+    this.notify.show('timeoff.created', { duration: 3000 });
   }
 
   protected act(action: RequestAction): void {
-    this.store.act(action, (key) => this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 }));
+    this.store.act(action, (key) => this.notify.show(key));
   }
 }

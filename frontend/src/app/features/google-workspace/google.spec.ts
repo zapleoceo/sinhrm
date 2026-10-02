@@ -74,5 +74,7 @@ describe('GoogleService', () => {
     expect(googleErrorKey(err(422))).toBe('google.errors.validation');
     expect(googleErrorKey(err(500, 'something'))).toBe('google.errors.generic');
     expect(googleErrorKey(new Error('x'))).toBe('google.errors.generic');
+    expect(googleErrorKey(err(403))).toBe('google.errors.generic');
+    expect(googleErrorKey(err(429))).toBe('google.errors.generic');
   });
 });

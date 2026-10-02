@@ -9,14 +9,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ASSIGNEE_RULES, AssigneeRule, EditableStep, WORKFLOW_ACTIONS, WORKFLOW_KINDS, WORKFLOW_TRIGGERS, WorkflowAction, WorkflowKind, WorkflowTrigger } from '../workflows.model';
 import { workflowsErrorKey } from '../workflows.service';
 import { PersonPicker, PickerValue } from '../../people/picker/person-picker';
 import { ConfigChange, StepConfigForm } from './step-config';
 import { WorkflowEditorStore } from './workflow-editor.store';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Nested server messages of one step's config: steps.2.config.url → { url }. */
 export function stepConfigErrors(errors: Record<string, string>, index: number): Record<string, string> {
@@ -63,8 +63,7 @@ export class WorkflowEditorPage {
   readonly id = input.required({ transform: numberAttribute });
 
   protected readonly store = inject(WorkflowEditorStore);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly kinds = WORKFLOW_KINDS;
   protected readonly triggers = WORKFLOW_TRIGGERS;
@@ -115,29 +114,25 @@ export class WorkflowEditorPage {
   }
 
   protected dropStep(event: CdkDragDrop<EditableStep[]>): void {
-    this.store.moveStep(event.previousIndex, event.currentIndex, (key) => this.toast(key));
+    this.store.moveStep(event.previousIndex, event.currentIndex, (key) => this.notify.show(key));
   }
 
   protected save(): void {
-    this.store.save().subscribe({ next: () => this.toast('workflows.editor.saved'), error: (e: unknown) => this.toast(workflowsErrorKey(e)) });
+    this.store.save().subscribe({ next: () => this.notify.show('workflows.editor.saved'), error: (e: unknown) => this.notify.show(workflowsErrorKey(e)) });
   }
 
   protected saveSecret(clear: boolean): void {
     const value = clear ? null : this.secret().trim();
     if (value !== null && (value.length < 16 || value.length > 200)) {
-      this.toast('workflows.secret.length');
+      this.notify.show('workflows.secret.length');
       return;
     }
     this.store.setSecret(value).subscribe({
       next: () => {
         this.secret.set('');
-        this.toast(clear ? 'workflows.secret.cleared' : 'workflows.secret.saved');
+        this.notify.show(clear ? 'workflows.secret.cleared' : 'workflows.secret.saved');
       },
-      error: (e: unknown) => this.toast(workflowsErrorKey(e)),
+      error: (e: unknown) => this.notify.show(workflowsErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

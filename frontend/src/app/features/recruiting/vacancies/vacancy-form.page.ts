@@ -35,12 +35,10 @@ import {
 } from '../recruiting.model';
 import { RecruitingService, recruitingErrorKey } from '../recruiting.service';
 import { MarkdownField } from './markdown-field';
+import { aiTextErrorKey } from '../../ai/ai.service';
 
 /** Markdown sections of the form, in page order. */
 export const VACANCY_SECTIONS: readonly VacancyTextSection[] = ['description', 'requirements', 'responsibilities', 'additional_info'];
-
-/** AI refusals shown as a hint under the section (texts from ai.errors.*). */
-const AI_ERRORS = ['ai_disabled', 'ai_not_configured', 'ai_purpose_disabled', 'ai_budget_exceeded', 'ai_timeout', 'ai_invalid_output'];
 
 const DRAFT_PREFIX = 'sinhrm.vacancy-draft.';
 const POLL_EVERY_MS = 3000;
@@ -48,15 +46,6 @@ const POLL_TIMES = 10;
 
 type LanguageGroup = FormGroup<{ lang: FormControl<string>; level: FormControl<string> }>;
 type PostingGroup = FormGroup<{ site: FormControl<string>; url: FormControl<string>; date: FormControl<string> }>;
-
-/** i18n key of an AI failure (a refusal code of the API or of the finished request). */
-export function aiErrorKey(error: unknown): string {
-  const code = error instanceof HttpErrorResponse ? (error.error as { code?: unknown } | null)?.code : error;
-  if (error instanceof HttpErrorResponse && error.status === 429) {
-    return 'ai.errors.throttled';
-  }
-  return typeof code === 'string' && AI_ERRORS.includes(code) ? `ai.errors.${code}` : 'ai.errors.generic';
-}
 
 /**
  * Full-page vacancy form (/vacancies/create, /vacancies/:id/edit): one centered column of card sections with a sticky
@@ -296,7 +285,7 @@ export class VacancyFormPage implements OnInit {
       })
       .subscribe({
         next: (draft) => this.onDraft(section, draft, 0),
-        error: (e: unknown) => this.setAi(section, false, aiErrorKey(e)),
+        error: (e: unknown) => this.setAi(section, false, aiTextErrorKey(e)),
       });
   }
 
@@ -394,7 +383,7 @@ export class VacancyFormPage implements OnInit {
       return;
     }
     if (draft.status === 'failed' || polls >= POLL_TIMES) {
-      this.setAi(section, false, aiErrorKey(draft.error ?? 'ai_timeout'));
+      this.setAi(section, false, aiTextErrorKey(draft.error ?? 'ai_timeout'));
       return;
     }
     timer(POLL_EVERY_MS)
@@ -405,7 +394,7 @@ export class VacancyFormPage implements OnInit {
       .subscribe(() =>
         this.api.vacancyTextResult(draft.request_id).subscribe({
           next: (next) => this.onDraft(section, next, polls + 1),
-          error: (e: unknown) => this.setAi(section, false, aiErrorKey(e)),
+          error: (e: unknown) => this.setAi(section, false, aiTextErrorKey(e)),
         }),
       );
   }

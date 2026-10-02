@@ -7,10 +7,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { FORM_FIELD_TYPES, FormField, FormFieldType, ROUTE_STEP_KINDS, RouteStep, RouteStepKind } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 const ROLES = USER_ROLES;
 
@@ -135,8 +135,7 @@ export function moveItem<T>(list: readonly T[], index: number, delta: -1 | 1): T
 })
 export class HiringSettingsPage implements OnInit {
   private readonly api = inject(HiringRequestsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly kinds = ROUTE_STEP_KINDS;
   protected readonly types = FORM_FIELD_TYPES;
   protected readonly roles = ROLES;
@@ -149,7 +148,7 @@ export class HiringSettingsPage implements OnInit {
   protected readonly saving = signal(false);
 
   ngOnInit(): void {
-    this.api.settings().subscribe({ next: (s) => this.apply(s), error: (e: unknown) => this.toast(hiringErrorKey(e)) });
+    this.api.settings().subscribe({ next: (s) => this.apply(s), error: (e: unknown) => this.notify.show(hiringErrorKey(e)) });
   }
 
   protected value(event: Event): string {
@@ -196,11 +195,11 @@ export class HiringSettingsPage implements OnInit {
       next: (s) => {
         this.saving.set(false);
         this.apply(s);
-        this.toast('hiring.settings.saved');
+        this.notify.show('hiring.settings.saved');
       },
       error: (e: unknown) => {
         this.saving.set(false);
-        this.toast(hiringErrorKey(e));
+        this.notify.show(hiringErrorKey(e));
       },
     });
   }
@@ -211,9 +210,5 @@ export class HiringSettingsPage implements OnInit {
     this.creators.set(s.creator_user_ids);
     this.autoVacancy.set(s.auto_vacancy);
     this.users.set(s.users);
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

@@ -5,12 +5,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 import { IntegrationStatus } from '../integrations/integrations.model';
 import { ChannelInfo } from './channels.model';
 import { ChannelsService, channelErrorKey, webhookUrlForConsole } from './channels.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * Channel part of an integration card (superadmin): webhook URL to paste in the provider console (copy button),
@@ -85,7 +85,7 @@ import { ChannelsService, channelErrorKey, webhookUrlForConsole } from './channe
 export class ChannelPanel implements OnInit {
   private readonly api = inject(ChannelsService);
   private readonly clipboard = inject(Clipboard);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
 
   readonly key = input.required<string>();
@@ -113,7 +113,7 @@ export class ChannelPanel implements OnInit {
 
   protected copy(): void {
     if (this.clipboard.copy(this.consoleUrl())) {
-      this.toast('channels.panel.copied');
+      this.notify.show('channels.panel.copied', { duration: 3000 });
     }
   }
 
@@ -135,18 +135,14 @@ export class ChannelPanel implements OnInit {
     request.subscribe({
       next: () => {
         this.busy.set(false);
-        this.toast(okKey);
+        this.notify.show(okKey, { duration: 3000 });
         this.acted.emit();
       },
       error: (e: unknown) => {
         this.busy.set(false);
-        this.toast(channelErrorKey(e));
+        this.notify.show(channelErrorKey(e), { duration: 3000 });
         this.acted.emit();
       },
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
   }
 }

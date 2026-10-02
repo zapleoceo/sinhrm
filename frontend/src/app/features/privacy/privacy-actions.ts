@@ -3,11 +3,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { EraseDialog, EraseDialogData } from './erase.dialog';
 import { DataSubjectType, ExportFormat, PrivacyService, canManagePrivacy, privacyErrorKey } from './privacy.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * "Персональні дані" menu on a candidate card / employee profile (superadmin and admin only): export as JSON or a
@@ -41,13 +41,12 @@ export class PrivacyActions {
   private readonly api = inject(PrivacyService);
   private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly allowed = computed(() => canManagePrivacy(this.auth.user()?.roles ?? []));
 
   protected download(format: ExportFormat): void {
-    this.api.download(this.type(), this.subjectId(), format).subscribe({ error: (e: unknown) => this.toast(privacyErrorKey(e)) });
+    this.api.download(this.type(), this.subjectId(), format).subscribe({ error: (e: unknown) => this.notify.show(privacyErrorKey(e)) });
   }
 
   protected erase(): void {
@@ -60,15 +59,11 @@ export class PrivacyActions {
         }
         this.api.erase(this.type(), this.subjectId(), reason).subscribe({
           next: () => {
-            this.toast('privacy.erase.done');
+            this.notify.show('privacy.erase.done');
             this.erased.emit();
           },
-          error: (e: unknown) => this.toast(privacyErrorKey(e)),
+          error: (e: unknown) => this.notify.show(privacyErrorKey(e)),
         });
       });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

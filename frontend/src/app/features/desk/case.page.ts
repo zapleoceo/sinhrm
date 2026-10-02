@@ -7,9 +7,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { DOCUMENT_FILE_ACCEPT, DOCUMENT_FILE_MAX_BYTES, fileSize } from '../documents/documents.model';
@@ -18,6 +17,7 @@ import { KnowledgeService } from '../knowledge/knowledge.service';
 import { CASE_STATUSES, CaseStatus, DeskCase } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** One case (/desk/cases/:id): the thread, replies, files; HR also sees internal notes, sets status, links articles. */
 @Component({
@@ -148,8 +148,7 @@ export class CasePage {
   private readonly api = inject(DeskService);
   private readonly kb = inject(KnowledgeService);
   private readonly auth = inject(AuthService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly statuses = CASE_STATUSES;
   protected readonly accept = DOCUMENT_FILE_ACCEPT;
   protected readonly item = signal<DeskCase | null>(null);
@@ -217,7 +216,7 @@ export class CasePage {
       return;
     }
     if (file.size > DOCUMENT_FILE_MAX_BYTES) {
-      this.toast('desk.errors.file_too_large');
+      this.notify.show('desk.errors.file_too_large');
       return;
     }
     this.apply(this.api.attach(this.id(), file));
@@ -232,7 +231,7 @@ export class CasePage {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(deskErrorKey(e));
+        this.notify.show(deskErrorKey(e));
       },
     });
   }
@@ -246,12 +245,8 @@ export class CasePage {
       },
       error: (e: unknown) => {
         this.saving.set(false);
-        this.toast(deskErrorKey(e));
+        this.notify.show(deskErrorKey(e));
       },
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

@@ -6,10 +6,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Objective, VISIBILITIES, Visibility, keyResultRatio, objectiveTree, progressTone, quarterOf, quarterOptions } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 interface KrDraft {
   title: string;
@@ -186,8 +186,7 @@ interface KrDraft {
 })
 export class ObjectivesPage implements OnInit {
   private readonly api = inject(PerformService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly periods = quarterOptions(new Date());
   protected readonly visibilities = VISIBILITIES;
   protected readonly period = signal(quarterOf(new Date()));
@@ -222,7 +221,7 @@ export class ObjectivesPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(performErrorKey(e));
+        this.notify.show(performErrorKey(e));
       },
     });
   }
@@ -236,7 +235,7 @@ export class ObjectivesPage implements OnInit {
       .filter((d) => d.title.trim())
       .map((d) => ({ title: d.title.trim(), start: Number(d.start), target: Number(d.target), current: Number(d.start), unit: d.unit || null, weight: 1 }));
     if (!this.title.trim() || krs.length === 0) {
-      this.toast('perform.objectives.needKeyResult');
+      this.notify.show('perform.objectives.needKeyResult');
       return;
     }
     this.api
@@ -246,9 +245,9 @@ export class ObjectivesPage implements OnInit {
           this.items.update((list) => [...list, o]);
           this.title = '';
           this.drafts.set([{ title: '', start: 0, target: 100, unit: '' }]);
-          this.toast('perform.saved');
+          this.notify.show('perform.saved');
         },
-        error: (e: unknown) => this.toast(performErrorKey(e)),
+        error: (e: unknown) => this.notify.show(performErrorKey(e)),
       });
   }
 
@@ -269,14 +268,10 @@ export class ObjectivesPage implements OnInit {
       next: (saved) => {
         this.items.update((list) => list.map((x) => (x.id === saved.id ? { ...saved, checkins: undefined } : x)));
         this.checkinId.set(null);
-        this.toast('perform.objectives.checkedIn');
+        this.notify.show('perform.objectives.checkedIn');
       },
-      error: (e: unknown) => this.toast(performErrorKey(e)),
+      error: (e: unknown) => this.notify.show(performErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }
 

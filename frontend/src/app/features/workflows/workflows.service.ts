@@ -1,8 +1,11 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { toParams } from '../recruiting/recruiting.service';
+import { Observable } from 'rxjs';
+import { toParams } from '../../core/api/http-params';
 import { RunQuery, SaveTemplate, StepCommand, StepOutcome, WORKFLOW_ERROR_CODES, WorkflowRun, WorkflowTemplate } from './workflows.model';
+import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 const API = '/api/workflows';
 
@@ -12,23 +15,23 @@ export class WorkflowsService {
   private readonly http = inject(HttpClient);
 
   templates(): Observable<WorkflowTemplate[]> {
-    return this.http.get<{ data: WorkflowTemplate[] }>(`${API}/templates`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<WorkflowTemplate[]>>(`${API}/templates`).pipe(unwrapData());
   }
 
   template(id: number): Observable<WorkflowTemplate> {
-    return this.http.get<{ data: WorkflowTemplate }>(`${API}/templates/${id}`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<WorkflowTemplate>>(`${API}/templates/${id}`).pipe(unwrapData());
   }
 
   createTemplate(body: SaveTemplate): Observable<WorkflowTemplate> {
-    return this.http.post<{ data: WorkflowTemplate }>(`${API}/templates`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<WorkflowTemplate>>(`${API}/templates`, body).pipe(unwrapData());
   }
 
   updateTemplate(id: number, body: SaveTemplate): Observable<WorkflowTemplate> {
-    return this.http.put<{ data: WorkflowTemplate }>(`${API}/templates/${id}`, body).pipe(map((r) => r.data));
+    return this.http.put<DataEnvelope<WorkflowTemplate>>(`${API}/templates/${id}`, body).pipe(unwrapData());
   }
 
   reorderSteps(id: number, ids: readonly number[]): Observable<WorkflowTemplate> {
-    return this.http.post<{ data: WorkflowTemplate }>(`${API}/templates/${id}/steps/reorder`, { ids }).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<WorkflowTemplate>>(`${API}/templates/${id}/steps/reorder`, { ids }).pipe(unwrapData());
   }
 
   deleteTemplate(id: number): Observable<void> {
@@ -37,50 +40,35 @@ export class WorkflowsService {
 
   /** null clears the signing key; the key itself is never returned. */
   setWebhookSecret(id: number, secret: string | null): Observable<WorkflowTemplate> {
-    return this.http.put<{ data: WorkflowTemplate }>(`${API}/templates/${id}/webhook-secret`, { secret }).pipe(map((r) => r.data));
+    return this.http.put<DataEnvelope<WorkflowTemplate>>(`${API}/templates/${id}/webhook-secret`, { secret }).pipe(unwrapData());
   }
 
   runs(query: RunQuery = {}): Observable<WorkflowRun[]> {
-    return this.http.get<{ data: WorkflowRun[] }>(`${API}/runs`, { params: toParams({ ...query }) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<WorkflowRun[]>>(`${API}/runs`, { params: toParams({ ...query }) }).pipe(unwrapData());
   }
 
   run(id: number): Observable<WorkflowRun> {
-    return this.http.get<{ data: WorkflowRun }>(`${API}/runs/${id}`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<WorkflowRun>>(`${API}/runs/${id}`).pipe(unwrapData());
   }
 
   startRun(templateId: number, employeeId: number, anchorDate?: string): Observable<WorkflowRun> {
     const body = { template_id: templateId, employee_id: employeeId, ...(anchorDate ? { anchor_date: anchorDate } : {}) };
-    return this.http.post<{ data: WorkflowRun }>(`${API}/runs`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<WorkflowRun>>(`${API}/runs`, body).pipe(unwrapData());
   }
 
   cancelRun(id: number): Observable<WorkflowRun> {
-    return this.http.post<{ data: WorkflowRun }>(`${API}/runs/${id}/cancel`, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<WorkflowRun>>(`${API}/runs/${id}/cancel`, {}).pipe(unwrapData());
   }
 
   stepCommand(runId: number, stepId: number, command: StepCommand, reason?: string): Observable<StepOutcome> {
     const body = command === 'skip' && reason ? { reason } : {};
-    return this.http.post<{ data: StepOutcome }>(`${API}/runs/${runId}/steps/${stepId}/${command}`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<StepOutcome>>(`${API}/runs/${runId}/steps/${stepId}/${command}`, body).pipe(unwrapData());
   }
 }
 
 /** i18n key for a failed Workflows API call. */
 export function workflowsErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (WORKFLOW_ERROR_CODES as readonly string[]).includes(code)) {
-      return `workflows.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'workflows.errors.forbidden';
-    }
-    if (error.status === 404) {
-      return 'workflows.errors.not_found';
-    }
-    if (error.status === 422) {
-      return 'workflows.errors.validation';
-    }
-  }
-  return 'common.error';
+  return apiErrorKey(error, 'workflows', WORKFLOW_ERROR_CODES, { statuses: [403, 404, 422] });
 }
 
 /** First server validation message for a field path (e.g. steps.0.config.url), if any. */

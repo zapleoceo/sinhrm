@@ -3,14 +3,14 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { CHANGEABLE_FIELDS, ChangeRequest, fieldLabelKey } from '../../people/people.model';
 import { PeopleService, peopleErrorKey } from '../../people/people.service';
 import { LeaveRequest } from '../timeoff.model';
 import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
 import { RequestAction, RequestsList } from '../widgets/requests-list';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Approvals inbox of a manager/admin: pending leave requests and personal-data change requests of their people. */
 @Component({
@@ -70,8 +70,7 @@ import { RequestAction, RequestsList } from '../widgets/requests-list';
 export class ApprovalsPage implements OnInit {
   private readonly timeoff = inject(TimeOffService);
   private readonly people = inject(PeopleService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly fields = CHANGEABLE_FIELDS;
   protected readonly label = fieldLabelKey;
   protected readonly leave = signal<LeaveRequest[]>([]);
@@ -100,18 +99,14 @@ export class ApprovalsPage implements OnInit {
   protected act({ request, action }: RequestAction): void {
     this.timeoff.decide(request.id, action).subscribe({
       next: () => this.leave.update((list) => list.filter((r) => r.id !== request.id)),
-      error: (e: unknown) => this.toast(timeoffErrorKey(e)),
+      error: (e: unknown) => this.notify.show(timeoffErrorKey(e)),
     });
   }
 
   protected decide(change: ChangeRequest, approve: boolean): void {
     this.people.decideChange(change.id, approve).subscribe({
       next: () => this.changes.update((list) => list.filter((c) => c.id !== change.id)),
-      error: (e: unknown) => this.toast(peopleErrorKey(e)),
+      error: (e: unknown) => this.notify.show(peopleErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

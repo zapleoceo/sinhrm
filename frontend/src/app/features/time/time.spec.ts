@@ -55,6 +55,7 @@ describe('TimeService', () => {
   it('maps errors', () => {
     expect(timeErrorKey(new HttpErrorResponse({ status: 409, error: { code: 'not_editable' } }))).toBe('time.errors.not_editable');
     expect(timeErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('time.errors.forbidden');
+    expect(timeErrorKey(new Error('x'))).toBe('common.error');
   });
 });
 

@@ -1,7 +1,7 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { toParams } from '../recruiting/recruiting.service';
+import { toParams } from '../../core/api/http-params';
 import {
   CandidateTemplate,
   EvaluationDetails,
@@ -15,6 +15,9 @@ import {
   TaskQuery,
   TouchEvaluation,
 } from './scripts.model';
+import { apiErrorKey } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 /** HTTP client of the Scripts API (/api/scripts, /candidates/{id}/templates, /touchpoints/{id}/evaluation, /tasks). */
 @Injectable({ providedIn: 'root' })
@@ -23,32 +26,32 @@ export class ScriptsService {
 
   list(withArchived = false): Observable<Script[]> {
     return this.http
-      .get<{ data: Script[] }>('/api/scripts', { params: toParams({ archived: withArchived ? 1 : undefined }) })
-      .pipe(map((r) => r.data));
+      .get<DataEnvelope<Script[]>>('/api/scripts', { params: toParams({ archived: withArchived ? 1 : undefined }) })
+      .pipe(unwrapData());
   }
 
   get(id: number): Observable<ScriptDetails> {
-    return this.http.get<{ data: ScriptDetails }>(`/api/scripts/${id}`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<ScriptDetails>>(`/api/scripts/${id}`).pipe(unwrapData());
   }
 
   create(name: string, channel: ScriptChannel): Observable<ScriptDetails> {
-    return this.http.post<{ data: ScriptDetails }>('/api/scripts', { name, channel }).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<ScriptDetails>>('/api/scripts', { name, channel }).pipe(unwrapData());
   }
 
   update(id: number, body: { name?: string; archived?: boolean }): Observable<ScriptDetails> {
-    return this.http.patch<{ data: ScriptDetails }>(`/api/scripts/${id}`, body).pipe(map((r) => r.data));
+    return this.http.patch<DataEnvelope<ScriptDetails>>(`/api/scripts/${id}`, body).pipe(unwrapData());
   }
 
   saveDraft(id: number, content: ScriptContent): Observable<ScriptVersion> {
-    return this.http.put<{ data: ScriptVersion }>(`/api/scripts/${id}/draft`, content).pipe(map((r) => r.data));
+    return this.http.put<DataEnvelope<ScriptVersion>>(`/api/scripts/${id}/draft`, content).pipe(unwrapData());
   }
 
   publish(id: number): Observable<ScriptDetails> {
-    return this.http.post<{ data: ScriptDetails }>(`/api/scripts/${id}/publish`, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<ScriptDetails>>(`/api/scripts/${id}/publish`, {}).pipe(unwrapData());
   }
 
   activate(id: number, version: number): Observable<ScriptDetails> {
-    return this.http.post<{ data: ScriptDetails }>(`/api/scripts/${id}/activate/${version}`, {}).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<ScriptDetails>>(`/api/scripts/${id}/activate/${version}`, {}).pipe(unwrapData());
   }
 
   versions(id: number): Observable<{ versions: ScriptVersion[]; activeVersionId: number | null }> {
@@ -58,15 +61,15 @@ export class ScriptsService {
   }
 
   test(id: number, text: string, version: 'draft' | 'active'): Observable<EvaluationDetails> {
-    return this.http.post<{ data: EvaluationDetails }>(`/api/scripts/${id}/test`, { text, version }).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<EvaluationDetails>>(`/api/scripts/${id}/test`, { text, version }).pipe(unwrapData());
   }
 
   candidateTemplates(candidateId: number): Observable<CandidateTemplate[]> {
-    return this.http.get<{ data: CandidateTemplate[] }>(`/api/candidates/${candidateId}/templates`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<CandidateTemplate[]>>(`/api/candidates/${candidateId}/templates`).pipe(unwrapData());
   }
 
   evaluation(touchpointId: number): Observable<TouchEvaluation> {
-    return this.http.get<{ data: TouchEvaluation }>(`/api/touchpoints/${touchpointId}/evaluation`).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<TouchEvaluation>>(`/api/touchpoints/${touchpointId}/evaluation`).pipe(unwrapData());
   }
 
   tasks(query: TaskQuery): Observable<Task[]> {
@@ -78,27 +81,15 @@ export class ScriptsService {
       source: query.source,
       employee_id: query.employee_id,
     });
-    return this.http.get<{ data: Task[] }>('/api/tasks', { params }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<Task[]>>('/api/tasks', { params }).pipe(unwrapData());
   }
 
   setTaskDone(id: number, done: boolean): Observable<Task> {
-    return this.http.patch<{ data: Task }>(`/api/tasks/${id}`, { done }).pipe(map((r) => r.data));
+    return this.http.patch<DataEnvelope<Task>>(`/api/tasks/${id}`, { done }).pipe(unwrapData());
   }
 }
 
 /** i18n key for a failed Scripts API call. */
 export function scriptsErrorKey(error: unknown): string {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (SCRIPT_ERROR_CODES as readonly string[]).includes(code)) {
-      return `scripts.errors.${code}`;
-    }
-    if (error.status === 403) {
-      return 'scripts.errors.forbidden';
-    }
-    if (error.status === 422) {
-      return 'scripts.errors.validation';
-    }
-  }
-  return 'scripts.errors.generic';
+  return apiErrorKey(error, 'scripts', SCRIPT_ERROR_CODES, { statuses: [403, 422], fallback: 'scripts.errors.generic' });
 }
