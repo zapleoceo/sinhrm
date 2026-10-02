@@ -46,6 +46,10 @@ PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` м
 - **Тесты вместе с кодом** (`scripts/tests-check.mjs`): изменился код модуля/фичи/расширения → добавлен или изменён тест в **том же** модуле (`backend/tests/{Feature,Unit}/<M>/`, `*.spec.ts` той же фичи или `core`, `extension/tests/`). Правка только `.html`/`.scss` теста не требует (доку — требует). Файлы вне модулей (`backend/app/Http`, `Models`, `Providers`) проверками не покрыты. Не требуют теста: `Providers`, `Contracts`, `Enums`, `Models`, `Database`, `DTO`, `Exceptions`, файлы `*.model.ts`, `*.routes.ts`, `types.ts`, чисто удалённый код.
 - **Исключение для тестов:** метка `no-tests-needed` (правка не меняет поведение: переименование, комментарии, откат) — ставит ревьюер, после метки Re-run job; dependabot проходит сам. Исключения для документации нет.
 
+## Таблицы
+Сортировка и фильтры в заголовках колонок — общий компонент `core/ui/table`; как подключить и какие таблицы
+ещё ждут — [tables.md](tables.md).
+
 ## Проверка входа и сессий
 Вход через Google работает только на prod-домене `sinhrm.vercel.app`: redirect URI в Google зарегистрирован только
 для него, а Sanctum считает stateful только этот домен. Preview-деплои проверяют API и интерфейс без входа;

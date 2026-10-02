@@ -40,7 +40,22 @@
 | `errors/error-reporter.service.ts`, `errors/global-error-handler.ts`, `errors/server-error.interceptor.ts` | журнал ошибок браузера: `GlobalErrorHandler` (исключения JS) и `serverErrorInterceptor` (ответы 5xx) отправляют `POST /api/errors/client` — только вошедший пользователь, без повторов, не больше 20 за загрузку; [architecture/observability.md](../architecture/observability.md) |
 | `http/api-error.ts` | `apiErrorKey(error, prefix, codes)` — i18n-ключ ошибки API: известный `{code}` → `<prefix>.errors.<code>`, иначе по статусу (`forbidden` 403, `not_found` 404, `validation` 422, `rate_limited` 429), иначе `common.error`; `saveBlob(blob, name)` — скачать ответ-Blob (CSV). Используют Desk, Safe Speak, Knowledge, Assets, Reports |
 
+| `ui/table/*` | общий заголовок таблицы с сортировкой и фильтром — раздел ниже |
+
 Все строки интерфейса — через Transloco (`'ключ' | transloco`); новый текст добавляется во все три файла `public/i18n`.
+
+### Заголовок таблицы: сортировка и фильтр
+Один способ для всех табличных списков (2026-10-02; первым подключён `/people`, порядок остальных —
+[guides/tables.md](../guides/tables.md)).
+
+| Файл | Что |
+|---|---|
+| `ui/table/table-sort.directive.ts` | `<table [appTableSort]="sort()" (appTableSortChange)="…" [appTableSortClearable]>` — состояние сортировки таблицы; по клику считает следующее: другая колонка → по возрастанию, та же → обратно; с `clearable` третий клик — порядок по умолчанию (`null`) |
+| `ui/table/column-header.ts` | `<th scope="col" app-column-header key label [sortable] [filter] [filterValue] (filterChange)>` — название-кнопка (Enter/Space, стрелка направления, `aria-sort` на `th`, `aria-label` = название), рядом кнопка-воронка (`aria-haspopup="dialog"`, `aria-expanded`) с маленьким диалогом: `text` — поле «Містить», `select` — выбор одного значения или «Усі», `range` — «Від/До» (`date` или `number`); «Застосувати» (или Enter в поле), «Очистити», Esc закрывает и возвращает фокус на воронку. Активный фильтр — точка на воронке и другое имя кнопки («…, увімкнено»). На сенсорных экранах кнопки ≥ 44px, фокус — кольцо `--app-focus-ring`, цвета только токенами, без анимаций при `prefers-reduced-motion` |
+| `ui/table/table-state.ts` | типы (`TableSort`, `ColumnFilter`, `FilterValue`) и чистые функции: `nextSort`, `ariaSort`, `isFilterActive`; адрес — `sortFromParams` (неизвестная колонка отбрасывается), `sortToParams`, `intParam`, `textParam`, `filterToParam`, `rangeToParams`/`rangeFromParams` (`<имя>_from`/`<имя>_to`) |
+| `ui/table/table-url-state.ts` | `TableUrlState` (provide на странице): `watch(parse, apply)` — запрос из адреса при загрузке, клике и «назад/вперёд»; `update(params, {paging})` — записывает в адрес (null убирает параметр), всё кроме листания сбрасывает `page` |
+
+Подключение и список таблиц сайта — [guides/tables.md](../guides/tables.md). Строки — `table.filter.*`. Тесты — `ui/table/table.spec.ts`.
 
 ### Персональные данные: общие контракты
 `Contracts\PersonalDataProvider` (выгрузка и обезличивание своей части данных человека) и `Contracts\RetentionSource`
