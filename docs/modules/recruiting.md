@@ -284,6 +284,8 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `inbox/` | `/inbox` + `InboxResolveDialog` (привязать / создать) |
 | `reports/` | `/reports`, период — `mat-date-range-picker` (в API уходит `YYYY-MM-DD`), таблицы с CSS-полосками, `pivotTouches`, иконки каналов в заголовках |
 | `channels/` | `/admin/acquisition-channels` — справочник каналов, правила UTM с проверкой, расходы; `board/vacancy-sources.ts` — блок «Джерела відгуків» на доске; в карточке — чипы канала и «як додано», в форме — «Канал залучення», в списке — фильтр по каналу |
+| `card/offer-panel.ts`, `card/offers.service.ts` | оффер заявки в карточке; HTTP — `OffersService` (оффер или `null`, шаблоны, создать, «send» / «decision»), компонент `HttpClient` не держит |
+| `careers/careers.ts`, `careers/careers.service.ts` | публичные `/jobs` и `/jobs/:slug` (`JobsPage`, `JobPage`); HTTP — `PublicCareersService` (список, вакансия по slug, отклик multipart), тип `PublicVacancy` |
 | `features/extension/` | `/settings/extension` — токен расширения ([extension.md](extension.md)); источники `linkedin`, `dou` в `recruiting.model.ts` |
 
 Строки — `recruiting.*` в `public/i18n/{uk,ru,en}.json`. Общие стили страниц (`.page-head`, `.filters`, `.panel`, `.state`)
@@ -453,6 +455,7 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 - Ошибки API → i18n-ключ: `recruitingErrorKey` — свой случай `duplicate_restricted`, остальное через общий `apiErrorKey` (`core/api/api-error.ts`; статусы 403/422, запасной `recruiting.errors.generic`). Ключ каналов привлечения переименован в `acquisitionChannelErrorKey` (было `channelErrorKey`, совпадало с именем в фиче channels). Подсказка ИИ под разделом вакансии — `aiTextErrorKey` из `features/ai/ai.service.ts` (раньше функция `aiErrorKey` жила в `vacancy-form.page.ts` и дублировала имя из фичи ai).
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+- Компоненты не ходят в HTTP сами: оффер — через `card/offers.service.ts` (`OffersService`), публичные страницы вакансий — через `careers/careers.service.ts` (`PublicCareersService`); запросы и ответы прежние.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,
