@@ -35,7 +35,8 @@
         {{ 'recruiting.reports.touchesTotals' | transloco: { total: t.totals.total, via: t.totals.via_product, captured: t.totals.captured } }}
       </p>
     }
-    <!-- Header sort / filter: core/ui/table; URL tch_*, sources src_*, reasons rej_*. «Разом» stays in tfoot. -->
+    <!-- Header sort / filter: core/ui/table; URL tch_*, sources src_*, reasons rej_*. «Разом» stays in tfoot and counts the
+         whole report (API / all recruiters), so with a column filter on it says «усі рядки звіту», as in reports/report-table.ts. -->
     <div class="scroll">
     <table class="app-table dense" [appTableSort]="touches.sort()" (appTableSortChange)="touches.setSort($event)">
       <thead>
@@ -70,7 +71,7 @@
         @let t = store.recruitersTotal();
         <tfoot>
           <tr>
-            <th scope="row">{{ 'recruiting.reports.grandTotal' | transloco }}</th>
+            <th scope="row">{{ (touches.filtered() ? 'recruiting.reports.grandTotalAll' : 'recruiting.reports.grandTotal') | transloco }}</th>
             @for (c of channels; track c) {
               <td class="num">{{ t.byChannel[c] ?? 0 }}</td>
             }
@@ -113,7 +114,7 @@
         @if (s.rows.length >= 2) {
           <tfoot>
             <tr>
-              <th scope="row">{{ 'recruiting.reports.grandTotal' | transloco }}</th>
+              <th scope="row">{{ (sources.filtered() ? 'recruiting.reports.grandTotalAll' : 'recruiting.reports.grandTotal') | transloco }}</th>
               <td class="num">{{ s.totals.candidates }}</td>
               <td class="num">{{ s.totals.hired }}</td>
             </tr>
@@ -150,7 +151,7 @@
         @if (rr.rows.length >= 2) {
           <tfoot>
             <tr>
-              <th scope="row">{{ 'recruiting.reports.grandTotal' | transloco }}</th>
+              <th scope="row">{{ (reasons.filtered() ? 'recruiting.reports.grandTotalAll' : 'recruiting.reports.grandTotal') | transloco }}</th>
               <td class="num">{{ rr.totals.total }}</td>
             </tr>
           </tfoot>

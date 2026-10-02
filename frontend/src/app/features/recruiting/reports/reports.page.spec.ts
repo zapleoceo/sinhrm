@@ -168,6 +168,18 @@ describe('ReportsPage tables: header sort and filter (core/ui/table)', () => {
     expect(rowNames(table(el, 0))).toEqual(['Ann']);
     expect([...table(el, 1).querySelectorAll('tbody td.barcell .num')].map((n) => n.textContent?.trim())).toEqual(['2', '3']);
   });
+
+  it('a column filter keeps the whole-report «Разом» and relabels it «усі рядки звіту» in that table only', async () => {
+    const footer = (t: HTMLTableElement): string => t.querySelector('tfoot th')?.textContent?.trim() ?? '';
+    const { el } = await open('/?tch_recruiter=an&rej_reason=sal');
+    expect(rowNames(table(el, 0))).toEqual(['Ann']);
+    expect(footer(table(el, 0))).toBe('recruiting.reports.grandTotalAll');
+    expect(table(el, 0).querySelector('tfoot td:last-child')?.textContent?.trim()).toBe('7');
+    expect(rowNames(table(el, 2))).toEqual(['Salary']);
+    expect(footer(table(el, 2))).toBe('recruiting.reports.grandTotalAll');
+    expect(table(el, 2).querySelector('tfoot td')?.textContent?.trim()).toBe('5');
+    expect(footer(table(el, 1))).toBe('recruiting.reports.grandTotal');
+  });
 });
 
 describe('funnel and touches helpers', () => {

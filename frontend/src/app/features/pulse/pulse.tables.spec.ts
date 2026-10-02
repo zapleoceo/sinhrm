@@ -95,5 +95,15 @@ describe('WaveResultsPage segments table (header sort and filter)', () => {
     const { el } = await open('/?seg_sort=name&seg_dir=asc');
     expect(column(segTable(el), 0)).toEqual(['Бухгалтерія', 'ІТ', 'Продажі']);
   });
+
+  it('switching the grouping drops the seg_* filters (other rows now) but keeps the sort', async () => {
+    const { el, router, settle } = await open('/?seg_sort=name&seg_dir=asc&seg_name=%D0%86%D0%A2&seg_responses_from=1');
+    expect(column(segTable(el), 0)).toEqual(['ІТ']);
+    const branch = [...el.querySelectorAll<HTMLButtonElement>('mat-button-toggle button')].find((b) => b.textContent?.includes('pulse.results.byBranch'));
+    branch?.click();
+    await settle();
+    expect(router.url).toBe('/?seg_sort=name&seg_dir=asc');
+    expect(column(segTable(el), 0)).toEqual(['Бухгалтерія', 'ІТ', 'Продажі']);
+  });
 });
 

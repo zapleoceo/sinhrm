@@ -35,7 +35,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
             @if (d.scope === 'department') { · {{ 'pulse.results.myDepartment' | transloco }} }
           </p>
         </div>
-        <mat-button-toggle-group [value]="segment()" (change)="segment.set($event.value)" [attr.aria-label]="'pulse.results.segment' | transloco">
+        <mat-button-toggle-group [value]="segment()" (change)="changeSegment($event.value)" [attr.aria-label]="'pulse.results.segment' | transloco">
           <mat-button-toggle value="department">{{ 'pulse.results.byDepartment' | transloco }}</mat-button-toggle>
           <mat-button-toggle value="branch">{{ 'pulse.results.byBranch' | transloco }}</mat-button-toggle>
         </mat-button-toggle-group>
@@ -242,6 +242,12 @@ export class WaveResultsPage {
       this.api.results(id, segment).subscribe({ next: (d) => this.data.set(d), error: (e: unknown) => this.error.set(pulseErrorKey(e)) });
       this.api.compare(id, segment).subscribe({ next: (c) => this.compare.set(c), error: () => this.compare.set(null) });
     });
+  }
+
+  /** Another grouping means other rows (branches vs departments): old seg_* filters would hide them, so they go; the sort stays. */
+  protected changeSegment(segment: 'department' | 'branch'): void {
+    this.segment.set(segment);
+    this.segTable.clearFilters();
   }
 
   protected entries(q: QuestionResult): [string, number][] {

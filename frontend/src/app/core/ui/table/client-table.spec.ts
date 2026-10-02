@@ -183,6 +183,15 @@ describe('ClientTable bound to the URL', () => {
     expect(decodeURIComponent(router.url)).toBe('/?t_name=Єва');
   });
 
+  it('clearFilters drops every filter of the table in one go; the sort and foreign params stay', async () => {
+    const { host, router, detect } = await setup('/?x=1&t_sort=name&t_dir=desc&t_name=a&t_n_from=2&t_n_to=9');
+    expect(host.table.filtered()).toBe(true);
+    host.table.clearFilters();
+    await detect();
+    expect(router.url).toBe('/?x=1&t_sort=name&t_dir=desc');
+    expect(host.table.filtered()).toBe(false);
+  });
+
   it('the header shows projected lead content inside the sort button; select labels are translated', async () => {
     const { el, host } = await setup('/');
     const button = el.querySelector('th button.title') as HTMLButtonElement;
