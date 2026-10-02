@@ -27,10 +27,13 @@ class Host {
   readonly count = signal(0);
 }
 
+@Component({ imports: [NavBadge], template: '<app-nav-badge class="burger-badge" [count]="7" />' })
+class BurgerHost {}
+
 describe('NavBadge', () => {
   function render(count: number): HTMLElement {
     TestBed.configureTestingModule({
-      imports: [Host, TranslocoTestingModule.forRoot({ langs: { uk: { shell: { badge: { new: '{{count}} нових' } } } }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      imports: [Host, BurgerHost, TranslocoTestingModule.forRoot({ langs: { uk: { shell: { badge: { new: '{{count}} нових' } } } }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     });
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.count.set(count);
@@ -52,6 +55,16 @@ describe('NavBadge', () => {
     const badge = render(150).querySelector('.nav-badge');
     expect(badge?.textContent?.trim()).toBe('99+');
     expect(badge?.getAttribute('aria-label')).toBe('150 нових');
+  });
+
+  it('on the burger keeps the same pill and label, pinned to the button corner (host is display: contents)', () => {
+    render(0);
+    const fixture = TestBed.createComponent(BurgerHost);
+    fixture.detectChanges();
+    const badge = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.nav-badge');
+    expect(badge?.textContent?.trim()).toBe('7');
+    expect(badge?.getAttribute('aria-label')).toBe('7 нових');
+    expect(getComputedStyle(badge!).position).toBe('absolute');
   });
 });
 

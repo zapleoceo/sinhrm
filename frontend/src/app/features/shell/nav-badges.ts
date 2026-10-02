@@ -77,14 +77,17 @@ export class NavBadgesService {
   `,
   styles: `
     :host { display: contents; }
+    /* Host is display:contents, so the burger's corner position goes on the pill itself (shell .burger is relative). */
+    :host(.burger-badge) .nav-badge { position: absolute; top: 0; right: -6px; margin: 0; pointer-events: none; }
     .nav-badge {
       margin-left: auto;
       min-width: 1.25rem;
       padding: 0 0.375rem;
       border-radius: 999px;
-      background: var(--mat-sys-primary);
-      color: var(--mat-sys-on-primary);
+      background: var(--app-badge-bg);
+      color: var(--app-badge-text);
       font: var(--mat-sys-label-small);
+      font-family: var(--app-font-mono);
       line-height: 1.25rem;
       text-align: center;
       text-transform: none;
