@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\HiringRequests\Providers;
 
-use App\Models\User;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
@@ -14,8 +14,6 @@ use App\Modules\HiringRequests\Services\HiringDashboardSection;
 use App\Modules\HiringRequests\Services\HiringNavBadges;
 use App\Modules\HiringRequests\Services\HiringSlaJob;
 use App\Modules\Overview\Contracts\DashboardSection;
-use App\Modules\People\Services\PeopleScope;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * HiringRequests (tz2): requests to hire with a configurable approval route, SLA per step, auto-vacancy.
@@ -44,6 +42,6 @@ final class HiringRequestsServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(PeopleScope::class)->isAdmin($user));
+        $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
     }
 }

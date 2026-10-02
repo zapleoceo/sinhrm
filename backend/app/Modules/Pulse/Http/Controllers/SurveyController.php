@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Pulse\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Pulse\Http\Requests\CreateWaveRequest;
 use App\Modules\Pulse\Http\Requests\SaveSurveyRequest;
 use App\Modules\Pulse\Http\Requests\UpdateWaveRequest;
@@ -15,12 +15,13 @@ use App\Modules\Pulse\Services\ResponseService;
 use App\Modules\Pulse\Services\SurveyService;
 use App\Modules\Pulse\Support\SurveyTemplates;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 /** Admin side (route gate pulse-manage): templates, the builder, waves, closing, identified responses. */
 final class SurveyController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly SurveyService $surveys, private readonly ResponseService $responses) {}
 
     public function templates(): JsonResponse
@@ -93,13 +94,5 @@ final class SurveyController
                 'answers' => (object) $r->answers,
                 'submitted_on' => $r->submitted_on->toDateString(),
             ])->values()->all()]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

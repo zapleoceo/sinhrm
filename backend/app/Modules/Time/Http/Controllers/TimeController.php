@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Time\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Time\Http\Requests\SaveEntriesRequest;
 use App\Modules\Time\Http\Requests\SaveScheduleRequest;
 use App\Modules\Time\Http\Requests\WeekRequest;
@@ -19,6 +19,8 @@ use Illuminate\Http\Response;
 /** Time: my/any week grid, save entries, submit, manager decisions, team overview, work schedules (admins). */
 final class TimeController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly TimesheetService $timesheets) {}
 
     public function week(WeekRequest $request): JsonResponse
@@ -82,13 +84,5 @@ final class TimeController
         $schedules->delete($branch);
 
         return new Response(null, 204);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

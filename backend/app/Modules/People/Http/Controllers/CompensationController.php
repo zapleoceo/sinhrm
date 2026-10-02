@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Http\Requests\SaveCompensationRequest;
 use App\Modules\People\Models\Employee;
@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
 /** Compensation: HR staff (people-manage gate on the routes) read/add; the employee reads own via /me/employee/compensation. */
 final class CompensationController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly CompensationService $service) {}
 
     public function index(Employee $employee): JsonResponse
@@ -37,13 +39,5 @@ final class CompensationController
         $employee = $scope->employeeOf($this->actor($request)) ?? throw PeopleException::noEmployee();
 
         return new JsonResponse(['data' => $this->service->payload($employee)]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Repositories;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserStatus;
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\Recruiting\Contracts\HiringTeamRepository;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Vacancy;
@@ -30,7 +31,7 @@ final class EloquentHiringTeamRepository implements HiringTeamRepository
         return User::query()
             ->where('status', UserStatus::Active->value)
             ->when($query, function ($q, string $term): void {
-                $like = '%'.addcslashes(mb_strtolower($term), '%_'.chr(92)).'%';
+                $like = Like::contains(mb_strtolower($term));
                 $q->where(fn ($w) => $w->whereRaw('lower(name) like ?', [$like])->orWhereRaw('lower(email) like ?', [$like]));
             })
             ->orderBy('name')

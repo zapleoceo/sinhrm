@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\DTO\CandidateFilter;
 use App\Modules\Recruiting\DTO\ContactKeys;
@@ -25,8 +26,8 @@ final class EloquentCandidateRepository implements CandidateRepository
         return $this->scoped(Candidate::query(), $scope)
             ->with(['channel', 'applications' => fn ($q) => $q->with(['vacancy', 'stage'])->orderByDesc('updated_at')])
             ->when($filter->q, function (Builder $q, string $term): void {
-                $like = '%'.addcslashes(mb_strtolower($term), '%_\\').'%';
-                $telegram = '%'.addcslashes(ltrim(mb_strtolower($term), '@'), '%_\\').'%';
+                $like = Like::contains(mb_strtolower($term));
+                $telegram = Like::contains(ltrim(mb_strtolower($term), '@'));
                 $digits = (string) preg_replace('/\D+/', '', $term);
                 $q->where(function (Builder $w) use ($like, $telegram, $digits): void {
                     $w->whereRaw('lower(full_name) like ?', [$like])

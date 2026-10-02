@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Knowledge\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Knowledge\Enums\ArticleStatus;
 use App\Modules\Knowledge\Http\Requests\SaveArticleRequest;
 use App\Modules\Knowledge\Http\Requests\SaveKbCategoryRequest;
@@ -21,6 +22,8 @@ use Illuminate\Http\Request;
 /** Knowledge base: categories, search, article view, votes; writing — gate knowledge-manage (routes). */
 final class KnowledgeController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly KnowledgeService $kb) {}
 
     public function categories(): JsonResponse
@@ -95,13 +98,5 @@ final class KnowledgeController
     private function detail(User $actor, KbArticle $article): JsonResponse
     {
         return new JsonResponse(['data' => ArticlePresenter::present($article, $this->kb->isEditor($actor), true, $this->kb->myVote($actor, $article))]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

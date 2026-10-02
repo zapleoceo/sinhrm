@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Pulse\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Pulse\Http\Requests\MoodCheckinRequest;
 use App\Modules\Pulse\Http\Requests\MoodReportRequest;
 use App\Modules\Pulse\Http\Requests\MoodSettingsRequest;
@@ -17,6 +17,8 @@ use Illuminate\Http\Request;
 /** Mood check-in (own), own history, team trend (managers/admins), settings (write: admins). */
 final class MoodController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly MoodService $mood) {}
 
     public function today(Request $request): JsonResponse
@@ -74,13 +76,5 @@ final class MoodController
             'alert_drop' => (float) $s->alert_drop,
             'min_group' => $s->min_group,
         ];
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\People\Services\EmployeeService;
 use App\Modules\People\Services\PeopleScope;
 use App\Modules\TimeOff\Http\Requests\AdjustBalanceRequest;
@@ -14,12 +14,13 @@ use App\Modules\TimeOff\Services\BalanceService;
 use App\Modules\TimeOff\Services\EmployeeResolver;
 use App\Modules\TimeOff\Services\LeaveSettingsService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 /** Balances per leave type (own, or ?employee_id for admin / manager above), ledger history, admin adjustments. */
 final class BalanceController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly BalanceService $balances,
         private readonly PeopleScope $scope,
@@ -53,13 +54,5 @@ final class BalanceController
         $this->balances->adjust($this->actor($request), $employee, $type, $request->float('delta'), $request->comment());
 
         return new JsonResponse(['data' => $this->balances->balances($employee, Carbon::now())], 201);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

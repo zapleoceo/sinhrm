@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Privacy\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Core\DTO\DataSubject;
 use App\Modules\Core\Enums\DataSubjectType;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
+use App\Modules\Core\Http\Responses\Download;
 use App\Modules\Privacy\Http\Requests\ErasePersonalDataRequest;
 use App\Modules\Privacy\Models\PrivacyRequest;
 use App\Modules\Privacy\Models\PrivacySettings;
@@ -19,6 +20,8 @@ use Illuminate\Http\Response;
 /** Personal-data rights (superadmin, admin): export (JSON or HTML file), erase (anonymize), journal, retention rule. */
 final class PersonalDataController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly PersonalDataService $service, private readonly ExportHtmlRenderer $html) {}
 
     /** GET /api/privacy/{type}/{id}/export?format=json|html — a downloadable file with everything we keep. */
@@ -30,14 +33,14 @@ final class PersonalDataController
         if ($request->query('format') === 'html') {
             return new Response($this->html->render($export), 200, [
                 'Content-Type' => 'text/html; charset=utf-8',
-                'Content-Disposition' => 'attachment; filename="'.$name.'.html"',
+                'Content-Disposition' => Download::disposition($name.'.html'),
                 'Cache-Control' => 'private, no-store',
             ]);
         }
 
         return new Response((string) json_encode($export, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), 200, [
             'Content-Type' => 'application/json; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="'.$name.'.json"',
+            'Content-Disposition' => Download::disposition($name.'.json'),
             'Cache-Control' => 'private, no-store',
         ]);
     }
@@ -86,13 +89,5 @@ final class PersonalDataController
     private function subject(string $type, int $id): DataSubject
     {
         return new DataSubject(DataSubjectType::from($type), $id);
-    }
-
-    private function actor(Request $request): User
-    {
-        $user = $request->user();
-        assert($user instanceof User);
-
-        return $user;
     }
 }

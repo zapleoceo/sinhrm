@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Enums\OfferStatus;
 use App\Modules\Recruiting\Http\Requests\OfferRequest;
 use App\Modules\Recruiting\Models\Application;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Gate;
 /** Offer of an application. Every action (reading too) needs the "offer" ability: the salary is sensitive. */
 final class OfferController
 {
-    use Actor;
+    use ResolvesActor;
 
     public function __construct(private readonly OfferService $service) {}
 

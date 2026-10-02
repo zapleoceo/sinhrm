@@ -52,8 +52,9 @@
 
 ### Запуск (`Services/WorkflowStarter`)
 Снимок шагов шаблона → `workflow_run_steps`, `due_at = anchor_date 00:00 + offset_days`, исполнитель вычисляется
-сразу (`Services/AssigneeResolver`): `employee` → логин сотрудника, `manager` → логин руководителя, `hr_admin` → админ,
-запустивший воркфлоу, иначе первый активный superadmin/admin, `specific_user` → указанный пользователь (заблокированный
+сразу (`Services/AssigneeResolver`): `employee` → логин сотрудника, `manager` → логин руководителя, `hr_admin` → HR (superadmin/admin/hr_manager,
+`PeopleScope::isAdmin`), запустивший воркфлоу, иначе первый по `id` активный пользователь с ролью из `UserRole::hrStaff()`
+(superadmin/admin/hr_manager, `Repositories/EloquentAssigneeDirectory::firstActiveAdminId`), `specific_user` → указанный пользователь (заблокированный
 = никто). Шаблон без шагов сразу `completed`. Ничего не выполняется при запуске.
 
 **Триггеры** (`Services/WorkflowTriggers`, слушатели в `Listeners/`): событие People `EmployeeHired` (ручное создание и
@@ -159,6 +160,13 @@ skipped, failed}`.
 В фильтре «Запуски» пикер сотрудника растягивается как остальные поля ряда (класс `grow`) и той же высоты.
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Статус запуска — пилюля `.app-pill` (`RUN_STATUS_TONE`: идёт ○ info, завершён ● good, отменён — пунктирный ○). Шаги запуска — станции на линии: иконка в кольце (ждёт — бренд, выполнен — зелёный с зелёной линией дальше, ошибка — красный, пропущен — пунктир). В редакторе: перетаскиваемый шаг — тень перетаскивания темы, место падения — пунктирный слот бренда. Тест вида — `features/workflows/workflows.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
+### Общие хелперы Core (2026-10-02)
+- «сегодня» по умолчанию (якорь ручного запуска и офбординга без даты увольнения) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
+- gate `workflows-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
+
+Поведение API не менялось, кроме ночной границы «сегодня» (пункт выше); подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
 ## Как проверить
 Бэкенд: `tests/Feature/Workflows/WorkflowTemplatesApiTest` (401/403, CRUD с шагами, проверка `config` каждого действия,

@@ -84,6 +84,21 @@ final class DirectoryApiTest extends TestCase
         $this->actingAs($this->superadmin)->getJson('/api/directory/cities?perPage=200')->assertOk();
     }
 
+    public function test_per_page_default_is_50_and_string_values_are_cast(): void
+    {
+        City::factory()->create(['name' => 'Alpha City']);
+        City::factory()->create(['name' => 'Beta City']);
+
+        $this->actingAs($this->superadmin)->getJson('/api/directory/cities')->assertOk()->assertJsonPath('meta.per_page', 50);
+        $this->actingAs($this->superadmin)->getJson('/api/directory/cities?perPage=1')->assertOk()
+            ->assertJsonPath('meta.per_page', 1)->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 2);
+        $this->actingAs($this->superadmin)->getJson('/api/directory/cities?perPage=200')->assertOk()->assertJsonPath('meta.per_page', 200);
+        foreach (['perPage=0', 'perPage=abc', 'perPage=201'] as $query) {
+            $this->actingAs($this->superadmin)->getJson("/api/directory/cities?$query")
+                ->assertUnprocessable()->assertJsonValidationErrors(['perPage']);
+        }
+    }
+
     public function test_admin_creates_and_edits_items(): void
     {
         $admin = User::factory()->withRole(UserRole::Admin)->create();

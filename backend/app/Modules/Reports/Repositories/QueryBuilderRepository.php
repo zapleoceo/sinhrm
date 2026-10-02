@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Reports\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\Reports\Contracts\BuilderRepository;
 use App\Modules\Reports\Contracts\Dataset;
 use App\Modules\Reports\DTO\BuilderSpec;
@@ -109,7 +110,7 @@ final class QueryBuilderRepository implements BuilderRepository
             return;
         }
         if ($op === 'contains') {
-            $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower((string) $value)).'%';
+            $pattern = Like::contains(mb_strtolower((string) $value), Like::PORTABLE);
             $query->whereRaw("lower(cast({$expr} as varchar(255))) like ? escape '!'", [$pattern]);
 
             return;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Pulse;
 
+use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\People\Models\Employee;
 use App\Modules\Pulse\Models\MoodCheckin;
@@ -63,6 +64,35 @@ final class MoodTest extends TestCase
         $this->actingAs($user)->putJson('/api/pulse/mood/settings', ['weekdays' => [], 'question' => 'x', 'required' => false, 'alert_drop' => 1, 'min_group' => 5])->assertForbidden();
         $this->actingAs($this->login(UserRole::Admin))->putJson('/api/pulse/mood/settings', ['weekdays' => [1], 'question' => 'x', 'required' => false, 'alert_drop' => 1, 'min_group' => 2])
             ->assertUnprocessable();
+    }
+
+    public function test_mood_settings_are_readable_by_every_active_user(): void
+    {
+        ['worker' => $worker] = $this->org();
+        $user = $this->userOf($worker);
+
+        $this->getJson('/api/pulse/mood/settings')->assertUnauthorized();
+
+        // Defaults until an admin saves something.
+        $this->actingAs($user)->getJson('/api/pulse/mood/settings')->assertOk()
+            ->assertExactJson(['data' => [
+                'weekdays' => [1, 2, 3, 4, 5], 'question' => 'Як ваш настрій сьогодні?', 'required' => false,
+                'alert_drop' => 0.5, 'min_group' => 5,
+            ]]);
+
+        $this->actingAs($this->login(UserRole::Admin))->putJson('/api/pulse/mood/settings', [
+            'weekdays' => [1, 3], 'question' => 'How are you today?', 'required' => true, 'alert_drop' => 0.75, 'min_group' => 6,
+        ])->assertOk();
+        $this->actingAs($user)->getJson('/api/pulse/mood/settings')->assertOk()
+            ->assertJsonPath('data.weekdays', [1, 3])
+            ->assertJsonPath('data.question', 'How are you today?')
+            ->assertJsonPath('data.required', true)
+            ->assertJsonPath('data.alert_drop', 0.75)
+            ->assertJsonPath('data.min_group', 6);
+
+        // A blocked account is refused by EnsureUserIsActive.
+        $blocked = User::factory()->withRole(UserRole::Recruiter)->blocked()->create();
+        $this->actingAs($blocked)->getJson('/api/pulse/mood/settings')->assertForbidden();
     }
 
     public function test_team_trend_is_suppressed_below_the_minimum_group(): void

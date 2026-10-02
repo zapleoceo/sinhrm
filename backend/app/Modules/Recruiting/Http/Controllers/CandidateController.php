@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Http\Requests\ListCandidatesRequest;
 use App\Modules\Recruiting\Http\Requests\LogTouchpointRequest;
 use App\Modules\Recruiting\Http\Requests\SaveCandidateRequest;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Gate;
 
 final class CandidateController
 {
-    use Actor;
+    use ResolvesActor;
 
     public function __construct(
         private readonly CandidateService $service,

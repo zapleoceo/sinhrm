@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Http\Requests;
 
+use App\Modules\Core\Support\UserTime;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 
@@ -21,7 +22,7 @@ final class TerminateEmployeeRequest extends FormRequest
 
     public function firedAt(): Carbon
     {
-        return Carbon::createFromFormat('Y-m-d', $this->string('fired_at')->toString())?->startOfDay() ?? Carbon::today();
+        return Carbon::createFromFormat('Y-m-d', $this->string('fired_at')->toString())?->startOfDay() ?? UserTime::today();
     }
 
     public function reason(): ?string

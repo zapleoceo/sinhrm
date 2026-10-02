@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Workflows\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Services\EmployeeService;
 use App\Modules\People\Services\PeopleScope;
@@ -26,6 +27,8 @@ use Illuminate\Http\Request;
  */
 final class WorkflowRunController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly WorkflowRunService $runs,
         private readonly WorkflowTemplateService $templates,
@@ -114,13 +117,5 @@ final class WorkflowRunController
             'result' => $step->result === null ? null : (object) $step->result,
             'run_status' => $step->run()->value('status'),
         ]]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

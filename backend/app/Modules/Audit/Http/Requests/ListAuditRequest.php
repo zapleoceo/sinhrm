@@ -6,12 +6,15 @@ namespace App\Modules\Audit\Http\Requests;
 
 use App\Modules\Audit\DTO\AuditFilter;
 use App\Modules\Audit\Enums\AuditAction;
+use App\Modules\Core\Http\Requests\Concerns\Paginates;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 final class ListAuditRequest extends FormRequest
 {
+    use Paginates;
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -22,7 +25,7 @@ final class ListAuditRequest extends FormRequest
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
             'page' => ['nullable', 'integer', 'min:1'],
-            'perPage' => ['nullable', 'integer', 'between:1,100'],
+            'perPage' => $this->perPageRules(100),
         ];
     }
 
@@ -39,7 +42,7 @@ final class ListAuditRequest extends FormRequest
             // "to" is inclusive: everything before the next midnight.
             to: $to !== '' ? Carbon::createFromFormat('Y-m-d', $to)?->startOfDay()->addDay() : null,
             page: $this->integer('page', 1),
-            perPage: $this->integer('perPage', 20),
+            perPage: $this->perPageOr(20),
         );
     }
 }

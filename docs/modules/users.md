@@ -82,6 +82,14 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Статус пользователя — пилюля `.app-pill` (активен ● good, заблокирован ■ bad) вместо чипа с перекрашенным текстом; рамка таблицы — от общего `.panel`. Тест вида — `features/users/users.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
+### Общие хелперы Core (2026-10-02)
+- `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..100`, по умолчанию 20, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListUsersRequest`);
+- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (обратный слеш, `Like::contains`) (имя и email);
+- gate `manage-users` задаётся `ModuleServiceProvider::defineRoleGate(…, [UserRole::Superadmin])`: только активный superadmin;
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
 ## Как проверить
 Тесты: `tests/Feature/Users/UsersAdminTest.php` (401/403, пагинация и `perPage` строкой, фильтры, приглашение,
 422/409, смена роли/статуса, запрет менять себя, 404, назначение/замена/снятие филиалов, валидация `branch_ids`), `tests/Unit/Users/UserAdminServiceTest.php`

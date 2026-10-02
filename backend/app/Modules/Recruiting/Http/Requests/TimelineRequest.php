@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Requests;
 
+use App\Modules\Core\Http\Requests\Concerns\Paginates;
 use App\Modules\Recruiting\Enums\Channel;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
  */
 final class TimelineRequest extends FormRequest
 {
+    use Paginates;
+
     public const string STAGE = 'stage';
 
     public function authorize(): bool
@@ -35,7 +38,7 @@ final class TimelineRequest extends FormRequest
         return [
             'channel' => ['nullable', 'array', 'max:10'],
             'channel.*' => ['string', Rule::in([...Channel::values(), self::STAGE])],
-            'perPage' => ['nullable', 'integer', 'between:1,200'],
+            'perPage' => $this->perPageRules(),
         ];
     }
 
@@ -59,7 +62,7 @@ final class TimelineRequest extends FormRequest
 
     public function perPage(): int
     {
-        return $this->integer('perPage', 50);
+        return $this->perPageOr();
     }
 
     /** @return list<string>|null */

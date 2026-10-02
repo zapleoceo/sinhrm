@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\TimeOff\Http\Requests\ListHolidaysRequest;
 use App\Modules\TimeOff\Http\Requests\SaveHolidayRequest;
 use App\Modules\TimeOff\Http\Requests\SaveLeaveTypeRequest;
@@ -22,6 +22,8 @@ use Illuminate\Http\Response;
 /** Leave types, policies, holidays. Reading types/holidays: any active user; everything else: gate timeoff-manage. */
 final class SettingsController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly LeaveSettingsService $service) {}
 
     /** ?all=1 adds inactive types (admins only). */
@@ -89,13 +91,5 @@ final class SettingsController
     private function one(array $row, int $status = 200): JsonResponse
     {
         return new JsonResponse(['data' => $row], $status);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

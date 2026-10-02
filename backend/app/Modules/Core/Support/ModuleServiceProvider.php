@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Support;
 
+use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Http\Middleware\EnsureModuleAccessible;
 use App\Modules\Core\Services\ModuleRegistry;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -101,6 +103,19 @@ abstract class ModuleServiceProvider extends ServiceProvider
     protected function accessMiddleware(): array
     {
         return $this->coreModule ? [] : [EnsureModuleAccessible::class.':'.$this->moduleKey()];
+    }
+
+    /**
+     * A role-only gate: an ACTIVE user holding any of $roles (the active role of "Працювати як" narrows it, as every
+     * Spatie check does). The shape of every "<module>.manage" gate: UserRole::hrStaff() for the HR modules (the same
+     * set as People\Services\PeopleScope::isAdmin), [UserRole::Superadmin] for system administration.
+     *
+     * @param  list<UserRole>  $roles
+     */
+    protected function defineRoleGate(string $ability, array $roles): void
+    {
+        $names = UserRole::valuesOf($roles);
+        Gate::define($ability, static fn (User $user): bool => $user->isActive() && $user->hasAnyRole($names));
     }
 
     protected function moduleDir(): string

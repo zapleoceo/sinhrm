@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Http\Requests;
 
+use App\Modules\Core\Support\UserTime;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 
@@ -23,14 +24,14 @@ final class CalendarRequest extends FormRequest
     public function from(): Carbon
     {
         return $this->filled('from')
-            ? (Carbon::createFromFormat('Y-m-d', $this->string('from')->toString())?->startOfDay() ?? Carbon::today())
-            : Carbon::today()->startOfMonth();
+            ? (Carbon::createFromFormat('Y-m-d', $this->string('from')->toString())?->startOfDay() ?? UserTime::today())
+            : UserTime::today()->startOfMonth();
     }
 
     public function to(): Carbon
     {
         return $this->filled('to')
-            ? (Carbon::createFromFormat('Y-m-d', $this->string('to')->toString())?->startOfDay() ?? Carbon::today())
+            ? (Carbon::createFromFormat('Y-m-d', $this->string('to')->toString())?->startOfDay() ?? UserTime::today())
             : $this->from()->copy()->endOfMonth()->startOfDay();
     }
 

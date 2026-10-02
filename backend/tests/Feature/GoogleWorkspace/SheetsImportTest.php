@@ -62,6 +62,37 @@ final class SheetsImportTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_superadmin_lists_saved_imports_newest_first_without_calling_google(): void
+    {
+        Http::fake();
+        $older = SheetImport::query()->create([
+            'spreadsheet_id' => 'fakeSpreadsheetOlder_0001', 'sheet' => 'Form', 'headers' => ['ПІБ', 'Email'],
+            'mapping' => ['full_name' => 0, 'email' => 1], 'last_row' => 7, 'auto_sync' => true, 'created_by' => $this->superadmin->id,
+            'last_synced_at' => '2026-09-30 08:00:00', 'last_report' => ['created' => 2, 'errors' => []],
+        ]);
+        $newer = SheetImport::query()->create([
+            'spreadsheet_id' => self::SHEET_ID, 'headers' => ['ПІБ'], 'mapping' => ['full_name' => 0], 'created_by' => $this->superadmin->id,
+        ]);
+
+        $this->actingAs($this->superadmin)->getJson('/api/google/sheets/imports')->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonStructure(['data' => [['id', 'spreadsheet_id', 'url', 'sheet', 'headers', 'mapping', 'last_row', 'auto_sync', 'last_synced_at', 'last_report']]])
+            ->assertJsonPath('data.0.id', $newer->id)
+            ->assertJsonPath('data.0.url', 'https://docs.google.com/spreadsheets/d/'.self::SHEET_ID)
+            ->assertJsonPath('data.0.last_row', 1)
+            ->assertJsonPath('data.0.auto_sync', false)
+            ->assertJsonPath('data.0.last_synced_at', null)
+            ->assertJsonPath('data.1.id', $older->id)
+            ->assertJsonPath('data.1.sheet', 'Form')
+            ->assertJsonPath('data.1.headers', ['ПІБ', 'Email'])
+            ->assertJsonPath('data.1.mapping.full_name', 0)
+            ->assertJsonPath('data.1.mapping.email', 1)
+            ->assertJsonPath('data.1.last_row', 7)
+            ->assertJsonPath('data.1.auto_sync', true)
+            ->assertJsonPath('data.1.last_report.created', 2);
+        Http::assertNothingSent();
+    }
+
     public function test_url_must_be_a_google_spreadsheet(): void
     {
         Http::fake();

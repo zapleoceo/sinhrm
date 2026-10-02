@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\HiringRequests\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\HiringRequests\Enums\HiringRequestStatus;
 use App\Modules\HiringRequests\Http\Requests\HiringDecisionRequest;
 use App\Modules\HiringRequests\Http\Requests\SaveHiringRequestRequest;
@@ -21,6 +22,8 @@ use Illuminate\Validation\Rule;
 /** Hiring requests: list, approval inbox, create/edit/submit, decisions, cancel/close, the vacancy link. */
 final class HiringRequestController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly HiringRequestService $service, private readonly HiringAccess $access) {}
 
     public function index(Request $request): JsonResponse
@@ -134,13 +137,5 @@ final class HiringRequestController
         $now = Carbon::now();
 
         return new JsonResponse(['data' => $list->map(fn (HiringRequest $r): array => HiringRequestPresenter::present($r, $progress[$r->id], $this->access->flags($actor, $r), $now))->values()->all()]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

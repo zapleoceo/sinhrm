@@ -64,6 +64,31 @@ final class AcquisitionChannelsApiTest extends TestCase
         $this->assertNotContains('jooble', array_column($this->actingAs($recruiter)->getJson('/api/acquisition-channels')->json('data'), 'code'));
     }
 
+    public function test_channel_cost_delete_is_manager_only_and_removes_the_row(): void
+    {
+        $recruiter = $this->userWith(UserRole::Recruiter);
+        $admin = $this->userWith(UserRole::Admin);
+        $channel = $this->channel('work_ua');
+
+        $cost = DB::table('acquisition_channel_costs')->insertGetId([
+            'channel_id' => $channel->id, 'period_start' => '2026-10-01', 'period_end' => '2026-10-31', 'amount' => 500,
+            'currency' => 'UAH', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $kept = DB::table('acquisition_channel_costs')->insertGetId([
+            'channel_id' => $channel->id, 'period_start' => '2026-09-01', 'period_end' => '2026-09-30', 'amount' => 400,
+            'currency' => 'UAH', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->deleteJson("/api/acquisition-channels/costs/{$cost}")->assertUnauthorized();
+        $this->actingAs($recruiter)->deleteJson("/api/acquisition-channels/costs/{$cost}")->assertForbidden();
+        $this->assertDatabaseHas('acquisition_channel_costs', ['id' => $cost]);
+
+        $this->actingAs($admin)->deleteJson("/api/acquisition-channels/costs/{$cost}")->assertNoContent();
+        $this->assertDatabaseMissing('acquisition_channel_costs', ['id' => $cost]);
+        $this->assertDatabaseHas('acquisition_channel_costs', ['id' => $kept]);
+        $this->actingAs($admin)->deleteJson("/api/acquisition-channels/costs/{$cost}")->assertNotFound();
+    }
+
     public function test_utm_precedence_on_candidate_creation(): void
     {
         $admin = $this->userWith(UserRole::Admin);

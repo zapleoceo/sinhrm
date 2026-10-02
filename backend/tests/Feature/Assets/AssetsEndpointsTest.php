@@ -8,8 +8,10 @@ use App\Models\User;
 use App\Modules\Assets\Models\Asset;
 use App\Modules\Assets\Models\AssetAssignment;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Enums\EmployeeStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
@@ -187,7 +189,23 @@ final class AssetsEndpointsTest extends TestCase
         // employee_id as a string (form value) works.
         $holder = $this->employee();
         $this->actingAs($admin)->postJson("/api/assets/$id/assign", ['employee_id' => (string) $holder->id])->assertOk()
-            ->assertJsonPath('data.employee.id', $holder->id)->assertJsonPath('data.history.0.assigned_at', now()->toDateString());
+            ->assertJsonPath('data.employee.id', $holder->id)->assertJsonPath('data.history.0.assigned_at', UserTime::today()->toDateString());
+    }
+
+    public function test_assign_without_a_date_uses_the_users_today_not_the_utc_one(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+        // 23:30 UTC on 15 Jan is already 01:30 on 16 Jan in Kyiv (+02:00): the asset is handed over "today" locally.
+        Carbon::setTestNow('2026-01-15 23:30:00');
+        try {
+            $admin = $this->login(UserRole::Admin);
+            $id = $this->asset($admin);
+            $holder = $this->employee();
+            $this->actingAs($admin)->postJson("/api/assets/$id/assign", ['employee_id' => $holder->id])->assertOk()
+                ->assertJsonPath('data.history.0.assigned_at', '2026-01-16');
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_return_validation_and_default_status(): void

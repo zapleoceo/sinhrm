@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Integrations\Providers;
 
-use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Integrations\Contracts\AiPolicy;
@@ -33,7 +32,6 @@ use App\Modules\Integrations\Support\DnsHostResolver;
 use App\Modules\Integrations\Support\IntegrationRegistry;
 use App\Modules\Integrations\Support\SecretScrubber;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 
 final class IntegrationsServiceProvider extends ModuleServiceProvider
@@ -84,8 +82,7 @@ final class IntegrationsServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE_INTEGRATIONS, fn (User $user): bool => $user->isActive()
-            && $user->hasRole(UserRole::Superadmin->value));
+        $this->defineRoleGate(self::MANAGE_INTEGRATIONS, [UserRole::Superadmin]);
 
         Route::pattern('integration', '[a-z0-9_]+');
         Route::bind('integration', fn (string $key) => $this->app->make(IntegrationRegistry::class)->get($key));

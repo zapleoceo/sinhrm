@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Http\Requests;
 
+use App\Modules\Core\Support\UserTime;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 
@@ -24,7 +25,7 @@ final class HireRequest extends FormRequest
     public function hiredAt(): Carbon
     {
         return $this->filled('hired_at')
-            ? (Carbon::createFromFormat('Y-m-d', $this->string('hired_at')->toString())?->startOfDay() ?? Carbon::today())
-            : Carbon::today();
+            ? (Carbon::createFromFormat('Y-m-d', $this->string('hired_at')->toString())?->startOfDay() ?? UserTime::today())
+            : UserTime::today();
     }
 }

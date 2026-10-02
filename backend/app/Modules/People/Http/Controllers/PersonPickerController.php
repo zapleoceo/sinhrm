@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\People\DTO\PersonOption;
 use App\Modules\People\Http\Requests\LookupPeopleRequest;
 use App\Modules\People\Http\Requests\SearchPeopleRequest;
 use App\Modules\People\Services\PersonPicker;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /** Person picker: search by name and id → name. Rows carry directory-level data only (PersonOption). */
 final class PersonPickerController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly PersonPicker $picker) {}
 
     public function search(SearchPeopleRequest $request): JsonResponse
@@ -37,13 +38,5 @@ final class PersonPickerController
     private function rows(array $rows): JsonResponse
     {
         return new JsonResponse(['data' => array_map(static fn (PersonOption $o): array => $o->toArray(), $rows)]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }
