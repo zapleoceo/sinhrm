@@ -37,6 +37,7 @@ final class TrustedProxiesTest extends TestCase
         config(['trustedproxy.proxies' => '127.0.0.1,::1']);
     }
 
+    /** @return TestResponse<Response> */
     private function ipFor(string $remoteAddr, ?string $forwardedFor): TestResponse
     {
         $headers = $forwardedFor === null ? [] : ['X-Forwarded-For' => $forwardedFor];
@@ -114,6 +115,7 @@ final class TrustedProxiesTest extends TestCase
         $this->submitFrom(self::CLIENT_B)->assertStatus(429);
     }
 
+    /** @return TestResponse<Response> */
     private function submitFrom(string $client): TestResponse
     {
         $this->flushHeaders();
