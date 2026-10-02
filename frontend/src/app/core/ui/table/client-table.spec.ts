@@ -183,15 +183,24 @@ describe('ClientTable bound to the URL', () => {
     expect(decodeURIComponent(router.url)).toBe('/?t_name=Єва');
   });
 
-  it('the header shows projected lead content inside the sort button; select labels are translated', async () => {
+  it('clearFilters drops every filter of the table in one go; the sort and foreign params stay', async () => {
+    const { host, router, detect } = await setup('/?x=1&t_sort=name&t_dir=desc&t_name=a&t_n_from=2&t_n_to=9');
+    expect(host.table.filtered()).toBe(true);
+    host.table.clearFilters();
+    await detect();
+    expect(router.url).toBe('/?x=1&t_sort=name&t_dir=desc');
+    expect(host.table.filtered()).toBe(false);
+  });
+
+  it('the header shows projected lead content inside the sort button; select labels are translation keys (FilterOption.i18n)', async () => {
     const { el, host } = await setup('/');
     const button = el.querySelector('th button.title') as HTMLButtonElement;
     expect(button.querySelector('.lead-icon')).not.toBeNull();
     expect(el.querySelector('th')?.getAttribute('aria-label')).toBe('Name');
     const filter = host.kinds();
     expect(filter.type === 'select' ? filter.options : []).toEqual([
-      { value: 'a', label: 'Альфа' },
-      { value: 'b', label: 'Бета' },
+      { value: 'a', label: 'kind.a', i18n: true },
+      { value: 'b', label: 'kind.b', i18n: true },
     ]);
   });
 });

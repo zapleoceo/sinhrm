@@ -1,27 +1,30 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
-import { DICTIONARY_TYPES, DIRECTORY_STATUSES, DictionaryItem, DirectoryStatus } from './directory.model';
-import { directoryErrorKey } from './directory.service';
+import { ColumnHeader } from '../../core/ui/table/column-header';
+import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { ColumnFilter, FilterValue, TableSort, filterToParam, sortToParams } from '../../core/ui/table/table-state';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
+import { DICTIONARY_TYPES, DIRECTORY_STATUSES, DictionaryItem } from './directory.model';
+import { directoryViewFromParams } from './directory.query';
+import { DirectoryService, directoryErrorKey } from './directory.service';
 import { DirectoryStore } from './directory.store';
 
-const SEARCH_DEBOUNCE_MS = 300;
+/** API order without ?sort (by name, A→Z): the name column carries the arrow. */
+const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 
 /**
- * Admin → Dictionaries (superadmin/admin): a tab per dictionary with search, status filter, inline rename,
- * disable/enable and adding an item.
+ * Admin → Dictionaries (superadmin/admin): a tab per dictionary, inline rename, disable/enable and adding an item.
+ * Column headers sort and filter (core/ui/table): name, city (branches), status; tab and state live in the URL.
  */
 @Component({
   selector: 'app-directory-page',
@@ -32,13 +35,14 @@ const SEARCH_DEBOUNCE_MS = 300;
     MatInputModule,
     MatPaginatorModule,
     MatProgressBarModule,
-    MatSelectModule,
     MatTableModule,
     MatTabsModule,
     MatTooltipModule,
+    TableSortDirective,
+    ColumnHeader,
     TranslocoPipe,
   ],
-  providers: [DirectoryStore],
+  providers: [DirectoryStore, TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './directory.page.html',
   styleUrl: './directory.page.scss',
@@ -47,11 +51,25 @@ export class DirectoryPage implements OnInit {
   protected readonly store = inject(DirectoryStore);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly search$ = new Subject<string>();
+  private readonly url = inject(TableUrlState);
+  private readonly directory = inject(DirectoryService);
+  private readonly cities = signal<DictionaryItem[]>([]);
 
   protected readonly types = DICTIONARY_TYPES;
-  protected readonly statuses = DIRECTORY_STATUSES;
+  protected readonly textFilter: ColumnFilter = { type: 'text' };
+  protected readonly statusFilter: ColumnFilter = {
+    type: 'select',
+    options: DIRECTORY_STATUSES.map((s) => ({ value: s, label: `directory.statuses.${s}`, i18n: true })),
+  };
+  protected readonly cityFilter = computed<ColumnFilter>(() => ({
+    type: 'select',
+    options: this.cities().map((c) => ({ value: String(c.id), label: c.name })),
+  }));
+  /** Shown sort: the URL one, or the API default. */
+  protected readonly sort = computed<TableSort>(() => {
+    const q = this.store.query();
+    return q.sort ? { key: q.sort, dir: q.dir ?? 'asc' } : DEFAULT_SORT;
+  });
   protected readonly columns = computed(() =>
     this.store.type() === 'branches' ? ['name', 'city', 'status', 'actions'] : ['name', 'status', 'actions'],
   );
@@ -60,27 +78,31 @@ export class DirectoryPage implements OnInit {
   protected readonly creating = signal(false);
 
   ngOnInit(): void {
-    this.search$
-      .pipe(debounceTime(SEARCH_DEBOUNCE_MS), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
-      .subscribe((q) => this.store.patchQuery({ q: q.trim() || undefined }));
-    this.store.load();
+    this.url.watch(directoryViewFromParams, (view) => this.store.apply(view));
+    this.directory.active('cities').subscribe({ next: (list) => this.cities.set(list), error: () => this.cities.set([]) });
   }
 
+  /** Another tab starts clean: its own filters and sort (city exists on branches only). */
   protected onTab(index: number): void {
     this.editingId.set(null);
-    this.store.selectType(this.types[index]);
-  }
-
-  protected onSearch(value: string): void {
-    this.search$.next(value);
-  }
-
-  protected onStatusFilter(status: DirectoryStatus | undefined): void {
-    this.store.patchQuery({ status });
+    this.url.update({ tab: this.types[index], q: null, status: null, city_id: null, sort: null, dir: null });
   }
 
   protected onPage(e: PageEvent): void {
-    this.store.setPage(e.pageIndex + 1, e.pageSize);
+    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+  }
+
+  protected onSort(sort: TableSort | null): void {
+    this.url.update(sortToParams(sort));
+  }
+
+  /** Header filters: text / chosen value; cleared → removed from the URL (and the page goes back to 1). */
+  protected setFilter(name: 'q' | 'status' | 'city_id', value: FilterValue): void {
+    this.url.update({ [name]: filterToParam(value) });
+  }
+
+  protected idValue(id: number | undefined): string | null {
+    return id ? String(id) : null;
   }
 
   protected startEdit(item: DictionaryItem): void {

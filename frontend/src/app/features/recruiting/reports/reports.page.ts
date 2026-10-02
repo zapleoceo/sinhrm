@@ -4,17 +4,25 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { TranslocoPipe } from '@jsverse/transloco';
-import { CHANNELS, Channel } from '../recruiting.model';
-import { barWidth, ReportsStore } from './reports.store';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { CHANNELS, Channel, RejectReasonsRow, SourcesRow } from '../recruiting.model';
+import { barWidth, RecruiterTouches, ReportsStore } from './reports.store';
 import { fromIsoDate, toIsoDate } from '../../../core/date/iso-date';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
+import { ClientColumn, ClientTable, NUMBER_RANGE, TEXT_FILTER, distinctValues, translatedSelect } from '../../../core/ui/table/client-table';
+import { ColumnHeader } from '../../../core/ui/table/column-header';
+import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
+import { TableUrlState } from '../../../core/ui/table/table-url-state';
 
-/** Manager reports without chart libraries: tables with plain CSS bars. One date range for all four. */
+/**
+ * Manager reports without chart libraries: tables with plain CSS bars. One date range for all four. The three tables
+ * sort by a click on a column title and filter next to it (core/ui/table; URL prefixes `tch_`, `src_`, `rej_`); the
+ * «Разом» rows are totals of the period and stay at the bottom.
+ */
 @Component({
   selector: 'app-reports-page',
-  imports: [ChannelIcon, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, TranslocoPipe],
-  providers: [ReportsStore],
+  imports: [ChannelIcon, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, TranslocoPipe, TableSortDirective, ColumnHeader],
+  providers: [ReportsStore, TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reports.page.html',
   styleUrl: './reports.page.scss',
@@ -32,6 +40,48 @@ export class ReportsPage implements OnInit {
     const q = this.query().trim().toLocaleLowerCase();
     const all = this.store.funnelCards();
     return q === '' || all.length <= this.filterFrom ? all : all.filter((c) => c.title.toLocaleLowerCase().includes(q));
+  });
+  private readonly i18n = inject(TranslocoService);
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberRange = NUMBER_RANGE;
+  /** Recruiter × channel: already sorted by the total (API + pivot), so the arrow starts on «Усього». */
+  protected readonly touches = new ClientTable<RecruiterTouches>({
+    rows: this.store.recruiters,
+    prefix: 'tch',
+    defaultSort: { key: 'total', dir: 'desc' },
+    columns: [
+      { key: 'recruiter', value: (r) => r.name, filter: 'text' },
+      ...this.channels.map((c): ClientColumn<RecruiterTouches> => ({ key: c, value: (r) => r.byChannel[c] ?? null })),
+      { key: 'via', value: (r) => r.viaProduct },
+      { key: 'captured', value: (r) => r.captured },
+      { key: 'total', value: (r) => r.total, filter: 'number' },
+    ],
+  });
+  private readonly sourceRows = computed(() => this.store.sources()?.rows ?? []);
+  protected readonly sourceFilter = translatedSelect(
+    () => distinctValues(this.sourceRows(), (r) => r.source),
+    (v) => 'recruiting.source.' + v,
+  );
+  /** Sources: the API orders by the source code, not by a shown column, so no arrow until a click. */
+  protected readonly sources = new ClientTable<SourcesRow>({
+    rows: this.sourceRows,
+    prefix: 'src',
+    columns: [
+      { key: 'source', value: (r) => this.i18n.translate('recruiting.source.' + r.source), filter: 'select', filterValue: (r) => r.source },
+      { key: 'candidates', value: (r) => r.candidates, filter: 'number' },
+      { key: 'hired', value: (r) => r.hired, filter: 'number' },
+    ],
+  });
+  private readonly reasonRows = computed(() => this.store.rejectReasons()?.rows ?? []);
+  /** Reject reasons: API order is by count, most frequent first. */
+  protected readonly reasons = new ClientTable<RejectReasonsRow>({
+    rows: this.reasonRows,
+    prefix: 'rej',
+    defaultSort: { key: 'count', dir: 'desc' },
+    columns: [
+      { key: 'reason', value: (r) => r.name, filter: 'text' },
+      { key: 'count', value: (r) => r.count, filter: 'number' },
+    ],
   });
   protected readonly maxReason = computed(() => Math.max(0, ...(this.store.rejectReasons()?.rows ?? []).map((r) => r.count)));
 

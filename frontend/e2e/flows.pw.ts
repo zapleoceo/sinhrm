@@ -293,9 +293,139 @@ test.describe('desktop flows', () => {
     expect(sent).toHaveLength(2);
   });
 
+  test('people (390 px): a filter of a hidden column stays visible as a chip and is removed from there', async ({ page, context }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, context, '/people?manager=%D0%9A%D0%BE');
+    const chips = page.getByRole('group', { name: 'Активні фільтри' });
+    await expect(chips).toContainText('Керівник: Ко');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    await chips.getByRole('button', { name: 'Прибрати фільтр «Керівник»' }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.has('manager')).toBe(false);
+    await expect(chips).toBeHidden();
+  });
+
+  test('admin users: titles sort via the URL, the role filter sits in its header, the API gets sort/dir and role', async ({ page, context }) => {
+    const sent: URLSearchParams[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/users') sent.push(u.searchParams);
+    });
+    await open(page, context, '/admin/users');
+    const user = page.getByRole('columnheader', { name: 'Користувач', exact: true });
+    const lastLogin = page.getByRole('columnheader', { name: 'Останній вхід', exact: true });
+    const role = page.getByRole('columnheader', { name: 'Роль', exact: true });
+    await expect(user).toHaveAttribute('aria-sort', 'ascending');
+    // Roles are many-valued: filter only, no sort.
+    await expect(role).not.toHaveAttribute('aria-sort', /.*/);
+
+    await lastLogin.getByRole('button', { name: 'Останній вхід', exact: true }).click();
+    await expect(page).toHaveURL(/[?&]sort=last_login&dir=asc(&|$)/);
+    await expect.poll(() => sent.at(-1)?.get('sort')).toBe('last_login');
+    await lastLogin.getByRole('button', { name: 'Останній вхід', exact: true }).press('Enter');
+    await expect(lastLogin).toHaveAttribute('aria-sort', 'descending');
+    await expect.poll(() => sent.at(-1)?.get('dir')).toBe('desc');
+
+    await role.getByRole('button', { name: 'Фільтр стовпця «Роль»' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Роль»' });
+    await dialog.getByRole('radio', { name: 'Спостерігач' }).check();
+    await dialog.getByRole('button', { name: 'Застосувати' }).click();
+    await expect(page).toHaveURL(/[?&]role=viewer(&|$)/);
+    await expect.poll(() => sent.at(-1)?.get('role')).toBe('viewer');
+    expect(sent.at(-1)?.get('page')).toBe('1');
+    await expect(role.getByRole('button', { name: 'Фільтр стовпця «Роль», увімкнено' })).toBeVisible();
+  });
+
+  test('audit log: newest first by default, the user title sorts, the time column filters a date range', async ({ page, context }) => {
+    const sent: URLSearchParams[] = [];
+    page.on('request', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname === '/api/audit') sent.push(u.searchParams);
+    });
+    await open(page, context, '/admin/audit');
+    const time = page.getByRole('columnheader', { name: 'Час', exact: true });
+    const user = page.getByRole('columnheader', { name: 'Користувач', exact: true });
+    await expect(time).toHaveAttribute('aria-sort', 'descending');
+
+    await user.getByRole('button', { name: 'Користувач', exact: true }).click();
+    await expect(user).toHaveAttribute('aria-sort', 'ascending');
+    await expect(time).toHaveAttribute('aria-sort', 'none');
+    await expect.poll(() => sent.at(-1)?.get('sort')).toBe('user');
+
+    await time.getByRole('button', { name: 'Фільтр стовпця «Час»' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Час»' });
+    await dialog.getByLabel('Від').fill('2026-09-01');
+    await dialog.getByLabel('До').fill('2026-09-30');
+    await dialog.getByRole('button', { name: 'Застосувати' }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('from')).toBe('2026-09-01');
+    expect(new URL(page.url()).searchParams.get('to')).toBe('2026-09-30');
+    await expect.poll(() => sent.at(-1)?.get('to')).toBe('2026-09-30');
+    expect(sent.at(-1)?.get('sort')).toBe('user');
+  });
+
   test('report view: the table has a «Разом» row', async ({ page, context }) => {
     await open(page, context, '/reports/catalog/desk_sla');
     await expect(page.getByRole('row', { name: /^Разом/ })).toBeVisible();
+  });
+
+  test('report view: a header title sorts the rows in the browser, «Разом» stays last, the filter narrows and relabels it', async ({ page, context }) => {
+    let reportRequests = 0;
+    page.on('request', (r) => {
+      if (new URL(r.url()).pathname.startsWith('/api/reports/catalog/desk_sla')) reportRequests++;
+    });
+    await open(page, context, '/reports/catalog/desk_sla');
+    const table = page.locator('app-report-table table');
+    const firstCells = () => table.locator('tbody tr td:first-child').allInnerTexts();
+    const breached = page.getByRole('columnheader', { name: 'SLA порушено, %' });
+    await expect(breached).toHaveAttribute('aria-sort', 'none');
+    const before = reportRequests;
+
+    // Two clicks: ascending, then descending by the share of breached cases; the API is not asked again.
+    await breached.getByRole('button', { name: 'SLA порушено, %', exact: true }).click();
+    await expect(page).toHaveURL(/[?&]r_sort=breached_pct&r_dir=asc(&|$)/);
+    expect(await firstCells()).toEqual(['Зарплата [ТЕСТ]', 'ІТ та доступи [ТЕСТ]', 'Довідки та документи [ТЕСТ]']);
+    await breached.getByRole('button', { name: 'SLA порушено, %', exact: true }).press('Enter');
+    await expect(breached).toHaveAttribute('aria-sort', 'descending');
+    expect(await firstCells()).toEqual(['Довідки та документи [ТЕСТ]', 'ІТ та доступи [ТЕСТ]', 'Зарплата [ТЕСТ]']);
+    expect(reportRequests).toBe(before);
+    // «Разом» is the footer, after every body row.
+    await expect(table.locator('tfoot tr')).toHaveCount(1);
+    await expect(table.locator('tr').last()).toContainText('Разом');
+
+    // Text filter of the category column: the total row now says it covers the whole report.
+    await page.getByRole('button', { name: 'Фільтр стовпця «Категорія»' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Категорія»' });
+    await dialog.getByRole('searchbox').fill('зарплата');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/[?&]r_category=/);
+    expect(await firstCells()).toEqual(['Зарплата [ТЕСТ]']);
+    await expect(table.locator('tfoot')).toContainText('Разом (усі рядки звіту)');
+
+    // «Back» removes the filter, the sort stays.
+    await page.goBack();
+    await expect(table.locator('tbody tr')).toHaveCount(3);
+    await expect(breached).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  test('recruiting reports: each table sorts on its own (prefixed URL), totals stay last', async ({ page, context }) => {
+    await open(page, context, '/reports');
+    const reasons = page.locator('section', { has: page.getByRole('heading', { name: 'Причини відмов' }) }).locator('table');
+    const names = () => reasons.locator('tbody th').allInnerTexts();
+    const count = reasons.getByRole('columnheader', { name: 'Кількість' });
+    await expect(count).toHaveAttribute('aria-sort', 'descending');
+    await count.getByRole('button', { name: 'Кількість', exact: true }).click();
+    await expect(page).toHaveURL(/[?&]rej_sort=count&rej_dir=asc(&|$)/);
+    expect((await names()).slice(0, 2)).toEqual(['Інше', 'Не прийшов на зустріч']);
+    await expect(reasons.locator('tr').last()).toContainText('Разом');
+    // The touches table keeps its own default order (by total).
+    const touches = page.locator('section', { has: page.getByRole('heading', { name: 'Касання рекрутерів' }) }).locator('table');
+    await expect(touches.getByRole('columnheader', { name: 'Усього' })).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  test('recruiting reports (390 px): the header buttons do not widen the page', async ({ page, context }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, context, '/reports');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBe(0);
   });
 
   test('user menu: «Працювати як» lists the roles and switching sends PUT /api/auth/active-role', async ({ page, context }) => {

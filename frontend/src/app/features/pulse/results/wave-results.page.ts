@@ -1,9 +1,13 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { ClientTable, NUMBER_RANGE, TEXT_FILTER } from '../../../core/ui/table/client-table';
+import { ColumnHeader } from '../../../core/ui/table/column-header';
+import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
+import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { QuestionResult, WaveCompare, WaveResults, deltaTone, enpsAngle, enpsTone, maxOf } from '../pulse.model';
 import { PulseService, pulseErrorKey } from '../pulse.service';
 
@@ -14,7 +18,8 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
  */
 @Component({
   selector: 'app-wave-results-page',
-  imports: [DatePipe, MatButtonToggleModule, MatIconModule, MatProgressBarModule, TranslocoPipe],
+  imports: [DatePipe, MatButtonToggleModule, MatIconModule, MatProgressBarModule, TranslocoPipe, TableSortDirective, ColumnHeader],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (error(); as key) {
@@ -30,7 +35,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
             @if (d.scope === 'department') { · {{ 'pulse.results.myDepartment' | transloco }} }
           </p>
         </div>
-        <mat-button-toggle-group [value]="segment()" (change)="segment.set($event.value)" [attr.aria-label]="'pulse.results.segment' | transloco">
+        <mat-button-toggle-group [value]="segment()" (change)="changeSegment($event.value)" [attr.aria-label]="'pulse.results.segment' | transloco">
           <mat-button-toggle value="department">{{ 'pulse.results.byDepartment' | transloco }}</mat-button-toggle>
           <mat-button-toggle value="branch">{{ 'pulse.results.byBranch' | transloco }}</mat-button-toggle>
         </mat-button-toggle-group>
@@ -95,19 +100,30 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
 
       @if (d.segments?.length) {
         <h2>{{ (segment() === 'branch' ? 'pulse.results.byBranch' : 'pulse.results.byDepartment') | transloco }}</h2>
-        <table class="panel table">
-          <thead>
-            <tr><th scope="col">{{ 'pulse.results.segment' | transloco }}</th><th scope="col">{{ 'pulse.results.answers' | transloco }}</th></tr>
-          </thead>
-          <tbody>
-            @for (s of d.segments; track s.segment) {
+        <!-- Segments: sort and filter in the headers (core/ui/table), URL seg_sort / seg_<column>. Hidden groups have no
+             number: they sort last and drop out of a number filter, so nothing about their size leaks. -->
+        <div class="panel">
+          <table class="app-table segments" [appTableSort]="segTable.sort()" (appTableSortChange)="segTable.setSort($event)">
+            <thead>
               <tr>
-                <th scope="row">{{ s.name ?? '—' }}</th>
-                <td>{{ s.suppressed ? ('pulse.results.hidden' | transloco) : s.responses }}</td>
+                <th scope="col" app-column-header key="name" [label]="'pulse.results.segment' | transloco"
+                  [filter]="textFilter" [filterValue]="segTable.filterValue('name')" (filterChange)="segTable.setFilter('name', $event)"></th>
+                <th scope="col" app-column-header key="responses" [label]="'pulse.results.answers' | transloco"
+                  [filter]="numberRange" [filterValue]="segTable.filterValue('responses')" (filterChange)="segTable.setFilter('responses', $event)"></th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (s of segTable.rows(); track s.segment) {
+                <tr>
+                  <th scope="row">{{ s.name ?? '—' }}</th>
+                  <td>{{ s.suppressed ? ('pulse.results.hidden' | transloco) : s.responses }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="2" class="muted">{{ 'table.noMatches' | transloco }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
 
       @if (compare(); as c) {
@@ -189,6 +205,8 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
     .table th, .table td { text-align: left; padding: 0.6rem 0.875rem; border-bottom: var(--app-border-w) solid var(--app-track); }
     .table thead th { font: var(--mat-sys-label-medium); font-weight: 700; color: var(--app-muted); border-bottom-color: var(--app-border); }
     .table tbody tr:last-child > * { border-bottom: 0; }
+    .segments tbody th { font: inherit; color: inherit; white-space: normal; padding: 0.6rem 1rem; border-bottom: var(--app-border-w) solid var(--app-track); }
+    .segments tbody tr:last-child > * { border-bottom: 0; }
     .delta { margin-left: 0.35rem; font-weight: 600; }
     .delta[data-tone='up'] { color: var(--app-good-text); }
     .delta[data-tone='down'] { color: var(--app-bad-text); }
@@ -205,6 +223,17 @@ export class WaveResultsPage {
   protected readonly angle = enpsAngle;
   protected readonly tone = enpsTone;
   protected readonly dTone = deltaTone;
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberRange = NUMBER_RANGE;
+  private readonly segments = computed(() => this.data()?.segments ?? []);
+  protected readonly segTable = new ClientTable({
+    rows: this.segments,
+    prefix: 'seg',
+    columns: [
+      { key: 'name', value: (s) => s.name, filter: 'text' },
+      { key: 'responses', value: (s) => (s.suppressed ? null : s.responses), filter: 'number' },
+    ],
+  });
 
   constructor() {
     effect(() => {
@@ -213,6 +242,12 @@ export class WaveResultsPage {
       this.api.results(id, segment).subscribe({ next: (d) => this.data.set(d), error: (e: unknown) => this.error.set(pulseErrorKey(e)) });
       this.api.compare(id, segment).subscribe({ next: (c) => this.compare.set(c), error: () => this.compare.set(null) });
     });
+  }
+
+  /** Another grouping means other rows (branches vs departments): old seg_* filters would hide them, so they go; the sort stays. */
+  protected changeSegment(segment: 'department' | 'branch'): void {
+    this.segment.set(segment);
+    this.segTable.clearFilters();
   }
 
   protected entries(q: QuestionResult): [string, number][] {

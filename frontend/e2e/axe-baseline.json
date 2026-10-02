@@ -11,13 +11,9 @@
   "color-contrast": 1
  },
  "assets.mobile.light": {},
- "audit.desktop.dark": {
-  "color-contrast": 2
- },
+ "audit.desktop.dark": {},
  "audit.desktop.light": {},
- "audit.mobile.dark": {
-  "color-contrast": 2
- },
+ "audit.mobile.dark": {},
  "audit.mobile.light": {},
  "candidate.desktop.dark": {
   "color-contrast": 3,
@@ -250,7 +246,6 @@
  "people--employee-dialog.mobile.light": {},
  "people.desktop.dark": {
   "button-name": 2,
-  "color-contrast": 1,
   "label": 30
  },
  "people.desktop.light": {
@@ -259,7 +254,6 @@
  },
  "people.mobile.dark": {
   "button-name": 2,
-  "color-contrast": 1,
   "label": 30
  },
  "people.mobile.light": {
@@ -404,13 +398,9 @@
   "color-contrast": 4
  },
  "timeoff.mobile.light": {},
- "users.desktop.dark": {
-  "color-contrast": 1
- },
+ "users.desktop.dark": {},
  "users.desktop.light": {},
- "users.mobile.dark": {
-  "color-contrast": 1
- },
+ "users.mobile.dark": {},
  "users.mobile.light": {},
  "vacancies.desktop.dark": {
   "color-contrast": 2

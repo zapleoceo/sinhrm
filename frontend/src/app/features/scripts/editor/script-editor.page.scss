@@ -35,9 +35,10 @@ article.item.item-head { flex-direction: row; }
 .patterns { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .patterns h3 { font: var(--mat-sys-title-small); margin: 0; }
 
-.versions { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-.versions th, .versions td { text-align: left; padding: 0.4rem 0.75rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
-.versions thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
+.versions-scroll { overflow-x: auto; margin-top: 1rem; }
+/* Row header (version number) reads like a cell; the column headers keep the .app-table look. */
+.versions tbody th { font: inherit; color: inherit; padding: 0.6rem 1rem; border-bottom: var(--app-border-w) solid var(--app-track); }
+.versions tbody tr:last-child th { border-bottom: 0; }
 .versions tr.active { background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container); }
 
 mat-tab-group { margin-top: 0.5rem; }

@@ -9,6 +9,8 @@ export const LIFECYCLE_TRIGGERS: readonly LifecycleTrigger[] = ['hire_30', 'hire
 export type WaveSchedule = 'once' | 'weekly' | 'monthly' | 'quarterly';
 export const WAVE_SCHEDULES: readonly WaveSchedule[] = ['once', 'weekly', 'monthly', 'quarterly'];
 export type WaveStatus = 'scheduled' | 'open' | 'closed';
+/** Wave statuses in lifecycle order (the status column sorts by it). */
+export const WAVE_STATUSES: readonly WaveStatus[] = ['scheduled', 'open', 'closed'];
 
 export interface Question {
   id: string;
