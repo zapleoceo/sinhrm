@@ -150,7 +150,7 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
   несколько человек, сохраняется сразу; остальные видят имена. Список людей — `GET /api/recruiting/assignable-users?q=`
   (активные пользователи `{id, name}`, по имени/e-mail, до 50; доступ — писатели и нанимающие менеджеры хотя бы одной
   вакансии, иначе 403; `q` длиннее 100 — 422). Карточка получает `applications[].interviewers [{id, name}]`.
-  Фронтенд: `vacancies/vacancy.dialog.ts`, `card/interviewers-panel.ts`, `hiring-team.ts` (`withCurrent` — текущие
+  Фронтенд: `vacancies/vacancy-form.page.ts`, `card/interviewers-panel.ts`, `hiring-team.ts` (`withCurrent` — текущие
   назначенные всегда есть в списке), методы `assignableUsers` / `setInterviewers` в `recruiting.service.ts`.
 
 Политики: `VacancyPolicy` (view/create/update), `CandidatePolicy` (view/create/update), `ApplicationPolicy::move` (по филиалу вакансии),
@@ -277,7 +277,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 |---|---|
 | `recruiting.model.ts`, `recruiting.service.ts` | типы API, HTTP-клиент, `recruitingErrorKey`, `duplicateOf` |
 | `recruiting.format.ts`, `recruiting.access.ts` | длительности, группировка по этапам, статус этапа, диапазон дат; `canWriteRecruiting` |
-| `vacancies/` | список + `VacancyDialog` (`/vacancies`) |
+| `vacancies/` | список (`/vacancies`) + страница формы вакансии `VacancyFormPage` (`vacancy-form.page.ts`: `/vacancies/create`, `/vacancies/:id/edit`; раньше был диалог, заменён в #88) |
 | `board/` | доска CDK drag&drop (`/vacancies/:id`), оптимистичный перенос с откатом, `RejectDialog`; «Створити співробітника» в колонке найма (`features/people/hire.action.ts`) |
 | `candidates/` | split view (`/candidates`, `/candidates/:id`), `CandidateDialog` с обработкой дубля; иконки источников — `core/ui/channel-icon.ts` |
 | `card/` | карточка: маршрут, перемещение, лента с фильтрами, `TouchComposer` (с кнопкой «Шаблон» — `features/scripts/templates/template-menu.ts` и «Надіслати» через `features/channels/channels.service.ts`), значок оценки у касания (`features/scripts/evaluation/evaluation-badge.ts`), задачи кандидата (`features/scripts/tasks/tasks-widget.ts`), кнопка «Запланувати зустріч» (`features/google-workspace/meeting.dialog.ts`; неактивна, если `GET /api/google/calendar` → `connected: false`), у касаний-встреч — время, ссылка Meet с копированием и ссылка на событие, у писем — ссылка на резюме; `screening-panel.ts` — ШІ-скринінг по заявкам (`RecruitingService.screenings/screen`, коды ошибок — `features/ai/ai.service.ts`) |
