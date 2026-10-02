@@ -245,6 +245,29 @@ describe('assistant history and the signed-in user', () => {
     expect(conv.history()).toEqual([{ role: 'user', content: 'hi' }]);
   });
 
+  it('a page reload with ANOTHER user removes the foreign saved chat and keeps the own one', () => {
+    sessionStorage.clear();
+    sessionStorage.setItem('sinhrm.assistant.history.5', JSON.stringify([{ role: 'user', content: 'foreign' }]));
+    sessionStorage.setItem('sinhrm.assistant.history.6', JSON.stringify([{ role: 'user', content: 'own' }]));
+    const user = signal<{ id: number } | null>(null);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: AssistantService, useValue: {} },
+        { provide: AssistantToolExecutor, useValue: {} },
+        { provide: AuthService, useValue: { user } },
+      ],
+    });
+    const conv = TestBed.inject(AssistantConversation);
+    TestBed.tick();
+    expect(sessionStorage.getItem('sinhrm.assistant.history.5')).not.toBeNull();
+    user.set({ id: 6 });
+    TestBed.tick();
+    expect(sessionStorage.getItem('sinhrm.assistant.history.5')).toBeNull();
+    expect(sessionStorage.getItem('sinhrm.assistant.history.6')).not.toBeNull();
+    expect(conv.history()).toEqual([{ role: 'user', content: 'own' }]);
+  });
+
   it('clearAssistantHistory keeps one user or removes all, leaving other keys alone', () => {
     sessionStorage.clear();
     sessionStorage.setItem('sinhrm.assistant.history.5', '[]');
