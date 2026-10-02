@@ -158,7 +158,7 @@ export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
 
     <section class="panel box">
       <h2>{{ 'perform.admin.cycles' | transloco }}</h2>
-      <table class="app-table cycles" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <table class="app-table cycles" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="name" [label]="'perform.fields.name' | transloco"

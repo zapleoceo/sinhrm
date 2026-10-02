@@ -245,11 +245,19 @@ test.describe('desktop flows', () => {
     const field = dialog.getByRole('searchbox', { name: 'Містить (стовпець «ПІБ»)' });
     await expect(field).toBeFocused();
     await expect(dialog.getByRole('button', { name: 'Застосувати' })).toHaveCount(0);
-    await field.pressSequentially('КОВАЛЕНКО');
+    // fill() puts the word in with one input event, so the count below does not depend on how fast the runner
+    // types; the debounce itself (letters within the pause → one write) is covered by the unit tests on fake timers.
+    const request = page.waitForRequest((r) => {
+      const u = new URL(r.url());
+      return u.pathname === '/api/people' && u.searchParams.has('name');
+    });
+    await field.fill('КОВАЛЕНКО');
+    await request; // no Enter: the request goes on its own after the pause
 
-    // No Enter: the list narrows on its own, the dialog stays open with the caret in the field.
+    // The list narrows, the dialog stays open with the caret in the field.
     await expect(rows).toHaveCount(expected);
     await expect(page).toHaveURL(/[?&]name=%D0%9A%D0%9E%D0%92/);
+    await settle(page); // network quiet: a second request would have been sent by now
     expect(named).toEqual(['КОВАЛЕНКО']); // one request for the whole word
     await expect(dialog).toBeVisible();
     await expect(field).toBeFocused();

@@ -1,6 +1,6 @@
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { of } from 'rxjs';
-import { TablePage, clickTitle, openTablePage } from '../../../../testing/table-page';
+import { TablePage, clickTitle, openTablePage, sortCount } from '../../../../testing/table-page';
 import { CycleStatus, ReviewCycle } from '../perform.model';
 import { PerformService } from '../perform.service';
 import { ReviewAdminPage } from './review-admin.page';
@@ -55,5 +55,6 @@ describe('ReviewAdminPage cycles: a real header row that sorts and filters', () 
     expect(cells(0, 'table.cycles')).toEqual(['Q2 2026']);
     await navigate('/?period_from=2026-06-01');
     expect(cells(0, 'table.cycles')).toEqual(['Q3 2026', 'Річна 2026']);
+    expect(sortCount(page.fixture)).toBe(2); // what an open header filter announces
   });
 });

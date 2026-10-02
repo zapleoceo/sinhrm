@@ -1,8 +1,9 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+import { sortCount } from '../../../testing/table-page';
 import { ReportTable } from './report-table';
 import { Row, barPercent, cleanSpec, columnMax, filterParams } from './reports.model';
 import { ReportsService, reportsErrorKey } from './reports.service';
@@ -130,7 +131,9 @@ describe('ReportTable headers: sort and filter in the browser, «Разом» st
   ];
   const totals: Row = { source: null, candidates: 17, hired_on: null };
 
-  async function render(url: string): Promise<{ el: HTMLElement; router: Router; detect: () => Promise<void> }> {
+  async function render(
+    url: string,
+  ): Promise<{ el: HTMLElement; router: Router; fixture: ComponentFixture<ReportTable>; detect: () => Promise<void> }> {
     TestBed.configureTestingModule({
       imports: [ReportTable, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
       providers: [provideRouter([])],
@@ -147,7 +150,7 @@ describe('ReportTable headers: sort and filter in the browser, «Разом» st
       await fixture.whenStable();
       fixture.detectChanges();
     };
-    return { el: fixture.nativeElement as HTMLElement, router, detect };
+    return { el: fixture.nativeElement as HTMLElement, router, fixture, detect };
   }
 
   const firstColumn = (el: HTMLElement): string[] => [...el.querySelectorAll('tbody tr')].map((tr) => tr.querySelector('td')?.textContent?.trim() ?? '');
@@ -179,12 +182,14 @@ describe('ReportTable headers: sort and filter in the browser, «Разом» st
   });
 
   it('URL filters narrow the rows; the total row then says it covers the whole report', async () => {
-    const { el } = await render('/?r_sort=source&r_dir=asc&r_hired_on_from=2026-09-10');
+    const { el, fixture } = await render('/?r_sort=source&r_dir=asc&r_hired_on_from=2026-09-10');
     expect(firstColumn(el)).toEqual(['Djinni']);
+    expect(sortCount(fixture)).toBe(1); // what an open header filter announces
     expect(footerLabel(el)).toBe('reports.totalAll');
     TestBed.resetTestingModule();
     const none = await render('/?r_source=zzz');
     expect(firstColumn(none.el)).toEqual(['reports.noMatches']);
+    expect(sortCount(none.fixture)).toBe(0);
     TestBed.resetTestingModule();
     const sorted = await render('/?r_sort=source&r_dir=asc');
     expect(firstColumn(sorted.el)).toEqual(['Djinni', 'robota', 'Work.ua']);

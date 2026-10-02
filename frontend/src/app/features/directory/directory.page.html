@@ -37,7 +37,7 @@
     </div>
   } @else {
     <!-- The headers stay when nothing matches: the filters that emptied the list are cleared right there. -->
-    <div class="table-scroll"><table mat-table [dataSource]="store.items()" [appTableSort]="sort()" (appTableSortChange)="onSort($event)">
+    <div class="table-scroll"><table mat-table [dataSource]="store.items()" [appTableSort]="sort()" [appTableSortCount]="store.loading() ? null : store.total()" (appTableSortChange)="onSort($event)">
       <ng-container matColumnDef="name">
         <th mat-header-cell *matHeaderCellDef scope="col" app-column-header key="name" [label]="'directory.columns.name' | transloco"
           [filter]="textFilter" [filterValue]="store.query().q ?? null" (filterChange)="setFilter('q', $event)"></th>

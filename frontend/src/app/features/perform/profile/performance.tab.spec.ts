@@ -1,5 +1,5 @@
 import { of } from 'rxjs';
-import { clickTitle, column, header, openTablePage } from '../../../../testing/table-page';
+import { clickTitle, column, header, openTablePage, sortCount } from '../../../../testing/table-page';
 import { Kpi } from '../perform.model';
 import { PerformService } from '../perform.service';
 import { PerformanceTab } from './performance.tab';
@@ -46,7 +46,8 @@ describe('PerformanceTab KPI table (header sort and filter)', () => {
   });
 
   it('address → view: metric sorted by the interface language, period filtered', async () => {
-    const { el } = await open('/?kpi_sort=metric&kpi_period=2026-09');
+    const { el, fixture } = await open('/?kpi_sort=metric&kpi_period=2026-09');
     expect(column(kpiTable(el), 0)).toEqual(['Анкети', 'Наймів']);
+    expect(sortCount(fixture)).toBe(2); // what an open header filter announces
   });
 });

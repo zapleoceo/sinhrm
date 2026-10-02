@@ -36,7 +36,7 @@ import { PeopleService } from '../people.service';
         }
       </p>
       <div class="scroll">
-        <table class="app-table history" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+        <table class="app-table history" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
           <thead>
             <tr>
               <th scope="col" app-column-header key="effective_on" [label]="'people.compensation.effectiveOn' | transloco"

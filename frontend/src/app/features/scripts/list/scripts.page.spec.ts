@@ -1,5 +1,5 @@
 import { of } from 'rxjs';
-import { TablePage, clickTitle, header, openTablePage } from '../../../../testing/table-page';
+import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../../testing/table-page';
 import { Script } from '../scripts.model';
 import { ScriptsService } from '../scripts.service';
 import { ScriptsPage } from './scripts.page';
@@ -49,5 +49,6 @@ describe('ScriptsPage: sortable / filterable headers bound to the URL', () => {
     expect(cells(0, 'table', 'a')).toEqual(['Відмова', 'Холодний дзвінок', 'Анкета']);
     await navigate('/?active=no');
     expect(cells(0, 'table', 'a')).toEqual(['Анкета']);
+    expect(sortCount(page.fixture)).toBe(1); // what an open header filter announces
   });
 });

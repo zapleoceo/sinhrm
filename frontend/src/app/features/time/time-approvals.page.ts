@@ -39,7 +39,7 @@ export const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
       <mat-progress-bar mode="indeterminate" />
     }
     <div class="panel">
-      <table class="app-table" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <table class="app-table" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="employee" [label]="'time.approvals.employee' | transloco"

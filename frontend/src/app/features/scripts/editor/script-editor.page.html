@@ -258,7 +258,7 @@
       <!-- Versions: sort and filter in the headers (core/ui/table), URL ver_sort / ver_<column>; drafts have no
            publish date, so they sort last by it. -->
       <div class="versions-scroll">
-      <table class="app-table versions" [appTableSort]="versions.sort()" (appTableSortChange)="versions.setSort($event)">
+      <table class="app-table versions" [appTableSort]="versions.sort()" [appTableSortCount]="versions.rows().length" (appTableSortChange)="versions.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="version" [label]="'scripts.versions.version' | transloco"

@@ -171,18 +171,25 @@ export class ClientTable<T> {
     const c = this.options.columns;
     return typeof c === 'function' ? c() : c;
   });
+  /** Sort and filters of the URL, parsed only when the URL (or the columns) change — not on every keystroke. */
+  private readonly fromUrl = computed(() => clientStateFromParams(this.params(), this.columns(), this.options.prefix));
   /**
-   * Filters typed but not yet in the URL (the header's live edit waits LIVE_FILTER_DEBOUNCE_MS before it writes
-   * the URL): the rows follow every keystroke at once, the URL catches up after the pause. They count only while
-   * the URL is the one they were typed over — after the next URL change it holds the same value (or «back»
-   * replaced it), so nothing has to be cleaned up.
+   * Filters as last typed in this table's headers. The header's live edit waits LIVE_FILTER_DEBOUNCE_MS before the
+   * URL follows, so the rows show a typed value on top of the URL for as long as its params are on their way there
+   * (`TableUrlState.writing()`: queued, then navigating — no flash of the old rows in between). Once the URL holds
+   * it, or the edit is dropped («back», another link, a navigation that keeps the query), the URL alone speaks.
    */
-  private readonly typed = signal<{ over: ParamMap | null; filters: Readonly<Record<string, FilterValue>> }>({ over: null, filters: {} });
+  private readonly typed = signal<Readonly<Record<string, FilterValue>>>({});
   private readonly state = computed(() => {
-    const params = this.params();
-    const url = clientStateFromParams(params, this.columns(), this.options.prefix);
+    const url = this.fromUrl();
+    const writing = this.url.writing();
+    if (!writing) return url;
     const typed = this.typed();
-    return typed.over === params ? { ...url, filters: { ...url.filters, ...typed.filters } } : url;
+    const overlay: Record<string, FilterValue> = {};
+    for (const column of this.columns()) {
+      if (column.key in typed && onTheWay(this.filterParams(column, typed[column.key]), writing)) overlay[column.key] = typed[column.key];
+    }
+    return Object.keys(overlay).length ? { ...url, filters: { ...url.filters, ...overlay } } : url;
   });
 
   /** Sort shown on the headers: the URL one or the API default. */
@@ -213,8 +220,7 @@ export class ClientTable<T> {
   setFilter(key: string, value: FilterValue): void {
     const column = this.columns().find((c) => c.key === key);
     if (!column?.filter) return;
-    const params = this.params();
-    this.typed.update((t) => ({ over: params, filters: { ...(t.over === params ? t.filters : {}), [key]: value } }));
+    this.typed.update((t) => ({ ...t, [key]: value }));
     this.url.update(this.filterParams(column, value), { paging: true });
   }
 
@@ -226,7 +232,7 @@ export class ClientTable<T> {
     const params = this.columns()
       .filter((c) => c.filter)
       .reduce<Params>((acc, c) => ({ ...acc, ...this.filterParams(c, null) }), {});
-    this.typed.set({ over: null, filters: {} });
+    this.typed.set({});
     this.url.update(params, { paging: true });
   }
 
@@ -234,4 +240,9 @@ export class ClientTable<T> {
     const name = prefixed(this.options.prefix, column.key);
     return column.filter === 'number' || column.filter === 'date' ? rangeToParams(name, value) : { [name]: filterToParam(value) };
   }
+}
+
+/** True when every param of a filter is queued / navigating with exactly this value (null = removed). */
+function onTheWay(params: Params, writing: Params): boolean {
+  return Object.entries(params).every(([name, value]) => name in writing && (writing[name] ?? null) === (value ?? null));
 }

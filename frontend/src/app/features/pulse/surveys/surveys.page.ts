@@ -191,7 +191,7 @@ import { TableUrlState } from '../../../core/ui/table/table-url-state';
               <p class="muted">{{ 'pulse.waves.anonymityHint' | transloco }}</p>
               <!-- Waves: sort and filter in the headers (core/ui/table), URL wave_sort / wave_<column>. -->
               <div class="scroll">
-              <table class="app-table waves" [appTableSort]="waveTable.sort()" (appTableSortChange)="waveTable.setSort($event)">
+              <table class="app-table waves" [appTableSort]="waveTable.sort()" [appTableSortCount]="waveTable.rows().length" (appTableSortChange)="waveTable.setSort($event)">
                 <thead>
                   <tr>
                     <th scope="col" app-column-header key="starts" [label]="'pulse.waves.period' | transloco"

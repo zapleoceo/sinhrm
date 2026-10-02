@@ -1,5 +1,5 @@
 import { of } from 'rxjs';
-import { TablePage, clickTitle, column, header, openTablePage } from '../../../testing/table-page';
+import { TablePage, clickTitle, column, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { Asset, AssetQuery } from './assets.model';
 import { AssetsPage } from './assets.page';
 import { AssetsService } from './assets.service';
@@ -54,6 +54,7 @@ describe('AssetsPage: sortable / filterable headers bound to the URL', () => {
     await debounce();
     expect(page.router.url).toContain('dir=desc');
     expect(column(table(), 0)).toEqual(['INV-10', 'INV-9']); // «MacBook», «ThinkPad» contain «a»; numbers compare naturally
+    expect(sortCount(page.fixture)).toBe(2); // what an open header filter announces
     expect(queries).toHaveLength(1);
   });
 

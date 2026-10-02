@@ -146,7 +146,7 @@ skipped, failed}`.
 | Файл | Что |
 |---|---|
 | `workflows.model.ts`, `workflows.service.ts` | типы API, HTTP-клиент, `workflowsErrorKey`, ключи кодов результата шага, прогресс |
-| `templates/workflow-templates.page.ts` | `/admin/workflows`: список, создание, удаление (409 `has_runs` → подсказка деактивировать); заголовки сортируют и фильтруют на странице (название, тип, запуск, число шагов и запусков — диапазон, «Змінено» — даты), состояние в адресе |
+| `templates/workflow-templates.page.ts` | `/admin/workflows`: список, создание, удаление (409 `has_runs` → подсказка деактивировать); заголовки сортируют и фильтруют на странице (название, тип, запуск, число шагов и запусков — диапазон, «Змінено» — даты), состояние в адресе Открытый фильтр колонки объявляет число показанных строк — «Знайдено: N» (`appTableSortCount` = `rows().length`, с 2026-10-03). |
 | `editor/workflow-editor.page.*`, `editor/workflow-editor.store.ts`, `editor/step-config.ts` | `/admin/workflows/:id`: поля шаблона, шаги с CDK drag&drop (сохранённые шаги без других правок — сразу `reorder`), форма настроек по действию, ключ подписи вебхука |
 | `runs/workflow-runs.page.ts`, `runs/runs.store.ts`, `runs/run-card.ts` | `/workflows/runs`: доска с фильтрами; карточка запуска — шаги, «Виконано / Пропустити / Повторити», отмена |
 | `runs/employee-runs.tab.ts` | вкладка «Воркфлоу» профиля (админ и руководители), «Запустити воркфлоу» |

@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
-import { TablePage, clickTitle, column, header, openTablePage } from '../../../../testing/table-page';
+import { TablePage, clickTitle, column, header, openTablePage, sortCount } from '../../../../testing/table-page';
 import { ScriptDetails, ScriptVersion, emptyContent } from '../scripts.model';
 import { ScriptsService } from '../scripts.service';
 import { ScriptEditorPage } from './script-editor.page';
@@ -52,7 +52,8 @@ describe('ScriptEditorPage versions table (header sort and filter)', () => {
   });
 
   it('address → view: author sorted by the interface language, steps filtered by range', async () => {
-    const { el } = await open('/?ver_sort=author&ver_steps_from=3');
+    const { el, fixture } = await open('/?ver_sort=author&ver_steps_from=3');
     expect(column(versionsTable(el), 2)).toEqual(['Ангеліна', 'Ольга']);
+    expect(sortCount(fixture)).toBe(2); // what an open header filter announces
   });
 });

@@ -111,7 +111,7 @@ export function assetQueryFromParams(params: ParamMap): AssetQuery {
       <mat-progress-bar mode="indeterminate" />
     }
     <div class="panel">
-      <table class="app-table assets" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
+      <table class="app-table assets" [appTableSort]="table.sort()" [appTableSortCount]="table.rows().length" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             <th scope="col" app-column-header key="inventory" [label]="'assets.inventoryNumber' | transloco"

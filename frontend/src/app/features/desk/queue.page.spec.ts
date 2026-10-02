@@ -1,5 +1,5 @@
 import { of } from 'rxjs';
-import { TablePage, clickTitle, column, header, openTablePage } from '../../../testing/table-page';
+import { TablePage, clickTitle, column, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { CaseStatus, DeskCase, DeskCategory, QueueQuery } from './desk.model';
 import { DeskService } from './desk.service';
 import { DeskQueuePage } from './queue.page';
@@ -68,6 +68,7 @@ describe('DeskQueuePage: sortable / filterable headers bound to the URL', () => 
     expect(queries.at(-1)).toEqual({ category_id: undefined });
     expect(header(table(), 'desk.statusLabel').querySelector('.dot')).toBeNull();
     expect(column(table(), 2)).toEqual(['Бойко']);
+    expect(sortCount(page.fixture, 0)).toBe(1); // the cases table announces its own rows
     await navigate('/?status=junk');
     expect(queries.at(-1)).toEqual({ open: true, category_id: undefined });
   });
@@ -107,8 +108,9 @@ describe('DeskQueuePage categories table (header sort and filter)', () => {
   });
 
   it('address → view: the active filter and a text filter come from the URL', async () => {
-    const { el } = await open('/?cat_active=false');
+    const { el, fixture } = await open('/?cat_active=false');
     expect(column(catsTable(el), 0)).toEqual(['Довідки']);
+    expect(sortCount(fixture, 1)).toBe(1); // and the categories table its own
     expect(header(catsTable(el), 'desk.categories.active').querySelector('button.filter.active')).not.toBeNull();
   });
 
