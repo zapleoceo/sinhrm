@@ -154,9 +154,11 @@ type EditableStatus = 'active' | 'on_leave';
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.75rem 1rem; }
     .grid mat-form-field { min-width: 0; }
     .full { grid-column: 1 / -1; }
-    .section { margin: 1rem 0 0.75rem; font: var(--mat-sys-title-small); color: var(--app-muted); }
+    /* Section heading = label + a quiet track line to the edge. */
+    .section { display: flex; align-items: center; gap: 0.6rem; margin: 1.25rem 0 0.75rem; font: var(--mat-sys-title-small); color: var(--app-muted); }
+    .section::after { content: ''; flex: 1; height: var(--app-border-w); background: var(--app-track); }
     .section:first-child { margin-top: 0.25rem; }
-    .error { color: var(--app-danger); margin: 0.75rem 0 0; }
+    .error { color: var(--app-bad-text); margin: 0.75rem 0 0; }
     @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
   `,
 })

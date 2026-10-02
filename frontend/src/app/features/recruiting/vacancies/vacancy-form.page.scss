@@ -12,24 +12,26 @@
 }
 
 .card {
-  background: var(--mat-sys-surface-container-low, var(--mat-sys-surface));
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius, 12px);
-  padding: 1rem 1.25rem;
+  background: var(--app-card);
+  border: var(--app-border-w) solid var(--app-border);
+  border-radius: var(--app-radius);
+  padding: 1.15rem 1.35rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
+h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.5rem; }
 
 .head-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .spacer { flex: 1; }
 .chip {
-  display: inline-flex; align-items: center; padding: 0.15rem 0.6rem; border-radius: 999px;
-  border: 1px solid var(--app-border); font-size: 0.8rem; color: var(--app-muted);
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.6rem; border-radius: var(--app-radius-pill);
+  border: var(--app-border-w) solid var(--app-border); font: var(--mat-sys-label-medium); color: var(--app-muted);
 }
-.chip.on { color: var(--app-success); border-color: currentColor; }
+.chip.on { color: var(--app-good-text); background: var(--app-good-bg); border-color: transparent; }
+// Shape marker next to the state text (filled circle = active), never colour alone.
+.chip.on::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; }
 .recruiter { min-width: 14rem; }
 
 .title-input {
@@ -37,14 +39,14 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
   outline: none;
   background: transparent;
   color: inherit;
-  font: inherit;
-  font-size: 1.6rem;
-  font-weight: 600;
+  font: var(--mat-sys-headline-medium);
+  letter-spacing: var(--mat-sys-headline-medium-tracking);
   padding: 0.5rem 0;
   width: 100%;
   border-bottom: 2px solid transparent;
 }
-.title-input:focus-visible { border-bottom-color: var(--mat-sys-primary); }
+.title-input::placeholder { color: var(--app-muted); }
+.title-input:focus-visible { border-bottom-color: var(--mat-sys-primary); outline: none; }
 .title-input[aria-invalid='true'] { border-bottom-color: var(--app-danger); }
 
 .grid { display: grid; gap: 0 0.75rem; }
@@ -58,17 +60,17 @@ h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
 .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 fieldset { border: 0; margin: 0.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-legend { font-weight: 600; margin-bottom: 0.5rem; padding: 0; }
+legend { font: var(--mat-sys-title-small); margin-bottom: 0.5rem; padding: 0; }
 .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .row .grow { flex: 1; min-width: 12rem; }
 .full { width: 100%; }
-.slug { margin: 0; font-family: monospace; }
+.slug { margin: 0; font-family: var(--app-font-mono); font-size: 0.8125rem; overflow-wrap: anywhere; }
 .small { font-size: 0.875rem; margin: 0; }
 .muted { color: var(--app-muted); }
 
 .notice {
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 1rem;
-  border: 1px solid var(--app-warning); border-radius: var(--app-radius, 8px);
+  border: var(--app-border-w) solid var(--app-warning); border-radius: var(--app-radius); background: var(--app-warn-bg);
 }
 
 .actions {
@@ -80,16 +82,16 @@ legend { font-weight: 600; margin-bottom: 0.5rem; padding: 0; }
   gap: 0.5rem;
   flex-wrap: wrap;
   padding: 0.75rem 1rem;
-  background: var(--mat-sys-surface);
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius, 12px);
-  box-shadow: 0 -2px 8px rgb(0 0 0 / 8%);
+  background: var(--app-card);
+  border: var(--app-border-w) solid var(--app-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-overlay-shadow);
   margin-top: 0.5rem;
 }
 .tpl-name { width: 14rem; }
 
-.error { color: var(--app-danger); margin: 0; }
-.ok { color: var(--app-success); margin: 0; }
+.error { color: var(--app-bad-text); margin: 0; }
+.ok { color: var(--app-good-text); margin: 0; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
@@ -103,5 +105,6 @@ legend { font-weight: 600; margin-bottom: 0.5rem; padding: 0; }
 @media (max-width: 720px) {
   .grid.four, .grid.three, .grid.two { grid-template-columns: minmax(0, 1fr); }
   .recruiter { min-width: 0; width: 100%; }
-  .title-input { font-size: 1.3rem; }
+  .title-input { font: var(--mat-sys-headline-small); }
+  .card { padding: 1rem; }
 }

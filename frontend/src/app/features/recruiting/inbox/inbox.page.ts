@@ -61,13 +61,32 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
     </section>
   `,
   styles: `
-    .count { font: var(--mat-sys-headline-small); font-variant-numeric: tabular-nums; }
+    .count {
+      display: inline-grid; place-items: center; min-width: 3rem; height: 3rem; padding: 0 0.75rem; box-sizing: border-box;
+      border-radius: var(--app-radius-pill); border: 3px solid var(--app-stage-new);
+      font: 600 1.25rem/1 var(--app-font-mono); font-variant-numeric: tabular-nums;
+    }
     .rows { list-style: none; margin: 0; padding: 0; }
-    .row { display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--app-border); }
-    .icon { color: var(--app-muted); }
+    .row {
+      display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem 1rem;
+      border-bottom: var(--app-border-w) solid var(--app-track); transition: background-color var(--app-fast);
+    }
+    .row:last-child { border-bottom: 0; }
+    .row:hover { background: var(--app-row-hover); }
+    .icon {
+      display: inline-grid; place-items: center; flex: none; width: 2.25rem; height: 2.25rem; box-sizing: border-box;
+      border-radius: 50%; border: var(--app-border-w) solid var(--app-border); background: var(--app-card); color: var(--app-muted);
+    }
     .body { flex: 1; min-width: 0; }
     .line { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; }
+    .line time { font-family: var(--app-font-mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
     .text { margin: 0.25rem 0 0; overflow-wrap: anywhere; }
+    @media (max-width: 600px) {
+      .row { flex-wrap: wrap; padding: 0.75rem; }
+      .body { flex-basis: calc(100% - 3rem); }
+      .row button { margin-left: 3rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { .row { transition: none; } }
   `,
 })
 export class InboxPage implements OnInit {

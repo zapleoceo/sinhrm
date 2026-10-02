@@ -78,8 +78,8 @@ import { PeopleService } from '../people.service';
   `,
   styles: `
     .history { border-collapse: collapse; margin-bottom: 1rem; }
-    .history td { padding: 0.25rem 0.75rem 0.25rem 0; }
-    .history tr.current { font-weight: 500; }
+    .history td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: var(--app-border-w) solid var(--app-track); font-variant-numeric: tabular-nums; }
+    .history tr.current { font-weight: 700; }
     .add { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; }
   `,
 })

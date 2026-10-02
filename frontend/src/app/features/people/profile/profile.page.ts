@@ -81,7 +81,7 @@ import { wideDialog } from '../../../core/ui/dialog';
             <p class="muted">
               {{ e.position?.name ?? '—' }}@if (e.department) { · {{ e.department.name }}}@if (e.branch) { · {{ e.branch.name }}}
               @if (e.status !== 'active') {
-                · <span class="badge">{{ 'people.status.' + e.status | transloco }}</span>
+                · <span class="badge app-pill" [attr.data-status]="e.status">{{ 'people.status.' + e.status | transloco }}</span>
               }
             </p>
           </div>
@@ -110,7 +110,7 @@ import { wideDialog } from '../../../core/ui/dialog';
             </dd>
             <dt>{{ 'people.fields.phone' | transloco }}</dt>
             <dd>
-              @if (e.phone) { <a [href]="'tel:' + e.phone">{{ e.phone }}</a> } @else { — }
+              @if (e.phone) { <a class="mono" [href]="'tel:' + e.phone">{{ e.phone }}</a> } @else { — }
             </dd>
             <dt>{{ 'people.fields.manager' | transloco }}</dt>
             <dd>
@@ -186,7 +186,7 @@ import { wideDialog } from '../../../core/ui/dialog';
                     }
                     <span class="muted small">{{ c.created_at | date: 'dd.MM.yyyy HH:mm' }}@if (c.decided_by) { · {{ c.decided_by.name }}}</span>
                   </div>
-                  <span class="status">{{ 'people.changeStatus.' + c.status | transloco }}</span>
+                  <span class="status app-pill">{{ 'people.changeStatus.' + c.status | transloco }}</span>
                   @if (c.can_decide && c.status === 'pending') {
                     <button mat-stroked-button type="button" (click)="decide(c, true)"><mat-icon>check</mat-icon>{{ 'timeoff.actions.approve' | transloco }}</button>
                     <button mat-button type="button" (click)="decide(c, false)">{{ 'timeoff.actions.reject' | transloco }}</button>
@@ -250,24 +250,41 @@ import { wideDialog } from '../../../core/ui/dialog';
     }
   `,
   styles: `
-    .who { display: flex; align-items: center; gap: 1rem; }
+    .who { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+    .who h1 { overflow-wrap: anywhere; }
+    /* Avatar = «station» ring (brief C): line colour ring, initials in the display face. */
     .avatar {
-      display: grid; place-items: center; width: 4rem; height: 4rem; border-radius: 50%; font-size: 1.4rem;
-      background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container);
+      display: grid; place-items: center; flex: none; width: 4rem; height: 4rem; box-sizing: border-box; border-radius: 50%;
+      border: 3px solid var(--mat-sys-primary); background: var(--app-card); color: var(--mat-sys-primary);
+      font: 800 1.35rem/1 var(--app-font-display);
     }
-    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .danger { color: var(--app-danger); }
-    .badge { color: var(--app-warning); }
-    .facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.5rem; padding: 1rem 0; margin: 0; }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .danger { color: var(--app-bad-text); --mat-button-text-label-text-color: var(--app-bad-text); }
+    .badge[data-status='on_leave'] { --pill-text: var(--app-info-text); --pill-bg: var(--app-info-bg); --pill-line: transparent; }
+    .badge[data-status='terminated']::before { border-style: dashed; }
+    .facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0; padding: 0.5rem 0 1rem; margin: 0; max-width: 48rem; }
+    .facts dt, .facts dd { padding: 0.6rem 1.5rem 0.6rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
     .facts dt { color: var(--app-muted); }
-    .facts dd { margin: 0; }
+    .facts dd { margin: 0; overflow-wrap: anywhere; }
+    .facts .mono { font-size: 0.8125rem; }
     .tab { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 0; }
+    .tab h3 { font: var(--mat-sys-title-medium); margin: 0.75rem 0 0.25rem; }
     .changes { list-style: none; margin: 0; padding: 1rem 0; }
-    .changes li { display: flex; gap: 1rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--app-border); flex-wrap: wrap; }
-    .changes li[data-status='pending'] .status { color: var(--app-warning); }
-    .changes li[data-status='approved'] .status { color: var(--app-success); }
-    .main { flex: 1; display: flex; flex-direction: column; }
+    .changes li { display: flex; gap: 1rem; align-items: center; padding: 0.75rem 0; border-bottom: var(--app-border-w) solid var(--app-track); flex-wrap: wrap; }
+    .changes li[data-status='pending'] .status { --pill-text: var(--app-warn-text); --pill-bg: var(--app-warn-bg); --pill-line: transparent; }
+    .changes li[data-status='pending'] .status::before { border-radius: 1px; rotate: 45deg; background: currentColor; width: 0.45rem; height: 0.45rem; }
+    .changes li[data-status='approved'] .status { --pill-text: var(--app-good-text); --pill-bg: var(--app-good-bg); --pill-line: transparent; }
+    .changes li[data-status='approved'] .status::before { background: currentColor; }
+    .changes li[data-status='rejected'] .status { --pill-text: var(--app-bad-text); --pill-bg: var(--app-bad-bg); --pill-line: transparent; }
+    .changes li[data-status='rejected'] .status::before { border-radius: 1px; background: currentColor; }
+    .main { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
     .small { font-size: 0.8rem; }
+    @media (max-width: 600px) {
+      .avatar { width: 3.25rem; height: 3.25rem; font-size: 1.1rem; }
+      .facts { grid-template-columns: minmax(0, 1fr); }
+      .facts dt { padding-bottom: 0; border-bottom: 0; font: var(--mat-sys-label-medium); }
+      .facts dd { padding-top: 0.15rem; }
+    }
   `,
 })
 export class ProfilePage {

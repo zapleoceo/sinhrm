@@ -87,7 +87,7 @@ export interface CandidateDialogData {
     mat-dialog-content { display: flex; flex-direction: column; min-width: min(30rem, 84vw); }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.75rem; }
     .dup { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-    .dup p { flex-basis: 100%; margin: 0; color: var(--app-warning); }
+    .dup p { flex-basis: 100%; margin: 0; color: var(--app-warn-text); }
     .error { color: var(--app-danger); margin: 0; }
     @media (max-width: 560px) { .two { grid-template-columns: 1fr; } }
   `,

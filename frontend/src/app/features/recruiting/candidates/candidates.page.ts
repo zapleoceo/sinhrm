@@ -147,6 +147,7 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
                 <mat-checkbox [checked]="selected().has(c.id)" (change)="toggle(c.id)" [attr.aria-label]="c.full_name" />
               }
               <a [routerLink]="['/candidates', c.id]" [class.active]="c.id === id()">
+                <span class="app-station" [class.current]="c.id === id()" [attr.data-kind]="c.applications[0]?.stage?.kind" aria-hidden="true"></span>
                 <span class="name">{{ c.full_name }}</span>
                 <span class="muted sub">{{ summary(c) }}</span>
                 @if (stale(c)) {
@@ -180,30 +181,50 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
   `,
   styles: `
     .split { display: grid; grid-template-columns: minmax(16rem, 22rem) 1fr; gap: var(--app-gap); align-items: start; }
-    .list { position: sticky; top: 0; display: flex; flex-direction: column; gap: 0.5rem; max-height: calc(100vh - 6rem); }
+    .list {
+      position: sticky; top: 0; display: flex; flex-direction: column; gap: 0.5rem; max-height: calc(100vh - 6rem);
+      padding: 0.75rem; box-sizing: border-box; border: var(--app-border-w) solid var(--app-border); border-radius: var(--app-radius);
+      background: var(--app-card);
+    }
     .list-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .board-view { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
     .vacancy-pick { max-width: 24rem; }
     .list-head h1 { font: var(--mat-sys-title-large); margin: 0; }
+    .filters { margin: 0; gap: 0.5rem; }
     .filters mat-form-field { flex: 1 1 8rem; }
-    .items { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+    .items { list-style: none; margin: 0 -0.25rem; padding: 0; overflow-y: auto; flex: 1; }
     .items a {
-      display: grid; grid-template-columns: 1fr auto; padding: 0.4rem 0.6rem; border-radius: 8px;
-      color: inherit; text-decoration: none;
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 0.6rem; align-items: center;
+      padding: 0.45rem 0.6rem; min-height: 44px; box-sizing: border-box; border-radius: var(--app-radius-sm);
+      color: inherit; text-decoration: none; transition: background-color var(--app-fast);
     }
-    .items a:hover { background: var(--mat-sys-surface-container-high); }
-    .items a.active { background: var(--mat-sys-secondary-container); color: var(--mat-sys-on-secondary-container); }
-    .name { font-weight: 500; }
-    .row { display: flex; align-items: center; }
-    .row a { flex: 1; }
-    .bulk-bar { display: flex; align-items: center; gap: 0.5rem; }
-    .sub { grid-column: 1; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .stale { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--app-warning); }
+    .items a:hover { background: var(--app-row-hover); }
+    .items a.active { background: var(--app-row-selected); box-shadow: inset 3px 0 0 var(--mat-sys-primary); }
+    .app-station { grid-row: 1 / span 2; }
+    .name { grid-column: 2; font-weight: 600; }
+    .row { display: flex; align-items: center; border-bottom: var(--app-border-w) solid var(--app-track); }
+    .row:last-child { border-bottom: 0; }
+    .row a { flex: 1; min-width: 0; }
+    .bulk-bar {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding: 0.35rem 0.5rem;
+      border-radius: var(--app-radius-sm); background: var(--app-row-selected);
+    }
+    .sub { grid-column: 2; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stale { grid-column: 3; grid-row: 1 / span 2; align-self: center; color: var(--app-warning); }
+    .detail {
+      min-width: 0; padding: 1.25rem 1.5rem; box-sizing: border-box; border: var(--app-border-w) solid var(--app-border);
+      border-radius: var(--app-radius); background: var(--app-card);
+    }
     @media (max-width: 900px) {
       .split { grid-template-columns: 1fr; }
       .list { position: static; max-height: none; }
       .split.has-card .list { display: none; }
+      .detail { padding: 1rem; }
     }
+    @media (max-width: 600px) {
+      .list { padding: 0.5rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { .items a { transition: none; } }
   `,
 })
 export class CandidatesPage implements OnInit {

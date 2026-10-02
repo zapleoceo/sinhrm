@@ -93,8 +93,8 @@ export interface InboxResolveData {
     .full { width: 100%; margin-top: 0.75rem; }
     .create { display: flex; flex-direction: column; margin-top: 0.75rem; }
     .actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
-    .warn { color: var(--app-warning); margin: 0; }
-    .error { color: var(--app-danger); }
+    .warn { color: var(--app-warn-text); margin: 0; }
+    .error { color: var(--app-bad-text); }
   `,
 })
 export class InboxResolveDialog implements OnInit {

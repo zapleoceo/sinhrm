@@ -93,18 +93,21 @@ export function applyMarkdown(text: string, start: number, end: number, format: 
   styles: `
     :host { display: block; }
     .head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .label { font-weight: 600; }
+    .label { font: var(--mat-sys-title-small); }
     .ai mat-spinner { display: inline-block; margin-right: 0.4rem; }
-    .box { border: 1px solid var(--app-border); border-radius: var(--app-radius, 8px); overflow: hidden; }
-    .box:focus-within { border-color: var(--mat-sys-primary); }
-    .box.invalid { border-color: var(--app-danger); }
-    .toolbar { display: flex; gap: 0.125rem; padding: 0.125rem 0.25rem; border-bottom: 1px solid var(--app-border); }
+    .box {
+      border-radius: var(--app-radius-sm); overflow: hidden; background: var(--app-card);
+      box-shadow: inset 0 0 0 1.5px var(--mat-sys-outline);
+    }
+    .box:focus-within { box-shadow: inset 0 0 0 2px var(--mat-sys-primary); }
+    .box.invalid { box-shadow: inset 0 0 0 2px var(--mat-sys-error); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.125rem; padding: 0.125rem 0.25rem; border-bottom: var(--app-border-w) solid var(--app-track); }
     textarea {
       display: block; width: 100%; box-sizing: border-box; border: 0; outline: none; resize: vertical; padding: 0.75rem;
       font: inherit; color: inherit; background: transparent; min-height: 8rem;
     }
-    .hint { color: var(--app-warning); margin: 0.25rem 0 0; font-size: 0.875rem; }
-    .error { color: var(--app-danger); margin: 0.25rem 0 0; font-size: 0.875rem; }
+    .hint { color: var(--app-warn-text); margin: 0.25rem 0 0; font-size: 0.875rem; }
+    .error { color: var(--app-bad-text); margin: 0.25rem 0 0; font-size: 0.875rem; }
   `,
 })
 export class MarkdownField {
