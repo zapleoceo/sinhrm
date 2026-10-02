@@ -197,7 +197,7 @@ viewer — например, новый сотрудник) и, как рань�
 | Файл | Что |
 |---|---|
 | `scripts.model.ts`, `scripts.service.ts`, `scripts.access.ts` | типы API, HTTP-клиент, `scriptsErrorKey`, `renderTemplate` (предпросмотр, те же правила, что на бэкенде), `canManageScripts` |
-| `list/scripts.page.ts` | `/admin/scripts`: список, создание, архивные |
+| `list/scripts.page.ts` | `/admin/scripts`: список, создание, архивные; заголовки сортируют и фильтруют на странице (название — текст, канал — выбор, активная версия и черновик — «є / немає», сортировка по их дате), состояние в адресе |
 | `editor/script-editor.page.*`, `editor/script-editor.store.ts` | `/admin/scripts/:id`: вкладки, CDK drag&drop шагов, чипы переменных, «перевірка на тексті», версии |
 | `evaluation/evaluation-view.ts`, `evaluation/evaluation-badge.ts` | детали оценки (у ШІ — комментарий под шагом и советы с пометкой «ШІ»); значок в ленте карточки с движком «правила» / «ШІ» (детали грузятся по клику) |
 | `templates/template-menu.ts` | кнопка «Шаблон» в `TouchComposer` карточки |
@@ -217,6 +217,16 @@ viewer — например, новый сотрудник) и, как рань�
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (`ScriptController`, `CandidateScriptController`).
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
+### Сортировка и фильтры версий (2026-10-02)
+Клик по названию колонки сортирует (повторный — в обратную сторону), воронка рядом — фильтр колонки; общий компонент `core/ui/table` (клиентская таблица `ClientTable`: все строки уже пришли, сравнение строк по языку интерфейса, пустые — в конце). Состояние — в адресе страницы с префиксом таблицы, ссылкой можно поделиться. Подключение — [guides/tables.md](../guides/tables.md).
+- Редактор скрипта, вкладка «Версії»: «Версія» и «Кроки» (диапазон), «Опубліковано» (диапазон дат; черновик даты не имеет — всегда внизу), «Автор» (текст), «Дії» без сортировки. Порядок API — новые версии сверху. Адрес — `ver_*`. Тест — `editor/script-editor.page.spec.ts`.
+
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `scriptsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Scripts/ScriptsApiTest` (права: recruiter/viewer только читают; версии: черновик → публикация →

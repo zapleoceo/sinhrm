@@ -48,6 +48,10 @@ merge-base) или падение самого шага — всё это даё
 результатов Pint и PHPStan в `actions/cache`), `tests` (Postgres, PHPUnit + покрытие не ниже 70 %) и `api-docs`
 (миграции, экспорт OpenAPI через Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
 Job `backend` — агрегатор: `needs` всех трёх, `if: always()`, зелёный только если все три `success`.
+Job `frontend`: `ng lint`, `ng test --watch=false --coverage` (Vitest + `@vitest/coverage-v8`) с порогами покрытия
+в `frontend/angular.json` → `test.options.coverageThresholds`: statements 45,5 %, branches 57 %, functions 54,5 %,
+lines 54 % — замер 02.10.2026 (47,6 / 59,1 / 56,7 / 56,3 %) минус запас ≈ 2 п.п.; ниже порога job падает. Порог
+поднимаем вместе с новыми тестами, не опускаем. Локальный `ng test` без `--coverage` пороги не проверяет.
 
 Ruleset «Protect main» требует проверки с именами **ровно** `backend`, `frontend`, `extension`, `security`, `docs`, `worklog`.
 Эти job **нельзя переименовывать и удалять**: PR будет вечно ждать отсутствующую проверку. Новые части бэкенда

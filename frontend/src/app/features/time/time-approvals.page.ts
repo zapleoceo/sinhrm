@@ -8,11 +8,25 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { TimesheetApproval } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
+import { ClientColumn, ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER } from '../../core/ui/table/client-table';
+import { ColumnHeader } from '../../core/ui/table/column-header';
+import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
+
+/** Columns of the approvals list (all submitted weeks are on the page). */
+export const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
+  { key: 'employee', value: (t) => t.employee.full_name, filter: 'text' },
+  { key: 'week', value: (t) => t.week_start, filter: 'date' },
+  { key: 'expected', value: (t) => t.expected, filter: 'number' },
+  { key: 'worked', value: (t) => t.worked, filter: 'number' },
+  { key: 'overtime', value: (t) => t.overtime, filter: 'number' },
+];
 
 /** Manager approvals (/time/approvals): submitted weeks of the subtree (admins: everyone), open the grid or decide. */
 @Component({
   selector: 'app-time-approvals-page',
-  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe],
+  imports: [DatePipe, DecimalPipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, TableSortDirective, ColumnHeader],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -25,19 +39,24 @@ import { TimeService, timeErrorKey } from './time.service';
       <mat-progress-bar mode="indeterminate" />
     }
     <div class="panel">
-      <table>
+      <table class="app-table" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
-            <th scope="col">{{ 'time.approvals.employee' | transloco }}</th>
-            <th scope="col">{{ 'time.approvals.week' | transloco }}</th>
-            <th scope="col" class="num">{{ 'time.week.expected' | transloco }}</th>
-            <th scope="col" class="num">{{ 'time.week.worked' | transloco }}</th>
-            <th scope="col" class="num">{{ 'time.week.overtime' | transloco }}</th>
-            <th scope="col"></th>
+            <th scope="col" app-column-header key="employee" [label]="'time.approvals.employee' | transloco"
+              [filter]="textFilter" [filterValue]="table.filterValue('employee')" (filterChange)="table.setFilter('employee', $event)"></th>
+            <th scope="col" app-column-header key="week" [label]="'time.approvals.week' | transloco"
+              [filter]="dateFilter" [filterValue]="table.filterValue('week')" (filterChange)="table.setFilter('week', $event)"></th>
+            <th scope="col" class="num" app-column-header key="expected" [label]="'time.week.expected' | transloco"
+              [filter]="numberFilter" [filterValue]="table.filterValue('expected')" (filterChange)="table.setFilter('expected', $event)"></th>
+            <th scope="col" class="num" app-column-header key="worked" [label]="'time.week.worked' | transloco"
+              [filter]="numberFilter" [filterValue]="table.filterValue('worked')" (filterChange)="table.setFilter('worked', $event)"></th>
+            <th scope="col" class="num" app-column-header key="overtime" [label]="'time.week.overtime' | transloco"
+              [filter]="numberFilter" [filterValue]="table.filterValue('overtime')" (filterChange)="table.setFilter('overtime', $event)"></th>
+            <th scope="col"><span class="visually-hidden">{{ 'table.actions' | transloco }}</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (t of items(); track t.id) {
+          @for (t of table.rows(); track t.id) {
             <tr>
               <td>{{ t.employee.full_name }}</td>
               <td><a routerLink="/time" [queryParams]="{ week: t.week_start, employee_id: t.employee.id }">{{ t.week_start | date: 'dd.MM.yyyy' }}</a></td>
@@ -50,22 +69,19 @@ import { TimeService, timeErrorKey } from './time.service';
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="muted">{{ 'time.approvals.empty' | transloco }}</td></tr>
+            <tr><td colspan="6" class="muted">{{ (items().length ? 'table.noMatches' : 'time.approvals.empty') | transloco }}</td></tr>
           }
         </tbody>
       </table>
     </div>
   `,
   styles: `
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
-    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
+    /* The hidden «actions» column title is position: absolute — keep it inside the scrolling panel, or it widens the page on phones. */
+    .panel { position: relative; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     td.num { font-family: var(--app-font-mono); font-size: 0.8rem; font-weight: 500; }
-    tbody tr:hover { background: var(--app-row-hover); }
     .over { color: var(--app-warn-text); }
     .actions { white-space: nowrap; text-align: right; }
-    .panel { overflow-x: auto; }
   `,
 })
 export class TimeApprovalsPage implements OnInit {
@@ -74,6 +90,10 @@ export class TimeApprovalsPage implements OnInit {
   private readonly i18n = inject(TranslocoService);
   protected readonly items = signal<TimesheetApproval[]>([]);
   protected readonly loading = signal(false);
+  protected readonly table = new ClientTable({ rows: this.items, columns: APPROVAL_COLUMNS });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberFilter = NUMBER_RANGE;
+  protected readonly dateFilter = DATE_RANGE;
 
   ngOnInit(): void {
     this.load();

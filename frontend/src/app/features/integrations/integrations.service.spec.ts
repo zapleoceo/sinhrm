@@ -95,6 +95,8 @@ describe('error and check-result keys', () => {
     expect(integrationErrorKey(err(422, { code: 'check_not_supported' }))).toBe('integrations.errors.check_not_supported');
     expect(integrationErrorKey(err(500, null))).toBe('integrations.errors.generic');
     expect(integrationErrorKey(new Error('x'))).toBe('integrations.errors.generic');
+    expect(integrationErrorKey(err(403, null))).toBe('integrations.errors.generic');
+    expect(integrationErrorKey(err(422, { errors: {} }))).toBe('integrations.errors.generic');
   });
 
   it('maps last_error codes', () => {

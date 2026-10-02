@@ -1,3 +1,5 @@
+import { PageMeta } from '../../core/api/api.model';
+
 /** Mirrors backend App\Modules\Recruiting\Enums\*. */
 export type StageKind = 'attract' | 'select' | 'hire' | 'closed';
 export type VacancyStatus = 'open' | 'paused' | 'closed';
@@ -397,21 +399,11 @@ export interface MoveApplication {
   reject_reason_id?: number;
 }
 
-export interface PageMeta {
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
-}
+export type { PageMeta, Paged } from '../../core/api/api.model';
 
 /** GET /api/vacancies meta: + active vacancies (open AND published) in the user's scope, for the list header. */
 export interface VacancyPageMeta extends PageMeta {
   active_count?: number;
-}
-
-export interface Paged<T> {
-  data: T[];
-  meta: PageMeta;
 }
 
 export interface Board {

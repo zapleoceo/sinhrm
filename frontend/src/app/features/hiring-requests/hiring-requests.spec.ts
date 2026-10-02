@@ -54,6 +54,7 @@ describe('HiringRequestsService', () => {
   it('maps errors', () => {
     expect(hiringErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'required_fields' } }))).toBe('hiring.errors.required_fields');
     expect(hiringErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('hiring.errors.not_found');
+    expect(hiringErrorKey(new Error('x'))).toBe('common.error');
   });
 });
 

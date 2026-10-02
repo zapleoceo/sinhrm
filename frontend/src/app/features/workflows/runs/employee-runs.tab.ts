@@ -7,13 +7,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { WorkflowRun, WorkflowTemplate } from '../workflows.model';
 import { WorkflowsService } from '../workflows.service';
 import { RunCard, StepAction } from './run-card';
 import { RunsStore } from './runs.store';
 import { toIsoDate, today } from '../../../core/date/iso-date';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Profile tab "Воркфлоу": runs of one employee; admins can start a workflow for them. */
 @Component({
@@ -77,8 +77,7 @@ export class EmployeeRunsTab {
 
   protected readonly store = inject(RunsStore);
   private readonly api = inject(WorkflowsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly templates = signal<WorkflowTemplate[]>([]);
   protected readonly form = inject(NonNullableFormBuilder).group({
     template_id: [0, [Validators.required, Validators.min(1)]],
@@ -99,18 +98,14 @@ export class EmployeeRunsTab {
     if (this.form.invalid) {
       return;
     }
-    this.store.start(v.template_id, this.employeeId(), toIsoDate(v.anchor_date) || undefined, (key) => this.toast(key));
+    this.store.start(v.template_id, this.employeeId(), toIsoDate(v.anchor_date) || undefined, (key) => this.notify.show(key));
   }
 
   protected act(a: StepAction): void {
-    this.store.command(a.run, a.step, a.command, (key) => this.toast(key), a.reason);
+    this.store.command(a.run, a.step, a.command, (key) => this.notify.show(key), a.reason);
   }
 
   protected cancel(run: WorkflowRun): void {
-    this.store.cancel(run, (key) => this.toast(key));
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.store.cancel(run, (key) => this.notify.show(key));
   }
 }

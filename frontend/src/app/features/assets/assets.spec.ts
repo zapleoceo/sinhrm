@@ -40,5 +40,6 @@ describe('AssetsService', () => {
   it('maps errors', () => {
     expect(assetsErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'inventory_number_taken' } }))).toBe('assets.errors.inventory_number_taken');
     expect(assetsErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('assets.errors.forbidden');
+    expect(assetsErrorKey(new Error('x'))).toBe('common.error');
   });
 });

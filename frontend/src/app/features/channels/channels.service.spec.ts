@@ -96,6 +96,8 @@ describe('ChannelsService', () => {
     expect(channelErrorKey(err(422, 'template_required'))).toBe('channels.errors.template_required');
     expect(channelErrorKey(err(422, 'something_else'))).toBe('channels.errors.generic');
     expect(channelErrorKey(err(403))).toBe('recruiting.errors.forbidden');
+    expect(channelErrorKey(err(404))).toBe('channels.errors.generic');
+    expect(channelErrorKey(new Error('x'))).toBe('channels.errors.generic');
     expect(channelErrorCode(new Error('x'))).toBeNull();
   });
 

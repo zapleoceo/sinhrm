@@ -1,8 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { apiErrorKey } from '../../core/http/api-error';
+import { Observable } from 'rxjs';
+import { apiErrorKey } from '../../core/api/api-error';
 import { BuilderResult, BuilderSpec, CatalogGroup, DatasetInfo, ReportFilter, ReportResult, SavedKind, SavedReport, filterParams } from './reports.model';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 /** HTTP client of the Reports API (/api/reports/{catalog,builder,saved}). CSV answers come as Blobs. */
 @Injectable({ providedIn: 'root' })
@@ -10,11 +12,11 @@ export class ReportsService {
   private readonly http = inject(HttpClient);
 
   catalog(): Observable<CatalogGroup[]> {
-    return this.http.get<{ data: CatalogGroup[] }>('/api/reports/catalog').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<CatalogGroup[]>>('/api/reports/catalog').pipe(unwrapData());
   }
 
   run(key: string, filters: Partial<Record<ReportFilter, string | number | null>>): Observable<ReportResult> {
-    return this.http.get<{ data: ReportResult }>(`/api/reports/catalog/${key}`, { params: filterParams(filters) }).pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<ReportResult>>(`/api/reports/catalog/${key}`, { params: filterParams(filters) }).pipe(unwrapData());
   }
 
   csv(key: string, filters: Partial<Record<ReportFilter, string | number | null>>): Observable<Blob> {
@@ -22,11 +24,11 @@ export class ReportsService {
   }
 
   datasets(): Observable<DatasetInfo[]> {
-    return this.http.get<{ data: DatasetInfo[] }>('/api/reports/builder/datasets').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<DatasetInfo[]>>('/api/reports/builder/datasets').pipe(unwrapData());
   }
 
   build(spec: BuilderSpec): Observable<BuilderResult> {
-    return this.http.post<{ data: BuilderResult }>('/api/reports/builder/run', spec).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<BuilderResult>>('/api/reports/builder/run', spec).pipe(unwrapData());
   }
 
   buildCsv(spec: BuilderSpec): Observable<Blob> {
@@ -34,13 +36,13 @@ export class ReportsService {
   }
 
   saved(): Observable<SavedReport[]> {
-    return this.http.get<{ data: SavedReport[] }>('/api/reports/saved').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<SavedReport[]>>('/api/reports/saved').pipe(unwrapData());
   }
 
   save(id: number | null, name: string, kind: SavedKind, definition: SavedReport['definition']): Observable<SavedReport> {
     const body = { name, kind, definition };
-    const call = id === null ? this.http.post<{ data: SavedReport }>('/api/reports/saved', body) : this.http.put<{ data: SavedReport }>(`/api/reports/saved/${id}`, body);
-    return call.pipe(map((r) => r.data));
+    const call = id === null ? this.http.post<DataEnvelope<SavedReport>>('/api/reports/saved', body) : this.http.put<DataEnvelope<SavedReport>>(`/api/reports/saved/${id}`, body);
+    return call.pipe(unwrapData());
   }
 
   remove(id: number): Observable<void> {

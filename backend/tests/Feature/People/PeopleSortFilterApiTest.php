@@ -94,6 +94,20 @@ final class PeopleSortFilterApiTest extends TestCase
         $this->assertSame([], $this->names($this->actingAs($viewer)->getJson('/api/people?name=_')));
     }
 
+    public function test_a_filter_value_of_zero_is_a_real_filter(): void
+    {
+        $none = ['work_email' => null, 'phone' => null]; // no digits outside the names
+        $agent = $this->employee(['full_name' => 'Agent 0'] + $none);
+        $this->employee(['full_name' => 'Agent One'] + $none);
+        $this->employee(['full_name' => 'Report Person', 'manager_id' => $agent->id] + $none);
+        $admin = $this->login(UserRole::Admin);
+
+        // "0" is falsy in PHP: a truthy check would drop the filter and return everybody.
+        $this->assertSame(['Agent 0'], $this->names($this->actingAs($admin)->getJson('/api/people?name=0')));
+        $this->assertSame(['Report Person'], $this->names($this->actingAs($admin)->getJson('/api/people?manager=0')));
+        $this->assertSame(['Agent 0'], $this->names($this->actingAs($admin)->getJson('/api/people?q=0')));
+    }
+
     public function test_unknown_sort_column_or_direction_is_422(): void
     {
         $this->employee(['full_name' => 'Anyone']);

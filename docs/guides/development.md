@@ -20,8 +20,11 @@
 **Браузерное расширение (`extension/`):** TypeScript без фреймворка, esbuild, Vitest + jsdom на вымышленных HTML-фикстурах
 (реальные страницы сайтов в репозиторий не копируем), ESLint; `npm run lint|typecheck|test|package` — job `extension` в CI.
 
-**Фронтенд (Angular):** standalone, signals, `inject()`, `OnPush`, typed forms, без `any`, HTTP только через сервисы
-в `core/api`, строки интерфейса — через i18n (ru/uk/en). Тесты — Vitest. Общие хелперы тестов — `frontend/src/testing/`
+**Фронтенд (Angular):** standalone, signals, `inject()`, `OnPush`, typed forms, без `any`, строки интерфейса — через i18n (ru/uk/en).
+Тесты — Vitest. **HTTP только через сервисы:** компонент не держит `HttpClient`; HTTP-сервис живёт в самой фиче
+(`features/<name>/<name>.service.ts` или рядом с подфичей, например `recruiting/card/offers.service.ts`), а в `core/api` —
+только общее для всех фич: `toParams`, `unwrapData`/`DataEnvelope`, `Paged`, `apiErrorKey` и сервисы самого ядра
+(`health.service.ts`). Уведомления — `core/ui/notify.service.ts` ([core.md](../modules/core.md)). Общие хелперы тестов — `frontend/src/testing/`
 (в сборку приложения не входят): `css(Component)` — скомпилированный CSS компонента для тестов вида `*.restyle.spec.ts`.
 
 ## Документация

@@ -98,5 +98,7 @@ describe('PulseService', () => {
     expect(pulseErrorKey(new HttpErrorResponse({ status: 403, error: { code: 'not_in_audience' } }))).toBe('pulse.errors.not_in_audience');
     expect(pulseErrorKey(new HttpErrorResponse({ status: 403 }))).toBe('pulse.errors.forbidden');
     expect(pulseErrorKey(new HttpErrorResponse({ status: 500 }))).toBe('common.error');
+    expect(pulseErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('pulse.errors.not_found');
+    expect(pulseErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('common.error');
   });
 });

@@ -1,4 +1,4 @@
-<header class="head">
+<header class="page-head">
   <div>
     <h1>{{ 'directory.title' | transloco }}</h1>
     <p class="muted">{{ 'directory.subtitle' | transloco }}</p>
@@ -11,21 +11,8 @@
   }
 </mat-tab-group>
 
+<!-- Search (name), city and status are filtered in the column headers (core/ui/table); tab and state live in the URL. -->
 <div class="filters">
-  <mat-form-field class="search" subscriptSizing="dynamic">
-    <mat-label>{{ 'directory.search' | transloco }}</mat-label>
-    <mat-icon matPrefix>search</mat-icon>
-    <input matInput type="search" #search (input)="onSearch(search.value)" />
-  </mat-form-field>
-  <mat-form-field subscriptSizing="dynamic">
-    <mat-label>{{ 'directory.status' | transloco }}</mat-label>
-    <mat-select [value]="store.query().status" (valueChange)="onStatusFilter($event)">
-      <mat-option [value]="undefined">{{ 'common.all' | transloco }}</mat-option>
-      @for (status of statuses; track status) {
-        <mat-option [value]="status">{{ 'directory.statuses.' + status | transloco }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
   <form class="add" (submit)="$event.preventDefault(); add()">
     <mat-form-field subscriptSizing="dynamic">
       <mat-label>{{ 'directory.newItem' | transloco }}</mat-label>
@@ -48,12 +35,12 @@
       <p>{{ 'directory.loadError' | transloco }}</p>
       <button mat-stroked-button type="button" (click)="store.load()">{{ 'common.retry' | transloco }}</button>
     </div>
-  } @else if (!store.loading() && store.items().length === 0) {
-    <p class="state muted">{{ 'directory.empty' | transloco }}</p>
   } @else {
-    <table mat-table [dataSource]="store.items()">
+    <!-- The headers stay when nothing matches: the filters that emptied the list are cleared right there. -->
+    <div class="table-scroll"><table mat-table [dataSource]="store.items()" [appTableSort]="sort()" (appTableSortChange)="onSort($event)">
       <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef>{{ 'directory.columns.name' | transloco }}</th>
+        <th mat-header-cell *matHeaderCellDef scope="col" app-column-header key="name" [label]="'directory.columns.name' | transloco"
+          [filter]="textFilter" [filterValue]="store.query().q ?? null" (filterChange)="setFilter('q', $event)"></th>
         <td mat-cell *matCellDef="let item">
           @if (editingId() === item.id) {
             <mat-form-field class="rename" subscriptSizing="dynamic">
@@ -89,19 +76,21 @@
       </ng-container>
 
       <ng-container matColumnDef="city">
-        <th mat-header-cell *matHeaderCellDef>{{ 'directory.columns.city' | transloco }}</th>
+        <th mat-header-cell *matHeaderCellDef scope="col" app-column-header key="city" [label]="'directory.columns.city' | transloco"
+          [filter]="cityFilter()" [filterValue]="idValue(store.query().city_id)" (filterChange)="setFilter('city_id', $event)"></th>
         <td mat-cell *matCellDef="let item" class="muted">{{ item.city?.name ?? '—' }}</td>
       </ng-container>
 
       <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>{{ 'directory.columns.status' | transloco }}</th>
+        <th mat-header-cell *matHeaderCellDef scope="col" app-column-header key="status" [label]="'directory.columns.status' | transloco"
+          [filter]="statusFilter" [filterValue]="store.query().status ?? null" (filterChange)="setFilter('status', $event)"></th>
         <td mat-cell *matCellDef="let item">
           <span class="app-pill" [attr.data-tone]="item.status === 'disabled' ? 'neutral' : 'good'">{{ 'directory.statuses.' + item.status | transloco }}</span>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="visually-hidden">{{ 'directory.columns.actions' | transloco }}</th>
+        <th mat-header-cell *matHeaderCellDef scope="col" class="visually-hidden">{{ 'directory.columns.actions' | transloco }}</th>
         <td mat-cell *matCellDef="let item" class="actions">
           <button mat-button type="button" [disabled]="store.pending().has(item.id)" (click)="toggle(item)">
             {{ (item.status === 'active' ? 'directory.disable' : 'directory.enable') | transloco }}
@@ -111,7 +100,10 @@
 
       <tr mat-header-row *matHeaderRowDef="columns()"></tr>
       <tr mat-row *matRowDef="let row; columns: columns()"></tr>
-    </table>
+      <tr class="mat-mdc-row" *matNoDataRow>
+        <td class="mat-mdc-cell state muted" [attr.colspan]="columns().length">{{ store.loading() ? '' : ('directory.empty' | transloco) }}</td>
+      </tr>
+    </table></div>
   }
 
   <mat-paginator

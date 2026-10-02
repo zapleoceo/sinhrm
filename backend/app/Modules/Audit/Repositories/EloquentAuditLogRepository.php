@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Audit\Contracts\AuditLogRepository;
 use App\Modules\Audit\DTO\AuditFilter;
 use App\Modules\Audit\DTO\AuditRecord;
+use App\Modules\Audit\Enums\AuditSort;
 use App\Modules\Audit\Models\AuditEntry;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,7 +31,7 @@ final class EloquentAuditLogRepository implements AuditLogRepository
 
     public function search(AuditFilter $filter): LengthAwarePaginator
     {
-        $q = $this->base();
+        $q = AuditEntry::query()->with('user:id,name');
         if ($filter->userId !== null) {
             $q->where('user_id', $filter->userId);
         }
@@ -46,6 +47,7 @@ final class EloquentAuditLogRepository implements AuditLogRepository
         if ($filter->to !== null) {
             $q->where('created_at', '<', $filter->to);
         }
+        self::sort($q, $filter->sort, $filter->descending);
 
         return $q->paginate($filter->perPage, ['*'], 'page', $filter->page);
     }
@@ -86,6 +88,32 @@ final class EloquentAuditLogRepository implements AuditLogRepository
         $ids = AuditEntry::query()->where('created_at', '<', $before)->orderBy('id')->limit($limit)->pluck('id')->all();
 
         return $ids === [] ? 0 : (int) AuditEntry::query()->whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * ORDER BY of a whitelisted column: column names and direction are literals, never request text. The actor's name
+     * comes from a correlated subquery (no join: the selected columns and the count stay as they are); system entries
+     * (no user) stay last in both directions — Postgres would put NULLs first on DESC. Ties: newest first by id.
+     *
+     * @param  Builder<AuditEntry>  $q
+     */
+    private static function sort(Builder $q, AuditSort $sort, bool $descending): void
+    {
+        $dir = $descending ? 'desc' : 'asc';
+        if ($sort === AuditSort::Time) {
+            $q->orderBy('audit_log.created_at', $dir)->orderBy('audit_log.id', $dir);
+
+            return;
+        }
+        $columns = match ($sort) {
+            AuditSort::User => ['(select users.name from users where users.id = audit_log.user_id)'],
+            AuditSort::Action => ['audit_log.action'],
+            AuditSort::Entity => ['audit_log.entity_type', 'audit_log.entity_id'],
+        };
+        foreach ($columns as $column) {
+            $q->orderByRaw($column.' '.$dir.' nulls last');
+        }
+        $q->orderByDesc('audit_log.id');
     }
 
     /** @return Builder<AuditEntry> */

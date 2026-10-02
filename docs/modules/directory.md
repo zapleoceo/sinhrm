@@ -45,7 +45,7 @@ Enum `Enums/DirectoryStatus` (`active`, `disabled`), `Enums/DictionaryType` (`br
 ### Эндпоинты (`/api/directory`)
 | Метод и путь | Тело / параметры | Ответ |
 |---|---|---|
-| `GET /{type}` | `q` (по названию, без учёта регистра), `status` (`active\|disabled`), `perPage` 1..200 (строка `"50"` тоже принимается, по умолчанию 50), `page` | `{data: [item], links, meta}`, сортировка по названию |
+| `GET /{type}` | `q` (по названию, без учёта регистра), `status` (`active\|disabled`), `city_id` (только `branches`), `sort` = `name\|status`, у `branches` ещё `city` (по умолчанию `name`), `dir` = `asc\|desc`, `perPage` 1..200 (строка `"50"` тоже принимается, по умолчанию 50), `page`; `city`/`city_id` у другого справочника, чужая колонка или направление → 422 | `{data: [item], links, meta}`; город — подзапросом, филиалы без города в конце (`nulls last`), равные — по названию и `id` |
 | `POST /{type}` | `{name, status?, city_id?}` | 201 `{data: item}`; 422 при ошибке полей |
 | `PATCH /{type}/{id}` | `{name?, status?, city_id?}` | `{data: item}`; нет записи в этом справочнике → 404 |
 
@@ -73,9 +73,13 @@ if ($ids !== null) {
 Демо- и тестовые данные — фабрики `Database/Factories/*Factory` (синтетические названия).
 
 ### Фронтенд (`features/directory`)
-`directory.page.ts` — вкладки, поиск, фильтр статуса, таблица с переименованием в строке, «Додати». `directory.store.ts` — состояние страницы
-на signals (переименование и выключение — оптимистично с откатом, устаревшие ответы после смены вкладки
-игнорируются). `directory.service.ts` — HTTP, `active(type)` для выпадающих списков (используется на странице
+`directory.page.ts` — вкладки, таблица с переименованием в строке, «Додати». Заголовки колонок — общий
+`th[app-column-header]` ([core.md](core.md#заголовок-таблицы-сортировка-и-фильтр)): «Назва» (сортировка, фильтр-текст `q` —
+бывший поиск сверху), «Місто» у филиалов (сортировка, выбор города), «Статус» (сортировка, выбор — бывший фильтр сверху).
+Вкладка и состояние — в адресе (`directory.query.ts`: `?tab=branches&city_id=2&sort=city&dir=desc`); смена вкладки
+начинает с чистых фильтров. `directory.store.ts` — состояние страницы на signals (`apply(view)` из адреса; новый
+запрос отменяет незавершённый — `LatestRequest`; переименование и выключение — оптимистично с откатом). При пустом
+результате заголовки остаются. `directory.service.ts` — HTTP, `active(type)` для выпадающих списков (используется на странице
 пользователей), перевод кодов ошибок в ключи i18n `directory.errors.*`. Маршрут `/admin/directory` —
 `roleGuard('superadmin', 'admin')`.
 
@@ -89,11 +93,17 @@ if ($ids !== null) {
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `directoryErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
 ## Как проверить
 Тесты: `tests/Feature/Directory/DirectoryApiTest.php` (401/403/404, чтение любым активным, сортировка, фильтры,
 `perPage` строкой и границы, создание/правка/выключение админом, `city_id` только у филиалов, запрет записи
 рекрутеру/наблюдателю, нет DELETE, `POST /api/directory/import` → 404), `tests/Unit/Directory/*` (`BranchAccess`, `DirectoryService`).
-Фронт: `directory.service.spec.ts`, `directory.store.spec.ts`.
+`tests/Feature/Directory/DirectorySortFilterApiTest.php` (сортировка, город только у филиалов, `nulls last`, `"0"`,
+строковые `perPage`/`page`, 422). Фронт: `directory.service.spec.ts`, `directory.store.spec.ts`, `directory.page.spec.ts`.
 
 Вручную (нужна сессия в браузере):
 ```bash

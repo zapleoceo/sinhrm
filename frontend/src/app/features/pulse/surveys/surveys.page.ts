@@ -23,12 +23,17 @@ import {
   SurveyTemplate,
   SurveyType,
   WAVE_SCHEDULES,
+  WAVE_STATUSES,
   Wave,
   WaveSchedule,
   nextQuestionId,
 } from '../pulse.model';
 import { PulseService, pulseErrorKey } from '../pulse.service';
 import { toIsoDate, today } from '../../../core/date/iso-date';
+import { ClientTable, DATE_RANGE, NUMBER_RANGE, translatedSelect } from '../../../core/ui/table/client-table';
+import { ColumnHeader } from '../../../core/ui/table/column-header';
+import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
+import { TableUrlState } from '../../../core/ui/table/table-url-state';
 
 /**
  * Surveys (/admin/pulse, admins): the builder (from a template or from scratch; questions: scales 1–5 / 1–10,
@@ -37,7 +42,22 @@ import { toIsoDate, today } from '../../../core/date/iso-date';
  */
 @Component({
   selector: 'app-surveys-page',
-  imports: [DatePipe, FormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule, RouterLink, TranslocoPipe],
+  imports: [
+    DatePipe,
+    FormsModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+    RouterLink,
+    TranslocoPipe,
+    TableSortDirective,
+    ColumnHeader,
+  ],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -169,9 +189,24 @@ import { toIsoDate, today } from '../../../core/date/iso-date';
                 <button mat-stroked-button type="submit" [disabled]="!startsAt || !endsAt">{{ 'pulse.waves.launch' | transloco }}</button>
               </form>
               <p class="muted">{{ 'pulse.waves.anonymityHint' | transloco }}</p>
-              <table class="waves">
+              <!-- Waves: sort and filter in the headers (core/ui/table), URL wave_sort / wave_<column>. -->
+              <div class="scroll">
+              <table class="app-table waves" [appTableSort]="waveTable.sort()" (appTableSortChange)="waveTable.setSort($event)">
+                <thead>
+                  <tr>
+                    <th scope="col" app-column-header key="starts" [label]="'pulse.waves.period' | transloco"
+                      [filter]="dateRange" [filterValue]="waveTable.filterValue('starts')" (filterChange)="waveTable.setFilter('starts', $event)"></th>
+                    <th scope="col" app-column-header key="schedule" [label]="'pulse.waves.schedule' | transloco"
+                      [filter]="scheduleFilter()" [filterValue]="waveTable.filterValue('schedule')" (filterChange)="waveTable.setFilter('schedule', $event)"></th>
+                    <th scope="col" app-column-header key="status" [label]="'pulse.waves.status' | transloco"
+                      [filter]="statusFilter()" [filterValue]="waveTable.filterValue('status')" (filterChange)="waveTable.setFilter('status', $event)"></th>
+                    <th scope="col" app-column-header key="responses" [label]="'pulse.waves.answers' | transloco"
+                      [filter]="numberRange" [filterValue]="waveTable.filterValue('responses')" (filterChange)="waveTable.setFilter('responses', $event)"></th>
+                    <th scope="col" app-column-header key="actions" [sortable]="false" [label]="'table.actions' | transloco"></th>
+                  </tr>
+                </thead>
                 <tbody>
-                  @for (w of waves(); track w.id) {
+                  @for (w of waveTable.rows(); track w.id) {
                     <tr>
                       <td>{{ w.starts_at | date: 'dd.MM.yyyy' }} — {{ w.ends_at | date: 'dd.MM.yyyy' }}</td>
                       <td>{{ 'pulse.schedule.' + w.schedule | transloco }}</td>
@@ -185,10 +220,11 @@ import { toIsoDate, today } from '../../../core/date/iso-date';
                       </td>
                     </tr>
                   } @empty {
-                    <tr><td class="muted">{{ 'pulse.waves.empty' | transloco }}</td></tr>
+                    <tr><td colspan="5" class="muted">{{ (waves().length ? 'table.noMatches' : 'pulse.waves.empty') | transloco }}</td></tr>
                   }
                 </tbody>
               </table>
+              </div>
             </section>
           }
         </div>
@@ -215,8 +251,7 @@ import { toIsoDate, today } from '../../../core/date/iso-date';
     .qid { font: 500 0.8125rem var(--app-font-mono); color: var(--app-muted); min-width: 2.5rem; }
     .grow { flex: 1 1 14rem; }
     .num { width: 7rem; }
-    .waves { width: 100%; border-collapse: collapse; }
-    .waves td { padding: 0.5rem 0.75rem; border-bottom: var(--app-border-w) solid var(--app-track); }
+    .scroll { overflow-x: auto; }
   `,
 })
 export class SurveysPage implements OnInit {
@@ -230,6 +265,22 @@ export class SurveysPage implements OnInit {
   protected readonly surveys = signal<Survey[]>([]);
   protected readonly templates = signal<SurveyTemplate[]>([]);
   protected readonly waves = signal<Wave[]>([]);
+  protected readonly dateRange = DATE_RANGE;
+  protected readonly numberRange = NUMBER_RANGE;
+  protected readonly scheduleFilter = translatedSelect(() => WAVE_SCHEDULES, (v) => 'pulse.schedule.' + v);
+  protected readonly statusFilter = translatedSelect(() => WAVE_STATUSES, (v) => 'pulse.waveStatus.' + v);
+  /** API order: newest start first. */
+  protected readonly waveTable = new ClientTable<Wave>({
+    rows: this.waves,
+    prefix: 'wave',
+    defaultSort: { key: 'starts', dir: 'desc' },
+    columns: [
+      { key: 'starts', value: (w) => w.starts_at, filter: 'date' },
+      { key: 'schedule', value: (w) => WAVE_SCHEDULES.indexOf(w.schedule), filter: 'select', filterValue: (w) => w.schedule },
+      { key: 'status', value: (w) => WAVE_STATUSES.indexOf(w.status), filter: 'select', filterValue: (w) => w.status },
+      { key: 'responses', value: (w) => w.responses_count, filter: 'number' },
+    ],
+  });
   protected readonly editingId = signal<number | null>(null);
   protected readonly draft = signal<{ title: string; type: SurveyType; description: string | null; lifecycle_trigger: LifecycleTrigger | null; active: boolean; questions: Question[] } | null>(null);
   protected startsAt: Date | null = today();

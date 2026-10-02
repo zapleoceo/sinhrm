@@ -146,7 +146,7 @@ skipped, failed}`.
 | Файл | Что |
 |---|---|
 | `workflows.model.ts`, `workflows.service.ts` | типы API, HTTP-клиент, `workflowsErrorKey`, ключи кодов результата шага, прогресс |
-| `templates/workflow-templates.page.ts` | `/admin/workflows`: список, создание, удаление (409 `has_runs` → подсказка деактивировать) |
+| `templates/workflow-templates.page.ts` | `/admin/workflows`: список, создание, удаление (409 `has_runs` → подсказка деактивировать); заголовки сортируют и фильтруют на странице (название, тип, запуск, число шагов и запусков — диапазон, «Змінено» — даты), состояние в адресе |
 | `editor/workflow-editor.page.*`, `editor/workflow-editor.store.ts`, `editor/step-config.ts` | `/admin/workflows/:id`: поля шаблона, шаги с CDK drag&drop (сохранённые шаги без других правок — сразу `reorder`), форма настроек по действию, ключ подписи вебхука |
 | `runs/workflow-runs.page.ts`, `runs/runs.store.ts`, `runs/run-card.ts` | `/workflows/runs`: доска с фильтрами; карточка запуска — шаги, «Виконано / Пропустити / Повторити», отмена |
 | `runs/employee-runs.tab.ts` | вкладка «Воркфлоу» профиля (админ и руководители), «Запустити воркфлоу» |
@@ -167,6 +167,12 @@ skipped, failed}`.
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось, кроме ночной границы «сегодня» (пункт выше); подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
+### Общие примитивы фронта
+Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `workflowsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Workflows/WorkflowTemplatesApiTest` (401/403, CRUD с шагами, проверка `config` каждого действия,

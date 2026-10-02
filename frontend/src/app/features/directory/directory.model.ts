@@ -1,3 +1,5 @@
+import { Paged } from '../../core/api/api.model';
+
 /** Mirrors backend App\Modules\Directory\Enums\DictionaryType (URL segment of /api/directory/{type}). */
 export type DictionaryType = 'branches' | 'cities' | 'departments' | 'positions' | 'vacancy_categories';
 export const DICTIONARY_TYPES: readonly DictionaryType[] = ['branches', 'cities', 'departments', 'positions', 'vacancy_categories'];
@@ -17,17 +19,23 @@ export interface DictionaryItem {
   city?: { id: number; name: string } | null;
 }
 
+/** Sortable columns of GET /api/directory/{type} (backend DictionarySort); `city` — branches only. */
+export const DICTIONARY_SORT_KEYS = ['name', 'city', 'status'] as const;
+export type DictionarySortKey = (typeof DICTIONARY_SORT_KEYS)[number];
+
 export interface DictionaryQuery {
+  /** Name contains (the «name» column filter). */
   q?: string;
   status?: DirectoryStatus;
+  /** Branches only. */
+  city_id?: number;
+  sort?: DictionarySortKey;
+  dir?: 'asc' | 'desc';
   page?: number;
   perPage?: number;
 }
 
-export interface DictionaryPage {
-  data: DictionaryItem[];
-  meta: { current_page: number; per_page: number; total: number; last_page: number };
-}
+export type DictionaryPage = Paged<DictionaryItem>;
 
 export interface SaveDictionaryItem {
   name?: string;

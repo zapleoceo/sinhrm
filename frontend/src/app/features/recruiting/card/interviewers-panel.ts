@@ -2,11 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output, si
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { withCurrent } from '../hiring-team';
 import { Application, Ref } from '../recruiting.model';
 import { RecruitingService, recruitingErrorKey } from '../recruiting.service';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Interviewers of one application in the candidate card (contextual role: they see only this candidate). Writers get a
@@ -45,8 +45,7 @@ export class InterviewersPanel {
   readonly changed = output<void>();
 
   private readonly api = inject(RecruitingService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly people = signal<Ref[] | null>(null);
   protected readonly saving = signal(false);
@@ -68,17 +67,13 @@ export class InterviewersPanel {
     this.api.setInterviewers(this.application().id, ids).subscribe({
       next: () => {
         this.saving.set(false);
-        this.toast('recruiting.card.interviewers.saved');
+        this.notify.show('recruiting.card.interviewers.saved', { duration: 3000 });
         this.changed.emit();
       },
       error: (e: unknown) => {
         this.saving.set(false);
-        this.toast(recruitingErrorKey(e));
+        this.notify.show(recruitingErrorKey(e), { duration: 3000 });
       },
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
   }
 }

@@ -2,7 +2,10 @@ import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { UserRole } from '../../core/auth/auth.model';
-import { apiErrorKey, saveBlob } from '../../core/http/api-error';
+import { apiErrorKey } from '../../core/api/api-error';
+import { saveBlob } from '../../core/http/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 export type DataSubjectType = 'candidate' | 'employee';
 export type ExportFormat = 'json' | 'html';
@@ -39,11 +42,11 @@ export class PrivacyService {
   }
 
   settings(): Observable<PrivacySettings> {
-    return this.http.get<{ data: PrivacySettings }>('/api/privacy/settings').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<PrivacySettings>>('/api/privacy/settings').pipe(unwrapData());
   }
 
   saveSettings(body: PrivacySettings): Observable<PrivacySettings> {
-    return this.http.put<{ data: PrivacySettings }>('/api/privacy/settings', body).pipe(map((r) => r.data));
+    return this.http.put<DataEnvelope<PrivacySettings>>('/api/privacy/settings', body).pipe(unwrapData());
   }
 }
 

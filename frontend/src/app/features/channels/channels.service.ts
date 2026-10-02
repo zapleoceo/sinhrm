@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { Touchpoint } from '../recruiting/recruiting.model';
@@ -11,6 +11,9 @@ import {
   SimulateEvent,
   SimulateResult,
 } from './channels.model';
+import { apiErrorCode, apiErrorStatus } from '../../core/api/api-error';
+import { DataEnvelope } from '../../core/api/api.model';
+import { unwrapData } from '../../core/api/unwrap-data';
 
 /** HTTP client of the Channels API + the channel availability shared by every candidate card. */
 @Injectable({ providedIn: 'root' })
@@ -26,7 +29,7 @@ export class ChannelsService {
       return;
     }
     this.availabilityRequested = true;
-    this.http.get<{ data: ChannelAvailability[] }>('/api/channels').subscribe({
+    this.http.get<DataEnvelope<ChannelAvailability[]>>('/api/channels').subscribe({
       next: (r) => this.availability.set(r.data),
       error: () => {
         this.availabilityRequested = false;
@@ -45,11 +48,11 @@ export class ChannelsService {
   }
 
   send(candidateId: number, body: SendMessage): Observable<Touchpoint> {
-    return this.http.post<{ data: Touchpoint }>(`/api/candidates/${candidateId}/messages`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<Touchpoint>>(`/api/candidates/${candidateId}/messages`, body).pipe(unwrapData());
   }
 
   adminOverview(): Observable<ChannelInfo[]> {
-    return this.http.get<{ data: ChannelInfo[] }>('/api/channels/admin').pipe(map((r) => r.data));
+    return this.http.get<DataEnvelope<ChannelInfo[]>>('/api/channels/admin').pipe(unwrapData());
   }
 
   registerWebhook(key: string): Observable<void> {
@@ -61,19 +64,14 @@ export class ChannelsService {
   }
 
   simulate(key: string, body: SimulateEvent): Observable<SimulateResult> {
-    return this.http.post<{ data: SimulateResult }>(`/api/channels/${key}/simulate`, body).pipe(map((r) => r.data));
+    return this.http.post<DataEnvelope<SimulateResult>>(`/api/channels/${key}/simulate`, body).pipe(unwrapData());
   }
 }
 
 /** Code of a failed Channels API call if it is a known business code, else null. */
 export function channelErrorCode(error: unknown): string | null {
-  if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (CHANNEL_ERROR_CODES as readonly string[]).includes(code)) {
-      return code;
-    }
-  }
-  return null;
+  const code = apiErrorCode(error);
+  return code !== null && (CHANNEL_ERROR_CODES as readonly string[]).includes(code) ? code : null;
 }
 
 /** i18n key for a failed Channels API call. */
@@ -82,10 +80,8 @@ export function channelErrorKey(error: unknown): string {
   if (code) {
     return `channels.errors.${code}`;
   }
-  if (error instanceof HttpErrorResponse && error.status === 403) {
-    return 'recruiting.errors.forbidden';
-  }
-  return 'channels.errors.generic';
+  // 403 comes from the recruiting card (the candidate is out of the user's scope) — the recruiting text explains it.
+  return apiErrorStatus(error) === 403 ? 'recruiting.errors.forbidden' : 'channels.errors.generic';
 }
 
 /** URL to paste in the provider console; telephony adds the shared token as a placeholder (the value is never shown). */

@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
-import { AssistantConversation, MAX_ROUNDS, POLL_INTERVAL_MS, httpErrorKey, trimHistory, turnErrorKey, unavailableKey } from './assistant-conversation';
+import { AssistantConversation, MAX_ROUNDS, clearAssistantHistory, POLL_INTERVAL_MS, httpErrorKey, trimHistory, turnErrorKey, unavailableKey } from './assistant-conversation';
 import { ChatMessage, TurnRequest, TurnResult } from './assistant.model';
 import { AssistantService } from './assistant.service';
 import { AssistantToolExecutor, ToolRun } from './assistant-tools';
@@ -187,5 +187,74 @@ describe('AssistantConversation loop', () => {
     conv.reset();
     expect(conv.history()).toEqual([]);
     expect(sessionStorage.getItem('sinhrm.assistant.history.5')).toBe('[]');
+  });
+});
+
+describe('assistant history and the signed-in user', () => {
+  function withUser(initial: { id: number } | null) {
+    sessionStorage.clear();
+    const user = signal<{ id: number } | null>(initial);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: AssistantService, useValue: { turn: vi.fn(() => of(done({ role: 'assistant', content: 'ok' }))), poll: vi.fn(), status: vi.fn() } },
+        { provide: AssistantToolExecutor, useValue: { run: vi.fn() } },
+        { provide: AuthService, useValue: { user } },
+      ],
+    });
+    const conv = TestBed.inject(AssistantConversation);
+    TestBed.tick();
+    return { conv, user };
+  }
+
+  it('logout removes the saved chat (it holds tool answers) from sessionStorage and from memory', async () => {
+    const { conv, user } = withUser({ id: 5 });
+    await conv.send('hi');
+    expect(sessionStorage.getItem('sinhrm.assistant.history.5')).not.toBeNull();
+    user.set(null);
+    TestBed.tick();
+    expect(sessionStorage.getItem('sinhrm.assistant.history.5')).toBeNull();
+    expect(conv.history()).toEqual([]);
+  });
+
+  it('another user in the same tab does not see, and drops, the previous chat', async () => {
+    const { conv, user } = withUser({ id: 5 });
+    await conv.send('hi');
+    user.set({ id: 6 });
+    TestBed.tick();
+    expect(sessionStorage.getItem('sinhrm.assistant.history.5')).toBeNull();
+    expect(conv.history()).toEqual([]);
+  });
+
+  it('a page reload (session not known yet, then the same user) keeps the chat', () => {
+    sessionStorage.clear();
+    sessionStorage.setItem('sinhrm.assistant.history.5', JSON.stringify([{ role: 'user', content: 'hi' }]));
+    const user = signal<{ id: number } | null>(null);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: AssistantService, useValue: {} },
+        { provide: AssistantToolExecutor, useValue: {} },
+        { provide: AuthService, useValue: { user } },
+      ],
+    });
+    const conv = TestBed.inject(AssistantConversation);
+    TestBed.tick();
+    user.set({ id: 5 });
+    TestBed.tick();
+    expect(conv.history()).toEqual([{ role: 'user', content: 'hi' }]);
+  });
+
+  it('clearAssistantHistory keeps one user or removes all, leaving other keys alone', () => {
+    sessionStorage.clear();
+    sessionStorage.setItem('sinhrm.assistant.history.5', '[]');
+    sessionStorage.setItem('sinhrm.assistant.history.6', '[]');
+    sessionStorage.setItem('other', 'x');
+    clearAssistantHistory(6);
+    expect(sessionStorage.getItem('sinhrm.assistant.history.5')).toBeNull();
+    expect(sessionStorage.getItem('sinhrm.assistant.history.6')).toBe('[]');
+    clearAssistantHistory();
+    expect(sessionStorage.getItem('sinhrm.assistant.history.6')).toBeNull();
+    expect(sessionStorage.getItem('other')).toBe('x');
   });
 });

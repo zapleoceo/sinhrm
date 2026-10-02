@@ -65,5 +65,8 @@ describe('directoryErrorKey', () => {
     expect(directoryErrorKey(err(422, { message: 'x', errors: {} }))).toBe('directory.errors.validation');
     expect(directoryErrorKey(err(502, { code: 'upstream_error' }))).toBe('directory.errors.generic');
     expect(directoryErrorKey(new Error('x'))).toBe('directory.errors.generic');
+    // Codes and other statuses are not mapped for the directory: only 422 has its own text.
+    expect(directoryErrorKey(err(403, { code: 'forbidden' }))).toBe('directory.errors.generic');
+    expect(directoryErrorKey(err(404, null))).toBe('directory.errors.generic');
   });
 });

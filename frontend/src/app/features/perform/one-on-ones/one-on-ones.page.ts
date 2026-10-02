@@ -11,11 +11,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTimepickerModule } from '@angular/material/timepicker';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ListItem, ONE_ON_ONE_STATUSES, OneOnOne, OneOnOnePatch, OneOnOneTemplate, itemsBody, newItem, splitMeetings, toggleItem } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { combineDateAndTime, toIsoDateOrNull, toIsoLocalDateTime } from '../../../core/date/iso-date';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * 1:1 meetings (/perform/one-on-ones): upcoming and past; the selected meeting with its agenda, shared notes,
@@ -194,8 +194,7 @@ import { combineDateAndTime, toIsoDateOrNull, toIsoLocalDateTime } from '../../.
 })
 export class OneOnOnesPage implements OnInit {
   private readonly api = inject(PerformService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly statuses = ONE_ON_ONE_STATUSES;
   protected readonly items = signal<OneOnOne[]>([]);
   protected readonly templates = signal<OneOnOneTemplate[]>([]);
@@ -227,7 +226,7 @@ export class OneOnOnesPage implements OnInit {
       },
       error: (e: unknown) => {
         this.loading.set(false);
-        this.toast(performErrorKey(e));
+        this.notify.show(performErrorKey(e));
       },
     });
   }
@@ -248,9 +247,9 @@ export class OneOnOnesPage implements OnInit {
         this.items.update((list) => [m, ...list]);
         this.select(m);
         this.newEmployee = null;
-        this.toast('perform.oneOnOnes.created');
+        this.notify.show('perform.oneOnOnes.created');
       },
-      error: (e: unknown) => this.toast(performErrorKey(e)),
+      error: (e: unknown) => this.notify.show(performErrorKey(e)),
     });
   }
 
@@ -286,14 +285,10 @@ export class OneOnOnesPage implements OnInit {
       next: (saved) => {
         this.items.update((list) => list.map((x) => (x.id === saved.id ? saved : x)));
         if (doneKey) {
-          this.toast(doneKey);
+          this.notify.show(doneKey);
         }
       },
-      error: (e: unknown) => this.toast(performErrorKey(e)),
+      error: (e: unknown) => this.notify.show(performErrorKey(e)),
     });
-  }
-
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
   }
 }

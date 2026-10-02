@@ -154,5 +154,6 @@ describe('PerformService', () => {
     expect(performErrorKey(new HttpErrorResponse({ status: 404 }))).toBe('perform.errors.not_found');
     expect(performErrorKey(new HttpErrorResponse({ status: 422, error: { code: 'nope' } }))).toBe('perform.errors.validation');
     expect(performErrorKey(new Error('x'))).toBe('common.error');
+    expect(performErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('common.error');
   });
 });

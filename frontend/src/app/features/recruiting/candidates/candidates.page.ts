@@ -4,7 +4,6 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,7 +12,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { BoardPage } from '../board/board.page';
@@ -26,6 +25,7 @@ import { CandidateBulkDialog } from './candidate-bulk.dialog';
 import { RecruitingService } from '../recruiting.service';
 import { CandidatesStore } from './candidates.store';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Split view: candidates list on the left, the open card on the right (/candidates/:id).
@@ -242,8 +242,7 @@ export class CandidatesPage implements OnInit {
   protected readonly statuses = APPLICATION_STATUSES;
   protected readonly sources = CANDIDATE_SOURCES;
   protected readonly channels = toSignal(inject(RecruitingService).channels(), { initialValue: [] });
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly selected = signal(new Set<number>());
   protected readonly emptySet = (): Set<number> => new Set<number>();
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
@@ -322,7 +321,7 @@ export class CandidatesPage implements OnInit {
       .subscribe((results: BulkResult[] | undefined) => {
         if (!results) return;
         const ok = results.filter((r) => r.ok).length;
-        this.snack.open(this.i18n.translate('bulk.done', { ok, total: results.length }), undefined, { duration: 5000 });
+        this.notify.show('bulk.done', { params: { ok, total: results.length }, duration: 5000 });
         this.selected.set(new Set());
         this.store.load();
       });

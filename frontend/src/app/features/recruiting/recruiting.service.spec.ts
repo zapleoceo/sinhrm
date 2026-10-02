@@ -122,6 +122,9 @@ describe('recruiting error helpers', () => {
     expect(recruitingErrorKey(err(409, { code: 'duplicate_candidate', restricted: true }))).toBe('recruiting.errors.duplicate_restricted');
     expect(recruitingErrorKey(err(422, { errors: {} }))).toBe('recruiting.errors.validation');
     expect(recruitingErrorKey(new Error('x'))).toBe('recruiting.errors.generic');
+    expect(recruitingErrorKey(err(409, { code: 'duplicate_candidate' }))).toBe('recruiting.errors.duplicate_candidate');
+    expect(recruitingErrorKey(err(403, null))).toBe('recruiting.errors.forbidden');
+    expect(recruitingErrorKey(err(404, null))).toBe('recruiting.errors.generic');
   });
 
   it('extracts the existing candidate of a duplicate', () => {

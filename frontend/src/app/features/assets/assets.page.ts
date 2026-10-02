@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,18 +10,61 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { Observable, Subject, debounceTime, switchMap } from 'rxjs';
+import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
+import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
+import { ColumnHeader } from '../../core/ui/table/column-header';
+import { LatestRequest } from '../../core/ui/table/latest-request';
+import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { ColumnFilter, intParam, oneOfParam, sameQuery, textParam } from '../../core/ui/table/table-state';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { PersonPicker, PickerValue } from '../people/picker/person-picker';
 import { ASSET_STATUSES, ASSET_STATUS_TONE, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
 import { AssetsService, assetsErrorKey } from './assets.service';
-import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 
-/** Inventory (/admin/assets): table with search and status, new asset, hand out / take back with history. */
+/**
+ * Columns of the inventory table (sorted and filtered on the page). Status and type also go to the API as server
+ * filters (it returns at most 500 rows, so they must narrow the query, not only the page).
+ */
+export const ASSET_COLUMNS: readonly ClientColumn<Asset>[] = [
+  { key: 'inventory', value: (a) => a.inventory_number, filter: 'text' },
+  { key: 'name', value: (a) => a.name, filter: 'text' },
+  { key: 'type', value: (a) => a.type?.name, filter: 'select', filterValue: (a) => (a.type ? String(a.type.id) : null) },
+  { key: 'serial', value: (a) => a.serial, filter: 'text' },
+  { key: 'status', value: (a) => ASSET_STATUSES.indexOf(a.status), filter: 'select', filterValue: (a) => a.status },
+  { key: 'holder', value: (a) => a.employee?.full_name, filter: 'text' },
+];
+
+/** API query of the URL: search, status and type (junk values are dropped, never sent). */
+export function assetQueryFromParams(params: ParamMap): AssetQuery {
+  return { q: textParam(params, 'q'), status: oneOfParam(params, 'status', ASSET_STATUSES), type_id: intParam(params, 'type') };
+}
+
+/**
+ * Inventory (/admin/assets): search on top, sortable / filterable column headers (state in the URL), new asset,
+ * hand out / take back with history.
+ */
 @Component({
   selector: 'app-assets-page',
-  imports: [DatePipe, FormsModule, PersonPicker, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatIconModule, MatInputModule, MatProgressBarModule, MatSelectModule, RouterLink, TranslocoPipe],
+  imports: [
+    DatePipe,
+    FormsModule,
+    PersonPicker,
+    MatButtonModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatSelectModule,
+    RouterLink,
+    TranslocoPipe,
+    TableSortDirective,
+    ColumnHeader,
+  ],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -55,39 +98,39 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
       </form>
     }
 
+    <!-- Search (number, name, serial at once) is not one column, so it stays on top; status and type are filtered in
+         their column headers (sent to the API), the other columns on the page. All of it lives in the URL. -->
     <div class="filters">
-      <mat-form-field subscriptSizing="dynamic">
+      <mat-form-field class="grow" subscriptSizing="dynamic">
         <mat-label>{{ 'assets.search' | transloco }}</mat-label>
-        <input matInput type="search" (input)="patch({ q: val($event) || undefined })" />
-      </mat-form-field>
-      <mat-form-field subscriptSizing="dynamic">
-        <mat-label>{{ 'assets.statusLabel' | transloco }}</mat-label>
-        <mat-select [value]="query().status ?? null" (valueChange)="patch({ status: $event ?? undefined })">
-          <mat-option [value]="null">{{ 'common.all' | transloco }}</mat-option>
-          @for (s of statuses; track s) {
-            <mat-option [value]="s">{{ 'assets.status.' + s | transloco }}</mat-option>
-          }
-        </mat-select>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="search" #q (input)="search$.next(q.value)" />
       </mat-form-field>
     </div>
     @if (loading()) {
       <mat-progress-bar mode="indeterminate" />
     }
-    <div class="panel scroll">
-      <table>
+    <div class="panel">
+      <table class="app-table assets" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
-            <th scope="col">{{ 'assets.inventoryNumber' | transloco }}</th>
-            <th scope="col">{{ 'assets.name' | transloco }}</th>
-            <th scope="col">{{ 'assets.type' | transloco }}</th>
-            <th scope="col">{{ 'assets.serial' | transloco }}</th>
-            <th scope="col">{{ 'assets.statusLabel' | transloco }}</th>
-            <th scope="col">{{ 'assets.holder' | transloco }}</th>
+            <th scope="col" app-column-header key="inventory" [label]="'assets.inventoryNumber' | transloco"
+              [filter]="textFilter" [filterValue]="table.filterValue('inventory')" (filterChange)="table.setFilter('inventory', $event)"></th>
+            <th scope="col" app-column-header key="name" [label]="'assets.name' | transloco"
+              [filter]="textFilter" [filterValue]="table.filterValue('name')" (filterChange)="table.setFilter('name', $event)"></th>
+            <th scope="col" app-column-header key="type" [label]="'assets.type' | transloco"
+              [filter]="typeFilter()" [filterValue]="table.filterValue('type')" (filterChange)="table.setFilter('type', $event)"></th>
+            <th scope="col" app-column-header key="serial" [label]="'assets.serial' | transloco"
+              [filter]="textFilter" [filterValue]="table.filterValue('serial')" (filterChange)="table.setFilter('serial', $event)"></th>
+            <th scope="col" app-column-header key="status" [label]="'assets.statusLabel' | transloco"
+              [filter]="statusFilter()" [filterValue]="table.filterValue('status')" (filterChange)="table.setFilter('status', $event)"></th>
+            <th scope="col" app-column-header key="holder" [label]="'assets.holder' | transloco"
+              [filter]="textFilter" [filterValue]="table.filterValue('holder')" (filterChange)="table.setFilter('holder', $event)"></th>
             <th scope="col"><span class="visually-hidden">{{ 'assets.actions' | transloco }}</span></th>
           </tr>
         </thead>
         <tbody>
-          @for (a of items(); track a.id) {
+          @for (a of table.rows(); track a.id) {
             <tr>
               <td><strong class="app-num">{{ a.inventory_number }}</strong></td>
               <td>{{ a.name }}</td>
@@ -146,7 +189,7 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
               </tr>
             }
           } @empty {
-            <tr><td colspan="7" class="muted">{{ 'assets.empty' | transloco }}</td></tr>
+            <tr><td colspan="7" class="muted">{{ (items().length ? 'table.noMatches' : 'assets.empty') | transloco }}</td></tr>
           }
         </tbody>
       </table>
@@ -155,14 +198,12 @@ import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
   styles: `
     .form { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; padding: 1rem; margin-bottom: var(--app-gap); }
     .grow { flex: 1 1 12rem; }
-    .scroll { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
-    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
+    /* The hidden «actions» column title is position: absolute — keep it inside the scrolling panel, or it widens the page on phones. */
+    .panel { position: relative; }
+    .assets td { vertical-align: middle; }
     .actions { white-space: nowrap; text-align: right; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .status[data-status='written_off'] { text-decoration: line-through; }
-    tbody tr:hover { background: var(--app-row-hover); }
     .serial { font-size: 0.8rem; }
     .hist { margin: 0; padding-left: 1rem; }
   `,
@@ -171,12 +212,11 @@ export class AssetsPage implements OnInit {
   private readonly api = inject(AssetsService);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
-  protected readonly statuses = ASSET_STATUSES;
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly statusTone = ASSET_STATUS_TONE;
   protected readonly returnStatuses = RETURN_STATUSES;
   protected readonly items = signal<Asset[]>([]);
   protected readonly types = signal<AssetType[]>([]);
-  protected readonly query = signal<AssetQuery>({});
   protected readonly loading = signal(false);
   protected readonly formOpen = signal(false);
   protected readonly newType = signal<number | null>(null);
@@ -184,48 +224,44 @@ export class AssetsPage implements OnInit {
   protected readonly opened = signal<Asset | null>(null);
   protected readonly employeeId = signal<number | null>(null);
   protected readonly returnStatus = signal<AssetStatus>('in_stock');
-  private readonly reload = new Subject<void>();
+  private readonly url = inject(TableUrlState);
+  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  /** Server part of the URL (search, status, type): only its change reloads the list, not sort or page filters. */
+  private readonly query = computed(() => assetQueryFromParams(this.params()), { equal: sameQuery });
+  private readonly request = new LatestRequest();
+  protected readonly search$ = new Subject<string>();
+  /** Search box value from the URL. */
+  protected readonly search = computed(() => this.query().q ?? '');
+  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('q');
+  protected readonly table = new ClientTable({ rows: this.items, columns: ASSET_COLUMNS, defaultSort: { key: 'inventory', dir: 'asc' } });
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly statusFilter = translatedSelect(() => ASSET_STATUSES, (s) => 'assets.status.' + s);
+  protected readonly typeFilter = computed<ColumnFilter>(() => ({ type: 'select', options: this.types().map((t) => ({ value: String(t.id), label: t.name })) }));
 
   constructor() {
-    this.reload
-      .pipe(
-        debounceTime(200),
-        switchMap(() => {
-          this.loading.set(true);
-          return this.api.list(this.query());
-        }),
-        takeUntilDestroyed(),
-      )
-      .subscribe({
-        next: (list) => {
-          this.items.set(list);
-          this.loading.set(false);
-        },
-        error: (e: unknown) => {
-          this.loading.set(false);
-          this.toast(assetsErrorKey(e));
-        },
-      });
+    effect(() => {
+      const query = this.query();
+      untracked(() => this.load(query));
+    });
+    // URL → search box («back», a link), but never while the user types in it: the URL holds the trimmed text, and
+    // writing it back would eat the space between two words typed after a debounce pause.
+    effect(() => {
+      const value = this.search();
+      const input = this.searchInput()?.nativeElement;
+      if (input && input !== input.ownerDocument.activeElement && input.value !== value) input.value = value;
+    });
   }
 
   ngOnInit(): void {
-    this.reload.next();
+    this.search$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((q) => this.url.update({ q: q.trim() || null }));
     this.api.types().subscribe({ next: (list) => this.types.set(list), error: () => this.types.set([]) });
   }
 
   protected asId(value: PickerValue): number | null {
     return typeof value === 'number' ? value : null;
   }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement).value;
-  }
-
-  protected patch(p: Partial<AssetQuery>): void {
-    this.query.update((q) => ({ ...q, ...p }));
-    this.reload.next();
-  }
-
   protected addType(name: string): void {
     if (name.trim() !== '') {
       this.api.createType(name.trim()).subscribe({ next: (t) => this.types.update((l) => [...l, t]), error: (e: unknown) => this.toast(assetsErrorKey(e)) });
@@ -277,6 +313,21 @@ export class AssetsPage implements OnInit {
       return;
     }
     this.api.get(a.id).subscribe({ next: (full) => this.opened.set(full), error: (e: unknown) => this.toast(assetsErrorKey(e)) });
+  }
+
+  private load(query: AssetQuery): void {
+    this.loading.set(true);
+    // A newer query wins: the previous request is cancelled, so an older answer never overwrites the list.
+    this.request.run(this.api.list(query), {
+      next: (list) => {
+        this.items.set(list);
+        this.loading.set(false);
+      },
+      error: (e: unknown) => {
+        this.loading.set(false);
+        this.toast(assetsErrorKey(e));
+      },
+    });
   }
 
   private apply(call: Observable<Asset>): void {

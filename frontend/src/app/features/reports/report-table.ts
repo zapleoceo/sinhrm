@@ -1,17 +1,40 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { ClientColumn, ClientFilterKind, ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER } from '../../core/ui/table/client-table';
+import { ColumnHeader } from '../../core/ui/table/column-header';
+import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { ColumnFilter } from '../../core/ui/table/table-state';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
 
-/** A report table; with a chart spec the label/value columns also get a plain CSS bar (no chart library). */
+interface ReportTableColumn {
+  key: string;
+  type: ColumnType | 'string' | 'number' | 'date';
+}
+
+/** Header filter of a report column by its type: text contains, numbers and dates — a range. */
+function filterKind(type: ReportTableColumn['type']): ClientFilterKind {
+  return type === 'number' || type === 'percent' ? 'number' : type === 'date' ? 'date' : 'text';
+}
+
+const HEADER_FILTER: Record<ClientFilterKind, ColumnFilter> = { text: TEXT_FILTER, select: TEXT_FILTER, number: NUMBER_RANGE, date: DATE_RANGE };
+
+/**
+ * A report table (catalog and builder): every column sorts by a click on its title and filters by the funnel next to
+ * it (core/ui/table, state in the URL as `r_sort`, `r_<column>`). The «Разом» row is the backend total of the whole
+ * report: it stays at the bottom and never takes part in sorting. With a chart spec the label/value columns also get
+ * a plain CSS bar (no chart library), in the order of the table.
+ */
 @Component({
   selector: 'app-report-table',
-  imports: [DecimalPipe, TranslocoPipe],
+  imports: [DecimalPipe, TranslocoPipe, TableSortDirective, ColumnHeader],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (chart(); as ch) {
       <div class="chart" role="img" [attr.aria-label]="'reports.chart' | transloco">
-        @for (r of rows(); track $index) {
+        @for (r of view(); track $index) {
           <div class="bar-row">
             <span class="label">{{ text(r[ch.label]) }}</span>
             <span class="bar" [style.width.%]="bar(r[ch.value])"></span>
@@ -21,16 +44,17 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
       </div>
     }
     <div class="scroll">
-      <table>
+      <table class="app-table" [appTableSort]="table.sort()" (appTableSortChange)="table.setSort($event)">
         <thead>
           <tr>
             @for (c of columns(); track c.key) {
-              <th scope="col" [class.num]="numeric(c.type)">{{ 'reports.columns.' + c.key | transloco }}</th>
+              <th scope="col" [class.num]="numeric(c.type)" app-column-header [key]="c.key" [label]="'reports.columns.' + c.key | transloco"
+                [filter]="headerFilter(c.type)" [filterValue]="table.filterValue(c.key)" (filterChange)="table.setFilter(c.key, $event)"></th>
             }
           </tr>
         </thead>
         <tbody>
-          @for (r of rows(); track $index) {
+          @for (r of view(); track $index) {
             <tr>
               @for (c of columns(); track c.key) {
                 <td [class.num]="numeric(c.type)">
@@ -45,7 +69,7 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
               }
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="columns().length" class="muted">{{ 'reports.noRows' | transloco }}</td></tr>
+            <tr><td [attr.colspan]="columns().length" class="muted">{{ (rows().length ? 'reports.noMatches' : 'reports.noRows') | transloco }}</td></tr>
           }
         </tbody>
         @if (footer(); as t) {
@@ -54,7 +78,7 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
               @for (c of columns(); track c.key; let first = $first) {
                 <td [class.num]="numeric(c.type)">
                   @if (first) {
-                    {{ 'reports.total' | transloco }}
+                    {{ (table.filtered() ? 'reports.totalAll' : 'reports.total') | transloco }}
                   }
                   @if (t[c.key] === null || t[c.key] === undefined) {
                     @if (!first) {
@@ -87,10 +111,6 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
     .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; }
     .val { font-family: var(--app-font-mono); font-variant-numeric: tabular-nums; font-size: 0.8rem; font-weight: 500; }
     .scroll { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: var(--app-border-w) solid var(--app-track); font-weight: normal; }
-    thead th { color: var(--app-muted); font: var(--mat-sys-label-medium); font-weight: 700; border-bottom-color: var(--app-border); white-space: nowrap; }
-    tbody tr:hover { background: var(--app-row-hover); }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     td.num { font-family: var(--app-font-mono); font-size: 0.8rem; font-weight: 500; }
     tfoot td {
@@ -100,11 +120,19 @@ import { Cell, ColumnType, Row, barPercent, columnMax } from './reports.model';
   `,
 })
 export class ReportTable {
-  readonly columns = input.required<{ key: string; type: ColumnType | 'string' | 'number' | 'date' }[]>();
+  readonly columns = input.required<ReportTableColumn[]>();
   readonly rows = input.required<Row[]>();
   readonly chart = input<{ label: string; value: string } | null>(null);
   /** The backend «Total» row; shown only for 2+ rows. */
   readonly totals = input<Row | null>(null);
+
+  /** Columns come with the report: every one sorts, the filter follows its type. */
+  private readonly clientColumns = computed<ClientColumn<Row>[]>(() =>
+    this.columns().map((c) => ({ key: c.key, filter: filterKind(c.type), value: (r: Row) => r[c.key] })),
+  );
+  protected readonly table = new ClientTable<Row>({ rows: this.rows, columns: this.clientColumns, prefix: 'r' });
+  /** Rows as shown: filtered and sorted in the browser (the report filters above stay in the API). */
+  protected readonly view = this.table.rows;
 
   protected readonly footer = computed(() => (this.rows().length >= 2 ? this.totals() : null));
 
@@ -115,6 +143,10 @@ export class ReportTable {
 
   protected bar(value: Cell): number {
     return barPercent(value, this.max());
+  }
+
+  protected headerFilter(type: ReportTableColumn['type']): ColumnFilter {
+    return HEADER_FILTER[filterKind(type)];
   }
 
   protected numeric(type: string): boolean {
