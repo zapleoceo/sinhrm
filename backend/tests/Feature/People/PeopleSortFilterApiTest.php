@@ -9,6 +9,7 @@ use App\Modules\Directory\Models\Position;
 use App\Modules\People\Models\Employee;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
@@ -17,7 +18,10 @@ final class PeopleSortFilterApiTest extends TestCase
 {
     use PeopleFixtures, RefreshDatabase;
 
-    /** @return list<string> */
+    /**
+     * @param  TestResponse<Response>  $response
+     * @return list<string>
+     */
     private function names(TestResponse $response): array
     {
         /** @var list<string> $names */
