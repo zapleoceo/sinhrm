@@ -136,14 +136,24 @@ Google Sheets действуют от имени суперадмина, под�
 `features/auth/login.page.ts` — карточка входа; код `?error` переводится в сообщение (`login-error.ts`,
 неизвестный код → общее сообщение, плашка `role=alert` внутри карточки). В карточке сверху — логотип
 (`<app-logo>`) и компактный переключатель языка uk|ru|en; кнопка Google с фирменной «G» ведёт на
-`/api/auth/google/redirect`; фон — анимированные CSS-пятна (статичны при `prefers-reduced-motion`). Дизайн —
-[design-direction.md](../architecture/design-direction.md) §8. Сессия, guards и язык — в `core/` (см. [core.md](core.md)).
+`/api/auth/google/redirect`. Дизайн — [design-direction.md](../architecture/design-direction.md) §8 и §4.2.
+Сессия, guards и язык — в `core/` (см. [core.md](core.md)).
+
+**Вид (рестайл C «Маршрут», 2026-10-02).** Фон — статичное мягкое свечение бренда и бирюзы на `--app-canvas` и сетка с
+радиальной маской (дрейфующие пятна убраны: в бюджете эффектов только одна «трасса» и одна «поп»). Карточка — язык линий:
+рамка 1.5px, без тени, «стекло» с непрозрачным фолбэком. Над заголовком — декоративный маршрут (`aria-hidden`) из пяти
+станций `.app-station` по типам этапов `LOGIN_ROUTE` = new → screen → interview → offer → hire (цвета — токены
+`--app-stage-*`, последняя залита, с ореолом). Анимации: заливка линии прорисовывается один раз (`scaleX`, 600мс —
+«трасса»), карточка появляется (`opacity` + `transform`, 280мс — «поп»); при `prefers-reduced-motion` обе выключены.
+Кнопка Google — пилюля 48px с рамкой `outline`, hover — рамка цветом текста и `translateY(-1px)` за 120мс. Ошибка
+`?error` — плашка `--app-bad-*` с квадратным маркером (не только цвет). Переключатель языка — 32px на десктопе и
+**44px на ≤ 600px** (цель касания). Тест — `login.page.spec.ts` (станции, ссылка Google, плашка ошибки).
 
 ## Как проверить
 Тесты: `tests/Feature/Auth/GoogleCallbackTest.php` (суперадмин, приглашённый, not_invited, blocked,
 email_unverified, oauth_failed), `tests/Feature/Auth/MeTest.php` (me, 401, 403 blocked, locale, logout),
 `tests/Unit/Auth/AuthServiceTest.php`, токены — `tests/Feature/Recruiting/ExtensionApiTest.php`, `tests/Unit/Auth/SocialiteGoogleIdentityProviderTest.php`,
-`frontend/.../login-error.spec.ts`.
+`frontend/.../login-error.spec.ts`, `frontend/.../login.page.spec.ts`.
 
 Вручную (preview/prod):
 ```bash

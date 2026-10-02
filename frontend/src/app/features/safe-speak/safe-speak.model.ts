@@ -6,6 +6,12 @@ export const REPORT_CATEGORIES: readonly ReportCategory[] = ['harassment', 'disc
 export type ReportStatus = 'new' | 'in_review' | 'closed';
 export const REPORT_STATUSES: readonly ReportStatus[] = ['new', 'in_review', 'closed'];
 
+/** Tone of the global `.app-pill` for a status (marker shape + text): new ○ info, in review ◆ warn, closed ┄ neutral. */
+export type ReportStatusTone = 'info' | 'warn' | 'neutral';
+export function reportStatusTone(status: ReportStatus): ReportStatusTone {
+  return status === 'new' ? 'info' : status === 'in_review' ? 'warn' : 'neutral';
+}
+
 export interface ReportMessage {
   author: 'reporter' | 'handler';
   body: string;

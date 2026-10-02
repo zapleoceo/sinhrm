@@ -9,7 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
-import { HandledReport, REPORT_STATUSES, ReportStatus } from './safe-speak.model';
+import { HandledReport, REPORT_STATUSES, ReportStatus, reportStatusTone } from './safe-speak.model';
 import { SafeSpeakService, safeSpeakErrorKey } from './safe-speak.service';
 import { SafeSpeakThread } from './thread';
 
@@ -40,11 +40,11 @@ import { SafeSpeakThread } from './thread';
           <li>
             <button type="button" [class.active]="selected()?.id === r.id" (click)="select(r.id)">
               <strong>#{{ r.id }} {{ r.subject }}</strong>
-              <span class="muted small">{{ 'safeSpeak.categories.' + r.category | transloco }} · {{ r.updated_on | date: 'dd.MM.yyyy' }} · {{ 'safeSpeak.status.' + r.status | transloco }}</span>
+              <span class="meta">{{ 'safeSpeak.categories.' + r.category | transloco }} · <span class="mono">{{ r.updated_on | date: 'dd.MM.yyyy' }}</span> · <span class="app-pill" [attr.data-tone]="tone(r.status)">{{ 'safeSpeak.status.' + r.status | transloco }}</span></span>
             </button>
           </li>
         } @empty {
-          <li class="muted pad">{{ 'safeSpeak.inbox.empty' | transloco }}</li>
+          <li class="app-empty">{{ 'safeSpeak.inbox.empty' | transloco }}</li>
         }
       </ul>
       @if (selected(); as r) {
@@ -75,19 +75,28 @@ import { SafeSpeakThread } from './thread';
     </div>
   `,
   styles: `
-    mat-button-toggle-group { margin-bottom: 1rem; }
+    mat-button-toggle-group { margin-bottom: 1rem; max-width: 100%; overflow-x: auto; }
     .split { display: grid; grid-template-columns: minmax(16rem, 1fr) 2fr; gap: var(--app-gap); align-items: start; }
     .list { list-style: none; margin: 0; padding: 0; }
-    .list button { display: flex; flex-direction: column; gap: 0.15rem; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--app-border); background: none; color: inherit; font: inherit; padding: 0.6rem 0.75rem; cursor: pointer; }
-    .list button.active { background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent); }
-    .pad { padding: 0.75rem; }
-    .view { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; }
+    .list li + li { border-top: var(--app-border-w) solid var(--app-track); }
+    .list button {
+      display: flex; flex-direction: column; gap: 0.25rem; width: 100%; min-height: 44px; box-sizing: border-box; text-align: left;
+      border: 0; background: none; color: inherit; font: inherit; padding: 0.65rem 0.875rem; cursor: pointer;
+      transition: background-color var(--app-fast) ease;
+    }
+    .list button:hover { background: var(--app-row-hover); }
+    /* Selected report: row tint + a brand bar on the left (position, not colour alone). */
+    .list button.active { background: var(--app-row-selected); box-shadow: inset 4px 0 0 var(--mat-sys-primary); }
+    .list strong { font: var(--mat-sys-title-small); overflow-wrap: anywhere; }
+    .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; color: var(--app-muted); font: var(--mat-sys-body-small); }
+    .view { display: flex; flex-direction: column; gap: 0.75rem; padding: 1.25rem; }
     .head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; }
-    .head h2 { font: var(--mat-sys-title-medium); margin: 0; }
-    .reply { display: flex; flex-direction: column; gap: 0.5rem; }
+    .head h2 { font: var(--mat-sys-title-medium); margin: 0; overflow-wrap: anywhere; }
+    .reply { display: flex; flex-direction: column; gap: 0.5rem; padding-top: 0.75rem; border-top: var(--app-border-w) dashed var(--app-track); }
     .actions { display: flex; justify-content: flex-end; }
-    .small { font-size: 0.8rem; }
     @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) { .view { padding: 1rem; } }
+    @media (prefers-reduced-motion: reduce) { .list button { transition: none; } }
   `,
 })
 export class SafeSpeakInboxPage implements OnInit {
@@ -100,6 +109,7 @@ export class SafeSpeakInboxPage implements OnInit {
   protected readonly selected = signal<HandledReport | null>(null);
   protected readonly loading = signal(false);
   protected readonly text = signal('');
+  protected readonly tone = reportStatusTone;
 
   ngOnInit(): void {
     this.load();

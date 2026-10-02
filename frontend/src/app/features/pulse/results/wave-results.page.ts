@@ -18,7 +18,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (error(); as key) {
-      <p class="state">{{ key | transloco }}</p>
+      <p class="state" role="alert">{{ key | transloco }}</p>
     }
     @if (data(); as d) {
       <header class="page-head">
@@ -56,7 +56,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
                 <div class="gauge" [attr.data-tone]="tone(e.score)" role="img" [attr.aria-label]="'eNPS ' + (e.score ?? '—')">
                   <div class="arc"></div>
                   <div class="needle" [style.transform]="'rotate(' + (angle(e.score) - 90) + 'deg)'"></div>
-                  <div class="value">{{ e.score ?? '—' }}</div>
+                  <div class="value mono">{{ e.score ?? '—' }}</div>
                 </div>
                 <p class="split">
                   <span class="pro">{{ 'pulse.results.promoters' | transloco }}: {{ e.promoters }}</span>
@@ -64,7 +64,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
                   <span class="det">{{ 'pulse.results.detractors' | transloco }}: {{ e.detractors }}</span>
                 </p>
               } @else if (q.distribution) {
-                <p class="avg">{{ q.average ?? '—' }}</p>
+                <p class="avg mono">{{ q.average ?? '—' }}</p>
               }
               @if (q.distribution) {
                 <div class="dist">
@@ -78,7 +78,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
               }
               @if (q.options) {
                 @for (o of q.options; track o.label) {
-                  <div class="hbar"><span class="lab">{{ o.label }}</span><span class="fill" [style.width.%]="(o.count / maxOpt(q)) * 100"></span><span class="num">{{ o.count }}</span></div>
+                  <div class="hbar"><span class="lab">{{ o.label }}</span><span class="fill" [style.width.%]="(o.count / maxOpt(q)) * 100"></span><span class="num mono">{{ o.count }}</span></div>
                 }
               }
               @if (q.texts) {
@@ -142,7 +142,7 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
                           <span class="muted">{{ 'pulse.results.hidden' | transloco }}</span>
                         } @else {
                           {{ cell.previous ?? '—' }} → {{ cell.current ?? '—' }}
-                          <span class="delta" [attr.data-tone]="dTone(cell.delta)">{{ cell.delta === null ? '' : (cell.delta > 0 ? '+' : '') + cell.delta }}</span>
+                          <span class="delta mono" [attr.data-tone]="dTone(cell.delta)">{{ cell.delta === null ? '' : (cell.delta > 0 ? '+' : '') + cell.delta }}</span>
                         }
                       </td>
                     }
@@ -159,34 +159,39 @@ import { PulseService, pulseErrorKey } from '../pulse.service';
     }
   `,
   styles: `
-    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-    .card { padding: 1rem; }
-    .card h2 { font: var(--mat-sys-title-small); margin: 0 0 0.5rem; }
-    .suppressed { padding: 1rem; }
-    .avg { font-size: 2rem; margin: 0; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .card { padding: 1.25rem; }
+    .card h2 { font: var(--mat-sys-title-small); margin: 0 0 0.75rem; overflow-wrap: anywhere; }
+    .suppressed { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 1rem 1.25rem; border-left: 3px solid var(--app-accent); }
+    .avg { font-size: 2.25rem; font-weight: 600; line-height: 1.1; margin: 0; }
     .gauge { position: relative; width: 10rem; height: 5.5rem; margin: 0.5rem auto; overflow: hidden; }
     .arc { position: absolute; inset: 0 0 auto 0; height: 10rem; border-radius: 50%;
       background: conic-gradient(from 270deg, var(--app-danger) 0deg 90deg, var(--app-warning) 90deg 117deg, var(--app-success) 117deg 180deg, transparent 180deg);
-      mask: radial-gradient(circle at 50% 50%, transparent 55%, #000 56%); }
+      mask: radial-gradient(circle at 50% 50%, transparent 58%, black 59%); }
     .needle { position: absolute; left: calc(50% - 2px); bottom: 0.5rem; width: 4px; height: 4.3rem; background: var(--mat-sys-on-surface); transform-origin: 50% 100%; border-radius: 2px; }
-    .value { position: absolute; bottom: 0; width: 100%; text-align: center; font-weight: 700; font-size: 1.4rem; }
-    .gauge[data-tone='danger'] .value { color: var(--app-danger); }
-    .gauge[data-tone='success'] .value { color: var(--app-success); }
-    .split { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem; }
-    .pro { color: var(--app-success); }
-    .det { color: var(--app-danger); }
-    .dist { display: flex; align-items: flex-end; gap: 0.25rem; height: 6rem; }
+    .value { position: absolute; bottom: 0; width: 100%; text-align: center; font-weight: 600; font-size: 1.4rem; }
+    .gauge[data-tone='danger'] .value { color: var(--app-bad-text); }
+    .gauge[data-tone='success'] .value { color: var(--app-good-text); }
+    .split { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.25rem 0.75rem; font: var(--mat-sys-body-small); }
+    .pro { color: var(--app-good-text); }
+    .det { color: var(--app-bad-text); }
+    .dist { display: flex; align-items: flex-end; gap: 0.25rem; height: 6rem; border-bottom: var(--app-border-w) solid var(--app-border); }
     .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
-    .colbar { width: 100%; background: var(--mat-sys-primary); border-radius: 3px 3px 0 0; min-height: 1px; }
-    .lbl { font-size: 0.75rem; color: var(--app-muted); }
-    .hbar { display: grid; grid-template-columns: 7rem 1fr 2rem; gap: 0.5rem; align-items: center; margin: 0.2rem 0; }
-    .fill { height: 10px; background: var(--mat-sys-tertiary); border-radius: 3px; min-width: 1px; }
-    .texts { margin: 0; padding-left: 1.25rem; max-height: 12rem; overflow: auto; }
+    .colbar { width: 100%; background: var(--mat-sys-primary); border-radius: 4px 4px 1px 1px; min-height: 1px; }
+    .lbl { font: 500 0.6875rem var(--app-font-mono); color: var(--app-muted); }
+    /* Choice bars: a teal fill (the length carries the number, the count is printed too). */
+    .hbar { display: grid; grid-template-columns: minmax(0, 7rem) 1fr 2rem; gap: 0.5rem; align-items: center; margin: 0.3rem 0; }
+    .hbar .lab { overflow-wrap: anywhere; font: var(--mat-sys-body-small); }
+    .fill { height: 8px; background: var(--app-accent); border-radius: 4px; min-width: 2px; }
+    .hbar .num { text-align: right; }
+    .texts { margin: 0; padding-left: 1.25rem; max-height: 12rem; overflow: auto; display: flex; flex-direction: column; gap: 0.25rem; }
     .table { width: 100%; border-collapse: collapse; }
-    .table th, .table td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--app-border); }
+    .table th, .table td { text-align: left; padding: 0.6rem 0.875rem; border-bottom: var(--app-border-w) solid var(--app-track); }
+    .table thead th { font: var(--mat-sys-label-medium); font-weight: 700; color: var(--app-muted); border-bottom-color: var(--app-border); }
+    .table tbody tr:last-child > * { border-bottom: 0; }
     .delta { margin-left: 0.35rem; font-weight: 600; }
-    .delta[data-tone='up'] { color: var(--app-success); }
-    .delta[data-tone='down'] { color: var(--app-danger); }
+    .delta[data-tone='up'] { color: var(--app-good-text); }
+    .delta[data-tone='down'] { color: var(--app-bad-text); }
   `,
 })
 export class WaveResultsPage {

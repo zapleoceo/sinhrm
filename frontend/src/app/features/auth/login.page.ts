@@ -4,10 +4,15 @@ import { Logo } from '../../core/ui/logo';
 import { LanguageSwitcher } from '../shell/language-switcher';
 import { loginErrorKey } from './login-error';
 
+/** Stage kinds of the decorative route on the card, in funnel order (colours = global `--app-stage-*` tokens). */
+export const LOGIN_ROUTE = ['new', 'screen', 'interview', 'offer', 'hire'] as const;
+
 /**
  * Public sign-in page; also renders the ?error=<code> denial states (not invited, blocked…).
  * The Google flow is a full-page redirect handled by the API.
- * Background: pure-CSS drifting blobs (transform only), static under prefers-reduced-motion.
+ * Look (restyle C «Маршрут»): a static soft glow + masked grid behind a «line» card; a five-station route above
+ * the title (stage colours by kind) is the page's one «trace» animation, the card's entrance its one «pop» — both
+ * transform/opacity only and off under prefers-reduced-motion.
  */
 @Component({
   selector: 'app-login-page',
@@ -16,7 +21,6 @@ import { loginErrorKey } from './login-error';
   template: `
     <main class="login">
       <div class="bg" aria-hidden="true">
-        <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
         <span class="grid"></span>
       </div>
 
@@ -25,6 +29,13 @@ import { loginErrorKey } from './login-error';
           <app-logo />
           <app-language-switcher class="lang" />
         </header>
+
+        <div class="route" aria-hidden="true" data-testid="login-route">
+          <span class="rail"><span class="trace"></span></span>
+          @for (kind of stations; track kind) {
+            <span class="app-station" [attr.data-kind]="kind" [class.current]="$last"></span>
+          }
+        </div>
 
         <h1 id="login-title">{{ 'login.title' | transloco }}</h1>
         <p class="subtitle">{{ 'login.subtitle' | transloco }}</p>
@@ -50,78 +61,96 @@ import { loginErrorKey } from './login-error';
   `,
   styles: `
     :host { display: block; }
+    /* Background (login only): a static brand/teal glow on the canvas and a masked grid. */
     .login {
       position: relative; isolation: isolate; overflow: hidden; min-height: 100dvh; box-sizing: border-box;
-      display: grid; place-items: center; padding: 1rem; background: var(--mat-sys-surface);
+      display: grid; place-items: center; padding: 1rem;
+      background:
+        radial-gradient(48rem 34rem at 8% -6%, color-mix(in srgb, var(--mat-sys-primary) 16%, transparent), transparent 70%),
+        radial-gradient(44rem 32rem at 104% 106%, color-mix(in srgb, var(--app-accent) 15%, transparent), transparent 70%),
+        var(--app-canvas);
     }
     .bg { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-    .blob {
-      position: absolute; width: 42vmax; height: 42vmax; border-radius: 50%;
-      filter: blur(70px); opacity: 0.4; will-change: transform;
-      animation: drift 28s ease-in-out infinite alternate;
-    }
-    .b1 { background: var(--mat-sys-primary); top: -18vmax; left: -12vmax; }
-    .b2 { background: var(--mat-sys-tertiary); bottom: -20vmax; right: -14vmax; animation-duration: 34s; animation-direction: alternate-reverse; }
-    .b3 { background: var(--mat-sys-secondary); top: 35%; left: 45%; width: 28vmax; height: 28vmax; opacity: 0.22; animation-duration: 40s; }
     .grid {
-      position: absolute; inset: 0; opacity: 0.35;
+      position: absolute; inset: 0; opacity: 0.6;
       background-image:
-        linear-gradient(var(--app-border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--app-border) 1px, transparent 1px);
+        linear-gradient(var(--app-track) 1px, transparent 1px),
+        linear-gradient(90deg, var(--app-track) 1px, transparent 1px);
       background-size: 32px 32px;
-      mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%);
-    }
-    @keyframes drift {
-      from { transform: translate3d(0, 0, 0) scale(1); }
-      to { transform: translate3d(8vmax, 6vmax, 0) scale(1.15); }
+      mask-image: radial-gradient(ellipse at center, black 15%, transparent 68%);
     }
 
+    /* Card: «line» language — 1.5px frame, no shadow; frosted over the glow where supported. */
     .card {
-      width: min(26rem, 100%); box-sizing: border-box; padding: 2rem 2rem 1.75rem;
-      border: 1px solid var(--app-border); border-radius: calc(var(--app-radius) * 1.5);
-      background: var(--mat-sys-surface-container-low);
-      box-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 12px 40px rgb(0 0 0 / 0.12);
+      width: min(26rem, 100%); box-sizing: border-box; padding: 1.75rem 2rem 1.5rem;
+      border: var(--app-border-w) solid var(--app-border); border-radius: calc(var(--app-radius) + 4px);
+      background: var(--app-card);
+      animation: pop 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
     @supports (backdrop-filter: blur(1px)) {
       .card {
-        background: color-mix(in srgb, var(--mat-sys-surface-container-low) 80%, transparent);
-        backdrop-filter: blur(18px) saturate(1.3);
+        background: color-mix(in srgb, var(--app-card) 90%, transparent);
+        backdrop-filter: blur(16px) saturate(1.2);
       }
     }
-    .top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 2rem; }
-    .lang { flex: none; --mat-button-toggle-height: 30px; --mat-standard-button-toggle-height: 30px; font-size: 0.75rem; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .lang { flex: none; --mat-button-toggle-height: 32px; font-size: 0.75rem; }
 
-    h1 { font: var(--mat-sys-headline-medium); margin: 0 0 0.375rem; color: var(--mat-sys-on-surface); }
-    .subtitle { margin: 0; color: var(--app-muted); }
-    .error {
-      margin: 1.25rem 0 0; padding: 0.75rem 0.875rem; border-radius: var(--app-radius);
-      color: var(--app-danger); background: color-mix(in srgb, var(--app-danger) 10%, transparent);
-      border: 1px solid color-mix(in srgb, var(--app-danger) 35%, transparent);
+    /* Route: five stations (new → screen → interview → offer → hire) on one rail; the rail fill «traces» once. */
+    .route { position: relative; display: flex; justify-content: space-between; align-items: center; height: 0.75rem; margin: 0 0 1.25rem; }
+    .rail { position: absolute; left: 0.375rem; right: 0.375rem; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: var(--app-track); overflow: hidden; }
+    .trace {
+      position: absolute; inset: 0; border-radius: inherit; transform-origin: left center;
+      background: linear-gradient(90deg, var(--app-stage-new), var(--app-stage-screen), var(--app-stage-interview), var(--app-stage-offer), var(--app-stage-hire));
+      animation: trace 600ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
     }
+    .route .app-station { position: relative; }
+    .route .app-station.current { box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-stage-hire) 22%, transparent); }
+
+    h1 { font: var(--mat-sys-headline-medium); letter-spacing: var(--mat-sys-headline-medium-tracking); margin: 0 0 0.375rem; }
+    .subtitle { margin: 0; color: var(--app-muted); }
+    /* Denial: text + a square marker (meaning never by colour alone). */
+    .error {
+      display: flex; align-items: flex-start; gap: 0.6rem;
+      margin: 1.25rem 0 0; padding: 0.75rem 0.875rem; border-radius: var(--app-radius-sm);
+      color: var(--app-bad-text); background: var(--app-bad-bg);
+      border: var(--app-border-w) solid color-mix(in srgb, var(--app-bad-text) 35%, transparent);
+    }
+    .error::before { content: ''; flex: none; width: 0.55rem; height: 0.55rem; margin-top: 0.42em; border-radius: 1px; background: currentColor; }
     .google {
       display: flex; align-items: center; justify-content: center; gap: 0.75rem;
       width: 100%; box-sizing: border-box; min-height: 48px; margin: 1.5rem 0 1rem; padding: 0 1rem;
-      border-radius: 999px; border: 1px solid var(--app-border);
-      background: var(--mat-sys-surface-container-lowest); color: var(--mat-sys-on-surface);
-      font: var(--mat-sys-label-large); font-size: 0.95rem; text-decoration: none;
-      box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
-      transition: box-shadow 150ms ease, transform 150ms ease;
+      border-radius: var(--app-radius-pill); border: var(--app-border-w) solid var(--mat-sys-outline);
+      background: var(--app-card); color: var(--mat-sys-on-surface);
+      font: var(--mat-sys-label-large); font-size: 0.9375rem; text-decoration: none;
+      transition: border-color var(--app-fast) ease, transform var(--app-fast) ease;
     }
-    .google:hover { box-shadow: 0 4px 14px rgb(0 0 0 / 0.14); transform: translateY(-1px); }
-    .google:active { transform: none; }
-    .google:focus-visible { outline: 3px solid var(--mat-sys-primary); outline-offset: 3px; }
+    .google:hover { border-color: var(--app-ink); transform: translateY(-1px); }
     .g { width: 20px; height: 20px; flex: none; }
     .hint { margin: 0; text-align: center; font: var(--mat-sys-body-small); color: var(--app-muted); }
     .tagline {
-      margin: 1.5rem 0 0; padding-top: 1rem; border-top: 1px solid var(--app-border);
+      margin: 1.25rem 0 0; padding-top: 1rem; border-top: var(--app-border-w) dashed var(--app-border);
       text-align: center; font: var(--mat-sys-label-medium); color: var(--app-muted);
     }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(8px) scale(0.985); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes trace {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    /* Touch targets: the language toggles reach 44px on phones (the compact 32px look is desktop only). */
+    @media (max-width: 600px) {
+      .lang { --mat-button-toggle-height: 44px; }
+    }
     @media (max-width: 480px) {
-      .card { padding: 1.5rem 1.25rem 1.25rem; }
-      .top { margin-bottom: 1.5rem; }
+      .card { padding: 1.25rem 1rem 1rem; }
+      .top { margin-bottom: 1.25rem; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .blob { animation: none; }
+      .card, .trace { animation: none; }
       .google { transition: none; }
       .google:hover { transform: none; }
     }
@@ -132,5 +161,6 @@ export class LoginPage {
   readonly error = input<string>();
 
   protected readonly googleUrl = '/api/auth/google/redirect';
+  protected readonly stations = LOGIN_ROUTE;
   protected readonly errorKey = computed(() => loginErrorKey(this.error()));
 }
