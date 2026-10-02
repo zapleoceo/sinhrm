@@ -295,6 +295,67 @@ test.describe('desktop flows', () => {
     await expect(page.getByRole('row', { name: /^Разом/ })).toBeVisible();
   });
 
+  test('report view: a header title sorts the rows in the browser, «Разом» stays last, the filter narrows and relabels it', async ({ page, context }) => {
+    let reportRequests = 0;
+    page.on('request', (r) => {
+      if (new URL(r.url()).pathname.startsWith('/api/reports/catalog/desk_sla')) reportRequests++;
+    });
+    await open(page, context, '/reports/catalog/desk_sla');
+    const table = page.locator('app-report-table table');
+    const firstCells = () => table.locator('tbody tr td:first-child').allInnerTexts();
+    const breached = page.getByRole('columnheader', { name: 'SLA порушено, %' });
+    await expect(breached).toHaveAttribute('aria-sort', 'none');
+    const before = reportRequests;
+
+    // Two clicks: ascending, then descending by the share of breached cases; the API is not asked again.
+    await breached.getByRole('button', { name: 'SLA порушено, %', exact: true }).click();
+    await expect(page).toHaveURL(/[?&]r_sort=breached_pct&r_dir=asc(&|$)/);
+    expect(await firstCells()).toEqual(['Зарплата [ТЕСТ]', 'ІТ та доступи [ТЕСТ]', 'Довідки та документи [ТЕСТ]']);
+    await breached.getByRole('button', { name: 'SLA порушено, %', exact: true }).press('Enter');
+    await expect(breached).toHaveAttribute('aria-sort', 'descending');
+    expect(await firstCells()).toEqual(['Довідки та документи [ТЕСТ]', 'ІТ та доступи [ТЕСТ]', 'Зарплата [ТЕСТ]']);
+    expect(reportRequests).toBe(before);
+    // «Разом» is the footer, after every body row.
+    await expect(table.locator('tfoot tr')).toHaveCount(1);
+    await expect(table.locator('tr').last()).toContainText('Разом');
+
+    // Text filter of the category column: the total row now says it covers the whole report.
+    await page.getByRole('button', { name: 'Фільтр стовпця «Категорія»' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Фільтр «Категорія»' });
+    await dialog.getByRole('searchbox').fill('зарплата');
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/[?&]r_category=/);
+    expect(await firstCells()).toEqual(['Зарплата [ТЕСТ]']);
+    await expect(table.locator('tfoot')).toContainText('Разом (усі рядки звіту)');
+
+    // «Back» removes the filter, the sort stays.
+    await page.goBack();
+    await expect(table.locator('tbody tr')).toHaveCount(3);
+    await expect(breached).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  test('recruiting reports: each table sorts on its own (prefixed URL), totals stay last', async ({ page, context }) => {
+    await open(page, context, '/reports');
+    const reasons = page.locator('section', { has: page.getByRole('heading', { name: 'Причини відмов' }) }).locator('table');
+    const names = () => reasons.locator('tbody th').allInnerTexts();
+    const count = reasons.getByRole('columnheader', { name: 'Кількість' });
+    await expect(count).toHaveAttribute('aria-sort', 'descending');
+    await count.getByRole('button', { name: 'Кількість', exact: true }).click();
+    await expect(page).toHaveURL(/[?&]rej_sort=count&rej_dir=asc(&|$)/);
+    expect((await names()).slice(0, 2)).toEqual(['Інше', 'Не прийшов на зустріч']);
+    await expect(reasons.locator('tr').last()).toContainText('Разом');
+    // The touches table keeps its own default order (by total).
+    const touches = page.locator('section', { has: page.getByRole('heading', { name: 'Касання рекрутерів' }) }).locator('table');
+    await expect(touches.getByRole('columnheader', { name: 'Усього' })).toHaveAttribute('aria-sort', 'descending');
+  });
+
+  test('recruiting reports (390 px): the header buttons do not widen the page', async ({ page, context }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, context, '/reports');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBe(0);
+  });
+
   test('user menu: «Працювати як» lists the roles and switching sends PUT /api/auth/active-role', async ({ page, context }) => {
     const mock = await open(page, context, '/');
     await page.getByRole('button', { name: 'Меню користувача' }).click();

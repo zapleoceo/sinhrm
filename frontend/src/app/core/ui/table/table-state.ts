@@ -51,16 +51,27 @@ export function isFilterActive(value: FilterValue): boolean {
 
 // ── URL query (?sort=name&dir=desc&page=2): the table state lives in the URL, so a link and «back» restore it ──
 
-/** Sort from `?sort=&dir=`; an unknown column (old link, hand-edited URL) is ignored, not sent to the API. */
-export function sortFromParams(params: ParamMap, keys: readonly string[]): TableSort | null {
-  const key = params.get('sort');
+/**
+ * URL name of a table param. A page with several tables gives each a prefix: `prefixed('src', 'sort')` → `src_sort`;
+ * without a prefix the name stays as is (`sort`).
+ */
+export function prefixed(prefix: string | undefined, name: string): string {
+  return prefix ? `${prefix}_${name}` : name;
+}
+
+/**
+ * Sort from `?sort=&dir=` (or `?<prefix>_sort=&<prefix>_dir=`); an unknown column (old link, hand-edited URL) is
+ * ignored, not sent to the API.
+ */
+export function sortFromParams(params: ParamMap, keys: readonly string[], prefix?: string): TableSort | null {
+  const key = params.get(prefixed(prefix, 'sort'));
   if (!key || !keys.includes(key)) return null;
-  return { key, dir: params.get('dir') === 'desc' ? 'desc' : 'asc' };
+  return { key, dir: params.get(prefixed(prefix, 'dir')) === 'desc' ? 'desc' : 'asc' };
 }
 
 /** Query params of a sort; null values remove the params (Router `queryParamsHandling: 'merge'`). */
-export function sortToParams(sort: TableSort | null): Params {
-  return { sort: sort?.key ?? null, dir: sort?.dir ?? null };
+export function sortToParams(sort: TableSort | null, prefix?: string): Params {
+  return { [prefixed(prefix, 'sort')]: sort?.key ?? null, [prefixed(prefix, 'dir')]: sort?.dir ?? null };
 }
 
 /** Positive integer param or undefined (`?page=abc` → undefined). */

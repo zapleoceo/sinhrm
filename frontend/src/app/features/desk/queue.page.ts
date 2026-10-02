@@ -11,6 +11,10 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { ClientTable, NUMBER_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
+import { ColumnHeader } from '../../core/ui/table/column-header';
+import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { CASE_STATUSES, CASE_STATUS_TONE, CaseStatus, DeskCase, DeskCategory, slaState } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
@@ -31,7 +35,10 @@ import { SlaBadge } from './sla-badge';
     RouterLink,
     TranslocoPipe,
     SlaBadge,
+    TableSortDirective,
+    ColumnHeader,
   ],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -85,23 +92,32 @@ import { SlaBadge } from './sla-badge';
     <section class="panel cats">
       <h2>{{ 'desk.categories.title' | transloco }}</h2>
       <p class="muted small">{{ 'desk.categories.hint' | transloco }}</p>
-      <table>
+      <!-- Categories: sort and filter in the headers (core/ui/table), state in the URL as cat_sort / cat_<column>. -->
+      <table class="app-table" [appTableSort]="cats.sort()" (appTableSortChange)="cats.setSort($event)">
         <thead>
           <tr>
-            <th scope="col">{{ 'desk.categories.name' | transloco }}</th>
-            <th scope="col" class="num">{{ 'desk.categories.firstResponse' | transloco }}</th>
-            <th scope="col" class="num">{{ 'desk.categories.resolve' | transloco }}</th>
-            <th scope="col">{{ 'desk.categories.active' | transloco }}</th>
+            <th scope="col" app-column-header key="name" [label]="'desk.categories.name' | transloco"
+              [filter]="textFilter" [filterValue]="cats.filterValue('name')" (filterChange)="cats.setFilter('name', $event)"></th>
+            <th scope="col" class="num" app-column-header key="first" [label]="'desk.categories.firstResponse' | transloco"
+              [filter]="numberRange" [filterValue]="cats.filterValue('first')" (filterChange)="cats.setFilter('first', $event)"></th>
+            <th scope="col" class="num" app-column-header key="resolve" [label]="'desk.categories.resolve' | transloco"
+              [filter]="numberRange" [filterValue]="cats.filterValue('resolve')" (filterChange)="cats.setFilter('resolve', $event)"></th>
+            <th scope="col" app-column-header key="active" [label]="'desk.categories.active' | transloco"
+              [filter]="activeFilter()" [filterValue]="cats.filterValue('active')" (filterChange)="cats.setFilter('active', $event)"></th>
           </tr>
         </thead>
         <tbody>
-          @for (k of categories(); track k.id) {
+          @for (k of cats.rows(); track k.id) {
             <tr>
               <td>{{ k.name }}</td>
               <td class="num app-num">{{ k.first_response_hours ?? '—' }}</td>
               <td class="num app-num">{{ k.resolve_hours ?? '—' }}</td>
               <td><mat-slide-toggle [checked]="k.active" (change)="toggleCategory(k, $event.checked)" [attr.aria-label]="k.name" /></td>
             </tr>
+          } @empty {
+            @if (categories().length) {
+              <tr><td colspan="4" class="muted">{{ 'table.noMatches' | transloco }}</td></tr>
+            }
           }
         </tbody>
       </table>
@@ -138,6 +154,21 @@ export class DeskQueuePage implements OnInit {
   protected readonly items = signal<DeskCase[]>([]);
   protected readonly categories = signal<DeskCategory[]>([]);
   protected readonly loading = signal(false);
+  protected readonly textFilter = TEXT_FILTER;
+  protected readonly numberRange = NUMBER_RANGE;
+  protected readonly activeFilter = translatedSelect(() => ['true', 'false'], (v) => (v === 'true' ? 'table.yes' : 'table.no'));
+  /** Categories table: API order is by name (the arrow sits there until the user picks another column). */
+  protected readonly cats = new ClientTable<DeskCategory>({
+    rows: this.categories,
+    prefix: 'cat',
+    defaultSort: { key: 'name', dir: 'asc' },
+    columns: [
+      { key: 'name', value: (k) => k.name, filter: 'text' },
+      { key: 'first', value: (k) => k.first_response_hours, filter: 'number' },
+      { key: 'resolve', value: (k) => k.resolve_hours, filter: 'number' },
+      { key: 'active', value: (k) => (k.active ? 0 : 1), filter: 'select', filterValue: (k) => String(k.active) },
+    ],
+  });
   protected readonly breached = computed(() => this.items().filter((c) => slaState(c) === 'breached').length);
 
   ngOnInit(): void {
