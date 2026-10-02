@@ -23,6 +23,7 @@
  "interactive": [
   "button \"Next page\"",
   "button \"Previous page\" [disabled]",
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування 9 нових\"",
   "button \"Записати\" [disabled]",
   "button \"Запланувати зустріч\" [disabled]",

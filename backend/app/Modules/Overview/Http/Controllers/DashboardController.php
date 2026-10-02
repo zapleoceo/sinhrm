@@ -21,8 +21,8 @@ final class DashboardController
      * `counts`, `stale_days`, `my_tasks`, `stale`, `warnings`, `funnel`, `touches {days, by_channel}`;
      * `funnel_insights {period_days, min_sample, min_offer_observations, bottleneck: {from, to, from_kind, to_kind,
      * conversion, passed, decided}|null, offer_path: {days, observations}|null}` — null when there is too little data;
-     * `day_route {date, interviews, tasks, items: [{kind: interview|task, id, at, end, title, meeting_type?, type?,
-     * candidate: {id, name}|null}]}` — today's meetings the user scheduled or interviews, and the user's tasks due today;
+     * `day_route {date, timezone, interviews, tasks, items: [{kind: interview|task, id, at, end, title, meeting_type?, type?,
+     * candidate: {id, name}|null}]}` — the user's day (time zone config app.user_timezone): meetings the user scheduled or interviews, and the user's tasks due that day;
      * plus blocks of other modules (`timeoff`, `hiring`, `time`). Formulas: docs/modules/overview.md.
      */
     public function __invoke(Request $request): JsonResponse

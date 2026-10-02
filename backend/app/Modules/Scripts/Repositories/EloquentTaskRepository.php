@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Scripts\Repositories;
 
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Enums\Channel;
@@ -45,14 +46,19 @@ final class EloquentTaskRepository implements TaskRepository
     /** @return Builder<Task> */
     private function filtered(Scope $scope, TaskFilter $filter, Carbon $now): Builder
     {
+        // "Today" is the day of $now in its own time zone (the user's, see Core\Support\UserTime); the bounds go to
+        // the query in the storage zone, otherwise a local wall time would be compared to UTC values.
+        $dayStart = UserTime::toStorage($now->copy()->startOfDay());
+        $dayEnd = UserTime::toStorage($now->copy()->endOfDay());
+
         return $this->scoped($scope)
             ->when($filter->source !== null, fn (Builder $q) => $q->whereIn('type', $filter->source?->typeValues() ?? []))
             ->when($filter->employeeId, fn (Builder $q, int $id) => $q->where('employee_id', $id))
             ->when($filter->mine, fn (Builder $q) => $q->where('assignee_id', $scope->userId))
             ->when($filter->candidateId, fn (Builder $q, int $id) => $q->where('candidate_id', $id))
             ->when(! $filter->withDone, fn (Builder $q) => $q->whereNull('done_at'))
-            ->when($filter->due === TaskDue::Today, fn (Builder $q) => $q->where('due_at', '<=', $now->copy()->endOfDay()))
-            ->when($filter->due === TaskDue::Overdue, fn (Builder $q) => $q->where('due_at', '<', $now->copy()->startOfDay()));
+            ->when($filter->due === TaskDue::Today, fn (Builder $q) => $q->where('due_at', '<=', $dayEnd))
+            ->when($filter->due === TaskDue::Overdue, fn (Builder $q) => $q->where('due_at', '<', $dayStart));
     }
 
     public function find(int $id): ?Task

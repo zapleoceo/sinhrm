@@ -125,6 +125,27 @@ final class TasksAndFollowupsTest extends TestCase
             ->assertJsonPath('data.2.id', $today->id);
     }
 
+    /**
+     * "today" and "overdue" are the user's day (Europe/Kyiv), not the UTC day: at 22:30 UTC it is already 01:30 of the
+     * next day in Kyiv, so 23:00 Kyiv yesterday is overdue and 18:00 Kyiv today is "today" though it is tomorrow in UTC.
+     */
+    public function test_today_and_overdue_follow_the_users_day(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+        $mine = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $app = $this->applied($this->vacancy);
+        $lastNight = $this->task($mine->id, $app, '2026-09-10 20:00');     // 23:00 Kyiv, 10 Sep
+        $thisEvening = $this->task($mine->id, $app, '2026-09-11 15:00', 'b'); // 18:00 Kyiv, 11 Sep
+        $this->task($mine->id, $app, '2026-09-11 21:30', 'c');              // 00:30 Kyiv, 12 Sep
+        Carbon::setTestNow('2026-09-10 22:30:00');                          // 01:30 Kyiv, 11 Sep
+
+        $this->actingAs($mine)->getJson('/api/tasks?mine=1&due=today')->assertOk()
+            ->assertJsonPath('data.*.id', [$lastNight->id, $thisEvening->id])
+            ->assertJsonPath('data.0.is_overdue', true)
+            ->assertJsonPath('data.1.is_overdue', false);
+        $this->actingAs($mine)->getJson('/api/tasks?mine=1&due=overdue')->assertOk()->assertJsonPath('data.*.id', [$lastNight->id]);
+    }
+
     public function test_nav_badge_counts_my_open_tasks_like_the_page(): void
     {
         Carbon::setTestNow('2026-09-10 12:00:00');

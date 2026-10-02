@@ -111,6 +111,18 @@ id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`)
 непрозрачные строки (HMAC или id). Используют Pulse ([pulse.md](pulse.md)) и Perform ([perform.md](perform.md)).
 Тест: `tests/Unit/Core/MembershipDifferencingTest.php`.
 
+### «Сегодня» пользователя (`Support/UserTime`, 2026-10-02)
+БД и API хранят время в UTC (`app.timezone`), интерфейс показывает местное. Граница «сегодня» (задачи на сегодня и
+просрочка, «Маршрут дня», «нові сьогодні») режется по поясу пользователя, иначе с 00:00 до 02:00/03:00 по Киеву сервер
+считает ещё вчерашний день. Настройки пояса у пользователя/компании нет — один пояс для всех: `config('app.user_timezone')`
+(env `APP_USER_TIMEZONE`, по умолчанию `Europe/Kyiv`, летнее/зимнее время учитывает сам пояс). Значение проверяется по
+`timezone_identifiers_list()`: пусто, опечатка или не-IANA (`GMT+3`) → `Europe/Kyiv`, без исключения. `UserTime::timezone()`,
+`UserTime::now(?Carbon)` — момент в поясе пользователя (его `startOfDay()/endOfDay()` — день пользователя),
+`UserTime::toStorage(Carbon)` — тот же момент в поясе хранения; **обязателен** перед передачей Carbon в привязку запроса:
+построитель запросов форматирует дату `Y-m-d H:i:s` без перевода, и местное время сравнилось бы с UTC.
+Используют Scripts ([scripts.md](scripts.md)) и Overview ([overview.md](overview.md)). Тест: `tests/Unit/Core/UserTimeTest.php`
+(23:30/00:30 UTC зимой и летом, день перехода на летнее время 29.03.2026 — 23 часа, начало `+02:00`, конец `+03:00`).
+
 ### Фоновые задачи (`Contracts/ScheduledJob`)
 У vercel-php нет воркеров и постоянных процессов, а cron Vercel Hobby — раз в сутки. Поэтому GitHub Actions
 (`cron.yml`) каждые 30 минут дёргает `POST /api/ops/jobs/run`. Модуль регистрирует задачу так:

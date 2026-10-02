@@ -198,6 +198,79 @@ test.describe('desktop flows', () => {
     await expect(collapse).toBeVisible();
   });
 
+  test('auto-hide: the rail opens over the content under the pointer and keyboard focus, folds back after a short delay', async ({ page, context }) => {
+    await open(page, context, '/');
+    const sidebar = page.locator('#app-sidebar');
+    const main = page.locator('main.content');
+    const autoHide = page.getByRole('button', { name: 'Автоприховування меню' });
+    const width = async (): Promise<number> => (await sidebar.boundingBox())!.width;
+    const mainX = async (): Promise<number> => (await main.boundingBox())!.x;
+    const away = (): Promise<void> => page.mouse.move(900, 400);
+
+    // Pinned 240px sidebar: logo + both toggles fit in the head (no overflow, buttons inside the sidebar).
+    const head = page.locator('.nav-head');
+    expect(await head.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
+    const box = (await sidebar.boundingBox())!;
+    const btn = (await autoHide.boundingBox())!;
+    expect(btn.x + btn.width).toBeLessThanOrEqual(box.x + box.width);
+
+    await expect(autoHide).toHaveAttribute('aria-pressed', 'false');
+    await autoHide.click();
+    await expect(autoHide).toHaveAttribute('aria-pressed', 'true');
+    // Switched on under the pointer: open until the pointer leaves, then a rail; the content keeps its place.
+    await expect(page.getByRole('button', { name: 'Згорнути меню' })).toHaveCount(0);
+    await away();
+    await expect.poll(width).toBeLessThanOrEqual(64);
+    const x = await mainX();
+
+    await sidebar.hover({ position: { x: 32, y: 300 } });
+    await expect.poll(width).toBeGreaterThan(200);
+    expect(await mainX(), 'the content does not move when the sidebar opens').toBe(x);
+    // A short overshoot is forgiven: back within the delay, still open.
+    await page.mouse.move(400, 300);
+    await page.mouse.move(100, 300);
+    await page.waitForTimeout(400);
+    expect(await width()).toBeGreaterThan(200);
+    await away();
+    await expect.poll(width).toBeLessThanOrEqual(64);
+
+    // The open user menu keeps the sidebar open while the pointer is over the menu.
+    await sidebar.hover({ position: { x: 32, y: 300 } });
+    await expect.poll(width).toBeGreaterThan(200);
+    await page.getByRole('button', { name: 'Меню користувача' }).click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.getByRole('menu').hover();
+    await away();
+    await page.waitForTimeout(400);
+    expect(await width()).toBeGreaterThan(200);
+    await page.mouse.click(900, 400); // closes the menu
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect.poll(width).toBeLessThanOrEqual(64);
+
+    // Keyboard: focus inside keeps it open, Esc folds it, focus leaving folds it.
+    await autoHide.focus();
+    await page.keyboard.press('Tab');
+    await expect.poll(width).toBeGreaterThan(200);
+    await page.waitForTimeout(400);
+    expect(await width()).toBeGreaterThan(200);
+    await page.keyboard.press('Escape');
+    await expect.poll(width).toBeLessThanOrEqual(64);
+    await page.keyboard.press('Tab');
+    await expect.poll(width).toBeGreaterThan(200);
+    await page.getByRole('button', { name: 'Оновити' }).focus();
+    await expect.poll(width).toBeLessThanOrEqual(64);
+
+    // Remembered; switching it off brings back the pinned sidebar.
+    await page.reload();
+    await settle(page);
+    await expect(autoHide).toHaveAttribute('aria-pressed', 'true');
+    expect(await width()).toBeLessThanOrEqual(64);
+    await autoHide.focus();
+    await page.keyboard.press('Enter');
+    await expect(autoHide).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByRole('button', { name: 'Згорнути меню' })).toBeVisible();
+  });
+
   test('login: language switch translates the page', async ({ page, context }) => {
     await open(page, context, '/login', true);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Вхід');

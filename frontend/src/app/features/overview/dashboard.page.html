@@ -76,7 +76,7 @@
           @if (fi.bottleneck; as b) {
             <p class="insight" data-insight="bottleneck">
               {{ 'overview.insights.bottleneck' | transloco }} <b>{{ b.from }} → {{ b.to }}</b>
-              <span class="app-num muted">{{ 'overview.insights.bottleneckRate' | transloco: { p: b.conversion, days: fi.period_days } }}</span>
+              <span class="app-num muted">{{ 'overview.insights.bottleneckRate' | transloco: { p: b.conversion, passed: b.passed, decided: b.decided, days: fi.period_days } }}</span>
             </p>
           }
           @if (fi.offer_path; as o) {
@@ -85,7 +85,7 @@
             </p>
           }
           @if (!fi.bottleneck && !fi.offer_path) {
-            <p class="insight muted" data-insight="none">{{ 'overview.insights.notEnough' | transloco: { n: fi.min_sample, days: fi.period_days } }}</p>
+            <p class="insight muted" data-insight="none">{{ 'overview.insights.notEnough' | transloco: { n: fi.min_sample, m: fi.min_offer_observations, days: fi.period_days } }}</p>
           }
         </div>
       }

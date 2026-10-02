@@ -23,6 +23,7 @@
  ],
  "interactive": [
   "button \"Open calendar\"",
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування 9 нових\"",
   "button \"Згорнути меню\" [expanded]",
   "button \"Люди 70 нових\"",

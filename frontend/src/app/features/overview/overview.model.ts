@@ -44,7 +44,10 @@ export interface FunnelInsights {
 
 /** backend Overview DayRouteService. */
 export interface DayRoute {
+  /** The user's day (Y-m-d) in `timezone`; the backend cuts «today» in that zone, not in UTC. */
   date: string;
+  /** IANA zone of the day (config app.user_timezone, e.g. Europe/Kyiv); older answers had none → the browser's zone. */
+  timezone?: string;
   interviews: number;
   tasks: number;
   items: DayRouteItem[];
@@ -79,14 +82,43 @@ export interface RouteScale {
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
-/** Local hour (with fraction) of an ISO time. */
-function hourOf(iso: string): number {
-  const d = new Date(iso);
-  return d.getHours() + d.getMinutes() / 60;
+/** Wall clock of a moment in a time zone (the browser's when none): date 'YYYY-MM-DD', hour and minute. */
+export interface WallClock {
+  date: string;
+  h: number;
+  m: number;
 }
 
-export function routeScale(items: DayRouteItem[], now: Date, date: string): RouteScale {
-  const hrs = items.map((i) => hourOf(i.at));
+export function wallClock(d: Date, timeZone?: string): WallClock {
+  if (!timeZone) {
+    return { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, h: d.getHours(), m: d.getMinutes() };
+  }
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(d);
+  const part = (type: Intl.DateTimeFormatPartTypes): string => parts.find((p) => p.type === type)?.value ?? '00';
+  return { date: `${part('year')}-${part('month')}-${part('day')}`, h: Number(part('hour')), m: Number(part('minute')) };
+}
+
+/** Hour (with fraction) of an ISO time on the wall clock of the zone. */
+function hourOf(iso: string, timeZone?: string): number {
+  const w = wallClock(new Date(iso), timeZone);
+  return w.h + w.m / 60;
+}
+
+/**
+ * Visible hours, «now» and its label. Everything is read on the wall clock of `timeZone` — the zone the backend cut the
+ * day in (day_route.timezone) — so the line, the stations and «зараз» agree with `date` even when the browser's zone or
+ * the UTC day differ (00:00–03:00 in Kyiv is still «yesterday» in UTC).
+ */
+export function routeScale(items: DayRouteItem[], now: Date, date: string, timeZone?: string): RouteScale {
+  const hrs = items.map((i) => hourOf(i.at, timeZone));
   const from = Math.max(0, Math.min(9, Math.floor(Math.min(9, ...hrs))));
   const to = Math.min(24, Math.max(19, Math.ceil(Math.max(19, ...hrs))));
   const span = to - from;
@@ -96,22 +128,22 @@ export function routeScale(items: DayRouteItem[], now: Date, date: string): Rout
   for (let h = from; h <= to; h += step) {
     hours.push({ h, left: pct(h) });
   }
-  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const n = now.getHours() + now.getMinutes() / 60;
+  const w = wallClock(now, timeZone);
+  const n = w.h + w.m / 60;
   return {
     from,
     to,
     hours,
-    now: today === date && n >= from && n <= to ? pct(n) : null,
-    nowLabel: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    now: w.date === date && n >= from && n <= to ? pct(n) : null,
+    nowLabel: `${pad(w.h)}:${pad(w.m)}`,
   };
 }
 
-export function routeStops(items: DayRouteItem[], scale: RouteScale): RouteStop[] {
+export function routeStops(items: DayRouteItem[], scale: RouteScale, timeZone?: string): RouteStop[] {
   const span = scale.to - scale.from;
   return items.map((i) => {
-    const d = new Date(i.at);
-    return { ...i, left: Math.round(((hourOf(i.at) - scale.from) / span) * 1000) / 10, time: `${pad(d.getHours())}:${pad(d.getMinutes())}` };
+    const w = wallClock(new Date(i.at), timeZone);
+    return { ...i, left: Math.round(((w.h + w.m / 60 - scale.from) / span) * 1000) / 10, time: `${pad(w.h)}:${pad(w.m)}` };
   });
 }
 

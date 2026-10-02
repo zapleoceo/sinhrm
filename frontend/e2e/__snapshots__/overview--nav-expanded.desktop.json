@@ -18,6 +18,7 @@
   "region \"Маршрут дня\""
  ],
  "interactive": [
+  "button \"Автоприховування меню\"",
   "button \"Адміністрування\" [expanded]",
   "button \"Згорнути меню\" [expanded]",
   "button \"Кандидат\"",

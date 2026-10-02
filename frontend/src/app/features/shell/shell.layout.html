@@ -1,4 +1,4 @@
-<div class="shell" [class.narrow]="narrow()" [class.rail]="collapsed()">
+<div class="shell" [class.narrow]="narrow()" [class.rail]="collapsed()" [class.autohide]="autoHide()" [class.peek]="autoHide() && peek()">
   @if (narrow()) {
     <header class="topbar">
       <button mat-icon-button type="button" class="burger" [attr.aria-label]="'shell.nav.label' | transloco" aria-controls="app-sidebar" [attr.aria-expanded]="drawerOpen()" (click)="openDrawer()">
@@ -12,13 +12,18 @@
       <div class="backdrop" aria-hidden="true" (click)="closeDrawer()"></div>
     }
   }
-  <aside class="sidebar" id="app-sidebar" [class.open]="drawerOpen()" [attr.inert]="narrow() && !drawerOpen() ? '' : null" [cdkTrapFocus]="narrow() && drawerOpen()" [cdkTrapFocusAutoCapture]="narrow() && drawerOpen()">
+  <aside #sidebar class="sidebar" id="app-sidebar" [class.open]="drawerOpen()" (mouseenter)="pointerEnter()" (mouseleave)="pointerLeave()" [attr.inert]="narrow() && !drawerOpen() ? '' : null" [cdkTrapFocus]="narrow() && drawerOpen()" [cdkTrapFocusAutoCapture]="narrow() && drawerOpen()">
   <nav class="sidebar-nav" [attr.aria-label]="'shell.nav.label' | transloco">
     <div class="nav-head">
       <a class="brand" routerLink="/"><app-logo [variant]="collapsed() ? 'mark' : 'full'" /></a>
-      @if (!narrow()) {
+      @if (!narrow() && !autoHide()) {
         <button type="button" class="rail-toggle" aria-controls="app-sidebar" [attr.aria-expanded]="!collapsed()" [attr.aria-label]="railToggleLabel() | transloco" [appRailTip]="railToggleLabel() | transloco" (click)="toggleRail()">
           <mat-icon aria-hidden="true">{{ collapsed() ? 'left_panel_open' : 'left_panel_close' }}</mat-icon>
+        </button>
+      }
+      @if (autoHideAvailable()) {
+        <button type="button" class="rail-toggle auto-hide" [attr.aria-pressed]="autoHide()" [attr.aria-label]="'shell.nav.autoHide' | transloco" [appRailTip]="'shell.nav.autoHide' | transloco" (click)="toggleAutoHide()">
+          <mat-icon aria-hidden="true">{{ autoHide() ? 'keep_off' : 'keep' }}</mat-icon>
         </button>
       }
     </div>
@@ -32,7 +37,7 @@
       <app-nav-badge [count]="badges()['tasks'] ?? 0" />
     </a>
     @if (groupVisible('recruiting')) {
-    <button type="button" class="nav-section" [class.current]="activeGroup() === 'recruiting'" [attr.aria-expanded]="isOpen('recruiting')" aria-controls="nav-group-recruiting" [appRailTip]="'shell.nav.recruiting' | transloco" (click)="toggle('recruiting')">
+    <button type="button" class="nav-section" [class.current]="activeGroup() === 'recruiting'" [attr.aria-current]="groupCurrent('recruiting')" [attr.aria-expanded]="isOpen('recruiting')" aria-controls="nav-group-recruiting" [appRailTip]="'shell.nav.recruiting' | transloco" (click)="toggle('recruiting')">
       <mat-icon class="section-icon" aria-hidden="true">person_add</mat-icon>
       <span class="label">{{ 'shell.nav.recruiting' | transloco }}</span>
       <app-nav-badge [count]="groupBadge('recruiting')" />
@@ -74,7 +79,7 @@
     </div></div>
     }
     @if (groupVisible('people')) {
-    <button type="button" class="nav-section" [class.current]="activeGroup() === 'people'" [attr.aria-expanded]="isOpen('people')" aria-controls="nav-group-people" [appRailTip]="'shell.nav.people' | transloco" (click)="toggle('people')">
+    <button type="button" class="nav-section" [class.current]="activeGroup() === 'people'" [attr.aria-current]="groupCurrent('people')" [attr.aria-expanded]="isOpen('people')" aria-controls="nav-group-people" [appRailTip]="'shell.nav.people' | transloco" (click)="toggle('people')">
       <mat-icon class="section-icon" aria-hidden="true">groups</mat-icon>
       <span class="label">{{ 'shell.nav.people' | transloco }}</span>
       <app-nav-badge [count]="groupBadge('people')" />
@@ -147,7 +152,7 @@
     </div></div>
     }
     @if (groupVisible('perform')) {
-    <button type="button" class="nav-section" [class.current]="activeGroup() === 'perform'" [attr.aria-expanded]="isOpen('perform')" aria-controls="nav-group-perform" [appRailTip]="'shell.nav.perform' | transloco" (click)="toggle('perform')">
+    <button type="button" class="nav-section" [class.current]="activeGroup() === 'perform'" [attr.aria-current]="groupCurrent('perform')" [attr.aria-expanded]="isOpen('perform')" aria-controls="nav-group-perform" [appRailTip]="'shell.nav.perform' | transloco" (click)="toggle('perform')">
       <mat-icon class="section-icon" aria-hidden="true">trending_up</mat-icon>
       <span class="label">{{ 'shell.nav.perform' | transloco }}</span>
       <app-nav-badge [count]="groupBadge('perform')" />
@@ -194,7 +199,7 @@
     </div></div>
     }
     @if (groupVisible('services')) {
-    <button type="button" class="nav-section" [class.current]="activeGroup() === 'services'" [attr.aria-expanded]="isOpen('services')" aria-controls="nav-group-services" [appRailTip]="'shell.nav.services' | transloco" (click)="toggle('services')">
+    <button type="button" class="nav-section" [class.current]="activeGroup() === 'services'" [attr.aria-current]="groupCurrent('services')" [attr.aria-expanded]="isOpen('services')" aria-controls="nav-group-services" [appRailTip]="'shell.nav.services' | transloco" (click)="toggle('services')">
       <mat-icon class="section-icon" aria-hidden="true">apps</mat-icon>
       <span class="label">{{ 'shell.nav.services' | transloco }}</span>
       <app-nav-badge [count]="groupBadge('services')" />
@@ -235,7 +240,7 @@
 </div></div>
     }
     @if (isHr()) {
-      <button type="button" class="nav-section" [class.current]="activeGroup() === 'admin'" [attr.aria-expanded]="isOpen('admin')" aria-controls="nav-group-admin" [appRailTip]="'shell.nav.admin' | transloco" (click)="toggle('admin')">
+      <button type="button" class="nav-section" [class.current]="activeGroup() === 'admin'" [attr.aria-current]="groupCurrent('admin')" [attr.aria-expanded]="isOpen('admin')" aria-controls="nav-group-admin" [appRailTip]="'shell.nav.admin' | transloco" (click)="toggle('admin')">
         <mat-icon class="section-icon" aria-hidden="true">admin_panel_settings</mat-icon>
         <span class="label">{{ 'shell.nav.admin' | transloco }}</span>
         <app-nav-badge [count]="groupBadge('admin')" />
@@ -384,7 +389,7 @@
       <span class="label">{{ 'shell.nav.docs' | transloco }}</span>
     </a>
     @if (user(); as u) {
-      <button type="button" class="user" [matMenuTriggerFor]="menu" [attr.aria-label]="'shell.menu.open' | transloco" [appRailTip]="u.name">
+      <button type="button" class="user" [matMenuTriggerFor]="menu" (menuOpened)="holdSidebar(true)" (menuClosed)="holdSidebar(false)" [attr.aria-label]="'shell.menu.open' | transloco" [appRailTip]="u.name">
         @if (u.avatar_url) {
           <img class="avatar" [src]="u.avatar_url" alt="" referrerpolicy="no-referrer" width="32" height="32" />
         } @else {

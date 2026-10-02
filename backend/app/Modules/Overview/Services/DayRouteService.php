@@ -16,7 +16,9 @@ use Illuminate\Support\Collection;
  * - interviews: meetings scheduled from the candidate card (touchpoints "meeting", meta.start today) that the user
  *   scheduled or is an interviewer of, only for candidates the user may see;
  * - tasks: the user's own open tasks due today (overdue ones are not on today's line, they stay in "Мої задачі").
- * "Today" is the server day [00:00, 23:59:59], as for "Мої задачі на сьогодні".
+ * "Today" is the user's day [00:00, 23:59:59] in the user's time zone (Core UserTime, config app.user_timezone), the
+ * same day as "Мої задачі на сьогодні"; every time in the answer carries that zone's offset, and `timezone` names it,
+ * so the UI draws the line in the zone the day was cut in.
  */
 final readonly class DayRouteService
 {
@@ -27,7 +29,8 @@ final readonly class DayRouteService
 
     /**
      * @param  Collection<int, Task>  $myTasks  my open tasks due by the end of today
-     * @return array{date: string, interviews: int, tasks: int, items: list<array<string, mixed>>}
+     * @param  Carbon  $now  the current moment in the user's time zone (its day is "today")
+     * @return array{date: string, timezone: string, interviews: int, tasks: int, items: list<array<string, mixed>>}
      */
     public function build(Scope $scope, Collection $myTasks, Carbon $now): array
     {
@@ -62,7 +65,7 @@ final readonly class DayRouteService
             $items[] = [
                 'kind' => 'task',
                 'id' => $t->id,
-                'at' => $t->due_at->toIso8601String(),
+                'at' => $t->due_at->copy()->setTimezone($tz)->toIso8601String(),
                 'end' => null,
                 'title' => $t->title,
                 'type' => $t->type->value,
@@ -72,6 +75,6 @@ final readonly class DayRouteService
         // Same time zone everywhere, so ISO strings sort chronologically; interviews before tasks at the same minute.
         usort($items, static fn (array $a, array $b): int => [$a['at'], $a['kind'], $a['id']] <=> [$b['at'], $b['kind'], $b['id']]);
 
-        return ['date' => $from->toDateString(), 'interviews' => $interviews, 'tasks' => $tasks, 'items' => $items];
+        return ['date' => $from->toDateString(), 'timezone' => $tz->getName(), 'interviews' => $interviews, 'tasks' => $tasks, 'items' => $items];
     }
 }

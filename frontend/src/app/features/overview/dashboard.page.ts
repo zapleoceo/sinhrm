@@ -16,6 +16,7 @@ import { canWriteRecruiting } from '../recruiting/recruiting.access';
 import { TasksWidget } from '../scripts/tasks/tasks-widget';
 import { TaskQuery } from '../scripts/scripts.model';
 import { DayRouteCard } from './day-route';
+import { wallClock } from './overview.model';
 import { OverviewStore } from './overview.store';
 
 /**
@@ -44,12 +45,11 @@ export class DashboardPage implements OnInit {
   protected readonly canCreateCandidate = computed(
     () => canWriteRecruiting(this.auth.user()?.roles ?? []) && this.auth.hasModule('recruiting'),
   );
-  protected readonly todayIso = computed(() => {
-    const d = this.store.loadedAt();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  });
+  /** Zone «today» is cut in by the backend (day_route.timezone); until the data arrives — the browser's zone. */
+  private readonly timeZone = computed(() => this.store.data()?.day_route?.timezone);
+  protected readonly todayIso = computed(() => wallClock(this.store.loadedAt(), this.timeZone()).date);
   protected readonly todayLabel = computed(() =>
-    new Intl.DateTimeFormat(this.lang(), { weekday: 'long', day: 'numeric', month: 'long' }).format(this.store.loadedAt()),
+    new Intl.DateTimeFormat(this.lang(), { weekday: 'long', day: 'numeric', month: 'long', timeZone: this.timeZone() }).format(this.store.loadedAt()),
   );
 
   ngOnInit(): void {

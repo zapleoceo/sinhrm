@@ -119,15 +119,16 @@ final class PersonPickerApiTest extends TestCase
 
     public function test_users_scope_is_hr_only(): void
     {
-        User::factory()->withRole(UserRole::Recruiter)->create(['name' => 'Rita Recruiter']);
+        // A token no faker name or e-mail contains: "rita" also matched random users (Margarita, rita@…) → flaky count.
+        User::factory()->withRole(UserRole::Recruiter)->create(['name' => 'Ritaqz Recruiter']);
         $admin = $this->login(UserRole::Admin);
 
-        $this->actingAs($this->login(UserRole::Viewer))->getJson('/api/people/search?q=rita&scope=users')->assertForbidden();
-        $row = $this->actingAs($admin)->getJson('/api/people/search?q=rita&scope=users')->assertOk()
+        $this->actingAs($this->login(UserRole::Viewer))->getJson('/api/people/search?q=ritaqz&scope=users')->assertForbidden();
+        $row = $this->actingAs($admin)->getJson('/api/people/search?q=ritaqz&scope=users')->assertOk()
             ->assertJsonCount(1, 'data')->json('data.0');
         $this->assertIsArray($row);
         $this->assertSame(self::ROW_KEYS, array_keys($row));
-        $this->assertSame('Rita Recruiter', $row['full_name']);
+        $this->assertSame('Ritaqz Recruiter', $row['full_name']);
     }
 
     public function test_like_wildcards_are_escaped(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Scripts\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Scripts\Contracts\TaskRepository;
 use App\Modules\Scripts\DTO\NewTask;
@@ -37,16 +38,20 @@ final readonly class TaskService
         private Dispatcher $events,
     ) {}
 
-    /** @return Collection<int, Task> */
+    /**
+     * "today" / "overdue" are the user's day (Core\Support\UserTime), not the server's UTC day.
+     *
+     * @return Collection<int, Task>
+     */
     public function list(User $actor, TaskFilter $filter, ?Carbon $now = null): Collection
     {
-        return $this->tasks->list($this->scope->for($actor), $filter, $now ?? Carbon::now(), self::LIMIT);
+        return $this->tasks->list($this->scope->for($actor), $filter, UserTime::now($now), self::LIMIT);
     }
 
     /** Same filter as list(), without the limit (sidebar counter). */
     public function count(User $actor, TaskFilter $filter, ?Carbon $now = null): int
     {
-        return $this->tasks->count($this->scope->for($actor), $filter, $now ?? Carbon::now());
+        return $this->tasks->count($this->scope->for($actor), $filter, UserTime::now($now));
     }
 
     public function canSee(User $actor, Task $task): bool

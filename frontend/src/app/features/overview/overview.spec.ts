@@ -3,13 +3,13 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { TranslocoTestingModule } from '@jsverse/transloco';
+import { Translation, TranslocoTestingModule } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { ChannelIcon } from '../../core/ui/channel-icon';
 import { MoodCheckinWidget } from '../pulse/mood/mood-checkin.widget';
 import { TasksWidget } from '../scripts/tasks/tasks-widget';
 import { DashboardPage } from './dashboard.page';
-import { Dashboard, DayRouteItem, routeScale, routeStops, statTiles, touchSegments } from './overview.model';
+import { Dashboard, DayRouteItem, routeScale, routeStops, statTiles, touchSegments, wallClock } from './overview.model';
 import { OverviewService } from './overview.service';
 import { OverviewStore } from './overview.store';
 
@@ -53,6 +53,23 @@ describe('Overview day route and touches (pure)', () => {
     const wide = routeScale([{ ...TASK, at: '2026-10-02T07:15:00' }, { ...TASK, at: '2026-10-02T20:40:00' }], now, '2026-10-01');
     expect([wide.from, wide.to]).toEqual([7, 21]);
     expect(wide.now).toBeNull();
+  });
+
+  it('day line reads the zone the backend cut the day in: 00:00-03:00 Kyiv is today there, yesterday in UTC', () => {
+    // Summer (+03:00): 21:45 UTC on 1 Oct = 00:45 Kyiv on 2 Oct; a meeting at 00:30 Kyiv.
+    const night: DayRouteItem = { ...INTERVIEW, at: '2026-10-01T21:30:00+00:00', end: null };
+    const now = new Date('2026-10-01T21:45:00Z');
+    const kyiv = routeScale([night], now, '2026-10-02', 'Europe/Kyiv');
+    expect([kyiv.from, kyiv.to]).toEqual([0, 19]);
+    expect(kyiv.nowLabel).toBe('00:45');
+    expect(kyiv.now).not.toBeNull();
+    expect(routeStops([night], kyiv, 'Europe/Kyiv').map((x) => [x.left, x.time])).toEqual([[2.6, '00:30']]);
+    // Read in UTC the same moment is still 1 Oct: no «now» on the 2 Oct line.
+    expect(routeScale([night], now, '2026-10-02', 'UTC').now).toBeNull();
+    // Winter (+02:00): 23:30 UTC on 15 Jan is 01:30 on 16 Jan in Kyiv.
+    expect(wallClock(new Date('2026-01-15T23:30:00Z'), 'Europe/Kyiv')).toEqual({ date: '2026-01-16', h: 1, m: 30 });
+    expect(wallClock(new Date('2026-01-16T00:30:00Z'), 'Europe/Kyiv')).toEqual({ date: '2026-01-16', h: 2, m: 30 });
+    expect(wallClock(new Date('2026-07-15T23:30:00Z'), 'Europe/Kyiv')).toEqual({ date: '2026-07-16', h: 2, m: 30 });
   });
 
   it('touch segments: share of the total and a colour slot by order, empty channels dropped', () => {
@@ -112,9 +129,9 @@ class ChannelStub {
   readonly key = input<unknown>();
 }
 
-function setup(roles: string[] = ['recruiter'], modules?: string[]) {
+function setup(roles: string[] = ['recruiter'], modules?: string[], uk: Translation = {}) {
   TestBed.configureTestingModule({
-    imports: [DashboardPage, TranslocoTestingModule.forRoot({ langs: { uk: {} }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+    imports: [DashboardPage, TranslocoTestingModule.forRoot({ langs: { uk }, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
@@ -129,8 +146,8 @@ function setup(roles: string[] = ['recruiter'], modules?: string[]) {
   return TestBed.createComponent(DashboardPage);
 }
 
-async function render(data: Dashboard, roles?: string[], modules?: string[]): Promise<HTMLElement> {
-  const fixture = setup(roles, modules);
+async function render(data: Dashboard, roles?: string[], modules?: string[], uk?: Translation): Promise<HTMLElement> {
+  const fixture = setup(roles, modules, uk);
   fixture.detectChanges();
   TestBed.inject(HttpTestingController).expectOne('/api/dashboard').flush({ data });
   fixture.detectChanges();
@@ -177,6 +194,25 @@ describe('DashboardPage (mock-up layout)', () => {
     expect(el.querySelector('[data-insight="bottleneck"]')).toBeNull();
     expect(el.querySelector('[data-insight="offer"]')).toBeNull();
     expect(el.querySelector('[data-insight="none"]')).not.toBeNull();
+  });
+
+  it('funnel captions: the bottleneck shows «N% (passed of decided)», the hint names both thresholds', async () => {
+    const uk: Translation = {
+      overview: { insights: { bottleneckRate: '{{p}}% ({{passed}} з {{decided}}) / {{days}}', notEnough: 'вузьке {{n}}, офер {{m}}, {{days}}' } },
+    };
+    let el = await render(FULL, undefined, undefined, uk);
+    expect(el.querySelector('[data-insight="bottleneck"] .muted')?.textContent?.trim()).toBe('30% (3 з 10) / 90');
+
+    TestBed.resetTestingModule();
+    const insights = FULL.funnel_insights;
+    if (!insights) throw new Error('fixture');
+    el = await render({ ...FULL, funnel_insights: { ...insights, bottleneck: null, offer_path: null } }, undefined, undefined, uk);
+    expect(el.querySelector('[data-insight="none"]')?.textContent?.trim()).toBe('вузьке 10, офер 3, 90');
+  });
+
+  it('header date is read in the zone of the day route, so the crumb and the route show the same day', async () => {
+    const el = await render({ ...FULL, day_route: { date: '2026-10-02', timezone: 'Pacific/Kiritimati', interviews: 0, tasks: 0, items: [] } });
+    expect(el.querySelector('.crumb time')?.getAttribute('datetime')).toBe(wallClock(new Date(), 'Pacific/Kiritimati').date);
   });
 
   it('touches: a stacked bar (decorative) and a legend with channel and number', async () => {
