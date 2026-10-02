@@ -1,0 +1,21 @@
+{
+ "path": "/login",
+ "state": null,
+ "headings": [
+  "Вхід"
+ ],
+ "landmarks": [
+  "main \"\"",
+  "region \"Вхід\""
+ ],
+ "interactive": [
+  "link \"Продовжити з Google\" -> /api/auth/google/redirect",
+  "radio \"en\"",
+  "radio \"ru\"",
+  "radio \"uk\" [checked]"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 1
+ }
+}

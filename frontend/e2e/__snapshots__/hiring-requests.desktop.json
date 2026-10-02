@@ -1,0 +1,61 @@
+{
+ "path": "/hiring-requests",
+ "state": null,
+ "headings": [
+  "Заявки на підбір"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг\" [expanded]",
+  "button \"Сервіси\"",
+  "link \"SinHRM\" -> /",
+  "link \"Вакансії\" -> /vacancies",
+  "link \"Вхідні\" -> /inbox",
+  "link \"Довідка\" -> /docs",
+  "link \"Заявка на підбір №1 [ТЕСТ]\" -> /hiring-requests/1",
+  "link \"Заявка на підбір №2 [ТЕСТ]\" -> /hiring-requests/2",
+  "link \"Заявка на підбір №3 [ТЕСТ]\" -> /hiring-requests/3",
+  "link \"Заявка на підбір №4 [ТЕСТ]\" -> /hiring-requests/4",
+  "link \"Заявка на підбір №5 [ТЕСТ]\" -> /hiring-requests/5",
+  "link \"Заявка на підбір №6 [ТЕСТ]\" -> /hiring-requests/6",
+  "link \"Заявка на підбір №7 [ТЕСТ]\" -> /hiring-requests/7",
+  "link \"Заявки на підбір 2 нових\" -> /hiring-requests",
+  "link \"Звіти\" -> /reports",
+  "link \"Кандидати\" -> /candidates",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Нова заявка\" -> /hiring-requests/new",
+  "link \"Огляд\" -> /",
+  "radio \"Є вакансія\"",
+  "radio \"Відхилена\"",
+  "radio \"Закрита\"",
+  "radio \"Мої\"",
+  "radio \"На погодження\"",
+  "radio \"На розгляді\"",
+  "radio \"Погоджена\"",
+  "radio \"Скасована\"",
+  "radio \"Усі доступні\"",
+  "radio \"Усі\" [checked]",
+  "radio \"Чернетка\""
+ ],
+ "columns": [
+  "Автор",
+  "Найнято",
+  "Посада / назва",
+  "Поточний крок",
+  "Статус",
+  "Створена"
+ ],
+ "counts": {
+  "cell": 42,
+  "img": 4,
+  "row": 8
+ }
+}

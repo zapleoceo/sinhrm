@@ -1,0 +1,15 @@
+{
+  "_comment": "Known layout issues present on main when the harness was added (2026-10-02). Each entry is a bug to fix, not a design decision; remove the entry with the fix. New entries only with a reason in the PR.",
+  "pageOverflow": [
+    "workflow-templates.mobile",
+    "time.mobile",
+    "feedback.mobile",
+    "assets.mobile",
+    "modules.mobile",
+    "users.mobile"
+  ],
+  "clipped": {
+    "hiring-requests.mobile": ["button.mat-button-toggle-button"],
+    "desk-queue.mobile": ["button.mat-button-toggle-button"]
+  }
+}

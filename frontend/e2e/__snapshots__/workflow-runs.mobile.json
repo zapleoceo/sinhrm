@@ -1,0 +1,22 @@
+{
+ "path": "/workflows/runs",
+ "state": null,
+ "headings": [
+  "Воркфлоу"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "combobox \"Співробітник\"",
+  "combobox \"Статус\"",
+  "combobox \"Шаблон\"",
+  "link \"Огляд\" -> /"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2
+ }
+}

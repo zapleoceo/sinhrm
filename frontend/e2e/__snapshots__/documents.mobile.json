@@ -1,0 +1,20 @@
+{
+ "path": "/me/documents",
+ "state": null,
+ "headings": [
+  "Мої документи"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "link \"Огляд\" -> /"
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "listitem": 1
+ }
+}

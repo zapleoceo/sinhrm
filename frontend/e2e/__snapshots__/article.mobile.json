@@ -1,0 +1,24 @@
+{
+ "path": "/knowledge/1",
+ "state": null,
+ "headings": [
+  "Як оформити відпустку [ТЕСТ]"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"25\"",
+  "button \"7\" [pressed]",
+  "button \"Головне меню\"",
+  "link \"Огляд\" -> /",
+  "link \"Редагувати\" -> /admin/knowledge/1",
+  "link \"← База знань\" -> /knowledge"
+ ],
+ "columns": [],
+ "counts": {
+  "article": 1,
+  "img": 2
+ }
+}

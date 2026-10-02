@@ -1,0 +1,34 @@
+{
+ "path": "/admin/workflows",
+ "state": null,
+ "headings": [
+  "Воркфлоу"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "button \"Створити\" [disabled]",
+  "combobox \"Запуск\"",
+  "combobox \"Тип\"",
+  "link \"Воркфлоу\" -> /workflows/runs",
+  "link \"Огляд\" -> /",
+  "textbox \"Назва\""
+ ],
+ "columns": [
+  "Видалити шаблон",
+  "Запуск",
+  "Запусків",
+  "Змінено",
+  "Кроків",
+  "Назва",
+  "Тип"
+ ],
+ "counts": {
+  "cell": 1,
+  "img": 2,
+  "row": 2
+ }
+}

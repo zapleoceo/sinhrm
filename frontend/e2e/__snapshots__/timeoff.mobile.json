@@ -1,0 +1,33 @@
+{
+ "path": "/timeoff",
+ "state": null,
+ "headings": [
+  "Баланси",
+  "Запити",
+  "Мої відсутності",
+  "Новий запит"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Open calendar\"",
+  "button \"Головне меню\"",
+  "button \"Надіслати запит\"",
+  "button \"Скасувати запит\"",
+  "button \"Скасувати запит\"",
+  "combobox \"Пів дня\"",
+  "combobox \"Тип відсутності\"",
+  "link \"Календар команди\" -> /timeoff/calendar",
+  "link \"Огляд\" -> /",
+  "textbox \"З\"",
+  "textbox \"Коментар\"",
+  "textbox \"По\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "listitem": 5
+ }
+}

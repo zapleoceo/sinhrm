@@ -1,0 +1,21 @@
+{
+ "path": "/login",
+ "state": "lang-en",
+ "headings": [
+  "Sign in"
+ ],
+ "landmarks": [
+  "main \"\"",
+  "region \"Sign in\""
+ ],
+ "interactive": [
+  "link \"Continue with Google\" -> /api/auth/google/redirect",
+  "radio \"en\" [checked]",
+  "radio \"ru\"",
+  "radio \"uk\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 1
+ }
+}

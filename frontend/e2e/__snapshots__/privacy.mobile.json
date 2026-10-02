@@ -1,0 +1,21 @@
+{
+ "path": "/admin/privacy",
+ "state": null,
+ "headings": [
+  "Персональні дані"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "button \"Зберегти\"",
+  "link \"Огляд\" -> /",
+  "switch \"Автоматично знеособлювати відхилених кандидатів\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2
+ }
+}

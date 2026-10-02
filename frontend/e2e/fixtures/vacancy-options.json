@@ -1,0 +1,104 @@
+{
+ "GET /api/vacancy-options": {
+  "status": 200,
+  "body": {
+   "data": {
+    "employment_types": [
+     "full_time",
+     "part_time",
+     "contract",
+     "internship",
+     "temporary"
+    ],
+    "work_formats": [
+     "office",
+     "remote",
+     "hybrid"
+    ],
+    "experience_levels": [
+     "none",
+     "lt_1",
+     "1_3",
+     "3_5",
+     "5_plus"
+    ],
+    "education_levels": [
+     "any",
+     "secondary",
+     "vocational",
+     "incomplete_higher",
+     "higher"
+    ],
+    "languages": [
+     "en",
+     "uk",
+     "pl",
+     "de",
+     "fr",
+     "es",
+     "it",
+     "pt",
+     "cs",
+     "ro",
+     "tr",
+     "nl",
+     "sv",
+     "zh",
+     "ja",
+     "ko",
+     "ar",
+     "he",
+     "ru"
+    ],
+    "language_levels": [
+     "A1",
+     "A2",
+     "B1",
+     "B2",
+     "C1",
+     "C2",
+     "native"
+    ],
+    "countries": [
+     "UA",
+     "PL",
+     "DE",
+     "CZ",
+     "SK",
+     "RO",
+     "MD",
+     "LT",
+     "LV",
+     "EE",
+     "GE",
+     "KZ",
+     "AT",
+     "NL",
+     "ES",
+     "IT",
+     "FR",
+     "PT",
+     "GB",
+     "US",
+     "CA",
+     "IL",
+     "AE",
+     "TR"
+    ],
+    "currencies": [
+     "UAH",
+     "USD",
+     "EUR"
+    ],
+    "external_sites": [
+     "work_ua",
+     "robota_ua",
+     "djinni",
+     "dou",
+     "linkedin",
+     "other"
+    ]
+   }
+  }
+ }
+}

@@ -1,0 +1,2805 @@
+{
+ "GET /api/vacancies?page=1&perPage=50&status=open": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 7,
+     "title": "Менеджер з продажу (вечірня зміна) [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 16,
+     "department": {
+      "id": 16,
+      "name": "Відділ продажів Дніпро [ТЕСТ]"
+     },
+     "position_id": 14,
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "recruiter_id": 109,
+     "recruiter": {
+      "id": 109,
+      "name": "Кравченко Софія [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 18,
+     "active_applications_count": 0,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-06-10T18:02:00+00:00"
+    },
+    {
+     "id": 6,
+     "title": "Бухгалтер [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 4,
+     "department": {
+      "id": 4,
+      "name": "Фінанси та бухгалтерія [ТЕСТ]"
+     },
+     "position_id": 20,
+     "position": {
+      "id": 20,
+      "name": "Бухгалтер [ТЕСТ]"
+     },
+     "recruiter_id": 108,
+     "recruiter": {
+      "id": 108,
+      "name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-05-29T18:02:00+00:00"
+    },
+    {
+     "id": 5,
+     "title": "Методист [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 6,
+     "department": {
+      "id": 6,
+      "name": "Методичний центр [ТЕСТ]"
+     },
+     "position_id": 27,
+     "position": {
+      "id": 27,
+      "name": "Методист [ТЕСТ]"
+     },
+     "recruiter_id": 107,
+     "recruiter": {
+      "id": 107,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-05-17T18:02:00+00:00"
+    },
+    {
+     "id": 4,
+     "title": "SMM-менеджер [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 2,
+     "department": {
+      "id": 2,
+      "name": "Маркетинг [ТЕСТ]"
+     },
+     "position_id": 16,
+     "position": {
+      "id": 16,
+      "name": "Маркетолог [ТЕСТ]"
+     },
+     "recruiter_id": 110,
+     "recruiter": {
+      "id": 110,
+      "name": "Поліщук Євген [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 13,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-05-05T18:02:00+00:00"
+    },
+    {
+     "id": 3,
+     "title": "Адміністратор філії [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 14,
+     "department": {
+      "id": 14,
+      "name": "Дирекція філії Дніпро [ТЕСТ]"
+     },
+     "position_id": 9,
+     "position": {
+      "id": 9,
+      "name": "Адміністратор філії [ТЕСТ]"
+     },
+     "recruiter_id": 109,
+     "recruiter": {
+      "id": 109,
+      "name": "Кравченко Софія [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 0,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-04-23T18:02:00+00:00"
+    },
+    {
+     "id": 2,
+     "title": "Викладач англійської [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 12,
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position_id": 12,
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "recruiter_id": 108,
+     "recruiter": {
+      "id": 108,
+      "name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-04-11T18:02:00+00:00"
+    },
+    {
+     "id": 1,
+     "title": "Менеджер з продажу [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 10,
+     "department": {
+      "id": 10,
+      "name": "Відділ продажів Київ [ТЕСТ]"
+     },
+     "position_id": 14,
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "recruiter_id": 107,
+     "recruiter": {
+      "id": 107,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-03-30T18:02:00+00:00"
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/vacancies?page=1",
+    "last": "https://sinhrm.test/api/vacancies?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/vacancies?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/vacancies",
+    "per_page": 50,
+    "to": 7,
+    "total": 7,
+    "active_count": 0
+   }
+  }
+ },
+ "GET /api/vacancies?perPage=100": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 7,
+     "title": "Менеджер з продажу (вечірня зміна) [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 16,
+     "department": {
+      "id": 16,
+      "name": "Відділ продажів Дніпро [ТЕСТ]"
+     },
+     "position_id": 14,
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "recruiter_id": 109,
+     "recruiter": {
+      "id": 109,
+      "name": "Кравченко Софія [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 18,
+     "active_applications_count": 0,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-06-10T18:02:00+00:00"
+    },
+    {
+     "id": 6,
+     "title": "Бухгалтер [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 4,
+     "department": {
+      "id": 4,
+      "name": "Фінанси та бухгалтерія [ТЕСТ]"
+     },
+     "position_id": 20,
+     "position": {
+      "id": 20,
+      "name": "Бухгалтер [ТЕСТ]"
+     },
+     "recruiter_id": 108,
+     "recruiter": {
+      "id": 108,
+      "name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-05-29T18:02:00+00:00"
+    },
+    {
+     "id": 5,
+     "title": "Методист [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 6,
+     "department": {
+      "id": 6,
+      "name": "Методичний центр [ТЕСТ]"
+     },
+     "position_id": 27,
+     "position": {
+      "id": 27,
+      "name": "Методист [ТЕСТ]"
+     },
+     "recruiter_id": 107,
+     "recruiter": {
+      "id": 107,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-05-17T18:02:00+00:00"
+    },
+    {
+     "id": 4,
+     "title": "SMM-менеджер [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 2,
+     "department": {
+      "id": 2,
+      "name": "Маркетинг [ТЕСТ]"
+     },
+     "position_id": 16,
+     "position": {
+      "id": 16,
+      "name": "Маркетолог [ТЕСТ]"
+     },
+     "recruiter_id": 110,
+     "recruiter": {
+      "id": 110,
+      "name": "Поліщук Євген [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 13,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-05-05T18:02:00+00:00"
+    },
+    {
+     "id": 3,
+     "title": "Адміністратор філії [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 14,
+     "department": {
+      "id": 14,
+      "name": "Дирекція філії Дніпро [ТЕСТ]"
+     },
+     "position_id": 9,
+     "position": {
+      "id": 9,
+      "name": "Адміністратор філії [ТЕСТ]"
+     },
+     "recruiter_id": 109,
+     "recruiter": {
+      "id": 109,
+      "name": "Кравченко Софія [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 0,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-04-23T18:02:00+00:00"
+    },
+    {
+     "id": 2,
+     "title": "Викладач англійської [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 12,
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position_id": 12,
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "recruiter_id": 108,
+     "recruiter": {
+      "id": 108,
+      "name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-04-11T18:02:00+00:00"
+    },
+    {
+     "id": 1,
+     "title": "Менеджер з продажу [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 10,
+     "department": {
+      "id": 10,
+      "name": "Відділ продажів Київ [ТЕСТ]"
+     },
+     "position_id": 14,
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "recruiter_id": 107,
+     "recruiter": {
+      "id": 107,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-03-30T18:02:00+00:00"
+    },
+    {
+     "id": 8,
+     "title": "Викладач програмування [ТЕСТ]",
+     "status": "paused",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 9,
+     "department": {
+      "id": 9,
+      "name": "Навчальний відділ Київ [ТЕСТ]"
+     },
+     "position_id": 12,
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "recruiter_id": 110,
+     "recruiter": {
+      "id": 110,
+      "name": "Поліщук Євген [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 18,
+     "active_applications_count": 12,
+     "opened_at": null,
+     "closed_at": null,
+     "created_at": "2026-06-22T18:02:00+00:00"
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/vacancies?page=1",
+    "last": "https://sinhrm.test/api/vacancies?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/vacancies?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/vacancies",
+    "per_page": 100,
+    "to": 8,
+    "total": 8,
+    "active_count": 0
+   }
+  }
+ },
+ "GET /api/vacancies/1": {
+  "status": 200,
+  "body": {
+   "data": {
+    "id": 1,
+    "title": "Менеджер з продажу [ТЕСТ]",
+    "status": "open",
+    "is_active": false,
+    "branch_id": 1,
+    "branch": {
+     "id": 1,
+     "name": "Тестовий філіал"
+    },
+    "department_id": 10,
+    "department": {
+     "id": 10,
+     "name": "Відділ продажів Київ [ТЕСТ]"
+    },
+    "position_id": 14,
+    "position": {
+     "id": 14,
+     "name": "Менеджер з продажу [ТЕСТ]"
+    },
+    "recruiter_id": 107,
+    "recruiter": {
+     "id": 107,
+     "name": "Лисенко Анна [ТЕСТ]"
+    },
+    "hiring_manager_id": null,
+    "hiring_manager": null,
+    "pipeline_id": 1,
+    "stages": [
+     {
+      "id": 1,
+      "name": "Новий відгук",
+      "kind": "attract",
+      "position": 1,
+      "is_terminal": false,
+      "is_reject": false,
+      "is_hire": false
+     },
+     {
+      "id": 2,
+      "name": "Первинний контакт",
+      "kind": "attract",
+      "position": 2,
+      "is_terminal": false,
+      "is_reject": false,
+      "is_hire": false
+     },
+     {
+      "id": 3,
+      "name": "Співбесіда",
+      "kind": "select",
+      "position": 3,
+      "is_terminal": false,
+      "is_reject": false,
+      "is_hire": false
+     },
+     {
+      "id": 4,
+      "name": "Зустріч у філії",
+      "kind": "select",
+      "position": 4,
+      "is_terminal": false,
+      "is_reject": false,
+      "is_hire": false
+     },
+     {
+      "id": 5,
+      "name": "Фінал з керівником",
+      "kind": "select",
+      "position": 5,
+      "is_terminal": false,
+      "is_reject": false,
+      "is_hire": false
+     },
+     {
+      "id": 6,
+      "name": "Офер",
+      "kind": "hire",
+      "position": 6,
+      "is_terminal": false,
+      "is_reject": false,
+      "is_hire": false
+     },
+     {
+      "id": 7,
+      "name": "Вийшов на роботу",
+      "kind": "hire",
+      "position": 7,
+      "is_terminal": true,
+      "is_reject": false,
+      "is_hire": true
+     },
+     {
+      "id": 8,
+      "name": "Відмова",
+      "kind": "closed",
+      "position": 8,
+      "is_terminal": true,
+      "is_reject": true,
+      "is_hire": false
+     }
+    ],
+    "description": "Тестова вакансія (синтетичні дані).",
+    "published": false,
+    "slug": null,
+    "public_description": null,
+    "category_id": null,
+    "category": null,
+    "city_id": null,
+    "city": null,
+    "country": null,
+    "employment_type": null,
+    "work_format": null,
+    "experience_level": null,
+    "education_level": null,
+    "salary_min": null,
+    "salary_max": null,
+    "salary_currency": "UAH",
+    "salary_visible": false,
+    "languages": [],
+    "requirements": null,
+    "responsibilities": null,
+    "additional_info": null,
+    "external_postings": [],
+    "applications_count": 19,
+    "active_applications_count": 19,
+    "opened_at": "2026-10-01T18:02:17+00:00",
+    "closed_at": null,
+    "created_at": "2026-03-30T18:02:00+00:00"
+   }
+  }
+ },
+ "GET /api/vacancies/1/board": {
+  "status": 200,
+  "body": {
+   "data": {
+    "vacancy": {
+     "id": 1,
+     "title": "Менеджер з продажу [ТЕСТ]",
+     "status": "open",
+     "is_active": false,
+     "branch_id": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department_id": 10,
+     "department": {
+      "id": 10,
+      "name": "Відділ продажів Київ [ТЕСТ]"
+     },
+     "position_id": 14,
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "recruiter_id": 107,
+     "recruiter": {
+      "id": 107,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     "hiring_manager_id": null,
+     "hiring_manager": null,
+     "pipeline_id": 1,
+     "stages": [
+      {
+       "id": 1,
+       "name": "Новий відгук",
+       "kind": "attract",
+       "position": 1,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 2,
+       "name": "Первинний контакт",
+       "kind": "attract",
+       "position": 2,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 3,
+       "name": "Співбесіда",
+       "kind": "select",
+       "position": 3,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 4,
+       "name": "Зустріч у філії",
+       "kind": "select",
+       "position": 4,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 5,
+       "name": "Фінал з керівником",
+       "kind": "select",
+       "position": 5,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 6,
+       "name": "Офер",
+       "kind": "hire",
+       "position": 6,
+       "is_terminal": false,
+       "is_reject": false,
+       "is_hire": false
+      },
+      {
+       "id": 7,
+       "name": "Вийшов на роботу",
+       "kind": "hire",
+       "position": 7,
+       "is_terminal": true,
+       "is_reject": false,
+       "is_hire": true
+      },
+      {
+       "id": 8,
+       "name": "Відмова",
+       "kind": "closed",
+       "position": 8,
+       "is_terminal": true,
+       "is_reject": true,
+       "is_hire": false
+      }
+     ],
+     "description": "Тестова вакансія (синтетичні дані).",
+     "published": false,
+     "slug": null,
+     "public_description": null,
+     "category_id": null,
+     "category": null,
+     "city_id": null,
+     "city": null,
+     "country": null,
+     "employment_type": null,
+     "work_format": null,
+     "experience_level": null,
+     "education_level": null,
+     "salary_min": null,
+     "salary_max": null,
+     "salary_currency": "UAH",
+     "salary_visible": false,
+     "languages": [],
+     "requirements": null,
+     "responsibilities": null,
+     "additional_info": null,
+     "external_postings": [],
+     "applications_count": 19,
+     "active_applications_count": 19,
+     "opened_at": "2026-10-01T18:02:17+00:00",
+     "closed_at": null,
+     "created_at": "2026-03-30T18:02:00+00:00"
+    },
+    "applications": [
+     {
+      "id": 25,
+      "candidate_id": 25,
+      "vacancy_id": 1,
+      "stage_id": 2,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-09-25T22:08:00+00:00",
+      "last_touch_at": "2026-09-25T21:48:00+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-09-16T09:48:00+00:00",
+      "candidate": {
+       "id": 25,
+       "full_name": "Павленко Ірина [ТЕСТ]",
+       "phone": "+380675149556",
+       "email": "user21857@sinhrm.test",
+       "telegram_username": "demo_cand_525",
+       "source": "meta_ads"
+      }
+     },
+     {
+      "id": 137,
+      "candidate_id": 137,
+      "vacancy_id": 1,
+      "stage_id": 2,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-09-25T02:12:00+00:00",
+      "last_touch_at": "2026-09-25T01:52:00+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-09-20T09:52:00+00:00",
+      "candidate": {
+       "id": 137,
+       "full_name": "Коваленко Анна [ТЕСТ]",
+       "phone": "+380676036484",
+       "email": "user22239@sinhrm.test",
+       "telegram_username": null,
+       "source": "referral"
+      }
+     },
+     {
+      "id": 49,
+      "candidate_id": 49,
+      "vacancy_id": 1,
+      "stage_id": 4,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-09-20T21:56:00+00:00",
+      "last_touch_at": "2026-09-27T15:02:18+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-09-04T09:36:00+00:00",
+      "candidate": {
+       "id": 49,
+       "full_name": "Мороз Юлія [ТЕСТ]",
+       "phone": "+380675339612",
+       "email": "user90975@sinhrm.test",
+       "telegram_username": "demo_cand_549",
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 97,
+      "candidate_id": 97,
+      "vacancy_id": 1,
+      "stage_id": 3,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-08-25T09:32:00+00:00",
+      "last_touch_at": "2026-09-23T15:02:19+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-08-11T09:12:00+00:00",
+      "candidate": {
+       "id": 97,
+       "full_name": "Руденко Анна [ТЕСТ]",
+       "phone": "+380675719724",
+       "email": "user32678@sinhrm.test",
+       "telegram_username": "demo_cand_597",
+       "source": "referral"
+      }
+     },
+     {
+      "id": 73,
+      "candidate_id": 73,
+      "vacancy_id": 1,
+      "stage_id": 1,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-08-23T09:24:00+00:00",
+      "last_touch_at": "2026-09-25T15:02:18+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-08-23T09:24:00+00:00",
+      "candidate": {
+       "id": 73,
+       "full_name": "Литвиненко Софія [ТЕСТ]",
+       "phone": "+380675529668",
+       "email": "user63560@sinhrm.test",
+       "telegram_username": "demo_cand_573",
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 9,
+      "candidate_id": 9,
+      "vacancy_id": 1,
+      "stage_id": 4,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-08-16T22:16:00+00:00",
+      "last_touch_at": "2026-09-30T23:02:17+00:00",
+      "is_stale": false,
+      "closed_at": null,
+      "created_at": "2026-07-26T09:56:00+00:00",
+      "candidate": {
+       "id": 9,
+       "full_name": "Шевчук Юлія [ТЕСТ]",
+       "phone": "+380675022852",
+       "email": "user18331@sinhrm.test",
+       "telegram_username": null,
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 121,
+      "candidate_id": 121,
+      "vacancy_id": 1,
+      "stage_id": 1,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-07-30T09:00:00+00:00",
+      "last_touch_at": "2026-09-21T15:02:19+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-07-30T09:00:00+00:00",
+      "candidate": {
+       "id": 121,
+       "full_name": "Мельничук Олена [ТЕСТ]",
+       "phone": "+380675909780",
+       "email": "user22180@sinhrm.test",
+       "telegram_username": "demo_cand_621",
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 145,
+      "candidate_id": 145,
+      "vacancy_id": 1,
+      "stage_id": 2,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-07-25T10:08:00+00:00",
+      "last_touch_at": "2026-09-19T15:02:19+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-07-18T09:48:00+00:00",
+      "candidate": {
+       "id": 145,
+       "full_name": "Шевчук Ірина [ТЕСТ]",
+       "phone": "+380676099836",
+       "email": "user91298@sinhrm.test",
+       "telegram_username": "demo_cand_645",
+       "source": "meta_ads"
+      }
+     },
+     {
+      "id": 57,
+      "candidate_id": 57,
+      "vacancy_id": 1,
+      "stage_id": 3,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-07-18T21:52:00+00:00",
+      "last_touch_at": "2026-09-26T23:02:18+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-07-02T09:32:00+00:00",
+      "candidate": {
+       "id": 57,
+       "full_name": "Бондаренко Анна [ТЕСТ]",
+       "phone": "+380675402964",
+       "email": "user60034@sinhrm.test",
+       "telegram_username": null,
+       "source": "referral"
+      }
+     },
+     {
+      "id": 33,
+      "candidate_id": 33,
+      "vacancy_id": 1,
+      "stage_id": 1,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-07-14T09:44:00+00:00",
+      "last_touch_at": "2026-09-28T23:02:17+00:00",
+      "is_stale": false,
+      "closed_at": null,
+      "created_at": "2026-07-14T09:44:00+00:00",
+      "candidate": {
+       "id": 33,
+       "full_name": "Кравченко Софія [ТЕСТ]",
+       "phone": "+380675212908",
+       "email": "user90916@sinhrm.test",
+       "telegram_username": null,
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 129,
+      "candidate_id": 129,
+      "vacancy_id": 1,
+      "stage_id": 4,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-07-10T10:16:00+00:00",
+      "last_touch_at": "2026-09-20T23:02:19+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-05-27T09:56:00+00:00",
+      "candidate": {
+       "id": 129,
+       "full_name": "Гончаренко Юлія [ТЕСТ]",
+       "phone": "+380675973132",
+       "email": "user20476@sinhrm.test",
+       "telegram_username": null,
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 81,
+      "candidate_id": 81,
+      "vacancy_id": 1,
+      "stage_id": 1,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-06-20T09:20:00+00:00",
+      "last_touch_at": null,
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-06-20T09:20:00+00:00",
+      "candidate": {
+       "id": 81,
+       "full_name": "Лисенко Олена [ТЕСТ]",
+       "phone": "+380675593020",
+       "email": "user32619@sinhrm.test",
+       "telegram_username": null,
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 105,
+      "candidate_id": 105,
+      "vacancy_id": 1,
+      "stage_id": 2,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-06-16T05:28:00+00:00",
+      "last_touch_at": "2026-09-22T23:02:19+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-06-08T09:08:00+00:00",
+      "candidate": {
+       "id": 105,
+       "full_name": "Кузьменко Ірина [ТЕСТ]",
+       "phone": "+380675783076",
+       "email": "user51358@sinhrm.test",
+       "telegram_username": null,
+       "source": "meta_ads"
+      }
+     },
+     {
+      "id": 17,
+      "candidate_id": 17,
+      "vacancy_id": 1,
+      "stage_id": 3,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-06-11T10:12:00+00:00",
+      "last_touch_at": "2026-09-30T07:02:17+00:00",
+      "is_stale": false,
+      "closed_at": null,
+      "created_at": "2026-05-23T09:52:00+00:00",
+      "candidate": {
+       "id": 17,
+       "full_name": "Марченко Анна [ТЕСТ]",
+       "phone": "+380675086204",
+       "email": "user20094@sinhrm.test",
+       "telegram_username": null,
+       "source": "referral"
+      }
+     },
+     {
+      "id": 41,
+      "candidate_id": 41,
+      "vacancy_id": 1,
+      "stage_id": 1,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-05-11T09:40:00+00:00",
+      "last_touch_at": "2026-09-28T07:02:18+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-05-11T09:40:00+00:00",
+      "candidate": {
+       "id": 41,
+       "full_name": "Савченко Олена [ТЕСТ]",
+       "phone": "+380675276260",
+       "email": "user92679@sinhrm.test",
+       "telegram_username": null,
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 65,
+      "candidate_id": 65,
+      "vacancy_id": 1,
+      "stage_id": 2,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-05-08T01:48:00+00:00",
+      "last_touch_at": "2026-09-26T07:02:18+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-04-29T09:28:00+00:00",
+      "candidate": {
+       "id": 65,
+       "full_name": "Поліщук Ірина [ТЕСТ]",
+       "phone": "+380675466316",
+       "email": "user61797@sinhrm.test",
+       "telegram_username": null,
+       "source": "meta_ads"
+      }
+     },
+     {
+      "id": 89,
+      "candidate_id": 89,
+      "vacancy_id": 1,
+      "stage_id": 4,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-04-28T21:36:00+00:00",
+      "last_touch_at": "2026-09-24T07:02:18+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-04-17T09:16:00+00:00",
+      "candidate": {
+       "id": 89,
+       "full_name": "Олійник Юлія [ТЕСТ]",
+       "phone": "+380675656372",
+       "email": "user30915@sinhrm.test",
+       "telegram_username": null,
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 113,
+      "candidate_id": 113,
+      "vacancy_id": 1,
+      "stage_id": 1,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-04-05T09:04:00+00:00",
+      "last_touch_at": "2026-09-22T07:02:19+00:00",
+      "is_stale": true,
+      "closed_at": null,
+      "created_at": "2026-04-05T09:04:00+00:00",
+      "candidate": {
+       "id": 113,
+       "full_name": "Ткаченко Софія [ТЕСТ]",
+       "phone": "+380675846428",
+       "email": "user20417@sinhrm.test",
+       "telegram_username": null,
+       "source": "work_ua"
+      }
+     },
+     {
+      "id": 1,
+      "candidate_id": 1,
+      "vacancy_id": 1,
+      "stage_id": 1,
+      "status": "active",
+      "reject_reason_id": null,
+      "reject_reason": null,
+      "rejected_note": null,
+      "stage_entered_at": "2026-04-01T09:00:00+00:00",
+      "last_touch_at": "2026-10-01T15:02:17+00:00",
+      "is_stale": false,
+      "closed_at": null,
+      "created_at": "2026-04-01T09:00:00+00:00",
+      "candidate": {
+       "id": 1,
+       "full_name": "Коваленко Олена [ТЕСТ]",
+       "phone": "+380674959500",
+       "email": "user20035@sinhrm.test",
+       "telegram_username": "demo_cand_501",
+       "source": "work_ua"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "GET /api/vacancies/1/personal-board": {
+  "status": 200,
+  "body": {
+   "data": {
+    "columns": [
+     {
+      "id": 2,
+      "title": "Мої [ТЕСТ]",
+      "color": null,
+      "position": 1,
+      "hidden": false
+     }
+    ],
+    "cards": [],
+    "layout": [
+     "stage:1",
+     "stage:2",
+     "stage:3",
+     "stage:4",
+     "stage:5",
+     "stage:6",
+     "stage:7",
+     "stage:8",
+     "col:2"
+    ]
+   }
+  }
+ },
+ "GET /api/vacancies/1/sources": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "channel_id": 1,
+     "name": "Work.ua",
+     "added_via": "manual",
+     "count": 11,
+     "share_pct": 57.9
+    },
+    {
+     "channel_id": 12,
+     "name": "Employee referral",
+     "added_via": "manual",
+     "count": 4,
+     "share_pct": 21.1
+    },
+    {
+     "channel_id": 9,
+     "name": "Meta Ads (Facebook/Instagram)",
+     "added_via": "manual",
+     "count": 4,
+     "share_pct": 21.1
+    }
+   ]
+  }
+ }
+}

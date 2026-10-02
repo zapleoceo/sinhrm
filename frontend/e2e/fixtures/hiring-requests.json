@@ -1,0 +1,1383 @@
+{
+ "GET /api/hiring-requests": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 7,
+     "title": "Заявка на підбір №7 [ТЕСТ]",
+     "status": "approved",
+     "priority": "low",
+     "reason": "replacement",
+     "headcount": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 10,
+      "name": "Відділ продажів Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "replaced_employee": null,
+     "desired_start_date": "2026-10-18",
+     "salary_min": 25000,
+     "salary_max": 35000,
+     "currency": "UAH",
+     "requirements": "Тестові вимоги.",
+     "extra": [],
+     "requester": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "recruiter": {
+      "id": 109,
+      "name": "Кравченко Софія [ТЕСТ]"
+     },
+     "vacancy": null,
+     "progress": {
+      "vacancy_status": null,
+      "hired": 0,
+      "headcount": 1,
+      "percent": 0
+     },
+     "current_step": null,
+     "overdue": false,
+     "approvals": [
+      {
+       "id": 13,
+       "position": 1,
+       "name": "Manager",
+       "kind": "manager",
+       "role": null,
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-09-03T18:02:00+00:00",
+       "due_at": "2026-09-05T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-09-04T18:02:00+00:00",
+       "comment": null
+      },
+      {
+       "id": 14,
+       "position": 2,
+       "name": "HR",
+       "kind": "role",
+       "role": "admin",
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-09-03T18:02:00+00:00",
+       "due_at": "2026-09-05T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-09-05T18:02:00+00:00",
+       "comment": null
+      }
+     ],
+     "submitted_at": "2026-09-03T18:02:00+00:00",
+     "decided_at": "2026-09-06T18:02:00+00:00",
+     "closed_at": null,
+     "created_at": "2026-09-03T18:02:00+00:00",
+     "can": {
+      "edit": false,
+      "submit": false,
+      "decide": false,
+      "cancel": true,
+      "manage": true
+     }
+    },
+    {
+     "id": 6,
+     "title": "Заявка на підбір №6 [ТЕСТ]",
+     "status": "pending",
+     "priority": "high",
+     "reason": "new_position",
+     "headcount": 2,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 16,
+      "name": "Відділ продажів Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "replaced_employee": null,
+     "desired_start_date": "2026-09-26",
+     "salary_min": 25000,
+     "salary_max": 35000,
+     "currency": "UAH",
+     "requirements": "Тестові вимоги.",
+     "extra": [],
+     "requester": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "recruiter": {
+      "id": 108,
+      "name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "vacancy": null,
+     "progress": {
+      "vacancy_status": null,
+      "hired": 0,
+      "headcount": 2,
+      "percent": 0
+     },
+     "current_step": {
+      "position": 1,
+      "name": "Manager",
+      "due_at": "2026-08-14T18:02:00+00:00",
+      "overdue": true
+     },
+     "overdue": true,
+     "approvals": [
+      {
+       "id": 11,
+       "position": 1,
+       "name": "Manager",
+       "kind": "manager",
+       "role": null,
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "pending",
+       "sla_days": 2,
+       "activated_at": "2026-08-12T18:02:00+00:00",
+       "due_at": "2026-08-14T18:02:00+00:00",
+       "overdue": true,
+       "decided_by": null,
+       "decided_at": null,
+       "comment": null
+      },
+      {
+       "id": 12,
+       "position": 2,
+       "name": "HR",
+       "kind": "role",
+       "role": "admin",
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "waiting",
+       "sla_days": 2,
+       "activated_at": null,
+       "due_at": null,
+       "overdue": false,
+       "decided_by": null,
+       "decided_at": null,
+       "comment": null
+      }
+     ],
+     "submitted_at": "2026-08-12T18:02:00+00:00",
+     "decided_at": null,
+     "closed_at": null,
+     "created_at": "2026-08-12T18:02:00+00:00",
+     "can": {
+      "edit": false,
+      "submit": false,
+      "decide": true,
+      "cancel": true,
+      "manage": true
+     }
+    },
+    {
+     "id": 5,
+     "title": "Заявка на підбір №5 [ТЕСТ]",
+     "status": "closed",
+     "priority": "normal",
+     "reason": "new_position",
+     "headcount": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 13,
+      "name": "Відділ продажів Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "replaced_employee": null,
+     "desired_start_date": "2026-09-04",
+     "salary_min": 25000,
+     "salary_max": 35000,
+     "currency": "UAH",
+     "requirements": "Тестові вимоги.",
+     "extra": [],
+     "requester": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "recruiter": {
+      "id": 107,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     "vacancy": null,
+     "progress": {
+      "vacancy_status": null,
+      "hired": 0,
+      "headcount": 1,
+      "percent": 0
+     },
+     "current_step": null,
+     "overdue": false,
+     "approvals": [
+      {
+       "id": 9,
+       "position": 1,
+       "name": "Manager",
+       "kind": "manager",
+       "role": null,
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-07-21T18:02:00+00:00",
+       "due_at": "2026-07-23T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-07-22T18:02:00+00:00",
+       "comment": null
+      },
+      {
+       "id": 10,
+       "position": 2,
+       "name": "HR",
+       "kind": "role",
+       "role": "admin",
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-07-21T18:02:00+00:00",
+       "due_at": "2026-07-23T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-07-23T18:02:00+00:00",
+       "comment": null
+      }
+     ],
+     "submitted_at": "2026-07-21T18:02:00+00:00",
+     "decided_at": "2026-07-24T18:02:00+00:00",
+     "closed_at": "2026-08-30T18:02:00+00:00",
+     "created_at": "2026-07-21T18:02:00+00:00",
+     "can": {
+      "edit": false,
+      "submit": false,
+      "decide": false,
+      "cancel": false,
+      "manage": true
+     }
+    },
+    {
+     "id": 4,
+     "title": "Заявка на підбір №4 [ТЕСТ]",
+     "status": "rejected",
+     "priority": "urgent",
+     "reason": "replacement",
+     "headcount": 2,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 10,
+      "name": "Відділ продажів Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "replaced_employee": null,
+     "desired_start_date": "2026-08-13",
+     "salary_min": 25000,
+     "salary_max": 35000,
+     "currency": "UAH",
+     "requirements": "Тестові вимоги.",
+     "extra": [],
+     "requester": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "recruiter": {
+      "id": 110,
+      "name": "Поліщук Євген [ТЕСТ]"
+     },
+     "vacancy": null,
+     "progress": {
+      "vacancy_status": null,
+      "hired": 0,
+      "headcount": 2,
+      "percent": 0
+     },
+     "current_step": null,
+     "overdue": false,
+     "approvals": [
+      {
+       "id": 7,
+       "position": 1,
+       "name": "Manager",
+       "kind": "manager",
+       "role": null,
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-06-29T18:02:00+00:00",
+       "due_at": "2026-07-01T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-06-30T18:02:00+00:00",
+       "comment": null
+      },
+      {
+       "id": 8,
+       "position": 2,
+       "name": "HR",
+       "kind": "role",
+       "role": "admin",
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "rejected",
+       "sla_days": 2,
+       "activated_at": "2026-06-29T18:02:00+00:00",
+       "due_at": "2026-07-01T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-07-01T18:02:00+00:00",
+       "comment": null
+      }
+     ],
+     "submitted_at": "2026-06-29T18:02:00+00:00",
+     "decided_at": "2026-07-02T18:02:00+00:00",
+     "closed_at": null,
+     "created_at": "2026-06-29T18:02:00+00:00",
+     "can": {
+      "edit": false,
+      "submit": false,
+      "decide": false,
+      "cancel": false,
+      "manage": true
+     }
+    },
+    {
+     "id": 3,
+     "title": "Заявка на підбір №3 [ТЕСТ]",
+     "status": "in_progress",
+     "priority": "low",
+     "reason": "new_position",
+     "headcount": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 16,
+      "name": "Відділ продажів Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "replaced_employee": null,
+     "desired_start_date": "2026-07-22",
+     "salary_min": 25000,
+     "salary_max": 35000,
+     "currency": "UAH",
+     "requirements": "Тестові вимоги.",
+     "extra": [],
+     "requester": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "recruiter": {
+      "id": 109,
+      "name": "Кравченко Софія [ТЕСТ]"
+     },
+     "vacancy": null,
+     "progress": {
+      "vacancy_status": null,
+      "hired": 0,
+      "headcount": 1,
+      "percent": 0
+     },
+     "current_step": null,
+     "overdue": false,
+     "approvals": [
+      {
+       "id": 5,
+       "position": 1,
+       "name": "Manager",
+       "kind": "manager",
+       "role": null,
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-06-07T18:02:00+00:00",
+       "due_at": "2026-06-09T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-06-08T18:02:00+00:00",
+       "comment": null
+      },
+      {
+       "id": 6,
+       "position": 2,
+       "name": "HR",
+       "kind": "role",
+       "role": "admin",
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-06-07T18:02:00+00:00",
+       "due_at": "2026-06-09T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-06-09T18:02:00+00:00",
+       "comment": null
+      }
+     ],
+     "submitted_at": "2026-06-07T18:02:00+00:00",
+     "decided_at": "2026-06-10T18:02:00+00:00",
+     "closed_at": null,
+     "created_at": "2026-06-07T18:02:00+00:00",
+     "can": {
+      "edit": false,
+      "submit": false,
+      "decide": false,
+      "cancel": false,
+      "manage": true
+     }
+    },
+    {
+     "id": 2,
+     "title": "Заявка на підбір №2 [ТЕСТ]",
+     "status": "approved",
+     "priority": "high",
+     "reason": "new_position",
+     "headcount": 2,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 13,
+      "name": "Відділ продажів Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "replaced_employee": null,
+     "desired_start_date": "2026-06-30",
+     "salary_min": 25000,
+     "salary_max": 35000,
+     "currency": "UAH",
+     "requirements": "Тестові вимоги.",
+     "extra": [],
+     "requester": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "recruiter": {
+      "id": 108,
+      "name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     "vacancy": null,
+     "progress": {
+      "vacancy_status": null,
+      "hired": 0,
+      "headcount": 2,
+      "percent": 0
+     },
+     "current_step": null,
+     "overdue": false,
+     "approvals": [
+      {
+       "id": 3,
+       "position": 1,
+       "name": "Manager",
+       "kind": "manager",
+       "role": null,
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-05-16T18:02:00+00:00",
+       "due_at": "2026-05-18T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-05-17T18:02:00+00:00",
+       "comment": null
+      },
+      {
+       "id": 4,
+       "position": 2,
+       "name": "HR",
+       "kind": "role",
+       "role": "admin",
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "approved",
+       "sla_days": 2,
+       "activated_at": "2026-05-16T18:02:00+00:00",
+       "due_at": "2026-05-18T18:02:00+00:00",
+       "overdue": false,
+       "decided_by": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "decided_at": "2026-05-18T18:02:00+00:00",
+       "comment": null
+      }
+     ],
+     "submitted_at": "2026-05-16T18:02:00+00:00",
+     "decided_at": "2026-05-19T18:02:00+00:00",
+     "closed_at": null,
+     "created_at": "2026-05-16T18:02:00+00:00",
+     "can": {
+      "edit": false,
+      "submit": false,
+      "decide": false,
+      "cancel": true,
+      "manage": true
+     }
+    },
+    {
+     "id": 1,
+     "title": "Заявка на підбір №1 [ТЕСТ]",
+     "status": "pending",
+     "priority": "normal",
+     "reason": "replacement",
+     "headcount": 1,
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 10,
+      "name": "Відділ продажів Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "replaced_employee": null,
+     "desired_start_date": "2026-06-08",
+     "salary_min": 25000,
+     "salary_max": 35000,
+     "currency": "UAH",
+     "requirements": "Тестові вимоги.",
+     "extra": [],
+     "requester": {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     "recruiter": {
+      "id": 107,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     "vacancy": null,
+     "progress": {
+      "vacancy_status": null,
+      "hired": 0,
+      "headcount": 1,
+      "percent": 0
+     },
+     "current_step": {
+      "position": 1,
+      "name": "Manager",
+      "due_at": "2026-04-26T18:02:00+00:00",
+      "overdue": true
+     },
+     "overdue": true,
+     "approvals": [
+      {
+       "id": 1,
+       "position": 1,
+       "name": "Manager",
+       "kind": "manager",
+       "role": null,
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "pending",
+       "sla_days": 2,
+       "activated_at": "2026-04-24T18:02:00+00:00",
+       "due_at": "2026-04-26T18:02:00+00:00",
+       "overdue": true,
+       "decided_by": null,
+       "decided_at": null,
+       "comment": null
+      },
+      {
+       "id": 2,
+       "position": 2,
+       "name": "HR",
+       "kind": "role",
+       "role": "admin",
+       "approver": {
+        "id": 2,
+        "name": "Адміністратор [ТЕСТ]"
+       },
+       "status": "waiting",
+       "sla_days": 2,
+       "activated_at": null,
+       "due_at": null,
+       "overdue": false,
+       "decided_by": null,
+       "decided_at": null,
+       "comment": null
+      }
+     ],
+     "submitted_at": "2026-04-24T18:02:00+00:00",
+     "decided_at": null,
+     "closed_at": null,
+     "created_at": "2026-04-24T18:02:00+00:00",
+     "can": {
+      "edit": false,
+      "submit": false,
+      "decide": true,
+      "cancel": true,
+      "manage": true
+     }
+    }
+   ]
+  }
+ },
+ "GET /api/hiring-requests/1": {
+  "status": 200,
+  "body": {
+   "data": {
+    "id": 1,
+    "title": "Заявка на підбір №1 [ТЕСТ]",
+    "status": "pending",
+    "priority": "normal",
+    "reason": "replacement",
+    "headcount": 1,
+    "branch": {
+     "id": 1,
+     "name": "Тестовий філіал"
+    },
+    "department": {
+     "id": 10,
+     "name": "Відділ продажів Київ [ТЕСТ]"
+    },
+    "position": {
+     "id": 14,
+     "name": "Менеджер з продажу [ТЕСТ]"
+    },
+    "replaced_employee": null,
+    "desired_start_date": "2026-06-08",
+    "salary_min": 25000,
+    "salary_max": 35000,
+    "currency": "UAH",
+    "requirements": "Тестові вимоги.",
+    "extra": [],
+    "requester": {
+     "id": 2,
+     "name": "Адміністратор [ТЕСТ]"
+    },
+    "recruiter": {
+     "id": 107,
+     "name": "Лисенко Анна [ТЕСТ]"
+    },
+    "vacancy": null,
+    "progress": {
+     "vacancy_status": null,
+     "hired": 0,
+     "headcount": 1,
+     "percent": 0
+    },
+    "current_step": {
+     "position": 1,
+     "name": "Manager",
+     "due_at": "2026-04-26T18:02:00+00:00",
+     "overdue": true
+    },
+    "overdue": true,
+    "approvals": [
+     {
+      "id": 1,
+      "position": 1,
+      "name": "Manager",
+      "kind": "manager",
+      "role": null,
+      "approver": {
+       "id": 2,
+       "name": "Адміністратор [ТЕСТ]"
+      },
+      "status": "pending",
+      "sla_days": 2,
+      "activated_at": "2026-04-24T18:02:00+00:00",
+      "due_at": "2026-04-26T18:02:00+00:00",
+      "overdue": true,
+      "decided_by": null,
+      "decided_at": null,
+      "comment": null
+     },
+     {
+      "id": 2,
+      "position": 2,
+      "name": "HR",
+      "kind": "role",
+      "role": "admin",
+      "approver": {
+       "id": 2,
+       "name": "Адміністратор [ТЕСТ]"
+      },
+      "status": "waiting",
+      "sla_days": 2,
+      "activated_at": null,
+      "due_at": null,
+      "overdue": false,
+      "decided_by": null,
+      "decided_at": null,
+      "comment": null
+     }
+    ],
+    "submitted_at": "2026-04-24T18:02:00+00:00",
+    "decided_at": null,
+    "closed_at": null,
+    "created_at": "2026-04-24T18:02:00+00:00",
+    "can": {
+     "edit": false,
+     "submit": false,
+     "decide": true,
+     "cancel": true,
+     "manage": true
+    }
+   }
+  }
+ },
+ "GET /api/hiring-requests/meta": {
+  "status": 200,
+  "body": {
+   "data": {
+    "can_create": true,
+    "can_manage": true,
+    "form_fields": []
+   }
+  }
+ },
+ "GET /api/hiring-requests/settings": {
+  "status": 200,
+  "body": {
+   "data": {
+    "form_fields": [],
+    "creator_user_ids": [],
+    "auto_vacancy": true,
+    "users": [
+     {
+      "id": 2,
+      "name": "Адміністратор [ТЕСТ]"
+     },
+     {
+      "id": 72,
+      "name": "Бондаренко Євген [ТЕСТ]"
+     },
+     {
+      "id": 122,
+      "name": "Бондаренко Євген [ТЕСТ]"
+     },
+     {
+      "id": 113,
+      "name": "Бондаренко Ірина [ТЕСТ]"
+     },
+     {
+      "id": 40,
+      "name": "Бондаренко Віктор [ТЕСТ]"
+     },
+     {
+      "id": 90,
+      "name": "Бондаренко Віктор [ТЕСТ]"
+     },
+     {
+      "id": 81,
+      "name": "Бондаренко Вікторія [ТЕСТ]"
+     },
+     {
+      "id": 8,
+      "name": "Бондаренко Дмитро [ТЕСТ]"
+     },
+     {
+      "id": 49,
+      "name": "Бондаренко Наталія [ТЕСТ]"
+     },
+     {
+      "id": 17,
+      "name": "Бондаренко Оксана [ТЕСТ]"
+     },
+     {
+      "id": 7,
+      "name": "Гончаренко Анна [ТЕСТ]"
+     },
+     {
+      "id": 30,
+      "name": "Гончаренко Максим [ТЕСТ]"
+     },
+     {
+      "id": 80,
+      "name": "Гончаренко Максим [ТЕСТ]"
+     },
+     {
+      "id": 130,
+      "name": "Гончаренко Максим [ТЕСТ]"
+     },
+     {
+      "id": 39,
+      "name": "Гончаренко Марія [ТЕСТ]"
+     },
+     {
+      "id": 89,
+      "name": "Гончаренко Марія [ТЕСТ]"
+     },
+     {
+      "id": 112,
+      "name": "Гончаренко Павло [ТЕСТ]"
+     },
+     {
+      "id": 71,
+      "name": "Гончаренко Софія [ТЕСТ]"
+     },
+     {
+      "id": 121,
+      "name": "Гончаренко Софія [ТЕСТ]"
+     },
+     {
+      "id": 48,
+      "name": "Гончаренко Тарас [ТЕСТ]"
+     },
+     {
+      "id": 76,
+      "name": "Коваленко Ігор [ТЕСТ]"
+     },
+     {
+      "id": 58,
+      "name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     {
+      "id": 108,
+      "name": "Коваленко Дмитро [ТЕСТ]"
+     },
+     {
+      "id": 67,
+      "name": "Коваленко Оксана [ТЕСТ]"
+     },
+     {
+      "id": 117,
+      "name": "Коваленко Оксана [ТЕСТ]"
+     },
+     {
+      "id": 3,
+      "name": "Коваленко Олена [ТЕСТ]"
+     },
+     {
+      "id": 26,
+      "name": "Коваленко Роман [ТЕСТ]"
+     },
+     {
+      "id": 35,
+      "name": "Коваленко Тетяна [ТЕСТ]"
+     },
+     {
+      "id": 99,
+      "name": "Коваленко Юлія [ТЕСТ]"
+     },
+     {
+      "id": 4,
+      "name": "Кравченко Богдан [ТЕСТ]"
+     },
+     {
+      "id": 45,
+      "name": "Кравченко Катерина [ТЕСТ]"
+     },
+     {
+      "id": 27,
+      "name": "Кравченко Марія [ТЕСТ]"
+     },
+     {
+      "id": 77,
+      "name": "Кравченко Марія [ТЕСТ]"
+     },
+     {
+      "id": 100,
+      "name": "Кравченко Павло [ТЕСТ]"
+     },
+     {
+      "id": 68,
+      "name": "Кравченко Сергій [ТЕСТ]"
+     },
+     {
+      "id": 118,
+      "name": "Кравченко Сергій [ТЕСТ]"
+     },
+     {
+      "id": 109,
+      "name": "Кравченко Софія [ТЕСТ]"
+     },
+     {
+      "id": 36,
+      "name": "Кравченко Тарас [ТЕСТ]"
+     },
+     {
+      "id": 25,
+      "name": "Лисенко Ірина [ТЕСТ]"
+     },
+     {
+      "id": 34,
+      "name": "Лисенко Андрій [ТЕСТ]"
+     },
+     {
+      "id": 57,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     {
+      "id": 107,
+      "name": "Лисенко Анна [ТЕСТ]"
+     },
+     {
+      "id": 16,
+      "name": "Лисенко Богдан [ТЕСТ]"
+     },
+     {
+      "id": 66,
+      "name": "Лисенко Богдан [ТЕСТ]"
+     },
+     {
+      "id": 116,
+      "name": "Лисенко Богдан [ТЕСТ]"
+     },
+     {
+      "id": 75,
+      "name": "Лисенко Наталія [ТЕСТ]"
+     },
+     {
+      "id": 98,
+      "name": "Лисенко Тарас [ТЕСТ]"
+     },
+     {
+      "id": 38,
+      "name": "Марченко Ігор [ТЕСТ]"
+     },
+     {
+      "id": 88,
+      "name": "Марченко Ігор [ТЕСТ]"
+     },
+     {
+      "id": 29,
+      "name": "Марченко Дарина [ТЕСТ]"
+     },
+     {
+      "id": 79,
+      "name": "Марченко Дарина [ТЕСТ]"
+     },
+     {
+      "id": 129,
+      "name": "Марченко Дарина [ТЕСТ]"
+     },
+     {
+      "id": 70,
+      "name": "Марченко Дмитро [ТЕСТ]"
+     },
+     {
+      "id": 120,
+      "name": "Марченко Дмитро [ТЕСТ]"
+     },
+     {
+      "id": 6,
+      "name": "Марченко Сергій [ТЕСТ]"
+     },
+     {
+      "id": 47,
+      "name": "Марченко Тетяна [ТЕСТ]"
+     },
+     {
+      "id": 111,
+      "name": "Марченко Юлія [ТЕСТ]"
+     },
+     {
+      "id": 84,
+      "name": "Мороз Андрій [ТЕСТ]"
+     },
+     {
+      "id": 43,
+      "name": "Мороз Вікторія [ТЕСТ]"
+     },
+     {
+      "id": 93,
+      "name": "Мороз Вікторія [ТЕСТ]"
+     },
+     {
+      "id": 20,
+      "name": "Мороз Дмитро [ТЕСТ]"
+     },
+     {
+      "id": 125,
+      "name": "Мороз Наталія [ТЕСТ]"
+     },
+     {
+      "id": 52,
+      "name": "Мороз Роман [ТЕСТ]"
+     },
+     {
+      "id": 102,
+      "name": "Мороз Роман [ТЕСТ]"
+     },
+     {
+      "id": 11,
+      "name": "Мороз Юлія [ТЕСТ]"
+     },
+     {
+      "id": 61,
+      "name": "Мороз Юлія [ТЕСТ]"
+     },
+     {
+      "id": 50,
+      "name": "Олійник Ігор [ТЕСТ]"
+     },
+     {
+      "id": 41,
+      "name": "Олійник Дарина [ТЕСТ]"
+     },
+     {
+      "id": 91,
+      "name": "Олійник Дарина [ТЕСТ]"
+     },
+     {
+      "id": 82,
+      "name": "Олійник Олег [ТЕСТ]"
+     },
+     {
+      "id": 114,
+      "name": "Олійник Роман [ТЕСТ]"
+     },
+     {
+      "id": 18,
+      "name": "Олійник Сергій [ТЕСТ]"
+     },
+     {
+      "id": 9,
+      "name": "Олійник Софія [ТЕСТ]"
+     },
+     {
+      "id": 59,
+      "name": "Олійник Софія [ТЕСТ]"
+     },
+     {
+      "id": 123,
+      "name": "Олійник Тетяна [ТЕСТ]"
+     },
+     {
+      "id": 126,
+      "name": "Павленко Ігор [ТЕСТ]"
+     },
+     {
+      "id": 44,
+      "name": "Павленко Олег [ТЕСТ]"
+     },
+     {
+      "id": 94,
+      "name": "Павленко Олег [ТЕСТ]"
+     },
+     {
+      "id": 53,
+      "name": "Павленко Олена [ТЕСТ]"
+     },
+     {
+      "id": 103,
+      "name": "Павленко Олена [ТЕСТ]"
+     },
+     {
+      "id": 12,
+      "name": "Павленко Павло [ТЕСТ]"
+     },
+     {
+      "id": 62,
+      "name": "Павленко Павло [ТЕСТ]"
+     },
+     {
+      "id": 21,
+      "name": "Павленко Софія [ТЕСТ]"
+     },
+     {
+      "id": 85,
+      "name": "Павленко Тетяна [ТЕСТ]"
+     },
+     {
+      "id": 110,
+      "name": "Поліщук Євген [ТЕСТ]"
+     },
+     {
+      "id": 46,
+      "name": "Поліщук Андрій [ТЕСТ]"
+     },
+     {
+      "id": 69,
+      "name": "Поліщук Анна [ТЕСТ]"
+     },
+     {
+      "id": 119,
+      "name": "Поліщук Анна [ТЕСТ]"
+     },
+     {
+      "id": 28,
+      "name": "Поліщук Віктор [ТЕСТ]"
+     },
+     {
+      "id": 78,
+      "name": "Поліщук Віктор [ТЕСТ]"
+     },
+     {
+      "id": 37,
+      "name": "Поліщук Наталія [ТЕСТ]"
+     },
+     {
+      "id": 87,
+      "name": "Поліщук Наталія [ТЕСТ]"
+     },
+     {
+      "id": 5,
+      "name": "Поліщук Оксана [ТЕСТ]"
+     },
+     {
+      "id": 33,
+      "name": "Руденко Катерина [ТЕСТ]"
+     },
+     {
+      "id": 15,
+      "name": "Руденко Олена [ТЕСТ]"
+     },
+     {
+      "id": 65,
+      "name": "Руденко Олена [ТЕСТ]"
+     },
+     {
+      "id": 115,
+      "name": "Руденко Олена [ТЕСТ]"
+     },
+     {
+      "id": 24,
+      "name": "Руденко Павло [ТЕСТ]"
+     },
+     {
+      "id": 74,
+      "name": "Руденко Павло [ТЕСТ]"
+     },
+     {
+      "id": 56,
+      "name": "Руденко Сергій [ТЕСТ]"
+     },
+     {
+      "id": 106,
+      "name": "Руденко Сергій [ТЕСТ]"
+     },
+     {
+      "id": 97,
+      "name": "Руденко Тетяна [ТЕСТ]"
+     },
+     {
+      "id": 10,
+      "name": "Савченко Євген [ТЕСТ]"
+     },
+     {
+      "id": 60,
+      "name": "Савченко Євген [ТЕСТ]"
+     },
+     {
+      "id": 51,
+      "name": "Савченко Ірина [ТЕСТ]"
+     },
+     {
+      "id": 101,
+      "name": "Савченко Ірина [ТЕСТ]"
+     },
+     {
+      "id": 19,
+      "name": "Савченко Анна [ТЕСТ]"
+     },
+     {
+      "id": 83,
+      "name": "Савченко Катерина [ТЕСТ]"
+     },
+     {
+      "id": 42,
+      "name": "Савченко Максим [ТЕСТ]"
+     },
+     {
+      "id": 92,
+      "name": "Савченко Максим [ТЕСТ]"
+     },
+     {
+      "id": 124,
+      "name": "Савченко Тарас [ТЕСТ]"
+     },
+     {
+      "id": 1,
+      "name": "Суперадмін [ТЕСТ]"
+     },
+     {
+      "id": 22,
+      "name": "Ткаченко Євген [ТЕСТ]"
+     },
+     {
+      "id": 13,
+      "name": "Ткаченко Ірина [ТЕСТ]"
+     },
+     {
+      "id": 63,
+      "name": "Ткаченко Ірина [ТЕСТ]"
+     },
+     {
+      "id": 54,
+      "name": "Ткаченко Богдан [ТЕСТ]"
+     },
+     {
+      "id": 104,
+      "name": "Ткаченко Богдан [ТЕСТ]"
+     },
+     {
+      "id": 31,
+      "name": "Ткаченко Вікторія [ТЕСТ]"
+     },
+     {
+      "id": 95,
+      "name": "Ткаченко Катерина [ТЕСТ]"
+     },
+     {
+      "id": 127,
+      "name": "Ткаченко Марія [ТЕСТ]"
+     },
+     {
+      "id": 86,
+      "name": "Ткаченко Тарас [ТЕСТ]"
+     },
+     {
+      "id": 96,
+      "name": "Шевчук Андрій [ТЕСТ]"
+     },
+     {
+      "id": 128,
+      "name": "Шевчук Віктор [ТЕСТ]"
+     },
+     {
+      "id": 55,
+      "name": "Шевчук Оксана [ТЕСТ]"
+     },
+     {
+      "id": 105,
+      "name": "Шевчук Оксана [ТЕСТ]"
+     },
+     {
+      "id": 32,
+      "name": "Шевчук Олег [ТЕСТ]"
+     },
+     {
+      "id": 14,
+      "name": "Шевчук Роман [ТЕСТ]"
+     },
+     {
+      "id": 64,
+      "name": "Шевчук Роман [ТЕСТ]"
+     },
+     {
+      "id": 23,
+      "name": "Шевчук Юлія [ТЕСТ]"
+     },
+     {
+      "id": 73,
+      "name": "Шевчук Юлія [ТЕСТ]"
+     }
+    ],
+    "route": [
+     {
+      "id": 1,
+      "position": 1,
+      "name": "Manager",
+      "kind": "manager",
+      "role": null,
+      "user": null,
+      "user_id": null,
+      "sla_days": 2
+     },
+     {
+      "id": 2,
+      "position": 2,
+      "name": "HR",
+      "kind": "role",
+      "role": "admin",
+      "user": null,
+      "user_id": null,
+      "sla_days": 2
+     }
+    ]
+   }
+  }
+ }
+}

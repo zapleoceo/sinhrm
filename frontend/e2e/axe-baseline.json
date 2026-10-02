@@ -1,0 +1,474 @@
+{
+ "article.desktop.dark": {},
+ "article.desktop.light": {},
+ "article.mobile.dark": {},
+ "article.mobile.light": {},
+ "assets.desktop.dark": {
+  "color-contrast": 1
+ },
+ "assets.desktop.light": {},
+ "assets.mobile.dark": {
+  "color-contrast": 1
+ },
+ "assets.mobile.light": {},
+ "audit.desktop.dark": {
+  "color-contrast": 2
+ },
+ "audit.desktop.light": {},
+ "audit.mobile.dark": {
+  "color-contrast": 2
+ },
+ "audit.mobile.light": {},
+ "candidate.desktop.dark": {
+  "color-contrast": 3,
+  "label": 30,
+  "nested-interactive": 30
+ },
+ "candidate.desktop.light": {
+  "label": 30,
+  "nested-interactive": 30
+ },
+ "candidate.mobile.dark": {
+  "color-contrast": 2
+ },
+ "candidate.mobile.light": {},
+ "candidates--board.desktop.dark": {},
+ "candidates--board.desktop.light": {},
+ "candidates--board.mobile.dark": {},
+ "candidates--board.mobile.light": {},
+ "candidates.desktop.dark": {
+  "color-contrast": 1,
+  "label": 30,
+  "nested-interactive": 30
+ },
+ "candidates.desktop.light": {
+  "label": 30,
+  "nested-interactive": 30
+ },
+ "candidates.mobile.dark": {
+  "color-contrast": 1,
+  "label": 30,
+  "nested-interactive": 30
+ },
+ "candidates.mobile.light": {
+  "label": 30,
+  "nested-interactive": 30
+ },
+ "desk-case.desktop.dark": {
+  "color-contrast": 1
+ },
+ "desk-case.desktop.light": {},
+ "desk-case.mobile.dark": {
+  "color-contrast": 1
+ },
+ "desk-case.mobile.light": {},
+ "desk-queue.desktop.dark": {
+  "color-contrast": 3
+ },
+ "desk-queue.desktop.light": {},
+ "desk-queue.mobile.dark": {
+  "color-contrast": 3
+ },
+ "desk-queue.mobile.light": {},
+ "desk.desktop.dark": {},
+ "desk.desktop.light": {},
+ "desk.mobile.dark": {},
+ "desk.mobile.light": {},
+ "docs.desktop.dark": {
+  "color-contrast": 1
+ },
+ "docs.desktop.light": {},
+ "docs.mobile.dark": {
+  "color-contrast": 1
+ },
+ "docs.mobile.light": {},
+ "documents.desktop.dark": {},
+ "documents.desktop.light": {},
+ "documents.mobile.dark": {},
+ "documents.mobile.light": {},
+ "errors.desktop.dark": {},
+ "errors.desktop.light": {},
+ "errors.mobile.dark": {},
+ "errors.mobile.light": {},
+ "feedback.desktop.dark": {
+  "color-contrast": 4
+ },
+ "feedback.desktop.light": {},
+ "feedback.mobile.dark": {
+  "color-contrast": 4
+ },
+ "feedback.mobile.light": {},
+ "hiring-new.desktop.dark": {
+  "color-contrast": 3
+ },
+ "hiring-new.desktop.light": {},
+ "hiring-new.mobile.dark": {
+  "color-contrast": 3
+ },
+ "hiring-new.mobile.light": {},
+ "hiring-request.desktop.dark": {
+  "color-contrast": 1
+ },
+ "hiring-request.desktop.light": {},
+ "hiring-request.mobile.dark": {
+  "color-contrast": 1
+ },
+ "hiring-request.mobile.light": {},
+ "hiring-requests.desktop.dark": {},
+ "hiring-requests.desktop.light": {},
+ "hiring-requests.mobile.dark": {},
+ "hiring-requests.mobile.light": {},
+ "inbox.desktop.dark": {},
+ "inbox.desktop.light": {},
+ "inbox.mobile.dark": {},
+ "inbox.mobile.light": {},
+ "integrations.desktop.dark": {
+  "aria-progressbar-name": 2,
+  "color-contrast": 15
+ },
+ "integrations.desktop.light": {
+  "aria-progressbar-name": 2
+ },
+ "integrations.mobile.dark": {
+  "aria-progressbar-name": 2,
+  "color-contrast": 15
+ },
+ "integrations.mobile.light": {
+  "aria-progressbar-name": 2
+ },
+ "knowledge.desktop.dark": {
+  "color-contrast": 1
+ },
+ "knowledge.desktop.light": {},
+ "knowledge.mobile.dark": {
+  "color-contrast": 1
+ },
+ "knowledge.mobile.light": {},
+ "login--lang-en.desktop.dark": {},
+ "login--lang-en.desktop.light": {},
+ "login--lang-en.mobile.dark": {},
+ "login--lang-en.mobile.light": {},
+ "login.desktop.dark": {},
+ "login.desktop.light": {},
+ "login.mobile.dark": {},
+ "login.mobile.light": {},
+ "me.desktop.dark": {},
+ "me.desktop.light": {},
+ "me.mobile.dark": {},
+ "me.mobile.light": {},
+ "modules.desktop.dark": {
+  "label": 174
+ },
+ "modules.desktop.light": {
+  "label": 174
+ },
+ "modules.mobile.dark": {
+  "label": 174
+ },
+ "modules.mobile.light": {
+  "label": 174
+ },
+ "objectives.desktop.dark": {
+  "color-contrast": 1
+ },
+ "objectives.desktop.light": {},
+ "objectives.mobile.dark": {
+  "color-contrast": 1
+ },
+ "objectives.mobile.light": {},
+ "one-on-ones--person-picker.desktop.dark": {
+  "color-contrast": 2
+ },
+ "one-on-ones--person-picker.desktop.light": {},
+ "one-on-ones--person-picker.mobile.dark": {
+  "color-contrast": 2
+ },
+ "one-on-ones--person-picker.mobile.light": {},
+ "one-on-ones.desktop.dark": {
+  "color-contrast": 3
+ },
+ "one-on-ones.desktop.light": {},
+ "one-on-ones.mobile.dark": {
+  "color-contrast": 3
+ },
+ "one-on-ones.mobile.light": {},
+ "org-chart.desktop.dark": {
+  "aria-required-children": 1,
+  "color-contrast": 1
+ },
+ "org-chart.desktop.light": {
+  "aria-required-children": 1
+ },
+ "org-chart.mobile.dark": {
+  "aria-required-children": 1,
+  "color-contrast": 1
+ },
+ "org-chart.mobile.light": {
+  "aria-required-children": 1
+ },
+ "overview--drawer.mobile.dark": {},
+ "overview--drawer.mobile.light": {},
+ "overview--nav-expanded.desktop.dark": {},
+ "overview--nav-expanded.desktop.light": {},
+ "overview--user-menu.desktop.dark": {
+  "aria-required-children": 1
+ },
+ "overview--user-menu.desktop.light": {
+  "aria-required-children": 1
+ },
+ "overview--user-menu.mobile.dark": {
+  "aria-required-children": 1
+ },
+ "overview--user-menu.mobile.light": {
+  "aria-required-children": 1
+ },
+ "overview.desktop.dark": {},
+ "overview.desktop.light": {},
+ "overview.mobile.dark": {},
+ "overview.mobile.light": {},
+ "people--cards.desktop.dark": {
+  "button-name": 2,
+  "color-contrast": 1
+ },
+ "people--cards.desktop.light": {
+  "button-name": 2
+ },
+ "people--cards.mobile.dark": {
+  "button-name": 2,
+  "color-contrast": 1
+ },
+ "people--cards.mobile.light": {
+  "button-name": 2
+ },
+ "people--employee-dialog.desktop.dark": {
+  "color-contrast": 9
+ },
+ "people--employee-dialog.desktop.light": {},
+ "people--employee-dialog.mobile.dark": {
+  "color-contrast": 5
+ },
+ "people--employee-dialog.mobile.light": {},
+ "people.desktop.dark": {
+  "button-name": 2,
+  "color-contrast": 1,
+  "label": 30
+ },
+ "people.desktop.light": {
+  "button-name": 2,
+  "label": 30
+ },
+ "people.mobile.dark": {
+  "button-name": 2,
+  "color-contrast": 1,
+  "label": 30
+ },
+ "people.mobile.light": {
+  "button-name": 2,
+  "label": 30
+ },
+ "person--tab-Активи.desktop.dark": {},
+ "person--tab-Активи.desktop.light": {},
+ "person--tab-Відсутності.desktop.dark": {
+  "color-contrast": 4
+ },
+ "person--tab-Відсутності.desktop.light": {},
+ "person--tab-Воркфлоу.desktop.dark": {
+  "color-contrast": 1
+ },
+ "person--tab-Воркфлоу.desktop.light": {},
+ "person--tab-Документи.desktop.dark": {},
+ "person--tab-Документи.desktop.light": {},
+ "person--tab-Запити на зміни.desktop.dark": {},
+ "person--tab-Запити на зміни.desktop.light": {},
+ "person--tab-Компенсація.desktop.dark": {
+  "color-contrast": 5
+ },
+ "person--tab-Компенсація.desktop.light": {},
+ "person--tab-Продуктивність.desktop.dark": {
+  "color-contrast": 5
+ },
+ "person--tab-Продуктивність.desktop.light": {},
+ "person--tab-Робота.desktop.dark": {},
+ "person--tab-Робота.desktop.light": {},
+ "person.desktop.dark": {},
+ "person.desktop.light": {},
+ "person.mobile.dark": {},
+ "person.mobile.light": {},
+ "privacy.desktop.dark": {},
+ "privacy.desktop.light": {},
+ "privacy.mobile.dark": {},
+ "privacy.mobile.light": {},
+ "pulse-mood.desktop.dark": {
+  "color-contrast": 3
+ },
+ "pulse-mood.desktop.light": {},
+ "pulse-mood.mobile.dark": {
+  "color-contrast": 3
+ },
+ "pulse-mood.mobile.light": {},
+ "pulse.desktop.dark": {},
+ "pulse.desktop.light": {},
+ "pulse.mobile.dark": {},
+ "pulse.mobile.light": {},
+ "report-catalog.desktop.dark": {},
+ "report-catalog.desktop.light": {},
+ "report-catalog.mobile.dark": {},
+ "report-catalog.mobile.light": {},
+ "report-view.desktop.dark": {
+  "color-contrast": 1
+ },
+ "report-view.desktop.light": {},
+ "report-view.mobile.dark": {
+  "color-contrast": 1,
+  "scrollable-region-focusable": 1
+ },
+ "report-view.mobile.light": {
+  "scrollable-region-focusable": 1
+ },
+ "reports.desktop.dark": {
+  "color-contrast": 2
+ },
+ "reports.desktop.light": {},
+ "reports.mobile.dark": {
+  "color-contrast": 2,
+  "scrollable-region-focusable": 1
+ },
+ "reports.mobile.light": {
+  "scrollable-region-focusable": 1
+ },
+ "reviews.desktop.dark": {},
+ "reviews.desktop.light": {},
+ "reviews.mobile.dark": {},
+ "reviews.mobile.light": {},
+ "safe-speak.desktop.dark": {
+  "color-contrast": 2
+ },
+ "safe-speak.desktop.light": {},
+ "safe-speak.mobile.dark": {
+  "color-contrast": 2
+ },
+ "safe-speak.mobile.light": {},
+ "tasks.desktop.dark": {},
+ "tasks.desktop.light": {},
+ "tasks.mobile.dark": {},
+ "tasks.mobile.light": {},
+ "time-approvals.desktop.dark": {},
+ "time-approvals.desktop.light": {},
+ "time-approvals.mobile.dark": {},
+ "time-approvals.mobile.light": {},
+ "time-team.desktop.dark": {
+  "color-contrast": 1
+ },
+ "time-team.desktop.light": {},
+ "time-team.mobile.dark": {
+  "color-contrast": 1
+ },
+ "time-team.mobile.light": {},
+ "time.desktop.dark": {
+  "color-contrast": 5
+ },
+ "time.desktop.light": {
+  "color-contrast": 4
+ },
+ "time.mobile.dark": {
+  "color-contrast": 5
+ },
+ "time.mobile.light": {
+  "color-contrast": 4
+ },
+ "timeoff-approvals.desktop.dark": {},
+ "timeoff-approvals.desktop.light": {},
+ "timeoff-approvals.mobile.dark": {},
+ "timeoff-approvals.mobile.light": {},
+ "timeoff-calendar.desktop.dark": {
+  "aria-required-children": 1,
+  "aria-required-parent": 928
+ },
+ "timeoff-calendar.desktop.light": {
+  "aria-required-children": 1,
+  "aria-required-parent": 928
+ },
+ "timeoff-calendar.mobile.dark": {
+  "aria-required-children": 1,
+  "aria-required-parent": 928
+ },
+ "timeoff-calendar.mobile.light": {
+  "aria-required-children": 1,
+  "aria-required-parent": 928
+ },
+ "timeoff.desktop.dark": {
+  "color-contrast": 4
+ },
+ "timeoff.desktop.light": {},
+ "timeoff.mobile.dark": {
+  "color-contrast": 4
+ },
+ "timeoff.mobile.light": {},
+ "users.desktop.dark": {
+  "color-contrast": 1
+ },
+ "users.desktop.light": {},
+ "users.mobile.dark": {
+  "color-contrast": 1
+ },
+ "users.mobile.light": {},
+ "vacancies.desktop.dark": {
+  "color-contrast": 2
+ },
+ "vacancies.desktop.light": {},
+ "vacancies.mobile.dark": {
+  "color-contrast": 2
+ },
+ "vacancies.mobile.light": {},
+ "vacancy-board--move-menu.desktop.dark": {},
+ "vacancy-board--move-menu.desktop.light": {},
+ "vacancy-board--move-menu.mobile.dark": {},
+ "vacancy-board--move-menu.mobile.light": {},
+ "vacancy-board--reject-dialog.desktop.dark": {
+  "color-contrast": 1
+ },
+ "vacancy-board--reject-dialog.desktop.light": {},
+ "vacancy-board--reject-dialog.mobile.dark": {
+  "color-contrast": 1
+ },
+ "vacancy-board--reject-dialog.mobile.light": {},
+ "vacancy-board.desktop.dark": {},
+ "vacancy-board.desktop.light": {},
+ "vacancy-board.mobile.dark": {},
+ "vacancy-board.mobile.light": {},
+ "vacancy-create.desktop.dark": {
+  "color-contrast": 5
+ },
+ "vacancy-create.desktop.light": {},
+ "vacancy-create.mobile.dark": {
+  "color-contrast": 5
+ },
+ "vacancy-create.mobile.light": {},
+ "vacancy-edit.desktop.dark": {
+  "color-contrast": 7
+ },
+ "vacancy-edit.desktop.light": {},
+ "vacancy-edit.mobile.dark": {
+  "color-contrast": 7
+ },
+ "vacancy-edit.mobile.light": {},
+ "workflow-runs.desktop.dark": {
+  "color-contrast": 2
+ },
+ "workflow-runs.desktop.light": {},
+ "workflow-runs.mobile.dark": {
+  "color-contrast": 2
+ },
+ "workflow-runs.mobile.light": {},
+ "workflow-templates.desktop.dark": {
+  "color-contrast": 3
+ },
+ "workflow-templates.desktop.light": {},
+ "workflow-templates.mobile.dark": {
+  "color-contrast": 3,
+  "scrollable-region-focusable": 1
+ },
+ "workflow-templates.mobile.light": {
+  "scrollable-region-focusable": 1
+ }
+}

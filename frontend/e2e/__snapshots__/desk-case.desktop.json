@@ -1,0 +1,37 @@
+{
+ "path": "/desk/cases/1",
+ "state": null,
+ "headings": [
+  "#1 Звернення №1 [ТЕСТ]"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Взяти собі\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\" [expanded]",
+  "combobox \"Статус\"",
+  "link \"Safe Speak\" -> /safe-speak",
+  "link \"SinHRM\" -> /",
+  "link \"База знань\" -> /knowledge",
+  "link \"Довідка\" -> /docs",
+  "link \"Каталог звітів\" -> /reports/catalog",
+  "link \"Конструктор звітів\" -> /reports/builder",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мої звернення\" -> /desk",
+  "link \"Огляд\" -> /",
+  "link \"← Назад\" -> /desk/queue"
+ ],
+ "columns": [],
+ "counts": {
+  "article": 1,
+  "img": 4
+ }
+}

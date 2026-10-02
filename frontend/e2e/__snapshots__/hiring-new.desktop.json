@@ -1,0 +1,42 @@
+{
+ "path": "/hiring-requests/new",
+ "state": null,
+ "headings": [
+  "Нова заявка на підбір"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"Адміністрування 9 нових\"",
+  "button \"Далі\" [disabled]",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг\" [expanded]",
+  "button \"Сервіси\"",
+  "combobox \"Відділ\"",
+  "combobox \"Посада (довідник)\"",
+  "combobox \"Пріоритет\"",
+  "combobox \"Філія\"",
+  "link \"SinHRM\" -> /",
+  "link \"Вакансії\" -> /vacancies",
+  "link \"Вхідні\" -> /inbox",
+  "link \"Довідка\" -> /docs",
+  "link \"Заявки на підбір 2 нових\" -> /hiring-requests",
+  "link \"Заявки на підбір\" -> /hiring-requests",
+  "link \"Звіти\" -> /reports",
+  "link \"Кандидати\" -> /candidates",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Огляд\" -> /",
+  "spinbutton \"Кількість позицій\"",
+  "textbox \"Посада / назва\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 4,
+  "listitem": 3
+ }
+}

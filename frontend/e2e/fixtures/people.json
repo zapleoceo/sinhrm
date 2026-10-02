@@ -1,0 +1,4283 @@
+{
+ "GET /api/people?page=1&perPage=50": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 70,
+     "full_name": "Бондаренко Євген [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-70@sinhrm.test",
+     "phone": "+380503533163",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 15,
+      "name": "Навчальний відділ Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 67,
+      "name": "Поліщук Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 120,
+     "full_name": "Бондаренко Євген [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-120@sinhrm.test",
+     "phone": "+380503919513",
+     "status": "on_leave",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 7,
+      "name": "IT [ТЕСТ]"
+     },
+     "position": {
+      "id": 30,
+      "name": "Розробник [ТЕСТ]"
+     },
+     "manager": {
+      "id": 119,
+      "name": "Гончаренко Софія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 111,
+     "full_name": "Бондаренко Ірина [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-111@sinhrm.test",
+     "phone": "+380503849970",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 5,
+      "name": "HR [ТЕСТ]"
+     },
+     "position": {
+      "id": 25,
+      "name": "Спеціаліст з навчання та розвитку [ТЕСТ]"
+     },
+     "manager": {
+      "id": 5,
+      "name": "Гончаренко Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 38,
+     "full_name": "Бондаренко Віктор [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-38@sinhrm.test",
+     "phone": "+380503285899",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 10,
+      "name": "Керівник навчального відділу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 36,
+      "name": "Марченко Ігор [ТЕСТ]"
+     }
+    },
+    {
+     "id": 88,
+     "full_name": "Бондаренко Віктор [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-88@sinhrm.test",
+     "phone": "+380503672249",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 2,
+      "name": "Маркетинг [ТЕСТ]"
+     },
+     "position": {
+      "id": 16,
+      "name": "Маркетолог [ТЕСТ]"
+     },
+     "manager": {
+      "id": 84,
+      "name": "Ткаченко Тарас [ТЕСТ]"
+     }
+    },
+    {
+     "id": 79,
+     "full_name": "Бондаренко Вікторія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-79@sinhrm.test",
+     "phone": "+380503602706",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 16,
+      "name": "Відділ продажів Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 77,
+      "name": "Марченко Дарина [ТЕСТ]"
+     }
+    },
+    {
+     "id": 6,
+     "full_name": "Бондаренко Дмитро [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-06@sinhrm.test",
+     "phone": "+380503038635",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "position": {
+      "id": 6,
+      "name": "Директор з навчання [ТЕСТ]"
+     },
+     "manager": {
+      "id": 1,
+      "name": "Коваленко Олена [ТЕСТ]"
+     }
+    },
+    {
+     "id": 47,
+     "full_name": "Бондаренко Наталія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-47@sinhrm.test",
+     "phone": "+380503355442",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 44,
+      "name": "Поліщук Андрій [ТЕСТ]"
+     }
+    },
+    {
+     "id": 15,
+     "full_name": "Бондаренко Оксана [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-15@sinhrm.test",
+     "phone": "+380503108178",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 9,
+      "name": "Навчальний відділ Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 12,
+      "name": "Шевчук Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 5,
+     "full_name": "Гончаренко Анна [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-05@sinhrm.test",
+     "phone": "+380503030908",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "position": {
+      "id": 5,
+      "name": "HR-директор [ТЕСТ]"
+     },
+     "manager": {
+      "id": 1,
+      "name": "Коваленко Олена [ТЕСТ]"
+     }
+    },
+    {
+     "id": 28,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-28@sinhrm.test",
+     "phone": "+380503208629",
+     "status": "on_leave",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 9,
+      "name": "Навчальний відділ Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 24,
+      "name": "Коваленко Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 78,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-78@sinhrm.test",
+     "phone": "+380503594979",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 16,
+      "name": "Відділ продажів Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 77,
+      "name": "Марченко Дарина [ТЕСТ]"
+     }
+    },
+    {
+     "id": 128,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-128@sinhrm.test",
+     "phone": "+380503981329",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 7,
+      "name": "IT [ТЕСТ]"
+     },
+     "position": {
+      "id": 32,
+      "name": "Системний адміністратор [ТЕСТ]"
+     },
+     "manager": {
+      "id": 125,
+      "name": "Ткаченко Марія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 37,
+     "full_name": "Гончаренко Марія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-37@sinhrm.test",
+     "phone": "+380503278172",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 11,
+      "name": "Дирекція філії Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 9,
+      "name": "Адміністратор філії [ТЕСТ]"
+     },
+     "manager": {
+      "id": 36,
+      "name": "Марченко Ігор [ТЕСТ]"
+     }
+    },
+    {
+     "id": 87,
+     "full_name": "Гончаренко Марія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-87@sinhrm.test",
+     "phone": "+380503664522",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 2,
+      "name": "Маркетинг [ТЕСТ]"
+     },
+     "position": {
+      "id": 16,
+      "name": "Маркетолог [ТЕСТ]"
+     },
+     "manager": {
+      "id": 84,
+      "name": "Ткаченко Тарас [ТЕСТ]"
+     }
+    },
+    {
+     "id": 110,
+     "full_name": "Гончаренко Павло [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-110@sinhrm.test",
+     "phone": "+380503842243",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 5,
+      "name": "HR [ТЕСТ]"
+     },
+     "position": {
+      "id": 24,
+      "name": "HR-генераліст [ТЕСТ]"
+     },
+     "manager": {
+      "id": 5,
+      "name": "Гончаренко Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 69,
+     "full_name": "Гончаренко Софія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-69@sinhrm.test",
+     "phone": "+380503525436",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 15,
+      "name": "Навчальний відділ Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 67,
+      "name": "Поліщук Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 119,
+     "full_name": "Гончаренко Софія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-119@sinhrm.test",
+     "phone": "+380503911786",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 7,
+      "name": "IT [ТЕСТ]"
+     },
+     "position": {
+      "id": 29,
+      "name": "Тімлід розробки [ТЕСТ]"
+     },
+     "manager": {
+      "id": 7,
+      "name": "Олійник Софія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 46,
+     "full_name": "Гончаренко Тарас [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-46@sinhrm.test",
+     "phone": "+380503347715",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 44,
+      "name": "Поліщук Андрій [ТЕСТ]"
+     }
+    },
+    {
+     "id": 74,
+     "full_name": "Коваленко Ігор [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-74@sinhrm.test",
+     "phone": "+380503564071",
+     "status": "on_leave",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 15,
+      "name": "Навчальний відділ Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 72,
+      "name": "Руденко Павло [ТЕСТ]"
+     }
+    },
+    {
+     "id": 56,
+     "full_name": "Коваленко Дмитро [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-56@sinhrm.test",
+     "phone": "+380503424985",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 13,
+      "name": "Відділ продажів Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 53,
+      "name": "Шевчук Оксана [ТЕСТ]"
+     }
+    },
+    {
+     "id": 106,
+     "full_name": "Коваленко Дмитро [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+hr-2@sinhrm.test",
+     "phone": "+380503811335",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 5,
+      "name": "HR [ТЕСТ]"
+     },
+     "position": {
+      "id": 23,
+      "name": "Рекрутер [ТЕСТ]"
+     },
+     "manager": {
+      "id": 104,
+      "name": "Руденко Сергій [ТЕСТ]"
+     }
+    },
+    {
+     "id": 65,
+     "full_name": "Коваленко Оксана [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-65@sinhrm.test",
+     "phone": "+380503494528",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 15,
+      "name": "Навчальний відділ Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 62,
+      "name": "Шевчук Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 115,
+     "full_name": "Коваленко Оксана [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-115@sinhrm.test",
+     "phone": "+380503880878",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 6,
+      "name": "Методичний центр [ТЕСТ]"
+     },
+     "position": {
+      "id": 27,
+      "name": "Методист [ТЕСТ]"
+     },
+     "manager": {
+      "id": 112,
+      "name": "Олійник Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 1,
+     "full_name": "Коваленко Олена [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-01@sinhrm.test",
+     "phone": "+380503000000",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "position": {
+      "id": 1,
+      "name": "Генеральний директор [ТЕСТ]"
+     },
+     "manager": null
+    },
+    {
+     "id": 24,
+     "full_name": "Коваленко Роман [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-24@sinhrm.test",
+     "phone": "+380503177721",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 9,
+      "name": "Навчальний відділ Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 11,
+      "name": "Старший методист [ТЕСТ]"
+     },
+     "manager": {
+      "id": 11,
+      "name": "Ткаченко Ірина [ТЕСТ]"
+     }
+    },
+    {
+     "id": 33,
+     "full_name": "Коваленко Тетяна [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-33@sinhrm.test",
+     "phone": "+380503247264",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 10,
+      "name": "Відділ продажів Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 29,
+      "name": "Ткаченко Вікторія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 97,
+     "full_name": "Коваленко Юлія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-97@sinhrm.test",
+     "phone": "+380503741792",
+     "status": "on_leave",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 3,
+      "name": "Контакт-центр [ТЕСТ]"
+     },
+     "position": {
+      "id": 18,
+      "name": "Оператор контакт-центру [ТЕСТ]"
+     },
+     "manager": {
+      "id": 90,
+      "name": "Савченко Максим [ТЕСТ]"
+     }
+    },
+    {
+     "id": 2,
+     "full_name": "Кравченко Богдан [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-02@sinhrm.test",
+     "phone": "+380503007727",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "position": {
+      "id": 2,
+      "name": "Операційний директор [ТЕСТ]"
+     },
+     "manager": {
+      "id": 1,
+      "name": "Коваленко Олена [ТЕСТ]"
+     }
+    },
+    {
+     "id": 43,
+     "full_name": "Кравченко Катерина [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-43@sinhrm.test",
+     "phone": "+380503324534",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 39,
+      "name": "Олійник Дарина [ТЕСТ]"
+     }
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/people?page=1",
+    "last": "https://sinhrm.test/api/people?page=3",
+    "prev": null,
+    "next": "https://sinhrm.test/api/people?page=2"
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 3,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/people?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": "https://sinhrm.test/api/people?page=2",
+      "label": "2",
+      "page": 2,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/people?page=3",
+      "label": "3",
+      "page": 3,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/people?page=2",
+      "label": "Next &raquo;",
+      "page": 2,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/people",
+    "per_page": 50,
+    "to": 50,
+    "total": 124
+   }
+  }
+ },
+ "GET /api/people?perPage=200": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 70,
+     "full_name": "Бондаренко Євген [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-70@sinhrm.test",
+     "phone": "+380503533163",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 15,
+      "name": "Навчальний відділ Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 67,
+      "name": "Поліщук Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 120,
+     "full_name": "Бондаренко Євген [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-120@sinhrm.test",
+     "phone": "+380503919513",
+     "status": "on_leave",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 7,
+      "name": "IT [ТЕСТ]"
+     },
+     "position": {
+      "id": 30,
+      "name": "Розробник [ТЕСТ]"
+     },
+     "manager": {
+      "id": 119,
+      "name": "Гончаренко Софія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 111,
+     "full_name": "Бондаренко Ірина [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-111@sinhrm.test",
+     "phone": "+380503849970",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 5,
+      "name": "HR [ТЕСТ]"
+     },
+     "position": {
+      "id": 25,
+      "name": "Спеціаліст з навчання та розвитку [ТЕСТ]"
+     },
+     "manager": {
+      "id": 5,
+      "name": "Гончаренко Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 38,
+     "full_name": "Бондаренко Віктор [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-38@sinhrm.test",
+     "phone": "+380503285899",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 10,
+      "name": "Керівник навчального відділу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 36,
+      "name": "Марченко Ігор [ТЕСТ]"
+     }
+    },
+    {
+     "id": 88,
+     "full_name": "Бондаренко Віктор [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-88@sinhrm.test",
+     "phone": "+380503672249",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 2,
+      "name": "Маркетинг [ТЕСТ]"
+     },
+     "position": {
+      "id": 16,
+      "name": "Маркетолог [ТЕСТ]"
+     },
+     "manager": {
+      "id": 84,
+      "name": "Ткаченко Тарас [ТЕСТ]"
+     }
+    },
+    {
+     "id": 79,
+     "full_name": "Бондаренко Вікторія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-79@sinhrm.test",
+     "phone": "+380503602706",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 16,
+      "name": "Відділ продажів Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 77,
+      "name": "Марченко Дарина [ТЕСТ]"
+     }
+    },
+    {
+     "id": 6,
+     "full_name": "Бондаренко Дмитро [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-06@sinhrm.test",
+     "phone": "+380503038635",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "position": {
+      "id": 6,
+      "name": "Директор з навчання [ТЕСТ]"
+     },
+     "manager": {
+      "id": 1,
+      "name": "Коваленко Олена [ТЕСТ]"
+     }
+    },
+    {
+     "id": 47,
+     "full_name": "Бондаренко Наталія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-47@sinhrm.test",
+     "phone": "+380503355442",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 44,
+      "name": "Поліщук Андрій [ТЕСТ]"
+     }
+    },
+    {
+     "id": 15,
+     "full_name": "Бондаренко Оксана [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-15@sinhrm.test",
+     "phone": "+380503108178",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 9,
+      "name": "Навчальний відділ Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 12,
+      "name": "Шевчук Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 5,
+     "full_name": "Гончаренко Анна [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-05@sinhrm.test",
+     "phone": "+380503030908",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "position": {
+      "id": 5,
+      "name": "HR-директор [ТЕСТ]"
+     },
+     "manager": {
+      "id": 1,
+      "name": "Коваленко Олена [ТЕСТ]"
+     }
+    },
+    {
+     "id": 28,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-28@sinhrm.test",
+     "phone": "+380503208629",
+     "status": "on_leave",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 9,
+      "name": "Навчальний відділ Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 24,
+      "name": "Коваленко Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 78,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-78@sinhrm.test",
+     "phone": "+380503594979",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 16,
+      "name": "Відділ продажів Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 77,
+      "name": "Марченко Дарина [ТЕСТ]"
+     }
+    },
+    {
+     "id": 128,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-128@sinhrm.test",
+     "phone": "+380503981329",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 7,
+      "name": "IT [ТЕСТ]"
+     },
+     "position": {
+      "id": 32,
+      "name": "Системний адміністратор [ТЕСТ]"
+     },
+     "manager": {
+      "id": 125,
+      "name": "Ткаченко Марія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 37,
+     "full_name": "Гончаренко Марія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-37@sinhrm.test",
+     "phone": "+380503278172",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 11,
+      "name": "Дирекція філії Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 9,
+      "name": "Адміністратор філії [ТЕСТ]"
+     },
+     "manager": {
+      "id": 36,
+      "name": "Марченко Ігор [ТЕСТ]"
+     }
+    },
+    {
+     "id": 87,
+     "full_name": "Гончаренко Марія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-87@sinhrm.test",
+     "phone": "+380503664522",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 2,
+      "name": "Маркетинг [ТЕСТ]"
+     },
+     "position": {
+      "id": 16,
+      "name": "Маркетолог [ТЕСТ]"
+     },
+     "manager": {
+      "id": 84,
+      "name": "Ткаченко Тарас [ТЕСТ]"
+     }
+    },
+    {
+     "id": 110,
+     "full_name": "Гончаренко Павло [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-110@sinhrm.test",
+     "phone": "+380503842243",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 5,
+      "name": "HR [ТЕСТ]"
+     },
+     "position": {
+      "id": 24,
+      "name": "HR-генераліст [ТЕСТ]"
+     },
+     "manager": {
+      "id": 5,
+      "name": "Гончаренко Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 69,
+     "full_name": "Гончаренко Софія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-69@sinhrm.test",
+     "phone": "+380503525436",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 15,
+      "name": "Навчальний відділ Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 67,
+      "name": "Поліщук Анна [ТЕСТ]"
+     }
+    },
+    {
+     "id": 119,
+     "full_name": "Гончаренко Софія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-119@sinhrm.test",
+     "phone": "+380503911786",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 7,
+      "name": "IT [ТЕСТ]"
+     },
+     "position": {
+      "id": 29,
+      "name": "Тімлід розробки [ТЕСТ]"
+     },
+     "manager": {
+      "id": 7,
+      "name": "Олійник Софія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 46,
+     "full_name": "Гончаренко Тарас [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-46@sinhrm.test",
+     "phone": "+380503347715",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 44,
+      "name": "Поліщук Андрій [ТЕСТ]"
+     }
+    },
+    {
+     "id": 74,
+     "full_name": "Коваленко Ігор [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-74@sinhrm.test",
+     "phone": "+380503564071",
+     "status": "on_leave",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 15,
+      "name": "Навчальний відділ Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 72,
+      "name": "Руденко Павло [ТЕСТ]"
+     }
+    },
+    {
+     "id": 56,
+     "full_name": "Коваленко Дмитро [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-56@sinhrm.test",
+     "phone": "+380503424985",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 13,
+      "name": "Відділ продажів Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 53,
+      "name": "Шевчук Оксана [ТЕСТ]"
+     }
+    },
+    {
+     "id": 106,
+     "full_name": "Коваленко Дмитро [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+hr-2@sinhrm.test",
+     "phone": "+380503811335",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 5,
+      "name": "HR [ТЕСТ]"
+     },
+     "position": {
+      "id": 23,
+      "name": "Рекрутер [ТЕСТ]"
+     },
+     "manager": {
+      "id": 104,
+      "name": "Руденко Сергій [ТЕСТ]"
+     }
+    },
+    {
+     "id": 65,
+     "full_name": "Коваленко Оксана [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-65@sinhrm.test",
+     "phone": "+380503494528",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 15,
+      "name": "Навчальний відділ Дніпро [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 62,
+      "name": "Шевчук Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 115,
+     "full_name": "Коваленко Оксана [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-115@sinhrm.test",
+     "phone": "+380503880878",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 6,
+      "name": "Методичний центр [ТЕСТ]"
+     },
+     "position": {
+      "id": 27,
+      "name": "Методист [ТЕСТ]"
+     },
+     "manager": {
+      "id": 112,
+      "name": "Олійник Роман [ТЕСТ]"
+     }
+    },
+    {
+     "id": 1,
+     "full_name": "Коваленко Олена [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-01@sinhrm.test",
+     "phone": "+380503000000",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "position": {
+      "id": 1,
+      "name": "Генеральний директор [ТЕСТ]"
+     },
+     "manager": null
+    },
+    {
+     "id": 24,
+     "full_name": "Коваленко Роман [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-24@sinhrm.test",
+     "phone": "+380503177721",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 9,
+      "name": "Навчальний відділ Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 11,
+      "name": "Старший методист [ТЕСТ]"
+     },
+     "manager": {
+      "id": 11,
+      "name": "Ткаченко Ірина [ТЕСТ]"
+     }
+    },
+    {
+     "id": 33,
+     "full_name": "Коваленко Тетяна [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-33@sinhrm.test",
+     "phone": "+380503247264",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 10,
+      "name": "Відділ продажів Київ [ТЕСТ]"
+     },
+     "position": {
+      "id": 14,
+      "name": "Менеджер з продажу [ТЕСТ]"
+     },
+     "manager": {
+      "id": 29,
+      "name": "Ткаченко Вікторія [ТЕСТ]"
+     }
+    },
+    {
+     "id": 97,
+     "full_name": "Коваленко Юлія [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-97@sinhrm.test",
+     "phone": "+380503741792",
+     "status": "on_leave",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 3,
+      "name": "Контакт-центр [ТЕСТ]"
+     },
+     "position": {
+      "id": 18,
+      "name": "Оператор контакт-центру [ТЕСТ]"
+     },
+     "manager": {
+      "id": 90,
+      "name": "Савченко Максим [ТЕСТ]"
+     }
+    },
+    {
+     "id": 2,
+     "full_name": "Кравченко Богдан [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-02@sinhrm.test",
+     "phone": "+380503007727",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "position": {
+      "id": 2,
+      "name": "Операційний директор [ТЕСТ]"
+     },
+     "manager": {
+      "id": 1,
+      "name": "Коваленко Олена [ТЕСТ]"
+     }
+    },
+    {
+     "id": 43,
+     "full_name": "Кравченко Катерина [ТЕСТ]",
+     "avatar_url": null,
+     "work_email": "demo+emp-43@sinhrm.test",
+     "phone": "+380503324534",
+     "status": "active",
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "department": {
+      "id": 12,
+      "name": "Навчальний відділ Львів [ТЕСТ]"
+     },
+     "position": {
+      "id": 12,
+      "name": "Викладач [ТЕСТ]"
+     },
+     "manager": {
+      "id": 39,
+      "name": "Олійник Дарина [ТЕСТ]"
+     }
+    }
+   ],
+   "links": {
+    "first": "https://sinhrm.test/api/people?page=1",
+    "last": "https://sinhrm.test/api/people?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": 1,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/people?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/people",
+    "per_page": 200,
+    "to": 124,
+    "total": 124
+   }
+  }
+ },
+ "GET /api/people/1": {
+  "status": 200,
+  "body": {
+   "data": {
+    "id": 1,
+    "full_name": "Коваленко Олена [ТЕСТ]",
+    "avatar_url": null,
+    "work_email": "demo+emp-01@sinhrm.test",
+    "phone": "+380503000000",
+    "status": "active",
+    "branch": {
+     "id": 1,
+     "name": "Тестовий філіал"
+    },
+    "department": {
+     "id": 1,
+     "name": "Дирекція [ТЕСТ]"
+    },
+    "position": {
+     "id": 1,
+     "name": "Генеральний директор [ТЕСТ]"
+    },
+    "manager": null,
+    "access": {
+     "job": true,
+     "pii": true,
+     "decide": true,
+     "manage": true,
+     "self": true
+    },
+    "user_id": 3,
+    "branch_id": 1,
+    "department_id": 1,
+    "position_id": 1,
+    "manager_id": null,
+    "hired_at": "2021-02-24",
+    "fired_at": null,
+    "termination_reason": null,
+    "gender": "female",
+    "employment_type": "full_time",
+    "work_schedule": null,
+    "reports_count": 6,
+    "candidate_id": null,
+    "birth_date": "1977-06-13",
+    "personal_email": null,
+    "address": null,
+    "emergency_contact": null,
+    "custom_fields": {}
+   }
+  }
+ },
+ "GET /api/people/change-requests?employee_id=1&perPage=50": {
+  "status": 200,
+  "body": {
+   "data": [],
+   "links": {
+    "first": "https://sinhrm.test/api/people/change-requests?page=1",
+    "last": "https://sinhrm.test/api/people/change-requests?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": null,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/people/change-requests?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/people/change-requests",
+    "per_page": 50,
+    "to": null,
+    "total": 0
+   }
+  }
+ },
+ "GET /api/people/change-requests?perPage=100&status=pending": {
+  "status": 200,
+  "body": {
+   "data": [],
+   "links": {
+    "first": "https://sinhrm.test/api/people/change-requests?page=1",
+    "last": "https://sinhrm.test/api/people/change-requests?page=1",
+    "prev": null,
+    "next": null
+   },
+   "meta": {
+    "current_page": 1,
+    "from": null,
+    "last_page": 1,
+    "links": [
+     {
+      "url": null,
+      "label": "&laquo; Previous",
+      "page": null,
+      "active": false
+     },
+     {
+      "url": "https://sinhrm.test/api/people/change-requests?page=1",
+      "label": "1",
+      "page": 1,
+      "active": true
+     },
+     {
+      "url": null,
+      "label": "Next &raquo;",
+      "page": null,
+      "active": false
+     }
+    ],
+    "path": "https://sinhrm.test/api/people/change-requests",
+    "per_page": 100,
+    "to": null,
+    "total": 0
+   }
+  }
+ },
+ "GET /api/people/org-chart": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 1,
+     "full_name": "Коваленко Олена [ТЕСТ]",
+     "avatar_url": null,
+     "position": {
+      "id": 1,
+      "name": "Генеральний директор [ТЕСТ]"
+     },
+     "department": {
+      "id": 1,
+      "name": "Дирекція [ТЕСТ]"
+     },
+     "branch": {
+      "id": 1,
+      "name": "Тестовий філіал"
+     },
+     "reports_count": 6,
+     "reports": [
+      {
+       "id": 6,
+       "full_name": "Бондаренко Дмитро [ТЕСТ]",
+       "avatar_url": null,
+       "position": {
+        "id": 6,
+        "name": "Директор з навчання [ТЕСТ]"
+       },
+       "department": {
+        "id": 1,
+        "name": "Дирекція [ТЕСТ]"
+       },
+       "branch": {
+        "id": 1,
+        "name": "Тестовий філіал"
+       },
+       "reports_count": 3,
+       "reports": [
+        {
+         "id": 118,
+         "full_name": "Марченко Дмитро [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 28,
+          "name": "Спеціаліст з контролю якості [ТЕСТ]"
+         },
+         "department": {
+          "id": 6,
+          "name": "Методичний центр [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 0,
+         "reports": []
+        },
+        {
+         "id": 112,
+         "full_name": "Олійник Роман [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 26,
+          "name": "Керівник методичного центру [ТЕСТ]"
+         },
+         "department": {
+          "id": 6,
+          "name": "Методичний центр [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 4,
+         "reports": [
+          {
+           "id": 115,
+           "full_name": "Коваленко Оксана [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 27,
+            "name": "Методист [ТЕСТ]"
+           },
+           "department": {
+            "id": 6,
+            "name": "Методичний центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 116,
+           "full_name": "Кравченко Сергій [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 27,
+            "name": "Методист [ТЕСТ]"
+           },
+           "department": {
+            "id": 6,
+            "name": "Методичний центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 114,
+           "full_name": "Лисенко Богдан [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 27,
+            "name": "Методист [ТЕСТ]"
+           },
+           "department": {
+            "id": 6,
+            "name": "Методичний центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 113,
+           "full_name": "Руденко Олена [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 27,
+            "name": "Методист [ТЕСТ]"
+           },
+           "department": {
+            "id": 6,
+            "name": "Методичний центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          }
+         ]
+        },
+        {
+         "id": 117,
+         "full_name": "Поліщук Анна [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 28,
+          "name": "Спеціаліст з контролю якості [ТЕСТ]"
+         },
+         "department": {
+          "id": 6,
+          "name": "Методичний центр [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 0,
+         "reports": []
+        }
+       ]
+      },
+      {
+       "id": 5,
+       "full_name": "Гончаренко Анна [ТЕСТ]",
+       "avatar_url": null,
+       "position": {
+        "id": 5,
+        "name": "HR-директор [ТЕСТ]"
+       },
+       "department": {
+        "id": 1,
+        "name": "Дирекція [ТЕСТ]"
+       },
+       "branch": {
+        "id": 1,
+        "name": "Тестовий філіал"
+       },
+       "reports_count": 4,
+       "reports": [
+        {
+         "id": 111,
+         "full_name": "Бондаренко Ірина [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 25,
+          "name": "Спеціаліст з навчання та розвитку [ТЕСТ]"
+         },
+         "department": {
+          "id": 5,
+          "name": "HR [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 0,
+         "reports": []
+        },
+        {
+         "id": 110,
+         "full_name": "Гончаренко Павло [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 24,
+          "name": "HR-генераліст [ТЕСТ]"
+         },
+         "department": {
+          "id": 5,
+          "name": "HR [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 0,
+         "reports": []
+        },
+        {
+         "id": 109,
+         "full_name": "Марченко Юлія [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 24,
+          "name": "HR-генераліст [ТЕСТ]"
+         },
+         "department": {
+          "id": 5,
+          "name": "HR [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 0,
+         "reports": []
+        },
+        {
+         "id": 104,
+         "full_name": "Руденко Сергій [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 22,
+          "name": "Тімлід рекрутингу [ТЕСТ]"
+         },
+         "department": {
+          "id": 5,
+          "name": "HR [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 4,
+         "reports": [
+          {
+           "id": 106,
+           "full_name": "Коваленко Дмитро [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 23,
+            "name": "Рекрутер [ТЕСТ]"
+           },
+           "department": {
+            "id": 5,
+            "name": "HR [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 107,
+           "full_name": "Кравченко Софія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 23,
+            "name": "Рекрутер [ТЕСТ]"
+           },
+           "department": {
+            "id": 5,
+            "name": "HR [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 105,
+           "full_name": "Лисенко Анна [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 23,
+            "name": "Рекрутер [ТЕСТ]"
+           },
+           "department": {
+            "id": 5,
+            "name": "HR [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 108,
+           "full_name": "Поліщук Євген [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 23,
+            "name": "Рекрутер [ТЕСТ]"
+           },
+           "department": {
+            "id": 5,
+            "name": "HR [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": 2,
+       "full_name": "Кравченко Богдан [ТЕСТ]",
+       "avatar_url": null,
+       "position": {
+        "id": 2,
+        "name": "Операційний директор [ТЕСТ]"
+       },
+       "department": {
+        "id": 1,
+        "name": "Дирекція [ТЕСТ]"
+       },
+       "branch": {
+        "id": 1,
+        "name": "Тестовий філіал"
+       },
+       "reports_count": 3,
+       "reports": [
+        {
+         "id": 36,
+         "full_name": "Марченко Ігор [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 8,
+          "name": "Директор філії [ТЕСТ]"
+         },
+         "department": {
+          "id": 11,
+          "name": "Дирекція філії Львів [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 3,
+         "reports": [
+          {
+           "id": 38,
+           "full_name": "Бондаренко Віктор [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 10,
+            "name": "Керівник навчального відділу [ТЕСТ]"
+           },
+           "department": {
+            "id": 12,
+            "name": "Навчальний відділ Львів [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 3,
+           "reports": [
+            {
+             "id": 39,
+             "full_name": "Олійник Дарина [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 12,
+              "name": "Навчальний відділ Львів [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 4,
+             "reports": [
+              {
+               "id": 43,
+               "full_name": "Кравченко Катерина [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 41,
+               "full_name": "Мороз Вікторія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 42,
+               "full_name": "Павленко Олег [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 40,
+               "full_name": "Савченко Максим [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            },
+            {
+             "id": 44,
+             "full_name": "Поліщук Андрій [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 12,
+              "name": "Навчальний відділ Львів [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 3,
+             "reports": [
+              {
+               "id": 47,
+               "full_name": "Бондаренко Наталія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 46,
+               "full_name": "Гончаренко Тарас [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 45,
+               "full_name": "Марченко Тетяна [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            },
+            {
+             "id": 49,
+             "full_name": "Савченко Ірина [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 12,
+              "name": "Навчальний відділ Львів [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 3,
+             "reports": [
+              {
+               "id": 50,
+               "full_name": "Мороз Роман [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 51,
+               "full_name": "Павленко Олена [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 52,
+               "full_name": "Ткаченко Богдан [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 12,
+                "name": "Навчальний відділ Львів [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "id": 37,
+           "full_name": "Гончаренко Марія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 9,
+            "name": "Адміністратор філії [ТЕСТ]"
+           },
+           "department": {
+            "id": 11,
+            "name": "Дирекція філії Львів [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 53,
+           "full_name": "Шевчук Оксана [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 13,
+            "name": "Керівник відділу продажів [ТЕСТ]"
+           },
+           "department": {
+            "id": 13,
+            "name": "Відділ продажів Львів [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 5,
+           "reports": [
+            {
+             "id": 56,
+             "full_name": "Коваленко Дмитро [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 13,
+              "name": "Відділ продажів Львів [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 55,
+             "full_name": "Лисенко Анна [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 13,
+              "name": "Відділ продажів Львів [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 57,
+             "full_name": "Олійник Софія [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 13,
+              "name": "Відділ продажів Львів [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 54,
+             "full_name": "Руденко Сергій [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 13,
+              "name": "Відділ продажів Львів [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 58,
+             "full_name": "Савченко Євген [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 13,
+              "name": "Відділ продажів Львів [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "id": 59,
+         "full_name": "Мороз Юлія [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 8,
+          "name": "Директор філії [ТЕСТ]"
+         },
+         "department": {
+          "id": 14,
+          "name": "Дирекція філії Дніпро [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 3,
+         "reports": [
+          {
+           "id": 77,
+           "full_name": "Марченко Дарина [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 13,
+            "name": "Керівник відділу продажів [ТЕСТ]"
+           },
+           "department": {
+            "id": 16,
+            "name": "Відділ продажів Дніпро [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 6,
+           "reports": [
+            {
+             "id": 79,
+             "full_name": "Бондаренко Вікторія [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 16,
+              "name": "Відділ продажів Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 78,
+             "full_name": "Гончаренко Максим [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 16,
+              "name": "Відділ продажів Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 82,
+             "full_name": "Мороз Андрій [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 16,
+              "name": "Відділ продажів Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 80,
+             "full_name": "Олійник Олег [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 16,
+              "name": "Відділ продажів Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 83,
+             "full_name": "Павленко Тетяна [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 16,
+              "name": "Відділ продажів Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 81,
+             "full_name": "Савченко Катерина [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 16,
+              "name": "Відділ продажів Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            }
+           ]
+          },
+          {
+           "id": 60,
+           "full_name": "Павленко Павло [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 9,
+            "name": "Адміністратор філії [ТЕСТ]"
+           },
+           "department": {
+            "id": 14,
+            "name": "Дирекція філії Дніпро [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 61,
+           "full_name": "Ткаченко Ірина [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 10,
+            "name": "Керівник навчального відділу [ТЕСТ]"
+           },
+           "department": {
+            "id": 15,
+            "name": "Навчальний відділ Дніпро [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 3,
+           "reports": [
+            {
+             "id": 67,
+             "full_name": "Поліщук Анна [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 15,
+              "name": "Навчальний відділ Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 4,
+             "reports": [
+              {
+               "id": 70,
+               "full_name": "Бондаренко Євген [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 69,
+               "full_name": "Гончаренко Софія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 68,
+               "full_name": "Марченко Дмитро [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 71,
+               "full_name": "Шевчук Юлія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            },
+            {
+             "id": 72,
+             "full_name": "Руденко Павло [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 15,
+              "name": "Навчальний відділ Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 4,
+             "reports": [
+              {
+               "id": 74,
+               "full_name": "Коваленко Ігор [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 75,
+               "full_name": "Кравченко Марія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 73,
+               "full_name": "Лисенко Наталія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 76,
+               "full_name": "Поліщук Віктор [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            },
+            {
+             "id": 62,
+             "full_name": "Шевчук Роман [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 15,
+              "name": "Навчальний відділ Дніпро [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 4,
+             "reports": [
+              {
+               "id": 65,
+               "full_name": "Коваленко Оксана [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 66,
+               "full_name": "Кравченко Сергій [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 64,
+               "full_name": "Лисенко Богдан [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 63,
+               "full_name": "Руденко Олена [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 15,
+                "name": "Навчальний відділ Дніпро [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "id": 8,
+         "full_name": "Савченко Євген [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 8,
+          "name": "Директор філії [ТЕСТ]"
+         },
+         "department": {
+          "id": 8,
+          "name": "Дирекція філії Київ [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 3,
+         "reports": [
+          {
+           "id": 9,
+           "full_name": "Мороз Юлія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 9,
+            "name": "Адміністратор філії [ТЕСТ]"
+           },
+           "department": {
+            "id": 8,
+            "name": "Дирекція філії Київ [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 11,
+           "full_name": "Ткаченко Ірина [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 10,
+            "name": "Керівник навчального відділу [ТЕСТ]"
+           },
+           "department": {
+            "id": 9,
+            "name": "Навчальний відділ Київ [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 3,
+           "reports": [
+            {
+             "id": 24,
+             "full_name": "Коваленко Роман [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 9,
+              "name": "Навчальний відділ Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 4,
+             "reports": [
+              {
+               "id": 28,
+               "full_name": "Гончаренко Максим [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 25,
+               "full_name": "Кравченко Марія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 27,
+               "full_name": "Марченко Дарина [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 26,
+               "full_name": "Поліщук Віктор [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            },
+            {
+             "id": 18,
+             "full_name": "Мороз Дмитро [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 9,
+              "name": "Навчальний відділ Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 5,
+             "reports": [
+              {
+               "id": 23,
+               "full_name": "Лисенко Ірина [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 19,
+               "full_name": "Павленко Софія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 22,
+               "full_name": "Руденко Павло [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 20,
+               "full_name": "Ткаченко Євген [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 21,
+               "full_name": "Шевчук Юлія [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            },
+            {
+             "id": 12,
+             "full_name": "Шевчук Роман [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 11,
+              "name": "Старший методист [ТЕСТ]"
+             },
+             "department": {
+              "id": 9,
+              "name": "Навчальний відділ Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 5,
+             "reports": [
+              {
+               "id": 15,
+               "full_name": "Бондаренко Оксана [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 14,
+               "full_name": "Лисенко Богдан [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 16,
+               "full_name": "Олійник Сергій [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 13,
+               "full_name": "Руденко Олена [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              },
+              {
+               "id": 17,
+               "full_name": "Савченко Анна [ТЕСТ]",
+               "avatar_url": null,
+               "position": {
+                "id": 12,
+                "name": "Викладач [ТЕСТ]"
+               },
+               "department": {
+                "id": 9,
+                "name": "Навчальний відділ Київ [ТЕСТ]"
+               },
+               "branch": {
+                "id": 1,
+                "name": "Тестовий філіал"
+               },
+               "reports_count": 0,
+               "reports": []
+              }
+             ]
+            }
+           ]
+          },
+          {
+           "id": 29,
+           "full_name": "Ткаченко Вікторія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 13,
+            "name": "Керівник відділу продажів [ТЕСТ]"
+           },
+           "department": {
+            "id": 10,
+            "name": "Відділ продажів Київ [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 6,
+           "reports": [
+            {
+             "id": 33,
+             "full_name": "Коваленко Тетяна [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 10,
+              "name": "Відділ продажів Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 34,
+             "full_name": "Кравченко Тарас [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 10,
+              "name": "Відділ продажів Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 32,
+             "full_name": "Лисенко Андрій [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 10,
+              "name": "Відділ продажів Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 35,
+             "full_name": "Поліщук Наталія [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 10,
+              "name": "Відділ продажів Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 31,
+             "full_name": "Руденко Катерина [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 10,
+              "name": "Відділ продажів Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            },
+            {
+             "id": 30,
+             "full_name": "Шевчук Олег [ТЕСТ]",
+             "avatar_url": null,
+             "position": {
+              "id": 14,
+              "name": "Менеджер з продажу [ТЕСТ]"
+             },
+             "department": {
+              "id": 10,
+              "name": "Відділ продажів Київ [ТЕСТ]"
+             },
+             "branch": {
+              "id": 1,
+              "name": "Тестовий філіал"
+             },
+             "reports_count": 0,
+             "reports": []
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": 4,
+       "full_name": "Марченко Сергій [ТЕСТ]",
+       "avatar_url": null,
+       "position": {
+        "id": 4,
+        "name": "Фінансовий директор [ТЕСТ]"
+       },
+       "department": {
+        "id": 1,
+        "name": "Дирекція [ТЕСТ]"
+       },
+       "branch": {
+        "id": 1,
+        "name": "Тестовий філіал"
+       },
+       "reports_count": 2,
+       "reports": [
+        {
+         "id": 99,
+         "full_name": "Савченко Ірина [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 19,
+          "name": "Головний бухгалтер [ТЕСТ]"
+         },
+         "department": {
+          "id": 4,
+          "name": "Фінанси та бухгалтерія [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 3,
+         "reports": [
+          {
+           "id": 100,
+           "full_name": "Мороз Роман [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 20,
+            "name": "Бухгалтер [ТЕСТ]"
+           },
+           "department": {
+            "id": 4,
+            "name": "Фінанси та бухгалтерія [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 101,
+           "full_name": "Павленко Олена [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 20,
+            "name": "Бухгалтер [ТЕСТ]"
+           },
+           "department": {
+            "id": 4,
+            "name": "Фінанси та бухгалтерія [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 102,
+           "full_name": "Ткаченко Богдан [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 20,
+            "name": "Бухгалтер [ТЕСТ]"
+           },
+           "department": {
+            "id": 4,
+            "name": "Фінанси та бухгалтерія [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          }
+         ]
+        },
+        {
+         "id": 103,
+         "full_name": "Шевчук Оксана [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 21,
+          "name": "Фінансовий аналітик [ТЕСТ]"
+         },
+         "department": {
+          "id": 4,
+          "name": "Фінанси та бухгалтерія [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 0,
+         "reports": []
+        }
+       ]
+      },
+      {
+       "id": 7,
+       "full_name": "Олійник Софія [ТЕСТ]",
+       "avatar_url": null,
+       "position": {
+        "id": 7,
+        "name": "IT-директор [ТЕСТ]"
+       },
+       "department": {
+        "id": 1,
+        "name": "Дирекція [ТЕСТ]"
+       },
+       "branch": {
+        "id": 1,
+        "name": "Тестовий філіал"
+       },
+       "reports_count": 2,
+       "reports": [
+        {
+         "id": 119,
+         "full_name": "Гончаренко Софія [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 29,
+          "name": "Тімлід розробки [ТЕСТ]"
+         },
+         "department": {
+          "id": 7,
+          "name": "IT [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 4,
+         "reports": [
+          {
+           "id": 120,
+           "full_name": "Бондаренко Євген [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 30,
+            "name": "Розробник [ТЕСТ]"
+           },
+           "department": {
+            "id": 7,
+            "name": "IT [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 123,
+           "full_name": "Мороз Наталія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 30,
+            "name": "Розробник [ТЕСТ]"
+           },
+           "department": {
+            "id": 7,
+            "name": "IT [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 121,
+           "full_name": "Олійник Тетяна [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 30,
+            "name": "Розробник [ТЕСТ]"
+           },
+           "department": {
+            "id": 7,
+            "name": "IT [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 122,
+           "full_name": "Савченко Тарас [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 30,
+            "name": "Розробник [ТЕСТ]"
+           },
+           "department": {
+            "id": 7,
+            "name": "IT [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          }
+         ]
+        },
+        {
+         "id": 125,
+         "full_name": "Ткаченко Марія [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 31,
+          "name": "Керівник служби підтримки [ТЕСТ]"
+         },
+         "department": {
+          "id": 7,
+          "name": "IT [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 3,
+         "reports": [
+          {
+           "id": 128,
+           "full_name": "Гончаренко Максим [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 32,
+            "name": "Системний адміністратор [ТЕСТ]"
+           },
+           "department": {
+            "id": 7,
+            "name": "IT [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 127,
+           "full_name": "Марченко Дарина [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 32,
+            "name": "Системний адміністратор [ТЕСТ]"
+           },
+           "department": {
+            "id": 7,
+            "name": "IT [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 126,
+           "full_name": "Шевчук Віктор [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 32,
+            "name": "Системний адміністратор [ТЕСТ]"
+           },
+           "department": {
+            "id": 7,
+            "name": "IT [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "id": 3,
+       "full_name": "Поліщук Оксана [ТЕСТ]",
+       "avatar_url": null,
+       "position": {
+        "id": 3,
+        "name": "Комерційний директор [ТЕСТ]"
+       },
+       "department": {
+        "id": 1,
+        "name": "Дирекція [ТЕСТ]"
+       },
+       "branch": {
+        "id": 1,
+        "name": "Тестовий філіал"
+       },
+       "reports_count": 2,
+       "reports": [
+        {
+         "id": 90,
+         "full_name": "Савченко Максим [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 17,
+          "name": "Керівник контакт-центру [ТЕСТ]"
+         },
+         "department": {
+          "id": 3,
+          "name": "Контакт-центр [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 8,
+         "reports": [
+          {
+           "id": 97,
+           "full_name": "Коваленко Юлія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 18,
+            "name": "Оператор контакт-центру [ТЕСТ]"
+           },
+           "department": {
+            "id": 3,
+            "name": "Контакт-центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 98,
+           "full_name": "Кравченко Павло [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 18,
+            "name": "Оператор контакт-центру [ТЕСТ]"
+           },
+           "department": {
+            "id": 3,
+            "name": "Контакт-центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 96,
+           "full_name": "Лисенко Тарас [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 18,
+            "name": "Оператор контакт-центру [ТЕСТ]"
+           },
+           "department": {
+            "id": 3,
+            "name": "Контакт-центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 91,
+           "full_name": "Мороз Вікторія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 18,
+            "name": "Оператор контакт-центру [ТЕСТ]"
+           },
+           "department": {
+            "id": 3,
+            "name": "Контакт-центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 92,
+           "full_name": "Павленко Олег [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 18,
+            "name": "Оператор контакт-центру [ТЕСТ]"
+           },
+           "department": {
+            "id": 3,
+            "name": "Контакт-центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 95,
+           "full_name": "Руденко Тетяна [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 18,
+            "name": "Оператор контакт-центру [ТЕСТ]"
+           },
+           "department": {
+            "id": 3,
+            "name": "Контакт-центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 93,
+           "full_name": "Ткаченко Катерина [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 18,
+            "name": "Оператор контакт-центру [ТЕСТ]"
+           },
+           "department": {
+            "id": 3,
+            "name": "Контакт-центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 94,
+           "full_name": "Шевчук Андрій [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 18,
+            "name": "Оператор контакт-центру [ТЕСТ]"
+           },
+           "department": {
+            "id": 3,
+            "name": "Контакт-центр [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          }
+         ]
+        },
+        {
+         "id": 84,
+         "full_name": "Ткаченко Тарас [ТЕСТ]",
+         "avatar_url": null,
+         "position": {
+          "id": 15,
+          "name": "Керівник з маркетингу [ТЕСТ]"
+         },
+         "department": {
+          "id": 2,
+          "name": "Маркетинг [ТЕСТ]"
+         },
+         "branch": {
+          "id": 1,
+          "name": "Тестовий філіал"
+         },
+         "reports_count": 4,
+         "reports": [
+          {
+           "id": 88,
+           "full_name": "Бондаренко Віктор [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 16,
+            "name": "Маркетолог [ТЕСТ]"
+           },
+           "department": {
+            "id": 2,
+            "name": "Маркетинг [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 87,
+           "full_name": "Гончаренко Марія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 16,
+            "name": "Маркетолог [ТЕСТ]"
+           },
+           "department": {
+            "id": 2,
+            "name": "Маркетинг [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 89,
+           "full_name": "Олійник Дарина [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 16,
+            "name": "Маркетолог [ТЕСТ]"
+           },
+           "department": {
+            "id": 2,
+            "name": "Маркетинг [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          },
+          {
+           "id": 85,
+           "full_name": "Поліщук Наталія [ТЕСТ]",
+           "avatar_url": null,
+           "position": {
+            "id": 16,
+            "name": "Маркетолог [ТЕСТ]"
+           },
+           "department": {
+            "id": 2,
+            "name": "Маркетинг [ТЕСТ]"
+           },
+           "branch": {
+            "id": 1,
+            "name": "Тестовий філіал"
+           },
+           "reports_count": 0,
+           "reports": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "GET /api/people/search?q=%D0%9A%D0%BE&scope=subordinates": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "id": 70,
+     "full_name": "Бондаренко Євген [ТЕСТ]",
+     "position": "Викладач [ТЕСТ]",
+     "department": "Навчальний відділ Дніпро [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 120,
+     "full_name": "Бондаренко Євген [ТЕСТ]",
+     "position": "Розробник [ТЕСТ]",
+     "department": "IT [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 111,
+     "full_name": "Бондаренко Ірина [ТЕСТ]",
+     "position": "Спеціаліст з навчання та розвитку [ТЕСТ]",
+     "department": "HR [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 38,
+     "full_name": "Бондаренко Віктор [ТЕСТ]",
+     "position": "Керівник навчального відділу [ТЕСТ]",
+     "department": "Навчальний відділ Львів [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 88,
+     "full_name": "Бондаренко Віктор [ТЕСТ]",
+     "position": "Маркетолог [ТЕСТ]",
+     "department": "Маркетинг [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 79,
+     "full_name": "Бондаренко Вікторія [ТЕСТ]",
+     "position": "Менеджер з продажу [ТЕСТ]",
+     "department": "Відділ продажів Дніпро [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 6,
+     "full_name": "Бондаренко Дмитро [ТЕСТ]",
+     "position": "Директор з навчання [ТЕСТ]",
+     "department": "Дирекція [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 47,
+     "full_name": "Бондаренко Наталія [ТЕСТ]",
+     "position": "Викладач [ТЕСТ]",
+     "department": "Навчальний відділ Львів [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 15,
+     "full_name": "Бондаренко Оксана [ТЕСТ]",
+     "position": "Викладач [ТЕСТ]",
+     "department": "Навчальний відділ Київ [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 5,
+     "full_name": "Гончаренко Анна [ТЕСТ]",
+     "position": "HR-директор [ТЕСТ]",
+     "department": "Дирекція [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 28,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "position": "Викладач [ТЕСТ]",
+     "department": "Навчальний відділ Київ [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 78,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "position": "Менеджер з продажу [ТЕСТ]",
+     "department": "Відділ продажів Дніпро [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 128,
+     "full_name": "Гончаренко Максим [ТЕСТ]",
+     "position": "Системний адміністратор [ТЕСТ]",
+     "department": "IT [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 37,
+     "full_name": "Гончаренко Марія [ТЕСТ]",
+     "position": "Адміністратор філії [ТЕСТ]",
+     "department": "Дирекція філії Львів [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 87,
+     "full_name": "Гончаренко Марія [ТЕСТ]",
+     "position": "Маркетолог [ТЕСТ]",
+     "department": "Маркетинг [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 110,
+     "full_name": "Гончаренко Павло [ТЕСТ]",
+     "position": "HR-генераліст [ТЕСТ]",
+     "department": "HR [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 69,
+     "full_name": "Гончаренко Софія [ТЕСТ]",
+     "position": "Викладач [ТЕСТ]",
+     "department": "Навчальний відділ Дніпро [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 119,
+     "full_name": "Гончаренко Софія [ТЕСТ]",
+     "position": "Тімлід розробки [ТЕСТ]",
+     "department": "IT [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 46,
+     "full_name": "Гончаренко Тарас [ТЕСТ]",
+     "position": "Викладач [ТЕСТ]",
+     "department": "Навчальний відділ Львів [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    },
+    {
+     "id": 74,
+     "full_name": "Коваленко Ігор [ТЕСТ]",
+     "position": "Викладач [ТЕСТ]",
+     "department": "Навчальний відділ Дніпро [ТЕСТ]",
+     "avatar_url": null,
+     "terminated": false,
+     "terminated_at": null
+    }
+   ]
+  }
+ },
+ "GET /api/people/1/compensation": {
+  "status": 200,
+  "body": {
+   "data": {
+    "current": {
+     "id": 2,
+     "amount": "182700.00",
+     "currency": "UAH",
+     "period": "month",
+     "effective_on": "2026-05-24",
+     "reason": "Перегляд",
+     "current": true
+    },
+    "history": [
+     {
+      "id": 2,
+      "amount": "182700.00",
+      "currency": "UAH",
+      "period": "month",
+      "effective_on": "2026-05-24",
+      "reason": "Перегляд",
+      "current": true
+     },
+     {
+      "id": 1,
+      "amount": "164500.00",
+      "currency": "UAH",
+      "period": "month",
+      "effective_on": "2021-02-24",
+      "reason": "Прийом",
+      "current": false
+     }
+    ]
+   }
+  }
+ }
+}

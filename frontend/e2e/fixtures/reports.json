@@ -1,0 +1,1607 @@
+{
+ "GET /api/reports/catalog": {
+  "status": 200,
+  "body": {
+   "data": [
+    {
+     "group": "general",
+     "reports": [
+      {
+       "key": "desk_sla",
+       "group": "general",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "category",
+         "type": "string"
+        },
+        {
+         "key": "cases",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "open",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "first_response_breached",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "resolve_breached",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "breached_pct",
+         "type": "percent",
+         "total": "none"
+        }
+       ],
+       "chart": {
+        "label": "category",
+        "value": "cases"
+       }
+      },
+      {
+       "key": "assets_by_status",
+       "group": "general",
+       "filters": [],
+       "columns": [
+        {
+         "key": "status",
+         "type": "string"
+        },
+        {
+         "key": "type",
+         "type": "string"
+        },
+        {
+         "key": "assets",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "cost",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "status",
+        "value": "assets"
+       }
+      }
+     ]
+    },
+    {
+     "group": "hr",
+     "reports": [
+      {
+       "key": "headcount",
+       "group": "hr",
+       "filters": [
+        "to",
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "branch",
+         "type": "string"
+        },
+        {
+         "key": "department",
+         "type": "string"
+        },
+        {
+         "key": "headcount",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "department",
+        "value": "headcount"
+       }
+      },
+      {
+       "key": "hires_terminations",
+       "group": "hr",
+       "filters": [
+        "from",
+        "to",
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "month",
+         "type": "string"
+        },
+        {
+         "key": "hires",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "terminations",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "month",
+        "value": "hires"
+       }
+      },
+      {
+       "key": "turnover",
+       "group": "hr",
+       "filters": [
+        "from",
+        "to",
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "month",
+         "type": "string"
+        },
+        {
+         "key": "avg_headcount",
+         "type": "number",
+         "total": "none"
+        },
+        {
+         "key": "terminations",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "turnover_pct",
+         "type": "percent",
+         "total": "none"
+        }
+       ],
+       "chart": {
+        "label": "month",
+        "value": "turnover_pct"
+       }
+      },
+      {
+       "key": "tenure",
+       "group": "hr",
+       "filters": [
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "bucket",
+         "type": "string"
+        },
+        {
+         "key": "employees",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "bucket",
+        "value": "employees"
+       }
+      },
+      {
+       "key": "age",
+       "group": "hr",
+       "filters": [
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "bucket",
+         "type": "string"
+        },
+        {
+         "key": "employees",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "bucket",
+        "value": "employees"
+       }
+      },
+      {
+       "key": "gender_pay_gap",
+       "group": "hr",
+       "filters": [
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "currency",
+         "type": "string"
+        },
+        {
+         "key": "period",
+         "type": "string"
+        },
+        {
+         "key": "gender",
+         "type": "string"
+        },
+        {
+         "key": "employees",
+         "type": "number",
+         "total": "none"
+        },
+        {
+         "key": "median",
+         "type": "number",
+         "total": "none"
+        },
+        {
+         "key": "gap_pct",
+         "type": "number",
+         "total": "none"
+        }
+       ],
+       "chart": null
+      },
+      {
+       "key": "leave_usage",
+       "group": "hr",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "leave_type",
+         "type": "string"
+        },
+        {
+         "key": "requests",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "days",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "employees",
+         "type": "number",
+         "total": "none"
+        }
+       ],
+       "chart": {
+        "label": "leave_type",
+        "value": "days"
+       }
+      },
+      {
+       "key": "absences_summary",
+       "group": "hr",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "month",
+         "type": "string"
+        },
+        {
+         "key": "employees_absent",
+         "type": "number",
+         "total": "none"
+        },
+        {
+         "key": "days",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "month",
+        "value": "days"
+       }
+      },
+      {
+       "key": "leave_balances",
+       "group": "hr",
+       "filters": [],
+       "columns": [
+        {
+         "key": "employee",
+         "type": "string"
+        },
+        {
+         "key": "leave_type",
+         "type": "string"
+        },
+        {
+         "key": "balance",
+         "type": "number",
+         "total": "none"
+        }
+       ],
+       "chart": null
+      },
+      {
+       "key": "time_by_employee",
+       "group": "hr",
+       "filters": [
+        "from",
+        "to",
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "employee",
+         "type": "string"
+        },
+        {
+         "key": "department",
+         "type": "string"
+        },
+        {
+         "key": "expected",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "worked",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "overtime",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "missing",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "absence",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "employee",
+        "value": "worked"
+       }
+      },
+      {
+       "key": "time_by_department",
+       "group": "hr",
+       "filters": [
+        "from",
+        "to",
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "department",
+         "type": "string"
+        },
+        {
+         "key": "expected",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "worked",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "overtime",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "missing",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "absence",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "department",
+        "value": "worked"
+       }
+      },
+      {
+       "key": "time_overtime",
+       "group": "hr",
+       "filters": [
+        "from",
+        "to",
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "employee",
+         "type": "string"
+        },
+        {
+         "key": "week_start",
+         "type": "date"
+        },
+        {
+         "key": "status",
+         "type": "string"
+        },
+        {
+         "key": "expected",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "worked",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "overtime",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "employee",
+        "value": "overtime"
+       }
+      },
+      {
+       "key": "time_missing",
+       "group": "hr",
+       "filters": [
+        "from",
+        "to",
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "employee",
+         "type": "string"
+        },
+        {
+         "key": "department",
+         "type": "string"
+        },
+        {
+         "key": "week_start",
+         "type": "date"
+        },
+        {
+         "key": "status",
+         "type": "string"
+        },
+        {
+         "key": "expected",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "worked",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "missing",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "employee",
+        "value": "missing"
+       }
+      }
+     ]
+    },
+    {
+     "group": "performance",
+     "reports": [
+      {
+       "key": "okr_progress",
+       "group": "performance",
+       "filters": [
+        "period"
+       ],
+       "columns": [
+        {
+         "key": "scope",
+         "type": "string"
+        },
+        {
+         "key": "objectives",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "avg_progress",
+         "type": "percent",
+         "total": "avg-weighted",
+         "weight": "objectives"
+        },
+        {
+         "key": "achieved",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "scope",
+        "value": "avg_progress"
+       }
+      },
+      {
+       "key": "review_completion",
+       "group": "performance",
+       "filters": [],
+       "columns": [
+        {
+         "key": "cycle",
+         "type": "string"
+        },
+        {
+         "key": "status",
+         "type": "string"
+        },
+        {
+         "key": "assigned",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "submitted",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "completion_pct",
+         "type": "percent",
+         "total": "ratio",
+         "of": [
+          "submitted",
+          "assigned"
+         ]
+        }
+       ],
+       "chart": {
+        "label": "cycle",
+        "value": "completion_pct"
+       }
+      },
+      {
+       "key": "enps_trend",
+       "group": "performance",
+       "filters": [],
+       "columns": [
+        {
+         "key": "survey",
+         "type": "string"
+        },
+        {
+         "key": "closed_on",
+         "type": "date"
+        },
+        {
+         "key": "responses",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "enps",
+         "type": "number",
+         "total": "none"
+        }
+       ],
+       "chart": {
+        "label": "closed_on",
+        "value": "enps"
+       }
+      },
+      {
+       "key": "mood_trend",
+       "group": "performance",
+       "filters": [
+        "weeks",
+        "branch_id"
+       ],
+       "columns": [
+        {
+         "key": "week",
+         "type": "date"
+        },
+        {
+         "key": "respondents",
+         "type": "number",
+         "total": "none"
+        },
+        {
+         "key": "average",
+         "type": "number",
+         "total": "avg-weighted",
+         "weight": "respondents"
+        }
+       ],
+       "chart": {
+        "label": "week",
+        "value": "average"
+       }
+      }
+     ]
+    },
+    {
+     "group": "recruiting",
+     "reports": [
+      {
+       "key": "recruiting_funnel",
+       "group": "recruiting",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "stage",
+         "type": "string"
+        },
+        {
+         "key": "applications",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "stage",
+        "value": "applications"
+       }
+      },
+      {
+       "key": "time_to_hire",
+       "group": "recruiting",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "vacancy",
+         "type": "string"
+        },
+        {
+         "key": "hires",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "avg_days",
+         "type": "number",
+         "total": "avg-weighted",
+         "weight": "hires"
+        },
+        {
+         "key": "median_days",
+         "type": "number",
+         "total": "none"
+        }
+       ],
+       "chart": {
+        "label": "vacancy",
+        "value": "avg_days"
+       }
+      },
+      {
+       "key": "source_effectiveness",
+       "group": "recruiting",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "source",
+         "type": "string"
+        },
+        {
+         "key": "candidates",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "hired",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "hire_rate_pct",
+         "type": "percent",
+         "total": "ratio",
+         "of": [
+          "hired",
+          "candidates"
+         ]
+        }
+       ],
+       "chart": {
+        "label": "source",
+        "value": "candidates"
+       }
+      },
+      {
+       "key": "channel_effectiveness",
+       "group": "recruiting",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "channel",
+         "type": "string"
+        },
+        {
+         "key": "type",
+         "type": "string"
+        },
+        {
+         "key": "candidates",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "applications",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "advanced",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "hired",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "conversion_pct",
+         "type": "percent",
+         "total": "ratio",
+         "of": [
+          "hired",
+          "candidates"
+         ]
+        },
+        {
+         "key": "cost",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "cost_per_hire",
+         "type": "number",
+         "total": "ratio",
+         "of": [
+          "cost",
+          "hired"
+         ]
+        }
+       ],
+       "chart": {
+        "label": "channel",
+        "value": "candidates"
+       }
+      },
+      {
+       "key": "reject_reasons",
+       "group": "recruiting",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "reason",
+         "type": "string"
+        },
+        {
+         "key": "rejections",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "reason",
+        "value": "rejections"
+       }
+      },
+      {
+       "key": "recruiter_touches",
+       "group": "recruiting",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "recruiter",
+         "type": "string"
+        },
+        {
+         "key": "channel",
+         "type": "string"
+        },
+        {
+         "key": "touches",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "via_product",
+         "type": "number",
+         "total": "sum"
+        }
+       ],
+       "chart": {
+        "label": "recruiter",
+        "value": "touches"
+       }
+      },
+      {
+       "key": "script_scores",
+       "group": "recruiting",
+       "filters": [
+        "from",
+        "to"
+       ],
+       "columns": [
+        {
+         "key": "recruiter",
+         "type": "string"
+        },
+        {
+         "key": "evaluations",
+         "type": "number",
+         "total": "sum"
+        },
+        {
+         "key": "avg_score",
+         "type": "number",
+         "total": "avg-weighted",
+         "weight": "evaluations"
+        },
+        {
+         "key": "next_step_fixed_pct",
+         "type": "percent",
+         "total": "avg-weighted",
+         "weight": "evaluations"
+        }
+       ],
+       "chart": {
+        "label": "recruiter",
+        "value": "avg_score"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "GET /api/reports/catalog/desk_sla": {
+  "status": 200,
+  "body": {
+   "data": {
+    "report": {
+     "key": "desk_sla",
+     "group": "general",
+     "filters": [
+      "from",
+      "to"
+     ],
+     "columns": [
+      {
+       "key": "category",
+       "type": "string"
+      },
+      {
+       "key": "cases",
+       "type": "number",
+       "total": "sum"
+      },
+      {
+       "key": "open",
+       "type": "number",
+       "total": "sum"
+      },
+      {
+       "key": "first_response_breached",
+       "type": "number",
+       "total": "sum"
+      },
+      {
+       "key": "resolve_breached",
+       "type": "number",
+       "total": "sum"
+      },
+      {
+       "key": "breached_pct",
+       "type": "percent",
+       "total": "none"
+      }
+     ],
+     "chart": {
+      "label": "category",
+      "value": "cases"
+     }
+    },
+    "filters": [],
+    "rows": [
+     {
+      "category": "ІТ та доступи [ТЕСТ]",
+      "cases": 15,
+      "open": 3,
+      "first_response_breached": 4,
+      "resolve_breached": 3,
+      "breached_pct": 46.7
+     },
+     {
+      "category": "Довідки та документи [ТЕСТ]",
+      "cases": 15,
+      "open": 3,
+      "first_response_breached": 4,
+      "resolve_breached": 9,
+      "breached_pct": 60
+     },
+     {
+      "category": "Зарплата [ТЕСТ]",
+      "cases": 15,
+      "open": 3,
+      "first_response_breached": 4,
+      "resolve_breached": 3,
+      "breached_pct": 40
+     }
+    ],
+    "totals": {
+     "category": null,
+     "cases": 45,
+     "open": 9,
+     "first_response_breached": 12,
+     "resolve_breached": 15,
+     "breached_pct": null
+    }
+   }
+  }
+ },
+ "GET /api/reports/funnel?from=2026-09-02&to=2026-10-01": {
+  "status": 200,
+  "body": {
+   "data": {
+    "range": {
+     "from": "2026-09-02",
+     "to": "2026-10-01"
+    },
+    "rows": [
+     {
+      "vacancy_id": 4,
+      "vacancy_title": "SMM-менеджер [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Поліщук Євген [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 2,
+      "stage_name": "Первинний контакт",
+      "stage_kind": "attract",
+      "position": 2,
+      "count": 1
+     },
+     {
+      "vacancy_id": 4,
+      "vacancy_title": "SMM-менеджер [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Поліщук Євген [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 7,
+      "stage_name": "Вийшов на роботу",
+      "stage_kind": "hire",
+      "position": 7,
+      "count": 2
+     },
+     {
+      "vacancy_id": 3,
+      "vacancy_title": "Адміністратор філії [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Кравченко Софія [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 8,
+      "stage_name": "Відмова",
+      "stage_kind": "closed",
+      "position": 8,
+      "count": 3
+     },
+     {
+      "vacancy_id": 6,
+      "vacancy_title": "Бухгалтер [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Коваленко Дмитро [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 1,
+      "stage_name": "Новий відгук",
+      "stage_kind": "attract",
+      "position": 1,
+      "count": 1
+     },
+     {
+      "vacancy_id": 6,
+      "vacancy_title": "Бухгалтер [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Коваленко Дмитро [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 2,
+      "stage_name": "Первинний контакт",
+      "stage_kind": "attract",
+      "position": 2,
+      "count": 1
+     },
+     {
+      "vacancy_id": 6,
+      "vacancy_title": "Бухгалтер [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Коваленко Дмитро [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 3,
+      "stage_name": "Співбесіда",
+      "stage_kind": "select",
+      "position": 3,
+      "count": 1
+     },
+     {
+      "vacancy_id": 2,
+      "vacancy_title": "Викладач англійської [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Коваленко Дмитро [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 2,
+      "stage_name": "Первинний контакт",
+      "stage_kind": "attract",
+      "position": 2,
+      "count": 2
+     },
+     {
+      "vacancy_id": 8,
+      "vacancy_title": "Викладач програмування [ТЕСТ]",
+      "vacancy_status": "paused",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Поліщук Євген [ТЕСТ]",
+      "opened_at": null,
+      "stage_id": 1,
+      "stage_name": "Новий відгук",
+      "stage_kind": "attract",
+      "position": 1,
+      "count": 1
+     },
+     {
+      "vacancy_id": 8,
+      "vacancy_title": "Викладач програмування [ТЕСТ]",
+      "vacancy_status": "paused",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Поліщук Євген [ТЕСТ]",
+      "opened_at": null,
+      "stage_id": 2,
+      "stage_name": "Первинний контакт",
+      "stage_kind": "attract",
+      "position": 2,
+      "count": 1
+     },
+     {
+      "vacancy_id": 7,
+      "vacancy_title": "Менеджер з продажу (вечірня зміна) [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Кравченко Софія [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 8,
+      "stage_name": "Відмова",
+      "stage_kind": "closed",
+      "position": 8,
+      "count": 3
+     },
+     {
+      "vacancy_id": 1,
+      "vacancy_title": "Менеджер з продажу [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Лисенко Анна [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 2,
+      "stage_name": "Первинний контакт",
+      "stage_kind": "attract",
+      "position": 2,
+      "count": 2
+     },
+     {
+      "vacancy_id": 1,
+      "vacancy_title": "Менеджер з продажу [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Лисенко Анна [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 4,
+      "stage_name": "Зустріч у філії",
+      "stage_kind": "select",
+      "position": 4,
+      "count": 1
+     },
+     {
+      "vacancy_id": 5,
+      "vacancy_title": "Методист [ТЕСТ]",
+      "vacancy_status": "open",
+      "branch_name": "Тестовий філіал",
+      "recruiter_name": "Лисенко Анна [ТЕСТ]",
+      "opened_at": "2026-10-01",
+      "stage_id": 1,
+      "stage_name": "Новий відгук",
+      "stage_kind": "attract",
+      "position": 1,
+      "count": 2
+     }
+    ],
+    "totals": {
+     "total": 21
+    }
+   }
+  }
+ },
+ "GET /api/reports/reject-reasons?from=2026-09-02&to=2026-10-01": {
+  "status": 200,
+  "body": {
+   "data": {
+    "range": {
+     "from": "2026-09-02",
+     "to": "2026-10-01"
+    },
+    "rows": [
+     {
+      "reject_reason_id": 2,
+      "name": "Відмовився сам",
+      "count": 2
+     },
+     {
+      "reject_reason_id": 4,
+      "name": "Не влаштували умови",
+      "count": 2
+     },
+     {
+      "reject_reason_id": 1,
+      "name": "Не підійшов за досвідом",
+      "count": 2
+     },
+     {
+      "reject_reason_id": 6,
+      "name": "Інше",
+      "count": 1
+     },
+     {
+      "reject_reason_id": 5,
+      "name": "Не прийшов на зустріч",
+      "count": 1
+     }
+    ],
+    "totals": {
+     "total": 8
+    }
+   }
+  }
+ },
+ "GET /api/reports/saved": {
+  "status": 200,
+  "body": {
+   "data": []
+  }
+ },
+ "GET /api/reports/sources?from=2026-09-02&to=2026-10-01": {
+  "status": 200,
+  "body": {
+   "data": {
+    "range": {
+     "from": "2026-09-02",
+     "to": "2026-10-01"
+    },
+    "rows": [
+     {
+      "source": "djinni",
+      "candidates": 1,
+      "hired": 0
+     },
+     {
+      "source": "manual",
+      "candidates": 1,
+      "hired": 0
+     },
+     {
+      "source": "meta_ads",
+      "candidates": 3,
+      "hired": 0
+     },
+     {
+      "source": "referral",
+      "candidates": 1,
+      "hired": 0
+     },
+     {
+      "source": "robota_ua",
+      "candidates": 5,
+      "hired": 1
+     },
+     {
+      "source": "site",
+      "candidates": 5,
+      "hired": 1
+     },
+     {
+      "source": "work_ua",
+      "candidates": 5,
+      "hired": 0
+     }
+    ],
+    "totals": {
+     "candidates": 21,
+     "hired": 2
+    }
+   }
+  }
+ },
+ "GET /api/reports/touches?from=2026-09-02&to=2026-10-01": {
+  "status": 200,
+  "body": {
+   "data": {
+    "range": {
+     "from": "2026-09-02",
+     "to": "2026-10-01"
+    },
+    "rows": [
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "call",
+      "via_product": false,
+      "count": 6
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "call",
+      "via_product": true,
+      "count": 2
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "email",
+      "via_product": false,
+      "count": 3
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "email",
+      "via_product": true,
+      "count": 3
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "meeting",
+      "via_product": true,
+      "count": 8
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "note",
+      "via_product": true,
+      "count": 6
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "telegram",
+      "via_product": false,
+      "count": 3
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "telegram",
+      "via_product": true,
+      "count": 5
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "viber",
+      "via_product": false,
+      "count": 1
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "viber",
+      "via_product": true,
+      "count": 1
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "whatsapp",
+      "via_product": false,
+      "count": 5
+     },
+     {
+      "author_id": 108,
+      "author_name": "Коваленко Дмитро [ТЕСТ]",
+      "channel": "whatsapp",
+      "via_product": true,
+      "count": 4
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "call",
+      "via_product": false,
+      "count": 1
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "call",
+      "via_product": true,
+      "count": 5
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "email",
+      "via_product": false,
+      "count": 3
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "email",
+      "via_product": true,
+      "count": 3
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "meeting",
+      "via_product": true,
+      "count": 6
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "note",
+      "via_product": true,
+      "count": 7
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "telegram",
+      "via_product": false,
+      "count": 6
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "telegram",
+      "via_product": true,
+      "count": 1
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "viber",
+      "via_product": true,
+      "count": 1
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "whatsapp",
+      "via_product": false,
+      "count": 3
+     },
+     {
+      "author_id": 109,
+      "author_name": "Кравченко Софія [ТЕСТ]",
+      "channel": "whatsapp",
+      "via_product": true,
+      "count": 4
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "call",
+      "via_product": false,
+      "count": 5
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "call",
+      "via_product": true,
+      "count": 2
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "email",
+      "via_product": false,
+      "count": 3
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "email",
+      "via_product": true,
+      "count": 5
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "meeting",
+      "via_product": true,
+      "count": 6
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "note",
+      "via_product": true,
+      "count": 6
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "telegram",
+      "via_product": false,
+      "count": 3
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "telegram",
+      "via_product": true,
+      "count": 4
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "viber",
+      "via_product": true,
+      "count": 1
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "whatsapp",
+      "via_product": false,
+      "count": 4
+     },
+     {
+      "author_id": 107,
+      "author_name": "Лисенко Анна [ТЕСТ]",
+      "channel": "whatsapp",
+      "via_product": true,
+      "count": 2
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "call",
+      "via_product": false,
+      "count": 2
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "call",
+      "via_product": true,
+      "count": 7
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "email",
+      "via_product": false,
+      "count": 1
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "email",
+      "via_product": true,
+      "count": 5
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "meeting",
+      "via_product": true,
+      "count": 6
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "note",
+      "via_product": true,
+      "count": 9
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "telegram",
+      "via_product": false,
+      "count": 3
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "telegram",
+      "via_product": true,
+      "count": 4
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "whatsapp",
+      "via_product": false,
+      "count": 2
+     },
+     {
+      "author_id": 110,
+      "author_name": "Поліщук Євген [ТЕСТ]",
+      "channel": "whatsapp",
+      "via_product": true,
+      "count": 4
+     }
+    ],
+    "totals": {
+     "total": 171,
+     "via_product": 117,
+     "captured": 54
+    }
+   }
+  }
+ }
+}

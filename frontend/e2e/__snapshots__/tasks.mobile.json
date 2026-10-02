@@ -1,0 +1,32 @@
+{
+ "path": "/tasks",
+ "state": null,
+ "headings": [
+  "Мої задачі"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "link \"Огляд\" -> /",
+  "radio \"Воркфлоу\"",
+  "radio \"Документи\"",
+  "radio \"Заявки на підбір\"",
+  "radio \"Звернення\"",
+  "radio \"Опитування\"",
+  "radio \"Прострочені\"",
+  "radio \"Рекрутинг\"",
+  "radio \"Сьогодні\"",
+  "radio \"Табель\"",
+  "radio \"Усі строки\" [checked]",
+  "radio \"Усі\" [checked]",
+  "switch \"Показати виконані\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "listitem": 1
+ }
+}

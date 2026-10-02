@@ -1,0 +1,50 @@
+{
+ "path": "/reports/catalog/desk_sla",
+ "state": null,
+ "headings": [
+  "SLA звернень"
+ ],
+ "landmarks": [
+  "complementary \"\"",
+  "main \"\"",
+  "navigation \"Головне меню\""
+ ],
+ "interactive": [
+  "button \"CSV\"",
+  "button \"Open calendar\"",
+  "button \"Open calendar\"",
+  "button \"Адміністрування 9 нових\"",
+  "button \"Застосувати\"",
+  "button \"Зберегти\"",
+  "button \"Люди 70 нових\"",
+  "button \"Меню користувача\"",
+  "button \"Продуктивність\"",
+  "button \"Рекрутинг 2 нових\"",
+  "button \"Сервіси\" [expanded]",
+  "link \"Safe Speak\" -> /safe-speak",
+  "link \"SinHRM\" -> /",
+  "link \"База знань\" -> /knowledge",
+  "link \"Довідка\" -> /docs",
+  "link \"Каталог звітів\" -> /reports/catalog",
+  "link \"Конструктор звітів\" -> /reports/builder",
+  "link \"Мої задачі\" -> /tasks",
+  "link \"Мої звернення\" -> /desk",
+  "link \"Огляд\" -> /",
+  "link \"← Каталог звітів\" -> /reports/catalog",
+  "textbox \"З\"",
+  "textbox \"По\""
+ ],
+ "columns": [
+  "SLA порушено, %",
+  "Вирішення із запізненням",
+  "Відкриті",
+  "Звернення",
+  "Категорія",
+  "Перша відповідь із запізненням"
+ ],
+ "counts": {
+  "cell": 24,
+  "img": 5,
+  "row": 5
+ }
+}
