@@ -215,6 +215,7 @@ html {
   // outlined / text / tonal / icon button a 48px hit area (density 0); fields are 52px; menu items are 48px tall.
   // Measured at 390px over 12 pages: buttons ≥ 48, selects ≥ 44, toggles 44, interactive chips 44.
   @media (max-width: 600px) {
+    --app-card-pad: 1rem;
     @include mat.button-toggle-overrides((height: 44px));
     // The paginator's page-size select is a compact 40px field by default → 44px on phones.
     @include mat.paginator-overrides((form-field-container-height: 44px, form-field-container-vertical-padding: 10px));
@@ -254,6 +255,7 @@ html {
   // ---- App tokens on top of Material system variables ----
   --app-gap: 1.5rem;
   --app-radius: 10px; // cards, panels
+  --app-card-pad: 1.1rem 1.25rem; // inner padding of a .panel card (1rem on phones, see below)
   --app-radius-sm: 8px; // small elements, inputs
   --app-radius-pill: 999px; // buttons, chips, search
   --app-border-w: 1.5px; // line language: borders instead of shadows
