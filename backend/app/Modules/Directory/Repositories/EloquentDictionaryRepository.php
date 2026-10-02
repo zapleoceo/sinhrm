@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Directory\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\Directory\Contracts\DictionaryRepository;
 use App\Modules\Directory\DTO\DictionaryFilter;
 use App\Modules\Directory\Enums\DictionarySort;
@@ -23,7 +24,7 @@ final class EloquentDictionaryRepository implements DictionaryRepository
             ->when($branches, fn (Builder $query) => $query->with('city'))
             // !== null, not truthy: a search for "0" is a real search.
             ->when($filter->q !== null, function (Builder $query) use ($filter): void {
-                $like = '%'.addcslashes(mb_strtolower((string) $filter->q), '%_\\').'%';
+                $like = Like::contains(mb_strtolower((string) $filter->q));
                 $query->whereRaw('lower(name) like ?', [$like]);
             })
             ->when($filter->status, fn (Builder $query, DirectoryStatus $s) => $query->where('status', $s->value))

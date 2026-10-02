@@ -9,6 +9,7 @@ use App\Modules\Assets\Enums\AssetStatus;
 use App\Modules\Assets\Models\Asset;
 use App\Modules\Assets\Models\AssetAssignment;
 use App\Modules\Assets\Models\AssetType;
+use App\Modules\Core\Support\Database\Like;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -43,7 +44,7 @@ final class EloquentAssetRepository implements AssetRepository
             ->when(isset($filter['type_id']), static fn (Builder $b) => $b->where('type_id', $filter['type_id']))
             ->when(isset($filter['employee_id']), static fn (Builder $b) => $b->where('employee_id', $filter['employee_id']))
             ->when($q !== '', static function (Builder $b) use ($q): void {
-                $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $q).'%';
+                $pattern = Like::contains($q, Like::PORTABLE);
                 $b->where(static fn (Builder $w) => $w
                     ->whereRaw("lower(inventory_number) like ? escape '!'", [$pattern])
                     ->orWhereRaw("lower(name) like ? escape '!'", [$pattern])

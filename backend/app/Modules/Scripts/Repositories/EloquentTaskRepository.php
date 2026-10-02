@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Scripts\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\Core\Support\UserTime;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
@@ -111,9 +112,7 @@ final class EloquentTaskRepository implements TaskRepository
 
     public function closeByRulePrefix(string $prefix, Carbon $at): int
     {
-        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $prefix);
-
-        return Task::query()->whereNull('done_at')->whereRaw("rule_key like ? escape '!'", [$escaped.'%'])
+        return Task::query()->whereNull('done_at')->whereRaw("rule_key like ? escape '!'", [Like::startsWith($prefix, Like::PORTABLE)])
             ->update(['done_at' => $at, 'updated_at' => Carbon::now()]);
     }
 

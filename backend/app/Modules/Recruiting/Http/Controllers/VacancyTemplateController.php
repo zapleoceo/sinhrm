@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Http\Requests\SaveVacancyTemplateRequest;
 use App\Modules\Recruiting\Models\VacancyTemplate;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Gate;
  */
 final class VacancyTemplateController
 {
-    use Actor;
+    use ResolvesActor;
 
     public function index(Request $request): JsonResponse
     {

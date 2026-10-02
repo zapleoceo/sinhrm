@@ -102,4 +102,21 @@ final class KnowledgeApiTest extends TestCase
             ->assertJsonPath('data.my_vote', true)->assertJsonPath('data.votes', ['helpful' => 1, 'not_helpful' => 0])
             ->assertJsonPath('data.body_md', null);
     }
+
+    /** Regression guard for Core Like::contains(..., Like::PORTABLE) with ESCAPE '!': %, _ and ! match only themselves. */
+    public function test_search_treats_wildcards_and_escape_char_literally(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $reader = $this->login(UserRole::Viewer);
+        foreach (['Bonus 50% rule', 'Bonus 500 rule', 'Form a_b guide', 'Form axb guide', 'Say hi!_now', 'Say hi!xnow'] as $title) {
+            $this->actingAs($admin)->postJson('/api/knowledge/articles', ['title' => $title, 'body_md' => 'Text', 'status' => 'published'])->assertCreated();
+        }
+
+        $search = fn (string $q): array => array_column((array) $this->actingAs($reader)->getJson('/api/knowledge/articles?q='.urlencode($q))->assertOk()->json('data'), 'title');
+        $this->assertSame(['Bonus 50% rule'], $search('50%'));
+        $this->assertSame(['Form a_b guide'], $search('a_b'));
+        $this->assertSame(['Say hi!_now'], $search('!_'));
+        // A plain query still matches as a substring (case-insensitive).
+        $this->assertEqualsCanonicalizing(['Bonus 50% rule', 'Bonus 500 rule'], $search('bonus'));
+    }
 }

@@ -52,6 +52,34 @@ final class CompensationAndBulkTest extends TestCase
         $this->assertSame(2, EmployeeCompensation::query()->where('employee_id', $worker->id)->count());
     }
 
+    public function test_hr_reads_compensation_history_and_current(): void
+    {
+        Carbon::setTestNow('2026-10-05 10:00:00');
+        $hr = $this->login(UserRole::HrManager);
+        $worker = $this->org()['worker'];
+        $url = "/api/people/{$worker->id}/compensation";
+
+        $this->actingAs($hr)->getJson($url)->assertOk()->assertExactJson(['data' => ['current' => null, 'history' => []]]);
+
+        $this->actingAs($hr)->postJson($url, ['amount' => 30000, 'currency' => 'UAH', 'period' => 'month', 'effective_on' => '2026-01-01', 'reason' => 'hire'])->assertCreated();
+        $this->actingAs($hr)->postJson($url, ['amount' => 35000, 'currency' => 'UAH', 'period' => 'month', 'effective_on' => '2026-12-01'])->assertCreated();
+
+        $this->actingAs($this->login(UserRole::Admin))->getJson($url)->assertOk()
+            ->assertJsonPath('data.current.amount', '30000.00')
+            ->assertJsonPath('data.current.effective_on', '2026-01-01')
+            ->assertJsonPath('data.current.reason', 'hire')
+            ->assertJsonPath('data.current.current', true)
+            ->assertJsonCount(2, 'data.history')
+            ->assertJsonPath('data.history.0.effective_on', '2026-12-01')
+            ->assertJsonPath('data.history.0.amount', '35000.00')
+            ->assertJsonPath('data.history.0.current', false)
+            ->assertJsonPath('data.history.1.effective_on', '2026-01-01')
+            ->assertJsonPath('data.history.1.current', true);
+
+        $this->actingAs($hr)->getJson('/api/people/999999/compensation')->assertNotFound();
+        Carbon::setTestNow();
+    }
+
     public function test_gender_is_hr_only(): void
     {
         $admin = $this->login(UserRole::Admin);

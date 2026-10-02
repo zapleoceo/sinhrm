@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\People\Http\Requests\ListPeopleRequest;
 use App\Modules\People\Http\Requests\OrgChartRequest;
 use App\Modules\People\Http\Requests\SaveEmployeeRequest;
@@ -20,6 +20,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 /** Directory, profile, admin edits, org chart. Visibility tiers: EmployeeResource + PeopleScope. */
 final class PeopleController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly EmployeeService $service,
         private readonly PeopleScope $scope,
@@ -70,13 +72,5 @@ final class PeopleController
         }
 
         return new JsonResponse(['data' => $this->service->orgChart($request->branchId(), $root)]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

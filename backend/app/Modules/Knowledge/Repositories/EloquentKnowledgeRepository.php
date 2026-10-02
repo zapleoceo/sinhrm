@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Knowledge\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\Knowledge\Contracts\KnowledgeRepository;
 use App\Modules\Knowledge\Contracts\PublishedArticles;
 use App\Modules\Knowledge\Enums\ArticleStatus;
@@ -43,7 +44,7 @@ final class EloquentKnowledgeRepository implements KnowledgeRepository, Publishe
         if ($q !== null && $q !== '') {
             $operator = (new KbArticle)->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
             // "!" escapes the wildcards: ESCAPE works the same on Postgres and SQLite (SQLite has no default escape).
-            $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $q).'%';
+            $pattern = Like::contains($q, Like::PORTABLE);
             $query->where(static fn (Builder $w) => $w
                 ->whereRaw("title {$operator} ? ESCAPE '!'", [$pattern])
                 ->orWhereRaw("body_md {$operator} ? ESCAPE '!'", [$pattern]));

@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Workflows\Providers;
 
-use App\Models\User;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\People\Events\EmployeeHired;
 use App\Modules\People\Events\EmployeeTerminated;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\Scripts\Events\TaskCompleted;
 use App\Modules\Workflows\Contracts\AssigneeDirectory;
 use App\Modules\Workflows\Contracts\WorkflowRunRepository;
@@ -34,7 +33,6 @@ use App\Modules\Workflows\Services\WorkflowTickJob;
 use App\Modules\Workflows\Support\ExecutorRegistry;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Workflows: onboarding/offboarding templates with steps, runs (snapshots), step executors (Open/Closed, tagged),
@@ -83,7 +81,7 @@ final class WorkflowsServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(PeopleScope::class)->isAdmin($user));
+        $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
 
         Event::listen(EmployeeHired::class, StartOnboardingWorkflows::class);
         Event::listen(EmployeeTerminated::class, StartOffboardingWorkflows::class);

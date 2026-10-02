@@ -15,7 +15,7 @@ use App\Modules\People\Providers\PeopleServiceProvider;
 use Illuminate\Support\Facades\Route;
 
 // /api/* of the People module. Reading the directory: any active user; job/PII tiers: PeopleScope;
-// writing employees: gate people-manage (superadmin, admin — they act as HR). No DELETE: people are terminated.
+// writing employees: gate people-manage (superadmin, admin, hr_manager — they act as HR). No DELETE: people are terminated.
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('people', [PeopleController::class, 'index'])->name('people.index');
     // Person picker: search by name / id -> name, directory-level fields only (PersonPicker).

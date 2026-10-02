@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Scripts\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Touchpoint;
 use App\Modules\Recruiting\Services\RecruitingScope;
@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Gate;
 /** Scripts inside the candidate card: filled message templates and the evaluation of a touch. */
 final class CandidateScriptController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly TemplateService $templates,
         private readonly EvaluationService $evaluations,
@@ -45,13 +47,5 @@ final class CandidateScriptController
 
         // Always 200, also when the evaluation was just computed by the lazy fallback.
         return (new EvaluationResource($this->evaluations->forTouchpoint($touchpoint)))->response()->setStatusCode(200);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

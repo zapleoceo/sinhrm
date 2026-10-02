@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Directory\Http\Requests;
 
+use App\Modules\Core\Http\Requests\Concerns\Paginates;
 use App\Modules\Directory\DTO\DictionaryFilter;
 use App\Modules\Directory\Enums\DictionarySort;
 use App\Modules\Directory\Enums\DictionaryType;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rule;
 
 final class ListDictionaryRequest extends FormRequest
 {
+    use Paginates;
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -29,7 +32,7 @@ final class ListDictionaryRequest extends FormRequest
             'dir' => ['nullable', Rule::in(['asc', 'desc'])],
             // Query strings arrive as strings ("50"): 'integer' accepts numeric strings, the DTO casts.
             'page' => ['nullable', 'integer', 'min:1'],
-            'perPage' => ['nullable', 'integer', 'between:1,200'],
+            'perPage' => $this->perPageRules(),
         ];
     }
 
@@ -38,7 +41,7 @@ final class ListDictionaryRequest extends FormRequest
         return new DictionaryFilter(
             q: $this->filled('q') ? $this->string('q')->trim()->toString() : null,
             status: $this->enum('status', DirectoryStatus::class),
-            perPage: $this->integer('perPage', 50),
+            perPage: $this->perPageOr(),
             cityId: $this->filled('city_id') ? $this->integer('city_id') : null,
             sort: $this->enum('sort', DictionarySort::class) ?? DictionarySort::Name,
             descending: $this->input('dir') === 'desc',

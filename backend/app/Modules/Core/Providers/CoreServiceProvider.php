@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Providers;
 
-use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\HealthCheck;
 use App\Modules\Core\Contracts\MigrationRunner;
@@ -21,7 +20,6 @@ use App\Modules\Core\Services\ModuleRegistry;
 use App\Modules\Core\Services\NavBadgeService;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Core\Support\NeonConnectionConfig;
-use Illuminate\Support\Facades\Gate;
 
 final class CoreServiceProvider extends ModuleServiceProvider
 {
@@ -63,6 +61,6 @@ final class CoreServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE_MODULES, fn (User $user): bool => $user->isActive() && $user->hasRole(UserRole::Superadmin->value));
+        $this->defineRoleGate(self::MANAGE_MODULES, [UserRole::Superadmin]);
     }
 }

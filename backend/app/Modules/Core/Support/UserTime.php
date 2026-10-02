@@ -36,8 +36,23 @@ final class UserTime
      */
     public static function toStorage(Carbon $moment): Carbon
     {
+        return $moment->copy()->setTimezone(self::storageTimezone());
+    }
+
+    /**
+     * The user's calendar date ("today" in the user's zone) at midnight of the storage zone: the drop-in for
+     * Carbon::today() wherever the value is a date — a date column, toDateString(), a comparison with a date cast.
+     * Between midnight in the user's zone and midnight UTC, Carbon::today() is still yesterday; this is already today.
+     */
+    public static function today(?Carbon $now = null): Carbon
+    {
+        return Carbon::parse(self::now($now)->toDateString(), self::storageTimezone());
+    }
+
+    private static function storageTimezone(): string
+    {
         $tz = config('app.timezone');
 
-        return $moment->copy()->setTimezone(is_string($tz) && $tz !== '' ? $tz : 'UTC');
+        return is_string($tz) && $tz !== '' ? $tz : 'UTC';
     }
 }

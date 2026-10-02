@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Channels\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Channels\Contracts\MessageSender;
 use App\Modules\Channels\Enums\ChannelMode;
 use App\Modules\Channels\Http\Requests\SendMessageRequest;
@@ -13,6 +12,7 @@ use App\Modules\Channels\Services\CallService;
 use App\Modules\Channels\Services\ChannelContext;
 use App\Modules\Channels\Services\MessageService;
 use App\Modules\Channels\Support\ChannelRegistry;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\GoogleWorkspace\Contracts\Mailer;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
 use App\Modules\GoogleWorkspace\Enums\MailerState;
@@ -20,11 +20,12 @@ use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Http\Resources\TouchpointResource;
 use App\Modules\Recruiting\Models\Candidate;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /** Sending from the candidate card and the channel availability the card needs. */
 final class ChannelMessageController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly MessageService $messages,
         private readonly CallService $calls,
@@ -62,13 +63,5 @@ final class ChannelMessageController
         $key = $this->calls->start($this->actor($request), $candidate);
 
         return new JsonResponse(['data' => ['status' => 'requested', 'integration' => $key]], 202);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Pulse\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Pulse\Http\Requests\ReportRequest;
 use App\Modules\Pulse\Http\Requests\RespondRequest;
 use App\Modules\Pulse\Models\SurveyWave;
@@ -20,6 +20,8 @@ use Illuminate\Http\Response;
  */
 final class WaveController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly ResponseService $responses, private readonly SurveyService $surveys) {}
 
     public function mine(Request $request): JsonResponse
@@ -88,13 +90,5 @@ final class WaveController
             'ends_at' => $wave->ends_at->toIso8601String(),
             'status' => $wave->status->value,
         ];
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

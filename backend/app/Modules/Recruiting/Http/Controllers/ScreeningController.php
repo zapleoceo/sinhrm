@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Http\Requests\ScreenApplicationRequest;
 use App\Modules\Recruiting\Http\Resources\ScreeningResource;
 use App\Modules\Recruiting\Models\Application;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 /** AI screening in the candidate card (tz6). Refusals of the Ai module render as {code} (ai_disabled, ai_budget_exceeded…). */
 final class ScreeningController
 {
-    use Actor;
+    use ResolvesActor;
 
     public function __construct(private readonly ScreeningService $service) {}
 

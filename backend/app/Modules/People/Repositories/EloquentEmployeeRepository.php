@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\Enums\EmployeeSort;
@@ -132,7 +133,7 @@ final class EloquentEmployeeRepository implements EmployeeRepository
     /** "%term%" for LIKE: lower-cased, with % _ \ escaped (the term is a binding, never SQL). */
     private static function like(string $term): string
     {
-        return '%'.addcslashes(mb_strtolower($term), '%_\\').'%';
+        return Like::contains(mb_strtolower($term));
     }
 
     /**

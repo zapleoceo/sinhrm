@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Http\Requests;
 
+use App\Modules\Core\Http\Requests\Concerns\Paginates;
 use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\Enums\EmployeeSort;
 use App\Modules\People\Enums\EmployeeStatus;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 final class ListPeopleRequest extends FormRequest
 {
+    use Paginates;
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -29,7 +32,7 @@ final class ListPeopleRequest extends FormRequest
             'status' => ['nullable', Rule::enum(EmployeeStatus::class)],
             'sort' => ['nullable', Rule::enum(EmployeeSort::class)],
             'dir' => ['nullable', Rule::in(['asc', 'desc'])],
-            'perPage' => ['nullable', 'integer', 'between:1,200'],
+            'perPage' => $this->perPageRules(),
         ];
     }
 
@@ -45,7 +48,7 @@ final class ListPeopleRequest extends FormRequest
             positionId: $id('position_id'),
             status: $this->enum('status', EmployeeStatus::class),
             managerId: $id('manager_id'),
-            perPage: $this->integer('perPage', 50),
+            perPage: $this->perPageOr(),
             name: $text('name'),
             contact: $text('contact'),
             manager: $text('manager'),

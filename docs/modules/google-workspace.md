@@ -170,6 +170,11 @@ e-mail / Telegram (глобально) — **matched**, иначе **created** (
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Состояние каждого сервиса Google — пилюля `.app-pill` (подключён ● good, ошибка ◆ warn, выключен — пунктирный ○), панели — общий `.panel`; предпросмотр импорта из Таблиц — шапка-подпись и строки на «треке» 1.5px, сохранённое сопоставление — зелёная «рельса» 4px. Тест вида — `features/google-workspace/google.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
+### Общие хелперы Core (2026-10-02)
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (`SheetsImportController`).
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
 ## Как проверить
 Бэкенд (Google везде подменён `Http::fake`, `Http::preventStrayRequests()`; все значения синтетические):
 - `tests/Feature/GoogleWorkspace/GoogleConnectTest` — 401/403; redirect: scopes, `offline`, `consent`, state в сессии,

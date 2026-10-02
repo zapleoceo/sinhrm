@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Privacy\Providers;
 
-use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\RetentionSource;
@@ -12,7 +11,6 @@ use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Privacy\Services\PersonalDataService;
 use App\Modules\Privacy\Services\RetentionJob;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Privacy: personal-data rights under Law of Ukraine No. 2297-VI — export and erase (anonymize) a candidate or a
@@ -44,7 +42,6 @@ final class PrivacyServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::MANAGE, static fn (User $user): bool => $user->isActive()
-            && $user->hasAnyRole(UserRole::valuesOf([UserRole::Superadmin, UserRole::Admin])));
+        $this->defineRoleGate(self::MANAGE, [UserRole::Superadmin, UserRole::Admin]);
     }
 }

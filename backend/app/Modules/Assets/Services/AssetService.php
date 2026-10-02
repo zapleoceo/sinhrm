@@ -11,6 +11,7 @@ use App\Modules\Assets\Exceptions\AssetException;
 use App\Modules\Assets\Models\Asset;
 use App\Modules\Assets\Models\AssetAssignment;
 use App\Modules\Assets\Models\AssetType;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Models\Employee;
 use Illuminate\Database\Eloquent\Collection;
@@ -96,7 +97,7 @@ final readonly class AssetService
             $this->assets->openAssignment([
                 'asset_id' => $locked->id,
                 'employee_id' => $employee->id,
-                'assigned_at' => ($on ?? Carbon::today())->toDateString(),
+                'assigned_at' => ($on ?? UserTime::today())->toDateString(),
                 'condition_out' => $condition,
                 'assigned_by' => $actor->id,
             ]);
@@ -114,7 +115,7 @@ final readonly class AssetService
             if ($locked->status !== AssetStatus::Assigned || ! $current instanceof AssetAssignment) {
                 throw AssetException::notAssigned();
             }
-            $returnedAt = $on ?? Carbon::today();
+            $returnedAt = $on ?? UserTime::today();
             if ($returnedAt->lt($current->assigned_at)) {
                 throw AssetException::returnBeforeAssign();
             }

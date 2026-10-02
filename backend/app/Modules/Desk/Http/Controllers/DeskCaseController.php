@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Desk\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
+use App\Modules\Core\Http\Responses\Download;
 use App\Modules\Desk\Http\Requests\CaseCommentRequest;
 use App\Modules\Desk\Http\Requests\OpenCaseRequest;
 use App\Modules\Desk\Http\Requests\QueueRequest;
@@ -17,11 +19,12 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Symfony\Component\HttpFoundation\HeaderUtils;
 
 /** Helpdesk cases: own cases for the employee, the queue for HR; thread, status, attachments. */
 final class DeskCaseController
 {
+    use ResolvesActor;
+
     public function __construct(private readonly DeskService $desk) {}
 
     public function mine(Request $request): JsonResponse
@@ -83,15 +86,8 @@ final class DeskCaseController
         $file = $this->desk->attachment($this->desk->findVisible($this->actor($request), $case), $attachment);
         $content = base64_decode($file->content, true);
         abort_if($content === false, 404);
-        $fallback = preg_replace('/[^A-Za-z0-9._-]+/', '_', $file->filename) ?: 'file';
 
-        return new Response($content, 200, [
-            'Content-Type' => $file->mime,
-            'Content-Length' => (string) $file->size,
-            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $file->filename, $fallback),
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'private, no-store',
-        ]);
+        return Download::file($content, $file->filename, $file->mime, $file->size);
     }
 
     /** @return array<string, mixed> */
@@ -106,13 +102,5 @@ final class DeskCaseController
     private function collection(Collection $cases, bool $hr): JsonResponse
     {
         return new JsonResponse(['data' => $cases->map(static fn (DeskCase $c): array => DeskCasePresenter::present($c, $hr))->values()->all()]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

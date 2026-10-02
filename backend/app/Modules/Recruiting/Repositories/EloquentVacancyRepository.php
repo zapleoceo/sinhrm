@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\DTO\VacancyFilter;
@@ -23,7 +24,7 @@ final class EloquentVacancyRepository implements VacancyRepository
         return $this->withCounts($this->scoped($scope)->with(self::RELATIONS))
             ->when($filter->active, fn (Builder $q) => $q->active())
             ->when($filter->q, function (Builder $q, string $term): void {
-                $q->whereRaw('lower(title) like ?', ['%'.addcslashes(mb_strtolower($term), '%_\\').'%']);
+                $q->whereRaw('lower(title) like ?', [Like::contains(mb_strtolower($term))]);
             })
             ->when($filter->status, fn (Builder $q, VacancyStatus $s) => $q->where('status', $s->value))
             ->when($filter->branchId, fn (Builder $q, int $id) => $q->where('branch_id', $id))

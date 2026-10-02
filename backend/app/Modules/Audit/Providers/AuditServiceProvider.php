@@ -33,7 +33,6 @@ use App\Modules\TimeOff\Models\LeaveRequest;
 use App\Modules\Workflows\Models\WorkflowTemplate;
 use Illuminate\Contracts\Foundation\Application as App;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 
 final class AuditServiceProvider extends ModuleServiceProvider
 {
@@ -88,8 +87,7 @@ final class AuditServiceProvider extends ModuleServiceProvider
     {
         parent::boot();
 
-        Gate::define(self::VIEW_AUDIT, fn (User $user): bool => $user->isActive()
-            && $user->hasRole(UserRole::Superadmin->value));
+        $this->defineRoleGate(self::VIEW_AUDIT, [UserRole::Superadmin]);
 
         $policy = $this->app->make(AuditPolicy::class);
         foreach (array_keys(self::TRACKED) as $model) {

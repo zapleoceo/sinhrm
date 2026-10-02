@@ -8,7 +8,7 @@ use App\Modules\Core\Support\UserTime;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
-/** The user's day vs the UTC storage day (config app.user_timezone), in winter (+02:00) and summer (+03:00). */
+/** The user's day (and "today") vs the UTC storage day (config app.user_timezone), in winter (+02:00) and summer (+03:00). */
 final class UserTimeTest extends TestCase
 {
     protected function tearDown(): void
@@ -47,6 +47,21 @@ final class UserTimeTest extends TestCase
         }
         $this->assertSame('2026-07-16', UserTime::now($now)->toDateString());
         $this->assertSame('UTC', $now->getTimezone()->getName());
+    }
+
+    public function test_today_is_the_users_date_at_storage_midnight(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+
+        // 22:30 UTC = 00:30 next day in Kyiv (winter, +02:00): Carbon::today() is still the 15th, the user's today is the 16th.
+        $late = Carbon::parse('2026-01-15 22:30:00', 'UTC');
+        $this->assertSame('2026-01-16 00:00:00 UTC', UserTime::today($late)->format('Y-m-d H:i:s e'));
+        // Midday: the same date as Carbon::today(), so a date column compares exactly as before.
+        Carbon::setTestNow('2026-07-15 12:00:00');
+        $this->assertTrue(UserTime::today()->equalTo(Carbon::today()));
+        // Summer (+03:00): from 21:00 UTC the user's day is already the next one.
+        $this->assertSame('2026-07-16', UserTime::today(Carbon::parse('2026-07-15 21:00:00', 'UTC'))->toDateString());
+        $this->assertSame('2026-07-15', UserTime::today(Carbon::parse('2026-07-15 20:59:59', 'UTC'))->toDateString());
     }
 
     public function test_the_spring_dst_day_is_23_hours_long(): void

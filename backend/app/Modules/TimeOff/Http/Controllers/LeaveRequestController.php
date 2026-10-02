@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Http\Requests\DecisionRequest;
 use App\Modules\People\Services\PeopleScope;
 use App\Modules\TimeOff\Exceptions\TimeOffException;
@@ -20,7 +21,6 @@ use App\Modules\TimeOff\Services\LeaveSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Carbon;
 
 /**
  * Leave requests: list in scope, preview, create (own; admin or a manager above may file for someone else),
@@ -28,6 +28,8 @@ use Illuminate\Support\Carbon;
  */
 final class LeaveRequestController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly LeaveRequestService $service,
         private readonly PeopleScope $scope,
@@ -105,7 +107,7 @@ final class LeaveRequestController
         $actor = $this->actor($request);
         $ctx = $this->scope->for($actor);
 
-        return LeaveRequestResource::for($this->service->cancel($actor, $ctx, $this->service->find($leaveRequest->id), Carbon::today()), $ctx);
+        return LeaveRequestResource::for($this->service->cancel($actor, $ctx, $this->service->find($leaveRequest->id), UserTime::today()), $ctx);
     }
 
     /** Pending requests the caller may decide (manager inbox; admins see all), oldest first. */
@@ -126,13 +128,5 @@ final class LeaveRequestController
             'data' => $calendar->calendar($ctx, $request->from(), $request->to(), $request->branchId()),
             'meta' => ['from' => $request->from()->toDateString(), 'to' => $request->to()->toDateString()],
         ]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

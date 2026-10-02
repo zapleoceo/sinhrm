@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Http\Requests\ApplyCandidateRequest;
 use App\Modules\Recruiting\Http\Requests\ListVacanciesRequest;
@@ -26,7 +27,7 @@ use Illuminate\Support\Facades\Gate;
 
 final class VacancyController
 {
-    use Actor;
+    use ResolvesActor;
 
     public function __construct(private readonly VacancyService $service) {}
 

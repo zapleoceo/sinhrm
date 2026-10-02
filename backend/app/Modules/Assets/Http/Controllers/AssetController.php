@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Assets\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Assets\Http\Requests\AssetMoveRequest;
 use App\Modules\Assets\Http\Requests\ListAssetsRequest;
 use App\Modules\Assets\Http\Requests\SaveAssetRequest;
@@ -14,6 +13,7 @@ use App\Modules\Assets\Models\Asset;
 use App\Modules\Assets\Models\AssetAssignment;
 use App\Modules\Assets\Models\AssetType;
 use App\Modules\Assets\Services\AssetService;
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\People\Services\EmployeeService;
 use App\Modules\People\Services\PeopleScope;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +25,8 @@ use Illuminate\Http\Request;
  */
 final class AssetController
 {
+    use ResolvesActor;
+
     public function __construct(
         private readonly AssetService $assets,
         private readonly EmployeeService $employees,
@@ -88,13 +90,5 @@ final class AssetController
 
         return new JsonResponse(['data' => $this->assets->historyOf($this->employees->find($employee))
             ->map(static fn (AssetAssignment $h): array => AssetPresenter::assignment($h, true))->values()->all()]);
-    }
-
-    private function actor(Request $request): User
-    {
-        $actor = $request->user();
-        assert($actor instanceof User);
-
-        return $actor;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Http\Controllers;
 
+use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Http\Requests\ClipCandidateRequest;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Services\ClipperService;
@@ -18,7 +19,7 @@ use Illuminate\Http\Response;
  */
 final class ExtensionController
 {
-    use Actor;
+    use ResolvesActor;
 
     public function __construct(
         private readonly ExtensionTokenService $tokens,
