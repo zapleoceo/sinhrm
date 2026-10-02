@@ -78,6 +78,9 @@
 `GET /api/assistant/transcriptions/{id}` (только владелец, 15 мин в кеше — `Ai/AssistantVoiceHandler`). Текст
 **вставляется в поле ввода** — пользователь правит и отправляет сам; тишина → `empty_transcript`. Аудио SinHRM не
 хранит (передаётся один раз под нейтральным именем `voice.<ext>`; брокер удаляет его по завершении задачи).
+Браузер даёт доступ к микрофону, только если заголовок SPA `Permissions-Policy` его разрешает: в `frontend/vercel.json`
+стоит `microphone=(self)` (до 02.10.2026 было `microphone=()`, и диктовка в проде не работала) —
+[architecture/observability.md](../architecture/observability.md).
 Лимит — 10 записей/мин на пользователя. У ключа проекта в брокере должна быть область `transcription`, иначе ответ
 `ai_provider_http_403` — **на живом брокере не проверялось**.
 
