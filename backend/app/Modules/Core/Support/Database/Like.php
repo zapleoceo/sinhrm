@@ -15,7 +15,7 @@ namespace App\Modules\Core\Support\Database;
  */
 final class Like
 {
-    public const string BACKSLASH = '\';
+    public const string BACKSLASH = '\\';
 
     public const string PORTABLE = '!';
 

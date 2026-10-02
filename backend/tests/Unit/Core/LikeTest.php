@@ -12,9 +12,9 @@ final class LikeTest extends TestCase
 {
     public function test_backslash_escaping_is_the_same_as_the_addcslashes_it_replaced(): void
     {
-        foreach (['plain', '50%', 'a_b', 'back\slash', '%_\', 'Іван_100%', ''] as $value) {
-            $this->assertSame(addcslashes($value, '%_\'), Like::escape($value), $value);
-            $this->assertSame('%'.addcslashes($value, '%_\').'%', Like::contains($value), $value);
+        foreach (['plain', '50%', 'a_b', 'back\\slash', '%_\\', 'Іван_100%', ''] as $value) {
+            $this->assertSame(addcslashes($value, '%_\\'), Like::escape($value), $value);
+            $this->assertSame('%'.addcslashes($value, '%_\\').'%', Like::contains($value), $value);
         }
     }
 
@@ -31,7 +31,8 @@ final class LikeTest extends TestCase
     public function test_the_escape_character_itself_is_escaped_first(): void
     {
         $this->assertSame('a!!!%', Like::escape('a!%', Like::PORTABLE));
-        $this->assertSame('a\\\%', Like::escape('a\%'));
-        $this->assertSame('x\_y%', Like::startsWith('x_y'));
+        // a\% → a\\\% : the backslash doubled, then the percent escaped.
+        $this->assertSame('a\\\\\\%', Like::escape('a\\%'));
+        $this->assertSame('x\\_y%', Like::startsWith('x_y'));
     }
 }
