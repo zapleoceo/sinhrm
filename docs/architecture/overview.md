@@ -60,6 +60,22 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Reports (каталог отчётов по всем модулям, конструктор по белому списку, CSV) | ✅ | [modules/reports.md](../modules/reports.md) |
 | Extension (браузерное расширение `extension/`: кандидат с открытой страницы профиля; API — в Recruiting, токен только для `/api/clipper/*`) | ✅ код, установка вручную | [modules/extension.md](../modules/extension.md) |
 | Channels (вебхуки мессенджеров и телефонии → лента кандидата, отправка из карточки, демо-события) | ✅ код, включается токенами | [modules/channels.md](../modules/channels.md) |
+| Privacy (персональные данные: выгрузка, обезличивание, журнал запросов, срок хранения) | ✅ | [modules/privacy.md](../modules/privacy.md) |
+| Audit (журнал изменений, вкладка «История» сотрудника и кандидата) | ✅ | [modules/audit.md](../modules/audit.md) |
+| Observability (журнал ошибок) | ✅ | [modules/observability.md](../modules/observability.md) |
+| Assistant (чат-ассистент и MCP) | ✅ | [modules/assistant.md](../modules/assistant.md) |
+
+### Границы модулей
+Модуль обращается к другому модулю через его `Contracts` (и `DTO`, `Enums`, `Events`), а не импортирует напрямую его
+`Models`, `Services`, `Repositories` или `Http`. Core — общее ядро (`Core\Support`, `Core\Http`, `Core\Contracts`), его импортируют
+все. Правило проверяет тест `backend/tests/Unit/Core/ModuleBoundariesTest.php` (сканирует `use` в `app/Modules`):
+- исключение для всех — `Auth\Http\Middleware\EnsureUserIsActive` (под ним маршруты каждого модуля);
+- текущие нарушения (на 2026-10-02 — 255 импортов в 162 файлах: чужие `Models` 159, `Services` 83, `Http` 11, `Repositories` 2)
+  записаны в `backend/tests/Unit/Core/module-boundaries-baseline.php`; новое нарушение валит тест, а исправленное надо
+  удалить из списка (тест подскажет) — список только сокращается;
+- двусторонние зависимости модулей (7 пар: Audit ↔ People, Audit ↔ Recruiting, Auth ↔ Core, Channels ↔ Recruiting,
+  Core ↔ Pulse, Core ↔ Recruiting, Recruiting ↔ Scripts) записаны в `KNOWN_CYCLES` теста по тому же принципу.
+Разрывать циклы и выносить зависимости в контракты — отдельными PR по модулю.
 
 ## Фронтенд
 `frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.
