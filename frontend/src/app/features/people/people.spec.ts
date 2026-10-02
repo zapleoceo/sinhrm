@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Subject, of } from 'rxjs';
+import { convertToParamMap } from '@angular/router';
+import { PEOPLE_PAGE_SIZE, peopleQueryFromParams, sameQuery } from './directory/people.query';
 import { PeopleStore } from './directory/people.store';
 import { countNodes, expandedToDepth, filterTree, initials } from './org-tree';
 import { canManagePeople } from './people.access';
@@ -141,16 +143,16 @@ describe('People helpers', () => {
 });
 
 describe('PeopleStore', () => {
-  it('drops stale answers and resets the page on filter change', () => {
+  it('drops stale answers and does not reload the same query', () => {
     const first = new Subject<Paged<Employee>>();
     const second = new Subject<Paged<Employee>>();
     const calls = [first, second];
-    const fake = { list: () => calls.shift() ?? of(EMPTY) };
-    TestBed.configureTestingModule({ providers: [PeopleStore, { provide: PeopleService, useValue: fake }] });
+    const list = vi.fn(() => calls.shift() ?? of(EMPTY));
+    TestBed.configureTestingModule({ providers: [PeopleStore, { provide: PeopleService, useValue: { list } }] });
     const store = TestBed.inject(PeopleStore);
 
-    store.setPage(3, 20);
-    store.patchQuery({ q: 'ann' });
+    store.apply({ page: 3, perPage: 20 });
+    store.apply({ q: 'ann', page: 1, perPage: 20 });
     expect(store.query().page).toBe(1);
     second.next({ data: [employee()], meta: { current_page: 1, per_page: 20, total: 1, last_page: 1 } });
     first.next({ data: [], meta: { current_page: 3, per_page: 20, total: 0, last_page: 1 } });
@@ -158,7 +160,59 @@ describe('PeopleStore', () => {
     expect(store.total()).toBe(1);
     expect(store.loading()).toBe(false);
 
+    store.apply({ q: 'ann', page: 1, perPage: 20 });
+    expect(list).toHaveBeenCalledTimes(2);
+
     store.setView('cards');
     expect(store.view()).toBe('cards');
+  });
+});
+
+describe('people query in the URL', () => {
+  it('reads filters, sort and paging from the URL; junk is dropped, not sent to the API', () => {
+    const q = peopleQueryFromParams(
+      convertToParamMap({ q: ' ann ', name: 'Ko', manager: 'lead', position_id: '3', status: 'terminated', sort: 'manager', dir: 'desc', page: '2', perPage: '20' }),
+    );
+    expect(q).toEqual({
+      q: 'ann',
+      name: 'Ko',
+      contact: undefined,
+      manager: 'lead',
+      branch_id: undefined,
+      department_id: undefined,
+      position_id: 3,
+      status: 'terminated',
+      sort: 'manager',
+      dir: 'desc',
+      page: 2,
+      perPage: 20,
+    });
+    const junk = peopleQueryFromParams(convertToParamMap({ sort: 'full_name', status: 'fired', branch_id: 'x', page: '-1', perPage: '9999' }));
+    expect(junk.sort).toBeUndefined();
+    expect(junk.dir).toBeUndefined();
+    expect(junk.status).toBeUndefined();
+    expect(junk.branch_id).toBeUndefined();
+    expect(junk.page).toBe(1);
+    expect(junk.perPage).toBe(200);
+    expect(peopleQueryFromParams(convertToParamMap({})).perPage).toBe(PEOPLE_PAGE_SIZE);
+  });
+
+  it('compares queries by value', () => {
+    expect(sameQuery({ q: 'a', page: 1 }, { page: 1, q: 'a', name: undefined })).toBe(true);
+    expect(sameQuery({ sort: 'name', dir: 'asc' }, { sort: 'name', dir: 'desc' })).toBe(false);
+  });
+
+  it('the service sends sort, dir and the column filters as query params', () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const http = TestBed.inject(HttpTestingController);
+    TestBed.inject(PeopleService).list({ name: 'Ko', contact: '050', manager: 'lead', sort: 'position', dir: 'desc', perPage: 20 }).subscribe();
+    const req = http.expectOne((r) => r.url === '/api/people');
+    expect(req.request.params.get('sort')).toBe('position');
+    expect(req.request.params.get('dir')).toBe('desc');
+    expect(req.request.params.get('name')).toBe('Ko');
+    expect(req.request.params.get('contact')).toBe('050');
+    expect(req.request.params.get('manager')).toBe('lead');
+    req.flush(EMPTY);
+    http.verify();
   });
 });

@@ -71,7 +71,7 @@
 ### Эндпоинты
 | Метод и путь | Кто | Параметры / тело | Ответ |
 |---|---|---|---|
-| `GET /api/people` | любой активный | `q, branch_id, department_id, position_id, manager_id, status, perPage` 1..200 (строка `"20"` ок), `page` | пагинация, только уровень «справочник»; без `status` — все, кроме уволенных; `status=terminated` — админу все, руководителю только его бывшие подчинённые, остальным пусто |
+| `GET /api/people` | любой активный | `q, branch_id, department_id, position_id, manager_id, status, perPage` 1..200 (строка `"20"` ок), `page`; фильтры заголовков таблицы `name`, `contact` (почта или телефон), `manager` (имя руководителя) — «содержит», без учёта регистра, до 100 символов; `sort` = `name\|position\|department\|branch\|manager` (по умолчанию `name`), `dir` = `asc\|desc` (по умолчанию `asc`); другая колонка или направление → 422 | пагинация, только уровень «справочник»; без `status` — все, кроме уволенных; `status=terminated` — админу все, руководителю только его бывшие подчинённые, остальным пусто. Сортировка и фильтры эту область не расширяют |
 | `GET /api/people/{id}` | любой активный | — | профиль по уровням + `access`; **уволенный** — только админу и руководителям выше него, остальным 404 |
 | `POST /api/people` | admin | `full_name, hired_at` (обязательны), остальные поля; `status` только `active\|on_leave` | 201 |
 | `PATCH /api/people/{id}` | admin | частично; `manager_id` на себя или на подчинённого → 422 `manager_cycle`; занятый `user_id` → 422 | 200 |
@@ -163,12 +163,21 @@
 `Contracts/EmployeeRepository`, `ChangeRequestRepository` (`Repositories/Eloquent*`). Ошибки — `Exceptions/PeopleException`
 (`{message, code}`). Фабрика `Database/Factories/EmployeeFactory` — синтетика на `example.test`.
 
+### Сортировка и фильтры списка (2026-10-02)
+`ListPeopleRequest` проверяет `sort` по `Enums/EmployeeSort` и `dir` по `asc|desc` (белый список; текст запроса в SQL не
+попадает). `EloquentEmployeeRepository::sort()` переводит колонку в свой `ORDER BY`: имя — `full_name`, должность /
+отдел / филиал / руководитель — коррелированный подзапрос имени (без `join`, поэтому выборка и `count` пагинации не
+меняются), `nulls last` — пустые значения в конце при обоих направлениях (Postgres по умолчанию ставит `NULL` первыми
+при `desc`), равные — по имени и `id` (страницы стабильны). Текстовые фильтры — `lower(...) like ?` с экранированием
+`% _ \` (значение только биндингом). Индексы `employees.department_id` и `employees.position_id` — миграция
+`2026_10_23_100001_add_directory_filter_indexes_to_employees.php` (филиал и руководитель были проиндексированы раньше).
+
 ### Фронтенд (`frontend/src/app/features/people`)
 | Файл | Что |
 |---|---|
 | `people.model.ts`, `people.service.ts` | типы, HTTP, `peopleErrorKey`, `diffChanges` (в запрос уходят только изменённые поля) |
 | `people.access.ts`, `org-tree.ts` | `canManagePeople`; раскрытие/поиск/подсчёт узлов оргструктуры, инициалы |
-| `directory/` | `/people` — таблица/карточки, фильтры (`PeopleStore`) |
+| `directory/` | `/people` — таблица/карточки (`PeopleStore`). Заголовки колонок — общий `th[app-column-header]` ([core.md](core.md#заголовок-таблицы-сортировка-и-фильтр)): клик по названию сортирует (`ПІБ`, `Посада`, `Відділ`, `Філія`, `Керівник`; повторный клик — обратный порядок), воронка рядом — фильтр (текст для ПІБ, контактов и руководителя; выбор для должности, отдела, филиала). Состояние — в адресе (`people.query.ts`: `?position_id=3&sort=manager&dir=desc&page=2`), ссылка и «назад» его восстанавливают; любая смена, кроме листания, возвращает на страницу 1. Поиск и статус — над таблицей; филиал/отдел/должность над таблицей остаются для карточек и узких экранов (там эти колонки скрыты) |
 | `profile/` | `/people/:id`, `/me` — вкладки по `access` (`ProfileStore`, `profileTabs`), диалоги: сотрудник, увольнение, запрос на изменение |
 | `org-chart/` | `/people/org-chart` — раскладка `d3-hierarchy` (tidy tree), своя отрисовка HTML+SVG; чистая геометрия/поиск/фильтры/экспорт в `org-layout.ts` (спеки), панель человека, пульт управления и легенда |
 | `hire.action.ts` | «Створити співробітника» с доски и карточки кандидата, снекбар «Відкрити» |
@@ -221,7 +230,8 @@ admin / сам / руководитель прямой и через урове�
 `HireFromApplicationTest` (не на этапе найма → 422, создание из кандидата и вакансии, повтор → 200 тот же id, начисление
 отпуска при найме, права). События найма и увольнения проверяются в `tests/Feature/Workflows/WorkflowRunsTest`
 (запуск онбординга/офбординга, повторное событие не дублирует запуск). Unit: `tests/Unit/People/PeopleScopeTest` (дерево, циклы, флаги), `PeopleServicesTest`.
-Фронт: `people.spec.ts`.
+Бэкенд, сортировка и фильтры: `tests/Feature/People/PeopleSortFilterApiTest` (имя asc/desc, связанная колонка с пустыми в конце в обе стороны, руководитель, фильтры `name/contact/manager` с `perPage` строкой и страницей, `%`/`_` как текст, недопустимые `sort`/`dir`/массив → 422, уволенные не видны через сортировку и фильтры).
+Фронт: `people.spec.ts` (store, чтение адреса, параметры запроса), `directory/people.page.spec.ts` (адрес → запрос, клик по заголовку → `sort/dir` в адресе и страница 1, «назад»), e2e `frontend/e2e/flows.pw.ts` («people: a header title sorts…», «people (390 px)…»).
 
 Вручную (нужна сессия): `curl -i "https://sinhrm.vercel.app/api/people?perPage=20"` → без сессии 401.
 

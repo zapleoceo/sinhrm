@@ -80,8 +80,18 @@ export interface Paged<T> {
   meta: { current_page: number; per_page: number; total: number; last_page: number };
 }
 
+/** Sortable columns of the directory (backend EmployeeSort); the default order is by name. */
+export type PeopleSortKey = 'name' | 'position' | 'department' | 'branch' | 'manager';
+export const PEOPLE_SORT_KEYS: readonly PeopleSortKey[] = ['name', 'position', 'department', 'branch', 'manager'];
+
 export interface PeopleQuery {
   q?: string;
+  /** Column filters of the table headers: «contains», case-insensitive. */
+  name?: string;
+  contact?: string;
+  manager?: string;
+  sort?: PeopleSortKey;
+  dir?: 'asc' | 'desc';
   branch_id?: number;
   department_id?: number;
   position_id?: number;

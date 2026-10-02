@@ -6,6 +6,7 @@ namespace App\Modules\People\Repositories;
 
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\EmployeeFilter;
+use App\Modules\People\Enums\EmployeeSort;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -19,7 +20,7 @@ final class EloquentEmployeeRepository implements EmployeeRepository
 
     public function paginate(EmployeeFilter $filter): LengthAwarePaginator
     {
-        return Employee::query()->with(self::RELATIONS)
+        $query = Employee::query()->with(self::RELATIONS)
             ->when(
                 $filter->status,
                 fn (Builder $q, EmployeeStatus $s) => $q->where('status', $s->value),
@@ -31,19 +32,28 @@ final class EloquentEmployeeRepository implements EmployeeRepository
                 },
             )
             ->when($filter->q, function (Builder $q, string $term): void {
-                $like = '%'.addcslashes(mb_strtolower($term), '%_\\').'%';
+                $like = self::like($term);
                 $q->where(fn (Builder $w) => $w->whereRaw('lower(full_name) like ?', [$like])
                     ->orWhereRaw('lower(work_email) like ?', [$like])
                     ->orWhere('phone', 'like', $like));
             })
+            // Column filters of the table headers: "contains", case-insensitive, values only as bindings.
+            ->when($filter->name, fn (Builder $q, string $term) => $q->whereRaw('lower(full_name) like ?', [self::like($term)]))
+            ->when($filter->contact, fn (Builder $q, string $term) => $q->where(
+                fn (Builder $w) => $w->whereRaw('lower(work_email) like ?', [self::like($term)])->orWhere('phone', 'like', self::like($term)),
+            ))
+            ->when($filter->manager, fn (Builder $q, string $term) => $q->whereHas(
+                'manager',
+                fn (Builder $m) => $m->whereRaw('lower(full_name) like ?', [self::like($term)]),
+            ))
             ->when($filter->onlyIds !== null, fn (Builder $q) => $q->whereIn('id', $filter->onlyIds ?? []))
             ->when($filter->branchId, fn (Builder $q, int $id) => $q->where('branch_id', $id))
             ->when($filter->departmentId, fn (Builder $q, int $id) => $q->where('department_id', $id))
             ->when($filter->positionId, fn (Builder $q, int $id) => $q->where('position_id', $id))
-            ->when($filter->managerId, fn (Builder $q, int $id) => $q->where('manager_id', $id))
-            ->orderBy('full_name')
-            ->orderBy('id')
-            ->paginate($filter->perPage);
+            ->when($filter->managerId, fn (Builder $q, int $id) => $q->where('manager_id', $id));
+        self::sort($query, $filter->sort, $filter->descending);
+
+        return $query->paginate($filter->perPage);
     }
 
     public function find(int $id): ?Employee
@@ -115,5 +125,39 @@ final class EloquentEmployeeRepository implements EmployeeRepository
     public function transaction(callable $callback): mixed
     {
         return DB::transaction(fn (): mixed => $callback());
+    }
+
+    /** "%term%" for LIKE: lower-cased, with % _ \ escaped (the term is a binding, never SQL). */
+    private static function like(string $term): string
+    {
+        return '%'.addcslashes(mb_strtolower($term), '%_\\').'%';
+    }
+
+    /**
+     * ORDER BY of a whitelisted column. Related names come from a correlated subquery (no join, so the selected
+     * columns and the pagination count stay as they are). Postgres puts NULLs first on DESC: «nulls last» keeps
+     * rows without a value at the end in both directions. Ties: by name, then id — stable pages.
+     *
+     * @param  Builder<Employee>  $q
+     */
+    private static function sort(Builder $q, EmployeeSort $sort, bool $descending): void
+    {
+        $dir = $descending ? 'desc' : 'asc';
+        $related = match ($sort) {
+            EmployeeSort::Name => null,
+            EmployeeSort::Position => DB::table('positions')->select('positions.name')->whereColumn('positions.id', 'employees.position_id'),
+            EmployeeSort::Department => DB::table('departments')->select('departments.name')->whereColumn('departments.id', 'employees.department_id'),
+            EmployeeSort::Branch => DB::table('branches')->select('branches.name')->whereColumn('branches.id', 'employees.branch_id'),
+            EmployeeSort::Manager => DB::table('employees as mgr')->select('mgr.full_name')->whereColumn('mgr.id', 'employees.manager_id'),
+        };
+        if ($related === null) {
+            $q->orderBy('employees.full_name', $dir)->orderBy('employees.id', $dir);
+
+            return;
+        }
+        // $dir is one of two literals above, never request text.
+        $q->orderByRaw('('.$related->toSql().') '.$dir.' nulls last', $related->getBindings())
+            ->orderBy('employees.full_name')
+            ->orderBy('employees.id');
     }
 }

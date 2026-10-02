@@ -2,16 +2,21 @@ import { Injectable, inject, signal } from '@angular/core';
 import { safeStorage } from '../../../core/storage/safe-storage';
 import { Employee, PeopleQuery } from '../people.model';
 import { PeopleService } from '../people.service';
+import { PEOPLE_PAGE_SIZE, sameQuery } from './people.query';
 
 export type PeopleView = 'table' | 'cards';
 const VIEW_KEY = 'sinhrm.people.view';
-const DEFAULT_QUERY: PeopleQuery = { page: 1, perPage: 50 };
+const DEFAULT_QUERY: PeopleQuery = { page: 1, perPage: PEOPLE_PAGE_SIZE };
 
-/** Directory page state (provided per page). Stale answers after a filter change are dropped. */
+/**
+ * Directory page state (provided per page). The query comes from the URL (people.query.ts): the page calls
+ * `apply()` on every URL change. Stale answers after a filter change are dropped.
+ */
 @Injectable()
 export class PeopleStore {
   private readonly api = inject(PeopleService);
   private seq = 0;
+  private loaded = false;
 
   readonly query = signal<PeopleQuery>(DEFAULT_QUERY);
   readonly items = signal<Employee[]>([]);
@@ -20,8 +25,18 @@ export class PeopleStore {
   readonly failed = signal(false);
   readonly view = signal<PeopleView>(safeStorage.get(VIEW_KEY) === 'cards' ? 'cards' : 'table');
 
+  /** New query from the URL: loads unless it is the same as the one already shown. */
+  apply(query: PeopleQuery): void {
+    if (this.loaded && sameQuery(query, this.query())) {
+      return;
+    }
+    this.query.set(query);
+    this.load();
+  }
+
   load(): void {
     const seq = ++this.seq;
+    this.loaded = true;
     this.loading.set(true);
     this.failed.set(false);
     this.api.list(this.query()).subscribe({
@@ -40,17 +55,6 @@ export class PeopleStore {
         }
       },
     });
-  }
-
-  /** Filters reset the page to 1. */
-  patchQuery(patch: Partial<PeopleQuery>): void {
-    this.query.update((q) => ({ ...q, ...patch, page: 1 }));
-    this.load();
-  }
-
-  setPage(page: number, perPage: number): void {
-    this.query.update((q) => ({ ...q, page, perPage }));
-    this.load();
   }
 
   setView(view: PeopleView): void {
