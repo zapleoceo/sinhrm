@@ -847,6 +847,7 @@
     "body": "What happened",
     "send": "Send",
     "code": "Access code",
+    "codeHint": "This is the code you were shown once after sending your report. Enter it to see the reply and add to the same conversation — you stay anonymous. The code cannot be restored: if you lost it, send a new report.",
     "open": "Open",
     "reply": "Reply",
     "statusLabel": "Status",
