@@ -6,6 +6,7 @@ namespace Tests\Feature\Core;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Core\Contracts\ModuleSettingsRepository;
 use App\Modules\Core\Models\ModuleSetting;
 use App\Modules\Core\Services\ModuleAccess;
 use App\Modules\Core\Services\ModuleRegistry;
@@ -155,6 +156,30 @@ final class ModuleAccessTest extends TestCase
 
         // The old cached copy was dropped: the cache now holds the saved value, not the stale one.
         $this->assertFalse(Cache::get(ModuleAccess::CACHE_KEY)['pulse']['enabled']);
+    }
+
+    public function test_explicit_refresh_bypasses_both_caches_and_reuses_normal_access_rules(): void
+    {
+        $access = $this->app->make(ModuleAccess::class);
+        $settings = $this->app->make(ModuleSettingsRepository::class);
+        $super = $this->user(UserRole::Superadmin);
+        $employee = $this->user(UserRole::Employee);
+        $admin = $this->user(UserRole::Admin);
+        $this->assertTrue($access->allows($super, 'knowledge'));
+        $settings->save('knowledge', false, []);
+        $this->assertTrue($access->allows($super, 'knowledge'), 'Ordinary calls still use the request-local cache.');
+        $snapshot = $access->refreshSettings();
+        $this->assertSame(['enabled' => false, 'roles' => []], $snapshot['knowledge']);
+        $this->assertFalse($access->allows($super, 'knowledge'), 'Disabled modules deny even superadmin.');
+        $this->assertTrue(Cache::get(ModuleAccess::CACHE_KEY)['knowledge']['enabled'], 'Explicit refresh does not rewrite the normal shared cache.');
+        $settings->save('knowledge', true, [UserRole::Admin->value]);
+        $access->refreshSettings();
+        $this->assertFalse($access->allows($employee, 'knowledge'));
+        $this->assertTrue($access->allows($admin, 'knowledge'));
+        $this->assertTrue($access->allows($super, 'knowledge'));
+        $this->assertNotContains('knowledge', $access->allowedKeys($employee));
+        $this->assertContains('knowledge', $access->allowedKeys($admin));
+        $this->assertTrue($access->allows($employee, 'auth'), 'Core modules retain their usual always-on rule.');
     }
 
     public function test_settings_page_is_superadmin_only(): void
