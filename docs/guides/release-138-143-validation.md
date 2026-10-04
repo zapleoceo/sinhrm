@@ -14,14 +14,15 @@
 | [139](https://github.com/zapleoceo/sinhrm/pull/139) | TZ6 screening ranking | `227046dd01c389e37a7369ef9e505a98ced3afe4` |
 | [140](https://github.com/zapleoceo/sinhrm/pull/140) | Мобильный launcher Стіка | `880772c9eba9f704f06db300cbafa02f539d0a18` |
 | [141](https://github.com/zapleoceo/sinhrm/pull/141) | Локализация paginator | `9da8931a3197a79df61b00bf710211bedabff980` |
-| [143](https://github.com/zapleoceo/sinhrm/pull/143) | Минимизация automatic API/tool → AI и повторная проверка доступа | `e93d1f985bb7b8abdba154f816d738558a443c25` |
+| [143](https://github.com/zapleoceo/sinhrm/pull/143) | Минимизация automatic API/tool → AI и повторная проверка доступа | `091f22fd284c880f7a655b915da9c9cf775daad2` |
 
 Первичное объединение: `dc443b4c4a2e1e4372b93e51b5e4fdc3c242fc1c`.
 Независимое раннее ревью: 53 изменённых source-файла совпадают с исходными feature heads;
 uk/ru/en сохраняют объединение изменённых leaf keys без конфликтов. В Playwright сохранены обе новые suites:
 `integrations-states.pw.ts` и `assistant-context.pw.ts`.
 Дополнение PR143 на `273911c`, исправление тестового error envelope на `576a869` и закрытие P2
-начального доступа к Assistant на `e93d1f9` прошли отдельное независимое source review без открытых P0/P1/P2;
+начального доступа к Assistant на `e93d1f9` прошли отдельное независимое source review без открытых P0/P1/P2.
+`091f22f` уточняет только return type тестового callback по результату PHPStan;
 финальное совместное ревью и CI привязываются к head в PR144.
 
 ## Что должен доказать gate помощника
