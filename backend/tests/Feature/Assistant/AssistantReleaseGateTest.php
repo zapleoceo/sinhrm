@@ -79,7 +79,7 @@ final class AssistantReleaseGateTest extends TestCase
         $users = $this->app->make(UserRepository::class);
         // The real route middleware has passed when capture makes its first user-repository lookup.
         $this->mock(UserRepository::class)->shouldReceive('find')->once()->with($user->id)
-            ->andReturnUsing(function (int $id) use ($change, $settings, $access, $user, $users): ?User {
+            ->andReturnUsing(function (int $id) use ($change, $settings, $access, $user, $users): User {
                 $fresh = $users->find($id);
                 assert($fresh instanceof User);
                 if ($change === 'demotion') {
