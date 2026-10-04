@@ -17,6 +17,7 @@ interface PaginatorLabels {
 export class AppPaginatorIntl extends MatPaginatorIntl {
   constructor() {
     super();
+    const nativeRangeLabel = this.getRangeLabel;
     inject(TranslocoService).selectTranslateObject<PaginatorLabels>('common.paginator')
       .pipe(takeUntilDestroyed(inject(DestroyRef)))
       .subscribe((labels) => {
@@ -25,15 +26,9 @@ export class AppPaginatorIntl extends MatPaginatorIntl {
         this.previousPageLabel = labels.previousPage;
         this.nextPageLabel = labels.nextPage;
         this.lastPageLabel = labels.lastPage;
-        this.getRangeLabel = (page, pageSize, length) => {
-          const total = Math.max(0, length);
-          if (total === 0 || pageSize <= 0) return `0 ${labels.rangeOf} ${total}`;
-          // A reduced total can leave the current page past the end while the list reloads.
-          const current = Math.max(0, Math.min(page, Math.ceil(total / pageSize) - 1));
-          const start = current * pageSize;
-          const end = Math.min(start + pageSize, total);
-          return `${start + 1}–${end} ${labels.rangeOf} ${total}`;
-        };
+        // Localize only the separator; Material owns page arithmetic and range formatting.
+        this.getRangeLabel = (page, pageSize, length) =>
+          nativeRangeLabel(page, pageSize, length).replace(' of ', ` ${labels.rangeOf} `);
         this.changes.next();
       });
   }

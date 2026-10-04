@@ -58,7 +58,7 @@ function expectLabels(intl: MatPaginatorIntl, lang: AppLang): void {
   expect(intl.previousPageLabel).toBe(labels.previousPage);
   expect(intl.nextPageLabel).toBe(labels.nextPage);
   expect(intl.lastPageLabel).toBe(labels.lastPage);
-  expect(intl.getRangeLabel(0, 30, 140)).toBe(`1–30 ${labels.rangeOf} 140`);
+  expect(intl.getRangeLabel(0, 30, 140)).toBe(new MatPaginatorIntl().getRangeLabel(0, 30, 140).replace(' of ', ` ${labels.rangeOf} `));
 }
 
 describe('AppPaginatorIntl', () => {
@@ -74,19 +74,24 @@ describe('AppPaginatorIntl', () => {
   });
 
   it.each([
-    { page: 0, size: 30, total: 0, expected: '0 із 0' },
-    { page: 0, size: 0, total: 140, expected: '0 із 140' },
-    { page: 0, size: 30, total: -1, expected: '0 із 0' },
-    { page: 0, size: 30, total: 140, expected: '1–30 із 140' },
-    { page: 1, size: 30, total: 140, expected: '31–60 із 140' },
-    { page: 4, size: 30, total: 140, expected: '121–140 із 140' },
-    { page: 1, size: 30, total: 60, expected: '31–60 із 60' },
-    { page: -1, size: 30, total: 140, expected: '1–30 із 140' },
-    { page: 4, size: 30, total: 20, expected: '1–20 із 20' },
-  ])('formats page $page / size $size / total $total safely', ({ page, size, total, expected }) => {
-    const { intl, loader } = setup();
-    loader.reply('uk');
-    expect(intl.getRangeLabel(page, size, total)).toBe(expected);
+    { page: 0, size: 30, total: 0 },
+    { page: 0, size: 0, total: 140 },
+    { page: 0, size: 30, total: -1 },
+    { page: 0, size: 30, total: 140 },
+    { page: 1, size: 30, total: 140 },
+    { page: 4, size: 30, total: 140 },
+    { page: 1, size: 20, total: 20 },
+    { page: -1, size: 30, total: 140 },
+    { page: 0, size: -30, total: 140 },
+    { page: 4, size: 30, total: 20 },
+  ])('preserves native page $page / size $size / total $total in every language', async ({ page, size, total }) => {
+    const { intl, language, loader } = setup();
+    const expected = new MatPaginatorIntl().getRangeLabel(page, size, total);
+    for (const lang of ['uk', 'ru', 'en'] as const) {
+      await language.use(lang);
+      loader.reply(lang);
+      expect(intl.getRangeLabel(page, size, total)).toBe(lang === 'en' ? expected : expected.replace(' of ', ` ${LABELS[lang].rangeOf} `));
+    }
   });
 
   it('waits for language loading and ignores a late dictionary from an abandoned switch', async () => {
@@ -121,14 +126,29 @@ describe('AppPaginatorIntl', () => {
     const element = fixture.nativeElement as HTMLElement;
     const labels = (): (string | null)[] => Array.from(element.querySelectorAll('button')).map((button) => button.getAttribute('aria-label'));
     expect(labels()).toEqual([LABELS.uk.firstPage, LABELS.uk.previousPage, LABELS.uk.nextPage, LABELS.uk.lastPage]);
-    expect(element.querySelector('.mat-mdc-paginator-range-label')?.textContent?.trim()).toBe('1–30 із 95');
+    expect(element.querySelector('.mat-mdc-paginator-range-label')?.textContent?.trim()).toBe('1 – 30 із 95');
     expect(element.querySelector('.mat-mdc-paginator-page-size-label')?.textContent?.trim()).toBe(LABELS.uk.itemsPerPage);
     await language.use('ru');
     loader.reply('ru');
     await fixture.whenStable();
     fixture.detectChanges();
     expect(labels()).toEqual([LABELS.ru.firstPage, LABELS.ru.previousPage, LABELS.ru.nextPage, LABELS.ru.lastPage]);
-    expect(element.querySelector('.mat-mdc-paginator-range-label')?.textContent?.trim()).toBe('1–30 из 95');
+    expect(element.querySelector('.mat-mdc-paginator-range-label')?.textContent?.trim()).toBe('1 – 30 из 95');
+    // A saved URL may still request page 2 after the total shrinks to one page.
+    const pageChanges = vi.fn();
+    fixture.componentInstance.page.subscribe(pageChanges);
+    fixture.componentRef.setInput('pageIndex', 1);
+    fixture.componentRef.setInput('pageSize', 20);
+    fixture.componentRef.setInput('length', 20);
+    fixture.detectChanges();
+    expect(element.querySelector('.mat-mdc-paginator-range-label')?.textContent?.trim()).toBe('21 – 40 из 20');
+    await language.use('en');
+    loader.reply('en');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(element.querySelector('.mat-mdc-paginator-range-label')?.textContent?.trim()).toBe(new MatPaginatorIntl().getRangeLabel(1, 20, 20));
+    expect(fixture.componentInstance.pageIndex).toBe(1);
+    expect(pageChanges).not.toHaveBeenCalled();
   });
 
   it('unsubscribes on injector destruction while the surviving provider still follows the language', async () => {

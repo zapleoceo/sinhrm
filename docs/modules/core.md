@@ -7,7 +7,7 @@
 Суперадмин и админ: меню → «Стан системи» (`/status`) показывает состояние API и его зависимостей (раньше это была
 стартовая страница; теперь стартовая — дашборд, [overview.md](overview.md)). Сама проверка `GET /api/health` открыта без входа.
 Вкладка браузера подписана «SinHRM · <раздел>» на языке интерфейса.
-Все списки с Material-пагинацией показывают диапазон («1–30 із 140»), размер страницы и подсказки навигации на выбранном языке: uk, ru или en. При смене языка подписи обновляются после загрузки перевода.
+Все списки с Material-пагинацией показывают диапазон («1 – 30 із 140»), размер страницы и подсказки навигации на выбранном языке: uk, ru или en. При смене языка подписи обновляются после загрузки перевода.
 
 ## Как устроено
 - Включение и роли модулей — таблица `module_settings` (`module`, `enabled`, `roles`), сервис `ModuleAccess`; подробности и правила — [modules-access.md](modules-access.md), решение — [ADR 0009](../adr/0009-module-access.md).
@@ -74,7 +74,7 @@
 | Файл | Что делает |
 |---|---|
 | `api/api-error.ts` | `apiErrorKey(error, prefix, codes, { statuses?, fallback? })` — i18n-ключ ошибки API: известный `{code}` → `<prefix>.errors.<code>`, иначе статус из списка `statuses` (по умолчанию все: `forbidden` 403, `not_found` 404, `validation` 422, `rate_limited` 429) → `<prefix>.errors.<имя>`, иначе `fallback` (по умолчанию `common.error`). `apiErrorCode(e)` / `apiErrorStatus(e)` — код и статус ответа или `null`. Ключи каждой фичи (`performErrorKey`, `scriptsErrorKey`, …) — однострочные обёртки с её списком статусов и запасным ключом, тексты не менялись |
-| `ui/paginator-intl.ts` | Общий `MatPaginatorIntl`, подключённый в `app.config.ts`: пять Material-подписей и связка диапазона из `common.paginator.*`; `selectTranslateObject` следует `LanguageService` через активный язык Transloco и ждёт загрузки словаря, `changes` обновляет существующие пагинаторы, `takeUntilDestroyed` завершает подписку. Пустой список/нулевой размер — «0 із N», последняя страница ограничена общим количеством; устаревший индекс после уменьшения списка ограничен последней страницей |
+| `ui/paginator-intl.ts` | Общий `MatPaginatorIntl`, подключённый в `app.config.ts`: пять Material-подписей и связка диапазона из `common.paginator.*`; `selectTranslateObject` следует `LanguageService` через активный язык Transloco и ждёт загрузки словаря, `changes` обновляет существующие пагинаторы, `takeUntilDestroyed` завершает подписку. Локализация заменяет только связку «of» штатного `MatPaginatorIntl`: числовой диапазон, пробелы и поведение пустых, отрицательных и выходящих за пределы страниц сохраняются. Провайдер не меняет индекс страницы, URL или API-запрос и не подменяет диапазон запрошенной страницы диапазоном другой |
 | `ui/notify.service.ts` | `NotifyService.show(key, { params?, duration? })` — короткое уведомление (Material snack bar) с переведённым текстом; длительность по умолчанию `NOTIFY_DURATION_MS` = 4000 мс, другие (2000/3000/5000) передаются явно там, где они были. Доступность — штатная snack bar: вежливая live-область (`aria-live="polite"`), фокус не уводится. Заменил 30+ локальных `toast()`; пока не переведены страницы с таблицами (их меняет общий заголовок таблиц — отдельная задача) и `features/people` |
 | `api/api.model.ts` | общие типы ответа API: `PageMeta` (`current_page`, `per_page`, `total`, `last_page`), `Paged<T, M = PageMeta>` (`{ data: T[], meta }`; фича может расширить meta, как `VacancyPageMeta`), `DataEnvelope<T>` (`{ data: T }`). Заменили 5 своих определений страницы в фичах (`features/people` пока со своим `Paged`) |
 | `api/unwrap-data.ts` | `unwrapData()` — RxJS-оператор: `http.get<DataEnvelope<T>>(url).pipe(unwrapData())` → `Observable<T>`. Заменил ~215 повторов `map((r) => r.data)` в сервисах фич |
@@ -82,7 +82,7 @@
 
 ## Как проверить
 Тесты: `iso-date.spec.ts`, `app-date-adapter.spec.ts`, `datepicker-intl.spec.ts`, `channel-icon.spec.ts`, `tests/Feature/Core/HealthTest.php`, `tests/Feature/Core/OpsJobsTest.php`, `tests/Feature/Core/SecurityHeadersTest.php`, `error-reporter.spec.ts`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
-`paginator-intl.spec.ts` (все подписи ru/uk/en, диапазоны, отложенная загрузка/быстрая смена языка, aria-label существующего пагинатора, освобождение подписки), `api-error.spec.ts`, `http-params.spec.ts`, `unwrap-data.spec.ts`, `notify.service.spec.ts`, `auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.
+`paginator-intl.spec.ts` (все подписи ru/uk/en, совпадение числовых диапазонов со штатным `MatPaginatorIntl`, отложенная загрузка/быстрая смена языка, aria-label существующего пагинатора, освобождение подписки), `api-error.spec.ts`, `http-params.spec.ts`, `unwrap-data.spec.ts`, `notify.service.spec.ts`, `auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.
 Вручную: `curl -i https://sinhrm.vercel.app/api/health`.
 
 ## Подключение к Neon из Vercel
