@@ -25,6 +25,7 @@
   "button \"Люди\" [expanded]",
   "button \"Меню користувача\"",
   "button \"Оновити\"",
+  "button \"Поговорити зі Стіком\"",
   "button \"Продуктивність\" [expanded]",
   "button \"Рекрутинг\" [expanded]",
   "button \"Сервіси\" [expanded]",

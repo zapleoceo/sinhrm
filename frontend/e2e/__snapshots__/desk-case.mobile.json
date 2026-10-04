@@ -11,6 +11,7 @@
  "interactive": [
   "button \"Взяти собі\"",
   "button \"Головне меню\"",
+  "button \"Поговорити зі Стіком\"",
   "combobox \"Статус\"",
   "link \"Огляд\" -> /",
   "link \"← Назад\" -> /desk/queue"

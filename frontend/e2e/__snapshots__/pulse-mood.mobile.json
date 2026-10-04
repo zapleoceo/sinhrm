@@ -15,6 +15,7 @@
  "interactive": [
   "button \"Головне меню\"",
   "button \"Зберегти\"",
+  "button \"Поговорити зі Стіком\"",
   "checkbox \"Вт\" [checked]",
   "checkbox \"Нд\"",
   "checkbox \"Обов’язкове\"",

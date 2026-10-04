@@ -672,3 +672,28 @@ test.describe('mobile flows', () => {
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
   });
 });
+
+
+test('mobile assistant: in-flow launcher opens chat without covering candidate content', async ({ page, context }, info) => {
+  test.skip(!info.project.name.startsWith('mobile-'), 'mobile viewports only');
+  const mock = await open(page, context, '/candidates');
+  const launcher = page.locator('.topbar .assistant-launcher');
+  await expect(launcher).toHaveAccessibleName('Поговорити зі Стіком');
+  await expect(page.locator('.mascot-stage')).toBeHidden();
+  await expect(page.locator('.mascot-orb')).toHaveCount(0);
+  const header = (await page.locator('.topbar').boundingBox())!;
+  const button = (await launcher.boundingBox())!;
+  expect(button.width).toBeGreaterThanOrEqual(44);
+  expect(button.height).toBeGreaterThanOrEqual(44);
+  expect(button.y + button.height).toBeLessThanOrEqual(header.y + header.height);
+  const firstCandidate = (await page.locator('app-candidates-page [role=option]').first().boundingBox())!;
+  expect(button.y + button.height).toBeLessThan(firstCandidate.y);
+  await launcher.click();
+  await expect(page.getByRole('dialog', { name: 'Стік', exact: true })).toBeVisible();
+  await expect(page.locator('.mascot-stage')).toBeHidden();
+  await page.getByRole('button', { name: 'Закрити чат', exact: true }).click();
+  await expect(page.locator('.assistant-panel')).toHaveCount(0);
+  await expect(launcher).toBeVisible();
+  expect(writes(mock)).toEqual([]);
+  expect(mock.missing).toEqual([]);
+});

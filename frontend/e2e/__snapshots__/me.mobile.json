@@ -14,6 +14,7 @@
   "button \"Запит на зміну даних\"",
   "button \"Звільнити\"",
   "button \"Персональні дані\"",
+  "button \"Поговорити зі Стіком\"",
   "button \"Редагувати\"",
   "link \"+380503000000\" -> tel:+380503000000",
   "link \"demo+emp-01@sinhrm.test\" -> mailto:demo+emp-01@sinhrm.test",
