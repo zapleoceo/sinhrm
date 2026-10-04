@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { RECORDED_AT, installMock, type Mock } from './harness';
 import { boardSteps } from './pages.mjs';
 import { runSteps, settle, watchNetwork } from './steps.mjs';
+import { E2E_ORIGIN } from './port.mjs';
+import type { AssistantStatus } from '../src/app/features/assistant/assistant.model';
 
 const writes = (mock: Mock) => mock.mutations.filter((m) => m.path !== '/sanctum/csrf-cookie');
 
@@ -677,6 +679,14 @@ test.describe('mobile flows', () => {
 test('mobile assistant: in-flow launcher opens chat without covering candidate content', async ({ page, context }, info) => {
   test.skip(!info.project.name.startsWith('mobile-'), 'mobile viewports only');
   const mock = await open(page, context, '/candidates');
+  // Opening chat reads status once; this synthetic GET belongs only to this flow.
+  const status: AssistantStatus = { available: true, reason: null, mcp_url: `${E2E_ORIGIN}/api/mcp` };
+  let statusRequests = 0;
+  await page.route(`${E2E_ORIGIN}/api/assistant/status`, async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    statusRequests++;
+    await route.fulfill({ status: 200, json: { data: status } });
+  });
   const launcher = page.locator('.topbar .assistant-launcher');
   await expect(launcher).toHaveAccessibleName('Поговорити зі Стіком');
   await expect(page.locator('.mascot-stage')).toBeHidden();
@@ -690,6 +700,8 @@ test('mobile assistant: in-flow launcher opens chat without covering candidate c
   expect(button.y + button.height).toBeLessThan(firstCandidate.y);
   await launcher.click();
   await expect(page.getByRole('dialog', { name: 'Стік', exact: true })).toBeVisible();
+  await settle(page);
+  expect(statusRequests).toBe(1);
   await expect(page.locator('.mascot-stage')).toBeHidden();
   await page.getByRole('button', { name: 'Закрити чат', exact: true }).click();
   await expect(page.locator('.assistant-panel')).toHaveCount(0);
