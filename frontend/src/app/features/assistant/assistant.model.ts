@@ -1,4 +1,4 @@
-/** Contract of /api/assistant (OpenAI chat format; the client owns the history, the server is stateless). */
+/** Contract of /api/assistant: the client owns display history; the server filters the provider context. */
 
 export interface ToolCall {
   id: string;
@@ -110,6 +110,7 @@ export const ASSISTANT_ERROR_CODES = [
   'ai_timeout',
   'ai_provider',
   'ai_invalid_output',
+  'ai_context_changed',
 ] as const;
 
 export const UNAVAILABLE_REASONS: readonly AssistantUnavailableReason[] = ['ai_disabled', 'ai_not_configured', 'ai_purpose_disabled'];

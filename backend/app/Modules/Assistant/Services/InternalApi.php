@@ -6,6 +6,7 @@ namespace App\Modules\Assistant\Services;
 
 use App\Models\User;
 use App\Modules\Assistant\Support\ApiPath;
+use App\Modules\Assistant\Support\AssistantDataPolicy;
 use Illuminate\Contracts\Auth\Factory as Auth;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Foundation\Application;
@@ -19,8 +20,8 @@ use Throwable;
 /**
  * Calls the real SinHRM API in-process as the given user (MCP tool calls): the sub-request goes through the router
  * with all route middleware — module access, gates, policies, validation, throttles — exactly like a request from the
- * SPA, so the helper can never do more than the user can. Only ApiPath-allowed paths; the answer is cut to MAX_CHARS
- * for the model. The container's current request is restored afterwards.
+ * SPA, so the helper can never do more than the user can. GETs also require AssistantDataPolicy; responses are
+ * projected before MAX_CHARS. Writes expose only status/fixed error codes. The container's current request is restored afterwards.
  */
 final readonly class InternalApi
 {
@@ -41,7 +42,8 @@ final readonly class InternalApi
     {
         $method = strtoupper($method);
         $clean = ApiPath::normalize($path);
-        if ($clean === null || ! in_array($method, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+        if ($clean === null || ! in_array($method, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], true)
+            || ($method === 'GET' && AssistantDataPolicy::readPath($path) === null)) {
             return ['status' => 403, 'error' => 'forbidden_path'];
         }
         $server = ['HTTP_ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json'];
@@ -49,7 +51,7 @@ final readonly class InternalApi
             ? Request::create('/api/'.$clean, 'GET', ApiPath::query($path, $payload), [], [], $server)
             : Request::create('/api/'.$clean, $method, [], [], [], $server, (string) json_encode((object) $payload));
 
-        return self::summarize($this->dispatch($user, $sub));
+        return self::summarize($this->dispatch($user, $sub), $method, $clean);
     }
 
     private function dispatch(User $user, Request $sub): Response
@@ -72,24 +74,27 @@ final readonly class InternalApi
     }
 
     /** @return array<string, mixed> */
-    private static function summarize(Response $response): array
+    private static function summarize(Response $response, string $method, string $path): array
     {
         $status = $response->getStatusCode();
-        if (! $response instanceof JsonResponse) {
-            $type = (string) $response->headers->get('Content-Type', '');
-
-            return ['status' => $status, 'content_type' => $type, 'note' => $status === 204 ? 'no content' : 'non-JSON response omitted'];
-        }
-        $data = $response->getData(true);
         if ($status >= 400) {
-            $message = is_array($data) ? ($data['message'] ?? $data['error'] ?? null) : null;
-
-            return array_filter([
-                'status' => $status,
-                'error' => is_string($message) ? $message : 'error',
-                'errors' => is_array($data) ? ($data['errors'] ?? null) : null,
-            ], static fn (mixed $v): bool => $v !== null);
+            return ['status' => $status, 'error' => match ($status) {
+                401 => 'unauthenticated',
+                403 => 'forbidden',
+                404 => 'not_found',
+                422 => 'validation_failed',
+                429 => 'rate_limited',
+                default => 'api_error',
+            }];
         }
+        if ($method !== 'GET' || $status === 204) {
+            return ['status' => $status];
+        }
+        if (! $response instanceof JsonResponse) {
+            return ['status' => $status, 'error' => 'non_json_response'];
+        }
+        // Project before encoding or truncating: previews must never contain discarded source fields.
+        $data = AssistantDataPolicy::project($path, $response->getData(true));
         $json = (string) json_encode($data, JSON_UNESCAPED_UNICODE);
         if (mb_strlen($json) > self::MAX_CHARS) {
             return ['status' => $status, 'truncated' => true, 'data_preview' => mb_substr($json, 0, self::MAX_CHARS)];
