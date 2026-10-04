@@ -32,7 +32,7 @@ final readonly class AssistantHistory
     ) {}
 
     /**
-     * @param  list<array<string, mixed>> $messages
+     * @param  list<array<string, mixed>>  $messages
      * @return list<array<string, mixed>>
      */
     public function build(User $user, array $messages): array
@@ -107,7 +107,7 @@ final readonly class AssistantHistory
     }
 
     /**
-     * @param  array<string, mixed> $args
+     * @param  array<string, mixed>  $args
      * @return array<string, string>
      */
     private function arguments(User $user, string $name, array $args): array
@@ -134,8 +134,8 @@ final readonly class AssistantHistory
     }
 
     /**
-     * @param  array<string, mixed> $args
-     * @param  array<string, mixed> $clientResult
+     * @param  array<string, mixed>  $args
+     * @param  array<string, mixed>  $clientResult
      * @return array<string, mixed>
      */
     private function fresh(User $user, string $name, array $args, array $clientResult): array

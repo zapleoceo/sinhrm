@@ -87,7 +87,7 @@ final class AssistantDataPolicy
     }
 
     /**
-     * @param  array<array-key, mixed> $value
+     * @param  array<array-key, mixed>  $value
      * @return array<string, mixed>|list<array<string, mixed>>
      */
     private static function rows(array $value, string $resource): array
@@ -106,7 +106,7 @@ final class AssistantDataPolicy
     }
 
     /**
-     * @param  array<array-key, mixed> $row
+     * @param  array<array-key, mixed>  $row
      * @return array<string, mixed>
      */
     private static function record(array $row, string $resource): array
@@ -149,8 +149,8 @@ final class AssistantDataPolicy
     }
 
     /**
-     * @param  array<array-key, mixed> $row
-     * @param  list<string> $keys
+     * @param  array<array-key, mixed>  $row
+     * @param  list<string>  $keys
      * @return array<string, int>
      */
     private static function ids(array $row, array $keys): array

@@ -303,7 +303,7 @@ final class AssistantDataMinimizationTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed> $args
+     * @param  array<string, mixed>  $args
      * @return list<array<string, mixed>>
      */
     private function round(string $tool, array $args, string $id = 'raw_call'): array
