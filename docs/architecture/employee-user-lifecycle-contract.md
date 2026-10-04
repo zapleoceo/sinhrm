@@ -19,7 +19,13 @@ No option below is an approved product decision; implementation and lifecycle te
 | [PATCH status validation](../../backend/app/Modules/People/Http/Requests/SaveEmployeeRequest.php#L52) permits active/on_leave; [update](../../backend/app/Modules/People/Services/EmployeeService.php#L91) saves supplied attributes. | No dedicated restore contract for dates, reviewed access, old workflows and rejoining was found. |
 | [Current schema](../../backend/app/Modules/People/Database/Migrations/2026_10_02_100001_create_people_tables.php#L13) has unique nullable user_id and one position_id. | It represents at most one Employee per User; external multiposition/employment semantics are unverified. Users may exist without an Employee. |
 
-## 2. Owner decisions — approval required before dependent implementation
+## 2. Owner decisions - approval required before dependent implementation
+
+Gate legend (from the separate UNIFIED-TZ v0.3 draft, source `0dd175de62350fdcacc16af7110739897829ccf0`):
+R0 = proposed end-to-end hiring pilot; I1 = person/account identity; I2 = organization boundary;
+I3 = branch/department/position; I4 = direct manager; I5 = roles/permissions/scope;
+I6 = hire/archive/restore; I7 = effective dates; I8 = synchronization/data quality.
+These are proposed contract topics, not approved integrations or completed release gates.
 
 | Decision | Status / owner | Options to resolve, without selecting a default | Dependent gate |
 | --- | --- | --- | --- |
