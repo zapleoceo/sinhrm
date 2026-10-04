@@ -74,6 +74,7 @@ final class EloquentVacancyRepository implements VacancyRepository
     public function boardApplications(Vacancy $vacancy): Collection
     {
         return $vacancy->applications()
+            ->addSelect(['applications.*', 'screening_score' => ScreeningRanking::applicationScore()])
             ->with(['candidate', 'rejectReason'])
             ->orderByDesc('stage_entered_at')
             ->orderByDesc('id')

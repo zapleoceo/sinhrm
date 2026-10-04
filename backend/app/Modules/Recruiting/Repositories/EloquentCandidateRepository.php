@@ -24,6 +24,7 @@ final class EloquentCandidateRepository implements CandidateRepository
         $appFilter = $filter->vacancyId !== null || $filter->stageId !== null || $filter->status !== null;
 
         return $this->scoped(Candidate::query(), $scope)
+            ->addSelect(['candidates.*', 'screening_score' => ScreeningRanking::candidateScore($filter)])
             ->with(['channel', 'applications' => fn ($q) => $q->with(['vacancy', 'stage'])->orderByDesc('updated_at')])
             ->when($filter->q, function (Builder $q, string $term): void {
                 $like = Like::contains(mb_strtolower($term));
@@ -46,6 +47,7 @@ final class EloquentCandidateRepository implements CandidateRepository
             ->when($filter->source, fn (Builder $q, CandidateSource $s) => $q->where('source', $s->value))
             ->when($filter->ownerId, fn (Builder $q, int $id) => $q->where('owner_id', $id))
             ->when($filter->channelId, fn (Builder $q, int $id) => $q->where('channel_id', $id))
+            ->when($filter->sort === 'screening_score', fn (Builder $q) => $q->orderByRaw('screening_score desc nulls last'))
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->paginate($filter->perPage);
