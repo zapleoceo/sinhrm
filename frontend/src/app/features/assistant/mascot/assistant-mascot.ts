@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, NgZone, afterNextRender, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, NgZone, afterNextRender, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -47,6 +47,8 @@ export function prefersLite(nav: NavigatorHints | undefined): boolean {
   styleUrl: './assistant-mascot.scss',
 })
 export class AssistantMascot {
+  /** Narrow shell: chat remains available through its in-flow top-bar launcher. */
+  readonly compact = input(false);
   private readonly zone = inject(NgZone);
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
@@ -86,8 +88,11 @@ export class AssistantMascot {
 
     effect(() => {
       const on = this.settings.enabled();
+      const compact = this.compact();
       untracked(() => {
-        this.brain?.setEnabled(on);
+        if (compact) this.cancelHold();
+        this.brain?.setEnabled(on && !compact);
+        this.syncLoop();
         this.loop?.kick();
       });
     });
@@ -200,7 +205,7 @@ export class AssistantMascot {
       }
     });
     this.watchOverlays();
-    this.brain.start(this.settings.enabled(), this.reduced);
+    this.brain.start(this.settings.enabled() && !this.compact(), this.reduced);
     this.brain.routeChanged(this.router.url);
     this.syncLoop();
   }
@@ -329,7 +334,7 @@ export class AssistantMascot {
   /* ───────────── loop ───────────── */
 
   private syncLoop(): void {
-    const on = !!this.brain?.visible && this.document.visibilityState !== 'hidden' && !this.paused;
+    const on = !this.compact() && !!this.brain?.visible && this.document.visibilityState !== 'hidden' && !this.paused;
     this.loop?.setEnabled(on);
     if (on) {
       this.armBlink();

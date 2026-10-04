@@ -1,6 +1,6 @@
-<div class="mascot-stage" #stage [class.off]="!onStage()"></div>
+<div class="mascot-stage" #stage [class.off]="!onStage() || compact()"></div>
 
-@if (onStage() && !settings.enabled() && !settings.chatOpen()) {
+@if (!compact() && onStage() && !settings.enabled() && !settings.chatOpen()) {
   <button
     type="button"
     class="mascot-orb"

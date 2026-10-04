@@ -21,6 +21,7 @@
  ],
  "interactive": [
   "button \"Головне меню\"",
+  "button \"Поговорити зі Стіком\"",
   "link \"Google Sheets Імпорт кандидатів зі старих таблиць\" -> /docs/recruiting",
   "link \"Google Пошта, календар, таблиці\" -> /docs/google-workspace",
   "link \"Інтеграції Підключення зовнішніх сервісів\" -> /docs/integrations",
