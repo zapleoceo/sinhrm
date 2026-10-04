@@ -69,6 +69,8 @@ describe('Google integration reconnect card', () => {
     const action = element.querySelector<HTMLAnchorElement>('.google-connect a');
     expect(action?.getAttribute('href')).toBeNull();
     expect(action?.getAttribute('aria-disabled')).toBe('true');
+    expect(action?.hasAttribute('disabled')).toBe(true);
+    expect(action?.classList.contains('mat-mdc-button-disabled')).toBe(true);
     expect(action?.getAttribute('tabindex')).toBe('-1');
   });
 

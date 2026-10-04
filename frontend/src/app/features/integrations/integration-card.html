@@ -24,7 +24,7 @@
   @if (it.group === 'google') {
     <div class="google-connect">
       <p class="muted">{{ 'integrations.google.scope' | transloco }}</p>
-      <a mat-flat-button role="link" [attr.href]="googleOauthConfigured() ? googleConnectHref : null" [class.disabled]="!googleOauthConfigured()" [attr.aria-disabled]="googleOauthConfigured() ? null : true" [attr.tabindex]="googleOauthConfigured() ? null : -1">
+      <a mat-flat-button role="link" [attr.href]="googleOauthConfigured() ? googleConnectHref : null" [disabled]="!googleOauthConfigured()">
         <mat-icon>link</mat-icon>
         {{ (it.status === 'off' && !it.last_error ? 'google.connect.button' : 'integrations.google.reconnect') | transloco }}
       </a>
