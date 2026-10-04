@@ -30,7 +30,7 @@ function setup(focused = false, failLogs = false) {
   const fixture = TestBed.createComponent(IntegrationCard);
   fixture.componentRef.setInput('item', gmail);
   fixture.componentRef.setInput('focused', focused);
-  fixture.componentRef.setInput('googleOauthConfigured', true);
+  fixture.componentRef.setInput('googleOAuthState', 'ready');
   fixture.detectChanges();
   return { fixture, element: fixture.nativeElement as HTMLElement };
 }
@@ -64,7 +64,7 @@ describe('Google integration reconnect card', () => {
 
   it('disables consent navigation when OAuth configuration has not been confirmed', () => {
     const { fixture, element } = setup();
-    fixture.componentRef.setInput('googleOauthConfigured', false);
+    fixture.componentRef.setInput('googleOAuthState', 'unconfigured');
     fixture.detectChanges();
     const action = element.querySelector<HTMLAnchorElement>('.google-connect a');
     expect(action?.getAttribute('href')).toBeNull();
@@ -72,6 +72,36 @@ describe('Google integration reconnect card', () => {
     expect(action?.hasAttribute('disabled')).toBe(true);
     expect(action?.classList.contains('mat-mdc-button-disabled')).toBe(true);
     expect(action?.getAttribute('tabindex')).toBe('-1');
+    expect(element.querySelector('.google-connect p')?.textContent).toContain(en.google.connect.availability.unconfigured);
+    expect(element.textContent).not.toContain(en.integrations.google.scope);
+  });
+
+  for (const state of ['loading', 'error'] as const) {
+    it(`explains ${state} beside the disabled consent action without promising a redirect`, () => {
+      const { fixture, element } = setup();
+      fixture.componentRef.setInput('googleOAuthState', state);
+      fixture.detectChanges();
+      const action = element.querySelector<HTMLAnchorElement>('.google-connect a');
+      expect(action?.getAttribute('href')).toBeNull();
+      expect(action?.getAttribute('aria-disabled')).toBe('true');
+      expect(action?.getAttribute('aria-describedby')).toBe('google-guidance-google_gmail');
+      expect(element.querySelector('#google-guidance-google_gmail')?.textContent).toContain(en.google.connect.availability[state]);
+      expect(element.textContent).not.toContain(en.integrations.google.scope);
+    });
+  }
+
+  it('restores the consent link when setup becomes ready and uses Connect for a fresh demo', () => {
+    const { fixture, element } = setup();
+    fixture.componentRef.setInput('googleOAuthState', 'unconfigured');
+    fixture.detectChanges();
+    fixture.componentRef.setInput('googleOAuthState', 'ready');
+    fixture.componentRef.setInput('item', { ...gmail, status: 'demo', last_error: null });
+    fixture.detectChanges();
+    const action = element.querySelector<HTMLAnchorElement>('.google-connect a');
+    expect(action?.getAttribute('href')).toBe('/api/google/connect?services=gmail,calendar,sheets');
+    expect(action?.hasAttribute('disabled')).toBe(false);
+    expect(action?.textContent).toContain(en.google.connect.button);
+    expect(element.querySelector('.google-connect p')?.textContent).toContain(en.integrations.google.scope);
   });
 
   it('does not offer Google consent for another integration', () => {

@@ -8,7 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { GOOGLE_SERVICES, connectUrl } from '../google-workspace/google.model';
+import { GOOGLE_SERVICES, GoogleOAuthState, connectUrl } from '../google-workspace/google.model';
 import { ChannelPanel } from '../channels/channel-panel';
 import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
@@ -45,7 +45,8 @@ export class IntegrationCard implements OnChanges {
 
   readonly item = input.required<Integration>();
   readonly focused = input(false);
-  readonly googleOauthConfigured = input(false);
+  readonly googleOAuthState = input<GoogleOAuthState>('loading');
+  protected readonly googleOauthConfigured = computed(() => this.googleOAuthState() === 'ready');
   protected readonly googleConnectHref = connectUrl(GOOGLE_SERVICES);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
 

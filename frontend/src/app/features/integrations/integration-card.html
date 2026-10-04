@@ -1,5 +1,5 @@
 @let it = item();
-<article class="card" [class.open]="expanded()" [attr.id]="'integration-' + it.key" tabindex="-1">
+<article class="card" [class.google]="it.group === 'google'" [class.open]="expanded()" [attr.id]="'integration-' + it.key" tabindex="-1">
   <header class="head">
     <div class="title">
       <h3><app-channel-icon [key]="it.key" /> {{ 'integrations.items.' + it.key + '.name' | transloco }}</h3>
@@ -23,10 +23,10 @@
 
   @if (it.group === 'google') {
     <div class="google-connect">
-      <p class="muted">{{ 'integrations.google.scope' | transloco }}</p>
-      <a mat-flat-button role="link" [attr.href]="googleOauthConfigured() ? googleConnectHref : null" [disabled]="!googleOauthConfigured()">
+      <p class="muted" [attr.id]="'google-guidance-' + it.key">{{ (googleOauthConfigured() ? 'integrations.google.scope' : 'google.connect.availability.' + googleOAuthState()) | transloco }}</p>
+      <a mat-flat-button role="link" [attr.href]="googleOauthConfigured() ? googleConnectHref : null" [disabled]="!googleOauthConfigured()" [attr.aria-describedby]="'google-guidance-' + it.key">
         <mat-icon>link</mat-icon>
-        {{ (it.status === 'off' && !it.last_error ? 'google.connect.button' : 'integrations.google.reconnect') | transloco }}
+        {{ ((it.status === 'off' || it.status === 'demo') && !it.last_error ? 'google.connect.button' : 'integrations.google.reconnect') | transloco }}
       </a>
     </div>
   }

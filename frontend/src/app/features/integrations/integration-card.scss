@@ -27,6 +27,11 @@
 
 .head .app-pill { flex: none; margin-top: 0.15rem; }
 
+/* Match the two-line Gmail description without squeezing controls or truncating text. */
+@media (min-width: 901px) {
+  .card.google .title > p { min-block-size: 2lh; }
+}
+
 .result { margin: 0; }
 .error { color: var(--app-danger); }
 .danger { color: var(--app-danger); }

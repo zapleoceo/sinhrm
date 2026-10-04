@@ -9,6 +9,7 @@ import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/sl
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AiPanel } from '../ai/ai-panel';
 import { GoogleConnectPanel } from '../google-workspace/google-connect.panel';
+import { GoogleOAuthState } from '../google-workspace/google.model';
 import { ConfirmAiDialog } from './confirm-ai.dialog';
 import { IntegrationCard } from './integration-card';
 import { IntegrationsStore } from './integrations.store';
@@ -25,7 +26,7 @@ import { NotifyService } from '../../core/ui/notify.service';
 })
 export class IntegrationsPage implements OnInit {
   protected readonly store = inject(IntegrationsStore);
-  protected readonly googleOauthConfigured = signal(false);
+  protected readonly googleOAuthState = signal<GoogleOAuthState>('loading');
   private readonly query = toSignal(inject(ActivatedRoute).queryParamMap);
   protected readonly focusedIntegration = computed(() => this.query()?.get('integration') ?? null);
   private readonly dialog = inject(MatDialog);
