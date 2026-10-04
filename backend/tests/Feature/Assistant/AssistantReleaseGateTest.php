@@ -7,6 +7,7 @@ namespace Tests\Feature\Assistant;
 use App\Models\User;
 use App\Modules\Assistant\Services\AssistantChatService;
 use App\Modules\Assistant\Services\InternalApi;
+use App\Modules\Auth\Contracts\UserRepository;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Core\Contracts\ModuleSettingsRepository;
@@ -62,6 +63,54 @@ final class AssistantReleaseGateTest extends TestCase
         $this->assertSame(0, $reads);
         $this->assertSame([], $this->brokerSubmits);
         Http::assertNothingSent();
+    }
+
+    #[DataProvider('initialCaptureChanges')]
+    public function test_initial_capture_rechecks_assistant_access_after_middleware(string $change): void
+    {
+        $this->enableAi(['native_tools' => 'on']);
+        $this->fakeBroker([[self::doneAnswer('Not delivered')]]);
+        $user = $this->userWith(UserRole::Superadmin);
+        $settings = $this->app->make(ModuleSettingsRepository::class);
+        $settings->save('assistant', true, [UserRole::Superadmin->value]);
+        $access = $this->app->make(ModuleAccess::class);
+        $access->refreshSettings();
+        $this->assertTrue($access->allows($user, 'assistant'));
+        $users = $this->app->make(UserRepository::class);
+        // The real route middleware has passed when capture makes its first user-repository lookup.
+        $this->mock(UserRepository::class)->shouldReceive('find')->once()->with($user->id)
+            ->andReturnUsing(function (int $id) use ($change, $settings, $access, $user, $users): ?User {
+                $fresh = $users->find($id);
+                assert($fresh instanceof User);
+                if ($change === 'demotion') {
+                    $fresh->syncRoles([UserRole::Employee->value]);
+                } else {
+                    $settings->save('assistant', false, [UserRole::Superadmin->value]);
+                    Cache::forget(ModuleAccess::CACHE_KEY);
+                }
+                $this->assertTrue($access->allows($user, 'assistant'), 'Middleware/current instance still accepted the earlier authority.');
+
+                return $fresh;
+            });
+        $reads = 0;
+        Route::get('api/people', function () use (&$reads) {
+            $reads++;
+
+            return response()->json(['data' => [['id' => 1]]]);
+        });
+        $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => self::readRound('people')])
+            ->assertOk()->assertJsonPath('data.state', 'failed')->assertJsonPath('data.error', 'ai_context_changed')
+            ->assertJsonPath('data.request_id', 0)->assertJsonMissingPath('data.assistant');
+        $this->assertSame(0, $reads);
+        $this->assertSame([], $this->brokerSubmits);
+        Http::assertNothingSent();
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function initialCaptureChanges(): iterable
+    {
+        yield 'demoted after middleware' => ['demotion'];
+        yield 'disabled after middleware' => ['module_off'];
     }
 
     public function test_role_revocation_during_history_read_blocks_provider_submit(): void
@@ -121,15 +170,16 @@ final class AssistantReleaseGateTest extends TestCase
         $access = $this->app->make(ModuleAccess::class);
         $this->assertTrue($access->allows($user, 'recruiting'));
         $finish = true;
-        $this->brokerWithRevocation(function (): void {
+        $this->brokerWithRevocation(function () use ($access, $user): void {
             // Another request saves through its repository and forgets shared cache; it cannot reset this instance.
             $this->app->make(ModuleSettingsRepository::class)->save('recruiting', false, UserRole::values());
             Cache::forget(ModuleAccess::CACHE_KEY);
+            $this->assertTrue($access->allows($user, 'recruiting'), 'The old instance is still stale before the final capture.');
         }, $finish);
         $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'Count']]])
             ->assertOk()->assertJsonPath('data.error', 'ai_context_changed')->assertJsonMissingPath('data.assistant')
             ->assertJsonMissingPath('data.server_results')->assertJsonMissingPath('data.client_calls');
-        $this->assertTrue($access->allows($user, 'recruiting'), 'The original instance still has its request-local settings, so the fresh repository digest is necessary.');
+        $this->assertFalse($access->allows($user, 'recruiting'), 'Final capture refreshed the instance before checking authority.');
         $this->assertCount(1, $this->brokerSubmits);
         $this->assertSame(1, $this->brokerPolls);
     }

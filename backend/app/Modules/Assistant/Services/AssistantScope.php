@@ -6,7 +6,6 @@ namespace App\Modules\Assistant\Services;
 
 use App\Models\User;
 use App\Modules\Auth\Contracts\UserRepository;
-use App\Modules\Core\Contracts\ModuleSettingsRepository;
 use App\Modules\Core\Services\ModuleAccess;
 use App\Modules\Directory\Contracts\DictionaryRepository;
 use App\Modules\Recruiting\Contracts\HiringTeamRepository;
@@ -19,7 +18,6 @@ final readonly class AssistantScope
         private DictionaryRepository $directory,
         private UserRepository $users,
         private HiringTeamRepository $team,
-        private ModuleSettingsRepository $settings,
     ) {}
 
     public static function cacheKey(int $requestId): string
@@ -44,13 +42,16 @@ final readonly class AssistantScope
         if ($selectedRole !== null && $actor->effectiveRoles() !== [$selectedRole]) {
             return null;
         }
+        $settings = $this->modules->refreshSettings();
+        if (! $this->modules->allows($actor, 'assistant')) {
+            return null;
+        }
         $roles = $actor->getRoleNames()->all();
         $permissions = $actor->getAllPermissions()->pluck('name')->all();
         // Fresh query: a loaded User::branches relation may predate an assignment change.
         $branches = $this->directory->activeBranchIdsOfUser($actor->id);
         $modules = $this->modules->allowedKeys($actor);
-        // Detect parallel settings edits even when ModuleAccess retains its request-local cached settings.
-        $settings = $this->settings->all();
+        // Canonicalize the exact refreshed snapshot used by the access gate and allowedKeys.
         foreach ($settings as $key => $setting) {
             sort($setting['roles']);
             $settings[$key] = $setting;
