@@ -102,7 +102,7 @@
   "link \"Підключити Google\" [disabled]",
   "link \"Підключити Google\" [disabled]",
   "link \"Підключити Google\" [disabled]",
-  "link \"Підключити Google\" [disabled] -> /api/google/connect?services=gmail,calendar,sheets",
+  "link \"Підключити Google\" [disabled]",
   "link \"Скрипти\" -> /admin/scripts",
   "link \"Стан системи\" -> /status",
   "link \"Цикли оцінювання\" -> /admin/perform/reviews",
