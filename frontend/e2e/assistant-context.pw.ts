@@ -12,9 +12,9 @@ const auth = (JSON.parse(readFileSync(join(__dirname, 'fixtures', 'auth.json'), 
 ].body;
 
 const languages = [
-  { locale: 'uk', talk: 'Поговорити', error: 'Ваша робоча роль або доступ змінилися. Надішліть запит ще раз.' },
-  { locale: 'ru', talk: 'Поговорить', error: 'Ваша рабочая роль или доступ изменились. Отправьте запрос ещё раз.' },
-  { locale: 'en', talk: 'Talk', error: 'Your work role or access changed. Send the request again.' },
+  { locale: 'uk', talk: 'Поговорити', menu: 'Меню Стіка', connect: 'Підключити до Claude / MCP', inactive: 'Токена ще немає', error: 'Ваша робоча роль або доступ змінилися. Надішліть запит ще раз.' },
+  { locale: 'ru', talk: 'Поговорить', menu: 'Меню Стика', connect: 'Подключить к Claude / MCP', inactive: 'Токена ещё нет', error: 'Ваша рабочая роль или доступ изменились. Отправьте запрос ещё раз.' },
+  { locale: 'en', talk: 'Talk', menu: 'Stick menu', connect: 'Connect to Claude / MCP', inactive: 'No token yet', error: 'Your work role or access changed. Send the request again.' },
 ] as const;
 
 for (const language of languages) {
@@ -35,6 +35,12 @@ for (const language of languages) {
     });
     let turns = 0;
     let polls = 0;
+    let mcpReads = 0;
+    await page.route(`${E2E_ORIGIN}/api/assistant/mcp-token`, async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      mcpReads++;
+      await route.fulfill({ status: 200, json: { data: { active: false, created_at: null, last_used_at: null, expires_at: null } } });
+    });
     await page.route(`${E2E_ORIGIN}/api/assistant/turn`, async (route) => {
       if (route.request().method() !== 'POST') return route.fallback();
       turns++;
@@ -96,6 +102,19 @@ for (const language of languages) {
 
     const axe = await new AxeBuilder({ page }).include('.assistant-panel').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
     expect(axe.violations).toEqual([]);
+
+    await panel.getByRole('button', { name: language.menu, exact: true }).click();
+    await page.getByRole('menuitem', { name: language.connect, exact: true }).click();
+    await expect(panel.locator('.status')).toHaveText(language.inactive);
+    const warning = panel.getByRole('note');
+    await warning.scrollIntoViewIfNeeded();
+    await expect(warning).toBeInViewport({ ratio: 1 });
+    expect(await warning.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await settle(page);
+    await capture('mcp-privacy');
+    const mcpAxe = await new AxeBuilder({ page }).include('.assistant-panel').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    expect(mcpAxe.violations).toEqual([]);
+    expect(mcpReads).toBe(1);
     expect(turns).toBe(1);
     expect(polls).toBe(1);
     expect(mock.mutations.filter((mutation) => mutation.path !== '/sanctum/csrf-cookie')).toEqual([]);
