@@ -34,7 +34,10 @@
   <div class="actions">
     <mat-form-field class="status" subscriptSizing="dynamic">
       <mat-label>{{ 'integrations.mode' | transloco }}</mat-label>
-      <mat-select [value]="manualStatus()" [disabled]="busy()" (valueChange)="setStatus($event)">
+      <mat-select [value]="it.status" [disabled]="busy()" (valueChange)="setStatus($event)">
+        @if (it.status === 'connected' || it.status === 'error') {
+          <mat-option [value]="it.status" disabled>{{ 'integrations.status.' + it.status | transloco }}</mat-option>
+        }
         @for (s of manualStatuses; track s) {
           <mat-option [value]="s">{{ 'integrations.status.' + s | transloco }}</mat-option>
         }

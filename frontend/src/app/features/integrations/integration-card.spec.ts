@@ -1,4 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { MatSelect } from '@angular/material/select';
+import { vi } from 'vitest';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of, throwError } from 'rxjs';
 import { IntegrationCard } from './integration-card';
@@ -14,12 +17,13 @@ const gmail: Integration = {
 };
 
 function setup(focused = false, failLogs = false) {
+  const setStatus = vi.fn();
   TestBed.configureTestingModule({
     imports: [IntegrationCard, TranslocoTestingModule.forRoot({
       langs: { en }, preloadLangs: true, translocoConfig: { availableLangs: ['en'], defaultLang: 'en' },
     })],
     providers: [
-      { provide: IntegrationsStore, useValue: { pending: () => new Set<string>() } },
+      { provide: IntegrationsStore, useValue: { pending: () => new Set<string>(), setStatus } },
       { provide: IntegrationsService, useValue: { logs: () => failLogs ? throwError(() => new Error('synthetic failure')) : of([
         { id: 1, level: 'warning', message: 'reconnect_required', created_at: null, context: {} },
         { id: 2, level: 'info', message: 'google_connected', created_at: null, context: {} },
@@ -32,10 +36,32 @@ function setup(focused = false, failLogs = false) {
   fixture.componentRef.setInput('focused', focused);
   fixture.componentRef.setInput('googleOAuthState', 'ready');
   fixture.detectChanges();
-  return { fixture, element: fixture.nativeElement as HTMLElement };
+  return { fixture, element: fixture.nativeElement as HTMLElement, setStatus };
 }
 
 describe('Google integration reconnect card', () => {
+  for (const status of ['connected', 'error'] as const) {
+    it(`shows ${status} without allowing an automatic status to be assigned manually`, async () => {
+      const { fixture, element, setStatus } = setup();
+      fixture.componentRef.setInput('item', { ...gmail, status });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+      expect(select.value).toBe(status);
+      expect(element.querySelector('.status .mat-mdc-select-value')?.textContent).toContain(en.integrations.status[status]);
+      const options = select.options.toArray();
+      expect(options.filter((option) => !option.disabled).map((option) => option.value)).toEqual(['off', 'demo']);
+      expect(options.find((option) => option.value === status)?.disabled).toBe(true);
+      select.valueChange.emit('connected');
+      select.valueChange.emit('error');
+      expect(setStatus).not.toHaveBeenCalled();
+      select.valueChange.emit('off');
+      select.valueChange.emit('demo');
+      expect(setStatus.mock.calls.map((call) => call[1])).toEqual(['off', 'demo']);
+    });
+  }
+
   it('offers consent navigation with the actual three-service scope before expanding', () => {
     const { element } = setup();
     const action = element.querySelector<HTMLAnchorElement>('.google-connect a');

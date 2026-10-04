@@ -10,7 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { GOOGLE_SERVICES, GoogleOAuthState, connectUrl } from '../google-workspace/google.model';
 import { ChannelPanel } from '../channels/channel-panel';
-import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
+import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, IntegrationStatus, MANUAL_STATUSES } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
 import { IntegrationsStore } from './integrations.store';
 import { ChannelIcon } from '../../core/ui/channel-icon';
@@ -76,10 +76,6 @@ export class IntegrationCard implements OnChanges {
   protected readonly logs = signal<IntegrationLog[] | null>(null);
   protected readonly logsFailed = signal(false);
   protected readonly busy = computed(() => this.store.pending().has(this.item().key));
-  protected readonly manualStatus = computed<ManualStatus | null>(() => {
-    const status = this.item().status;
-    return status === 'off' || status === 'demo' ? status : null;
-  });
   protected readonly checkKey = computed(() => checkResultKey(this.item().last_error));
 
   protected toggle(): void {
@@ -91,7 +87,9 @@ export class IntegrationCard implements OnChanges {
     }
   }
 
-  protected setStatus(status: ManualStatus): void {
+  protected setStatus(status: IntegrationStatus): void {
+    // Connected/error are observations, never user-assigned modes.
+    if (status !== 'off' && status !== 'demo') return;
     this.store.setStatus(this.item(), status, (key) => this.notify.show(key, { duration: 3000 }));
   }
 

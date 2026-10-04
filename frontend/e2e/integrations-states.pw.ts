@@ -21,7 +21,7 @@ const readJson = (file: string): unknown => JSON.parse(readFileSync(join(__dirna
 const scenarios = readJson('fixtures/scenarios/google-integrations.json') as Scenario[];
 const original = (readJson('fixtures/integrations.json') as Record<string, { body: IntegrationsList }>)['GET /api/integrations'].body;
 const i18n = readJson('../public/i18n/uk.json') as {
-  integrations: { google: { scope: string }; check: { reconnect_required: string }; logs: { error: string; messages: { google_connected: string } } };
+  integrations: { status: Record<Integration['status'], string>; google: { scope: string }; check: { reconnect_required: string }; logs: { error: string; messages: { google_connected: string } } };
   common: { retry: string };
 };
 // Reuse the existing page's known findings; new states may not add axe violations.
@@ -67,6 +67,19 @@ for (const scenario of scenarios) {
       await expect(page.locator(`app-google-connect-panel li[data-state="${scenario.id === 'connected' ? 'connected' : 'error'}"]`)).toHaveCount(3);
       const gmail = page.locator('#integration-google_gmail');
       await expect(gmail).toHaveClass(/open/);
+      // Deep links retain the complete focused header below the mobile sticky bar.
+      const focusedHeader = await gmail.locator('header.head').boundingBox();
+      expect(focusedHeader).not.toBeNull();
+      expect(focusedHeader!.y).toBeGreaterThanOrEqual(0);
+      if (info.project.name.startsWith('mobile')) {
+        const topbar = await page.locator('.topbar').boundingBox();
+        expect(topbar).not.toBeNull();
+        expect(focusedHeader!.y).toBeGreaterThanOrEqual(topbar!.y + topbar!.height);
+      }
+      for (const mode of await cards.locator('.status mat-select').all()) {
+        await expect(mode).toHaveText(i18n.integrations.status[scenario.integration.status]);
+      }
+
       await expect(gmail.locator('.google-connect p')).toHaveText(i18n.integrations.google.scope);
       if (scenario.id !== 'connected') {
         await expect(cards.locator('.result')).toHaveCount(3);
