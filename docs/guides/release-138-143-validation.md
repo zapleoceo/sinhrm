@@ -14,14 +14,14 @@
 | [139](https://github.com/zapleoceo/sinhrm/pull/139) | TZ6 screening ranking | `227046dd01c389e37a7369ef9e505a98ced3afe4` |
 | [140](https://github.com/zapleoceo/sinhrm/pull/140) | Мобильный launcher Стіка | `880772c9eba9f704f06db300cbafa02f539d0a18` |
 | [141](https://github.com/zapleoceo/sinhrm/pull/141) | Локализация paginator | `9da8931a3197a79df61b00bf710211bedabff980` |
-| [143](https://github.com/zapleoceo/sinhrm/pull/143) | Минимизация automatic API/tool → AI и повторная проверка доступа | `576a869afc8d3fae8705a39b13b7976c0feb7d62` |
+| [143](https://github.com/zapleoceo/sinhrm/pull/143) | Минимизация automatic API/tool → AI и повторная проверка доступа | `e93d1f985bb7b8abdba154f816d738558a443c25` |
 
 Первичное объединение: `dc443b4c4a2e1e4372b93e51b5e4fdc3c242fc1c`.
 Независимое раннее ревью: 53 изменённых source-файла совпадают с исходными feature heads;
 uk/ru/en сохраняют объединение изменённых leaf keys без конфликтов. В Playwright сохранены обе новые suites:
 `integrations-states.pw.ts` и `assistant-context.pw.ts`.
-Дополнение PR143 на `273911c` и исправление тестового error envelope на `576a869` прошли
-отдельное независимое source review без открытых P0/P1/P2;
+Дополнение PR143 на `273911c`, исправление тестового error envelope на `576a869` и закрытие P2
+начального доступа к Assistant на `e93d1f9` прошли отдельное независимое source review без открытых P0/P1/P2;
 финальное совместное ревью и CI привязываются к head в PR144.
 
 ## Что должен доказать gate помощника
@@ -39,7 +39,8 @@ uk/ru/en сохраняют объединение изменённых leaf key
 Автоматическая история передаёт ID/счётчики, а прямой текст пользователя намеренно передаётся AI.
 Задачи, требующие чтения имён, контактов, зарплаты и другого закрытого содержимого из API, не поддержаны.
 Уже показанная переписка не очищается при смене effective роли того же пользователя.
-`AssistantReleaseGateTest.php` содержит 14 новых Feature cases; браузерные сценарии в
+`AssistantReleaseGateTest.php` содержит 16 новых Feature cases; дополнительный Core-тест проверяет
+обновление кеша ModuleAccess без изменения правил авторизации. Браузерные сценарии в
 `assistant-context.pw.ts` проверяют count/navigation/confirm/decline/reload/forbidden/retry на uk/ru/en.
 Наличие этих тестов не означает, что их CI завершился успешно: результат публикуется с конкретным SHA в PR144.
 
