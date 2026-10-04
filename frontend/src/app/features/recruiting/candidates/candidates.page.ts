@@ -95,6 +95,8 @@ import { NotifyService } from '../../../core/ui/notify.service';
           <mat-icon matPrefix>search</mat-icon>
           <input matInput type="search" #q id="candidate-search" (input)="search$.next(q.value)" />
         </mat-form-field>
+        <button mat-stroked-button type="button" [attr.aria-pressed]="store.query().sort === 'screening_score'" (click)="store.patchQuery({ sort: store.query().sort ? undefined : 'screening_score' })">{{ 'recruiting.screening.rank' | transloco }}</button>
+        <p class="muted">{{ 'recruiting.screening.label' | transloco }}</p>
         <div class="filters">
           <mat-form-field subscriptSizing="dynamic">
             <mat-label>{{ 'recruiting.candidates.fields.status' | transloco }}</mat-label>
@@ -150,6 +152,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
                 <span class="app-station" [class.current]="c.id === id()" [attr.data-kind]="c.applications[0]?.stage?.kind" aria-hidden="true"></span>
                 <span class="name">{{ c.full_name }}</span>
                 <span class="muted sub">{{ summary(c) }}</span>
+                <span class="muted sub">{{ 'recruiting.screening.score' | transloco }}: {{ c.screening_score ?? '—' }}</span>
                 @if (stale(c)) {
                   <mat-icon class="stale" inline [attr.aria-label]="'recruiting.card.stale' | transloco">schedule</mat-icon>
                 }
