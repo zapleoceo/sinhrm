@@ -65,22 +65,25 @@ final readonly class AssistantChatService
         try {
             // No API replay when policy/provider/purpose has switched AI off. AiService still applies its gates.
             $this->ai->assertAvailable(AiPurpose::AssistantChat);
-            $history = $this->history->build($user, $messages);
+            $scope = $this->scope->capture($user);
+            if ($scope === null) {
+                return self::contextChanged(0);
+            }
+            $history = $this->history->build($scope['actor'], $messages);
             if ($history === []) {
                 return ['state' => 'failed', 'request_id' => 0, 'error' => 'ai_invalid_output'];
             }
-            $fingerprint = $this->scope->fingerprint($user);
-            $prompt = AssistantPrompt::build($history, $this->tools->definitions(), self::context($user, $page));
+            $actor = $this->scope->matchingActor($user, $scope['fingerprint']);
+            if ($actor === null) {
+                return self::contextChanged(0);
+            }
+            $prompt = AssistantPrompt::build($history, $this->tools->definitions(), self::context($actor, $page));
             $outcome = $this->ai->run($prompt, self::SUBJECT, $user->id, [], self::WAIT_SECONDS);
         } catch (AiException $e) {
             return ['state' => 'failed', 'request_id' => 0, 'error' => $e->errorCode];
         }
 
-        if ($outcome->requestId > 0) {
-            $this->cache->put(AssistantScope::cacheKey($outcome->requestId), $fingerprint, AssistantChatHandler::TTL);
-        }
-
-        return $this->result($user, $outcome);
+        return $this->deliver($user, $outcome, $scope['fingerprint'], true);
     }
 
     /**
@@ -95,11 +98,11 @@ final readonly class AssistantChatService
             return null;
         }
         $fingerprint = $this->cache->get(AssistantScope::cacheKey($requestId));
-        if (! is_string($fingerprint) || ! hash_equals($fingerprint, $this->scope->fingerprint($user))) {
-            return ['state' => 'failed', 'request_id' => $requestId, 'error' => 'ai_context_changed'];
+        if (! is_string($fingerprint) || $this->scope->matchingActor($user, $fingerprint) === null) {
+            return self::contextChanged($requestId);
         }
         if ($request->status === AiRequestStatus::Pending) {
-            return $this->result($user, $this->ai->refresh($request));
+            return $this->deliver($user, $this->ai->refresh($request), $fingerprint);
         }
         if ($request->status === AiRequestStatus::Failed) {
             return ['state' => 'failed', 'request_id' => $request->id, 'error' => $request->error ?? 'ai_provider_error', ...$this->detail($request->id)];
@@ -107,8 +110,32 @@ final readonly class AssistantChatService
         $data = $this->cache->get(AssistantChatHandler::cacheKey($request->id));
 
         return is_array($data)
-            ? $this->result($user, AiOutcome::done($request->id, $data))
+            ? $this->deliver($user, AiOutcome::done($request->id, $data), $fingerprint)
             : ['state' => 'failed', 'request_id' => $request->id, 'error' => 'ai_timeout'];
+    }
+
+    /**
+     * No model answer or server/client tool is delivered under authority that changed while awaiting the broker.
+     *
+     * @return array<string, mixed>
+     */
+    private function deliver(User $user, AiOutcome $outcome, string $fingerprint, bool $bindScope = false): array
+    {
+        $actor = $this->scope->matchingActor($user, $fingerprint);
+        if ($actor === null) {
+            return self::contextChanged($outcome->requestId);
+        }
+        if ($bindScope && $outcome->requestId > 0) {
+            $this->cache->put(AssistantScope::cacheKey($outcome->requestId), $fingerprint, AssistantChatHandler::TTL);
+        }
+
+        return $this->result($actor, $outcome);
+    }
+
+    /** @return array{state: string, request_id: int, error: string} */
+    private static function contextChanged(int $requestId): array
+    {
+        return ['state' => 'failed', 'request_id' => $requestId, 'error' => 'ai_context_changed'];
     }
 
     /** @return array<string, mixed> */
