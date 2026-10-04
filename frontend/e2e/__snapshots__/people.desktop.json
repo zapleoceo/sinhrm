@@ -10,8 +10,6 @@
   "navigation \"Головне меню\""
  ],
  "interactive": [
-  "button \"Next page\"",
-  "button \"Previous page\" [disabled]",
   "button \"Автоприховування меню\"",
   "button \"Адміністрування 9 нових\"",
   "button \"Відділ\"",
@@ -20,7 +18,9 @@
   "button \"Керівник\"",
   "button \"Люди\" [expanded]",
   "button \"Меню користувача\"",
+  "button \"Наступна сторінка\"",
   "button \"ПІБ\"",
+  "button \"Попередня сторінка\" [disabled]",
   "button \"Посада\"",
   "button \"Продуктивність\"",
   "button \"Рекрутинг 2 нових\"",
@@ -62,7 +62,7 @@
   "checkbox \"\"",
   "checkbox \"\"",
   "checkbox \"\"",
-  "combobox \"Items per page:\"",
+  "combobox \"На сторінці:\"",
   "combobox \"Статус\"",
   "link \"+380503000000\" -> tel:+380503000000",
   "link \"+380503007727\" -> tel:+380503007727",
