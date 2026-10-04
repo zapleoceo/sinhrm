@@ -123,6 +123,6 @@ export class GoogleConnectPanel implements OnInit {
     } else {
       return;
     }
-    void this.router.navigate([], { queryParams: {}, replaceUrl: true });
+    void this.router.navigate([], { queryParams: { connected: null, missing: null, google_error: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 }

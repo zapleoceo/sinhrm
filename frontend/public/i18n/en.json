@@ -103,6 +103,7 @@
     }
   },
   "integrations": {
+    "google": {"reconnect": "Reconnect through Google", "scope": "Google will open to request access to Gmail, Calendar and Sheets: reading and sending mail, calendar events and reading spreadsheets. Choose an account and confirm permissions.", "noFields": "The connection is managed through Google. Use the button on this card; you do not need to enter tokens manually."},
     "options": {"on":"On","off":"Off","chat:fast":"chat:fast — fast","chat:smart":"chat:smart — smart","chat:sales":"chat:sales — sales","structured":"structured — structured","diia_signature":"Diia.Signature","vchasno":"Vchasno"},
     "title": "Integrations",
     "subtitle": "Keys and settings of external services. Secrets are stored encrypted and never shown again.",
@@ -140,6 +141,7 @@
       "willClear": "will be removed on save"
     },
     "check": {
+      "reconnect_required": "Google access expired or was revoked. Select “Reconnect through Google” and confirm permissions.",
       "run": "Check connection",
       "connection_failed": "Service unreachable",
       "unauthorized": "Key rejected (401)",
@@ -161,6 +163,8 @@
       "empty": "No events yet",
       "error": "Could not load events",
       "messages": {
+        "reconnect_required": "Google access expired or was revoked. Select “Reconnect through Google” and confirm permissions.",
+        "google_connected": "Google connected and access to the service granted.",
         "webhook_received": "Webhook: new events received",
         "webhook_rejected": "Webhook rejected: bad signature or token",
         "webhook_registered": "Webhook registered",

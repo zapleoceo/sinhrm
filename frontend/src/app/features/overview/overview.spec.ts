@@ -1,3 +1,4 @@
+import { warningIntegration } from './overview.model';
 import { Component, input, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -279,5 +280,17 @@ describe('DayRouteCard (card padding)', () => {
     const css = Array.from(document.head.querySelectorAll('style')).map((st) => st.textContent ?? '').join(' ');
     expect(css).toMatch(/\.card[^{]*\{\s*padding:\s*var\(--app-card-pad\)/);
     expect((fixture.nativeElement as HTMLElement).querySelector('section.panel.card')).not.toBeNull();
+  });
+});
+
+
+describe('warningIntegration', () => {
+  it('targets the affected Google card only for recognised reconnect warnings', () => {
+    for (const service of ['gmail', 'calendar', 'sheets']) {
+      expect(warningIntegration({ code: 'google_reconnect_required', level: 'warning', link: '/admin/integrations', params: { service } })).toBe(`google_${service}`);
+    }
+    expect(warningIntegration({ code: 'google_reconnect_required', level: 'warning', link: '/admin/integrations', params: { service: 'unknown' } })).toBeNull();
+    expect(warningIntegration({ code: 'other', level: 'warning', link: '/admin/integrations', params: { service: 'gmail' } })).toBeNull();
+    expect(warningIntegration({ code: 'google_reconnect_required', level: 'warning', link: '/other', params: { service: 'gmail' } })).toBeNull();
   });
 });

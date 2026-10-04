@@ -37,7 +37,7 @@
       }
       <div class="grid">
         @for (item of g.items; track item.key) {
-          <app-integration-card [item]="item" />
+          <app-integration-card [item]="item" [focused]="focusedIntegration() === item.key" />
         }
       </div>
     </section>

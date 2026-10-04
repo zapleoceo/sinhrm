@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,6 +25,8 @@ import { NotifyService } from '../../core/ui/notify.service';
 })
 export class IntegrationsPage implements OnInit {
   protected readonly store = inject(IntegrationsStore);
+  private readonly query = toSignal(inject(ActivatedRoute).queryParamMap);
+  protected readonly focusedIntegration = computed(() => this.query()?.get('integration') ?? null);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
 

@@ -1,5 +1,5 @@
 @let it = item();
-<article class="card" [class.open]="expanded()">
+<article class="card" [class.open]="expanded()" [attr.id]="'integration-' + it.key" tabindex="-1">
   <header class="head">
     <div class="title">
       <h3><app-channel-icon [key]="it.key" /> {{ 'integrations.items.' + it.key + '.name' | transloco }}</h3>
@@ -19,6 +19,16 @@
         <span class="muted">· {{ it.last_checked_at | date: 'short' }}</span>
       }
     </p>
+  }
+
+  @if (it.group === 'google') {
+    <div class="google-connect">
+      <p class="muted">{{ 'integrations.google.scope' | transloco }}</p>
+      <a mat-flat-button [href]="googleConnectHref">
+        <mat-icon>link</mat-icon>
+        {{ (it.status === 'off' && !it.last_error ? 'google.connect.button' : 'integrations.google.reconnect') | transloco }}
+      </a>
+    </div>
   }
 
   <div class="actions">
@@ -97,7 +107,7 @@
         }
       }
       @if (it.fields.length === 0) {
-        <p class="muted">{{ 'integrations.noFields' | transloco }}</p>
+        <p class="muted">{{ (it.group === 'google' ? 'integrations.google.noFields' : 'integrations.noFields') | transloco }}</p>
       } @else {
         <div class="form-actions">
           <button mat-flat-button type="submit" [disabled]="busy()">{{ 'integrations.save' | transloco }}</button>

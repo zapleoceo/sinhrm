@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnChanges, SimpleChanges, afterRenderEffect, computed, inject, input, signal } from '@angular/core';
 import { FormControl, FormRecord, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { GOOGLE_SERVICES, connectUrl } from '../google-workspace/google.model';
 import { ChannelPanel } from '../channels/channel-panel';
 import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
@@ -37,12 +38,33 @@ const URL_PATTERN = /^https:\/\/\S+$/i;
   templateUrl: './integration-card.html',
   styleUrl: './integration-card.scss',
 })
-export class IntegrationCard {
+export class IntegrationCard implements OnChanges {
   private readonly store = inject(IntegrationsStore);
   private readonly api = inject(IntegrationsService);
   private readonly notify = inject(NotifyService);
 
   readonly item = input.required<Integration>();
+  readonly focused = input(false);
+  protected readonly googleConnectHref = connectUrl(GOOGLE_SERVICES);
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    afterRenderEffect(() => {
+      if (this.focused()) {
+        const card = this.element.nativeElement.querySelector<HTMLElement>('article');
+        card?.focus({ preventScroll: true });
+        card?.scrollIntoView?.({ block: 'start' });
+      }
+    });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['focused'] && this.focused() && !this.expanded()) {
+      this.expanded.set(true);
+      this.resetForm();
+      this.loadLogs();
+    }
+  }
 
   protected readonly manualStatuses = MANUAL_STATUSES;
   protected readonly statusTone = INTEGRATION_STATUS_TONE;
