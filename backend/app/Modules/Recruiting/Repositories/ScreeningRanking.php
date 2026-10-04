@@ -33,7 +33,7 @@ final class ScreeningRanking
         return self::completedLatest()->selectRaw('max(screening.score)')
             ->join('applications as ranked_application', 'ranked_application.id', '=', 'screening.application_id')
             ->whereColumn('ranked_application.candidate_id', 'candidates.id')
-            ->where('ranked_application.status', $filter->status?->value ?? 'active')
+            ->where('ranked_application.status', $filter->status->value ?? 'active')
             ->when($filter->vacancyId, fn (Builder $q, int $id) => $q->where('ranked_application.vacancy_id', $id))
             ->when($filter->stageId, fn (Builder $q, int $id) => $q->where('ranked_application.stage_id', $id));
     }

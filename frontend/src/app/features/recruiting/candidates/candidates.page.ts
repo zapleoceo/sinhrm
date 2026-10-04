@@ -95,8 +95,10 @@ import { NotifyService } from '../../../core/ui/notify.service';
           <mat-icon matPrefix>search</mat-icon>
           <input matInput type="search" #q id="candidate-search" (input)="search$.next(q.value)" />
         </mat-form-field>
-        <button mat-stroked-button type="button" [attr.aria-pressed]="store.query().sort === 'screening_score'" (click)="store.patchQuery({ sort: store.query().sort ? undefined : 'screening_score' })">{{ 'recruiting.screening.rank' | transloco }}</button>
-        <p class="muted">{{ 'recruiting.screening.label' | transloco }}</p>
+        <div class="ranking-controls">
+          <button mat-stroked-button type="button" [attr.aria-pressed]="store.query().sort === 'screening_score'" (click)="store.patchQuery({ sort: store.query().sort ? undefined : 'screening_score' })">{{ 'recruiting.screening.rank' | transloco }}</button>
+          <p class="muted">{{ 'recruiting.screening.label' | transloco }}</p>
+        </div>
         <div class="filters">
           <mat-form-field subscriptSizing="dynamic">
             <mat-label>{{ 'recruiting.candidates.fields.status' | transloco }}</mat-label>
@@ -193,6 +195,8 @@ import { NotifyService } from '../../../core/ui/notify.service';
     .board-view { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
     .vacancy-pick { max-width: 24rem; }
     .list-head h1 { font: var(--mat-sys-title-large); margin: 0; }
+    .ranking-controls { display: flex; flex-direction: column; gap: 0.5rem; flex: none; }
+    .ranking-controls p { margin: 0; }
     .filters { margin: 0; gap: 0.5rem; }
     .filters mat-form-field { flex: 1 1 8rem; }
     .items { list-style: none; margin: 0 -0.25rem; padding: 0; overflow-y: auto; flex: 1; }
