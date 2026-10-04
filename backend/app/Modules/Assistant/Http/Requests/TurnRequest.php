@@ -8,8 +8,9 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 /**
- * POST /api/assistant/turn — the chat history (OpenAI message format, owned by the SPA) + the current page. The
- * history only shapes the model's answer: nothing in it is executed, so it is validated for shape and size only.
+ * POST /api/assistant/turn — the chat history (OpenAI message format, owned by the SPA) + the current page. Shape/size
+ * validation only. AssistantHistory separately discards client results and refetches fresh permitted GETs as the actor;
+ * client-supplied writes are never replayed.
  */
 final class TurnRequest extends FormRequest
 {
