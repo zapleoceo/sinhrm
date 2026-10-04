@@ -1,8 +1,8 @@
 // Synthetic consent states: inspect available actions, never follow an OAuth link.
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { GoogleStatus } from '../src/app/features/google-workspace/google.model';
 import type { Integration, IntegrationLog, IntegrationsList } from '../src/app/features/integrations/integrations.model';
 import { RECORDED_AT, installMock, recordedStatus, watchErrors } from './harness';
@@ -26,6 +26,46 @@ const i18n = readJson('../public/i18n/uk.json') as {
 };
 // Reuse the existing page's known findings; new states may not add axe violations.
 const axeBaseline = readJson('axe-baseline.json') as Record<string, Record<string, number>>;
+
+/** Integration-only evidence: normal scrolling, sticky header and in-flow launcher in the real viewport. */
+async function captureMobileViewport(page: Page, region: Locator, directory: string, name: string, scenario: string): Promise<void> {
+  const topbar = page.locator('.topbar');
+  const initialHeader = await topbar.boundingBox();
+  expect(initialHeader).not.toBeNull();
+  await region.evaluate((element, headerHeight) => window.scrollTo(0, window.scrollY + element.getBoundingClientRect().top - headerHeight - 12), initialHeader!.height);
+  await settle(page);
+  const header = await topbar.boundingBox();
+  const content = await region.boundingBox();
+  const launcher = await page.locator('.topbar .assistant-launcher').boundingBox();
+  const viewport = page.viewportSize();
+  expect(header).not.toBeNull();
+  expect(content).not.toBeNull();
+  expect(launcher).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(content!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+  expect(content!.y + content!.height).toBeLessThanOrEqual(viewport!.height);
+  expect(content!.x).toBeGreaterThanOrEqual(0);
+  expect(content!.x + content!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(launcher!.width).toBeGreaterThanOrEqual(44);
+  expect(launcher!.height).toBeGreaterThanOrEqual(44);
+  expect(launcher!.x).toBeGreaterThanOrEqual(header!.x);
+  expect(launcher!.y).toBeGreaterThanOrEqual(header!.y);
+  expect(launcher!.x + launcher!.width).toBeLessThanOrEqual(header!.x + header!.width);
+  expect(launcher!.y + launcher!.height).toBeLessThanOrEqual(header!.y + header!.height);
+  await expect(page.locator('.mascot-stage')).toBeHidden();
+  await expect(page.locator('.mascot-orb')).toHaveCount(0);
+  const accounts = await region.locator('.services li').evaluateAll((nodes) => nodes.map((node) => {
+    const { x, y, width, height } = node.getBoundingClientRect();
+    return { x, y, width, height };
+  }));
+  for (const account of accounts) {
+    expect(account.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+    expect(account.y + account.height).toBeLessThanOrEqual(viewport!.height);
+  }
+  mkdirSync(directory, { recursive: true });
+  await page.screenshot({ path: join(directory, `${name}.png`), fullPage: false });
+  writeFileSync(join(directory, `${name}.json`), JSON.stringify({ scenario, url: page.url(), viewport, recordedAt: RECORDED_AT.toISOString(), scrollY: await page.evaluate(() => window.scrollY), header, content, launcher, accounts }, null, 2) + '\n');
+}
 
 for (const scenario of scenarios) {
   test(`integrations-google-${scenario.id}`, async ({ page, context }, info) => {
@@ -99,6 +139,18 @@ for (const scenario of scenarios) {
       if (info.project.name.startsWith('desktop')) {
         const positions = await cards.locator('.actions').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
         expect(Math.max(...positions) - Math.min(...positions), 'Google card controls align across descriptions').toBeLessThanOrEqual(2);
+      }
+      // Exactly four extra evidence images across the selected mobile theme/state pairs.
+      if ((info.project.name === 'mobile-light' && scenario.id === 'connected') || (info.project.name === 'mobile-dark' && scenario.id === 'reconnect')) {
+        const theme = info.project.name === 'mobile-light' ? 'light' : 'dark';
+        const directory = join(__dirname, '.out', 'screens', info.project.name);
+        const scroll = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
+        const panel = page.locator('app-google-connect-panel .panel');
+        await expect(panel.locator('.services li')).toHaveCount(3);
+        await captureMobileViewport(page, panel, directory, `integration-mobile-${theme}-google-viewport`, scenario.id);
+        await captureMobileViewport(page, gmail.locator('.logs'), directory, `integration-mobile-${theme}-logs-viewport`, scenario.id);
+        await page.evaluate(({ x, y }) => window.scrollTo(x, y), scroll);
+        await settle(page);
       }
       const layout = await layoutOf(page);
       expect.soft(layout.pageOverflow).toBe(0);

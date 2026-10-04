@@ -90,3 +90,7 @@ git diff frontend/e2e  # прочитать: каждая строка «-» —
 5. Новое исключение в `layout-allowlist.json` — только с объяснением в PR, почему обрезка задумана.
 6. PR заявлен как «пиксели не меняются» — приложите прогон `npm run e2e:visual`: на `main` один раз
    `npm run e2e:visual -- --update-snapshots`, затем на ветке `npm run e2e:visual` (эталоны в `e2e/.visual/`, не коммитятся).
+
+### Временная проверка совместимости PR138–141
+
+Integration-ветка объединяет screening ranking, перевод Material-пагинации, мобильный доступ к ассистенту и состояния переподключения Google; это проверочная ветка, не shipping PR. `integrations-states.pw.ts` сохраняет все 12 сценариев и дополнительно снимает ровно четыре viewport PNG: Google-блок и журнал Gmail для mobile-light/connected и mobile-dark/reconnect. Используются обычная прокрутка и реальные bounding boxes: блок и строки аккаунтов ниже sticky topbar, контент помещается в viewport, кнопка ассистента ≥44px внутри header, фигура/круг скрыты. Соседние JSON сохраняют сценарий, URL, фиксированное время, размер viewport, scrollY и измеренные координаты для provenance. CSS не подменяется; missing-request, no-business-write и axe/layout проверки остаются прежними.
