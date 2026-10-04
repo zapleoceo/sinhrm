@@ -30,6 +30,7 @@ function setup(focused = false, failLogs = false) {
   const fixture = TestBed.createComponent(IntegrationCard);
   fixture.componentRef.setInput('item', gmail);
   fixture.componentRef.setInput('focused', focused);
+  fixture.componentRef.setInput('googleOauthConfigured', true);
   fixture.detectChanges();
   return { fixture, element: fixture.nativeElement as HTMLElement };
 }
@@ -59,6 +60,16 @@ describe('Google integration reconnect card', () => {
     expect(element.querySelector('.logs')?.textContent).toContain(en.integrations.logs.error);
     expect(element.querySelector('.logs button')?.textContent).toContain(en.common.retry);
     expect(element.querySelector('.google-connect a')).not.toBeNull();
+  });
+
+  it('disables consent navigation when OAuth configuration has not been confirmed', () => {
+    const { fixture, element } = setup();
+    fixture.componentRef.setInput('googleOauthConfigured', false);
+    fixture.detectChanges();
+    const action = element.querySelector<HTMLAnchorElement>('.google-connect a');
+    expect(action?.getAttribute('href')).toBeNull();
+    expect(action?.getAttribute('aria-disabled')).toBe('true');
+    expect(action?.getAttribute('tabindex')).toBe('-1');
   });
 
   it('does not offer Google consent for another integration', () => {

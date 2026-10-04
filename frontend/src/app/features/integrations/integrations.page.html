@@ -30,14 +30,14 @@
     <section class="group">
       <h2>{{ 'integrations.groups.' + g.group | transloco }}</h2>
       @if (g.group === 'google') {
-        <app-google-connect-panel />
+        <app-google-connect-panel (oauthConfigured)="googleOauthConfigured.set($event)" />
       }
       @if (g.group === 'ai') {
         <app-ai-panel />
       }
       <div class="grid">
         @for (item of g.items; track item.key) {
-          <app-integration-card [item]="item" [focused]="focusedIntegration() === item.key" />
+          <app-integration-card [item]="item" [focused]="focusedIntegration() === item.key" [googleOauthConfigured]="googleOauthConfigured()" />
         }
       </div>
     </section>

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -73,6 +73,7 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
   `,
 })
 export class GoogleConnectPanel implements OnInit {
+  readonly oauthConfigured = output<boolean>();
   private readonly api = inject(GoogleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -91,8 +92,12 @@ export class GoogleConnectPanel implements OnInit {
         this.connections.set(s.data);
         this.redirectUri.set(s.meta.redirect_uri);
         this.notConfigured.set(!s.meta.oauth_configured);
+        this.oauthConfigured.emit(s.meta.oauth_configured);
       },
-      error: () => this.connections.set([]),
+      error: () => {
+        this.connections.set([]);
+        this.oauthConfigured.emit(false);
+      },
     });
   }
 

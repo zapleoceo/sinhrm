@@ -45,6 +45,7 @@ export class IntegrationCard implements OnChanges {
 
   readonly item = input.required<Integration>();
   readonly focused = input(false);
+  readonly googleOauthConfigured = input(false);
   protected readonly googleConnectHref = connectUrl(GOOGLE_SERVICES);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
 

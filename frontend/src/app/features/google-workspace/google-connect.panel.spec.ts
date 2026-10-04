@@ -17,7 +17,10 @@ it('shows a denied consent and preserves the contextual card when consuming call
     ],
   });
   const fixture = TestBed.createComponent(GoogleConnectPanel);
+  const configured: boolean[] = [];
+  fixture.componentInstance.oauthConfigured.subscribe((value) => configured.push(value));
   fixture.detectChanges();
+  expect(configured).toEqual([true]);
   expect((fixture.nativeElement as HTMLElement).querySelector('[role=status]')?.textContent).toContain(en.google.errors.consent_denied);
   expect(calls).toEqual([[[], { queryParams: { connected: null, missing: null, google_error: null }, queryParamsHandling: 'merge', replaceUrl: true }]]);
 });

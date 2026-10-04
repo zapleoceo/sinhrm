@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,6 +25,7 @@ import { NotifyService } from '../../core/ui/notify.service';
 })
 export class IntegrationsPage implements OnInit {
   protected readonly store = inject(IntegrationsStore);
+  protected readonly googleOauthConfigured = signal(false);
   private readonly query = toSignal(inject(ActivatedRoute).queryParamMap);
   protected readonly focusedIntegration = computed(() => this.query()?.get('integration') ?? null);
   private readonly dialog = inject(MatDialog);
