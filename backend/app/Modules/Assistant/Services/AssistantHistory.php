@@ -58,6 +58,7 @@ final readonly class AssistantHistory
             if (($message['role'] ?? null) === 'user') {
                 // Deliberate user input remains intentional model input; this is not universal text redaction.
                 $out[] = ['role' => 'user', 'content' => $message['content']];
+
                 continue;
             }
             if (($message['role'] ?? null) !== 'assistant' || ! is_array($message['tool_calls'] ?? null)) {

@@ -58,8 +58,14 @@ for (const language of languages) {
     await page.goto('/');
     await settle(page);
     await expect(page.locator('html')).toHaveAttribute('lang', language.locale);
-    await page.locator('.mascot-orb').click();
-    await page.getByRole('menuitem', { name: language.talk, exact: true }).click();
+    const mobileLauncher = page.locator('.assistant-launcher');
+    if (page.viewportSize()!.width < 768 && await mobileLauncher.count()) {
+      // The panel has a compact mobile launcher as well as the mascot menu.
+      await mobileLauncher.click();
+    } else {
+      await page.locator('.mascot-orb').click();
+      await page.getByRole('menuitem', { name: language.talk, exact: true }).click();
+    }
     const panel = page.locator('.assistant-panel');
     await expect(panel).toBeVisible();
     await settle(page);

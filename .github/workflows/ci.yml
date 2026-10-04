@@ -40,7 +40,7 @@ jobs:
             lint-${{ hashFiles('backend/composer.lock') }}-${{ github.ref_name }}-
             lint-${{ hashFiles('backend/composer.lock') }}-
       - name: Pint (code style)
-        run: vendor/bin/pint --test --parallel --cache-file=/tmp/pint.cache -v
+        run: vendor/bin/pint --test --parallel --cache-file=/tmp/pint.cache
       - name: PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
