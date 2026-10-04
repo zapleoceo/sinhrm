@@ -274,7 +274,8 @@ final class AssistantReleaseGateTest extends TestCase
         $proposal = $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => $messages])->assertOk()->assertJsonPath('data.client_calls.0.arguments.path', $path)->json('data');
         $raw = $this->actingAs($user)->getJson('/api/'.$path)->assertForbidden()->json();
         $messages[] = $proposal['assistant'];
-        $messages[] = ['role' => 'tool', 'tool_call_id' => 'read', 'content' => json_encode($raw)];
+        // Match AssistantToolExecutor: errors carry status/message, never the whole Laravel debug response.
+        $messages[] = ['role' => 'tool', 'tool_call_id' => 'read', 'content' => json_encode(['status' => 403, 'error' => $raw['message']])];
         $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => $messages])->assertOk()->assertJsonPath('data.assistant.content', 'Access denied (forbidden); ask an authorized colleague.');
         $this->assertSame(['status' => 403, 'error' => 'forbidden'], json_decode($this->brokerSubmits[1]['messages'][3]['content'], true));
         $this->assertStringNotContainsString('SENTINEL_FOREIGN', (string) json_encode($this->brokerSubmits));
