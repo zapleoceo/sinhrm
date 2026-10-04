@@ -64,7 +64,7 @@ async function captureMobileViewport(page: Page, region: Locator, directory: str
   }
   mkdirSync(directory, { recursive: true });
   await page.screenshot({ path: join(directory, `${name}.png`), fullPage: false });
-  writeFileSync(join(directory, `${name}.json`), JSON.stringify({ scenario, url: page.url(), viewport, recordedAt: RECORDED_AT.toISOString(), scrollY: await page.evaluate(() => window.scrollY), header, content, launcher, accounts }, null, 2) + '\n');
+  writeFileSync(join(directory, `${name}.json`), JSON.stringify({ scenario, captureAtISO: new Date().toISOString(), githubSha: process.env['GITHUB_SHA'] ?? null, url: page.url(), viewport, recordedAt: RECORDED_AT.toISOString(), scrollY: await page.evaluate(() => window.scrollY), header, content, launcher, accounts }, null, 2) + '\n');
 }
 
 for (const scenario of scenarios) {
