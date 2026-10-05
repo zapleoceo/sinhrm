@@ -21,3 +21,5 @@
 - Наступна дія: root перевіряє CI остаточного PR head та screenshots, організовує незалежне Luna/Astra рев'ю; PR залишається draft, без merge/deploy. Цей запис оновлює тільки стан після перевірки коду.
 - CI correction: Chromium ICU повертає `Europe/Kiev` як canonical alias налаштованого `Europe/Kyiv` (12 browser cases впали на exact-name gate). Gate тепер приймає лише ці два імені для Kyiv та додатково перевіряє фактичні UTC offsets кожного winter/summer/midnight instant; date assertions збережені. Root перевіряє новий точний SHA CI.
 - Обмеження: локальний app/server і повні suite заборонені; без merge, preview label/deploy та live OAuth. SOL/Luna/Astra дозволені власником замість Opus/Sonnet.
+
+2026-10-05: Synthetic fixtures use production check_error; uk/ru/en tests verify translation and reject raw namespace, retaining date/timezone assertions. Exact-head CI pending.

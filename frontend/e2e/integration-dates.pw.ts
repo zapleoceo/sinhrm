@@ -13,6 +13,7 @@ const auth = (read('fixtures/auth.json') as Record<string, { body: CurrentUser }
 const original = (read('fixtures/integrations.json') as Record<string, { body: IntegrationsList }>)['GET /api/integrations'].body;
 const instants = ['2026-10-01T22:05:00Z', '2026-01-15T12:05:00Z', '2026-07-15T12:05:00Z'];
 const languages = ['uk', 'ru', 'en'] as const;
+const logMessages: Record<AppLang, string> = { uk: 'Перевірка: помилка', ru: 'Проверка: ошибка', en: 'Check: error' };
 const calendarDates: Record<AppLang, string[]> = {
   uk: ['01.10.26', '15.01.26', '15.07.26'],
   ru: ['01.10.2026', '15.01.2026', '15.07.2026'],
@@ -44,11 +45,11 @@ for (const zone of zones) {
           return `${day}, ${zone.times[index]}`;
         });
         const logs: IntegrationLog[] = instants.map((created_at, index) => ({
-          id: index + 1, level: 'warning', message: 'checked', created_at, context: {},
+          id: index + 1, level: 'warning', message: 'check_error', created_at, context: {},
         }));
         logs.push(
-          { id: 4, level: 'warning', message: 'checked', created_at: null, context: {} },
-          { id: 5, level: 'warning', message: 'checked', created_at: 'not-a-timestamp', context: {} },
+          { id: 4, level: 'warning', message: 'check_error', created_at: null, context: {} },
+          { id: 5, level: 'warning', message: 'check_error', created_at: 'not-a-timestamp', context: {} },
         );
         const overrides = new Map<string, unknown>([
           ['/api/auth/me', { ...auth, locale: lang }],
@@ -78,6 +79,8 @@ for (const zone of zones) {
         await expect(card.locator('.logs li .muted')).toHaveText([...expected, '', '']);
         await expect(card.locator('.logs')).not.toContainText(/AM|PM/);
         await expect(card.locator('.logs')).not.toContainText('Invalid Date');
+        for (const row of await card.locator('.logs li').all()) await expect(row).toContainText(logMessages[lang]);
+        await expect(card.locator('.logs')).not.toContainText('integrations.logs.messages.');
         expect(mock.missing).toEqual([]);
         expect(mock.mutations).toEqual([]);
         expect(errors).toEqual([]);

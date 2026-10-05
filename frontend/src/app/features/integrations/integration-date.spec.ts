@@ -23,7 +23,7 @@ const expected: Record<AppLang, string> = {
 function setup(lang: AppLang, timestamp: string | null = localInstant) {
   const current = signal(lang);
   const reads = vi.fn(() => of<IntegrationLog[]>([
-    { id: 1, level: 'warning', message: 'checked', created_at: timestamp, context: {} },
+    { id: 1, level: 'warning', message: 'check_error', created_at: timestamp, context: {} },
   ]));
   const writes = vi.fn();
   TestBed.configureTestingModule({
@@ -58,6 +58,8 @@ describe('Integration timestamps follow the UI locale', () => {
       expect(element.querySelector('.result .muted')?.textContent?.trim()).toBe(`· ${expected[lang]}`);
       expect(element.querySelector('.logs li .muted')?.textContent?.trim()).toBe(expected[lang]);
       expect(element.querySelector('.logs li .muted')?.textContent).not.toMatch(/AM|PM/);
+      expect(element.querySelector('.logs')?.textContent).toContain(({ uk, ru, en })[lang].integrations.logs.messages.check_error);
+      expect(element.querySelector('.logs')?.textContent).not.toContain('integrations.logs.messages.');
       expect(writes).not.toHaveBeenCalled();
     });
   }
