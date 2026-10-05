@@ -1,5 +1,7 @@
 table { width: 100%; }
 
+.table-scroll { contain: paint; }
+
 .who { display: flex; flex-direction: column; }
 
 .role { width: 11rem; }

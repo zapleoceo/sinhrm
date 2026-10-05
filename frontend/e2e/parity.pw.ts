@@ -3,7 +3,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { AXE_BASELINE, AXE_OUT } from './axe-teardown';
 import { RECORDED_AT, installMock, recordedStatus, watchErrors } from './harness';
 import { inventoryOf } from './inventory';
@@ -22,6 +22,48 @@ const allowlist = JSON.parse(readFileSync(join(__dirname, 'layout-allowlist.json
 // a real but timing-dependent finding, so it is left out of the counts (it would make the baseline flaky).
 const NONDETERMINISTIC = (rule: string, html: string): boolean => rule === 'aria-prohibited-attr' && html.startsWith('<mat-button-toggle');
 const axeBaseline =existsSync(AXE_BASELINE) ? (JSON.parse(readFileSync(AXE_BASELINE, 'utf8')) as Record<string, Record<string, number>>) : {};
+
+async function expectUsersTableScrollable(page: Page, width: number, theme: string): Promise<void> {
+  const metrics = await page.locator('.table-scroll').evaluate((element) => {
+    const scroller = element as HTMLElement;
+    const overflowX = getComputedStyle(scroller).overflowX;
+    const initialScrollLeft = scroller.scrollLeft;
+    scroller.scrollLeft = scroller.scrollWidth;
+    const maxScrollLeft = scroller.scrollLeft;
+    scroller.scrollLeft = initialScrollLeft;
+    return { overflowX, scrollWidth: scroller.scrollWidth, clientWidth: scroller.clientWidth, maxScrollLeft };
+  });
+  expect.soft(metrics.overflowX, `Users table horizontal scroller at ${width}px (${theme})`).toBe('auto');
+  expect.soft(metrics.scrollWidth, `Users table content width at ${width}px (${theme})`).toBeGreaterThan(metrics.clientWidth);
+  expect.soft(metrics.maxScrollLeft, `Users table columns reachable at ${width}px (${theme})`).toBeGreaterThan(0);
+}
+
+async function expectUsersControlsReachable(page: Page, theme: string): Promise<void> {
+  const scroller = page.locator('.table-scroll');
+  const action = page.locator('.table-scroll td.actions button').first();
+  await scroller.evaluate((element) => {
+    const viewport = element as HTMLElement;
+    viewport.scrollLeft = viewport.scrollWidth;
+  });
+  await expect.soft(action, `rightmost user action is reachable (${theme})`).toBeInViewport();
+  await scroller.evaluate((element) => {
+    (element as HTMLElement).scrollLeft = 0;
+  });
+
+  for (const [selector, label] of [['.role mat-select', 'role'], ['.branches mat-select:not([disabled])', 'branch']] as const) {
+    const control = page.locator(selector).first();
+    await control.scrollIntoViewIfNeeded();
+    await control.click();
+    const listbox = page.getByRole('listbox');
+    await expect.soft(listbox, `${label} options open outside the contained scroller (${theme})`).toBeVisible();
+    const bounds = await listbox.boundingBox();
+    expect.soft(bounds?.x ?? -1, `${label} options stay inside the viewport (${theme})`).toBeGreaterThanOrEqual(0);
+    expect.soft((bounds?.x ?? 0) + (bounds?.width ?? 0), `${label} options stay inside the viewport (${theme})`).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
+    const layout = await layoutOf(page);
+    expect.soft(layout.pageOverflow, `${label} options do not cause page overflow (${theme})`).toBe(0);
+    await page.keyboard.press('Escape');
+  }
+}
 
 for (const p of PAGES) {
   for (const state of [{ id: '', steps: [], only: undefined }, ...(p.states ?? [])]) {
@@ -69,6 +111,8 @@ for (const p of PAGES) {
         }
 
         if (key === 'users.mobile') {
+          await expectUsersTableScrollable(page, 390, theme);
+          await expectUsersControlsReachable(page, theme);
           const originalViewport = page.viewportSize();
           if (!originalViewport) throw new Error('Users mobile viewport is required for the 375px regression check');
           try {
@@ -76,6 +120,7 @@ for (const p of PAGES) {
             await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
             const narrowLayout = await layoutOf(page);
             expect.soft(narrowLayout.pageOverflow, `horizontal page scroll on users.mobile at 375px (${theme})`).toBe(0);
+            await expectUsersTableScrollable(page, 375, theme);
             expect.soft(await inventoryOf(page, p.volatile), `inventory of users.mobile at 375px (${theme})`).toEqual(inventory);
             if (SCREENSHOTS) {
               await page.screenshot({ path: join(__dirname, '.out', 'screens', info.project.name, 'users-375.png'), fullPage: true });
