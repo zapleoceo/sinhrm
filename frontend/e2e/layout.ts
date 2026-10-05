@@ -4,38 +4,6 @@ import type { Page } from '@playwright/test';
 export interface LayoutReport {
   pageOverflow: number;
   clipped: string[];
-  diagnostics: {
-    viewportWidth: number;
-    documentClientWidth: number;
-    documentScrollWidth: number;
-    tableAncestors: Array<{
-      element: string;
-      left: number;
-      right: number;
-      width: number;
-      scrollWidth: number;
-      clientWidth: number;
-      cssWidth: string;
-      minWidth: string;
-      overflowX: string;
-      display: string;
-      position: string;
-    }>;
-    documentOverflowRoots: Array<{
-      element: string;
-      left: number;
-      right: number;
-      width: number;
-      cssWidth: string;
-      minWidth: string;
-      overflowX: string;
-      display: string;
-      position: string;
-      scrollWidth: number;
-      clientWidth: number;
-    }>;
-    isolation: Array<{ selector: string; scrollWidthBefore: number; scrollWidthAfter: number }>;
-  };
 }
 
 /**
@@ -86,92 +54,6 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
       }
       if (out) clipped.push(describe(el));
     }
-    // The table can be wider than the viewport inside an intentional scroller; measure its ancestors to find
-    // which box (if any) allows that width to escape into the document.
-    const table = document.querySelector('table.mat-mdc-table');
-    const tableAncestors: LayoutReport['diagnostics']['tableAncestors'] = [];
-    for (let el: Element | null = table; el; el = el.parentElement) {
-      const rect = el.getBoundingClientRect();
-      const style = getComputedStyle(el);
-      const classes = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 3) : [];
-      tableAncestors.push({
-        element: `${el.tagName.toLowerCase()}${classes.map((name) => `.${name}`).join('')}`,
-        left: Math.round(rect.left * 10) / 10,
-        right: Math.round(rect.right * 10) / 10,
-        width: Math.round(rect.width * 10) / 10,
-        scrollWidth: el.scrollWidth,
-        clientWidth: el.clientWidth,
-        cssWidth: style.width,
-        minWidth: style.minWidth,
-        overflowX: style.overflowX,
-        display: style.display,
-        position: style.position,
-      });
-    }
-    const documentOverflowRoots = Array.from(document.body.querySelectorAll('*'))
-      .flatMap((el) => {
-        const rect = el.getBoundingClientRect();
-        if (rect.right <= window.innerWidth + TOL && rect.left >= -TOL) return [];
-        let contained = false;
-        for (let parent = el.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
-          const parentRect = parent.getBoundingClientRect();
-          if (parentRect.right > window.innerWidth + TOL || parentRect.left < -TOL) {
-            contained = true; // Report the outermost escaping element, not all its descendants.
-            break;
-          }
-          const overflowX = getComputedStyle(parent).overflowX;
-          if (overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'hidden' || overflowX === 'clip') {
-            contained = true; // A scroll/clipping ancestor keeps this element from widening the document.
-            break;
-          }
-        }
-        if (contained) return [];
-        const style = getComputedStyle(el);
-        const classes = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 3) : [];
-        return [{
-          element: `${el.tagName.toLowerCase()}${classes.map((name) => `.${name}`).join('')}`,
-          left: Math.round(rect.left * 10) / 10,
-          right: Math.round(rect.right * 10) / 10,
-          width: Math.round(rect.width * 10) / 10,
-          cssWidth: style.width,
-          minWidth: style.minWidth,
-          overflowX: style.overflowX,
-          display: style.display,
-          position: style.position,
-          scrollWidth: el.scrollWidth,
-          clientWidth: el.clientWidth,
-        }];
-      })
-      .slice(0, 30);
-    const isolationSelectors = ['table.mat-mdc-table', '.table-scroll', '.panel', 'aside.sidebar', '.mascot-stage'];
-    const isolation = isolationSelectors.flatMap((selector) => {
-      const el = document.querySelector<HTMLElement>(selector);
-      if (!el) return [];
-      const scrollWidthBefore = doc.scrollWidth;
-      const previousDisplay = el.style.getPropertyValue('display');
-      const previousPriority = el.style.getPropertyPriority('display');
-      const scrollWidthAfter = (() => {
-        try {
-          el.style.setProperty('display', 'none', 'important');
-          return doc.scrollWidth;
-        } finally {
-          if (previousDisplay) el.style.setProperty('display', previousDisplay, previousPriority);
-          else el.style.removeProperty('display');
-        }
-      })();
-      return [{ selector, scrollWidthBefore, scrollWidthAfter }];
-    });
-    return {
-      pageOverflow,
-      clipped: [...new Set(clipped)].sort(),
-      diagnostics: {
-        viewportWidth: window.innerWidth,
-        documentClientWidth: doc.clientWidth,
-        documentScrollWidth: doc.scrollWidth,
-        tableAncestors,
-        documentOverflowRoots,
-        isolation,
-      },
-    };
+    return { pageOverflow, clipped: [...new Set(clipped)].sort() };
   });
 }
