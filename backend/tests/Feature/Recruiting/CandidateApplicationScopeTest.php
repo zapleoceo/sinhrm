@@ -8,7 +8,9 @@ use App\Models\User;
 use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
+use App\Modules\Recruiting\Ai\ScreeningPromptFactory;
 use App\Modules\Recruiting\Models\Candidate;
+use App\Modules\Recruiting\Models\CandidateScreening;
 use App\Modules\Recruiting\Models\Touchpoint;
 use App\Modules\Recruiting\Services\ApplicationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,8 +29,11 @@ final class CandidateApplicationScopeTest extends TestCase
         $candidate = Candidate::query()->findOrFail($first->candidate_id);
         $second = app(ApplicationService::class)->apply(null, $candidate, $this->vacancyIn($south));
         foreach ([$first, $second] as $application) {
+            CandidateScreening::query()->create(['candidate_id' => $candidate->id, 'application_id' => $application->id,
+                'vacancy_id' => $application->vacancy_id, 'status' => CandidateScreening::DONE, 'trigger' => 'manual',
+                'score' => 80, 'summary' => 'Private synthetic rationale '.$application->id, 'prompt_version' => 'screening.v4']);
             Touchpoint::query()->create(['candidate_id' => $candidate->id, 'application_id' => $application->id,
-                'channel' => 'email', 'occurred_at' => now(), 'body' => 'Synthetic application '.$application->id]);
+                'channel' => 'email', 'direction' => 'in', 'occurred_at' => now(), 'body' => 'Synthetic application '.$application->id]);
             AuditEntry::query()->create(['entity_type' => 'application', 'entity_id' => $application->id,
                 'action' => 'updated', 'changes' => ['stage' => ['from' => 'synthetic old', 'to' => 'synthetic new']]]);
         }
@@ -42,6 +47,11 @@ final class CandidateApplicationScopeTest extends TestCase
         $first->vacancy->forceFill(['hiring_manager_id' => $manager->id])->save();
         $interviewer = $this->userWith(UserRole::Employee);
         $second->interviewers()->attach($interviewer->id);
+        $materials = app(ScreeningPromptFactory::class)->input($first->id);
+        $this->assertNotNull($materials);
+        $this->assertStringNotContainsString('Synthetic application '.$second->id, json_encode($materials->materials, JSON_THROW_ON_ERROR));
+        $this->assertStringContainsString('Synthetic application '.$first->id, json_encode($materials->materials, JSON_THROW_ON_ERROR));
+        $this->assertStringContainsString('Synthetic global contact', json_encode($materials->materials, JSON_THROW_ON_ERROR));
         $cases = [
             [$this->userWith(UserRole::Admin), [$first->id, $second->id]],
             [$this->userWith(UserRole::HrManager), [$first->id, $second->id]],
@@ -55,12 +65,13 @@ final class CandidateApplicationScopeTest extends TestCase
                 $hidden = in_array($first->id, $visible, true) ? $second : $first;
                 $this->actingAs($actor)->getJson('/api/candidates?vacancy_id='.$hidden->vacancy_id)
                     ->assertOk()->assertJsonCount(0, 'data');
+                $this->actingAs($actor)->postJson('/api/applications/'.$hidden->id.'/screening')->assertForbidden();
             }
         }
         $this->actingAs($owner)->patchJson('/api/candidates/'.$candidate->id, ['full_name' => 'Synthetic edited candidate'])
             ->assertOk()->assertJsonMissingPath('data.applications');
         foreach ([$this->userWith(UserRole::Employee, [$north]), $this->userWith(UserRole::Viewer)] as $denied) {
-            foreach (['', '/timeline', '/history'] as $suffix) {
+            foreach (['', '/timeline', '/history', '/screenings'] as $suffix) {
                 $this->actingAs($denied)->getJson('/api/candidates/'.$candidate->id.$suffix)->assertForbidden();
             }
             $this->actingAs($denied)->getJson('/api/candidates')->assertOk()->assertJsonCount(0, 'data');
@@ -94,6 +105,11 @@ final class CandidateApplicationScopeTest extends TestCase
             }
         }
         $this->assertTrue($globalSeen);
+        $screenings = $this->getJson($url.'/screenings')->assertOk()->assertJsonCount(count($visible), 'data')->json('data');
+        foreach ($screenings as $screening) {
+            $this->assertContains($screening['application_id'], $visible);
+            $this->assertSame('Private synthetic rationale '.$screening['application_id'], $screening['summary']);
+        }
         $history = $this->getJson($url.'/history')->assertOk()->json('data');
         $this->assertContains($globalAudit, array_column($history, 'id'));
         foreach ($history as $entry) {

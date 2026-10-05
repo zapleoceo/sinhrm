@@ -11,11 +11,14 @@ Rovo SinHRM queries returned HTTP502; KB unavailable. Planned query: candidate m
 
 ## Стан
 - Час: 2026-10-05 Asia/Saigon.
-- Step: investigation complete, implementation next. Branch fix/candidate-application-scope, base origin/main 3b4ac30; worktree initially clean.
+- Step: screening boundary committed and pushed; exact-head CI pending. Branch fix/candidate-application-scope, base origin/main 3b4ac30.
 - Evidence: list/show/timeline/history application queries unrestricted. find() loads city/owner/channel only, so store/update/inbox replies omit applications safely.
-- Next: implementation and regression matrix.
+- Next: inspect exact-head PR153 CI, independent review, then coordinate combined PR139 compatibility work before merge.
 - Blockers: PHP absent PATH; KB HTTP502 nonblocking. No local server/full suite. SOL writer authorized.
 
 - Implementation: shared typed ApplicationVisibility SQL helper; list eager loading and application filters, show through repository, actor scoped timeline and audit. CandidateResource store/update/inbox omit applications; no application counts on base main. Bulk/import readshape audit completed.
 - Tests: real API role matrix two branches/shared candidate, stage/app/global touches/audits, negative hidden vacancy filters, owner-no-branches and unrelated role denial; update response omits applications. PHP unavailable, CI execution pending.
 - Compatibility blocker: PR139 candidateScore aggregates hidden applications without Scope; do not mix its code into this source branch. Root must scope score in combined package with shared-candidate high-hidden-score regression before release.
+
+- Screening boundary: GET latest screenings is scoped before polling/serialization; manual POST requires visible application and existing candidate edit right. Prompt materials use the selected application and global candidate touches. Stable prompt text/version/provider/cache configuration unchanged; no live AI/cache evidence. Role matrix covers private screening rationale and hidden start denial.
+- Validation: `git diff --check` and `node scripts/worklog-build.mjs --print` passed. PHP is unavailable locally, so targeted PHPUnit was not run; the full backend suite is delegated to CI. Earlier CI on commit `5c2d8c7` passed all jobs, including backend; it does not include this screening boundary.
