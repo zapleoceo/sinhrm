@@ -35,11 +35,31 @@
   "link \"Активи\" -> /admin/assets",
   "link \"Воркфлоу\" -> /admin/workflows",
   "link \"Вхідні Safe Speak\" -> /safe-speak/inbox",
+  "link \"Відгук #145\" -> /candidates/145",
+  "link \"Відгук #145\" -> /candidates/145",
+  "link \"Відгук #146\" -> /candidates/146",
+  "link \"Відгук #146\" -> /candidates/146",
+  "link \"Відгук #146\" -> /candidates/146",
+  "link \"Відгук #146\" -> /candidates/146",
+  "link \"Відгук #147\" -> /candidates/147",
+  "link \"Відгук #147\" -> /candidates/147",
+  "link \"Відгук #148\" -> /candidates/148",
+  "link \"Відгук #148\" -> /candidates/148",
+  "link \"Відгук #149\" -> /candidates/149",
+  "link \"Відгук #149\" -> /candidates/149",
+  "link \"Відгук #149\" -> /candidates/149",
+  "link \"Відгук #149\" -> /candidates/149",
+  "link \"Відгук #150\" -> /candidates/150",
   "link \"Графіки роботи\" -> /admin/time",
   "link \"Довідка\" -> /docs",
   "link \"Довідники\" -> /admin/directory",
   "link \"Журнал дій\" -> /admin/audit",
   "link \"Канали залучення\" -> /admin/acquisition-channels",
+  "link \"Кандидат #146\" -> /candidates/146",
+  "link \"Кандидат #147\" -> /candidates/147",
+  "link \"Кандидат #148\" -> /candidates/148",
+  "link \"Кандидат #149\" -> /candidates/149",
+  "link \"Кандидат #150\" -> /candidates/150",
   "link \"Користувачі\" -> /admin/users",
   "link \"Модулі\" -> /admin/modules",
   "link \"Мої задачі\" -> /tasks",
@@ -64,9 +84,9 @@
   "Час"
  ],
  "counts": {
-  "cell": 60,
+  "cell": 100,
   "img": 4,
   "listitem": 95,
-  "row": 1
+  "row": 21
  }
 }

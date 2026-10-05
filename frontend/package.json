@@ -14,7 +14,7 @@
     "e2e:update": "node e2e/run.mjs --update",
     "e2e:visual": "node e2e/run.mjs --visual",
     "e2e:record": "node e2e/record-fixtures.mjs",
-    "e2e:lint": "eslint -c e2e/eslint.config.mjs e2e && tsc -p e2e/tsconfig.json"
+    "e2e:lint": "node --test e2e/inventory.test.mjs && eslint -c e2e/eslint.config.mjs e2e && tsc -p e2e/tsconfig.json"
   },
   "private": true,
   "packageManager": "npm@11.17.0",

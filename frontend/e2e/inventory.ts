@@ -27,10 +27,24 @@ const THEME_NAMES: Record<string, string> = { 'Світла тема': '<theme t
 const LINE =/^(\s*)- ([a-z]+)(?: "((?:[^"\\]|\\.)*)")?((?: \[[^\]]+\])*)(:?)(.*)$/;
 const URL_LINE = /^\s*- \/url: (.*)$/;
 
+const QUOTED_LINE = /^(\s*- )('(?:[^']|'')*'|"(?:[^"\\]|\\.)*")(:?)(.*)$/;
+
+/** Playwright quotes YAML role/name keys containing punctuation such as `: `. */
+function unquoteRoleLine(line: string): string {
+  const match = QUOTED_LINE.exec(line);
+  if (!match) return line;
+  const [, prefix, scalar, colon, suffix] = match;
+  try {
+    const role = scalar.startsWith("'") ? scalar.slice(1, -1).replace(/''/g, "'") : JSON.parse(scalar) as string;
+    return `${prefix}${role}${colon}${suffix}`;
+  } catch {
+    return line;
+  }
+}
 /** Parses `locator.ariaSnapshot()` YAML into a sorted, order-free inventory. */
 export function parseInventory(yaml: string): Inventory {
   const inv: Inventory = { headings: [], landmarks: [], interactive: [], columns: [], counts: {} };
-  const lines = yaml.split('\n');
+  const lines = yaml.split(/\r?\n/).map(unquoteRoleLine);
   for (let i = 0; i < lines.length; i++) {
     const m = LINE.exec(lines[i]);
     if (!m) continue;
