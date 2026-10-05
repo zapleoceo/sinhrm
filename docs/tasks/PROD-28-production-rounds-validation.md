@@ -36,3 +36,9 @@ Current repo/source tasks/UNIFIED-TZ and exact GitHub source heads are authorita
 - Next: smallest conflict resolutions, CI, then pending PROD-09 and final combined Astra review.
 - Blockers: PROD-09 source not ready; no live browser/provider/deploy proof in this branch.
 - Timestamp: 2026-10-05 Asia/Saigon.
+
+### Integration pause
+Merged exact PR138/139/140 heads. Four mobile inventory conflicts resolved by preserving both independent buttons (AI ranking and compact assistant launcher), not dropping either assertion.
+Integration paused before further source merges/push: PR139 ranking visibility bug confirmed; aggregate must be scoped before MAX/sort/filter using shared ApplicationVisibility helper with pending PROD-09.
+Next: fix owning PR139, review new139/09 heads, replace inventory heads, continue all source merges, then combined CI/review.
+No validation PR/push/deploy created yet.
