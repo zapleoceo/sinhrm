@@ -57,6 +57,14 @@ for (const p of PAGES) {
       expect.soft(mock.missing, 'GET without a fixture — re-record (npm run e2e:record)').toEqual([]);
       if (p.id === 'integrations') {
         expect(mock.requests).toContain('GET /api/integrations/itstep-directory/status');
+        const googleActions = page.locator('a[role="link"]').filter({ hasText: 'Підключити Google' });
+        await expect(googleActions).toHaveCount(4);
+        expect(await googleActions.evaluateAll((links) => links.map((link) => ({
+          href: link.getAttribute('href'),
+          ariaDisabled: link.getAttribute('aria-disabled'),
+          disabled: link.hasAttribute('disabled'),
+        })))).toEqual(Array.from({ length: 4 }, () => ({ href: null, ariaDisabled: 'true', disabled: true })));
+        if (viewport === 'mobile') await expect(page.getByRole('button', { name: 'Поговорити зі Стіком' })).toBeVisible();
         if (state.id === 'synthetic-directory-preview') {
           expect(mock.requests).toContain('GET /api/integrations/itstep-directory/synthetic-preview');
           await expect(page.getByText('Синтетичні дані — не відповідь Itstep')).toBeVisible();
