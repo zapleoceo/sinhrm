@@ -43,12 +43,12 @@ final class CandidateController
         return (new CandidateResource($this->service->find($candidate->id)))->response()->setStatusCode(201);
     }
 
-    /** The card: contacts, source/UTM and every application with its route. */
+    /** The card: contacts, source/UTM and visible applications with their routes. */
     public function show(Request $request, Candidate $candidate): JsonResponse
     {
         Gate::forUser($this->actor($request))->authorize('view', $candidate);
         $data = (new CandidateResource($this->service->find($candidate->id)))->toArray($request);
-        $data['applications'] = ApplicationResource::collection($this->service->applications($candidate))->toArray($request);
+        $data['applications'] = ApplicationResource::collection($this->service->applications($this->actor($request), $candidate))->toArray($request);
 
         return new JsonResponse(['data' => $data]);
     }
@@ -63,7 +63,7 @@ final class CandidateController
     public function timeline(TimelineRequest $request, Candidate $candidate): AnonymousResourceCollection
     {
         return TimelineEntryResource::collection(
-            $this->touchpoints->timeline($candidate, $request->channels(), $request->withStages(), $request->perPage()),
+            $this->touchpoints->timeline($this->actor($request), $candidate, $request->channels(), $request->withStages(), $request->perPage()),
         );
     }
 
