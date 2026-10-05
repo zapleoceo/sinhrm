@@ -12,6 +12,7 @@ use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Models\Candidate;
+use App\Modules\Recruiting\Support\ApplicationVisibility;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -24,8 +25,10 @@ final class EloquentCandidateRepository implements CandidateRepository
         $appFilter = $filter->vacancyId !== null || $filter->stageId !== null || $filter->status !== null;
 
         return $this->scoped(Candidate::query(), $scope)
-            ->addSelect(['candidates.*', 'screening_score' => ScreeningRanking::candidateScore($filter)])
-            ->with(['channel', 'applications' => fn ($q) => $q->with(['vacancy', 'stage'])->orderByDesc('updated_at')])
+            ->addSelect(['candidates.*', 'screening_score' => ScreeningRanking::candidateScore($filter, $scope)])
+            ->with(['channel', 'applications' => fn ($q) => $q
+                ->whereIn('applications.id', ApplicationVisibility::query($scope)->select('applications.id'))
+                ->with(['vacancy', 'stage'])->orderByDesc('updated_at')])
             ->when($filter->q, function (Builder $q, string $term): void {
                 $like = Like::contains(mb_strtolower($term));
                 $telegram = Like::contains(ltrim(mb_strtolower($term), '@'));
@@ -39,8 +42,9 @@ final class EloquentCandidateRepository implements CandidateRepository
                     }
                 });
             })
-            ->when($appFilter, fn (Builder $q) => $q->whereHas('applications', function (Builder $a) use ($filter): void {
-                $a->when($filter->vacancyId, fn (Builder $x, int $id) => $x->where('vacancy_id', $id))
+            ->when($appFilter, fn (Builder $q) => $q->whereHas('applications', function (Builder $a) use ($filter, $scope): void {
+                $a->whereIn('applications.id', ApplicationVisibility::query($scope)->select('applications.id'))
+                    ->when($filter->vacancyId, fn (Builder $x, int $id) => $x->where('vacancy_id', $id))
                     ->when($filter->stageId, fn (Builder $x, int $id) => $x->where('stage_id', $id))
                     ->when($filter->status, fn (Builder $x, ApplicationStatus $s) => $x->where('status', $s->value));
             }))

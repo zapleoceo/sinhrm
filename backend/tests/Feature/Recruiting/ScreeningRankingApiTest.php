@@ -125,6 +125,74 @@ final class ScreeningRankingApiTest extends TestCase
         $this->getJson('/api/candidates?sort=screening_score&status=hired')->assertOk()->assertJsonCount(0, 'data');
     }
 
+    public function test_hidden_applications_do_not_change_visible_candidate_score_filters_or_order(): void
+    {
+        $visibleVacancy = $this->vacancyIn($this->branch);
+        $hiddenVacancy = $this->vacancyIn(Branch::factory()->create());
+        $visible = $this->applied($visibleVacancy);
+        $hidden = $this->app->make(ApplicationService::class)->apply(null, $visible->candidate, $hiddenVacancy);
+        $hidden->update(['status' => 'rejected', 'stage_id' => $this->rejectStage()->id]);
+        $other = $this->applied($visibleVacancy);
+        $this->screening($visible, 20);
+        $this->screening($hidden, 99);
+        $this->screening($other, 40);
+
+        $response = $this->getJson('/api/candidates?sort=screening_score')->assertOk();
+        $this->assertSame([$other->candidate_id, $visible->candidate_id], array_column($response->json('data'), 'id'));
+        $this->assertSame([40, 20], array_column($response->json('data'), 'screening_score'));
+        $this->assertSame([$visible->id], array_column($response->json('data.1.applications'), 'id'));
+
+        $this->getJson('/api/candidates?sort=screening_score&vacancy_id='.$hiddenVacancy->id)
+            ->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/candidates?sort=screening_score&stage_id='.$this->rejectStage()->id)
+            ->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/candidates?sort=screening_score&status=rejected')
+            ->assertOk()->assertJsonCount(0, 'data');
+        $this->getJson('/api/candidates?sort=screening_score&vacancy_id='.$visibleVacancy->id)
+            ->assertOk()->assertJsonPath('data.0.id', $other->candidate_id)
+            ->assertJsonPath('data.1.id', $visible->candidate_id)
+            ->assertJsonPath('data.1.screening_score', 20);
+    }
+
+    public function test_owned_candidate_without_visible_applications_has_no_score_or_application_details(): void
+    {
+        $owner = $this->userWith(UserRole::Viewer);
+        $hiddenApplication = $this->applied($this->vacancyIn(Branch::factory()->create()), ['owner_id' => $owner->id]);
+        $this->screening($hiddenApplication, 88);
+
+        $this->actingAs($owner)->getJson('/api/candidates?sort=screening_score')->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $hiddenApplication->candidate_id)
+            ->assertJsonPath('data.0.screening_score', null)
+            ->assertJsonCount(0, 'data.0.applications');
+    }
+
+    public function test_branch_manager_interviewer_and_admin_scores_use_their_visible_applications(): void
+    {
+        $visibleVacancy = $this->vacancyIn($this->branch);
+        $hiddenVacancy = $this->vacancyIn(Branch::factory()->create());
+        $manager = $this->userWith(UserRole::Employee);
+        $interviewer = $this->userWith(UserRole::Employee);
+        $visibleVacancy->update(['hiring_manager_id' => $manager->id]);
+        $visible = $this->applied($visibleVacancy);
+        $hidden = $this->app->make(ApplicationService::class)->apply(null, $visible->candidate, $hiddenVacancy);
+        $visible->interviewers()->sync([$interviewer->id => ['created_at' => now()]]);
+        $this->screening($visible, 25);
+        $this->screening($hidden, 95);
+
+        $this->getJson('/api/candidates?sort=screening_score')->assertOk()
+            ->assertJsonPath('data.0.screening_score', 25);
+        $this->actingAs($manager)->getJson('/api/candidates?sort=screening_score')->assertOk()
+            ->assertJsonPath('data.0.screening_score', 25)
+            ->assertJsonCount(1, 'data.0.applications');
+        $this->actingAs($interviewer)->getJson('/api/candidates?sort=screening_score')->assertOk()
+            ->assertJsonPath('data.0.screening_score', 25)
+            ->assertJsonCount(1, 'data.0.applications');
+        $this->actingAs($this->userWith(UserRole::Admin))->getJson('/api/candidates?sort=screening_score')->assertOk()
+            ->assertJsonPath('data.0.screening_score', 95)
+            ->assertJsonCount(2, 'data.0.applications');
+    }
+
     public function test_ranking_retains_scope_authentication_and_sort_validation(): void
     {
         $own = $this->applied($this->vacancyIn($this->branch));
