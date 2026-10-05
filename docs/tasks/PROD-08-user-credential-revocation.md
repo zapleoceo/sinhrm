@@ -22,3 +22,5 @@
 - KB: Rovo HTTP502 не блокує авторизовану роботу. SOL writer дозволений власником.
 
 Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.
+
+CI regression assertion correction: Laravel getRememberToken casts persisted null to empty string. Tests assert raw remember_token is null and getter is empty, retaining real cookie/token denial assertions. Prior full CI: 1376 passed, 2 getter assertions failed, one existing warning. Exact-head rerun pending.

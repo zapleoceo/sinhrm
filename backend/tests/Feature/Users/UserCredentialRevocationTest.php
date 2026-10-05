@@ -51,7 +51,8 @@ final class UserCredentialRevocationTest extends TestCase
         app(UserAdminService::class)->update($this->admin, $target, null, UserStatus::Active);
 
         $this->assertSame(1, $target->refresh()->credential_version);
-        $this->assertNull($target->getRememberToken());
+        $this->assertNull($target->getRawOriginal('remember_token'));
+        $this->assertSame('', $target->getRememberToken());
         $this->assertSame(0, PersonalAccessToken::query()->whereMorphedTo('tokenable', $target)->count());
         $this->bearer($token)->assertUnauthorized();
         $this->remembered($name, $cookie)->assertUnauthorized();
@@ -114,7 +115,8 @@ final class UserCredentialRevocationTest extends TestCase
         $this->resetClient();
 
         $this->actingAs($this->admin)->patchJson('/api/users/'.$target->id, ['status' => 'blocked'])->assertOk();
-        $this->assertNull($target->refresh()->getRememberToken());
+        $this->assertNull($target->refresh()->getRawOriginal('remember_token'));
+        $this->assertSame('', $target->getRememberToken());
         $this->assertSame('synthetic-other-remember', $other->refresh()->getRememberToken());
         $this->remembered($name, $cookie)->assertUnauthorized();
 
