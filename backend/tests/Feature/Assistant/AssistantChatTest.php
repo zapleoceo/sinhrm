@@ -7,7 +7,6 @@ namespace Tests\Feature\Assistant;
 use App\Models\User;
 use App\Modules\Ai\DTO\AiPrompt;
 use App\Modules\Assistant\Ai\AssistantPrompt;
-use App\Modules\Assistant\Services\AssistantChatService;
 use App\Modules\Auth\Enums\UserRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -92,7 +91,7 @@ final class AssistantChatTest extends TestCase
         // Cache discipline: the system prompt is byte-stable; per-turn context lives in the last user message.
         $this->assertSame(AssistantPrompt::SYSTEM, $body['messages'][0]['content']);
         $this->assertStringNotContainsString('Synthetic Recruiter', $body['messages'][0]['content']);
-        $this->assertStringContainsString('Synthetic Recruiter', $body['messages'][1]['content']);
+        $this->assertStringNotContainsString('Synthetic Recruiter', $body['messages'][1]['content']);
         $this->assertStringContainsString('/candidates', $body['messages'][1]['content']);
         $this->assertStringEndsWith('Знайди Олену', $body['messages'][1]['content']);
     }
@@ -174,7 +173,7 @@ final class AssistantChatTest extends TestCase
             ->assertJsonPath('data.detail.finish_reason', 'stop');
     }
 
-    public function test_old_tool_results_are_trimmed_and_the_fresh_one_capped(): void
+    public function test_old_tool_results_are_omitted_and_the_fresh_one_is_refetched(): void
     {
         $this->enableAi(self::NATIVE);
         $this->fakeBroker([[self::doneAnswer('Активних кандидатів: 125.')]]);
@@ -191,11 +190,12 @@ final class AssistantChatTest extends TestCase
         ]])->assertOk()->assertJsonPath('data.assistant.content', 'Активних кандидатів: 125.');
 
         $messages = $this->brokerSubmits[0]['messages'];
-        $this->assertSame(AssistantChatService::OLD_TOOL_CHARS + mb_strlen('…[trimmed]'), mb_strlen($messages[3]['content']));
-        $this->assertSame(AssistantChatService::FRESH_TOOL_CHARS + mb_strlen('…[trimmed]'), mb_strlen($messages[5]['content']));
+        $this->assertSame('{"omitted":"older_tool_result"}', $messages[3]['content']);
+        $this->assertSame(200, json_decode($messages[5]['content'], true)['status']);
+        $this->assertStringNotContainsString($big, (string) json_encode($messages));
     }
 
-    public function test_a_text_answer_ends_the_turn_and_tool_history_is_forwarded(): void
+    public function test_a_text_answer_ends_the_turn_and_tool_history_is_rebuilt(): void
     {
         $this->enableAi(self::NATIVE);
         $this->fakeBroker([[self::doneAnswer('Знайшов 2 кандидатки: /candidates/4 і /candidates/9.')]]);
@@ -214,7 +214,7 @@ final class AssistantChatTest extends TestCase
 
         $messages = $this->brokerSubmits[0]['messages'];
         $this->assertSame(['system', 'user', 'assistant', 'tool'], array_column($messages, 'role'));
-        $this->assertSame('call_2', $messages[3]['tool_call_id']);
+        $this->assertSame('history_1', $messages[3]['tool_call_id']);
         $this->assertSame('api_get', $messages[2]['tool_calls'][0]['function']['name']);
     }
 
