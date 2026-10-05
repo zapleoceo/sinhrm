@@ -15,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Laravel\Sanctum\PersonalAccessToken;
 use LogicException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
@@ -50,9 +51,9 @@ final class UserCredentialRevocationTest extends TestCase
         $this->actingAs($this->admin)->patchJson('/api/users/'.$target->id, ['status' => 'blocked'])
             ->assertOk()->assertJsonPath('data.status', 'blocked');
         $this->assertSame(0, DB::table('sessions')->where('user_id', $target->id)->count());
-        $this->assertSame(0, $target->tokens()->getQuery()->count());
+        $this->assertSame(0, PersonalAccessToken::query()->whereMorphedTo('tokenable', $target)->count());
         $this->assertDatabaseHas('sessions', ['id' => str_repeat('c', 40), 'user_id' => $other->id]);
-        $this->assertSame(1, $other->tokens()->getQuery()->count());
+        $this->assertSame(1, PersonalAccessToken::query()->whereMorphedTo('tokenable', $other)->count());
 
         foreach ($tokens as $token) {
             $this->bearer($token)->assertUnauthorized();
@@ -116,7 +117,7 @@ final class UserCredentialRevocationTest extends TestCase
 
         $this->assertSame(UserStatus::Active, $target->refresh()->status);
         $this->assertDatabaseHas('sessions', ['id' => str_repeat('d', 40), 'user_id' => $target->id]);
-        $this->assertSame(1, $target->tokens()->getQuery()->count());
+        $this->assertSame(1, PersonalAccessToken::query()->whereMorphedTo('tokenable', $target)->count());
         $this->assertSame('synthetic-original-remember', $target->refresh()->getRememberToken());
     }
 
@@ -129,7 +130,7 @@ final class UserCredentialRevocationTest extends TestCase
         $this->actingAs($this->admin)->patchJson('/api/users/'.$target->id, ['status' => 'blocked'])->assertOk();
         $this->actingAs($this->admin)->patchJson('/api/users/'.$target->id, ['status' => 'blocked'])->assertOk();
         $this->assertSame(0, DB::table('sessions')->where('user_id', $target->id)->count());
-        $this->assertSame(0, $target->tokens()->getQuery()->count());
+        $this->assertSame(0, PersonalAccessToken::query()->whereMorphedTo('tokenable', $target)->count());
     }
 
     public function test_a_separate_session_database_fails_closed_without_changing_status_or_credentials(): void
@@ -146,7 +147,7 @@ final class UserCredentialRevocationTest extends TestCase
         }
         $this->assertSame(UserStatus::Active, $target->refresh()->status);
         $this->assertDatabaseHas('sessions', ['id' => str_repeat('g', 40), 'user_id' => $target->id]);
-        $this->assertSame(1, $target->tokens()->getQuery()->count());
+        $this->assertSame(1, PersonalAccessToken::query()->whereMorphedTo('tokenable', $target)->count());
     }
 
     public function test_last_superadmin_guard_uses_current_locked_status_instead_of_a_stale_target(): void
@@ -167,7 +168,7 @@ final class UserCredentialRevocationTest extends TestCase
         $this->actingAs($this->admin)->patchJson('/api/users/'.$this->admin->id, ['status' => 'blocked'])
             ->assertUnprocessable()->assertJsonPath('code', 'self_change_forbidden');
         $this->assertDatabaseHas('sessions', ['id' => str_repeat('f', 40), 'user_id' => $this->admin->id]);
-        $this->assertSame(1, $this->admin->tokens()->getQuery()->count());
+        $this->assertSame(1, PersonalAccessToken::query()->whereMorphedTo('tokenable', $this->admin)->count());
         $this->assertSame(UserStatus::Active, $this->admin->refresh()->status);
     }
 

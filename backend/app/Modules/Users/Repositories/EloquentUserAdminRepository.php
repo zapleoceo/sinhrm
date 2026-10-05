@@ -15,6 +15,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\PersonalAccessToken;
 use LogicException;
 
 final class EloquentUserAdminRepository implements UserAdminRepository
@@ -91,7 +92,7 @@ final class EloquentUserAdminRepository implements UserAdminRepository
         }
 
         $user->getConnection()->table((string) config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
-        $user->tokens()->getQuery()->delete();
+        PersonalAccessToken::query()->whereMorphedTo('tokenable', $user)->delete();
         $user->forceFill([$user->getRememberTokenName() => null])->save();
     }
 
