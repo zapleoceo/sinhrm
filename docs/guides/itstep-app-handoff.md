@@ -5,7 +5,7 @@
 ## Что проверено в репозитории
 
 - Backend — Laravel 13 (`backend/composer.json`), Composer-зависимости зафиксированы в `backend/composer.lock`. Минимальная версия PHP по Composer — 8.3; CI устанавливает PHP 8.4 и расширения `pdo_pgsql`, `pgsql`, `intl`, `sodium`. Для целевой среды рекомендуется PHP 8.4 с этими расширениями; окончательную проверку требований зафиксированного набора пакетов выполнять командой `composer check-platform-reqs --no-dev`.
-- HTTP entrypoint — `backend/public/index.php`. Для обычного PHP-FPM/Apache/Nginx document root должен указывать на `backend/public`, а все неизвестные пути API передаваться через этот front controller. `backend/api/index.php` и `backend/vercel.json` — Vercel-адаптеры; запуск приложения от корня репозитория или через этот адаптер на Itstep не требуется.
+- HTTP entrypoint — `backend/public/index.php`. Для обычного PHP-FPM/Apache/Nginx document root должен указывать на `backend/public`, а все неизвестные пути API передаваться через этот front controller. `backend/api/index.php` и `backend/vercel.json` — Vercel-адаптеры; запуск приложения от корня репозитория или через этот адаптер на Itstep не требуется. При запуске непосредственно через `public/index.php` PHP runtime должен задавать `zend.exception_ignore_args=1` (Vercel-адаптер задаёт это сам): проверить эффективное значение именно для PHP-FPM/web runtime, а не только CLI. Это не допускает попадания значений аргументов функций в exception traces.
 - Frontend — Angular application builder. Использовать Node.js 24, `npm` версии из `frontend/package.json` (`npm@11.17.0`) и `frontend/package-lock.json`: `cd frontend && npm ci && npm run build`. Сборка запускает генерацию документации и создаёт статический сайт в `frontend/dist/frontend/browser` (стандартный browser output Angular application builder). Публиковать содержимое этой папки.
 - Frontend отправляет запросы на относительные `/api/...` и `/sanctum/...`. В текущем Vercel-размещении эти пути направляются из `frontend/vercel.json` в отдельный API-проект. Для Itstep настройка фронтенда может остаться неизменной, если reverse proxy публикует SPA и API под одним внешним origin и направляет `/api/*` и `/sanctum/*` в Laravel, а остальные неизвестные UI-пути — на `index.html`. Это сохраняет cookie-аутентификацию Sanctum. Отдельные browser-origin для SPA и API потребуют отдельной доработки credentialed CORS/Sanctum и не являются проверенным конфигурационным сценарием приложения.
 - API health check — `GET /api/health`; он проверяет подключение к базе и отвечает HTTP 503 при ошибке. Laravel также регистрирует `/up` для проверки запуска процесса; проверка базы доступна на `/api/health`.
@@ -27,8 +27,9 @@
 | `DB_URL` или `DATABASE_URL` | обязательно | PostgreSQL connection URL; предпочтительно `DB_URL`, поскольку он имеет приоритет. |
 | `SUPERADMIN_EMAIL` | обязательно | Адрес начального суперадминистратора. |
 | `OPS_SECRET` | обязательно для миграций через ops endpoint и планового запуска модульных задач | Секрет заголовка `X-Ops-Secret`; не передавать как аргумент публичной команды и не логировать. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | если используется Google OAuth | OAuth credentials; секрет — только в защищённом хранилище окружения. |
-| `GOOGLE_REDIRECT_URI`, `GOOGLE_CONNECT_REDIRECT_URI` | если используется Google OAuth | Полные callback URL на домене приложения, включая пути из текущей конфигурации `backend/config/services.php`. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | обязательно для текущего входа | Текущая аутентификация пользователей использует Google OAuth; secret — только в защищённом хранилище окружения. |
+| `GOOGLE_REDIRECT_URI` | обязательно для текущего входа | Зарегистрировать в Google OAuth полный Itstep callback URL `/api/auth/google/callback`; переопределить Vercel default из `backend/config/services.php`. `SUPERADMIN_EMAIL` входит первым через Google при подтверждённом совпадении email. |
+| `GOOGLE_CONNECT_REDIRECT_URI` | только если включается Google Workspace | Отдельный callback URL `/api/google/connect/callback` для согласия на доступ Gmail/Calendar/Sheets; это не callback входа. |
 | `SANCTUM_STATEFUL_DOMAINS` | настроить под внешний host | Домены SPA, которым разрешена stateful cookie-аутентификация. |
 | `SESSION_SECURE_COOKIE` | `true` под HTTPS | Браузер передаёт сессию только по HTTPS. |
 | `SESSION_DOMAIN` | при необходимости общего cookie-домена | Оставить конфигурацию по умолчанию при одном host; при отдельных поддоменах проверить cookie-domain совместно с архитектурой маршрутизации. |
@@ -41,10 +42,10 @@
 1. Собрать backend из `backend/`: установить зафиксированные production-зависимости через `composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader`, затем проверить платформу Composer.
 2. Собрать frontend из `frontend/` командами выше и публиковать только `dist/frontend/browser` как SPA.
 3. Настроить один внешний HTTPS origin: проксировать `/api/*` и `/sanctum/*` к backend, остальные пути SPA отдавать через `index.html`. Ограничения и security headers из `frontend/vercel.json` сейчас применяет Vercel; при размещении вне Vercel их перенос на edge/web server является настройкой хостинга и должен быть выполнен там.
-4. Задать перечисленные production-переменные и PostgreSQL-соединение. Убедиться, что Laravel runtime может писать необходимые служебные каталоги.
+4. Задать перечисленные production-переменные и PostgreSQL-соединение, включая Google login credentials и зарегистрированный callback для текущего входа. Убедиться, что PHP-FPM применяет `zend.exception_ignore_args=1`, а Laravel runtime может писать необходимые служебные каталоги. Если для Itstep требуется иной корпоративный способ входа, это требует отдельного согласования и изменения приложения.
 5. До переключения трафика применить миграции командой `php artisan migrate --force` из `backend/` в окружении релиза. Не запускать preview/reset миграционный режим на рабочей базе.
 6. Настроить запланированный POST `https://<внешний-origin>/api/ops/jobs/run` каждые 30 минут с заголовком `X-Ops-Secret`; проверять HTTP-статус и поле `ok` ответа, а в журнал планировщика писать только результат/счётчики без содержимого персональных данных.
-7. Проверить `GET /api/health` после миграций и SPA по корневому URL; затем отдельно проверить вход с cookie и, если используется, Google OAuth callback на Itstep hostname.
+7. Проверить `GET /api/health` после миграций, SPA по корневому URL и вход через Google с Itstep callback и cookie-сессией. Если настроен Google Workspace, отдельно проверить его callback подключения.
 
 ## Ограничения и зависимости релиза
 
