@@ -559,3 +559,10 @@ curl -i "https://<preview>/api/recruiting/stale?days=3"      # без сесси
 **Как проверить.** `php artisan test --filter=VacancyFormApiTest` (форма, 422, шаблоны, активность, публичная
 зарплата, экранирование, ИИ, права на шаблоны, проверка `vacancy-text`); фронт — `vacancy-form.spec.ts`,
 `careers.spec.ts`.
+
+## Сквозной HTTP acceptance
+`tests/Feature/HiringRequests/HiringApiAcceptanceTest.php` связывает одобренную заявку и auto-vacancy
+с HTTP create candidate/apply/move до hired/rejected и итоговыми scoped reports.
+Чужой филиал служит контрольной группой; viewer/foreign не меняют этап. Повторная create/apply/move
+и отказ без причины возвращают существующие ошибки, не добавляя кандидатов, заявок или истории.
+Проверка работает на синтетическом PostgreSQL CI, без frontend/provider mocks и без live production данных.
