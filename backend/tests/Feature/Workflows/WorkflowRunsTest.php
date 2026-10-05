@@ -14,11 +14,14 @@ use App\Modules\People\Models\Employee;
 use App\Modules\Scripts\Models\Task;
 use App\Modules\Workflows\Models\WorkflowRun;
 use App\Modules\Workflows\Models\WorkflowRunStep;
+use App\Modules\Workflows\Contracts\WorkflowRunRepository;
+use App\Modules\Workflows\Services\WorkflowTriggers;
 use App\Modules\Workflows\Support\WebhookSecrets;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\FakeHostResolver;
 use Tests\Support\GoogleFixtures;
 use Tests\Support\PeopleFixtures;
@@ -45,6 +48,54 @@ final class WorkflowRunsTest extends TestCase
     {
         Carbon::setTestNow();
         parent::tearDown();
+    }
+
+    /** @return array<string, array{string, string, list<string>}> */
+    public static function localDayCases(): array
+    {
+        return [
+            'early Kyiv next day' => ['2026-10-04 22:44:00', '2026-10-05', ['2026-10-03 21:00:00', '2026-10-04 21:00:00', '2026-10-05 21:00:00']],
+            'normal daytime' => ['2026-10-05 12:00:00', '2026-10-05', ['2026-10-03 21:00:00', '2026-10-04 21:00:00', '2026-10-05 21:00:00']],
+            'spring DST' => ['2026-03-28 22:44:00', '2026-03-29', ['2026-03-27 22:00:00', '2026-03-28 22:00:00', '2026-03-29 21:00:00']],
+            'autumn DST' => ['2026-10-24 22:44:00', '2026-10-25', ['2026-10-23 21:00:00', '2026-10-24 21:00:00', '2026-10-25 22:00:00']],
+        ];
+    }
+
+    /** @param list<string> $expected */
+    #[DataProvider('localDayCases')]
+    public function test_default_anchor_and_due_offsets_follow_local_calendar_day(string $now, string $date, array $expected): void
+    {
+        config(['app.timezone' => 'UTC', 'app.user_timezone' => 'Europe/Kyiv']);
+        Carbon::setTestNow(Carbon::parse($now, 'UTC'));
+        $admin = $this->login(UserRole::Admin);
+        $employee = $this->employee();
+        $template = $this->workflow([['create_task', -1], ['create_task', 0], ['create_task', 1]]);
+        $id = $this->actingAs($admin)->postJson('/api/workflows/runs', ['template_id' => $template->id, 'employee_id' => $employee->id])
+            ->assertCreated()->assertJsonPath('data.anchor_date', $date)->json('data.id');
+        $steps = WorkflowRunStep::query()->where('run_id', $id)->orderBy('position')->get();
+        $this->assertSame($expected, $steps->map(fn (WorkflowRunStep $step): string => $step->due_at->format('Y-m-d H:i:s'))->all());
+        $this->assertCount(2, $this->app->make(WorkflowRunRepository::class)->dueSteps(Carbon::now(), 100));
+        $this->assertSame(2, $this->tick()['executed']);
+        $this->assertSame(0, $this->tick()['executed']);
+    }
+
+    public function test_probation_and_nested_workflow_use_local_today_before_utc_midnight(): void
+    {
+        config(['app.timezone' => 'UTC', 'app.user_timezone' => 'Europe/Kyiv']);
+        Carbon::setTestNow(Carbon::parse('2026-10-04 22:44:00', 'UTC'));
+        $admin = $this->login(UserRole::Admin);
+        $employee = $this->employee(['hired_at' => '2026-10-04']);
+        $probation = $this->workflow([['create_task']], ['trigger' => 'probation_end', 'probation_days' => 1]);
+        $this->assertSame(1, $this->app->make(WorkflowTriggers::class)->probationEnded(Carbon::now()));
+        $this->assertSame('2026-10-05', WorkflowRun::query()->where('template_id', $probation->id)->sole()->anchor_date->toDateString());
+
+        $child = $this->workflow([['create_task']]);
+        $parent = $this->workflow([['start_workflow', 0, 'hr_admin', ['template_id' => $child->id]]]);
+        $this->actingAs($admin)->postJson('/api/workflows/runs', ['template_id' => $parent->id, 'employee_id' => $employee->id])->assertCreated();
+        $this->tick();
+        $run = WorkflowRun::query()->where('template_id', $child->id)->sole();
+        $this->assertSame('2026-10-05', $run->anchor_date->toDateString());
+        $this->assertSame('2026-10-04 21:00:00', $run->steps()->sole()->due_at->format('Y-m-d H:i:s'));
     }
 
     public function test_hire_starts_onboarding_once_per_employee(): void
@@ -95,7 +146,7 @@ final class WorkflowRunsTest extends TestCase
         $run = WorkflowRun::query()->where('employee_id', $employee->id)->sole();
         $this->assertSame('2026-10-20', $run->anchor_date->toDateString());
         $step = WorkflowRunStep::query()->where('run_id', $run->id)->sole();
-        $this->assertSame('2026-10-19 00:00:00', $step->due_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-10-18 21:00:00', $step->due_at->format('Y-m-d H:i:s'));
         $this->assertSame($admin->id, $step->assignee_id);
     }
 
