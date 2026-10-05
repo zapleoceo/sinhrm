@@ -45,6 +45,10 @@ test('workflow file change -> both', () => {
   assert.deepEqual(flags, { api: true, web: true });
 });
 
+test('build stamping change -> both', () => {
+  assert.deepEqual(classifyPaths(['scripts/stamp-build.mjs']), { api: true, web: true });
+});
+
 test('unrelated paths -> neither', () => {
   const flags = classifyPaths(['extension/manifest.json', 'README.md', 'rest/foo.http']);
   assert.deepEqual(flags, { api: false, web: false });

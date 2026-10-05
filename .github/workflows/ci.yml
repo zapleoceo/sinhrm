@@ -197,6 +197,8 @@ jobs:
         with: { fetch-depth: 0 }
       - name: Tests of the checks
         run: node --test scripts/pr-checks.test.mjs
+      - name: Build provenance tests
+        run: node --test scripts/stamp-build.test.mjs
       - name: Docs updated with code
         env:
           BASE_REF: ${{ github.base_ref }}
