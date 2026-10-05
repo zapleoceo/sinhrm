@@ -8,7 +8,7 @@ export interface LayoutReport {
     viewportWidth: number;
     documentClientWidth: number;
     documentScrollWidth: number;
-    overflowingElements: Array<{
+    tableAncestors: Array<{
       element: string;
       left: number;
       right: number;
@@ -17,11 +17,9 @@ export interface LayoutReport {
       clientWidth: number;
       cssWidth: string;
       minWidth: string;
-      maxWidth: string;
       overflowX: string;
       display: string;
-      gridTemplateColumns: string;
-      flexBasis: string;
+      position: string;
     }>;
   };
 }
@@ -74,31 +72,28 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
       }
       if (out) clipped.push(describe(el));
     }
-    const overflowingElements = Array.from(document.querySelectorAll('body *'))
-      .map((el) => {
-        const rect = el.getBoundingClientRect();
-        if (rect.right <= window.innerWidth + TOL && rect.left >= -TOL && el.scrollWidth <= el.clientWidth + TOL) return null;
-        const style = getComputedStyle(el);
-        const classes = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 3) : [];
-        return {
-          element: `${el.tagName.toLowerCase()}${classes.map((name) => `.${name}`).join('')}`,
-          left: Math.round(rect.left * 10) / 10,
-          right: Math.round(rect.right * 10) / 10,
-          width: Math.round(rect.width * 10) / 10,
-          scrollWidth: el.scrollWidth,
-          clientWidth: el.clientWidth,
-          cssWidth: style.width,
-          minWidth: style.minWidth,
-          maxWidth: style.maxWidth,
-          overflowX: style.overflowX,
-          display: style.display,
-          gridTemplateColumns: style.gridTemplateColumns,
-          flexBasis: style.flexBasis,
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null)
-      .sort((a, b) => (b.right - window.innerWidth) - (a.right - window.innerWidth) || b.width - a.width)
-      .slice(0, 40);
+    // The table can be wider than the viewport inside an intentional scroller; measure its ancestors to find
+    // which box (if any) allows that width to escape into the document.
+    const table = document.querySelector('table.mat-mdc-table');
+    const tableAncestors: LayoutReport['diagnostics']['tableAncestors'] = [];
+    for (let el: Element | null = table; el; el = el.parentElement) {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      const classes = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 3) : [];
+      tableAncestors.push({
+        element: `${el.tagName.toLowerCase()}${classes.map((name) => `.${name}`).join('')}`,
+        left: Math.round(rect.left * 10) / 10,
+        right: Math.round(rect.right * 10) / 10,
+        width: Math.round(rect.width * 10) / 10,
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        cssWidth: style.width,
+        minWidth: style.minWidth,
+        overflowX: style.overflowX,
+        display: style.display,
+        position: style.position,
+      });
+    }
     return {
       pageOverflow,
       clipped: [...new Set(clipped)].sort(),
@@ -106,7 +101,7 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
         viewportWidth: window.innerWidth,
         documentClientWidth: doc.clientWidth,
         documentScrollWidth: doc.scrollWidth,
-        overflowingElements,
+        tableAncestors,
       },
     };
   });
