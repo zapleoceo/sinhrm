@@ -16,5 +16,7 @@
 - Крок: реалізація готова до CI та незалежного рев'ю.
 - Виконано: безпечний pure pipe для null/порожніх/некоректних дат, locale signal і browser timezone, unit відображення/перемикання/offset/epoch, синтетичні e2e 3 мови × 3 часові пояси × 4 viewport/theme projects; fixtures збережено. Модуль і worklog оновлено.
 - Доказ: targeted Angular і e2e ESLint пройшли; локальний unit build зупинився на відсутніх 4 FontAwesome пакетах у спільному node_modules, e2e tsc — відсутній @types/node. Залежності локально не встановлювалися. Unit/e2e результат очікується з CI.
-- Наступна дія: commit/push, draft PR, перевірити CI точного SHA; без merge/deploy.
+- Доставка: draft PR [#146](https://github.com/zapleoceo/sinhrm/pull/146), attached до Codex. Код SHA `c8e78f895e73aa5e1e40280797a5b2601ec75394`.
+- CI цього коду: [run 37272582125](https://github.com/zapleoceo/sinhrm/actions/runs/37272582125): frontend lint/unit/coverage/build зелені, 10 нових тестів дат пройшли; загалом 145 files, 978 passed / 1 skipped. Docs/worklog/security/extension/API-docs/backend-lint зелені; backend tests та ui-parity на момент handoff виконуються. Скріншоти ще не підтверджені.
+- Наступна дія: root перевіряє CI остаточного PR head та screenshots, організовує незалежне Luna/Astra рев'ю; PR залишається draft, без merge/deploy. Цей запис оновлює тільки стан після перевірки коду.
 - Обмеження: локальний app/server і повні suite заборонені; без merge, preview label/deploy та live OAuth. SOL/Luna/Astra дозволені власником замість Opus/Sonnet.
