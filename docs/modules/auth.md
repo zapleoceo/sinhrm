@@ -210,3 +210,5 @@ CORS (`config/cors.php`) открыт только для `api/clipper/*`, то�
 Ключ модуля `auth`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).
 
 `PATCH /api/auth/me/notifications {approval_emails: bool}` — вимикач листів про погодження («Мій профіль»); `GET /me` повертає `approval_emails`.
+
+Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.

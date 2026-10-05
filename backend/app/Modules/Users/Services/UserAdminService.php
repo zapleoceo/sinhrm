@@ -83,6 +83,10 @@ final class UserAdminService
                 $this->audit->record('user', $target->id, AuditAction::RoleChanged, ['role' => ['from' => self::names($previous), 'to' => self::names($roles)]], null, $actor->id);
             }
             if ($status !== null) {
+                // Pre-generation blocked accounts may still own credentials from before the upgrade.
+                if ($status === UserStatus::Active && ! $target->isActive() && $target->credential_version === 0) {
+                    $this->users->revokeCredentials($target);
+                }
                 $this->users->setStatus($target, $status);
                 if ($status === UserStatus::Blocked) {
                     $this->users->revokeCredentials($target);

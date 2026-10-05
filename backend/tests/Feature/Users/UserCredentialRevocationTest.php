@@ -36,6 +36,32 @@ final class UserCredentialRevocationTest extends TestCase
         $this->admin = User::factory()->withRole(UserRole::Superadmin)->create();
     }
 
+    public function test_restoring_a_legacy_blocked_account_revokes_its_pre_upgrade_credentials(): void
+    {
+        $target = User::factory()->blocked()->withRole(UserRole::Viewer)->create(['remember_token' => 'synthetic-legacy-remember']);
+        $other = User::factory()->create(['remember_token' => 'synthetic-healthy-remember']);
+        $token = $target->createToken('extension')->plainTextToken;
+        $target->createToken('mcp');
+        $otherToken = $other->createToken('extension')->plainTextToken;
+        $this->sessionFor($target, str_repeat('l', 40), legacy: true);
+        $this->sessionFor($other, str_repeat('o', 40));
+        $name = $this->sessionGuard()->getRecallerName();
+        $cookie = $target->id.'|'.$target->getRememberToken().'|'.$target->getAuthPassword();
+
+        app(UserAdminService::class)->update($this->admin, $target, null, UserStatus::Active);
+
+        $this->assertSame(1, $target->refresh()->credential_version);
+        $this->assertNull($target->getRememberToken());
+        $this->assertSame(0, PersonalAccessToken::query()->whereMorphedTo('tokenable', $target)->count());
+        $this->bearer($token)->assertUnauthorized();
+        $this->remembered($name, $cookie)->assertUnauthorized();
+        $this->browser(str_repeat('l', 40))->assertUnauthorized();
+        $this->bearer($otherToken)->assertOk()->assertJsonPath('id', $other->id);
+        $this->browser(str_repeat('o', 40))->assertOk()->assertJsonPath('id', $other->id);
+        $this->assertSame('synthetic-healthy-remember', $other->refresh()->getRememberToken());
+        $this->assertSame(0, $other->credential_version);
+    }
+
     public function test_block_revokes_every_session_and_token_name_without_touching_another_user(): void
     {
         $target = User::factory()->withRole(UserRole::Viewer)->create();

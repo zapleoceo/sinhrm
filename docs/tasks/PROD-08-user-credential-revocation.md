@@ -20,3 +20,5 @@
 - Наступна дія: commit/push PR149, root перевіряє CI та незалежне рев'ю; потім PR146 fixture translation, лише після цього PROD09.
 - Межі: database sessions на спільній connection, не all drivers; вже виконувані запити не скасовуються. Migration перед code release; legacy durable sessions вимагають нового login. Без local server/full suite/merge/deploy/preview/live OAuth.
 - KB: Rovo HTTP502 не блокує авторизовану роботу. SOL writer дозволений власником.
+
+Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.
