@@ -101,11 +101,22 @@
 
 | ID | Задача | Критерий / состояние |
 |---|---|---|
-| PROD-39 | Пакет frontend/backend для DevOps Itstep | IN_PROGRESS · Luna, отдельная chore/itstep-app-handoff: проверяемые runtime/build/start/migrations/queue/scheduler/storage/health, имена конфигурации, зависимости Vercel и способ их устранения; CI без реальных данных |
-| PROD-40 | Авторизация в целевой экосистеме | IN_PROGRESS: поиск реального контракта; текущий Sintegrum использует локальный пароль и opaque tokens, SSO этим не доказан. После подтверждения — отдельный Laravel adapter, frontend вход и тесты отказа/отзыва/прав; секреты через существующий vault/config |
-| PROD-41 | Импорт и сверка сотрудников СКУД | IN_PROGRESS: исследовать canonical employee feed и стабильные IDs; исходящий hire sync Sintegrum не считать полным импортом. После контракта — idempotent reconciliation, конфликты, status/branch mapping, наблюдаемый результат, outage не удаляет сотрудников; отдельная ветка |
+| PROD-39 | Пакет frontend/backend для DevOps Itstep | IN_PROGRESS · [PR155](https://github.com/zapleoceo/sinhrm/pull/155),e77b200 docs baseline: runtime/build/start/migrations/queue/scheduler/storage/health и границы текущего Vercel; CI/Astra pending, приложение не объявлено развёрнутым на Itstep |
+| PROD-40 | Авторизация в целевой экосистеме | EXTERNAL_PENDING contract · текущий Sintegrum использует локальный пароль и opaque tokens, SSO этим не доказан. Владелец сообщил, что сервис/документацию пока дать не может; записать в долги, подготовить доступную часть кода; существующий login не заменять выдуманным SSO |
+| PROD-41 | Импорт и сверка сотрудников СКУД | IN_PROGRESS preparation · владелец разрешил подготовить код сейчас, данные подключения даст позже. Отдельная feat/itstep-directory-preparation: disabled default, явная схема/namespace, typed gateway и безопасный preview/conflicts; полного live sync/изменения сотрудников по неизвестному feed не заявлять |
 | PROD-42 | Связь аккаунтов и права импортированных сотрудников | QUEUED: source-scoped IDs, уникальность и reviewed conflicts; email не выдаёт ACL; владелец superadmin подтверждён, массовое назначение прав остальным не определено. Подготовить конкретный безопасный сценарий после40/41 |
-| PROD-43 | Проектные правила экономии контекста | PR_READY review · [PR154](https://github.com/zapleoceo/sinhrm/pull/154),00682bd Astra PASS, CI pending; короткий AGENTS.md, узкие задачи Luna, дисковый state, краткие логи и exact-head review без ослабления gates; settings клиента не меняются |
+| PROD-43 | Проектные правила экономии контекста | DONE · [PR154](https://github.com/zapleoceo/sinhrm/pull/154),00682bd:10 checks SUCCESS, Astra PASS; merged main38d90ea. Короткий AGENTS.md, узкие задачи Luna, дисковый state, краткие логи и exact-head review; новые shared rules master_v3b269a264 и sinhrm adapter прочитаны, автоматическое разрешение release не добавлено |
+
+### Долги, которые владелец предоставит позже
+
+| Долг | Зачем нужен | Что делаем до получения |
+|---|---|---|
+| Репозиторий/OpenAPI сервиса сотрудников и авторизации | Проверить фактический response/ACL и corporate login | Готовим выключенную интеграцию и контрактные проверки; текущий login сохраняет свой проверенный контракт |
+| Canonical staff ID/namespace и project/branch mapping | Связать профили с внутренними employee/user без ошибочного объединения | Явные source-scoped IDs, конфликты и preview; не выдаём права по email |
+| Схема ответа, total/termination пагинации, delta/deletion semantics | Доказать полный импорт и обработку изменений/удалений | Fail-closed при неизвестной/неполной выдаче; outage не увольняет сотрудников |
+| Разрешённое подключение/token и live acceptance | Проверить реальный сервис после передачи данных | Секреты через vault/config; синтетические tests, network по умолчанию выключен; настройку окружения передаём DevOps |
+
+Ответ владельца 05.10.2026: ссылки пока нет, записать в долги и подготовить код; остальное предоставит позже. Нового вопроса по тем же данным не требуется. Попытка GitLab metadata discovery через cached credential была отклонена автоматической policy до выполнения, без получения/передачи credential; обход не выполнялся.
 
 ## Источники среза
 
@@ -113,4 +124,4 @@ Main `3b4ac30`, [CI37212189230](https://github.com/zapleoceo/sinhrm/actions/runs
 
 ## Стан
 
-2026-10-05: main по свежему remote ref остаётся3b4ac30.145/146/148/149/150/151/152 имеют зелёный exact-head CI и Astra PASS;153b27 и139cc7 implementation тоже прошли полный CI/Astra, task-state deltas требуют финального CI. Новая совместная регрессия ещё не завершена. SOL ответил на повторный запуск; владелец выбрал недорогую Luna и правила экономии контекста PR154. Требования Itstep/superadmin включены в ТЗ, DevOps эксплуатационные настройки вынесены из нашей разработки. Внутренние SDK доступны через cached HTTPS; SSH publickey отказ не означает отсутствия HTTPS доступа. Профильный endpoint найден, generic response и canonical namespace ещё требуют источника. Production readiness OPEN; feature merge/deploy не выполнялись.
+2026-10-05: main38d90ea после docs-only154; feature merge/deploy не выполнялись.145/146/148/149/150/151/152 имеют зелёный exact-head CI и Astra PASS;153b27 и139cc7 implementation тоже прошли полный CI/Astra, task-state deltas требуют финального CI. Luna продолжает новую совместную регрессию и подготовку приложения/директории Itstep. Требования Itstep/superadmin включены в ТЗ, DevOps эксплуатационные настройки вынесены из нашей разработки. Внутренние SDK доступны через HTTPS, профильный endpoint найден; owner inputs записаны в долги, код разрешён к подготовке без живого подключения. Production readiness OPEN.
