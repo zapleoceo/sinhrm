@@ -19,6 +19,24 @@ final class EmployeeDirectoryApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_invalid_source_snapshot_is_rejected_and_does_not_write_people_records(): void
+    {
+        $this->app->instance(EmployeeDirectoryGateway::class, new class implements EmployeeDirectoryGateway
+        {
+            public function status(): EmployeeDirectorySourceStatus { return new EmployeeDirectorySourceStatus(EmployeeDirectoryGatewayState::ReadyForPreview, [], 'company-a'); }
+            public function fetchCompleteSnapshot(): EmployeeDirectorySnapshot
+            {
+                return new EmployeeDirectorySnapshot('company-a', false, []);
+            }
+        });
+        $admin = User::factory()->withRole(UserRole::Superadmin)->create();
+
+        $this->actingAs($admin)->getJson('/api/integrations/itstep-directory/preview')
+            ->assertUnprocessable()->assertJsonPath('code', 'snapshot_invalid')->assertJsonPath('reason', 'snapshot_incomplete');
+        $this->assertDatabaseCount('employees', 0);
+        $this->assertDatabaseCount('users', 1);
+    }
+
     public function test_pending_status_and_fetch_are_gated_to_superadmin_and_do_not_call_a_source(): void
     {
         $this->getJson('/api/integrations/itstep-directory/status')->assertUnauthorized();
@@ -57,24 +75,6 @@ final class EmployeeDirectoryApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.status', 'preview_only')->assertJsonPath('data.profiles.0.link_action', 'manual_identity_review');
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('employees', 0);
-    }
-
-    public function test_invalid_source_snapshot_is_rejected_and_does_not_write_people_records(): void
-    {
-        $this->app->instance(EmployeeDirectoryGateway::class, new class implements EmployeeDirectoryGateway
-        {
-            public function status(): EmployeeDirectorySourceStatus { return new EmployeeDirectorySourceStatus(EmployeeDirectoryGatewayState::ReadyForPreview, [], 'company-a'); }
-            public function fetchCompleteSnapshot(): EmployeeDirectorySnapshot
-            {
-                return new EmployeeDirectorySnapshot('company-a', false, []);
-            }
-        });
-        $admin = User::factory()->withRole(UserRole::Superadmin)->create();
-
-        $this->actingAs($admin)->getJson('/api/integrations/itstep-directory/preview')
-            ->assertUnprocessable()->assertJsonPath('code', 'snapshot_invalid')->assertJsonPath('reason', 'snapshot_incomplete');
-        $this->assertDatabaseCount('employees', 0);
-        $this->assertDatabaseCount('users', 1);
     }
 
     public function test_synthetic_preview_is_labeled_and_never_uses_the_gateway(): void

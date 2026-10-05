@@ -62,7 +62,7 @@ export interface EmployeeDirectoryStatus {
 export interface EmployeeDirectoryPreview {
   status: 'preview_only' | 'conflicts_found';
   namespace: string;
-  profiles: Array<{
+  profiles: {
     source_id: string;
     link_action: 'manual_identity_review';
     mapping_state: 'unconfirmed';
@@ -71,9 +71,9 @@ export interface EmployeeDirectoryPreview {
     branch_key: string;
     position_key: string;
     status_code: string;
-  }>;
+  }[];
   duplicate_count: number;
-  conflicts: Array<{ source_id: string | null; code: string }>;
+  conflicts: { source_id: string | null; code: string }[];
 }
 
 export interface EmployeeDirectorySyntheticPreview {

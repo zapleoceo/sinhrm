@@ -32,15 +32,15 @@
         <h2 id="directory-title">{{ 'integrations.directory.title' | transloco }}</h2>
         <p class="muted">{{ 'integrations.directory.explain' | transloco }}</p>
       </div>
-      <button mat-stroked-button type="button" [disabled]="directoryLoading()" (click)="loadSyntheticPreview()">
-        {{ (directoryLoading() ? 'integrations.directory.loading' : 'integrations.directory.showPreview') | transloco }}
+      <button mat-stroked-button type="button" [disabled]="directory.previewLoading()" (click)="directory.loadSyntheticPreview()">
+        {{ (directory.previewLoading() ? 'integrations.directory.loading' : 'integrations.directory.showPreview') | transloco }}
       </button>
     </div>
-    @if (directoryError()) {
+    @if (directory.statusError() || directory.previewError()) {
       <p role="alert">{{ 'integrations.directory.error' | transloco }}</p>
-      <button mat-stroked-button type="button" (click)="retryDirectory()">{{ 'common.retry' | transloco }}</button>
+      <button mat-stroked-button type="button" (click)="directory.retry()">{{ 'common.retry' | transloco }}</button>
     }
-    @if (directoryStatus(); as status) {
+    @if (directory.status(); as status) {
       <p class="directory-status" role="status">
         {{ (status.status === 'dependency_pending' ? 'integrations.directory.pending' : 'integrations.directory.ready') | transloco }}
       </p>
@@ -53,7 +53,7 @@
         </ul>
       }
     }
-    @if (directoryPreview(); as preview) {
+    @if (directory.preview(); as preview) {
       <div class="directory-preview">
         <strong>{{ 'integrations.directory.syntheticLabel' | transloco }}</strong>
         <span>{{ 'integrations.directory.previewCount' | transloco: { count: preview.profiles.length } }}</span>

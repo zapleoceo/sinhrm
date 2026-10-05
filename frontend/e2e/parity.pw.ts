@@ -55,6 +55,13 @@ for (const p of PAGES) {
 
       // (b) no missing fixtures, console errors, page errors, failed requests.
       expect.soft(mock.missing, 'GET without a fixture — re-record (npm run e2e:record)').toEqual([]);
+      if (p.id === 'integrations') {
+        expect(mock.requests).toContain('GET /api/integrations/itstep-directory/status');
+        if (state.id === 'synthetic-directory-preview') {
+          expect(mock.requests).toContain('GET /api/integrations/itstep-directory/synthetic-preview');
+          await expect(page.getByText('Синтетичні дані — не відповідь Itstep')).toBeVisible();
+        }
+      }
       expect.soft(errors, 'console / page / request errors').toEqual([]);
 
       // (c) layout — themes do not change geometry, the light run checks it.

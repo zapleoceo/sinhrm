@@ -16,7 +16,7 @@ final class EmployeeDirectoryPreviewTest extends TestCase
 {
     public function test_gateway_is_dependency_pending_and_fetch_fails_without_network_fallback(): void
     {
-        $gateway = new PendingEmployeeDirectoryGateway();
+        $gateway = new PendingEmployeeDirectoryGateway;
 
         self::assertSame(EmployeeDirectoryGatewayState::DependencyPending, $gateway->status()->status);
         self::assertNotEmpty($gateway->status()->missingInputs);
@@ -62,6 +62,20 @@ final class EmployeeDirectoryPreviewTest extends TestCase
         self::assertSame('conflicts_found', $result['status']);
         self::assertSame('duplicate_id_conflicting_record', $result['conflicts'][0]['code']);
         self::assertCount(0, $result['profiles']);
+    }
+
+    public function test_duplicate_conflicts_and_exact_repeat_counts_do_not_depend_on_row_order(): void
+    {
+        $firstVariant = $this->profile();
+        $secondVariant = [...$firstVariant, 'display_name' => 'Other Example'];
+        $preview = new EmployeeDirectoryPreview();
+        $forward = $preview->build($this->payload([$firstVariant, $secondVariant, $secondVariant]), 'company-a');
+        $reverse = $preview->build($this->payload([$secondVariant, $secondVariant, $firstVariant]), 'company-a');
+
+        self::assertSame($forward, $reverse);
+        self::assertSame(1, $forward['duplicate_count']);
+        self::assertCount(1, $forward['conflicts']);
+        self::assertCount(0, $forward['profiles']);
     }
 
     #[DataProvider('invalidSnapshots')]
