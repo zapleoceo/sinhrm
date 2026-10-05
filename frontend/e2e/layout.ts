@@ -150,14 +150,15 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
       const scrollWidthBefore = doc.scrollWidth;
       const previousDisplay = el.style.getPropertyValue('display');
       const previousPriority = el.style.getPropertyPriority('display');
-      let scrollWidthAfter = scrollWidthBefore;
-      try {
-        el.style.setProperty('display', 'none', 'important');
-        scrollWidthAfter = doc.scrollWidth;
-      } finally {
-        if (previousDisplay) el.style.setProperty('display', previousDisplay, previousPriority);
-        else el.style.removeProperty('display');
-      }
+      const scrollWidthAfter = (() => {
+        try {
+          el.style.setProperty('display', 'none', 'important');
+          return doc.scrollWidth;
+        } finally {
+          if (previousDisplay) el.style.setProperty('display', previousDisplay, previousPriority);
+          else el.style.removeProperty('display');
+        }
+      })();
       return [{ selector, scrollWidthBefore, scrollWidthAfter }];
     });
     return {

@@ -10,7 +10,8 @@
 - Контекст з KB: інструменти бази знань у цій сесії недоступні; використано `docs/guides/ui-parity.md`, тестові виміри DOM у CI та код Users.
 - Підтверджено: окремий diagnostic job на `ba744a3475dd099c085ba336daeb69f267ffe204` завершився `No tests found` через надто точний grep; повний UI parity job у тому самому CI завершився успішно й дав виміри ланцюжка вище.
 - Підтверджено: job на `f3773a35b11310d03e11e71d99633e8e93efb8ad` зупинився на `e2e:lint` через дубльовані поля діагностичного типу; геометрії цього head немає.
-- Наступна дія: виправлений narrow job індивідуально приховує/відновлює таблицю, її scroll container, панель, sidebar і mascot stage та порівнює `html.scrollWidth`.
+- Підтверджено: CI run `37293278476` не створив geometry через lint error `no-useless-assignment` у вимірюванні `scrollWidthAfter`; виправлено локально.
+- Наступна дія: narrow job індивідуально приховує/відновлює таблицю, її scroll container, панель, sidebar і mascot stage та порівнює `html.scrollWidth`.
 - Блокери: джерело `html.scrollWidth=1008` ще не встановлено; CSS не змінено.
 
 ## План і критерії приймання
