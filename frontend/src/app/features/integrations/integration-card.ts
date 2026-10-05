@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, OnChanges, SimpleChanges, afterRenderEffect, computed, inject, input, signal } from '@angular/core';
 import { FormControl, FormRecord, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,11 +9,14 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { GOOGLE_SERVICES, GoogleOAuthState, connectUrl } from '../google-workspace/google.model';
 import { ChannelPanel } from '../channels/channel-panel';
-import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, IntegrationStatus, MANUAL_STATUSES } from './integrations.model';
+import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
 import { IntegrationsStore } from './integrations.store';
 import { ChannelIcon } from '../../core/ui/channel-icon';
 import { NotifyService } from '../../core/ui/notify.service';
+import { DATE_LOCALES } from '../../core/date/app-date-adapter';
+import { LanguageService } from '../../core/i18n/language.service';
+import { IntegrationDatePipe } from './integration-date.pipe';
 
 const URL_PATTERN = /^https:\/\/\S+$/i;
 
@@ -23,7 +25,7 @@ const URL_PATTERN = /^https:\/\/\S+$/i;
   selector: 'app-integration-card',
   imports: [
     ChannelIcon,
-    DatePipe,
+    IntegrationDatePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -67,6 +69,8 @@ export class IntegrationCard implements OnChanges {
       this.loadLogs();
     }
   }
+  private readonly language = inject(LanguageService);
+  private readonly dateFormatter = new IntegrationDatePipe();
 
   protected readonly manualStatuses = MANUAL_STATUSES;
   protected readonly statusTone = INTEGRATION_STATUS_TONE;
@@ -75,6 +79,8 @@ export class IntegrationCard implements OnChanges {
   protected readonly cleared = signal<ReadonlySet<string>>(new Set());
   protected readonly logs = signal<IntegrationLog[] | null>(null);
   protected readonly logsFailed = signal(false);
+  protected readonly dateLocale = computed(() => DATE_LOCALES[this.language.current()]);
+  protected readonly checkedDate = computed(() => this.dateFormatter.transform(this.item().last_checked_at, this.dateLocale()));
   protected readonly busy = computed(() => this.store.pending().has(this.item().key));
   protected readonly checkKey = computed(() => checkResultKey(this.item().last_error));
 
@@ -87,7 +93,7 @@ export class IntegrationCard implements OnChanges {
     }
   }
 
-  protected setStatus(status: IntegrationStatus): void {
+  protected setStatus(status: ManualStatus): void {
     // Connected/error are observations, never user-assigned modes.
     if (status !== 'off' && status !== 'demo') return;
     this.store.setStatus(this.item(), status, (key) => this.notify.show(key, { duration: 3000 }));
