@@ -41,27 +41,32 @@ async function expectUsersTableScrollable(page: Page, width: number, theme: stri
 async function expectUsersControlsReachable(page: Page, theme: string): Promise<void> {
   const scroller = page.locator('.table-scroll');
   const action = page.locator('.table-scroll td.actions button').first();
-  await scroller.evaluate((element) => {
-    const viewport = element as HTMLElement;
-    viewport.scrollLeft = viewport.scrollWidth;
-  });
-  await expect.soft(action, `rightmost user action is reachable (${theme})`).toBeInViewport();
-  await scroller.evaluate((element) => {
-    (element as HTMLElement).scrollLeft = 0;
-  });
+  const initialScrollLeft = await scroller.evaluate((element) => (element as HTMLElement).scrollLeft);
+  try {
+    await scroller.evaluate((element) => {
+      const viewport = element as HTMLElement;
+      viewport.scrollLeft = viewport.scrollWidth;
+    });
+    await expect.soft(action, `rightmost user action is reachable (${theme})`).toBeInViewport({ ratio: 1 });
 
-  for (const [selector, label] of [['.role mat-select', 'role'], ['.branches mat-select:not([disabled])', 'branch']] as const) {
-    const control = page.locator(selector).first();
-    await control.scrollIntoViewIfNeeded();
-    await control.click();
-    const listbox = page.getByRole('listbox');
-    await expect.soft(listbox, `${label} options open outside the contained scroller (${theme})`).toBeVisible();
-    const bounds = await listbox.boundingBox();
-    expect.soft(bounds?.x ?? -1, `${label} options stay inside the viewport (${theme})`).toBeGreaterThanOrEqual(0);
-    expect.soft((bounds?.x ?? 0) + (bounds?.width ?? 0), `${label} options stay inside the viewport (${theme})`).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
-    const layout = await layoutOf(page);
-    expect.soft(layout.pageOverflow, `${label} options do not cause page overflow (${theme})`).toBe(0);
+    for (const [selector, label] of [['.role mat-select', 'role'], ['.branches mat-select:not([disabled])', 'branch']] as const) {
+      const control = page.locator(selector).first();
+      await control.scrollIntoViewIfNeeded();
+      await control.click();
+      const listbox = page.getByRole('listbox');
+      await expect.soft(listbox, `${label} options open outside the contained scroller (${theme})`).toBeVisible();
+      const bounds = await listbox.boundingBox();
+      expect.soft(bounds?.x ?? -1, `${label} options stay inside the viewport (${theme})`).toBeGreaterThanOrEqual(0);
+      expect.soft((bounds?.x ?? 0) + (bounds?.width ?? 0), `${label} options stay inside the viewport (${theme})`).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
+      const layout = await layoutOf(page);
+      expect.soft(layout.pageOverflow, `${label} options do not cause page overflow (${theme})`).toBe(0);
+      await page.keyboard.press('Escape');
+    }
+  } finally {
     await page.keyboard.press('Escape');
+    await scroller.evaluate((element, left) => {
+      (element as HTMLElement).scrollLeft = left;
+    }, initialScrollLeft);
   }
 }
 
@@ -121,6 +126,7 @@ for (const p of PAGES) {
             const narrowLayout = await layoutOf(page);
             expect.soft(narrowLayout.pageOverflow, `horizontal page scroll on users.mobile at 375px (${theme})`).toBe(0);
             await expectUsersTableScrollable(page, 375, theme);
+            await expectUsersControlsReachable(page, `${theme}, 375px`);
             expect.soft(await inventoryOf(page, p.volatile), `inventory of users.mobile at 375px (${theme})`).toEqual(inventory);
             if (SCREENSHOTS) {
               await page.screenshot({ path: join(__dirname, '.out', 'screens', info.project.name, 'users-375.png'), fullPage: true });
