@@ -21,6 +21,14 @@
 
 Поиск внутренней KB вернул HTTP502. Отсутствие KB не блокировало исследование исходников. Реализация зависимости `itstep/user-client` отсутствует в локальном vendor, поэтому точные upstream HTTP/queue DTO и полный employee feed ещё требуют источника. Эти неизвестные поля не считаются дефектом уже существующего SinHRM.
 
+### Дополнительная проверка внутренних SDK
+
+Репозитории SDK удалось прочитать через существующий HTTPS доступ; SSH publickey access отказал. Проверены текущие `user-client`43258e6/`api-client`89db503 и точные версии Sintegrum lock: `user-client`1.4.24@29578fb, `api-client`1.5.2@f13ac43, без изменения checkouts или обращения к реальным сотрудникам.
+
+Подтверждён `ProfileResource::index`: `GET /api/v1/profiles` с `user_id`, `login`, `type`, `status`, `project_id`, `branch_id` и page/per_page; default page1/per_page20, sort id DESC. SDK перечисляет employee и статусы active/blocked/deleted. `division_id` появился в текущем SDK, но отсутствует в исследованной locked версии — переносить его без проверки версии нельзя. Transport поддерживает Bearer и GET query fields. Эти факты подтверждены исходниками SDK, но не live поведением сервера.
+
+`ProfileResponse` остаётся generic JSON: серверный response envelope, pagination termination/total и ACL этим не установлены. Factory показывает profile.id/user_id, memberships-related поля и externals, но не гарантирует их canonical SKUD семантику. Cursor/updated-since/deletion watermark не найден; token issuance/renewal и корпоративный SSO SDK не задаёт. Read-only доступ к referenced owning service пока не подтверждён. Поэтому page enumeration найдено, а полную корректную синхронизацию ещё нельзя объявить готовой.
+
 ## Контракт, который нужно установить до adapter implementation
 
 1. Какой сервис удостоверяет вход: локальные credentials, корпоративный identity endpoint или отдельный SSO. Нужны схема запроса/ответа, expiry/refresh/revoke, immutable identity и company scope.
