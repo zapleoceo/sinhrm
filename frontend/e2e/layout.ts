@@ -4,6 +4,26 @@ import type { Page } from '@playwright/test';
 export interface LayoutReport {
   pageOverflow: number;
   clipped: string[];
+  diagnostics: {
+    viewportWidth: number;
+    documentClientWidth: number;
+    documentScrollWidth: number;
+    overflowingElements: Array<{
+      element: string;
+      left: number;
+      right: number;
+      width: number;
+      scrollWidth: number;
+      clientWidth: number;
+      cssWidth: string;
+      minWidth: string;
+      maxWidth: string;
+      overflowX: string;
+      display: string;
+      gridTemplateColumns: string;
+      flexBasis: string;
+    }>;
+  };
 }
 
 /**
@@ -54,6 +74,40 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
       }
       if (out) clipped.push(describe(el));
     }
-    return { pageOverflow, clipped: [...new Set(clipped)].sort() };
+    const overflowingElements = Array.from(document.querySelectorAll('body *'))
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.right <= window.innerWidth + TOL && rect.left >= -TOL && el.scrollWidth <= el.clientWidth + TOL) return null;
+        const style = getComputedStyle(el);
+        const classes = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 3) : [];
+        return {
+          element: `${el.tagName.toLowerCase()}${classes.map((name) => `.${name}`).join('')}`,
+          left: Math.round(rect.left * 10) / 10,
+          right: Math.round(rect.right * 10) / 10,
+          width: Math.round(rect.width * 10) / 10,
+          scrollWidth: el.scrollWidth,
+          clientWidth: el.clientWidth,
+          cssWidth: style.width,
+          minWidth: style.minWidth,
+          maxWidth: style.maxWidth,
+          overflowX: style.overflowX,
+          display: style.display,
+          gridTemplateColumns: style.gridTemplateColumns,
+          flexBasis: style.flexBasis,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .sort((a, b) => (b.right - window.innerWidth) - (a.right - window.innerWidth) || b.width - a.width)
+      .slice(0, 40);
+    return {
+      pageOverflow,
+      clipped: [...new Set(clipped)].sort(),
+      diagnostics: {
+        viewportWidth: window.innerWidth,
+        documentClientWidth: doc.clientWidth,
+        documentScrollWidth: doc.scrollWidth,
+        overflowingElements,
+      },
+    };
   });
 }

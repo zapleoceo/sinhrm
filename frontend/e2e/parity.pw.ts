@@ -60,6 +60,7 @@ for (const p of PAGES) {
       // (c) layout — themes do not change geometry, the light run checks it.
       if (theme === 'light') {
         const layout = await layoutOf(page);
+        if (key === 'users.mobile') console.log(`[layout-diagnostic] ${JSON.stringify(layout.diagnostics)}`);
         if (!allowlist.pageOverflow.includes(key)) expect.soft(layout.pageOverflow, `horizontal page scroll on ${key}`).toBe(0);
         const allowed = allowlist.clipped[key] ?? [];
         expect.soft(layout.clipped.filter((c) => !allowed.some((a) => c.includes(a))), `clipped elements on ${key}`).toEqual([]);
