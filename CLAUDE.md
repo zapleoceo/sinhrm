@@ -23,6 +23,8 @@
 11. Тяжёлое тестирование выносим в GitHub Actions, локально минимум (владелец, 02.10.2026): локально только lint и точечные тесты изменённых файлов (`ng test --include <файл>`, `phpunit --filter`); полные `ng test`, `npm run e2e`, ui-parity, весь phpunit/phpstan — в CI. Пушим рано, чиним по логам CI; несколько тяжёлых локальных прогонов параллельно не держим. Исключение — CI недоступен или нужен снимок/реальный запрос для «Доказ» — один точечный прогон. Подробнее — `docs/guides/development.md`, «Тесты: что локально, что в CI».
 
 ## Команды (CI)
+Порядок экономии контекста/логов и передачи состояния для Codex — [docs/guides/agent-efficiency.md](docs/guides/agent-efficiency.md); короткая точка входа — `AGENTS.md`. Он сохраняет все обязательные проверки проекта.
+
 Бэкенд: `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `php artisan test --coverage --min=70`.
 Фронт: `npx ng lint`, `npx ng test --watch=false`, `npm run test:docs`, `npm run build` (собирает справку `/docs` из `docs/` и приложение).
 UI parity: `npm run build && npm run e2e` (job `ui-parity`, пока не обязательный).
