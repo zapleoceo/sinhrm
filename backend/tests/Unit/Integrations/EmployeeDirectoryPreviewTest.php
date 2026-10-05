@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Integrations;
 
+use App\Modules\Integrations\Enums\EmployeeDirectoryGatewayState;
 use App\Modules\Integrations\Exceptions\EmployeeDirectoryUnavailable;
 use App\Modules\Integrations\Services\EmployeeDirectoryPreview;
 use App\Modules\Integrations\Services\PendingEmployeeDirectoryGateway;
-use App\Modules\Integrations\Enums\EmployeeDirectoryGatewayState;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -113,7 +113,7 @@ final class EmployeeDirectoryPreviewTest extends TestCase
     }
 
     /** @param list<array<string, mixed>> $profiles
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function payload(array $profiles): array
     {

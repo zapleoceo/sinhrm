@@ -22,7 +22,7 @@ final class EmployeeDirectoryPreview
     {
         $this->assertExactKeys($payload, self::ENVELOPE_KEYS, 'snapshot_shape_unknown');
         $namespace = $payload['namespace'] ?? null;
-        if (!is_string($namespace) || trim($namespace) === '') {
+        if (! is_string($namespace) || trim($namespace) === '') {
             throw new InvalidArgumentException('namespace_required');
         }
         if ($expectedNamespace === '' || trim($namespace) !== $expectedNamespace) {
@@ -32,7 +32,7 @@ final class EmployeeDirectoryPreview
             throw new InvalidArgumentException('snapshot_incomplete');
         }
         $rawProfiles = $payload['profiles'] ?? null;
-        if (!is_array($rawProfiles) || !array_is_list($rawProfiles)) {
+        if (! is_array($rawProfiles) || ! array_is_list($rawProfiles)) {
             throw new InvalidArgumentException('profiles_must_be_list');
         }
 
@@ -46,11 +46,12 @@ final class EmployeeDirectoryPreview
             $sourceId = $profile['source_id'];
             $identityKey = 'id:'.$sourceId;
             $recordKey = hash('sha256', serialize($profile));
-            if (!isset($recordsById[$identityKey])) {
+            if (! isset($recordsById[$identityKey])) {
                 $recordsById[$identityKey] = ['source_id' => $sourceId, 'first_profile' => $profile, 'variants' => []];
             }
             if (isset($recordsById[$identityKey]['variants'][$recordKey])) {
                 $duplicates++;
+
                 continue;
             }
             $recordsById[$identityKey]['variants'][$recordKey] = true;
@@ -62,6 +63,7 @@ final class EmployeeDirectoryPreview
         foreach ($recordsById as $record) {
             if (count($record['variants']) !== 1) {
                 $conflicts[] = ['source_id' => $record['source_id'], 'code' => 'duplicate_id_conflicting_record'];
+
                 continue;
             }
             $profile = $record['first_profile'];
@@ -87,7 +89,7 @@ final class EmployeeDirectoryPreview
     }
 
     /** @param array<array-key, mixed> $value
-     *  @param list<string> $expected
+     * @param  list<string>  $expected
      */
     private function assertExactKeys(array $value, array $expected, string $reason): void
     {
@@ -102,7 +104,7 @@ final class EmployeeDirectoryPreview
     /** @return array{source_id: string, display_name: string, branch_key: string|null, position_key: string|null, status_code: string} */
     private function normalizeProfile(mixed $profile): array
     {
-        if (!is_array($profile)) {
+        if (! is_array($profile)) {
             throw new InvalidArgumentException('profile_shape_invalid');
         }
         $this->assertExactKeys($profile, self::PROFILE_KEYS, 'profile_shape_unknown');
@@ -112,18 +114,18 @@ final class EmployeeDirectoryPreview
         $statusCode = $profile['status_code'] ?? null;
         $branchKey = $profile['branch_key'] ?? null;
         $positionKey = $profile['position_key'] ?? null;
-        if (!is_string($sourceId) || trim($sourceId) === '' || strlen(trim($sourceId)) > 255 || preg_match('/[\x00-\x1F\x7F]/', $sourceId) === 1) {
+        if (! is_string($sourceId) || trim($sourceId) === '' || strlen(trim($sourceId)) > 255 || preg_match('/[\x00-\x1F\x7F]/', $sourceId) === 1) {
             throw new InvalidArgumentException('profile_source_id_invalid');
         }
         foreach (['display_name' => $displayName, 'status_code' => $statusCode] as $field => $value) {
-            if (!is_string($value) || trim($value) === '') {
+            if (! is_string($value) || trim($value) === '') {
                 throw new InvalidArgumentException('profile_'.$field.'_invalid');
             }
         }
-        if ($branchKey !== null && !is_string($branchKey)) {
+        if ($branchKey !== null && ! is_string($branchKey)) {
             throw new InvalidArgumentException('profile_branch_key_invalid');
         }
-        if ($positionKey !== null && !is_string($positionKey)) {
+        if ($positionKey !== null && ! is_string($positionKey)) {
             throw new InvalidArgumentException('profile_position_key_invalid');
         }
 

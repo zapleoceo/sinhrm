@@ -9,8 +9,8 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Integrations\Contracts\EmployeeDirectoryGateway;
 use App\Modules\Integrations\DTO\EmployeeDirectorySnapshot;
 use App\Modules\Integrations\DTO\EmployeeDirectorySourceStatus;
-use App\Modules\Integrations\Exceptions\EmployeeDirectoryUnavailable;
 use App\Modules\Integrations\Enums\EmployeeDirectoryGatewayState;
+use App\Modules\Integrations\Exceptions\EmployeeDirectoryUnavailable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -23,7 +23,11 @@ final class EmployeeDirectoryApiTest extends TestCase
     {
         $this->app->instance(EmployeeDirectoryGateway::class, new class implements EmployeeDirectoryGateway
         {
-            public function status(): EmployeeDirectorySourceStatus { return new EmployeeDirectorySourceStatus(EmployeeDirectoryGatewayState::ReadyForPreview, [], 'company-a'); }
+            public function status(): EmployeeDirectorySourceStatus
+            {
+                return new EmployeeDirectorySourceStatus(EmployeeDirectoryGatewayState::ReadyForPreview, [], 'company-a');
+            }
+
             public function fetchCompleteSnapshot(): EmployeeDirectorySnapshot
             {
                 return new EmployeeDirectorySnapshot('company-a', false, []);
@@ -81,8 +85,15 @@ final class EmployeeDirectoryApiTest extends TestCase
     {
         $this->app->instance(EmployeeDirectoryGateway::class, new class implements EmployeeDirectoryGateway
         {
-            public function status(): EmployeeDirectorySourceStatus { return new EmployeeDirectorySourceStatus(EmployeeDirectoryGatewayState::DependencyPending, []); }
-            public function fetchCompleteSnapshot(): EmployeeDirectorySnapshot { throw new EmployeeDirectoryUnavailable('must_not_fetch'); }
+            public function status(): EmployeeDirectorySourceStatus
+            {
+                return new EmployeeDirectorySourceStatus(EmployeeDirectoryGatewayState::DependencyPending, []);
+            }
+
+            public function fetchCompleteSnapshot(): EmployeeDirectorySnapshot
+            {
+                throw new EmployeeDirectoryUnavailable('must_not_fetch');
+            }
         });
         $admin = User::factory()->withRole(UserRole::Superadmin)->create();
 
