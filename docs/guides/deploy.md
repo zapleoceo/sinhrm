@@ -1,5 +1,7 @@
 # Деплой
 
+Для app-side runtime/build requirements при переносе с Vercel см. [хенд-офф приложения для Itstep](itstep-app-handoff.md). Этот файл ниже описывает действующий Vercel workflow.
+
 ## Простыми словами
 Как только изменение принято в `main`, GitHub сам прогоняет тесты и выкладывает новую версию на Vercel.
 Тестовая копия (preview) выкладывается только для Pull Request с меткой `preview`, ссылка появляется в комментарии к PR.
