@@ -198,6 +198,13 @@ export interface DashboardWarning {
   link?: string;
 }
 
+/** Contextual target for a known reconnect warning; other warnings keep their original navigation. */
+export function warningIntegration(warning: DashboardWarning): string | null {
+  const service = warning.params?.['service'];
+  return warning.code === 'google_reconnect_required' && warning.link === '/admin/integrations'
+    && (service === 'gmail' || service === 'calendar' || service === 'sheets') ? `google_${service}` : null;
+}
+
 /** A counter tile: i18n key, value and where a click leads. */
 export interface StatTile {
   key: 'active' | 'stale' | 'unmatched_inbox' | 'new_today';

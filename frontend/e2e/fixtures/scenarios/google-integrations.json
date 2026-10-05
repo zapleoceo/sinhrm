@@ -1,0 +1,211 @@
+[
+  {
+    "id": "connected",
+    "integration": {
+      "status": "connected",
+      "last_error": null,
+      "last_checked_at": "2026-10-01T09:00:00+00:00"
+    },
+    "google": {
+      "data": [
+        {
+          "service": "gmail",
+          "integration_key": "google_gmail",
+          "status": "connected",
+          "connected": true,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.send"
+          ],
+          "can_send": true,
+          "error": null,
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        },
+        {
+          "service": "calendar",
+          "integration_key": "google_calendar",
+          "status": "connected",
+          "connected": true,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/calendar.events"
+          ],
+          "can_send": false,
+          "error": null,
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        },
+        {
+          "service": "sheets",
+          "integration_key": "google_sheets",
+          "status": "connected",
+          "connected": true,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/spreadsheets.readonly"
+          ],
+          "can_send": false,
+          "error": null,
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        }
+      ],
+      "meta": {
+        "redirect_uri": "https://sinhrm.test/api/google/connect/callback",
+        "oauth_configured": true
+      }
+    },
+    "logs": {
+      "status": 200,
+      "body": {
+        "data": [
+          {
+            "id": 1,
+            "level": "info",
+            "message": "google_connected",
+            "created_at": "2026-10-01T09:00:00+00:00",
+            "context": {}
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "reconnect",
+    "integration": {
+      "status": "error",
+      "last_error": "reconnect_required",
+      "last_checked_at": "2026-10-01T09:00:00+00:00"
+    },
+    "google": {
+      "data": [
+        {
+          "service": "gmail",
+          "integration_key": "google_gmail",
+          "status": "error",
+          "connected": false,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.send"
+          ],
+          "can_send": false,
+          "error": "reconnect_required",
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        },
+        {
+          "service": "calendar",
+          "integration_key": "google_calendar",
+          "status": "error",
+          "connected": false,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/calendar.events"
+          ],
+          "can_send": false,
+          "error": "reconnect_required",
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        },
+        {
+          "service": "sheets",
+          "integration_key": "google_sheets",
+          "status": "error",
+          "connected": false,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/spreadsheets.readonly"
+          ],
+          "can_send": false,
+          "error": "reconnect_required",
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        }
+      ],
+      "meta": {
+        "redirect_uri": "https://sinhrm.test/api/google/connect/callback",
+        "oauth_configured": true
+      }
+    },
+    "logs": {
+      "status": 200,
+      "body": {
+        "data": [
+          {
+            "id": 2,
+            "level": "warning",
+            "message": "reconnect_required",
+            "created_at": "2026-10-01T09:00:00+00:00",
+            "context": {}
+          },
+          {
+            "id": 1,
+            "level": "info",
+            "message": "google_connected",
+            "created_at": "2026-10-01T09:00:00+00:00",
+            "context": {}
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "logs-error",
+    "integration": {
+      "status": "error",
+      "last_error": "reconnect_required",
+      "last_checked_at": "2026-10-01T09:00:00+00:00"
+    },
+    "google": {
+      "data": [
+        {
+          "service": "gmail",
+          "integration_key": "google_gmail",
+          "status": "error",
+          "connected": false,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.send"
+          ],
+          "can_send": false,
+          "error": "reconnect_required",
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        },
+        {
+          "service": "calendar",
+          "integration_key": "google_calendar",
+          "status": "error",
+          "connected": false,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/calendar.events"
+          ],
+          "can_send": false,
+          "error": "reconnect_required",
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        },
+        {
+          "service": "sheets",
+          "integration_key": "google_sheets",
+          "status": "error",
+          "connected": false,
+          "account_email": "recruiting@sinhrm.test",
+          "scopes": [
+            "https://www.googleapis.com/auth/spreadsheets.readonly"
+          ],
+          "can_send": false,
+          "error": "reconnect_required",
+          "connected_at": "2026-10-01T09:00:00+00:00"
+        }
+      ],
+      "meta": {
+        "redirect_uri": "https://sinhrm.test/api/google/connect/callback",
+        "oauth_configured": true
+      }
+    },
+    "logs": {
+      "status": 500,
+      "body": {
+        "message": "Synthetic log request failure"
+      }
+    }
+  }
+]

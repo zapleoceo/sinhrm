@@ -16,7 +16,7 @@ import { canWriteRecruiting } from '../recruiting/recruiting.access';
 import { TasksWidget } from '../scripts/tasks/tasks-widget';
 import { TaskQuery } from '../scripts/scripts.model';
 import { DayRouteCard } from './day-route';
-import { wallClock } from './overview.model';
+import { wallClock, warningIntegration } from './overview.model';
 import { OverviewStore } from './overview.store';
 
 /**
@@ -41,6 +41,7 @@ export class DashboardPage implements OnInit {
   private readonly lang = toSignal(inject(TranslocoService).langChanges$, { initialValue: 'uk' });
 
   protected readonly firstName = computed(() => (this.auth.user()?.name ?? '').split(' ')[0]);
+  protected readonly warningIntegration = warningIntegration;
   protected readonly myTasks: TaskQuery = { mine: true, due: 'today' };
   protected readonly canCreateCandidate = computed(
     () => canWriteRecruiting(this.auth.user()?.roles ?? []) && this.auth.hasModule('recruiting'),
