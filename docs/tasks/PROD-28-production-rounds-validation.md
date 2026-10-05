@@ -33,11 +33,12 @@ Atlassian KB/cloudId unavailable in this session; prior Rovo/Drive SinHRM search
 Current repo/source tasks/UNIFIED-TZ and exact GitHub source heads are authoritative. Query: SinHRM production rounds combined validation.
 
 ## Стан
-- Step: all authorized source heads are combined; run focused repository checks, record final inventory, then push the draft validation PR and run its required full CI.
-- Branch/base: `chore/validate-production-rounds`, based on `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab; current combined HEAD before task-state commit: 92d810136ee1488aed3b8d643405bf8c862a29da.
-- Completed: exact heads above merged; PR139 scoped-ranking implementation is present before PR153; PR154 rules are already in base; PR155 documentation included. PR141 mobile snapshots retain ranking/assistant assertions and add localized paginator labels. PR143/146 Playwright selection retains all suites. PR152 module documentation sections were combined.
-- Source evidence from parent: PR139 and PR153 source CI each green (10 checks); PR155 source CI green (10 checks) with Astra PASS; PR147 refreshed docs CI is still running. These do not replace final combined-branch CI or combined Astra review.
-- Next: run lightweight JSON/conflict/diff checks; push branch and open a draft PR labeled `DO NOT MERGE`; start one required full CI at the pushed final head; complete independent combined review.
-- Unexecuted gates: combined full CI, combined Astra review, live browser/provider/auth verification, preview/deploy/production proof. No shipping claim is made.
-- Excluded: PR142/144 and active PROD-41 source.
+- Step: sources merged, focused checks pass, draft validation PR opened; update this checkpoint and use the resulting pushed SHA for the final combined CI and Astra review.
+- Worktree / branch / base: `D:/Projects/sinhrm-wt/production-rounds-validation`, `chore/validate-production-rounds`, `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab.
+- Current pushed head: 1403ca7ac898f50ee2123d7bd7bddc5678f70a4e. Draft PR #156: https://github.com/zapleoceo/sinhrm/pull/156 (label `DO NOT MERGE`).
+- Completed: all authorized source heads listed above combined; PR142/144 and active PROD-41 excluded. `git diff --check` passed; no unresolved merge entries/conflict markers; all 124 E2E snapshot JSON files parsed successfully.
+- Initial CI at 1403ca7 (run 37285042049): docs, extension, security, and worklog passed; api-docs, frontend, lint, synthetic-restore, tests, and ui-parity were pending at last check. This run predates this task-state checkpoint commit; final CI must report on the pushed checkpoint head.
+- Source evidence from parent: PR139 and PR153 source CI each green (10 checks); PR155 source CI green (10 checks) with source Astra PASS; PR147 docs CI was running when recorded. Combined Astra review pending.
+- Next: push this checkpoint update; use one final CI run on the resulting HEAD and capture its terminal result. Obtain independent combined Astra review of exact PR head.
+- Unexecuted gates: final combined CI, combined Astra review, live browser/provider/auth verification, preview/deploy/production proof. No shipping claim is made.
 - Timestamp: 2026-10-05 Asia/Saigon.
