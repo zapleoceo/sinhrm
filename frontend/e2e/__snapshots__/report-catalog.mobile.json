@@ -15,6 +15,7 @@
  ],
  "interactive": [
   "button \"Головне меню\"",
+  "button \"Поговорити зі Стіком\"",
   "link \"SLA звернень\" -> /reports/catalog/desk_sla",
   "link \"Активи за статусом\" -> /reports/catalog/assets_by_status",
   "link \"Баланси відсутностей\" -> /reports/catalog/leave_balances",

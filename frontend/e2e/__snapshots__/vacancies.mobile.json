@@ -13,6 +13,7 @@
   "button \"Previous page\" [disabled]",
   "button \"Активні (0)\"",
   "button \"Головне меню\"",
+  "button \"Поговорити зі Стіком\"",
   "combobox \"Items per page:\"",
   "combobox \"Статус\"",
   "link \"SMM-менеджер [ТЕСТ] Тестовий філіал · Поліщук Євген [ТЕСТ]\" -> /vacancies/4",

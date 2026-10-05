@@ -11,6 +11,7 @@ import { of } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { HOVER_QUERY } from './nav-rail';
+import { AssistantSettings } from '../assistant/assistant-settings';
 import { ShellLayout } from './shell.layout';
 
 @Component({ template: '' })
@@ -486,5 +487,29 @@ describe('ShellLayout auto-hide sidebar', () => {
     } finally {
       outside.remove();
     }
+  });
+});
+
+
+describe('ShellLayout mobile assistant access', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('opens chat from a translated top-bar button without opening the drawer or changing the animation preference', async () => {
+    const { el, detect } = await setup(['assistant'], true);
+    const settings = TestBed.inject(AssistantSettings);
+    const launcher = el.querySelector('.topbar .assistant-launcher') as HTMLButtonElement;
+    expect(launcher?.getAttribute('aria-label')).toBe('shell.menu.assistant');
+    expect(settings.chatOpen()).toBe(false);
+    launcher.click();
+    await detect();
+    expect(settings.chatOpen()).toBe(true);
+    expect(settings.enabled()).toBe(true);
+    expect(el.querySelector('.sidebar')?.classList.contains('open')).toBe(false);
+    expect(localStorage.getItem('sinhrm.assistant.enabled')).toBeNull();
+  });
+
+  it('hides the mobile launcher when assistant access is unavailable', async () => {
+    const { el } = await setup(['core'], true);
+    expect(el.querySelector('.assistant-launcher')).toBeNull();
   });
 });
