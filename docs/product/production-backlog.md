@@ -1,6 +1,10 @@
 # SinHRM — задачи до готовности к production
 
-Обновлено 2026-10-05. Внутренние ID PROD не являются Jira-карточками. Источник продуктовой цели — [единое ТЗ](UNIFIED-TZ.md); этот backlog описывает выполнение и доказательства, не утверждает неизвестные бизнес-решения. Работа разрешена владельцем: брать задачи раундами, SOL пишет код, Luna проверяет выводы, Astra проверяет локальный и GitHub diff перед merge.
+Обновлено 2026-10-05. Внутренние ID PROD не являются Jira-карточками. Источник продуктовой цели — [единое ТЗ](UNIFIED-TZ.md); этот backlog описывает выполнение и доказательства, не утверждает неизвестные бизнес-решения. Работа разрешена владельцем: брать задачи раундами; последнее указание передаёт исполнение недорогой Luna, Astra проверяет локальный и GitHub diff перед merge.
+
+### Граница поставки, подтверждённая владельцем
+
+Наша поставка — готовые frontend/backend, интеграция сотрудников и авторизации с экосистемой Itstep, миграции и инструкция развёртывания. Владелец — superadmin и принимает продуктовые решения. Целевая production инфраструктура — Itstep; серверы, резервные копии, восстановление, секреты окружения и alerts настраивают DevOps при переносе. Эти настройки не являются вопросами к владельцу в рамках нашей разработки. Текущие Vercel/Neon — существующая среда, не утверждённая целевая инфраструктура. Реальный запуск на Itstep принимается отдельно после передачи приложения DevOps.
 
 ## Что означает Ready to production
 
@@ -11,12 +15,12 @@
 3. Один выбранный пилотный workflow проходит на известных синтетических данных через реальные API с отрицательными правами, повторами и ошибками. Полный путь заявка → вакансия → кандидат → решение → сотрудник/адаптация и связанные отчёты обязательны только если входят в scope. UI fixtures подтверждают интерфейс, но не живой внешний сервис.
 4. Shipping commit имеет зелёные required checks, независимый Astra verdict, содержательную документацию и журнал. Каждая feature/fix живёт в собственной ветке. Проверочные объединения PR142/144 не служат shipping commits.
 5. Выбранные внешние потоки прошли реальную разрешённую приёмку; для неподключённых функций явно записан статус. PROD-19–22 и PR138–141/143 применяются к release только при включении соответствующей функции. Для включённого AI качество проверено отдельно от deterministic broker fixtures, чувствительные данные минимизированы.
-6. Владелец подтвердил состояние GOOGLE_CLIENT_SECRET/VERCEL_TOKEN и необходимость ротации без передачи значений; факт раскрытия не установлен этим аудитом. Выполнена показанная по результатам проверки ротация, есть рабочий backup/restore, согласованные RPO/RTO, наблюдаемость, адресат alerts и порядок реакции.
+6. Для передачи DevOps описаны версии runtime, сборка frontend/backend, миграции, очередь/расписание, файлы, health и имена конфигурации без значений секретов. Приложение не требует Vercel как единственного способа исполнения. DevOps отвечает за production резервные копии, восстановление, секреты окружения и alerts; их инфраструктурная приёмка не подменяет готовность приложения.
 7. До выкладки определены stop/rollback, ответственное лицо и точные версии Web/API; после разрешённой выкладки выполнены smoke и изменённые пользовательские сценарии на обычном URL.
 
 ## Правила работы раундами
 
-Каждый раунд берёт ограниченное число независимых задач. Перед кодом — краткий план/контекст и `## Стан` в `docs/tasks/PROD-*.md`; перед handoff состояние обновляется. SOL завершает code/tests/docs → push/draft PR → CI → Luna сверяет выводы → Astra проверяет локальный и GitHub shipping diff → разрешённый merge/deploy → live proof. Полные suites идут в GitHub Actions; локально только минимальные релевантные проверки. Нельзя молча превращать OWNER_PENDING в выбранный контракт. Зелёный CI не закрывает live и эксплуатационные gates.
+Каждый раунд берёт ограниченное число независимых задач. Перед кодом — краткий план/контекст и `## Стан` в `docs/tasks/PROD-*.md`; перед handoff состояние обновляется. Luna завершает code/tests/docs → push/draft PR → CI → отдельная проверка выводов → Astra проверяет локальный и GitHub shipping diff → разрешённый merge/deploy → live proof. Полные suites идут в GitHub Actions; локально только минимальные релевантные проверки. Нельзя молча превращать OWNER_PENDING в выбранный контракт. Зелёный CI не закрывает live gates.
 
 Статусы: **IN_PROGRESS**, **QUEUED**, **PR_READY**, **OWNER_PENDING**, **EXTERNAL_PENDING**, **DONE**. DONE требует доказательства критерия, а не только написанного кода.
 
@@ -25,7 +29,7 @@
 | ID | Задача | Критерий завершения | Состояние / исполнитель |
 |---|---|---|---|
 | PROD-00 | Единый production backlog и точная документация процесса/индекса | Критерии/зависимости/все долги перечислены; старые ложные сведения про отчёты/Clipper/HR исправлены; модельный workflow соответствует инструкции владельца | IN_PROGRESS · [PR147](https://github.com/zapleoceo/sinhrm/pull/147);37f95bd Luna/Astra PASS и10 checks SUCCESS; текущий phase update требует проверки |
-| PROD-01 | Локализация даты журнала интеграций | uk/ru/en, browser timezone, null/invalid без ложной даты; targeted unit и synthetic E2E/CI, сохранённые элементы UI | IN_PROGRESS · SOL · [PR146](https://github.com/zapleoceo/sinhrm/pull/146), CI/review |
+| PROD-01 | Локализация даты журнала интеграций | uk/ru/en, browser timezone, null/invalid без ложной даты; targeted unit и synthetic E2E/CI, сохранённые элементы UI | PR_READY · [PR146](https://github.com/zapleoceo/sinhrm/pull/146),8acfadb:10 checks SUCCESS, Astra PASS; synthetic desktop/mobile PNG просмотрены |
 | PROD-02 | Provenance Web/API сборки | Безопасный immutable build SHA от фактического checkout, health contract сохранён, preview не ошибочно получает main SHA; тесты валидных/невалидных данных и stamping | PR_READY · [PR145](https://github.com/zapleoceo/sinhrm/pull/145),88dd8b7:10 checks SUCCESS, Astra PASS; не в production |
 | PROD-03 | Исправить границу локальных суток workflow | Luna нашла общую причину failures133–136: `UserTime.php:47` и `WorkflowStarter.php:77` превращают локальный день Kyiv в midnightUTC; zero-offset шаг становится будущим между21–24UTC при UTC+3. Исправить owning scheduler и добавить deterministic boundary/DST/offset tests, не ослаблять assertions | PR_READY · [PR148](https://github.com/zapleoceo/sinhrm/pull/148),df397ed:10 checks SUCCESS, Astra PASS; существующие due_at не переписаны |
 
@@ -37,8 +41,8 @@
 | PROD-05 | Scramble, [PR134](https://github.com/zapleoceo/sinhrm/pull/134) | То же; API schema не теряет контракт | QUEUED · после03 |
 | PROD-06 | typescript-eslint, [PR135](https://github.com/zapleoceo/sinhrm/pull/135) | То же; правила lint не ослаблены ради прохождения | QUEUED · после03 |
 | PROD-07 | Laravel, [PR136](https://github.com/zapleoceo/sinhrm/pull/136) | То же; auth/session/DB regressions остаются зелёными | QUEUED · после03 |
-| PROD-08 | Explicit User block: глобальный отзыв credentials | Сессии/PAT отозваны атомарно; stale grants после block/unblock не создают долговременный доступ; last-active-superadmin защищён; поддерживаемые drivers и legacy invalidation документированы | IN_PROGRESS · [PR149](https://github.com/zapleoceo/sinhrm/pull/149); Astra/Luna выявили PAT/OAuth race, SOL закрывает persisted credential generation; не зависит от Employee semantics |
-| PROD-09 | Исправить candidate nested application scope | Фильтр разрешённых application rows применяется к list/show, stage history, application-bound touchpoints и audit; candidate-global entries сохраняют существующий контракт; отрицательная role/cross-branch matrix | QUEUED · Luna подтвердила owning API gap по RecruitingScope/Scope/recruiting.md; SOL назначен после08 |
+| PROD-08 | Explicit User block: глобальный отзыв credentials | Сессии/PAT отозваны атомарно; stale grants после block/unblock не создают долговременный доступ; last-active-superadmin защищён; поддерживаемые drivers и legacy invalidation документированы | PR_READY · [PR149](https://github.com/zapleoceo/sinhrm/pull/149),2cd011a:10 checks SUCCESS, Astra PASS; PAT/OAuth races и legacy block закрыты credential generation |
+| PROD-09 | Исправить candidate nested application scope | Фильтр разрешённых application rows применяется к list/show, stage history, application-bound touchpoints, audit и screenings до polling/serialization; prompt materials не содержат скрытые application touches; отрицательная role/cross-branch matrix | IN_PROGRESS · [PR153](https://github.com/zapleoceo/sinhrm/pull/153),ff0b8a3; Luna продолжает сохранённые правки; exact-head CI и Astra pending |
 | PROD-10 | Минимизация AI-данных и fresh access, [PR143](https://github.com/zapleoceo/sinhrm/pull/143) | Фактический release head reviewed/CI; чёткие допустимые данные/задачи; no replay writes из сохранённой истории диалога; ограничения tenant/exactly-once/уже показанной истории честно приняты | PR_READY · Draft, не в main; live quality в20; условно по scope |
 
 ## Раунд 3 — lifecycle и операционная безопасность
@@ -49,15 +53,15 @@
 | PROD-12 | Зафиксировать D2: увольнение/дата/rejoin | Immediate/scheduled, effective instant/timezone, late/backdated/cancel и reviewed restore выбраны | OWNER_PENDING |
 | PROD-13 | Зафиксировать D3: handover/exit survey | Получатель работы и transfer/cancel/keep, timing survey, старые workflows при rejoin определены | OWNER_PENDING |
 | PROD-14 | Реализовать согласованный Employee↔User lifecycle | При включении автоматизации T01–T14 актуализированы и пройдены: transaction/concurrency, idempotent event, disable/restore/manager scope/handover/last-superadmin, сбои внешних эффектов видимы | QUEUED ·11–13 и release scope; отдельные узкие feature ветки |
-| PROD-15 | Синтетическая backup/restore проверка + runbook | Реальный dump/restore изолированной CI БД, сверка данных/связей/vault; DB proof не покрывает внешние файлы; безопасный production runbook с stop/rollback; не читать production data | IN_PROGRESS · [PR150](https://github.com/zapleoceo/sinhrm/pull/150); restore37274448033 SUCCESS,20 seed/22 restore assertions; Astra PASS a828020;081d2a1 task-state delta и общий CI ещё проверяются |
-| PROD-16 | Эксплуатационная приёмка | Подтверждены ротация GOOGLE_CLIENT_SECRET/VERCEL_TOKEN, restore procedure/доступ, RPO/RTO и owner, alerts delivery и cron failure/retry | OWNER_PENDING / EXTERNAL_PENDING · значения секретов не пересылаются |
+| PROD-15 | Синтетическая backup/restore проверка + runbook | Реальный dump/restore изолированной CI БД, сверка данных/связей/vault; DB proof не покрывает внешние файлы; инструкция передаётся DevOps; не читать production data | PR_READY · [PR150](https://github.com/zapleoceo/sinhrm/pull/150),081d2a1:11 checks SUCCESS, Astra PASS;20 seed/22 restore assertions; production restore не заявлен |
+| PROD-16 | Передача эксплуатационной приёмки DevOps | При переносе DevOps настраивает production backup/restore, секреты, alerts и реакцию; приложение передаёт проверяемую инструкцию и health | EXTERNAL_PENDING · ответственность DevOps; не блокирует самостоятельную разработку frontend/backend; вопросы RPO/RTO владельцу сняты |
 
 ## Раунд 4 — сквозная приёмка и внешние потоки
 
 | ID | Задача | Критерий завершения | Состояние / зависимость |
 |---|---|---|---|
-| PROD-17 | API end-to-end выбранного пилотного workflow | Известный dataset, успешный сценарий, повторы, ошибки и forbidden для выбранного пути; hiring/оффер/найм/адаптация и exact reports по периоду/scope проверяются в объёме включённого scope; обнаруженные дефекты закрыты | IN_PROGRESS · SOL; существующие tests используют прямые service/DB transitions, целый HTTP путь не проверен; isolated CI без реальных лиц; scope proposal ещё pending |
-| PROD-18 | Матрица включённых модулей/ролей + UI | Проверки прав/ошибок/повторов/PII для каждого включённого модуля; desktop/mobile/light/dark, keyboard и реальные понятные сценарии; known skips перечислены | QUEUED · выбор release scope; не объявлять все модули принятыми по одному e2e |
+| PROD-17 | API end-to-end выбранного пилотного workflow | Известный dataset, успешный сценарий, повторы, ошибки и forbidden для выбранного пути; hiring/оффер/найм/адаптация и exact reports по периоду/scope проверяются в объёме включённого scope; обнаруженные дефекты закрыты | PR_READY · [PR151](https://github.com/zapleoceo/sinhrm/pull/151),4626e81:10 checks SUCCESS, Astra PASS; реальный HTTP путь заявки/вакансии/кандидата/решения/отчётов на синтетике; не полная live приёмка |
+| PROD-18 | Матрица включённых модулей/ролей + UI | Проверки прав/ошибок/повторов/PII для каждого включённого модуля; desktop/mobile/light/dark, keyboard и реальные понятные сценарии; known skips перечислены | IN_PROGRESS · протокол и HTTP module boundary [PR152](https://github.com/zapleoceo/sinhrm/pull/152),4bf3524:10 checks SUCCESS, Astra PASS; полная матрица и live UI ещё не приняты |
 | PROD-19 | Google reconnect/send/read/calendar/sheets | Разрешённый владелец аккаунта подтвердил gmail.send; проверены выбранный поток, expiry/refresh/denial/retry и безопасные ошибки | EXTERNAL_PENDING · UI/код в138; подготовка протокола самостоятельная |
 | PROD-20 | Live AI usefulness/safety | Разрешённые синтетические задания и явные критерии полезности, отказа, стоимости/latency/human correction; no autonomous personnel decisions; провайдер проверен | EXTERNAL_PENDING · после10 и scope/data decisions |
 | PROD-21 | Выбранные messaging/telephony потоки | API/договор/права, реальный обезличенный payload, send/read/webhook/retry/disable, дедуп и источник; каждый неподключённый provider отмечен отдельно | EXTERNAL_PENDING · выбрать сервисы; no fabricated live proof |
@@ -69,10 +73,10 @@
 | ID | Задача | Критерий завершения | Состояние / зависимость |
 |---|---|---|---|
 | PROD-24 | Source138 reconnect | Новый shipping SHA/CI/Astra, содержательная live приёмка выбранного UI/flow | PR_READY · [138](https://github.com/zapleoceo/sinhrm/pull/138),10/10 CI, Draft |
-| PROD-25 | Source139 ranking | Сохранённые scores, фильтры/pagination/ties/null, opted-in board; reviewed shipping SHA, live UI проверка | PR_READY · [139](https://github.com/zapleoceo/sinhrm/pull/139),10/10 CI, Draft |
+| PROD-25 | Source139 ranking | Scope применяется до max score, фильтра и сортировки; скрытая application не влияет на видимый score; ties/null/pagination; reviewed shipping SHA, live UI проверка | IN_PROGRESS · [139](https://github.com/zapleoceo/sinhrm/pull/139); старый227046d green не закрывает подтверждённую утечку score; исправление в той же ветке |
 | PROD-26 | Source140 mobile mascot | Нет перекрытия changed content/confirmation на mobile; browser limitations перечислены | PR_READY · [140](https://github.com/zapleoceo/sinhrm/pull/140),10/10 CI, Draft |
 | PROD-27 | Source141 paginator | uk/ru/en labels/range, нулевые/пустые страницы, normal layout | PR_READY · [141](https://github.com/zapleoceo/sinhrm/pull/141),10/10 CI, Draft |
-| PROD-28 | Combined regression / validation docs | Выбранный shipping набор проверен совместно, конфликты/переводы/inventory не потеряны; lifecycle drafts остаются честно pending | PR_READY для текущего набора · [144](https://github.com/zapleoceo/sinhrm/pull/144),10/10 CI;142/144 DO NOT MERGE |
+| PROD-28 | Combined regression / validation docs | Выбранный shipping набор проверен совместно, конфликты/переводы/inventory не потеряны; lifecycle drafts остаются честно pending | IN_PROGRESS · новая совместная проверка ожидает09/25;142/144 покрывают старый набор и остаются DO NOT MERGE |
 | PROD-29 | Release/rollback/live acceptance | Конкретный пакет, разрешение production, точные squash SHA и Web/API deploy IDs, stop condition, rollback owner, normal-URL smoke и изменённые сценарии | QUEUED · все применимые gates выше; main автоматически выкладывается |
 
 ## Остальные хвосты — очередь продукта, влияние на release выбирается по evidence
@@ -91,10 +95,21 @@
 | PROD-37 | Согласовать draft UNIFIED-TZv0.3 | OWNER_PENDING: reconcile с нынешним backlog и security evidence; v0.3 local draft `0dd175d` не считается принятой версией main |
 | PROD-38 | Рабочие копии/артефакты | QUEUED: inventory выявил44 worktrees, включая активные и unmerged drafts; удаление требует подтверждённой ненужности и проверки ignored data, активные/evidence сохраняются |
 
+## Обязательная подготовка приложения для Itstep
+
+Источник нового требования — указание владельца от 05.10.2026: перенос на Itstep, сотрудники из СКУД, изучить связь как в Sintegrum. [Разбор и контракт поставки](itstep-integration.md) отделяет найденные механизмы от неизвестного протокола.
+
+| ID | Задача | Критерий / состояние |
+|---|---|---|
+| PROD-39 | Пакет frontend/backend для DevOps Itstep | QUEUED: проверяемые runtime/build/start/migrations/queue/scheduler/storage/health, имена конфигурации, зависимости Vercel и способ их устранения; CI без реальных данных; отдельная ветка |
+| PROD-40 | Авторизация в целевой экосистеме | IN_PROGRESS: поиск реального контракта; текущий Sintegrum использует локальный пароль и opaque tokens, SSO этим не доказан. После подтверждения — отдельный Laravel adapter, frontend вход и тесты отказа/отзыва/прав; секреты через существующий vault/config |
+| PROD-41 | Импорт и сверка сотрудников СКУД | IN_PROGRESS: исследовать canonical employee feed и стабильные IDs; исходящий hire sync Sintegrum не считать полным импортом. После контракта — idempotent reconciliation, конфликты, status/branch mapping, наблюдаемый результат, outage не удаляет сотрудников; отдельная ветка |
+| PROD-42 | Связь аккаунтов и права импортированных сотрудников | QUEUED: source-scoped IDs, уникальность и reviewed conflicts; email не выдаёт ACL; владелец superadmin подтверждён, массовое назначение прав остальным не определено. Подготовить конкретный безопасный сценарий после40/41 |
+
 ## Источники среза
 
 Main `3b4ac30`, [CI37212189230](https://github.com/zapleoceo/sinhrm/actions/runs/37212189230); Web production [37212621448](https://github.com/zapleoceo/sinhrm/actions/runs/37212621448), API [37055808795](https://github.com/zapleoceo/sinhrm/actions/runs/37055808795). [Combined CI37232005803](https://github.com/zapleoceo/sinhrm/actions/runs/37232005803) относится только к144 head `31bf076`. Модульные документы/тесты — evidence кода, не live acceptance. Старый worklog — исторический источник; актуальные release gates фиксируются здесь. Внешний локальный аудит: `D:/Projects/HRM/docs/project-status-2026-10-05.md`.
 
 ## Стан
 
-2026-10-05: раунд1 проверен Astra локально/GitHub;145/147/148 имеют зелёный CI на перечисленных SHA.146 прошёл полный CI9927c83, root просмотрел synthetic desktop/mobile PNG: даты корректны; обнаружено нереалистичное имя события в фикстуре, SOL исправляет его без изменения production контракта. Раунд2:149 закрывает confirmed credential races,09 назначен после него. Раунд3/4:150 прошёл реальный synthetic restore,17 выполняется SOL. Production readiness OPEN; merge/deploy не выполнялись. Browser-панель Vercel обнаружена, но оба подключения завершились CDP timeout: это не доказательство отсутствия прав. GitHub secret metadata доступна, значения не читаются и ротация этим не подтверждена. Owner/external gates остаются pending; первый scope предложен владельцу отдельно.
+2026-10-05: main по свежему remote ref остаётся3b4ac30.145/146/148/149/150/151/152 имеют зелёный exact-head CI и ранее полученный Astra PASS; merge/deploy не выполнялись.153 ff0b8a3 проходит CI;139 требует owning score-scope correction, новая совместная регрессия ожидает обе задачи. SOL ответил на повторный запуск; затем владелец выбрал недорогую Luna для дальнейшего исполнения. Требования Itstep и superadmin записаны, DevOps эксплуатационные настройки вынесены из нашей разработки. Sintegrum auth/SKUD изучены по текущему локальному коду, полный corporate login/staff feed ещё не установлен. Production readiness OPEN.
