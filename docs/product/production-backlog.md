@@ -24,10 +24,10 @@
 
 | ID | Задача | Критерий завершения | Состояние / исполнитель |
 |---|---|---|---|
-| PROD-00 | Единый production backlog и точная документация процесса/индекса | Критерии/зависимости/все долги перечислены; старые ложные сведения про отчёты/Clipper/HR исправлены; модельный workflow соответствует инструкции владельца | IN_PROGRESS · docs/production-readiness · основной агент, Luna/Astra review |
+| PROD-00 | Единый production backlog и точная документация процесса/индекса | Критерии/зависимости/все долги перечислены; старые ложные сведения про отчёты/Clipper/HR исправлены; модельный workflow соответствует инструкции владельца | IN_PROGRESS · [PR147](https://github.com/zapleoceo/sinhrm/pull/147);37f95bd Luna/Astra PASS и10 checks SUCCESS; текущий phase update требует проверки |
 | PROD-01 | Локализация даты журнала интеграций | uk/ru/en, browser timezone, null/invalid без ложной даты; targeted unit и synthetic E2E/CI, сохранённые элементы UI | IN_PROGRESS · SOL · [PR146](https://github.com/zapleoceo/sinhrm/pull/146), CI/review |
-| PROD-02 | Provenance Web/API сборки | Безопасный immutable build SHA от фактического checkout, health contract сохранён, preview не ошибочно получает main SHA; тесты валидных/невалидных данных и stamping | IN_PROGRESS · SOL · [PR145](https://github.com/zapleoceo/sinhrm/pull/145), CI/review |
-| PROD-03 | Исправить границу локальных суток workflow | Luna нашла общую причину failures133–136: `UserTime.php:47` и `WorkflowStarter.php:77` превращают локальный день Kyiv в midnightUTC; zero-offset шаг становится будущим между21–24UTC при UTC+3. Исправить owning scheduler и добавить deterministic boundary/DST/offset tests, не ослаблять assertions | IN_PROGRESS · SOL · fix/workflow-local-day-boundary |
+| PROD-02 | Provenance Web/API сборки | Безопасный immutable build SHA от фактического checkout, health contract сохранён, preview не ошибочно получает main SHA; тесты валидных/невалидных данных и stamping | PR_READY · [PR145](https://github.com/zapleoceo/sinhrm/pull/145),88dd8b7:10 checks SUCCESS, Astra PASS; не в production |
+| PROD-03 | Исправить границу локальных суток workflow | Luna нашла общую причину failures133–136: `UserTime.php:47` и `WorkflowStarter.php:77` превращают локальный день Kyiv в midnightUTC; zero-offset шаг становится будущим между21–24UTC при UTC+3. Исправить owning scheduler и добавить deterministic boundary/DST/offset tests, не ослаблять assertions | PR_READY · [PR148](https://github.com/zapleoceo/sinhrm/pull/148),df397ed:10 checks SUCCESS, Astra PASS; существующие due_at не переписаны |
 
 ## Раунд 2 — безопасность и совместимость
 
@@ -37,8 +37,8 @@
 | PROD-05 | Scramble, [PR134](https://github.com/zapleoceo/sinhrm/pull/134) | То же; API schema не теряет контракт | QUEUED · после03 |
 | PROD-06 | typescript-eslint, [PR135](https://github.com/zapleoceo/sinhrm/pull/135) | То же; правила lint не ослаблены ради прохождения | QUEUED · после03 |
 | PROD-07 | Laravel, [PR136](https://github.com/zapleoceo/sinhrm/pull/136) | То же; auth/session/DB regressions остаются зелёными | QUEUED · после03 |
-| PROD-08 | Explicit User block: глобальный отзыв credentials | Все сессии/PAT затронутого User отозваны, old credentials отвергаются и после unblock; last-active-superadmin защищён; изменения status атомарны с локальной invalidation | IN_PROGRESS · SOL; Luna подтвердила сохранение нетронутых DB sessions/PAT после unblock; не зависит от Employee semantics |
-| PROD-09 | Проверить candidate nested application scope | Зафиксирован ожидаемый контракт разрешённой карточки и вложенных данных; отрицательные cross-branch tests; реальный gap исправлен в owning API, а не workaround Assistant | QUEUED · audit → SOL при подтверждённом дефекте; ожидаемый бизнес-scope уточняется по текущему контракту |
+| PROD-08 | Explicit User block: глобальный отзыв credentials | Сессии/PAT отозваны атомарно; stale grants после block/unblock не создают долговременный доступ; last-active-superadmin защищён; поддерживаемые drivers и legacy invalidation документированы | IN_PROGRESS · [PR149](https://github.com/zapleoceo/sinhrm/pull/149); Astra/Luna выявили PAT/OAuth race, SOL закрывает persisted credential generation; не зависит от Employee semantics |
+| PROD-09 | Исправить candidate nested application scope | Фильтр разрешённых application rows применяется к list/show, stage history, application-bound touchpoints и audit; candidate-global entries сохраняют существующий контракт; отрицательная role/cross-branch matrix | QUEUED · Luna подтвердила owning API gap по RecruitingScope/Scope/recruiting.md; SOL назначен после08 |
 | PROD-10 | Минимизация AI-данных и fresh access, [PR143](https://github.com/zapleoceo/sinhrm/pull/143) | Фактический release head reviewed/CI; чёткие допустимые данные/задачи; no replay writes из сохранённой истории диалога; ограничения tenant/exactly-once/уже показанной истории честно приняты | PR_READY · Draft, не в main; live quality в20; условно по scope |
 
 ## Раунд 3 — lifecycle и операционная безопасность
@@ -49,14 +49,14 @@
 | PROD-12 | Зафиксировать D2: увольнение/дата/rejoin | Immediate/scheduled, effective instant/timezone, late/backdated/cancel и reviewed restore выбраны | OWNER_PENDING |
 | PROD-13 | Зафиксировать D3: handover/exit survey | Получатель работы и transfer/cancel/keep, timing survey, старые workflows при rejoin определены | OWNER_PENDING |
 | PROD-14 | Реализовать согласованный Employee↔User lifecycle | При включении автоматизации T01–T14 актуализированы и пройдены: transaction/concurrency, idempotent event, disable/restore/manager scope/handover/last-superadmin, сбои внешних эффектов видимы | QUEUED ·11–13 и release scope; отдельные узкие feature ветки |
-| PROD-15 | Синтетическая backup/restore проверка + runbook | Реальный dump/restore изолированной CI БД, сверка данных/связей/документов; безопасный production runbook с stop/rollback; не читать production data | QUEUED · SOL/CI; инфраструктурная приёмка в16 |
+| PROD-15 | Синтетическая backup/restore проверка + runbook | Реальный dump/restore изолированной CI БД, сверка данных/связей/vault; DB proof не покрывает внешние файлы; безопасный production runbook с stop/rollback; не читать production data | IN_PROGRESS · [PR150](https://github.com/zapleoceo/sinhrm/pull/150); restore37274448033 SUCCESS,20 seed/22 restore assertions; Astra PASS a828020;081d2a1 task-state delta и общий CI ещё проверяются |
 | PROD-16 | Эксплуатационная приёмка | Подтверждены ротация GOOGLE_CLIENT_SECRET/VERCEL_TOKEN, restore procedure/доступ, RPO/RTO и owner, alerts delivery и cron failure/retry | OWNER_PENDING / EXTERNAL_PENDING · значения секретов не пересылаются |
 
 ## Раунд 4 — сквозная приёмка и внешние потоки
 
 | ID | Задача | Критерий завершения | Состояние / зависимость |
 |---|---|---|---|
-| PROD-17 | API end-to-end выбранного пилотного workflow | Известный dataset, успешный сценарий, повторы, ошибки и forbidden для выбранного пути; hiring/оффер/найм/адаптация и exact reports по периоду/scope проверяются в объёме включённого scope; обнаруженные дефекты закрыты | QUEUED · SOL; isolated CI, без реальных лиц |
+| PROD-17 | API end-to-end выбранного пилотного workflow | Известный dataset, успешный сценарий, повторы, ошибки и forbidden для выбранного пути; hiring/оффер/найм/адаптация и exact reports по периоду/scope проверяются в объёме включённого scope; обнаруженные дефекты закрыты | IN_PROGRESS · SOL; существующие tests используют прямые service/DB transitions, целый HTTP путь не проверен; isolated CI без реальных лиц; scope proposal ещё pending |
 | PROD-18 | Матрица включённых модулей/ролей + UI | Проверки прав/ошибок/повторов/PII для каждого включённого модуля; desktop/mobile/light/dark, keyboard и реальные понятные сценарии; known skips перечислены | QUEUED · выбор release scope; не объявлять все модули принятыми по одному e2e |
 | PROD-19 | Google reconnect/send/read/calendar/sheets | Разрешённый владелец аккаунта подтвердил gmail.send; проверены выбранный поток, expiry/refresh/denial/retry и безопасные ошибки | EXTERNAL_PENDING · UI/код в138; подготовка протокола самостоятельная |
 | PROD-20 | Live AI usefulness/safety | Разрешённые синтетические задания и явные критерии полезности, отказа, стоимости/latency/human correction; no autonomous personnel decisions; провайдер проверен | EXTERNAL_PENDING · после10 и scope/data decisions |
@@ -89,7 +89,7 @@
 | PROD-35 | КЭП / размер файлов / payroll / новые регионы | OWNER_PENDING / EXTERNAL_PENDING: подтверждённые сценарии, рынок, сервис/договор; не считать stub интеграцией |
 | PROD-36 | Межмодульные зависимости/циклы | QUEUED: измерить текущий baseline и уменьшать отдельными модульными PR; не проводить весь legacy rewrite ради release |
 | PROD-37 | Согласовать draft UNIFIED-TZv0.3 | OWNER_PENDING: reconcile с нынешним backlog и security evidence; v0.3 local draft `0dd175d` не считается принятой версией main |
-| PROD-38 | Рабочие копии/артефакты | QUEUED: inventory владельцев/состояний; удалять только завершённые подтверждённо ненужные данные, сохранить активные worktrees/evidence |
+| PROD-38 | Рабочие копии/артефакты | QUEUED: inventory выявил44 worktrees, включая активные и unmerged drafts; удаление требует подтверждённой ненужности и проверки ignored data, активные/evidence сохраняются |
 
 ## Источники среза
 
@@ -97,4 +97,4 @@ Main `3b4ac30`, [CI37212189230](https://github.com/zapleoceo/sinhrm/actions/runs
 
 ## Стан
 
-2026-10-05: раунд1 выполняется. PROD-01/02 имеют draft PR146/145; полные CI идут. Luna выявила production-дефекты PROD-03/08, SOL назначен на отдельные ветки. Основной агент ведёт PROD-00. Production readiness ещё OPEN. Следующий переход — source PR/CI → Luna evidence → Astra exact diff; owner/external tasks сохраняют явные блокеры.
+2026-10-05: раунд1 проверен Astra локально/GitHub;145/147/148 имеют зелёный CI на перечисленных SHA.146 прошёл полный CI9927c83, root просмотрел synthetic desktop/mobile PNG: даты корректны; обнаружено нереалистичное имя события в фикстуре, SOL исправляет его без изменения production контракта. Раунд2:149 закрывает confirmed credential races,09 назначен после него. Раунд3/4:150 прошёл реальный synthetic restore,17 выполняется SOL. Production readiness OPEN; merge/deploy не выполнялись. Browser-панель Vercel обнаружена, но оба подключения завершились CDP timeout: это не доказательство отсутствия прав. GitHub secret metadata доступна, значения не читаются и ротация этим не подтверждена. Owner/external gates остаются pending; первый scope предложен владельцу отдельно.
