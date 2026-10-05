@@ -13,12 +13,12 @@ use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\CareerSubmission;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Scripts\Services\TaskService;
+use finfo;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
-use finfo;
 
 /**
  * Public career page (/jobs): published open vacancies and anonymous applications. An application goes through the
