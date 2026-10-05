@@ -26,8 +26,9 @@
 | 154 | 00682bda11d080b9e553b02b46069fe344d77ba5 | via squash commit 38d90ea in main |
 | 155 | c7e638e8805460ee8bf0cd5f8d0b78256111277d | yes, docs only |
 | 157 | f006c7261f2cebe3be44c73b739d4450b0f4a0cf | source CI green; merged locally |
+| 158 | bbca41419eadf825da16842ed8c3b27e3f918c88 | functional source included; CI pending |
 
-PR142/144 validation branches remain explicitly excluded. PR154 contributes only the rules commit already present in `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab. PROD-39/PR155 is documentation-only. PROD-41/PR157 is included as a source for combined validation; full CI run `37292425236` passed on exact head f006c72. PR158 head `9fd29dcb` is diagnostic-only and explicitly excluded; the owning writer is isolating and implementing the actual CSS fix.
+PR142/144 validation branches remain explicitly excluded. PR154 contributes only the rules commit already present in `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab. PROD-39/PR155 is documentation-only. PROD-41/PR157 is included as a source for combined validation; full CI run `37292425236` passed on exact head f006c72. PR158 functional head bbca41419eadf825da16842ed8c3b27e3f918c88 is included; source CI run `37294470282` is in progress and exact-head static Astra review passed.
 
 ## Контекст з KB
 Atlassian KB/cloudId unavailable in this session; prior Rovo/Drive SinHRM searches had no applicable results.
@@ -39,10 +40,10 @@ Current repo/source tasks/UNIFIED-TZ and exact GitHub source heads are authorita
 - Scope: combined validation only; no merge to main, preview or deployment.
 - Worktree / branch / base: `D:/Projects/sinhrm-wt/production-rounds-validation` / `chore/validate-production-rounds` / `origin/main` `38d90eaada1c43363cd64c2f16d7ceaecb611dab`.
 - Prior combined baseline: PR156 exact head `d23b6b17723f2ef8680f3f668bf4cb35ee9868d0`, Astra-reviewed and green at its prior exact source set; prior CI run `37285204644` had focused assertion and inventory failures, repaired at d23. Do not treat that prior green/review as covering new PR157 source.
-- Current local merge: `MERGE_HEAD` `f006c7261f2cebe3be44c73b739d4450b0f4a0cf` from full PR157 history. All source files merged; one mobile integration inventory conflict resolved by retaining PR140 launcher action and PR157 synthetic-preview action. JSON parsing passes. Merge remains uncommitted and unpushed.
+- Current local source chain: PR157 full-history merge commit bd264ecd7054395831a4b7729dea276e029c1343; PR158 full-history merge in progress at MERGE_HEAD bbca41419eadf825da16842ed8c3b27e3f918c88. PR157 mobile integration inventory retains PR140 launcher action plus PR157 synthetic-preview action. PR158 Users docs conflict resolved by keeping the mobile layout behavior and existing credential-safety note. JSON parsing and diff checks pass; PR158 merge is not committed or pushed yet.
 - PR157 evidence: exact prior head `0726d2f05044e24f733ae68386cc75a98fd52193` had static Astra PASS and CI PHPStan failure at `EmployeeDirectoryPreviewTest.php:81` for missing iterable value type. Fix commit f006c72 annotates `array<string, mixed>`; fresh CI run `37292425236` passed on exact head f006c72. Astra final exact-head review passed on f006c72 (reviewer confirmed one-line PHPDoc-only delta); final combined Astra review is still required.
 - Combined checks so far: `git diff --check` and Python JSON parse for `frontend/e2e/__snapshots__/integrations.mobile.json` pass. No full suite or screenshot capture was run locally.
 - UI evidence gap: PR157 desktop/mobile light/dark screenshots were inspected on its prior head; PR140 launcher remains represented in the merged mobile inventory, but the combined rendered output still needs CI screenshot inspection. Do not claim mascot/launcher compatibility until those combined screenshots are inspected.
 - Documentation: source inventory includes PR157; PROD-41 state was consolidated to remove duplicate KB/next-step entries. Existing recruiting scope assertion and source worklog fragments remain intact.
-- Next: wait for the owning writer to provide the actual functional CSS fix SHA for PR158; keep diagnostic commits excluded. Then merge the final functional source, run combined CI, inspect shipping screenshots and complete independent Astra review. No merge/deploy.
-- Blockers: actual PR158 CSS fix from its owning writer, final combined CI, combined Astra review, and rendered combined screenshot inspection.
+- Next: finish lightweight conflict and JSON guards, commit and push the PR158 merge as draft PR156, then complete full combined CI, inspect rendered shipping screenshots, and independent Astra review. No merge/deploy.
+- Blockers: PR158 source CI and combined CI, combined Astra review, and rendered combined screenshot inspection.

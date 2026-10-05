@@ -145,6 +145,6 @@ curl -i "https://sinhrm.vercel.app/api/users?perPage=20"   # без сессии
 
 Ключ модуля `users`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).
 
-- На узком экране (< 768px) страница не прокручивается вбок: широкие элементы (таблицы, переключатели, длинные строки) прокручиваются или переносятся внутри своего блока.
+- На узком экране (< 768px) страница не прокручивается вбок: широкие элементы (таблицы, переключатели, длинные строки) прокручиваются или переносятся внутри своего блока. В таблице пользователей все колонки и действия остаются доступны во внутренней горизонтальной прокрутке карточки.
 
 Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.

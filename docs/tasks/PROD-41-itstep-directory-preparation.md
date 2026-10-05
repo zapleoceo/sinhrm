@@ -8,7 +8,7 @@
 - Результаты: PR157 CI run `37291833428` на 0726d2f прошёл Pint, но PHPStan обнаружил неподписанный iterable тип `$payload` в `EmployeeDirectoryPreviewTest.php:81`. В f006c72 добавлена PHPDoc-форма `array<string, mixed>`; новый run `37292425236` прошёл все jobs на exact head f006c72. Astra final exact-head review на f006c72 — PASS; reviewer подтвердил PHPDoc-only delta, clean GitHub/local match и 10 зелёных checks. Combined review через PR156 ещё нужен.
 - Реализация остаётся безопасной подготовкой: официальный `itstep/user-client` и подтверждённый API schema/namespace/auth/mappings отсутствуют; fetch не выполняется, доступы/роли/профили не меняются. UI synthetic sample явно помечен тестовым.
 - KB: Rovo-запрос `PROD-41 Itstep employee directory SKUD profiles integration SinHRM` завершился HTTP 502; Confluence-запрос `SinHRM SKUD profile API employee directory mapping authentication integration` не дал результатов.
-- Следующий шаг: дождаться следующего функционального source head 158, затем включить его в PR156 и выполнить combined CI/Astra/rendered screenshots; нет live-интеграции и нет разрешения на merge/deploy.
+- Следующий шаг: PR157 source прошёл; в PR156 дополнительно включён функциональный PR158. Дождаться combined CI/Astra/rendered screenshots; нет live-интеграции и разрешения на merge/deploy.
 - Блокер: нужны официальный SDK, сервисный контракт, namespace, canonical ID, mappings и доверенный endpoint/auth config от владельца/сервиса.
 ## План
 

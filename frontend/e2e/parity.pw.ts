@@ -64,12 +64,33 @@ for (const p of PAGES) {
       }
       expect.soft(errors, 'console / page / request errors').toEqual([]);
 
-      // (c) layout — themes do not change geometry, the light run checks it.
-      if (theme === 'light') {
+      // (c) layout — run all pages in light theme; Users additionally checks both themes and a narrower phone width.
+      if (theme === 'light' || key === 'users.mobile' || key === 'users.desktop') {
         const layout = await layoutOf(page);
-        if (!allowlist.pageOverflow.includes(key)) expect.soft(layout.pageOverflow, `horizontal page scroll on ${key}`).toBe(0);
-        const allowed = allowlist.clipped[key] ?? [];
-        expect.soft(layout.clipped.filter((c) => !allowed.some((a) => c.includes(a))), `clipped elements on ${key}`).toEqual([]);
+        if ((theme === 'light' && !allowlist.pageOverflow.includes(key)) || key === 'users.mobile' || key === 'users.desktop') {
+          expect.soft(layout.pageOverflow, `horizontal page scroll on ${key} (${theme})`).toBe(0);
+        }
+        if (theme === 'light') {
+          const allowed = allowlist.clipped[key] ?? [];
+          expect.soft(layout.clipped.filter((c) => !allowed.some((a) => c.includes(a))), `clipped elements on ${key}`).toEqual([]);
+        }
+
+        if (key === 'users.mobile') {
+          const originalViewport = page.viewportSize();
+          if (!originalViewport) throw new Error('Users mobile viewport is required for the 375px regression check');
+          try {
+            await page.setViewportSize({ ...originalViewport, width: 375 });
+            await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+            const narrowLayout = await layoutOf(page);
+            expect.soft(narrowLayout.pageOverflow, `horizontal page scroll on users.mobile at 375px (${theme})`).toBe(0);
+            expect.soft(await inventoryOf(page, p.volatile), `inventory of users.mobile at 375px (${theme})`).toEqual(inventory);
+            if (SCREENSHOTS) {
+              await page.screenshot({ path: join(__dirname, '.out', 'screens', info.project.name, 'users-375.png'), fullPage: true });
+            }
+          } finally {
+            await page.setViewportSize(originalViewport);
+          }
+        }
       }
 
       // (d) axe WCAG A/AA: per-rule node counts must not grow.
