@@ -16,7 +16,7 @@
 | 143 | 091f22fd284c880f7a655b915da9c9cf775daad2 | yes |
 | 145 | 88dd8b7ac1dac13f99595e2bd15f14465460627a | yes |
 | 146 | 8acfadbdad8edeb2a98f4aeb27b2367837c96559 | yes |
-| 147 | d12e956df19dd17af058166aeef9553a9bbdd16b | yes, refreshed source |
+| 147 | 7fbd6016084652ba6267866de4d3041f132f6750 | yes, refreshed readiness/docs source |
 | 148 | df397ed1c5eda1cf6be958fd345b7a45da9d1d51 | yes |
 | 149 | 2cd011ad829f691a04e9dee5b9a1373e96631cf7 | yes |
 | 150 | 081d2a16484a19d8c85c1e7a4806b0d5e13d4f94 | yes |
@@ -26,9 +26,9 @@
 | 154 | 00682bda11d080b9e553b02b46069fe344d77ba5 | via squash commit 38d90ea in main |
 | 155 | c7e638e8805460ee8bf0cd5f8d0b78256111277d | yes, docs only |
 | 157 | f006c7261f2cebe3be44c73b739d4450b0f4a0cf | source CI green; merged locally |
-| 158 | ccb3f522706283f5a2ca3d1260227e027dd664f2 | corrected functional source included; source CI pending |
+| 158 | ccb3f522706283f5a2ca3d1260227e027dd664f2 | corrected functional source included; source CI 37297027767 passed |
 
-PR142/144 validation branches remain explicitly excluded. PR154 contributes only the rules commit already present in `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab. PROD-39/PR155 is documentation-only. PROD-41/PR157 is included as a source for combined validation; full CI run `37292425236` passed on exact head f006c72. PR158 functional head bbca41419eadf825da16842ed8c3b27e3f918c88 is included; source CI run `37294470282` is in progress and exact-head static Astra review passed.
+PR142/144 validation branches remain explicitly excluded. PR154 contributes only the rules commit already present in `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab. PROD-39/PR155 is documentation-only. PROD-41/PR157 is included as a source for combined validation; full CI run `37292425236` passed on exact head f006c72. PR158 corrected functional head ccb3f52 is included; source CI run `37297027767` passed on that exact head. Earlier head bbca414 failed UI parity and is superseded.
 
 ## Контекст з KB
 Atlassian KB/cloudId unavailable in this session; prior Rovo/Drive SinHRM searches had no applicable results.
@@ -36,14 +36,14 @@ Current repo/source tasks/UNIFIED-TZ and exact GitHub source heads are authorita
 
 ## Стан
 
-- Час: 2026-10-05 17:35 Asia/Saigon.
+- Час: 2026-10-05 17:38 Asia/Saigon.
 - Scope: combined validation only; no merge to main, preview or deployment.
 - Worktree / branch / base: `D:/Projects/sinhrm-wt/production-rounds-validation` / `chore/validate-production-rounds` / `origin/main` `38d90eaada1c43363cd64c2f16d7ceaecb611dab`.
 - Prior combined baseline: PR156 exact head `d23b6b17723f2ef8680f3f668bf4cb35ee9868d0`, Astra-reviewed and green at its prior exact source set; prior CI run `37285204644` had focused assertion and inventory failures, repaired at d23. Do not treat that prior green/review as covering new PR157 source.
-- Current local source chain: PR157 full-history merge commit bd264ecd7054395831a4b7729dea276e029c1343; PR158 full-history merge in progress at exact head ccb3f522706283f5a2ca3d1260227e027dd664f2. PR157 mobile integration inventory retains PR140 launcher action plus PR157 synthetic-preview action. Resolved Users docs retain the mobile containment guidance and existing credential-safety note. PR158 source CI `37297027767` is pending; earlier source head bbca414 failed UI parity and is superseded.
+- Current local source chain: PR157 merge `bd264ecd7054395831a4b7729dea276e029c1343`; PR158 corrected full history at exact head `ccb3f522706283f5a2ca3d1260227e027dd664f2`; PR147 readiness/docs refresh `7fbd6016084652ba6267866de4d3041f132f6750`. PR158 CI `37297027767` passed on exact head. Earlier PR158 head bbca414 failed UI parity and is superseded. PR157 mobile inventory retains PR140 launcher plus PR157 synthetic-preview action. Resolved Users docs retain mobile containment guidance and the existing credential-safety note.
 - PR157 evidence: exact prior head `0726d2f05044e24f733ae68386cc75a98fd52193` had static Astra PASS and CI PHPStan failure at `EmployeeDirectoryPreviewTest.php:81` for missing iterable value type. Fix commit f006c72 annotates `array<string, mixed>`; fresh CI run `37292425236` passed on exact head f006c72. Astra final exact-head review passed on f006c72 (reviewer confirmed one-line PHPDoc-only delta); final combined Astra review is still required.
-- Combined checks so far: production build passed with existing Angular bundle/style budget warnings. Targeted compiled E2E `npm run e2e -- -g 'integrations|users' --project=desktop-light --project=mobile-light --project=desktop-dark --project=mobile-dark` passed 28 cases (Playwright report `.out/results/.last-run.json`: `failedTests: []`) against the combined bundle, without an application DB. This includes all four integrations inventory variants and Users mobile 390/375 control checks. `git diff --check` passed.
-- Local rendered evidence from that targeted run: `frontend/e2e/.out/screens/{desktop-light,mobile-light,desktop-dark,mobile-dark}/integrations*.png` and `users*.png`; integrations golden changes came from the compiled app and include four disabled Google actions without href, with both mobile launcher and synthetic-preview actions retained. Final combined CI screenshot inspection is still required for shipping evidence.
+- Combined checks so far: production build passed with existing Angular bundle/style budget warnings; `npm run e2e:lint` passed (5 checks). Targeted compiled E2E `npm run e2e -- -g 'integrations|users' --project=desktop-light --project=mobile-light --project=desktop-dark --project=mobile-dark` completed with 25 passed, 3 skipped, 0 failed (Playwright report `.out/results/.last-run.json`: status `passed`, `failedTests: []`), without an application DB. This includes all four integrations inventory variants and Users mobile 390/375 overflow, inner-scroll, full-action visibility and role/branch overlays.
+- Local rendered evidence from that targeted run: `frontend/e2e/.out/screens/{desktop-light,mobile-light,desktop-dark,mobile-dark}/integrations*.png` and `users*.png`, including `mobile-light`/`mobile-dark` `integrations--synthetic-directory-preview.png` and `users-375.png`. Screens were inspected: synthetic integrations retains the mobile launcher, preview action and four disabled Google actions; Users controls remain within the 375px scroller. Integration goldens came from the compiled bundle. Final combined CI screenshot inspection is still required for shipping evidence.
 - Documentation: source inventory includes PR157; PROD-41 state was consolidated to remove duplicate KB/next-step entries. Existing recruiting scope assertion and source worklog fragments remain intact.
-- Next: finish lightweight merge/source checks, commit and push the PR158 combined merge as draft PR156, then complete full CI, inspect final combined shipping screenshots, and obtain independent Astra review. No merge/deploy.
-- Blockers: PR158 source CI, combined CI, exact-head Astra review, and rendered combined screenshots.
+- Next: push the final combined local head to draft PR156, then complete full CI, inspect exact-head combined shipping screenshots, and obtain independent Astra review. No merge/deploy.
+- Blockers: combined CI, exact-head Astra review, and rendered combined CI screenshots.
