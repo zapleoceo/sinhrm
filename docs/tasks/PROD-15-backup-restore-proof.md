@@ -24,3 +24,10 @@ Bash syntax, git whitespace and docs/tests guards passed. PHP absent locally; ac
 Initial Actions workflow validation failed: job.services context was declared at job env level.
 Moved container ID to step env, where job context is available; no permission/guard weakening.
 Next: green restore job/full CI and Astra review. No production actions or deployment.
+
+## CI evidence — 2026-10-05
+Restore run 37274448033 SUCCESS on code head a828020ec9ca9d53339e0281cc8fc754a5f0c0d0:
+PostgreSQL client 17.11; Linux safety tests 3/3; seed 20 assertions; restored verification 22 assertions.
+Each phase deliberately skips the opposite phase. Synthetic migrate/dump/restore/verify elapsed 4s, not production RTO.
+Full CI 37274448008: lint, docs, worklog, api-docs, extension, security green; frontend/tests/ui-parity pending at handoff.
+Next: root monitors final CI and Astra review; production backup readiness remains OWNER PENDING.
