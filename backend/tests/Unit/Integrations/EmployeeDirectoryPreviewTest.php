@@ -78,6 +78,7 @@ final class EmployeeDirectoryPreviewTest extends TestCase
         self::assertCount(0, $forward['profiles']);
     }
 
+    /** @param array<string, mixed> $payload */
     #[DataProvider('invalidSnapshots')]
     public function test_unknown_or_incomplete_snapshot_is_rejected(string $reason, array $payload): void
     {
