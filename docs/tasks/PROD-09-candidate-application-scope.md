@@ -11,15 +11,16 @@ Rovo SinHRM queries returned HTTP502; KB unavailable. Planned query: candidate m
 
 ## Стан
 - Час: 2026-10-05 Asia/Saigon.
-- Step: correcting screening test fixture and adding hidden-pending poll regression after exact-head CI surfaced a failure. Branch fix/candidate-application-scope, base origin/main 3b4ac30.
+- Step: implementation ready for combined regression; branch fix/candidate-application-scope, base origin/main3b4ac30, tested implementation head b27f6f428074180805055811aecdd75cb7565e41.
 - Evidence: list/show/timeline/history application queries unrestricted. find() loads city/owner/channel only, so store/update/inbox replies omit applications safely.
-- Next: rerun exact-head PR153 CI, independent review, then coordinate combined PR139 compatibility work before merge.
-- Blockers: PHP absent PATH; KB HTTP502 nonblocking. No local server/full suite. SOL writer authorized.
+- Next: final state-delta CI/review, then combined PR139 compatibility before merge. No release performed.
+- Blockers: PHP absent PATH; KB HTTP502 nonblocking. Full suite passed in CI, not locally. Latest owner instruction selected Luna execution and independent Astra review.
 
 - Implementation: shared typed ApplicationVisibility SQL helper; list eager loading and application filters, show through repository, actor scoped timeline and audit. CandidateResource store/update/inbox omit applications; no application counts on base main. Bulk/import readshape audit completed.
 - Tests: real API role matrix two branches/shared candidate, stage/app/global touches/audits, negative hidden vacancy filters, owner-no-branches and unrelated role denial; update response omits applications. PHP unavailable, CI execution pending.
-- Compatibility blocker: PR139 candidateScore aggregates hidden applications without Scope; do not mix its code into this source branch. Root must scope score in combined package with shared-candidate high-hidden-score regression before release.
+- Compatibility: PR139 owning score-scope correction is prepared at cc7b9ff,10 checks SUCCESS and Astra PASS. Do not mix its feature into this branch; shared helper compatibility still needs combined verification.
 
 - Screening boundary: GET latest screenings is scoped before polling/serialization; manual POST requires visible application and existing candidate edit right. Prompt materials use the selected application and global candidate touches. Stable prompt text/version/provider/cache configuration unchanged; no live AI/cache evidence. Role matrix covers private screening rationale and hidden start denial.
 - Validation: `git diff --check` and `node scripts/worklog-build.mjs --print` passed. PHP is unavailable locally, so targeted PHPUnit was not run; the full backend suite is delegated to CI. Earlier CI on commit `5c2d8c7` passed all jobs, including backend; it does not include this screening boundary.
 - CI `37280378724`: all jobs except backend and dependent aggregate passed; backend PHPUnit reported `CandidateApplicationScopeTest` line 54 because the synthetic global email omitted `direction=in`. Added that fixture value without weakening the assertion. Also adding a hidden pending screening/request regression asserting no provider poll and no status change.
+- Final implementation proof: b27f6f4 run37281215729 has10 checks SUCCESS,1362 backend tests/12572 assertions, independent Astra local/GitHub PASS. Fixture direction and hidden-PENDING no-poll/status regressions are verified. This later evidence supersedes the earlier pending/failing runs above; production provider calls were not performed.
