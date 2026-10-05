@@ -10,7 +10,7 @@
 ## С чего начать
 | Кому | Что читать |
 |---|---|
-| Владелец продукта / вся команда | [Единое продуктовое ТЗ](product/UNIFIED-TZ.md) → [Свидетельства аудитории и пробелы исследования](product/audience-evidence.md) |
+| Владелец продукта / вся команда | [Единое продуктовое ТЗ](product/UNIFIED-TZ.md) → [Свидетельства аудитории](product/audience-evidence.md) → [Задачи до production и раунды](product/production-backlog.md) |
 | Руководитель / рекрутер | [Обзор модулей](modules/README.md) |
 | Разработчик | [Архитектура](architecture/overview.md) → [Правила разработки](guides/development.md) → [Деплой](guides/deploy.md) → [API: документация и .http-примеры](guides/api.md) → [UI parity: страховка для рестайла](guides/ui-parity.md) → [Таблицы: сортировка и фильтры](guides/tables.md) |
 | Про безопасность | [Секреты и персональные данные](architecture/secrets.md), [Журнал ошибок и заголовки безопасности](architecture/observability.md) |

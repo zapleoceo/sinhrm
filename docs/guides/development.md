@@ -6,11 +6,11 @@
 
 ## Процесс (обязателен)
 1. Задача → ветка от `main`: `feat/<кратко>`, `fix/<кратко>`, `docs/<кратко>`, `chore/<кратко>`.
-2. Код пишет Opus 5.5. Коммиты — Conventional Commits (`feat: …`, `fix: …`).
+2. Код пишет SOL. Коммиты — Conventional Commits (`feat: …`, `fix: …`).
 3. Pull Request по шаблону: что, зачем, **доказательство** (вывод CI, запрос к preview-API), документация.
 4. CI (GitHub Actions) должен быть зелёным: линт, статанализ, тесты, покрытие, сборка, gitleaks, проверка документации.
-5. Ревью Sonnet 5.5: SOLID, DRY, модульность, безопасность, тесты, документация. Без approve — не мержим.
-6. Merge только squash в `main` → автодеплой в prod → smoke-проверка `/api/health`.
+5. Выводы перепроверяет Luna. Независимый агент Astra проверяет локальный и GitHub diff: SOLID, DRY, модульность, безопасность, тесты, документация. Без approve актуального commit — не мержим. Это текущая инструкция владельца; формальный GitHub approval не следует приписывать агенту без опубликованного review.
+6. Разрешённый merge только squash в `main` → автодеплой в prod → smoke-проверка `/api/health` и изменённых сценариев. Общая работа над production backlog не выбирает нерешённые product/security gates. [Раунды и критерии production](../product/production-backlog.md).
 
 ## Правила кода
 **Бэкенд (Laravel):** PSR-12 + `declare(strict_types=1)` (Pint), PHPStan level 6 (Larastan). Контроллер — только
