@@ -1,0 +1,105 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Recruiting;
+
+use App\Models\User;
+use App\Modules\Audit\Models\AuditEntry;
+use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Directory\Models\Branch;
+use App\Modules\Recruiting\Models\Candidate;
+use App\Modules\Recruiting\Models\Touchpoint;
+use App\Modules\Recruiting\Services\ApplicationService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\RecruitingFixtures;
+use Tests\TestCase;
+
+final class CandidateApplicationScopeTest extends TestCase
+{
+    use RecruitingFixtures, RefreshDatabase;
+
+    public function test_shared_candidate_outputs_only_visible_applications_for_each_role(): void
+    {
+        $north = Branch::factory()->create();
+        $south = Branch::factory()->create();
+        $first = $this->applied($this->vacancyIn($north), ['full_name' => 'Synthetic shared candidate']);
+        $candidate = Candidate::query()->findOrFail($first->candidate_id);
+        $second = app(ApplicationService::class)->apply(null, $candidate, $this->vacancyIn($south));
+        foreach ([$first, $second] as $application) {
+            Touchpoint::query()->create(['candidate_id' => $candidate->id, 'application_id' => $application->id,
+                'channel' => 'email', 'occurred_at' => now(), 'body' => 'Synthetic application '.$application->id]);
+            AuditEntry::query()->create(['entity_type' => 'application', 'entity_id' => $application->id,
+                'action' => 'updated', 'changes' => ['stage' => ['from' => 'synthetic old', 'to' => 'synthetic new']]]);
+        }
+        $globalTouch = Touchpoint::query()->create(['candidate_id' => $candidate->id, 'application_id' => null,
+            'channel' => 'email', 'occurred_at' => now(), 'body' => 'Synthetic global contact']);
+        $globalAudit = AuditEntry::query()->create(['entity_type' => 'candidate', 'entity_id' => $candidate->id,
+            'action' => 'updated', 'changes' => ['name' => ['from' => 'synthetic old', 'to' => 'synthetic new']]]);
+        $owner = $this->userWith(UserRole::Recruiter);
+        $candidate->forceFill(['owner_id' => $owner->id])->save();
+        $manager = $this->userWith(UserRole::Employee);
+        $first->vacancy->forceFill(['hiring_manager_id' => $manager->id])->save();
+        $interviewer = $this->userWith(UserRole::Employee);
+        $second->interviewers()->attach($interviewer->id);
+        $cases = [
+            [$this->userWith(UserRole::Admin), [$first->id, $second->id]],
+            [$this->userWith(UserRole::HrManager), [$first->id, $second->id]],
+            [$this->userWith(UserRole::Recruiter, [$north]), [$first->id]],
+            [$this->userWith(UserRole::Viewer, [$south]), [$second->id]],
+            [$manager, [$first->id]], [$interviewer, [$second->id]], [$owner, []],
+        ];
+        foreach ($cases as [$actor, $visible]) {
+            $this->assertOutputs($actor, $candidate, $visible, $globalTouch->id, $globalAudit->id);
+            if ($visible !== [$first->id, $second->id]) {
+                $hidden = in_array($first->id, $visible, true) ? $second : $first;
+                $this->actingAs($actor)->getJson('/api/candidates?vacancy_id='.$hidden->vacancy_id)
+                    ->assertOk()->assertJsonCount(0, 'data');
+            }
+        }
+        $this->actingAs($owner)->patchJson('/api/candidates/'.$candidate->id, ['full_name' => 'Synthetic edited candidate'])
+            ->assertOk()->assertJsonMissingPath('data.applications');
+        foreach ([$this->userWith(UserRole::Employee, [$north]), $this->userWith(UserRole::Viewer)] as $denied) {
+            foreach (['', '/timeline', '/history'] as $suffix) {
+                $this->actingAs($denied)->getJson('/api/candidates/'.$candidate->id.$suffix)->assertForbidden();
+            }
+            $this->actingAs($denied)->getJson('/api/candidates')->assertOk()->assertJsonCount(0, 'data');
+        }
+    }
+
+    /** @param list<int> $visible */
+    private function assertOutputs(User $actor, Candidate $candidate, array $visible, int $globalTouch, int $globalAudit): void
+    {
+        $this->actingAs($actor);
+        $url = '/api/candidates/'.$candidate->id;
+        foreach ([$this->getJson('/api/candidates')->assertOk()->json('data.0.applications'),
+            $this->getJson($url)->assertOk()->json('data.applications')] as $applications) {
+            $ids = array_column($applications, 'id');
+            sort($ids);
+            $expected = $visible;
+            sort($expected);
+            $this->assertSame($expected, $ids);
+        }
+        $timeline = $this->getJson($url.'/timeline')->assertOk()->assertJsonCount(count($visible) * 2 + 1, 'data')->json('data');
+        $globalSeen = false;
+        foreach ($timeline as $entry) {
+            if ($entry['type'] === 'stage_change') {
+                $this->assertContains($entry['stage_change']['application_id'], $visible);
+            } else {
+                $applicationId = $entry['touchpoint']['application_id'];
+                if ($applicationId !== null) {
+                    $this->assertContains($applicationId, $visible);
+                }
+                $globalSeen = $globalSeen || $entry['touchpoint']['id'] === $globalTouch;
+            }
+        }
+        $this->assertTrue($globalSeen);
+        $history = $this->getJson($url.'/history')->assertOk()->json('data');
+        $this->assertContains($globalAudit, array_column($history, 'id'));
+        foreach ($history as $entry) {
+            if ($entry['entity_type'] === 'application') {
+                $this->assertContains($entry['entity_id'], $visible);
+            }
+        }
+    }
+}

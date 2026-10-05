@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Http\Controllers;
 
 use App\Modules\Core\Http\Concerns\ResolvesActor;
-use App\Modules\Recruiting\Http\Requests\AssignableUsersRequest;
 use App\Modules\Recruiting\Http\Requests\AssignInterviewersRequest;
+use App\Modules\Recruiting\Http\Requests\AssignableUsersRequest;
 use App\Modules\Recruiting\Http\Requests\MoveApplicationRequest;
 use App\Modules\Recruiting\Http\Requests\StaleRequest;
 use App\Modules\Recruiting\Http\Resources\ApplicationResource;

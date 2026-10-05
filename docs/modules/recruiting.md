@@ -550,3 +550,15 @@ curl -i "https://<preview>/api/recruiting/stale?days=3"      # без сесси
 **Как проверить.** `php artisan test --filter=VacancyFormApiTest` (форма, 422, шаблоны, активность, публичная
 зарплата, экранирование, ИИ, права на шаблоны, проверка `vacancy-text`); фронт — `vacancy-form.spec.ts`,
 `careers.spec.ts`.
+
+### Видимость заявок общей карточки (PROD09)
+Доступ к кандидату (включая owner/created_by) не открывает заявки других филиалов. List и detail
+возвращают только заявки видимых филиалов, управляемых вакансий либо назначенного интервью.
+Один SQL application scope используется для вложенных заявок, application-фильтров списка,
+stage changes, касаний с application_id и application audit. Глобальные контакты/аудит кандидата
+и касания без application_id сохраняются. HR/admin видят всё; запрещённая карточка сохраняет 403.
+Ответы store/update/inbox create используют find без загрузки applications и не раскрывают вложенные заявки;
+bulk/import возвращают результаты операций, а не CandidateResource с вложенными данными.
+Совместимость с PR139: candidate screening_score агрегирует заявки отдельным SQL и должен также
+получить Scope перед совместным выпуском. Фильтрация nested applications сама не закрывает этот агрегат;
+combined regression должна проверить общую карточку с высокой оценкой скрытой заявки.
