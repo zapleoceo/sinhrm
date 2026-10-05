@@ -62,7 +62,7 @@
 | PROD-20 | Live AI usefulness/safety | Разрешённые синтетические задания и явные критерии полезности, отказа, стоимости/latency/human correction; no autonomous personnel decisions; провайдер проверен | EXTERNAL_PENDING · после10 и scope/data decisions |
 | PROD-21 | Выбранные messaging/telephony потоки | API/договор/права, реальный обезличенный payload, send/read/webhook/retry/disable, дедуп и источник; каждый неподключённый provider отмечен отдельно | EXTERNAL_PENDING · выбрать сервисы; no fabricated live proof |
 | PROD-22 | Clipper live calibration | Все заявленные5 площадок проверены на разрешённых страницах, extraction/dedup/auth/denial, ограничения документированы | EXTERNAL_PENDING · страницы работодателя; fixtures остаются synthetic |
-| PROD-23 | Первый сегмент/интервью/метрики пилота | Роли/организация/ценность/явные не-желания, baseline и критерии S1–S6, обезличенный протокол и пользовательская приёмка | OWNER_PENDING / EXTERNAL_PENDING · public reviews уже доступны, контакты и пилот ещё нет |
+| PROD-23 | Первый сегмент/интервью/метрики пилота | Роли/организация/ценность/явные не-желания, baseline и применимые к выбранному пилоту S-критерии, обезличенный протокол и пользовательская приёмка | OWNER_PENDING / EXTERNAL_PENDING · public reviews уже доступны, контакты и пилот ещё нет |
 
 ## Раунд 5 — подготовленные изменения и shipping
 

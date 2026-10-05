@@ -11,7 +11,7 @@
 ## Стан
 
 - 2026-10-05: phase planning/execution раунд1.
-- Сделано: refs/main/openPR сверены; создан [backlog](../product/production-backlog.md); ownership PROD-01/02 назначен SOL, Luna — независимая диагностика/backlog review.
-- Следующий шаг: закончить docs consistency → commit/draft PR → CI/Astra; продолжить PROD-03/08/15/17 по результатам первого раунда.
+- Сделано: refs/main/openPR сверены; создан [backlog](../product/production-backlog.md), docs/worklog guards прошли; docs draft PR147. Luna PASS для8496d2b, рекомендация сужения S-критериев учтена. SOL создал PR145 (PROD-02,10 checks SUCCESS) и146 (PROD-01, exact-head CI идёт). Luna подтвердила timezone scheduler bug и сохранение старых credentials после unblock; SOL начал отдельные PROD-03/08 ветки.
+- Следующий шаг: Astra локальный/GitHub exact diff145/146/147 → оставшиеся CI; продолжить самостоятельные PROD-09/15/17 и конкретизировать owner/external acceptance.
 - Блокеры: D1–D3 и внешние gates не разрешены автоматически; production release проводится по конкретному проверенному пакету.
 - Evidence: status audit2026-10-05, main3b4ac30, combined31bf076/CI37232005803. Тесты/код в этом docs task не изменены.
