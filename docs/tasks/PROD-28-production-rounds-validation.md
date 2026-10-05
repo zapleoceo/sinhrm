@@ -33,12 +33,13 @@ Atlassian KB/cloudId unavailable in this session; prior Rovo/Drive SinHRM search
 Current repo/source tasks/UNIFIED-TZ and exact GitHub source heads are authoritative. Query: SinHRM production rounds combined validation.
 
 ## Стан
-- Step: sources merged, focused checks pass, draft validation PR opened; update this checkpoint and use the resulting pushed SHA for the final combined CI and Astra review.
+- Step: diagnose failed combined CI and repair only the outdated application-visibility compatibility assertion plus snapshot ordering.
 - Worktree / branch / base: `D:/Projects/sinhrm-wt/production-rounds-validation`, `chore/validate-production-rounds`, `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab.
-- Current pushed head: 1403ca7ac898f50ee2123d7bd7bddc5678f70a4e. Draft PR #156: https://github.com/zapleoceo/sinhrm/pull/156 (label `DO NOT MERGE`).
-- Completed: all authorized source heads listed above combined; PR142/144 and active PROD-41 excluded. `git diff --check` passed; no unresolved merge entries/conflict markers; all 124 E2E snapshot JSON files parsed successfully.
-- Initial CI at 1403ca7 (run 37285042049): docs, extension, security, and worklog passed; api-docs, frontend, lint, synthetic-restore, tests, and ui-parity were pending at last check. This run predates this task-state checkpoint commit; final CI must report on the pushed checkpoint head.
-- Source evidence from parent: PR139 and PR153 source CI each green (10 checks); PR155 source CI green (10 checks) with source Astra PASS; PR147 docs CI was running when recorded. Combined Astra review pending.
-- Next: push this checkpoint update; use one final CI run on the resulting HEAD and capture its terminal result. Obtain independent combined Astra review of exact PR head.
-- Unexecuted gates: final combined CI, combined Astra review, live browser/provider/auth verification, preview/deploy/production proof. No shipping claim is made.
+- PR #156 remains draft and labeled `DO NOT MERGE`: https://github.com/zapleoceo/sinhrm/pull/156. Previous pushed head before repair: d69d7b959fbf1e95217ef6fdf836b9c2af1367d2.
+- CI evidence: run 37285204644 failed only one backend assertion in `AssistantReleaseGateTest` (1469 passed, 13302 assertions) and 12 mobile UI inventory comparisons. Backend log: `D:/Projects/_tmp/sinhrm/ci-37285204644-tests.log`; UI log: `D:/Projects/_tmp/sinhrm/ci-37285204644-ui-parity.log`.
+- Root cause / repair: the old assistant regression expected a Recruiter who can see the North application to receive a South application on the same candidate. PROD-09 correctly removes that row; the test now asserts North included and South absent in both normal API and assistant projection, and hidden-vacancy filtering returns an empty list. All 12 light/dark inventory diffs were compared: each has the same translated paginator controls, in different list positions. Six mobile snapshot interactive arrays are sorted with the shared `parseInventory()` comparator. Rendered light/dark screenshots were inspected; this snapshot-only correction does not change rendered UI.
+- Other CI: frontend, lint, api-docs, extension, docs, worklog, security, and synthetic-restore passed at d69d7b; the synthetic restore run 37285204611 is green. Source CI for PR139/153 and refreshed PR147 is green per parent evidence; PR155 source checks are green.
+- Documentation: `docs/modules/recruiting.md` already records the PROD-09 visibility contract; no module documentation change is needed for this regression-test/snapshot-order correction. New combined validation worklog fragment is added in this repair.
+- Next: commit/push the focused fix, run required full CI once at the new head, and complete independent combined Astra review. Do not merge, preview, or deploy.
+- Unexecuted: final combined CI and combined Astra review. No live browser/provider/auth/production proof is claimed.
 - Timestamp: 2026-10-05 Asia/Saigon.

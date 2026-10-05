@@ -1,60 +1,60 @@
 {
-  "path": "/admin/audit",
-  "state": null,
-  "headings": [
-    "Журнал дій"
-  ],
-  "landmarks": [
-    "banner \"\"",
-    "main \"\""
-  ],
-  "interactive": [
-    "button \"Наступна сторінка\"",
-    "button \"Попередня сторінка\" [disabled]",
-    "button \"Головне меню\"",
-    "button \"Дія\"",
-    "button \"Користувач\"",
-    "button \"Обʼєкт\"",
-    "button \"Поговорити зі Стіком\"",
-    "button \"Фільтр стовпця «Дія»\"",
-    "button \"Фільтр стовпця «Користувач»\"",
-    "button \"Фільтр стовпця «Обʼєкт»\"",
-    "button \"Фільтр стовпця «Час»\"",
-    "button \"Час\"",
-    "combobox \"На сторінці:\"",
-    "link \"Відгук #145\" -> /candidates/145",
-    "link \"Відгук #145\" -> /candidates/145",
-    "link \"Відгук #146\" -> /candidates/146",
-    "link \"Відгук #146\" -> /candidates/146",
-    "link \"Відгук #146\" -> /candidates/146",
-    "link \"Відгук #146\" -> /candidates/146",
-    "link \"Відгук #147\" -> /candidates/147",
-    "link \"Відгук #147\" -> /candidates/147",
-    "link \"Відгук #148\" -> /candidates/148",
-    "link \"Відгук #148\" -> /candidates/148",
-    "link \"Відгук #149\" -> /candidates/149",
-    "link \"Відгук #149\" -> /candidates/149",
-    "link \"Відгук #149\" -> /candidates/149",
-    "link \"Відгук #149\" -> /candidates/149",
-    "link \"Відгук #150\" -> /candidates/150",
-    "link \"Кандидат #146\" -> /candidates/146",
-    "link \"Кандидат #147\" -> /candidates/147",
-    "link \"Кандидат #148\" -> /candidates/148",
-    "link \"Кандидат #149\" -> /candidates/149",
-    "link \"Кандидат #150\" -> /candidates/150",
-    "link \"Огляд\" -> /"
-  ],
-  "columns": [
-    "Дія",
-    "Зміни",
-    "Користувач",
-    "Обʼєкт",
-    "Час"
-  ],
-  "counts": {
-    "cell": 100,
-    "img": 2,
-    "listitem": 95,
-    "row": 21
-  }
+ "path": "/admin/audit",
+ "state": null,
+ "headings": [
+  "Журнал дій"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\""
+ ],
+ "interactive": [
+  "button \"Головне меню\"",
+  "button \"Дія\"",
+  "button \"Користувач\"",
+  "button \"Наступна сторінка\"",
+  "button \"Обʼєкт\"",
+  "button \"Поговорити зі Стіком\"",
+  "button \"Попередня сторінка\" [disabled]",
+  "button \"Фільтр стовпця «Дія»\"",
+  "button \"Фільтр стовпця «Користувач»\"",
+  "button \"Фільтр стовпця «Обʼєкт»\"",
+  "button \"Фільтр стовпця «Час»\"",
+  "button \"Час\"",
+  "combobox \"На сторінці:\"",
+  "link \"Відгук #145\" -> /candidates/145",
+  "link \"Відгук #145\" -> /candidates/145",
+  "link \"Відгук #146\" -> /candidates/146",
+  "link \"Відгук #146\" -> /candidates/146",
+  "link \"Відгук #146\" -> /candidates/146",
+  "link \"Відгук #146\" -> /candidates/146",
+  "link \"Відгук #147\" -> /candidates/147",
+  "link \"Відгук #147\" -> /candidates/147",
+  "link \"Відгук #148\" -> /candidates/148",
+  "link \"Відгук #148\" -> /candidates/148",
+  "link \"Відгук #149\" -> /candidates/149",
+  "link \"Відгук #149\" -> /candidates/149",
+  "link \"Відгук #149\" -> /candidates/149",
+  "link \"Відгук #149\" -> /candidates/149",
+  "link \"Відгук #150\" -> /candidates/150",
+  "link \"Кандидат #146\" -> /candidates/146",
+  "link \"Кандидат #147\" -> /candidates/147",
+  "link \"Кандидат #148\" -> /candidates/148",
+  "link \"Кандидат #149\" -> /candidates/149",
+  "link \"Кандидат #150\" -> /candidates/150",
+  "link \"Огляд\" -> /"
+ ],
+ "columns": [
+  "Дія",
+  "Зміни",
+  "Користувач",
+  "Обʼєкт",
+  "Час"
+ ],
+ "counts": {
+  "cell": 100,
+  "img": 2,
+  "listitem": 95,
+  "row": 21
+ }
 }
