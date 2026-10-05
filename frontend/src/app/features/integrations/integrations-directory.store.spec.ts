@@ -8,14 +8,18 @@ import { IntegrationsDirectoryStore } from './integrations-directory.store';
 describe('IntegrationsDirectoryStore', () => {
   let statusRequest: Subject<DataEnvelope<EmployeeDirectoryStatus>>;
   let previewRequest: Subject<EmployeeDirectorySyntheticPreview>;
+  let refreshRequest: Subject<EmployeeDirectorySyntheticPreview>;
+  let previewCalls: number;
   let store: IntegrationsDirectoryStore;
 
   beforeEach(() => {
     statusRequest = new Subject<DataEnvelope<EmployeeDirectoryStatus>>();
     previewRequest = new Subject<EmployeeDirectorySyntheticPreview>();
+    refreshRequest = new Subject<EmployeeDirectorySyntheticPreview>();
+    previewCalls = 0;
     const api = {
       employeeDirectoryStatus: (): Observable<DataEnvelope<EmployeeDirectoryStatus>> => statusRequest,
-      employeeDirectorySyntheticPreview: (): Observable<EmployeeDirectorySyntheticPreview> => previewRequest,
+      employeeDirectorySyntheticPreview: (): Observable<EmployeeDirectorySyntheticPreview> => previewCalls++ === 0 ? previewRequest : refreshRequest,
     };
     TestBed.configureTestingModule({ providers: [IntegrationsDirectoryStore, { provide: IntegrationsService, useValue: api }] });
     store = TestBed.inject(IntegrationsDirectoryStore);
@@ -44,5 +48,21 @@ describe('IntegrationsDirectoryStore', () => {
     expect(store.statusError()).toBe(true);
     expect(store.previewError()).toBe(false);
     expect(store.preview()).toEqual(preview);
+  });
+
+  it('clears the previous preview when a refresh fails', () => {
+    const preview: EmployeeDirectoryPreview = {
+      status: 'preview_only', namespace: 'synthetic-demo', profiles: [], duplicate_count: 0, conflicts: [],
+    };
+    store.loadSyntheticPreview();
+    previewRequest.next({ data: preview, synthetic: true });
+    expect(store.preview()).toEqual(preview);
+
+    store.loadSyntheticPreview();
+    expect(store.preview()).toBeNull();
+    refreshRequest.error(new Error('preview refresh failed'));
+
+    expect(store.previewError()).toBe(true);
+    expect(store.preview()).toBeNull();
   });
 });

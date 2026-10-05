@@ -30,7 +30,7 @@ final class EmployeeDirectoryPreviewTest extends TestCase
 
     public function test_preview_collapses_identical_duplicates_and_is_deterministic(): void
     {
-        $preview = new EmployeeDirectoryPreview();
+        $preview = new EmployeeDirectoryPreview;
         $payload = $this->payload([
             $this->profile(),
             ['status_code' => 'active', 'position_key' => null, 'source_id' => 'profile-1', 'branch_key' => 'branch-a', 'display_name' => 'Example Person'],
@@ -47,14 +47,14 @@ final class EmployeeDirectoryPreviewTest extends TestCase
     public function test_numeric_source_ids_remain_opaque_strings(): void
     {
         $profile = [...$this->profile(), 'source_id' => '123'];
-        $result = (new EmployeeDirectoryPreview())->build($this->payload([$profile]), 'company-a');
+        $result = (new EmployeeDirectoryPreview)->build($this->payload([$profile]), 'company-a');
 
         self::assertSame('123', $result['profiles'][0]['source_id']);
     }
 
     public function test_conflicting_duplicate_ids_are_reported_without_a_link_plan_for_the_duplicate(): void
     {
-        $result = (new EmployeeDirectoryPreview())->build($this->payload([
+        $result = (new EmployeeDirectoryPreview)->build($this->payload([
             $this->profile(),
             [...$this->profile(), 'display_name' => 'Different Example'],
         ]), 'company-a');
@@ -68,7 +68,7 @@ final class EmployeeDirectoryPreviewTest extends TestCase
     {
         $firstVariant = $this->profile();
         $secondVariant = [...$firstVariant, 'display_name' => 'Other Example'];
-        $preview = new EmployeeDirectoryPreview();
+        $preview = new EmployeeDirectoryPreview;
         $forward = $preview->build($this->payload([$firstVariant, $secondVariant, $secondVariant]), 'company-a');
         $reverse = $preview->build($this->payload([$secondVariant, $secondVariant, $firstVariant]), 'company-a');
 
@@ -82,7 +82,7 @@ final class EmployeeDirectoryPreviewTest extends TestCase
     public function test_unknown_or_incomplete_snapshot_is_rejected(string $reason, array $payload): void
     {
         try {
-            (new EmployeeDirectoryPreview())->build($payload, 'company-a');
+            (new EmployeeDirectoryPreview)->build($payload, 'company-a');
             self::fail('Invalid snapshots must not yield a preview plan.');
         } catch (InvalidArgumentException $exception) {
             self::assertSame($reason, $exception->getMessage());

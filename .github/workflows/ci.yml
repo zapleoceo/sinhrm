@@ -40,7 +40,17 @@ jobs:
             lint-${{ hashFiles('backend/composer.lock') }}-${{ github.ref_name }}-
             lint-${{ hashFiles('backend/composer.lock') }}-
       - name: Pint (code style)
+        id: pint
         run: vendor/bin/pint --test --parallel --cache-file=/tmp/pint.cache
+      - name: TEMP diagnose Pint formatting
+        if: failure() && steps.pint.outcome == 'failure'
+        run: |
+          vendor/bin/pint app/Modules/Integrations/Services/EmployeeDirectoryPreview.php tests/Feature/Integrations/EmployeeDirectoryApiTest.php tests/Unit/Integrations/EmployeeDirectoryPreviewTest.php
+          git diff -- app/Modules/Integrations/Services/EmployeeDirectoryPreview.php tests/Feature/Integrations/EmployeeDirectoryApiTest.php tests/Unit/Integrations/EmployeeDirectoryPreviewTest.php > /tmp/prod41-pint.patch
+          cat /tmp/prod41-pint.patch
+      - uses: actions/upload-artifact@v7
+        if: failure() && steps.pint.outcome == 'failure'
+        with: { name: prod41-pint-diagnostic, path: /tmp/prod41-pint.patch, retention-days: 1 }
       - name: PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
