@@ -8,6 +8,11 @@
 Это не production backup и не проверка внешних файлов; [runbook](../guides/backup-restore.md) описывает отдельные
 DB/key/storage требования и незакрытые решения владельца по RPO/RTO, retention и доступу.
 
+Изоляцию пилота проверяет focused `ModuleAccessTest`: выключенный Workflows пропускает реальный ops tick
+и сохраняет due run/step/workflow tasks; после включения шаг исполняется и последовательный tick не создаёт вторую задачу.
+Это синтетический HTTP/DB test; [протокол пилота](../guides/pilot-acceptance.md) отдельно требует live login,
+реальные данные API/UI, mobile/keyboard, выбранные роли и независимые AI/provider controls.
+
 ## Как пользоваться
 Суперадмин и админ: меню → «Стан системи» (`/status`) показывает состояние API и его зависимостей (раньше это была
 стартовая страница; теперь стартовая — дашборд, [overview.md](overview.md)). Сама проверка `GET /api/health` открыта без входа.
