@@ -22,3 +22,8 @@ Implementation complete: local-midnight due dates with offsets before UTC conver
 Added deterministic regressions for early local day, daytime, spring/fall DST, ±1 offsets, UTC setting, input immutability and calendar date.
 PHP unavailable in PATH; local runtime suite not executed. Full CI required; no live evidence before release.
 Existing persisted step due_at snapshots are not rewritten. Next: draft PR CI and Astra review.
+
+### CI correction
+Astra logic review PASS reported by orchestrator. CI run 37273400730 lint blocked on ordered_imports in WorkflowRunsTest only.
+Moved WorkflowRunRepository import before Models; no behavior change. Local git diff --check passed; PHP/Pint unavailable locally.
+Next: CI on corrected head and Astra head verification; no deploy/merge.
