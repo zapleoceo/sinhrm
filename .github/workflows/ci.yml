@@ -151,7 +151,8 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
       - run: npx playwright install --with-deps --only-shell chromium
-      - run: npm run e2e -- --grep '^users$' --project=mobile-light
+      - run: npm run e2e -- --list --grep users --project=mobile-light
+      - run: npm run e2e -- --grep users --project=mobile-light
         env: { E2E_SCREENSHOTS: "1" }
       - uses: actions/upload-artifact@v7
         if: always()

@@ -21,6 +21,17 @@ export interface LayoutReport {
       display: string;
       position: string;
     }>;
+    documentOverflowRoots: Array<{
+      element: string;
+      left: number;
+      right: number;
+      width: number;
+      cssWidth: string;
+      minWidth: string;
+      overflowX: string;
+      display: string;
+      position: string;
+    }>;
   };
 }
 
@@ -94,6 +105,39 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
         position: style.position,
       });
     }
+    const documentOverflowRoots = Array.from(document.body.querySelectorAll('*'))
+      .flatMap((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.right <= window.innerWidth + TOL && rect.left >= -TOL) return [];
+        let contained = false;
+        for (let parent = el.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+          const parentRect = parent.getBoundingClientRect();
+          if (parentRect.right > window.innerWidth + TOL || parentRect.left < -TOL) {
+            contained = true; // Report the outermost escaping element, not all its descendants.
+            break;
+          }
+          const overflowX = getComputedStyle(parent).overflowX;
+          if (overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'hidden' || overflowX === 'clip') {
+            contained = true; // A scroll/clipping ancestor keeps this element from widening the document.
+            break;
+          }
+        }
+        if (contained) return [];
+        const style = getComputedStyle(el);
+        const classes = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 3) : [];
+        return [{
+          element: `${el.tagName.toLowerCase()}${classes.map((name) => `.${name}`).join('')}`,
+          left: Math.round(rect.left * 10) / 10,
+          right: Math.round(rect.right * 10) / 10,
+          width: Math.round(rect.width * 10) / 10,
+          cssWidth: style.width,
+          minWidth: style.minWidth,
+          overflowX: style.overflowX,
+          display: style.display,
+          position: style.position,
+        }];
+      })
+      .slice(0, 30);
     return {
       pageOverflow,
       clipped: [...new Set(clipped)].sort(),
@@ -102,6 +146,7 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
         documentClientWidth: doc.clientWidth,
         documentScrollWidth: doc.scrollWidth,
         tableAncestors,
+        documentOverflowRoots,
       },
     };
   });
