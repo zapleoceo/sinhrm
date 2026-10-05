@@ -19,9 +19,9 @@ const calendarDates: Record<AppLang, string[]> = {
   en: ['01/10/2026', '15/01/2026', '15/07/2026'],
 };
 const zones = [
-  { id: 'UTC', times: ['22:05', '12:05', '12:05'] },
-  { id: 'Europe/Kyiv', times: ['01:05', '14:05', '15:05'] },
-  { id: 'America/Los_Angeles', times: ['15:05', '04:05', '05:05'] },
+  { id: 'UTC', times: ['22:05', '12:05', '12:05'], offsets: [0, 0, 0] },
+  { id: 'Europe/Kyiv', times: ['01:05', '14:05', '15:05'], offsets: [-180, -120, -180] },
+  { id: 'America/Los_Angeles', times: ['15:05', '04:05', '05:05'], offsets: [420, 480, 420] },
 ];
 
 for (const zone of zones) {
@@ -65,7 +65,11 @@ for (const zone of zones) {
         await page.goto('/admin/integrations');
         await settle(page);
         await expect(page.locator('html')).toHaveAttribute('lang', lang);
-        expect(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe(zone.id);
+        // Chromium's ICU may expose the historical canonical alias Europe/Kiev for Europe/Kyiv.
+        const acceptedNames = zone.id === 'Europe/Kyiv' ? ['Europe/Kyiv', 'Europe/Kiev'] : [zone.id];
+        expect(acceptedNames).toContain(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone));
+        expect(await page.evaluate((values) => values.map((value) => new Date(value).getTimezoneOffset()), instants))
+          .toEqual(zone.offsets);
         const card = page.locator('app-integration-card').filter({ has: page.getByRole('heading', { name: 'Gmail', exact: true }) });
         await expect(card).toHaveCount(1);
         await card.locator('button[aria-expanded]').click();
