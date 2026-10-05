@@ -26,6 +26,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $google_id
  * @property string|null $avatar_url
  * @property UserStatus $status
+ * @property int $credential_version incremented on explicit block; never reset by unblock
  * @property string $locale
  * @property Carbon|null $last_login_at
  * @property int|null $invited_by
@@ -51,6 +52,7 @@ class User extends Authenticatable
         'status' => 'active',
         'locale' => 'uk',
         'safe_speak_handler' => false,
+        'credential_version' => 0,
     ];
 
     /** @var list<string>|null assigned global roles while the user "works as" one of them (null = not narrowed) */
@@ -136,6 +138,7 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'status' => UserStatus::class,
+            'credential_version' => 'integer',
             'safe_speak_handler' => 'boolean',
             'approval_emails' => 'boolean',
         ];

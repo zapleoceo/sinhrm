@@ -24,6 +24,19 @@ final class AuthServiceTest extends TestCase
         $this->repo = $this->createMock(UserRepository::class);
     }
 
+    public function test_session_grant_delegates_the_actor_and_callback_to_the_locked_repository(): void
+    {
+        $user = new User;
+        $called = false;
+        $grant = static function (User $current) use ($user, &$called): void {
+            $called = $current === $user;
+        };
+        $this->repo->expects($this->once())->method('grantSession')->with($user, $grant)
+            ->willReturnCallback(static fn (User $actor, callable $callback) => $callback($actor));
+        (new AuthService($this->repo, null))->grantSession($user, $grant);
+        $this->assertTrue($called);
+    }
+
     public function test_profile_normalizes_email(): void
     {
         $this->assertSame('a.b@example.com', $this->profile('  A.B@Example.COM ')->email);
