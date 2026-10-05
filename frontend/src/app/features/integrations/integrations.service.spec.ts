@@ -64,6 +64,25 @@ describe('IntegrationsService', () => {
     expect(ai.request.body).toEqual({ enabled: true });
     ai.flush({ data: { enabled: true } });
   });
+
+  it('reads the fail-closed employee-directory status and explicitly synthetic preview', () => {
+    let status: string | undefined;
+    service.employeeDirectoryStatus().subscribe((response) => (status = response.data.status));
+    http.expectOne({ method: 'GET', url: '/api/integrations/itstep-directory/status' }).flush({
+      data: { status: 'dependency_pending', missing_inputs: ['itstep_user_client_sdk'], scope_configured: false, writes_enabled: false },
+    });
+    expect(status).toBe('dependency_pending');
+
+    let isSynthetic = false;
+    service.employeeDirectorySyntheticPreview().subscribe((response) => (isSynthetic = response.synthetic));
+    const preview = http.expectOne({ method: 'GET', url: '/api/integrations/itstep-directory/synthetic-preview' });
+    expect(preview.request.method).toBe('GET');
+    preview.flush({
+      synthetic: true,
+      data: { status: 'preview_only', namespace: 'synthetic-demo', profiles: [], duplicate_count: 0, conflicts: [] },
+    });
+    expect(isSynthetic).toBe(true);
+  });
 });
 
 describe('buildUpdate', () => {

@@ -1,6 +1,6 @@
 {
  "path": "/admin/integrations",
- "state": null,
+ "state": "synthetic-directory-preview",
  "headings": [
   "AI",
   "AI Broker",
@@ -53,7 +53,6 @@
   "button \"Перевірити з'єднання\"",
   "button \"Перевірити з'єднання\"",
   "button \"Перевірити з'єднання\"",
-  "button \"Поговорити зі Стіком\"",
   "button \"Показати синтетичний приклад\"",
   "button \"Промпт\"",
   "button \"Промпт\"",
@@ -86,6 +85,6 @@
  "counts": {
   "article": 15,
   "img": 2,
-  "listitem": 11
+  "listitem": 14
  }
 }

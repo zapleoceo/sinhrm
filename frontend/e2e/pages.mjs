@@ -116,7 +116,11 @@ export const PAGES = [
   { id: 'assets', path: '/admin/assets' },
   { id: 'users', path: '/admin/users' },
   { id: 'modules', path: '/admin/modules' },
-  { id: 'integrations', path: '/admin/integrations' },
+  {
+    id: 'integrations',
+    path: '/admin/integrations',
+    states: [{ id: 'synthetic-directory-preview', steps: [{ click: { role: 'button', name: 'Показати синтетичний приклад' } }] }],
+  },
   { id: 'audit', path: '/admin/audit' },
   { id: 'errors', path: '/admin/errors' },
   { id: 'privacy', path: '/admin/privacy' },

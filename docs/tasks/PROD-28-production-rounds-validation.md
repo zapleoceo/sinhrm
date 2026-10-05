@@ -25,21 +25,24 @@
 | 153 | 7b05362519cbad202ac454edebc03fcb48369577 | yes |
 | 154 | 00682bda11d080b9e553b02b46069fe344d77ba5 | via squash commit 38d90ea in main |
 | 155 | c7e638e8805460ee8bf0cd5f8d0b78256111277d | yes, docs only |
+| 157 | f006c7261f2cebe3be44c73b739d4450b0f4a0cf | source CI green; merged locally |
 
-PR142/144 validation branches remain explicitly excluded. PR154 contributes only the rules commit already present in `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab. PROD-39/PR155 is documentation-only; active PROD-41 is excluded until reviewed.
+PR142/144 validation branches remain explicitly excluded. PR154 contributes only the rules commit already present in `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab. PROD-39/PR155 is documentation-only. PROD-41/PR157 is included as a source for combined validation; full CI run `37292425236` passed on exact head f006c72. PR158 head `9fd29dcb` is diagnostic-only and explicitly excluded; the owning writer is isolating and implementing the actual CSS fix.
 
 ## Контекст з KB
 Atlassian KB/cloudId unavailable in this session; prior Rovo/Drive SinHRM searches had no applicable results.
 Current repo/source tasks/UNIFIED-TZ and exact GitHub source heads are authoritative. Query: SinHRM production rounds combined validation.
 
 ## Стан
-- Step: diagnose failed combined CI and repair only the outdated application-visibility compatibility assertion plus snapshot ordering.
-- Worktree / branch / base: `D:/Projects/sinhrm-wt/production-rounds-validation`, `chore/validate-production-rounds`, `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab.
-- PR #156 remains draft and labeled `DO NOT MERGE`: https://github.com/zapleoceo/sinhrm/pull/156. Previous pushed head before repair: d69d7b959fbf1e95217ef6fdf836b9c2af1367d2.
-- CI evidence: run 37285204644 failed only one backend assertion in `AssistantReleaseGateTest` (1469 passed, 13302 assertions) and 12 mobile UI inventory comparisons. Backend log: `D:/Projects/_tmp/sinhrm/ci-37285204644-tests.log`; UI log: `D:/Projects/_tmp/sinhrm/ci-37285204644-ui-parity.log`.
-- Root cause / repair: the old assistant regression expected a Recruiter who can see the North application to receive a South application on the same candidate. PROD-09 correctly removes that row; the test now asserts North included and South absent in both normal API and assistant projection, and hidden-vacancy filtering returns an empty list. All 12 light/dark inventory diffs were compared: each has the same translated paginator controls, in different list positions. Six mobile snapshot interactive arrays are sorted with the shared `parseInventory()` comparator. Rendered light/dark screenshots were inspected; this snapshot-only correction does not change rendered UI.
-- Other CI: frontend, lint, api-docs, extension, docs, worklog, security, and synthetic-restore passed at d69d7b; the synthetic restore run 37285204611 is green. Source CI for PR139/153 and refreshed PR147 is green per parent evidence; PR155 source checks are green.
-- Documentation: `docs/modules/recruiting.md` already records the PROD-09 visibility contract; no module documentation change is needed for this regression-test/snapshot-order correction. New combined validation worklog fragment is added in this repair.
-- Next: commit/push the focused fix, run required full CI once at the new head, and complete independent combined Astra review. Do not merge, preview, or deploy.
-- Unexecuted: final combined CI and combined Astra review. No live browser/provider/auth/production proof is claimed.
-- Timestamp: 2026-10-05 Asia/Saigon.
+
+- Час: 2026-10-05 16:55 Asia/Saigon.
+- Scope: combined validation only; no merge to main, preview or deployment.
+- Worktree / branch / base: `D:/Projects/sinhrm-wt/production-rounds-validation` / `chore/validate-production-rounds` / `origin/main` `38d90eaada1c43363cd64c2f16d7ceaecb611dab`.
+- Prior combined baseline: PR156 exact head `d23b6b17723f2ef8680f3f668bf4cb35ee9868d0`, Astra-reviewed and green at its prior exact source set; prior CI run `37285204644` had focused assertion and inventory failures, repaired at d23. Do not treat that prior green/review as covering new PR157 source.
+- Current local merge: `MERGE_HEAD` `f006c7261f2cebe3be44c73b739d4450b0f4a0cf` from full PR157 history. All source files merged; one mobile integration inventory conflict resolved by retaining PR140 launcher action and PR157 synthetic-preview action. JSON parsing passes. Merge remains uncommitted and unpushed.
+- PR157 evidence: exact prior head `0726d2f05044e24f733ae68386cc75a98fd52193` had static Astra PASS and CI PHPStan failure at `EmployeeDirectoryPreviewTest.php:81` for missing iterable value type. Fix commit f006c72 annotates `array<string, mixed>`; fresh CI run `37292425236` passed on exact head f006c72. Astra final exact-head review passed on f006c72 (reviewer confirmed one-line PHPDoc-only delta); final combined Astra review is still required.
+- Combined checks so far: `git diff --check` and Python JSON parse for `frontend/e2e/__snapshots__/integrations.mobile.json` pass. No full suite or screenshot capture was run locally.
+- UI evidence gap: PR157 desktop/mobile light/dark screenshots were inspected on its prior head; PR140 launcher remains represented in the merged mobile inventory, but the combined rendered output still needs CI screenshot inspection. Do not claim mascot/launcher compatibility until those combined screenshots are inspected.
+- Documentation: source inventory includes PR157; PROD-41 state was consolidated to remove duplicate KB/next-step entries. Existing recruiting scope assertion and source worklog fragments remain intact.
+- Next: wait for the owning writer to provide the actual functional CSS fix SHA for PR158; keep diagnostic commits excluded. Then merge the final functional source, run combined CI, inspect shipping screenshots and complete independent Astra review. No merge/deploy.
+- Blockers: actual PR158 CSS fix from its owning writer, final combined CI, combined Astra review, and rendered combined screenshot inspection.
