@@ -26,7 +26,7 @@
 | 154 | 00682bda11d080b9e553b02b46069fe344d77ba5 | via squash commit 38d90ea in main |
 | 155 | c7e638e8805460ee8bf0cd5f8d0b78256111277d | yes, docs only |
 | 157 | f006c7261f2cebe3be44c73b739d4450b0f4a0cf | source CI green; merged locally |
-| 158 | bbca41419eadf825da16842ed8c3b27e3f918c88 | functional source included; CI pending |
+| 158 | ccb3f522706283f5a2ca3d1260227e027dd664f2 | corrected functional source included; source CI pending |
 
 PR142/144 validation branches remain explicitly excluded. PR154 contributes only the rules commit already present in `origin/main` 38d90eaada1c43363cd64c2f16d7ceaecb611dab. PROD-39/PR155 is documentation-only. PROD-41/PR157 is included as a source for combined validation; full CI run `37292425236` passed on exact head f006c72. PR158 functional head bbca41419eadf825da16842ed8c3b27e3f918c88 is included; source CI run `37294470282` is in progress and exact-head static Astra review passed.
 
@@ -36,14 +36,14 @@ Current repo/source tasks/UNIFIED-TZ and exact GitHub source heads are authorita
 
 ## Стан
 
-- Час: 2026-10-05 16:55 Asia/Saigon.
+- Час: 2026-10-05 17:35 Asia/Saigon.
 - Scope: combined validation only; no merge to main, preview or deployment.
 - Worktree / branch / base: `D:/Projects/sinhrm-wt/production-rounds-validation` / `chore/validate-production-rounds` / `origin/main` `38d90eaada1c43363cd64c2f16d7ceaecb611dab`.
 - Prior combined baseline: PR156 exact head `d23b6b17723f2ef8680f3f668bf4cb35ee9868d0`, Astra-reviewed and green at its prior exact source set; prior CI run `37285204644` had focused assertion and inventory failures, repaired at d23. Do not treat that prior green/review as covering new PR157 source.
-- Current local source chain: PR157 full-history merge commit bd264ecd7054395831a4b7729dea276e029c1343; PR158 full-history merge in progress at MERGE_HEAD bbca41419eadf825da16842ed8c3b27e3f918c88. PR157 mobile integration inventory retains PR140 launcher action plus PR157 synthetic-preview action. PR158 Users docs conflict resolved by keeping the mobile layout behavior and existing credential-safety note. JSON parsing and diff checks pass; PR158 merge is not committed or pushed yet.
+- Current local source chain: PR157 full-history merge commit bd264ecd7054395831a4b7729dea276e029c1343; PR158 full-history merge in progress at exact head ccb3f522706283f5a2ca3d1260227e027dd664f2. PR157 mobile integration inventory retains PR140 launcher action plus PR157 synthetic-preview action. Resolved Users docs retain the mobile containment guidance and existing credential-safety note. PR158 source CI `37297027767` is pending; earlier source head bbca414 failed UI parity and is superseded.
 - PR157 evidence: exact prior head `0726d2f05044e24f733ae68386cc75a98fd52193` had static Astra PASS and CI PHPStan failure at `EmployeeDirectoryPreviewTest.php:81` for missing iterable value type. Fix commit f006c72 annotates `array<string, mixed>`; fresh CI run `37292425236` passed on exact head f006c72. Astra final exact-head review passed on f006c72 (reviewer confirmed one-line PHPDoc-only delta); final combined Astra review is still required.
-- Combined checks so far: `git diff --check` and Python JSON parse for `frontend/e2e/__snapshots__/integrations.mobile.json` pass. No full suite or screenshot capture was run locally.
-- UI evidence gap: PR157 desktop/mobile light/dark screenshots were inspected on its prior head; PR140 launcher remains represented in the merged mobile inventory, but the combined rendered output still needs CI screenshot inspection. Do not claim mascot/launcher compatibility until those combined screenshots are inspected.
+- Combined checks so far: production build passed with existing Angular bundle/style budget warnings. Targeted compiled E2E `npm run e2e -- -g 'integrations|users' --project=desktop-light --project=mobile-light --project=desktop-dark --project=mobile-dark` passed 28 cases (Playwright report `.out/results/.last-run.json`: `failedTests: []`) against the combined bundle, without an application DB. This includes all four integrations inventory variants and Users mobile 390/375 control checks. `git diff --check` passed.
+- Local rendered evidence from that targeted run: `frontend/e2e/.out/screens/{desktop-light,mobile-light,desktop-dark,mobile-dark}/integrations*.png` and `users*.png`; integrations golden changes came from the compiled app and include four disabled Google actions without href, with both mobile launcher and synthetic-preview actions retained. Final combined CI screenshot inspection is still required for shipping evidence.
 - Documentation: source inventory includes PR157; PROD-41 state was consolidated to remove duplicate KB/next-step entries. Existing recruiting scope assertion and source worklog fragments remain intact.
-- Next: finish lightweight conflict and JSON guards, commit and push the PR158 merge as draft PR156, then complete full combined CI, inspect rendered shipping screenshots, and independent Astra review. No merge/deploy.
-- Blockers: PR158 source CI and combined CI, combined Astra review, and rendered combined screenshot inspection.
+- Next: finish lightweight merge/source checks, commit and push the PR158 combined merge as draft PR156, then complete full CI, inspect final combined shipping screenshots, and obtain independent Astra review. No merge/deploy.
+- Blockers: PR158 source CI, combined CI, exact-head Astra review, and rendered combined screenshots.
