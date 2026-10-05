@@ -6,10 +6,11 @@
 - Підтверджено CI run `37289104847`, head `35658e8850bb3814b5e1b9f9498fcb9a1ac6975d` (усі 10 job успішні): viewport/client width `390 px`, document scroll width `1008 px`; таблиця має rect `x=13..1148 px`, ширину `1135 px`.
 - Підтверджено CI run `37290930368`, head `ba744a3475dd099c085ba336daeb69f267ffe204`: `.table-scroll` має `364 px` ширини та `scrollWidth=1135/clientWidth=364/overflow-x:auto`; `.panel` має `366 px`, `scrollWidth=364/clientWidth=364/overflow-x:hidden`; оболонка й `body` мають `390 px` і `scrollWidth=390`, тоді як `html.scrollWidth=1008`.
 - Це виключає таблицю та її обгортку як прямий витік ширини в документ. Скриншот `mobile-light/users.png` показує розширений full-page canvas, але не визначає джерело. Фіксовані `.role`/`.branches` не оголошуються причиною.
+- Вузький job у CI run `37291880875` пройшов тест discovery і виконав Users mobile-light. Два зовнішні кандидати: закрита fixed sidebar `x=-321..0` та fixed `.mascot-stage` `x=180..420`; rect-и цих оболонок не пояснюють `html.scrollWidth=1008`.
 - Контекст з KB: інструменти бази знань у цій сесії недоступні; використано `docs/guides/ui-parity.md`, тестові виміри DOM у CI та код Users.
 - Підтверджено: окремий diagnostic job на `ba744a3475dd099c085ba336daeb69f267ffe204` завершився `No tests found` через надто точний grep; повний UI parity job у тому самому CI завершився успішно й дав виміри ланцюжка вище.
-- Наступна дія: виправлений вузький job спершу перевіряє test discovery через Playwright `--list`, а потім вимірює зовнішні DOM-елементи поза scroll/clip-контейнерами.
-- Блокери: елемент поза ланцюжком таблиці ще не виміряний; CSS не змінено.
+- Наступна дія: виміряти дочірні вузли й псевдоелементи цих fixed roots, щоб знайти джерело повного 1008 px кореня.
+- Блокери: ширший descendant або інший кореневий overflow ще не встановлено; CSS не змінено.
 
 ## План і критерії приймання
 1. Для Users на 390 px записати у CI-лог геометрію документа та предків таблиці; лише селектори, класи, розміри й computed layout, без тексту рядків/PII.

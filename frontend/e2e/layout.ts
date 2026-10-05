@@ -20,6 +20,35 @@ export interface LayoutReport {
       overflowX: string;
       display: string;
       position: string;
+      scrollWidth: number;
+      clientWidth: number;
+      before: {
+        contentPresent: boolean;
+        width: string;
+        left: string;
+        right: string;
+        visibility: string;
+        overflowX: string;
+        position: string;
+      };
+      after: {
+        contentPresent: boolean;
+        width: string;
+        left: string;
+        right: string;
+        visibility: string;
+        overflowX: string;
+        position: string;
+      };
+      descendants: Array<{
+        element: string;
+        left: number;
+        right: number;
+        width: number;
+        visibility: string;
+        overflowX: string;
+        position: string;
+      }>;
     }>;
     documentOverflowRoots: Array<{
       element: string;
@@ -125,6 +154,39 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
         if (contained) return [];
         const style = getComputedStyle(el);
         const classes = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 3) : [];
+        const pseudo = (which: '::before' | '::after') => {
+          const pseudoStyle = getComputedStyle(el, which);
+          return {
+            contentPresent: pseudoStyle.content !== 'none' && pseudoStyle.content !== 'normal',
+            width: pseudoStyle.width,
+            left: pseudoStyle.left,
+            right: pseudoStyle.right,
+            visibility: pseudoStyle.visibility,
+            overflowX: pseudoStyle.overflowX,
+            position: pseudoStyle.position,
+          };
+        };
+        const descendants = Array.from(el.querySelectorAll('*'))
+          .map((descendant) => {
+            const descendantRect = descendant.getBoundingClientRect();
+            if (descendantRect.right <= window.innerWidth + TOL && descendantRect.left >= -TOL) return null;
+            const descendantStyle = getComputedStyle(descendant);
+            const descendantClasses = typeof descendant.className === 'string'
+              ? descendant.className.trim().split(/\s+/).filter(Boolean).slice(0, 3)
+              : [];
+            return {
+              element: `${descendant.tagName.toLowerCase()}${descendantClasses.map((name) => `.${name}`).join('')}`,
+              left: Math.round(descendantRect.left * 10) / 10,
+              right: Math.round(descendantRect.right * 10) / 10,
+              width: Math.round(descendantRect.width * 10) / 10,
+              visibility: descendantStyle.visibility,
+              overflowX: descendantStyle.overflowX,
+              position: descendantStyle.position,
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null)
+          .sort((a, b) => b.right - a.right)
+          .slice(0, 10);
         return [{
           element: `${el.tagName.toLowerCase()}${classes.map((name) => `.${name}`).join('')}`,
           left: Math.round(rect.left * 10) / 10,
@@ -135,6 +197,11 @@ export async function layoutOf(page: Page): Promise<LayoutReport> {
           overflowX: style.overflowX,
           display: style.display,
           position: style.position,
+          scrollWidth: el.scrollWidth,
+          clientWidth: el.clientWidth,
+          before: pseudo('::before'),
+          after: pseudo('::after'),
+          descendants,
         }];
       })
       .slice(0, 30);
