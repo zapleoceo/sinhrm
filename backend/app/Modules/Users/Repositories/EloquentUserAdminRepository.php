@@ -15,6 +15,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use LogicException;
 
 final class EloquentUserAdminRepository implements UserAdminRepository
 {
@@ -74,6 +75,26 @@ final class EloquentUserAdminRepository implements UserAdminRepository
         $user->forceFill(['status' => $status])->save();
     }
 
+    public function lockAndRefresh(User $user): void
+    {
+        $fresh = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+        $user->setRawAttributes($fresh->getAttributes(), true);
+        $user->unsetRelations();
+    }
+
+    public function revokeCredentials(User $user): void
+    {
+        // A separate session connection cannot participate in the users transaction: fail closed.
+        $sessionConnection = config('session.connection') ?? DB::getDefaultConnection();
+        if ($sessionConnection !== $user->getConnection()->getName()) {
+            throw new LogicException('User credential revocation requires sessions on the users database connection.');
+        }
+
+        $user->getConnection()->table((string) config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
+        $user->tokens()->delete();
+        $user->forceFill([$user->getRememberTokenName() => null])->save();
+    }
+
     public function setSafeSpeakHandler(User $user, bool $handler): void
     {
         $user->forceFill(['safe_speak_handler' => $handler])->save();
@@ -94,7 +115,7 @@ final class EloquentUserAdminRepository implements UserAdminRepository
     {
         return DB::transaction(function () use ($callback): mixed {
             // Serialize concurrent changes of superadmins (last-superadmin rule).
-            User::query()->role(UserRole::Superadmin->value)->lockForUpdate()->pluck('id');
+            User::query()->role(UserRole::Superadmin->value)->orderBy('id')->lockForUpdate()->pluck('id');
 
             return $callback();
         });

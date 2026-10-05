@@ -63,6 +63,7 @@ final class UserAdminService
         }
 
         return $this->users->transaction(function () use ($actor, $target, $roles, $status, $branchIds, $safeSpeakHandler): User {
+            $this->users->lockAndRefresh($target);
             $previous = $this->users->rolesOf($target);
             $wasSuperadmin = in_array(UserRole::Superadmin, $previous, true);
             if ($roles !== null && ! $wasSuperadmin && in_array(UserRole::Superadmin, $roles, true)) {
@@ -83,6 +84,9 @@ final class UserAdminService
             }
             if ($status !== null) {
                 $this->users->setStatus($target, $status);
+                if ($status === UserStatus::Blocked) {
+                    $this->users->revokeCredentials($target);
+                }
             }
             if ($branchIds !== null) {
                 $this->users->syncBranches($target, $branchIds);

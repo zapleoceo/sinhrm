@@ -49,6 +49,15 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
 сохранении из интерфейса снимается. Как филиалы ограничивают данные — `AccessibleBranches` в [directory.md](directory.md).
 
 ### Правила (`Services\UserAdminService`)
+- Явная блокировка (`status=blocked`) в одной транзакции со статусом удаляет **все** DB-сессии пользователя,
+  персональные токены всех имён (клиппер, MCP и другие) и обнуляет remember-token. Других пользователей это не затрагивает.
+  Повторная блокировка снова отзывает credentials; разблокировка меняет статус, но не возвращает старые сессии,
+  токены или remember-cookie — нужен новый вход и новый токен. Запрет менять себя и последнего активного суперадмина сохранён.
+  Перед проверками target перечитывается под row lock, а superadmin rows блокируются в порядке id; конкурентные
+  изменения статуса используют актуальное состояние. Ошибка отзыва откатывает также статус и уже удалённые credentials.
+  Поддерживается проектный database session driver на той же connection, что users; отдельная session connection
+  приводит к ошибке и откату, поскольку атомарность между БД не гарантируется. Другие session drivers не покрыты этим отзывом.
+  Уже автентифицированный запрос может завершиться после блокировки; отмена выполняющихся запросов не реализована.
 - Приглашение: e-mail приводится к нижнему регистру, проверка занятости без учёта регистра, `invited_by` = кто пригласил.
 - Аудит: `users.invited` / `users.updated` в лог — только id и роль/статус, без e-mail и имён.
 - Смена ролей пишет в журнал «Зміна ролі» с именами ролей «было → стало» (`"recruiter"` → `"hr_manager, recruiter"`).
@@ -107,6 +116,11 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ## Как проверить
+`tests/Feature/Users/UserCredentialRevocationTest.php`: реальный DB session-cookie и bearer/remember-cookie действуют
+до блокировки, после блокировки и разблокировки больше не работают; вторая сессия, PAT разных имён,
+другой пользователь, rollback частично выполненного отзыва, повторный block, stale target и запрет self-block.
+`tests/Unit/Users/UserAdminServiceTest.php`: отзыв только при явном block, исключение отзыва выходит из транзакции,
+last-superadmin guard отказывает до изменения credentials.
 Тесты: `tests/Feature/Users/UsersSortFilterApiTest.php` (сортировка по колонкам и `nulls last`, фильтры с датами,
 `"0"`, строковые `perPage`/`page`, 422 на чужую колонку/направление/дату, 403 другой роли), `frontend/.../users.page.spec.ts`
 (адрес → запрос, клик → `sort/dir` и страница 1, отмена устаревшего запроса),
