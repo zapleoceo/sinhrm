@@ -91,7 +91,7 @@ final class EloquentUserAdminRepository implements UserAdminRepository
         }
 
         $user->getConnection()->table((string) config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
-        $user->tokens()->delete();
+        $user->tokens()->getQuery()->delete();
         $user->forceFill([$user->getRememberTokenName() => null])->save();
     }
 

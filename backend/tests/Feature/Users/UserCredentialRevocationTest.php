@@ -9,6 +9,7 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Users\Exceptions\UserAdminException;
 use App\Modules\Users\Services\UserAdminService;
+use Illuminate\Auth\SessionGuard;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
@@ -49,9 +50,9 @@ final class UserCredentialRevocationTest extends TestCase
         $this->actingAs($this->admin)->patchJson('/api/users/'.$target->id, ['status' => 'blocked'])
             ->assertOk()->assertJsonPath('data.status', 'blocked');
         $this->assertSame(0, DB::table('sessions')->where('user_id', $target->id)->count());
-        $this->assertSame(0, $target->tokens()->count());
+        $this->assertSame(0, $target->tokens()->getQuery()->count());
         $this->assertDatabaseHas('sessions', ['id' => str_repeat('c', 40), 'user_id' => $other->id]);
-        $this->assertSame(1, $other->tokens()->count());
+        $this->assertSame(1, $other->tokens()->getQuery()->count());
 
         foreach ($tokens as $token) {
             $this->bearer($token)->assertUnauthorized();
@@ -77,15 +78,15 @@ final class UserCredentialRevocationTest extends TestCase
         $target->save();
         $other->setRememberToken('synthetic-other-remember');
         $other->save();
-        $name = Auth::guard('web')->getRecallerName();
+        $name = $this->sessionGuard()->getRecallerName();
         $cookie = $target->id.'|'.$target->getRememberToken().'|'.$target->getAuthPassword();
 
         $this->remembered($name, $cookie)->assertOk()->assertJsonPath('id', $target->id);
         $this->resetClient();
 
         $this->actingAs($this->admin)->patchJson('/api/users/'.$target->id, ['status' => 'blocked'])->assertOk();
-        $this->assertNull($target->fresh()?->getRememberToken());
-        $this->assertSame('synthetic-other-remember', $other->fresh()?->getRememberToken());
+        $this->assertNull($target->refresh()->getRememberToken());
+        $this->assertSame('synthetic-other-remember', $other->refresh()->getRememberToken());
         $this->remembered($name, $cookie)->assertUnauthorized();
 
         $this->resetClient();
@@ -113,10 +114,10 @@ final class UserCredentialRevocationTest extends TestCase
             $this->assertSame('synthetic-revocation-failure', $error->getMessage());
         }
 
-        $this->assertSame(UserStatus::Active, $target->fresh()?->status);
+        $this->assertSame(UserStatus::Active, $target->refresh()->status);
         $this->assertDatabaseHas('sessions', ['id' => str_repeat('d', 40), 'user_id' => $target->id]);
-        $this->assertSame(1, $target->tokens()->count());
-        $this->assertSame('synthetic-original-remember', $target->fresh()?->getRememberToken());
+        $this->assertSame(1, $target->tokens()->getQuery()->count());
+        $this->assertSame('synthetic-original-remember', $target->refresh()->getRememberToken());
     }
 
     public function test_repeated_block_is_safe_and_revokes_credentials_added_since_the_first_block(): void
@@ -128,7 +129,7 @@ final class UserCredentialRevocationTest extends TestCase
         $this->actingAs($this->admin)->patchJson('/api/users/'.$target->id, ['status' => 'blocked'])->assertOk();
         $this->actingAs($this->admin)->patchJson('/api/users/'.$target->id, ['status' => 'blocked'])->assertOk();
         $this->assertSame(0, DB::table('sessions')->where('user_id', $target->id)->count());
-        $this->assertSame(0, $target->tokens()->count());
+        $this->assertSame(0, $target->tokens()->getQuery()->count());
     }
 
     public function test_a_separate_session_database_fails_closed_without_changing_status_or_credentials(): void
@@ -143,9 +144,9 @@ final class UserCredentialRevocationTest extends TestCase
         } catch (LogicException $error) {
             $this->assertStringContainsString('sessions on the users database connection', $error->getMessage());
         }
-        $this->assertSame(UserStatus::Active, $target->fresh()?->status);
+        $this->assertSame(UserStatus::Active, $target->refresh()->status);
         $this->assertDatabaseHas('sessions', ['id' => str_repeat('g', 40), 'user_id' => $target->id]);
-        $this->assertSame(1, $target->tokens()->count());
+        $this->assertSame(1, $target->tokens()->getQuery()->count());
     }
 
     public function test_last_superadmin_guard_uses_current_locked_status_instead_of_a_stale_target(): void
@@ -166,15 +167,23 @@ final class UserCredentialRevocationTest extends TestCase
         $this->actingAs($this->admin)->patchJson('/api/users/'.$this->admin->id, ['status' => 'blocked'])
             ->assertUnprocessable()->assertJsonPath('code', 'self_change_forbidden');
         $this->assertDatabaseHas('sessions', ['id' => str_repeat('f', 40), 'user_id' => $this->admin->id]);
-        $this->assertSame(1, $this->admin->tokens()->count());
-        $this->assertSame(UserStatus::Active, $this->admin->fresh()?->status);
+        $this->assertSame(1, $this->admin->tokens()->getQuery()->count());
+        $this->assertSame(UserStatus::Active, $this->admin->refresh()->status);
+    }
+
+    private function sessionGuard(): SessionGuard
+    {
+        $guard = Auth::guard('web');
+        $this->assertInstanceOf(SessionGuard::class, $guard);
+
+        return $guard;
     }
 
     private function sessionFor(User $user, string $id): void
     {
         DB::table('sessions')->insert([
             'id' => $id, 'user_id' => $user->id, 'last_activity' => time(),
-            'payload' => base64_encode(serialize([Auth::guard('web')->getName() => $user->id, '_token' => 'synthetic-csrf'])),
+            'payload' => base64_encode(serialize([$this->sessionGuard()->getName() => $user->id, '_token' => 'synthetic-csrf'])),
         ]);
     }
 
