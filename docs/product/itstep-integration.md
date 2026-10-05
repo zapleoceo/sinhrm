@@ -52,4 +52,6 @@
 
 PROD-39 должен проверить и описать текущие версии PHP/Node, сборку frontend/backend, старт web/API, migrations, worker/scheduler, persistent uploads, health/readiness и список обязательных переменных без значений. Проверить Vercel-specific entrypoint/routing/runtime assumptions и подготовить независимый способ запуска там, где это действительно нужно.
 
-Здесь ещё нет утверждённой runtime инструкции или готового adapter: этот документ фиксирует доказанный исходный контракт, требования и последовательность работ. Production настройку выполняют DevOps после передачи проверенного приложения.
+Пакет приложения подготовлен в отдельном [PR155](https://github.com/zapleoceo/sinhrm/pull/155), commit `c7e638e`: инструкции runtime/build/start/migrations/queue/scheduler/storage/health прошли CI и независимую проверку Astra. Это готовность пакета к передаче; развёртывание на Itstep ещё не выполнялось. Production настройку выполняют DevOps.
+
+Подготовка employee directory находится в отдельном [PR157](https://github.com/zapleoceo/sinhrm/pull/157), commit `f006c72`: typed gateway, проверка полного нормализованного снимка, read-only план дубликатов/конфликтов и отдельный синтетический preview прошли CI и независимую проверку Astra. Production gateway явно сообщает об отсутствующем подключении; сетевых вызовов и записи сотрудников/прав нет. Доступ к сервису, его response/namespace/auth contract и согласованная mapping остаются в PROD-40–42. Владелец предоставит данные позже.
