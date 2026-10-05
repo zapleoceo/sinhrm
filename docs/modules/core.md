@@ -248,3 +248,16 @@ Vercel обрезает длинные сообщения, и текст оши�
 ## safeStorage.remove (2026-10-25)
 `core/storage/safe-storage.ts` умеет удалять ключ (`remove`), тоже без исключений. Нужно форме вакансии: черновик
 формы хранится в браузере и стирается после сохранения.
+
+## SHA сборки Web и API
+Deploy генерирует `backend/build.json` и `frontend/public/build.json` из `git rev-parse HEAD`
+после checkout `workflow_run.head_sha`, до сборки. SHA событий `github.sha` и переменные Vercel не используются:
+в workflow_run они могут относиться к main, а preview собирается из другой ревизии.
+API `GET /api/health` возвращает полный SHA в существующем поле `version`; `ok`, `checks` и HTTP 200/503 сохранены.
+Если метаданных нет либо SHA некорректен, возвращается `dev`; APP_VERSION не подтверждает происхождение сборки.
+Web `GET /build.json` отдаёт только `{sha}` как статический asset с `Cache-Control: no-store`.
+SHA Web и API сверяют отдельно: production gate может обновить только один проект, поэтому они законно различаются.
+Generated файлы игнорируются git; новых обязательных env нет. Ручной обход Deploy без stamping не доказывает SHA.
+Проверка: `node --test scripts/stamp-build.test.mjs`, backend `HealthTest`, `BuildVersionTest`.
+После разрешённого deploy сравнить `/build.json` и `/api/health` с HEAD конкретного успешного Deploy checkout.
+До этого runtime provenance не считается подтверждённым.

@@ -81,6 +81,8 @@ jobs:
         with: { ref: "${{ github.event.workflow_run.head_sha }}" }
       - uses: actions/setup-node@v7
         with: { node-version: 24 }
+      - name: Stamp immutable Web and API build SHA from checkout
+        run: node scripts/stamp-build.mjs
       - uses: shivammathur/setup-php@v2
         with: { php-version: "8.4", extensions: "intl, sodium" }
       # Pinned CLI (was @latest; 61.0.0 in the last green deploy). Bump deliberately, not on every run.
