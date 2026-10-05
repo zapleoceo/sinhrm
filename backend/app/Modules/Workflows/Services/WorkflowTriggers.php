@@ -48,7 +48,7 @@ final readonly class WorkflowTriggers
         if ($templates->isEmpty()) {
             return 0;
         }
-        $today = $now->copy()->startOfDay();
+        $today = UserTime::today($now);
         $started = 0;
         foreach ($this->employees->working() as $employee) {
             foreach ($templates as $template) {

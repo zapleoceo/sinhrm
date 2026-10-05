@@ -14,6 +14,7 @@ use App\Modules\Workflows\Contracts\StepExecutor;
 use App\Modules\Workflows\DTO\StepContext;
 use App\Modules\Workflows\DTO\StepOutcome;
 use App\Modules\Workflows\Enums\StepAction;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -56,7 +57,9 @@ final readonly class AddCalendarEventExecutor implements StepExecutor
         [$hour, $minute] = array_map('intval', explode(':', $context->step->string('time') ?? self::DEFAULT_TIME));
         $meeting = new MeetingData(
             title: $context->step->string('title') ?? $context->step->title,
-            start: $context->runStep->due_at->copy()->setTime($hour, $minute),
+            // Preserve the configured clock's app-timezone contract and the date-only step day.
+            start: Carbon::parse($context->run->anchor_date->toDateString())
+                ->addDays($context->step->offsetDays)->setTime($hour, $minute),
             durationMinutes: $context->step->int('duration_minutes') ?? self::DEFAULT_MINUTES,
             type: $context->step->bool('online') ? MeetingData::TYPE_ONLINE : MeetingData::TYPE_BRANCH,
             inviteCandidate: false,
