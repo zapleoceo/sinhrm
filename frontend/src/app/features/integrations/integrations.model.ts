@@ -52,6 +52,35 @@ export interface AiPolicy {
   enabled: boolean;
 }
 
+export interface EmployeeDirectoryStatus {
+  status: 'dependency_pending' | 'ready_for_preview';
+  missing_inputs: string[];
+  scope_configured: boolean;
+  writes_enabled: false;
+}
+
+export interface EmployeeDirectoryPreview {
+  status: 'preview_only' | 'conflicts_found';
+  namespace: string;
+  profiles: Array<{
+    source_id: string;
+    link_action: 'manual_identity_review';
+    mapping_state: 'unconfirmed';
+    mapping_conflicts: string[];
+    display_name: string;
+    branch_key: string;
+    position_key: string;
+    status_code: string;
+  }>;
+  duplicate_count: number;
+  conflicts: Array<{ source_id: string | null; code: string }>;
+}
+
+export interface EmployeeDirectorySyntheticPreview {
+  data: EmployeeDirectoryPreview;
+  synthetic: true;
+}
+
 export interface IntegrationsList {
   data: Integration[];
   ai_policy: AiPolicy;

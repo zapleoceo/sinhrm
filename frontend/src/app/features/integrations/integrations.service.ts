@@ -9,6 +9,8 @@ import {
   IntegrationField,
   IntegrationLog,
   IntegrationsList,
+  EmployeeDirectoryStatus,
+  EmployeeDirectorySyntheticPreview,
   ManualStatus,
   UpdateIntegration,
 } from './integrations.model';
@@ -44,6 +46,14 @@ export class IntegrationsService {
 
   setAiPolicy(enabled: boolean): Observable<AiPolicy> {
     return this.http.put<DataEnvelope<AiPolicy>>(`${API}/ai-policy`, { enabled }).pipe(unwrapData());
+  }
+
+  employeeDirectoryStatus(): Observable<DataEnvelope<EmployeeDirectoryStatus>> {
+    return this.http.get<DataEnvelope<EmployeeDirectoryStatus>>(`${API}/itstep-directory/status`);
+  }
+
+  employeeDirectorySyntheticPreview(): Observable<EmployeeDirectorySyntheticPreview> {
+    return this.http.get<EmployeeDirectorySyntheticPreview>(`${API}/itstep-directory/synthetic-preview`);
   }
 }
 
