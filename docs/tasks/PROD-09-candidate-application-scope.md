@@ -11,9 +11,9 @@ Rovo SinHRM queries returned HTTP502; KB unavailable. Planned query: candidate m
 
 ## Стан
 - Час: 2026-10-05 Asia/Saigon.
-- Step: screening boundary committed and pushed; exact-head CI pending. Branch fix/candidate-application-scope, base origin/main 3b4ac30.
+- Step: correcting screening test fixture and adding hidden-pending poll regression after exact-head CI surfaced a failure. Branch fix/candidate-application-scope, base origin/main 3b4ac30.
 - Evidence: list/show/timeline/history application queries unrestricted. find() loads city/owner/channel only, so store/update/inbox replies omit applications safely.
-- Next: inspect exact-head PR153 CI, independent review, then coordinate combined PR139 compatibility work before merge.
+- Next: rerun exact-head PR153 CI, independent review, then coordinate combined PR139 compatibility work before merge.
 - Blockers: PHP absent PATH; KB HTTP502 nonblocking. No local server/full suite. SOL writer authorized.
 
 - Implementation: shared typed ApplicationVisibility SQL helper; list eager loading and application filters, show through repository, actor scoped timeline and audit. CandidateResource store/update/inbox omit applications; no application counts on base main. Bulk/import readshape audit completed.
@@ -22,3 +22,4 @@ Rovo SinHRM queries returned HTTP502; KB unavailable. Planned query: candidate m
 
 - Screening boundary: GET latest screenings is scoped before polling/serialization; manual POST requires visible application and existing candidate edit right. Prompt materials use the selected application and global candidate touches. Stable prompt text/version/provider/cache configuration unchanged; no live AI/cache evidence. Role matrix covers private screening rationale and hidden start denial.
 - Validation: `git diff --check` and `node scripts/worklog-build.mjs --print` passed. PHP is unavailable locally, so targeted PHPUnit was not run; the full backend suite is delegated to CI. Earlier CI on commit `5c2d8c7` passed all jobs, including backend; it does not include this screening boundary.
+- CI `37280378724`: all jobs except backend and dependent aggregate passed; backend PHPUnit reported `CandidateApplicationScopeTest` line 54 because the synthetic global email omitted `direction=in`. Added that fixture value without weakening the assertion. Also adding a hidden pending screening/request regression asserting no provider poll and no status change.

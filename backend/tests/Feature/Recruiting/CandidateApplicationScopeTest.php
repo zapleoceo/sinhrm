@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Recruiting;
 
 use App\Models\User;
+use App\Modules\Ai\Contracts\AiProvider;
+use App\Modules\Ai\Models\AiRequest;
 use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
@@ -38,7 +40,7 @@ final class CandidateApplicationScopeTest extends TestCase
                 'action' => 'updated', 'changes' => ['stage' => ['from' => 'synthetic old', 'to' => 'synthetic new']]]);
         }
         $globalTouch = Touchpoint::query()->create(['candidate_id' => $candidate->id, 'application_id' => null,
-            'channel' => 'email', 'occurred_at' => now(), 'body' => 'Synthetic global contact']);
+            'channel' => 'email', 'direction' => 'in', 'occurred_at' => now(), 'body' => 'Synthetic global contact']);
         $globalAudit = AuditEntry::query()->create(['entity_type' => 'candidate', 'entity_id' => $candidate->id,
             'action' => 'updated', 'changes' => ['name' => ['from' => 'synthetic old', 'to' => 'synthetic new']]]);
         $owner = $this->userWith(UserRole::Recruiter);
@@ -76,6 +78,37 @@ final class CandidateApplicationScopeTest extends TestCase
             }
             $this->actingAs($denied)->getJson('/api/candidates')->assertOk()->assertJsonCount(0, 'data');
         }
+    }
+
+    public function test_hidden_pending_screening_is_not_polled_or_returned(): void
+    {
+        $north = Branch::factory()->create();
+        $south = Branch::factory()->create();
+        $first = $this->applied($this->vacancyIn($north), ['full_name' => 'Synthetic shared candidate']);
+        $candidate = Candidate::query()->findOrFail($first->candidate_id);
+        $hidden = app(ApplicationService::class)->apply(null, $candidate, $this->vacancyIn($south));
+        $request = AiRequest::query()->create([
+            'purpose' => 'candidate_screening', 'subject_type' => 'screening',
+            'provider' => 'ai_broker', 'capability' => 'chat:fast', 'job_id' => 'synthetic-hidden-job',
+            'status' => 'pending', 'prompt_version' => 'screening.v4',
+        ]);
+        $screening = CandidateScreening::query()->create([
+            'candidate_id' => $candidate->id, 'application_id' => $hidden->id, 'vacancy_id' => $hidden->vacancy_id,
+            'status' => CandidateScreening::PENDING, 'trigger' => 'manual', 'prompt_version' => 'screening.v4',
+            'ai_request_id' => $request->id,
+        ]);
+        $request->subject_id = $screening->id;
+        $request->save();
+        $provider = \Mockery::mock(AiProvider::class);
+        $provider->shouldNotReceive('poll');
+        $this->app->instance(AiProvider::class, $provider);
+        $actor = $this->userWith(UserRole::Recruiter, [$north]);
+
+        $this->actingAs($actor)->getJson('/api/candidates/'.$candidate->id.'/screenings')
+            ->assertOk()->assertJsonCount(0, 'data');
+
+        $this->assertSame(CandidateScreening::PENDING, $screening->fresh()->status);
+        $this->assertSame('pending', $request->fresh()->status->value);
     }
 
     /** @param list<int> $visible */
