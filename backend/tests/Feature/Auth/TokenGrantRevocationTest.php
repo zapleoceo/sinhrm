@@ -57,4 +57,22 @@ final class TokenGrantRevocationTest extends TestCase
         $this->assertNotSame($old, $new);
         $this->assertSame(1, PersonalAccessToken::query()->whereMorphedTo('tokenable', $target)->count());
     }
+
+    public function test_a_stale_actor_cannot_issue_a_token_after_block_then_unblock(): void
+    {
+        $admin = User::factory()->withRole(UserRole::Superadmin)->create();
+        $target = User::factory()->withRole(UserRole::Viewer)->create();
+        $stale = User::query()->findOrFail($target->id);
+        app(UserAdminService::class)->update($admin, $target, null, UserStatus::Blocked);
+        app(UserAdminService::class)->update($admin, $target, null, UserStatus::Active);
+        $freshToken = app(PersonalTokens::class)->issue($target->refresh(), new TokenKind('mcp', 'synthetic-ability', 1, 'synthetic_token'))->plainText;
+        try {
+            app(PersonalTokens::class)->issue($stale, new TokenKind('mcp', 'synthetic-ability', 1, 'synthetic_token'));
+            $this->fail('Captured credentials were revoked even though the user is active again');
+        } catch (AuthorizationException $error) {
+            $this->assertSame('credentials_revoked', $error->getMessage());
+        }
+        $this->assertSame(1, PersonalAccessToken::query()->whereMorphedTo('tokenable', $target)->count());
+        $this->assertNotNull($freshToken);
+    }
 }

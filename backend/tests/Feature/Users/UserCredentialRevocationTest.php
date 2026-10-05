@@ -7,6 +7,8 @@ namespace Tests\Feature\Users;
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
+use App\Modules\Auth\Services\AuthService;
+use App\Modules\Auth\Support\CredentialSession;
 use App\Modules\Users\Exceptions\UserAdminException;
 use App\Modules\Users\Services\UserAdminService;
 use Illuminate\Auth\SessionGuard;
@@ -172,6 +174,31 @@ final class UserCredentialRevocationTest extends TestCase
         $this->assertSame(UserStatus::Active, $this->admin->refresh()->status);
     }
 
+    public function test_a_session_granted_before_block_cannot_be_resurrected_by_a_late_database_write(): void
+    {
+        $target = User::factory()->withRole(UserRole::Viewer)->create();
+        $captured = null;
+        app(AuthService::class)->grantSession($target, static function (User $current) use (&$captured): void {
+            $captured = $current->credential_version;
+        });
+        $this->assertSame(0, $captured);
+        app(UserAdminService::class)->update($this->admin, $target, null, UserStatus::Blocked);
+        $this->sessionFor($target, str_repeat('h', 40), capturedVersion: $captured);
+        $this->browser(str_repeat('h', 40))->assertForbidden()->assertJsonPath('message', 'blocked');
+        app(UserAdminService::class)->update($this->admin, $target, null, UserStatus::Active);
+        // Simulate middleware persisting the already-granted session after block AND unblock committed.
+        $this->sessionFor($target, str_repeat('i', 40), capturedVersion: $captured);
+        $this->browser(str_repeat('i', 40))->assertUnauthorized()->assertJsonPath('message', 'credentials_revoked');
+        $this->assertSame(1, $target->refresh()->credential_version);
+    }
+
+    public function test_legacy_durable_sessions_without_a_generation_stamp_require_a_new_login(): void
+    {
+        $target = User::factory()->withRole(UserRole::Viewer)->create();
+        $this->sessionFor($target, str_repeat('j', 40), legacy: true);
+        $this->browser(str_repeat('j', 40))->assertUnauthorized()->assertJsonPath('message', 'credentials_revoked');
+    }
+
     private function sessionGuard(): SessionGuard
     {
         $guard = Auth::guard('web');
@@ -180,11 +207,15 @@ final class UserCredentialRevocationTest extends TestCase
         return $guard;
     }
 
-    private function sessionFor(User $user, string $id): void
+    private function sessionFor(User $user, string $id, ?int $capturedVersion = null, bool $legacy = false): void
     {
+        $payload = [$this->sessionGuard()->getName() => $user->id, '_token' => 'synthetic-csrf'];
+        if (! $legacy) {
+            $payload[CredentialSession::VERSION_KEY] = $capturedVersion ?? $user->credential_version;
+        }
         DB::table('sessions')->insert([
             'id' => $id, 'user_id' => $user->id, 'last_activity' => time(),
-            'payload' => base64_encode(serialize([$this->sessionGuard()->getName() => $user->id, '_token' => 'synthetic-csrf'])),
+            'payload' => base64_encode(json_encode($payload, JSON_THROW_ON_ERROR)),
         ]);
     }
 

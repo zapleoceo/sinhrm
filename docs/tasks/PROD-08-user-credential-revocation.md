@@ -13,12 +13,10 @@
 
 ## Стан
 - Час: 2026-10-05, Asia/Saigon.
-- Крок: реалізація та regression tests готові; branch `fix/user-block-credential-revocation`, база `origin/main` `3b4ac30`.
-- Виконано: repository lockAndRefresh/revokeCredentials, стабільний порядок superadmin row locks; status і revoke під спільною transaction, separate session DB fail-closed. Unit делегування/повторний block/error і 7 feature regression scenarios; Users docs/worklog оновлено. Employee/Auth code не змінювалися.
-- Перевірки: git diff --check пройшов. PHP у PATH відсутній; локально phpunit/Pint/PHPStan не запускалися, середовище не встановлювалося. Повні перевірки та тести виконує CI.
-- Наступна дія: commit/push, draft PR/attach; root перевіряє точний SHA CI та організовує Luna/Astra рев'ю перед будь-яким release.
-- Доставка: draft PR [#149](https://github.com/zapleoceo/sinhrm/pull/149) attached до Codex; початковий code SHA `2401dc2110ef7d2bad10465c9b22641ea619b3c7`, CI [37273832745](https://github.com/zapleoceo/sinhrm/actions/runs/37273832745).
-- CI correction: Pint пройшов; PHPStan виявив Larastan relation delete/count typing, StatefullGuard API typing у tests і nullsafe після refresh. Виклики переведено на constrained relation builder, session guard тип перевірено assertion, persisted user перевіряється через refresh. Root перевіряє новий точний PR head CI; тести поки не підтверджені.
-- Astra P1 correction: реальний Auth PAT grant тепер під transaction блокує user row і перечитує persisted active status, а stale actor після block отримує 403 blocked без нового токена. Додані 2 Auth feature scenarios через справжню DI construction path. Larastan HasAbilities relation typing замінено на typed PersonalAccessToken query з whereMorphedTo, без suppressions.
-- Статично виявлено adjacent OAuth/session grant race: handleGoogle status check перед login/remember, остаточне збереження DB session у middleware після callback. Це залишковий ризик, PAT fix його не закриває; root має окремо вирішити gate/наступний крок, без твердження про live exploit. Candidate scope PROD09 поки тільки worktree, без коду.
-- Межі: тільки DB sessions у тій самій DB connection; не обіцяємо all-drivers. Запити, автентифіковані до block, не скасовуються. Employee semantics не змінюються. Без локального server/full suite, merge/deploy/preview/live OAuth. SOL/Luna/Astra дозволені власником.
+- Крок: PAT і durable web-session grant race виправлені у draft PR149; очікується CI точного head та Astra review.
+- Виконано: атомарні status/revoke DB sessions/all PAT/remember-token; target lock і last-active-superadmin guard; credential_version increment на block, serialized fresh-active/version Auth grants; durable session stamp і legacy-session invalidation. Unblock credentials не повертає; Employee semantics незмінні.
+- Регресії: second session/multiple PAT/remember/unrelated user/rollback/repeated block/guards; stale actor після unblock не створює і не замінює PAT; late session write і legacy session відхиляються; новий explicit Google login після unblock дозволений. DB session fixtures відповідають JSON serialization проекту.
+- Перевірки: PHP відсутній у PATH; phpunit/Pint/PHPStan та migration up/down локально не запускалися. CI виконає full suite/forward migration; down не підтверджено. git diff --check пройшов.
+- Наступна дія: commit/push PR149, root перевіряє CI та незалежне рев'ю; потім PR146 fixture translation, лише після цього PROD09.
+- Межі: database sessions на спільній connection, не all drivers; вже виконувані запити не скасовуються. Migration перед code release; legacy durable sessions вимагають нового login. Без local server/full suite/merge/deploy/preview/live OAuth.
+- KB: Rovo HTTP502 не блокує авторизовану роботу. SOL writer дозволений власником.

@@ -93,7 +93,10 @@ final class EloquentUserAdminRepository implements UserAdminRepository
 
         $user->getConnection()->table((string) config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
         PersonalAccessToken::query()->whereMorphedTo('tokenable', $user)->delete();
-        $user->forceFill([$user->getRememberTokenName() => null])->save();
+        $user->forceFill([
+            $user->getRememberTokenName() => null,
+            'credential_version' => $user->credential_version + 1,
+        ])->save();
     }
 
     public function setSafeSpeakHandler(User $user, bool $handler): void

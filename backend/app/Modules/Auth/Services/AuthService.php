@@ -51,6 +51,12 @@ final class AuthService
         return $this->users->updateLocale($user, $locale);
     }
 
+    /** @param callable(User): void $grant */
+    public function grantSession(User $user, callable $grant): void
+    {
+        $this->users->grantSession($user, $grant);
+    }
+
     public function changeApprovalEmails(User $user, bool $on): User
     {
         return $this->users->updateApprovalEmails($user, $on);

@@ -83,15 +83,21 @@ Enum `Enums\UserStatus`: `active` | `blocked`.
 Заблокированный пользователь с живой сессией на следующем запросе получает 403 `{"message":"blocked"}`
 и разлогинивается (`Http\Middleware\EnsureUserIsActive`).
 
-Выдача PAT в `SanctumPersonalTokenRepository::create` перечитывает пользователя под `FOR UPDATE` в транзакции:
-если запрос был авторизован до административной блокировки, но выдача возобновилась после неё, статус из памяти
-не позволяет обойти блокировку — новый токен не создаётся, ответ 403 `blocked`. Этот user-row lock общий с
-блокировкой в Users: токен, выданный до block, удаляется block; выдача после block отклоняется. Проверка:
-`tests/Feature/Auth/TokenGrantRevocationTest.php` через настоящий `PersonalTokens` и DI repository, без подмены grant.
-Разблокировка допускает новую выдачу, но не восстанавливает отозванные токены.
-Это не отменяет уже выполняющиеся запросы. Отдельный остаточный риск: OAuth callback проверяет статус до
-`login(remember: true)`, а session middleware сохраняет DB-сессию позже; гонка такого уже начатого callback
-с block этим PAT-lock не закрывается. Полной гарантии отзыва in-flight session grants нет.
+PAT и Google login блокируют user row и проверяют свежий active status и захваченную
+`credential_version`. Block увеличивает версию; unblock её не сбрасывает. Старый actor после
+block не получает PAT (403 blocked), после block/unblock — 403 credentials_revoked.
+Замена PAT выполняется после проверок в той же транзакции: stale grant не удаляет новый токен.
+Google grant со старой версией отклоняется как oauth_failed.
+
+Google login создаёт remember-token и сохраняет захваченную версию в web session под user lock.
+Поздняя DB-запись старой сессии после block/unblock не восстанавливает доступ: middleware
+отклоняет durable web credential со старым/отсутствующим stamp (401 credentials_revoked).
+Обычный запрос не обновляет stamp. Валидный remember-cookie является новым grant с версией
+загруженного пользователя; старый cookie отозван обнулением remember-token.
+Миграция 2026_10_09_180000_add_user_credential_version нужна перед выпуском кода.
+Legacy durable sessions без stamp требуют нового Google login. Новый вход после unblock разрешён.
+Выполняющиеся запросы не отменяются. Feature regressions используют настоящие DI repositories:
+TokenGrantRevocationTest, GoogleCallbackTest, UserCredentialRevocationTest.
 
 ### «Працювати як» (активная роль)
 Простыми словами: если у аккаунта **несколько** глобальных ролей, в меню пользователя (аватар внизу слева) можно

@@ -3,3 +3,5 @@ date: 2026-10-05
 area: users
 ---
 Блокировка пользователя отзывает его DB-сессии, все персональные токены и remember-cookie; разблокировка не возвращает старый доступ. Статус и отзыв атомарны; выдача нового PAT повторно проверяет active под lock, ограничения суперадмина сохранены. Подробнее: [Пользователи](modules/users.md), [Auth](modules/auth.md).
+
+Auth grant race correction: persisted credential generation increments on block, serialized grants reject stale actors, durable session stamps reject late writes after unblock and invalidate legacy sessions. Regression fixtures use project JSON serialization. PHP unavailable locally; exact-head CI/review pending.

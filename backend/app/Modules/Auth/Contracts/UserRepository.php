@@ -23,6 +23,9 @@ interface UserRepository
     /** Stores google_id, avatar and last_login_at. */
     public function recordGoogleLogin(User $user, GoogleProfile $profile): User;
 
+    /** @param callable(User): void $grant fresh active user locked with the captured credential version */
+    public function grantSession(User $user, callable $grant): void;
+
     public function updateLocale(User $user, AppLocale $locale): User;
 
     public function updateApprovalEmails(User $user, bool $on): User;

@@ -22,6 +22,11 @@ final class SanctumPersonalTokenRepository implements PersonalTokenRepository
             if (! $current->isActive()) {
                 throw new AuthorizationException('blocked');
             }
+            if ($current->credential_version !== $user->credential_version) {
+                throw new AuthorizationException('credentials_revoked');
+            }
+
+            $this->deleteAll($current, $name);
 
             return $current->createToken($name, $abilities, $expiresAt);
         });
