@@ -153,3 +153,10 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 Ключ модуля `hiring-requests`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
 
 Крок стає активним → окрім задачі, лист погоджувачу; фінальне рішення (погоджено/відхилено) → лист заявнику (Core UserNotifier).
+
+## Сквозная API-приёмка найма
+`HiringApiAcceptanceTest` проходит существующий configurable approval → auto-vacancy через HTTP,
+затем создаёт кандидатов, заявки и меняет этапы до найма/отказа реальными Recruiting endpoint.
+Проверяет progress заявки и точные Recruiting/Reports aggregates после этих HTTP изменений.
+Это дополняет отдельные route/service tests, где наймы создавались fixture/direct DB update.
+Sequential repeat/conflict проверки не доказывают конкуренцию или exactly-once; production pilot scope согласуется отдельно.
