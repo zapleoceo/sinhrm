@@ -85,6 +85,7 @@ final readonly class CalendarService
             'ends_on' => $r->ends_on->toDateString(),
             'half_day' => $r->half_day->value,
             'status' => $r->status->value,
+            'handover_to' => $r->handoverTo === null ? null : ['id' => $r->handoverTo->id, 'full_name' => $r->handoverTo->full_name],
         ];
     }
 }

@@ -42,6 +42,7 @@ final class LeaveRequestResource extends JsonResource
             'half_day' => $this->half_day->value,
             'days' => $this->daysValue(),
             'comment' => $this->comment,
+            'handover_to' => $this->handoverTo === null ? null : ['id' => $this->handoverTo->id, 'full_name' => $this->handoverTo->full_name],
             'status' => $this->status->value,
             'balance_override' => $this->balance_override,
             'approver' => $this->approver === null ? null : ['id' => $this->approver->id, 'name' => $this->approver->name],

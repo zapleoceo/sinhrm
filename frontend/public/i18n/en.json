@@ -683,7 +683,7 @@
     "daysCount": "{{n}} working days",
     "my": { "title": "My time off", "subtitle": "Balances, requests and their status" },
     "balance": { "available": "days available", "details": "balance {{balance}} · pending {{pending}} · used this year {{used}}", "usedUnlimited": "days used this year (no limit)" },
-    "fields": { "type": "Leave type", "from": "From", "to": "To", "halfDay": "Half day", "comment": "Comment", "override": "Allow a negative balance (admin)" },
+    "fields": { "type": "Leave type", "from": "From", "to": "To", "halfDay": "Half day", "comment": "Comment", "override": "Allow a negative balance (admin)", "handover": "Hand over work to", "handoverHint": "Covering: {{name}}" },
     "halfDay": { "none": "Full days", "start": "First day is half", "end": "Last day is half" },
     "preview": { "available": "available: {{n}}" },
     "status": { "pending": "Pending", "approved": "Approved", "rejected": "Rejected", "cancelled": "Cancelled" },
@@ -692,7 +692,7 @@
     "calendar": { "title": "Team calendar", "subtitle": "Who is absent this month (grey: weekends, amber: holidays, hatched: pending)", "prev": "Previous", "next": "Next", "empty": "Nobody is absent this month" },
     "approvals": { "title": "Approvals", "subtitle": "Requests of your people waiting for a decision", "leave": "Leave requests: {{n}}", "changes": "Profile changes: {{n}}", "none": "Nothing to approve" },
     "settings": { "title": "Time off settings", "subtitle": "Leave types, policies per branch and public holidays", "types": "Leave types", "policies": "Policies", "holidays": "Holidays", "name": "Name", "code": "Code", "color": "Color", "paid": "paid", "unpaid": "unpaid", "tracked": "with balance", "unlimited": "no limit", "withApproval": "needs approval", "autoApproved": "approved automatically", "active": "Active", "add": "Add", "defaultPolicy": "Company default", "perYear": "{{n}} days a year", "carryAll": "unused days carry over", "carryMax": "carry over up to {{n}}", "annualDays": "Days a year", "accrual": "Accrual", "carryOver": "Carry over max", "allBranches": "All branches", "date": "Date", "delete": "Delete", "noHolidays": "No holidays this year" },
-    "errors": { "insufficient_balance": "Not enough days on the balance", "overlap": "Overlaps another request", "no_working_days": "No working days in this range", "range_too_long": "The range is too long", "inactive_type": "This leave type is switched off", "invalid_status": "The request has already been decided", "forbidden": "Not allowed", "no_employee": "Your account is not linked to an employee record yet", "validation": "Check the fields" }
+    "errors": { "insufficient_balance": "Not enough days on the balance", "overlap": "Overlaps another request", "no_working_days": "No working days in this range", "range_too_long": "The range is too long", "inactive_type": "This leave type is switched off", "invalid_status": "The request has already been decided", "forbidden": "Not allowed", "no_employee": "Your account is not linked to an employee record yet", "validation": "Check the fields", "invalid_handover": "This colleague cannot be chosen: pick a working employee other than yourself" }
   },
   "tasks": {
     "title": "My tasks",
@@ -703,7 +703,7 @@
     "dueToday": "Today",
     "dueOverdue": "Overdue",
     "showDone": "Show completed",
-    "sources": { "recruiting": "Recruiting", "workflows": "Workflows", "documents": "Documents", "pulse": "Pulse", "desk": "Helpdesk", "hiring": "Hiring requests", "time": "Timesheet" }
+    "sources": { "recruiting": "Recruiting", "workflows": "Workflows", "documents": "Documents", "pulse": "Pulse", "desk": "Helpdesk", "hiring": "Hiring requests", "time": "Timesheet", "timeoff": "Time off" }
   },
   "workflows": {
     "templates": { "title": "Workflows", "subtitle": "Onboarding, offboarding and other process templates: steps, due dates, owners.", "create": "Create", "delete": "Delete template", "empty": "No templates yet", "confirmDelete": "Delete template “{{name}}”?" },

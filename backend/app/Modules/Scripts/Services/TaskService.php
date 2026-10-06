@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Core\Support\UserTime;
 use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Scripts\Contracts\TaskRepository;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\DTO\TaskFilter;
 use App\Modules\Scripts\Enums\TaskType;
@@ -21,7 +22,7 @@ use Illuminate\Support\Carbon;
  * The unified task list: recruiter follow-ups (Recruiting scope) plus workflow and document tasks of employees
  * (assigned to a person). Listing, marking done/undone, creating tasks for other modules exactly once.
  */
-final readonly class TaskService
+final readonly class TaskService implements TaskScheduler
 {
     public const int LIMIT = 200;
 

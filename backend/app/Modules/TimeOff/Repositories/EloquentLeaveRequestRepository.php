@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentLeaveRequestRepository implements LeaveRequestRepository
 {
-    private const array RELATIONS = ['employee', 'leaveType', 'approver'];
+    private const array RELATIONS = ['employee', 'leaveType', 'approver', 'handoverTo'];
 
     private const array BLOCKING = [LeaveRequestStatus::Pending->value, LeaveRequestStatus::Approved->value];
 
@@ -71,7 +71,7 @@ final class EloquentLeaveRequestRepository implements LeaveRequestRepository
 
     public function inRange(?array $employeeIds, Carbon $from, Carbon $to, array $statuses, ?int $branchId = null): Collection
     {
-        return LeaveRequest::query()->with(['employee', 'leaveType'])
+        return LeaveRequest::query()->with(['employee', 'leaveType', 'handoverTo'])
             ->when($employeeIds !== null, fn (Builder $q) => $q->whereIn('employee_id', $employeeIds ?? []))
             ->when($branchId, fn (Builder $q, int $id) => $q->whereHas('employee', fn (Builder $e) => $e->where('branch_id', $id)))
             ->whereIn('status', array_map(static fn (LeaveRequestStatus $s): string => $s->value, $statuses))

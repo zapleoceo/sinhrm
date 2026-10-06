@@ -10,18 +10,20 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Subject, catchError, debounceTime, of, switchMap } from 'rxjs';
 import { fromIsoDate, toIsoDate } from '../../../core/date/iso-date';
+import { PersonPicker } from '../../people/picker/person-picker';
 import { estimateDays } from '../timeoff.dates';
 import { HALF_DAYS, HalfDay, LeavePreview, LeaveRequest, LeaveType, NewLeaveRequest } from '../timeoff.model';
 import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
 
 /**
- * New leave request: type, date range (native date inputs), half day, comment. The number of working days comes
+ * New leave request: type, date range (native date inputs), half day, optional handover colleague (person picker),
+ * comment. The number of working days comes
  * from the server preview (/api/timeoff/requests/preview: weekends, holidays of the employee's branch, balance);
  * a local estimate is shown until it arrives.
  */
 @Component({
   selector: 'app-leave-request-form',
-  imports: [ReactiveFormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
+  imports: [ReactiveFormsModule, MatButtonModule, MatCheckboxModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, MatSelectModule, PersonPicker, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" class="form">
@@ -52,7 +54,8 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
           }
         </mat-select>
       </mat-form-field>
-      <mat-form-field class="full">
+      <app-person-picker class="half" formControlName="handover_to_employee_id" label="timeoff.fields.handover" scope="employees" />
+      <mat-form-field class="half">
         <mat-label>{{ 'timeoff.fields.comment' | transloco }}</mat-label>
         <input matInput formControlName="comment" maxlength="2000" />
       </mat-form-field>
@@ -90,6 +93,7 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
   styles: `
     .form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 1rem; align-items: start; }
     .full { grid-column: 1 / -1; }
+    .half { grid-column: span 2; }
     .preview { margin: 0 0 0.5rem; }
     .warn { color: var(--app-warning); }
     .error { color: var(--app-danger); margin: 0; }
@@ -120,6 +124,8 @@ export class LeaveRequestForm implements OnInit {
     half_day: ['none' as HalfDay],
     comment: [''],
     override_balance: [false],
+    /** Optional colleague who takes over the work (person picker, scope employees). */
+    handover_to_employee_id: [null as number | null],
   });
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
   protected readonly estimate = computed(() => {
@@ -162,7 +168,7 @@ export class LeaveRequestForm implements OnInit {
     this.api.create(body).subscribe({
       next: (created) => {
         this.saving.set(false);
-        this.form.patchValue({ comment: '', override_balance: false });
+        this.form.patchValue({ comment: '', override_balance: false, handover_to_employee_id: null });
         this.created.emit(created);
       },
       error: (e: unknown) => {
@@ -187,6 +193,7 @@ export class LeaveRequestForm implements OnInit {
       comment: v.comment.trim() || null,
       ...(this.employeeId() !== undefined ? { employee_id: this.employeeId() } : {}),
       ...(v.override_balance ? { override_balance: true } : {}),
+      ...(v.handover_to_employee_id !== null ? { handover_to_employee_id: v.handover_to_employee_id } : {}),
     };
   }
 }

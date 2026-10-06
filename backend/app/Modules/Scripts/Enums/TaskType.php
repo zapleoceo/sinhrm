@@ -23,6 +23,8 @@ enum TaskType: string
     case HiringApproval = 'hiring_approval';
     /** "Fill in / submit your timesheet for the week" for the employee (Time, job time.reminders). */
     case TimesheetReminder = 'time_reminder';
+    /** "Cover for a colleague during their approved absence" for the chosen handover colleague (TimeOff). */
+    case LeaveHandover = 'leave_handover';
 
     /** Source group of the "Мої задачі" filter. */
     public function source(): TaskSource
@@ -34,6 +36,7 @@ enum TaskType: string
             self::DeskSla => TaskSource::Desk,
             self::HiringApproval => TaskSource::Hiring,
             self::TimesheetReminder => TaskSource::Time,
+            self::LeaveHandover => TaskSource::TimeOff,
             self::Followup, self::Manual, self::NewApplicant => TaskSource::Recruiting,
         };
     }
