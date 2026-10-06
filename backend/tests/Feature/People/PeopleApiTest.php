@@ -84,7 +84,7 @@ final class PeopleApiTest extends TestCase
         $this->actingAs($this->login(UserRole::Admin))->getJson($url)->assertOk()
             ->assertJsonPath('data.birth_date', '1990-05-01')
             ->assertJsonPath('data.hired_at', '2025-01-15')
-            ->assertJsonPath('data.access', ['job' => true, 'pii' => true, 'decide' => true, 'manage' => true, 'self' => false]);
+            ->assertJsonPath('data.access', ['job' => true, 'pii' => true, 'decide' => true, 'manage' => true, 'self' => false, 'terminate' => true]);
         // self: PII and job, cannot decide own requests
         $this->actingAs($this->userOf($worker))->getJson($url)->assertOk()
             ->assertJsonPath('data.personal_email', 'worker.home@example.test')
