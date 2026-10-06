@@ -89,6 +89,27 @@ final class EndpointCatalog
         ];
     }
 
+    /** Route metadata, never arbitrary client path text, for sanitized model call arguments. */
+    public function promptPath(User $user, string $method, string $path): ?string
+    {
+        $clean = ApiPath::normalize($path);
+        if ($clean === null) {
+            return null;
+        }
+        foreach ($this->all() as $entry) {
+            if ($entry['method'] !== $method || ! $this->access->allows($user, $entry['module'])) {
+                continue;
+            }
+            $parts = preg_split('~(\{[^}]+\})~', $entry['path'], -1, PREG_SPLIT_DELIM_CAPTURE) ?: [];
+            $pattern = implode('', array_map(static fn (string $part): string => str_starts_with($part, '{') ? '[1-9][0-9]*' : preg_quote($part, '~'), $parts));
+            if (preg_match('~^'.$pattern.'$~D', $clean) === 1) {
+                return $clean;
+            }
+        }
+
+        return null;
+    }
+
     /** @return list<array{method: string, path: string, module: string, summary: string, fields: array<string, string>, controller: string}> */
     private function all(): array
     {
