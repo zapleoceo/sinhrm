@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Repositories;
 
 use App\Modules\Recruiting\Contracts\ScreeningRepository;
+use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\CandidateScreening;
 use App\Modules\Recruiting\Models\Touchpoint;
+use App\Modules\Recruiting\Support\ApplicationVisibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -49,10 +51,11 @@ final class EloquentScreeningRepository implements ScreeningRepository
         return true;
     }
 
-    public function latestForCandidate(int $candidateId): Collection
+    public function latestForCandidate(int $candidateId, Scope $scope): Collection
     {
         return CandidateScreening::query()
             ->with('vacancy:id,title')
+            ->whereIn('application_id', ApplicationVisibility::query($scope)->select('applications.id'))
             ->where('candidate_id', $candidateId)
             ->whereIn('id', CandidateScreening::query()->selectRaw('MAX(id)')->where('candidate_id', $candidateId)->groupBy('application_id'))
             ->orderByDesc('id')
@@ -75,10 +78,11 @@ final class EloquentScreeningRepository implements ScreeningRepository
             ->get();
     }
 
-    public function materials(int $candidateId, int $limit): array
+    public function materials(int $candidateId, int $applicationId, int $limit): array
     {
         return Touchpoint::query()
             ->where('candidate_id', $candidateId)
+            ->where(fn (Builder $query) => $query->whereNull('application_id')->orWhere('application_id', $applicationId))
             ->whereNotNull('body')
             ->where(fn (Builder $q) => $q
                 ->where('channel', Channel::Note->value)

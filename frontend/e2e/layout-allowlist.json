@@ -3,8 +3,7 @@
   "pageOverflow": [
     "time.mobile",
     "feedback.mobile",
-    "modules.mobile",
-    "users.mobile"
+    "modules.mobile"
   ],
   "clipped": {
     "hiring-requests.mobile": ["button.mat-button-toggle-button"]

@@ -9,6 +9,7 @@ use App\Modules\Audit\Http\Resources\AuditEntryResource;
 use App\Modules\Audit\Services\AuditService;
 use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Recruiting\Models\Candidate;
+use App\Modules\Recruiting\Services\CandidateService;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 
@@ -17,14 +18,14 @@ final class CandidateHistoryController
 {
     use ResolvesActor;
 
-    public function __construct(private readonly AuditService $audit) {}
+    public function __construct(private readonly AuditService $audit, private readonly CandidateService $candidates) {}
 
     public function __invoke(HistoryRequest $request, Candidate $candidate): AnonymousResourceCollection
     {
         Gate::forUser($this->actor($request))->authorize('view', $candidate);
 
         /** @var list<int> $applicationIds */
-        $applicationIds = $candidate->applications()->pluck('id')->map(fn (mixed $id): int => (int) $id)->values()->all();
+        $applicationIds = $this->candidates->applications($this->actor($request), $candidate)->modelKeys();
 
         return AuditEntryResource::collection($this->audit->history(
             ['candidate' => [$candidate->id], 'application' => $applicationIds],

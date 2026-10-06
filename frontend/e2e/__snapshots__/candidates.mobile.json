@@ -10,10 +10,10 @@
   "main \"\""
  ],
  "interactive": [
-  "button \"Next page\"",
-  "button \"Previous page\" [disabled]",
   "button \"Головне меню\"",
+  "button \"Наступна сторінка\"",
   "button \"Новий кандидат\"",
+  "button \"Попередня сторінка\" [disabled]",
   "checkbox \"\"",
   "checkbox \"\"",
   "checkbox \"\"",
