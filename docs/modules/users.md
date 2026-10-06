@@ -72,6 +72,17 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
   роль, выбранную в сессии. Суперадмин, который сейчас работает как рекрутер, по-прежнему считается суперадмином.
   Но открыть сам раздел «Користувачі» он сможет, только вернувшись к «Суперадмін» или «Усі ролі».
 
+### Блокировка по жизненному циклу сотрудника (`Contracts\AccountBlocker`, 2026-10-06)
+Для других модулей (сейчас People: увольнение — сразу или после окончания запланированного последнего дня по Киеву — и восстановление, [people.md](people.md)) — без админского экрана и без
+актора-пользователя (cron). Реализация `Services\AccountBlockService` переиспользует `UserAdminRepository`: тот же row lock,
+`setStatus` и `revokeCredentials` (все сессии, токены, remember token, `credential_version + 1`) в одной транзакции.
+- `block(user, actorId)` — блокирует только активного; возвращает новую `credential_version` (модуль хранит её как
+  «моя блокировка») или `null`: уже заблокирован, или это последний активный суперадмин (не блокируется, warning в логе).
+- `unblockIfBlockedBy(user, version, actorId)` — разблокирует, только если пользователь всё ещё заблокирован и
+  `credential_version` равна сохранённой. Любая ручная блокировка после этого меняет версию — такой блок не снимается.
+- Смена статуса попадает в журнал аудита через наблюдатель модели `User`; в лог — `users.lifecycle_blocked/unblocked`
+  (только id). Тест — `tests/Unit/Users/AccountBlockServiceTest.php`.
+
 ### Обработчик Safe Speak
 Флаг можно дать HR (`superadmin`, `admin`, `hr_manager` — `UserRole::hrStaff()`); другим ролям — 422 `handler_requires_admin`.
 Колонка `users.safe_speak_handler boolean default false` — миграция модуля Users

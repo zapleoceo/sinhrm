@@ -1557,7 +1557,8 @@
      "pii": true,
      "decide": true,
      "manage": true,
-     "self": true
+     "self": true,
+     "terminate": false
     },
     "user_id": 3,
     "branch_id": 1,

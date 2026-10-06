@@ -54,7 +54,16 @@ final readonly class PeopleContext
         return $this->admin || $this->isAbove($employeeId);
     }
 
-    /** @return array{job: bool, pii: bool, decide: bool, manage: bool, self: bool} */
+    /**
+     * Terminate (now or from a date) and cancel a scheduled termination: HR staff or a manager above along the
+     * manager_id chain. Nobody terminates their own record (the login would lock itself out).
+     */
+    public function canTerminate(int $employeeId): bool
+    {
+        return ! $this->isSelf($employeeId) && $this->canDecideFor($employeeId);
+    }
+
+    /** @return array{job: bool, pii: bool, decide: bool, manage: bool, self: bool, terminate: bool} */
     public function flags(int $employeeId): array
     {
         return [
@@ -63,6 +72,7 @@ final readonly class PeopleContext
             'decide' => $this->canDecideFor($employeeId),
             'manage' => $this->admin,
             'self' => $this->isSelf($employeeId),
+            'terminate' => $this->canTerminate($employeeId),
         ];
     }
 

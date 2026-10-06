@@ -36,6 +36,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $fired_at
  * @property Carbon|null $anonymized_at personal data erased after offboarding (Privacy)
  * @property string|null $termination_reason
+ * @property bool $termination_event_pending EmployeeTerminated still to be (re)sent by ScheduledTerminationJob
+ * @property int|null $termination_block_version users.credential_version after the termination blocked the login
  * @property EmployeeStatus $status
  * @property EmploymentType $employment_type
  * @property array<string, mixed>|null $work_schedule
@@ -66,7 +68,7 @@ final class Employee extends Model
 
     protected $fillable = [
         'user_id', 'full_name', 'work_email', 'phone', 'avatar_url', 'birth_date', 'personal_email', 'address',
-        'emergency_contact', 'custom_fields', 'hired_at', 'fired_at', 'termination_reason', 'status', 'employment_type',
+        'emergency_contact', 'custom_fields', 'hired_at', 'fired_at', 'termination_reason', 'termination_block_version', 'termination_event_pending', 'status', 'employment_type',
         'work_schedule', 'branch_id', 'department_id', 'position_id', 'manager_id', 'candidate_id', 'application_id', 'gender',
     ];
 
@@ -114,6 +116,12 @@ final class Employee extends Model
         return $this->status === EmployeeStatus::Terminated;
     }
 
+    /** Still working, with a termination date set (access until the end of that day in Kyiv, then ScheduledTerminationJob applies it). */
+    public function isTerminationScheduled(): bool
+    {
+        return ! $this->isTerminated() && $this->fired_at !== null;
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {
@@ -123,6 +131,8 @@ final class Employee extends Model
             'birth_date' => 'date',
             'hired_at' => 'date',
             'fired_at' => 'date',
+            'termination_block_version' => 'integer',
+            'termination_event_pending' => 'boolean',
             'custom_fields' => 'array',
             'work_schedule' => 'array',
             'anonymized_at' => 'datetime',

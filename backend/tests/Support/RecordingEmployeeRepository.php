@@ -10,6 +10,7 @@ use App\Modules\People\Models\Employee;
 use App\Modules\People\Repositories\EloquentEmployeeRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -67,6 +68,21 @@ final class RecordingEmployeeRepository implements EmployeeRepository
     public function working(?array $ids = null, ?int $branchId = null): Collection
     {
         return $this->inner->working($ids, $branchId);
+    }
+
+    public function dueTerminations(Carbon $today): array
+    {
+        return $this->inner->dueTerminations($today);
+    }
+
+    public function pendingTerminationEvents(): array
+    {
+        return $this->inner->pendingTerminationEvents();
+    }
+
+    public function markTerminationEventSent(int $id): void
+    {
+        $this->inner->markTerminationEventSent($id);
     }
 
     public function create(array $attributes): Employee

@@ -30,6 +30,11 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     Route::post('people/change-requests/{changeRequest}/reject', [ChangeRequestController::class, 'reject'])
         ->whereNumber('changeRequest')->name('people.change-requests.reject');
     Route::get('people/{employee}', [PeopleController::class, 'show'])->whereNumber('employee')->name('people.show');
+    // Termination from a date and its cancellation: HR or a manager above (TerminationService checks PeopleContext).
+    Route::post('people/{employee}/terminate', [PeopleController::class, 'terminate'])
+        ->whereNumber('employee')->name('people.terminate');
+    Route::post('people/{employee}/terminate/cancel', [PeopleController::class, 'cancelTermination'])
+        ->whereNumber('employee')->name('people.terminate.cancel');
 
     Route::middleware('can:'.PeopleServiceProvider::MANAGE)->group(function (): void {
         Route::post('people', [PeopleController::class, 'store'])->name('people.store');
@@ -38,8 +43,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         Route::post('people/{employee}/compensation', [CompensationController::class, 'store'])->whereNumber('employee')->name('people.compensation.store');
         Route::patch('people/{employee}', [PeopleController::class, 'update'])->whereNumber('employee')->name('people.update');
         Route::get('people/{employee}/history', EmployeeHistoryController::class)->whereNumber('employee')->name('people.history');
-        Route::post('people/{employee}/terminate', [PeopleController::class, 'terminate'])
-            ->whereNumber('employee')->name('people.terminate');
+        Route::post('people/{employee}/restore', [PeopleController::class, 'restore'])
+            ->whereNumber('employee')->name('people.restore');
     });
 
     Route::get('me/employee', [MyEmployeeController::class, 'show'])->name('people.me');

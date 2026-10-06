@@ -13,6 +13,7 @@ use App\Modules\People\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentEmployeeRepository implements EmployeeRepository
@@ -111,6 +112,36 @@ final class EloquentEmployeeRepository implements EmployeeRepository
     public function lockForUpdate(int $id): void
     {
         Employee::query()->whereKey($id)->lockForUpdate()->first();
+    }
+
+    public function dueTerminations(Carbon $today): array
+    {
+        return Employee::query()
+            ->where('status', '!=', EmployeeStatus::Terminated->value)
+            ->whereNotNull('fired_at')
+            ->whereDate('fired_at', '<', $today->toDateString())
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    public function pendingTerminationEvents(): array
+    {
+        return Employee::query()
+            ->where('status', EmployeeStatus::Terminated->value)
+            ->where('termination_event_pending', true)
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    public function markTerminationEventSent(int $id): void
+    {
+        Employee::query()->whereKey($id)->update(['termination_event_pending' => false]);
     }
 
     public function create(array $attributes): Employee

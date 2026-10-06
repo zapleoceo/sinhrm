@@ -8,6 +8,7 @@ use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 interface EmployeeRepository
 {
@@ -45,6 +46,23 @@ interface EmployeeRepository
      * ledger writes of one employee (overlap and balance checks are read-then-write).
      */
     public function lockForUpdate(int $id): void;
+
+    /**
+     * Scheduled terminations now in force: not terminated, fired_at < $today (a date). Access ends at the end of day fired_at.
+     *
+     * @return list<int>
+     */
+    public function dueTerminations(Carbon $today): array;
+
+    /**
+     * Terminated employees whose EmployeeTerminated did not go through yet (termination_event_pending).
+     *
+     * @return list<int>
+     */
+    public function pendingTerminationEvents(): array;
+
+    /** Clears termination_event_pending without model events (a technical flag, not an audited change). */
+    public function markTerminationEventSent(int $id): void;
 
     /** @param  array<string, mixed>  $attributes */
     public function create(array $attributes): Employee;

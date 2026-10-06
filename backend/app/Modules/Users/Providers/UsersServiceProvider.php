@@ -6,8 +6,10 @@ namespace App\Modules\Users\Providers;
 
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Support\ModuleServiceProvider;
+use App\Modules\Users\Contracts\AccountBlocker;
 use App\Modules\Users\Contracts\UserAdminRepository;
 use App\Modules\Users\Repositories\EloquentUserAdminRepository;
+use App\Modules\Users\Services\AccountBlockService;
 
 final class UsersServiceProvider extends ModuleServiceProvider
 {
@@ -21,6 +23,7 @@ final class UsersServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->app->bind(UserAdminRepository::class, EloquentUserAdminRepository::class);
+        $this->app->bind(AccountBlocker::class, AccountBlockService::class);
     }
 
     public function boot(): void
