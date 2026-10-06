@@ -9,6 +9,7 @@ use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\StageChange;
+use App\Modules\Recruiting\Support\ApplicationVisibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -36,9 +37,9 @@ final class EloquentApplicationRepository implements ApplicationRepository
             ->first();
     }
 
-    public function forCandidate(int $candidateId): Collection
+    public function forCandidate(int $candidateId, Scope $scope): Collection
     {
-        return Application::query()
+        return ApplicationVisibility::query($scope)
             ->with(['vacancy.branch', 'vacancy.pipeline.stages', 'stage', 'rejectReason', 'stageChanges.toStage', 'stageChanges.byUser', 'interviewers'])
             ->where('candidate_id', $candidateId)
             ->orderByDesc('updated_at')

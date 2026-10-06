@@ -25,11 +25,12 @@ final class ScreeningController
     /** GET /candidates/{candidate}/screenings — visible with the candidate. */
     public function index(Request $request, Candidate $candidate): AnonymousResourceCollection
     {
-        if (! $this->actor($request)->can('view', $candidate)) {
+        $actor = $this->actor($request);
+        if (! $actor->can('view', $candidate)) {
             throw new AccessDeniedHttpException;
         }
 
-        return ScreeningResource::collection($this->service->forCandidate($candidate));
+        return ScreeningResource::collection($this->service->forCandidate($actor, $candidate));
     }
 
     /** POST /applications/{application}/screening — 201 done or 202 still running (finished by ai.poll). */
