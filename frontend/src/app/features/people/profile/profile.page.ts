@@ -28,7 +28,10 @@ import { CompensationTab } from './compensation.tab';
 import { ChangeRequestDialog } from './change-request.dialog';
 import { EmployeeDialog, EmployeeDialogData } from './employee.dialog';
 import { ProfileStore, ProfileTab } from './profile.store';
+import { RestoreDialog } from './restore.dialog';
 import { TerminateDialog } from './terminate.dialog';
+import { ConfirmDialog, ConfirmDialogData } from '../../workflows/confirm.dialog';
+import { PeopleService, peopleErrorKey } from '../people.service';
 import { PrivacyActions } from '../../privacy/privacy-actions';
 import { wideDialog } from '../../../core/ui/dialog';
 
@@ -93,13 +96,23 @@ import { wideDialog } from '../../../core/ui/dialog';
           }
           @if (e.access?.manage) {
             <button mat-stroked-button type="button" (click)="edit(e)"><mat-icon>edit</mat-icon>{{ 'people.edit.title' | transloco }}</button>
-            @if (e.status !== 'terminated') {
+            @if (e.status === 'terminated') {
+              <button mat-stroked-button type="button" (click)="restore(e)"><mat-icon>person_add</mat-icon>{{ 'people.restore.action' | transloco }}</button>
+            }
+          }
+          @if (e.access?.terminate && e.status !== 'terminated') {
+            @if (e.termination_scheduled) {
+              <button mat-button type="button" (click)="cancelTermination(e)"><mat-icon>event_busy</mat-icon>{{ 'people.terminate.cancel' | transloco }}</button>
+            } @else {
               <button mat-button type="button" class="danger" (click)="terminate(e)">{{ 'people.terminate.action' | transloco }}</button>
             }
           }
           <app-privacy-actions type="employee" [subjectId]="e.id" [name]="e.full_name" [erasable]="e.status === 'terminated'" (erased)="store.load(e.id)" />
         </div>
       </header>
+      @if (e.termination_scheduled && e.fired_at) {
+        <p class="scheduled app-pill" role="status"><mat-icon aria-hidden="true">event</mat-icon>{{ 'people.terminate.scheduled' | transloco: { date: dateText(e.fired_at) } }}</p>
+      }
 
       <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" [selectedIndex]="initialTab()">
         <mat-tab [label]="'people.tabs.overview' | transloco">
@@ -262,6 +275,9 @@ import { wideDialog } from '../../../core/ui/dialog';
     .danger { color: var(--app-bad-text); --mat-button-text-label-text-color: var(--app-bad-text); }
     .badge[data-status='on_leave'] { --pill-text: var(--app-info-text); --pill-bg: var(--app-info-bg); --pill-line: transparent; }
     .badge[data-status='terminated']::before { border-style: dashed; }
+    .scheduled { --pill-text: var(--app-warn-text); --pill-bg: var(--app-warn-bg); --pill-line: transparent; display: inline-flex; align-items: center; gap: 0.5rem; margin: 0 0 0.5rem; }
+    .scheduled::before { display: none; }
+    .scheduled mat-icon { font-size: 1.125rem; width: 1.125rem; height: 1.125rem; }
     .facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0; padding: 0.5rem 0 1rem; margin: 0; max-width: 48rem; }
     .facts dt, .facts dd { padding: 0.6rem 1.5rem 0.6rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
     .facts dt { color: var(--app-muted); }
@@ -296,6 +312,7 @@ export class ProfilePage {
   protected readonly store = inject(ProfileStore);
   protected readonly requests = inject(LeaveRequestsStore);
   private readonly dialog = inject(MatDialog);
+  private readonly people = inject(PeopleService);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly fields = CHANGEABLE_FIELDS;
@@ -331,6 +348,11 @@ export class ProfilePage {
 
   protected initialsOf(e: Employee): string {
     return initials(e.full_name);
+  }
+
+  /** YYYY-MM-DD → dd.MM.yyyy (no time zone shift: the date is a calendar day). */
+  protected dateText(iso: string | null | undefined): string {
+    return iso ? iso.split('-').reverse().join('.') : '';
   }
 
   protected scheduleText(e: Employee): string {
@@ -370,7 +392,46 @@ export class ProfilePage {
     this.dialog
       .open<TerminateDialog, Employee, Employee>(TerminateDialog, { data: e })
       .afterClosed()
-      .subscribe((saved) => saved && this.store.replace(saved));
+      .subscribe((saved) => {
+        if (saved) {
+          this.store.replace(saved);
+          this.toast(saved.termination_scheduled ? 'people.terminate.scheduledDone' : 'people.terminate.done', { date: this.dateText(saved.fired_at) });
+        }
+      });
+  }
+
+  /** Confirm, then cancel the scheduled termination (HR or a manager above). */
+  protected cancelTermination(e: Employee): void {
+    const t = (key: string): string => this.i18n.translate(key, { name: e.full_name });
+    this.dialog
+      .open<ConfirmDialog, ConfirmDialogData, { reason: string } | null>(ConfirmDialog, {
+        data: { message: t('people.terminate.cancelBody'), confirm: t('people.terminate.cancelConfirm'), cancel: t('people.terminate.keep') },
+        ariaLabel: t('people.terminate.cancelTitle'),
+      })
+      .afterClosed()
+      .subscribe((ok) => {
+        if (!ok) return;
+        this.people.cancelTermination(e.id).subscribe({
+          next: (saved) => {
+            this.store.replace(saved);
+            this.toast('people.terminate.cancelled');
+          },
+          error: (err: unknown) => this.toast(peopleErrorKey(err)),
+        });
+      });
+  }
+
+  /** HR: restore a terminated employee into the previous or a new position. */
+  protected restore(e: Employee): void {
+    this.dialog
+      .open<RestoreDialog, Employee, Employee>(RestoreDialog, wideDialog(e))
+      .afterClosed()
+      .subscribe((saved) => {
+        if (saved) {
+          this.store.replace(saved);
+          this.toast('people.restore.done');
+        }
+      });
   }
 
   protected async toggleApprovalEmails(on: boolean): Promise<void> {
@@ -381,7 +442,7 @@ export class ProfilePage {
     }
   }
 
-  private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+  private toast(key: string, params?: Record<string, string>): void {
+    this.snack.open(this.i18n.translate(key, params), undefined, { duration: 4000 });
   }
 }

@@ -10,17 +10,15 @@ use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Events\EmployeeHired;
-use App\Modules\People\Events\EmployeeTerminated;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Support\ReportingTree;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 
-/** Employee records: directory, profile, create/edit/terminate (admin), org chart. */
+/** Employee records: directory, profile, create/edit (admin), org chart. Termination and restore: TerminationService. */
 final readonly class EmployeeService
 {
     public function __construct(
@@ -100,24 +98,6 @@ final readonly class EmployeeService
         $this->log->info('people.employee_updated', ['id' => $employee->id, 'by' => $actor->id, 'fields' => array_keys($attributes)]);
 
         return $this->find($employee->id);
-    }
-
-    /** @throws PeopleException already_terminated */
-    public function terminate(User $actor, Employee $employee, Carbon $firedAt, ?string $reason): Employee
-    {
-        if ($employee->isTerminated()) {
-            throw PeopleException::alreadyTerminated();
-        }
-        $this->employees->update($employee, [
-            'status' => EmployeeStatus::Terminated->value,
-            'fired_at' => $firedAt->toDateString(),
-            'termination_reason' => $reason,
-        ]);
-        $this->log->info('people.employee_terminated', ['id' => $employee->id, 'by' => $actor->id]);
-        $terminated = $this->find($employee->id);
-        $this->events->dispatch(new EmployeeTerminated($terminated));
-
-        return $terminated;
     }
 
     /**

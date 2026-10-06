@@ -35,13 +35,15 @@ final class PeopleScopeTest extends TestCase
         $admin = new PeopleContext(11, true, null, []);
         $nobody = new PeopleContext(12, false, null, []);
 
-        $this->assertSame(['job' => true, 'pii' => false, 'decide' => true, 'manage' => false, 'self' => false], $manager->flags(3));
-        $this->assertSame(['job' => true, 'pii' => true, 'decide' => false, 'manage' => false, 'self' => true], $manager->flags(1));
-        $this->assertSame(['job' => false, 'pii' => false, 'decide' => false, 'manage' => false, 'self' => false], $manager->flags(7));
+        $this->assertSame(['job' => true, 'pii' => false, 'decide' => true, 'manage' => false, 'self' => false, 'terminate' => true], $manager->flags(3));
+        $this->assertSame(['job' => true, 'pii' => true, 'decide' => false, 'manage' => false, 'self' => true, 'terminate' => false], $manager->flags(1));
+        $this->assertSame(['job' => false, 'pii' => false, 'decide' => false, 'manage' => false, 'self' => false, 'terminate' => false], $manager->flags(7));
         $this->assertTrue($manager->isManager());
         $this->assertSame([1, 2, 3], $manager->visibleIds());
         $this->assertNull($admin->visibleIds());
         $this->assertTrue($admin->canSeePii(7));
+        $this->assertTrue($admin->canTerminate(7));
+        $this->assertFalse((new PeopleContext(11, true, 7, []))->canTerminate(7), 'nobody terminates their own record');
         $this->assertSame([], $nobody->visibleIds());
         $this->assertFalse($nobody->isManager());
     }

@@ -6,6 +6,7 @@ namespace App\Modules\People\Providers;
 
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\PersonalDataProvider;
+use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\People\Contracts\ChangeRequestRepository;
 use App\Modules\People\Contracts\EmployeeRepository;
@@ -15,6 +16,7 @@ use App\Modules\People\Privacy\EmployeePersonalData;
 use App\Modules\People\Repositories\EloquentChangeRequestRepository;
 use App\Modules\People\Repositories\EloquentEmployeeRepository;
 use App\Modules\People\Repositories\EloquentPickerUserRepository;
+use App\Modules\People\Services\ScheduledTerminationJob;
 
 /**
  * People (Core HR): employees, directory, org chart, self-service change requests, hire from Recruiting.
@@ -26,7 +28,7 @@ final class PeopleServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'people';
 
-    /** Create/edit/terminate employees: superadmin, admin (there is no separate HR role yet). */
+    /** Create/edit/restore employees: HR staff (superadmin, admin, hr_manager). Termination: also managers above. */
     public const string MANAGE = 'people-manage';
 
     public function register(): void
@@ -36,6 +38,8 @@ final class PeopleServiceProvider extends ModuleServiceProvider
         $this->app->bind(EmployeeRepository::class, EloquentEmployeeRepository::class);
         $this->app->bind(ChangeRequestRepository::class, EloquentChangeRequestRepository::class);
         $this->app->bind(PickerUserRepository::class, EloquentPickerUserRepository::class);
+        // Scheduled terminations come into force on their date (cron, POST /api/ops/jobs/run).
+        $this->app->tag([ScheduledTerminationJob::class], ScheduledJob::class);
     }
 
     public function boot(): void

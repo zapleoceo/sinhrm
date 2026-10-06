@@ -149,11 +149,13 @@ final class PeopleApiTest extends TestCase
         $this->actingAs($admin)->patchJson("/api/people/$id", ['phone' => '+380501112233', 'status' => 'on_leave'])->assertOk()
             ->assertJsonPath('data.phone', '+380501112233')->assertJsonPath('data.status', 'on_leave');
 
-        $this->actingAs($admin)->postJson("/api/people/$id/terminate", ['fired_at' => '2026-12-31', 'reason' => 'Contract ended'])->assertOk()
+        // A past date applies at once (a future one is scheduled: TerminationApiTest).
+        $this->actingAs($admin)->postJson("/api/people/$id/terminate", ['fired_at' => '2026-01-31', 'reason' => 'Contract ended'])->assertOk()
             ->assertJsonPath('data.status', 'terminated')
-            ->assertJsonPath('data.fired_at', '2026-12-31')
+            ->assertJsonPath('data.fired_at', '2026-01-31')
+            ->assertJsonPath('data.termination_scheduled', false)
             ->assertJsonPath('data.termination_reason', 'Contract ended');
-        $this->actingAs($admin)->postJson("/api/people/$id/terminate", ['fired_at' => '2026-12-31'])->assertStatus(409)
+        $this->actingAs($admin)->postJson("/api/people/$id/terminate", ['fired_at' => '2026-01-31'])->assertStatus(409)
             ->assertJsonPath('code', 'already_terminated');
         $this->actingAs($admin)->postJson("/api/people/$id/terminate", [])->assertUnprocessable();
         $this->actingAs($admin)->deleteJson("/api/people/$id")->assertStatus(405);
@@ -165,6 +167,10 @@ final class PeopleApiTest extends TestCase
         foreach ([$this->userOf($org['head']), $this->userOf($org['worker']), $this->login(UserRole::Viewer)] as $user) {
             $this->actingAs($user)->postJson('/api/people', ['full_name' => 'X', 'hired_at' => '2026-01-01'])->assertForbidden();
             $this->actingAs($user)->patchJson('/api/people/'.$org['worker']->id, ['phone' => '1'])->assertForbidden();
+            $this->actingAs($user)->postJson('/api/people/'.$org['worker']->id.'/restore')->assertForbidden();
+        }
+        // Termination is also open to managers above (TerminationApiTest); self and outsiders still get 403.
+        foreach ([$this->userOf($org['worker']), $this->userOf($org['peer']), $this->login(UserRole::Viewer)] as $user) {
             $this->actingAs($user)->postJson('/api/people/'.$org['worker']->id.'/terminate', ['fired_at' => '2026-01-01'])->assertForbidden();
         }
     }

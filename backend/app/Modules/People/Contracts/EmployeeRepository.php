@@ -8,6 +8,7 @@ use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 interface EmployeeRepository
 {
@@ -45,6 +46,13 @@ interface EmployeeRepository
      * ledger writes of one employee (overlap and balance checks are read-then-write).
      */
     public function lockForUpdate(int $id): void;
+
+    /**
+     * Not terminated employees whose termination date (fired_at) has come: fired_at <= $today (a date).
+     *
+     * @return list<int>
+     */
+    public function dueTerminations(Carbon $today): array;
 
     /** @param  array<string, mixed>  $attributes */
     public function create(array $attributes): Employee;

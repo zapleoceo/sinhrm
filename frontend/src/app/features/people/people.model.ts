@@ -29,6 +29,8 @@ export interface EmployeeAccess {
   decide: boolean;
   manage: boolean;
   self: boolean;
+  /** Terminate / cancel a scheduled termination: HR or a manager above, never oneself. */
+  terminate?: boolean;
 }
 
 export interface WorkSchedule {
@@ -60,6 +62,8 @@ export interface Employee {
   manager_id?: number | null;
   hired_at?: string;
   fired_at?: string | null;
+  /** fired_at is set but the person still works: the termination comes into force on that date. */
+  termination_scheduled?: boolean;
   termination_reason?: string | null;
   /** HR-only, optional (pay-gap report). */
   gender?: string | null;
@@ -99,6 +103,15 @@ export interface PeopleQuery {
   status?: EmployeeStatus;
   page?: number;
   perPage?: number;
+}
+
+/** POST /api/people/{id}/restore (HR). Omitted = keep the previous value, null = clear. */
+export interface RestoreEmployee {
+  position_id?: number | null;
+  department_id?: number | null;
+  branch_id?: number | null;
+  manager_id?: number | null;
+  hired_at?: string;
 }
 
 /** POST/PATCH /api/people (admin). */
@@ -156,6 +169,10 @@ export const PEOPLE_ERROR_CODES = [
   'no_employee',
   'manager_cycle',
   'already_terminated',
+  'termination_scheduled',
+  'termination_not_scheduled',
+  'not_terminated',
+  'anonymized',
   'already_decided',
   'not_hired',
   'forbidden',

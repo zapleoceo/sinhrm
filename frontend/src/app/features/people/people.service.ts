@@ -18,6 +18,7 @@ import {
   PeopleQuery,
   PersonOption,
   PickerScope,
+  RestoreEmployee,
   SaveEmployee,
 } from './people.model';
 
@@ -72,6 +73,16 @@ export class PeopleService {
     return this.http
       .post<{ data: Employee }>(`/api/people/${id}/terminate`, { fired_at: firedAt, reason })
       .pipe(map((r) => r.data));
+  }
+
+  /** Cancel a scheduled (future) termination before its date. */
+  cancelTermination(id: number): Observable<Employee> {
+    return this.http.post<{ data: Employee }>(`/api/people/${id}/terminate/cancel`, {}).pipe(map((r) => r.data));
+  }
+
+  /** HR: bring a terminated employee back; omitted fields keep their previous values. */
+  restore(id: number, body: RestoreEmployee): Observable<Employee> {
+    return this.http.post<{ data: Employee }>(`/api/people/${id}/restore`, body).pipe(map((r) => r.data));
   }
 
   orgChart(query: { branch_id?: number; root_id?: number; mine?: boolean } = {}): Observable<OrgNode[]> {
