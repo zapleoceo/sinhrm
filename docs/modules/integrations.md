@@ -129,6 +129,17 @@ Gate `manage-integrations` (`Providers\IntegrationsServiceProvider::MANAGE_INTEG
 | `POST /{key}/status` | `{status: off\|demo}` | `{data: integration}` |
 | `GET /{key}/logs` | — | `{data: [{id, level, message, context, created_at}]}`, последние 50 |
 | `PUT /ai-policy` | `{enabled: bool}` | `{data: {enabled}}`, пишется в журнал `ai_policy` (уровень warning) |
+| `GET /itstep-directory/status` | — | `{data: {status, missing_inputs, scope_configured, writes_enabled: false}}`; доступен только суперадмину |
+| `GET /itstep-directory/preview` | — | read-only preview complete normalized snapshot from the injected gateway; `409 dependency_pending` пока SDK/source contract не готовы, `422 snapshot_invalid` для unknown/incomplete payload |
+| `GET /itstep-directory/synthetic-preview` | — | `{synthetic: true, data: preview}` на фиксированных демонстрационных данных; не вызывает source gateway |
+
+### Каталог сотрудников Itstep — подготовка
+
+`EmployeeDirectoryGateway` зарегистрирован на `PendingEmployeeDirectoryGateway`: состояние `dependency_pending`, fetch завершается типизированной ошибкой и не выполняет сетевых запросов. Preview разрешается только если gateway явно сообщает настроенный namespace, а полный snapshot содержит ровно тот же namespace. Источник блокирует получение данных до установки `itstep/user-client` и подтверждения схемы ответа, namespace/company scope, доверенного endpoint/auth и правил stable employee ID. SDK path `/api/v1/profiles` сам по себе не подтверждает response contract.
+
+`EmployeeDirectoryPreview` принимает только полный normalized snapshot с точным набором известных полей; unknown shape, пустой source ID и incomplete pages отклоняются. Идентичные повторы сворачиваются детерминированно, разные строки с одним ID показываются как конфликт. Результат — только ручной план identity review; branch/position/status явно остаются `unconfirmed`. Ни Employee, ни User, ни роли/статусы не меняются. Synthetic preview использует выдуманные demo-значения и отдельно помечен в API/UI; он не доказывает доступность или схему Itstep. В панели состояние источника и synthetic preview загружаются независимо: ошибка одного запроса остаётся видна независимо от порядка завершения второго, а при повторной загрузке старый preview сразу очищается.
+
+После получения недостающих входных данных нужно добавить адаптер поверх установленного официального SDK и подтвердить mapping до подключения данных. Не включать автоназначение ролей, создание пользователей или деактивацию сотрудников на этом этапе.
 
 `integration` (`Http/Resources/IntegrationResource`): `key, group, status, supports_check, last_checked_at,
 last_error, updated_at, fields[]`. Поле: `name, type, required, options, default` + `value` (несекретное) или
@@ -187,7 +198,7 @@ placeholder маска или «не задано», кнопка «Очисти
 Тесты: `tests/Feature/Integrations/IntegrationsApiTest.php` (401/403, 404 неизвестного ключа, список и маскирование
 со сканированием всего ответа, шифрование в БД, семантика set/unchanged/delete, валидация, проверки через
 `Http::fake` — Telegram ok/401/обрыв, AI Broker health ok/503, логи без секретов, лимит 50,
-AI-флаг, битый токен без запроса и без записи в лог, любой Throwable → код, https-only, SSRF-блокировки, сброс статуса после изменения), `tests/Unit/Integrations/*` (в т.ч. `OutboundUrlGuardTest` — все запрещённые диапазоны, `SecretScrubberTest` — редактирование через обработчик исключений и `Log::spy`) (хранилище: шифротекст ≠ открытый текст, маска; реестр; сервис: очистка
+AI-флаг, битый токен без запроса и без записи в лог, любой Throwable → код, https-only, SSRF-блокировки, сброс статуса после изменения), `tests/Feature/Integrations/EmployeeDirectoryApiTest.php` (superadmin access, pending/no-network, complete and incomplete snapshots, synthetic endpoint, no employee/user writes), `tests/Unit/Integrations/EmployeeDirectoryPreviewTest.php` (shape/scope, ID validation, duplicate conflicts, deterministic plan), `tests/Unit/Integrations/*` (в т.ч. `OutboundUrlGuardTest` — все запрещённые диапазоны, `SecretScrubberTest` — редактирование через обработчик исключений и `Log::spy`) (хранилище: шифротекст ≠ открытый текст, маска; реестр; сервис: очистка
 секретов из сообщений, пропуск проверки без ключа). Фронт: `integrations.service.spec.ts`, `integrations.store.spec.ts`.
 
 Вручную (нужна сессия суперадмина):

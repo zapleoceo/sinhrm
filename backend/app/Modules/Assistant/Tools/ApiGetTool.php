@@ -9,7 +9,7 @@ use App\Modules\Assistant\Contracts\AssistantTool;
 use App\Modules\Assistant\Enums\ToolRunner;
 use App\Modules\Assistant\Services\InternalApi;
 
-/** Reads any allowed endpoint as the user (in the chat: by the SPA with the user's session). */
+/** Reads as the user; automatic model/MCP results additionally pass the server privacy whitelist. */
 final readonly class ApiGetTool implements AssistantTool
 {
     public function __construct(private InternalApi $api) {}
@@ -21,10 +21,13 @@ final readonly class ApiGetTool implements AssistantTool
 
     public function description(): string
     {
-        return 'Read data from the SinHRM API with the rights of the current user (GET). `path` is relative to /api, '
-            .'without a leading slash, placeholders filled in (e.g. "candidates/42", "timeoff/balances"); `query` holds '
-            .'filters/pagination. Returns {status, data} or {status, error}; 403 means the user has no access — say so, '
-            .'do not retry. Large answers are truncated: narrow the query instead of paging blindly.';
+        return 'Read permitted integer record/reference IDs and numeric pagination counters as the current user (GET). '
+            .'Allowed: auth/me; people list/numeric details, me/employee, people/search and people/lookup; '
+            .'candidates, vacancies and tasks lists/numeric details; pipelines list. No names, contacts, salaries, '
+            .'dates, free text, statuses or URLs. Other endpoints are unavailable, even to admins. `path` is relative '
+            .'to /api (e.g. "candidates/42"); `query` holds filters/pagination used locally and omitted from model history. '
+            .'Returns {status, data} or {status, error}; 403 means unavailable or no access: explain and do not retry. '
+            .'Projection precedes truncation; prefer narrow queries and perPage=1 for counts.';
     }
 
     public function parameters(): array

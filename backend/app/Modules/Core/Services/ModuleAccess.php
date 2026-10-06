@@ -49,6 +49,17 @@ final class ModuleAccess
         return $this->stored[$module->key] ?? ['enabled' => true, 'roles' => $module->defaultRoles];
     }
 
+    /**
+     * Reload this instance directly from the repository before a sensitive operation or after a long wait.
+     * Normal requests retain their shared cache; callers reuse this exact snapshot for checks and fingerprints.
+     *
+     * @return array<string, array{enabled: bool, roles: list<string>}>
+     */
+    public function refreshSettings(): array
+    {
+        return $this->stored = $this->settings->all();
+    }
+
     public function enabled(string $key): bool
     {
         $module = $this->registry->find($key);

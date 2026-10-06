@@ -76,9 +76,10 @@ final class McpServerTest extends TestCase
 
         $me = $this->callTool($token, 'api_get', ['path' => 'auth/me']);
         $this->assertFalse($me['isError'] ?? false);
-        $this->assertStringContainsString('Synthetic Employee', (string) json_encode($me, JSON_UNESCAPED_UNICODE));
+        $this->assertStringNotContainsString('Synthetic Employee', (string) json_encode($me, JSON_UNESCAPED_UNICODE));
+        $this->assertSame($employee->id, json_decode((string) $me['content'][0]['text'], true)['data']['id']);
 
-        // Admin-only endpoint: the policy of the real route answers, not the helper.
+        // Sensitive endpoints are denied by the assistant read policy even before route dispatch.
         $users = $this->callTool($token, 'api_get', ['path' => 'users']);
         $this->assertTrue($users['isError'] ?? false);
         $this->assertStringContainsString('403', (string) json_encode($users));

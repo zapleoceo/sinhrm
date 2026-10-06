@@ -1,8 +1,12 @@
 {
  "path": "/vacancies/1",
  "state": "reject-dialog",
- "headings": [],
- "landmarks": [],
+ "headings": [
+  "Відмова: Литвиненко Софія [ТЕСТ]"
+ ],
+ "landmarks": [
+  "dialog \"Відмова: Литвиненко Софія [ТЕСТ]\""
+ ],
  "interactive": [
   "button \"Відмовити\"",
   "button \"Скасувати\"",

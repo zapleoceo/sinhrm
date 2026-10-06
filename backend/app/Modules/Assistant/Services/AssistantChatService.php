@@ -14,9 +14,12 @@ use App\Modules\Ai\Services\AiService;
 use App\Modules\Assistant\Ai\AssistantChatHandler;
 use App\Modules\Assistant\Ai\AssistantPrompt;
 use App\Modules\Assistant\Enums\ToolRunner;
+use App\Modules\Assistant\Support\AssistantDataPolicy;
 use App\Modules\Assistant\Support\ToolRegistry;
+use App\Modules\Auth\Enums\UserRole;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -25,7 +28,7 @@ use Throwable;
  * request fits the serverless limit. Tool calls of the answer are split:
  *   - ToolRunner::Server (find_endpoints) run here at once → server_results;
  *   - ToolRunner::Client (api_get, api_write, open_page) → client_calls, executed by the SPA with the user's own
- *     session (writes only after the user's click), whose results come back in the next turn's history.
+ *     session (writes only after the user's click); AssistantHistory refetches allowed reads for the next turn.
  * A slow answer → state "pending" + request_id; GET /api/assistant/turns/{id} finishes it (only for its owner).
  */
 final readonly class AssistantChatService
@@ -35,17 +38,13 @@ final readonly class AssistantChatService
     /** Seconds to wait for the model inside one HTTP request (the rest of the 60 s is for tools and the answer). */
     public const int WAIT_SECONDS = 25;
 
-    /** Tool results of the latest round the model has not answered yet. */
-    public const int FRESH_TOOL_CHARS = 4000;
-
-    /** Tool results of earlier rounds (already used by the model). */
-    public const int OLD_TOOL_CHARS = 300;
-
     public function __construct(
         private AiService $ai,
         private AiRequestRepository $requests,
         private ToolRegistry $tools,
         private Cache $cache,
+        private AssistantHistory $history,
+        private AssistantScope $scope,
     ) {}
 
     /** @return array{available: bool, reason: string|null} */
@@ -63,14 +62,28 @@ final readonly class AssistantChatService
      */
     public function turn(User $user, array $messages, array $page): array
     {
-        $prompt = AssistantPrompt::build(self::compact($messages), $this->tools->definitions(), self::context($user, $page));
         try {
+            // No API replay when policy/provider/purpose has switched AI off. AiService still applies its gates.
+            $this->ai->assertAvailable(AiPurpose::AssistantChat);
+            $scope = $this->scope->capture($user);
+            if ($scope === null) {
+                return self::contextChanged(0);
+            }
+            $history = $this->history->build($scope['actor'], $messages);
+            if ($history === []) {
+                return ['state' => 'failed', 'request_id' => 0, 'error' => 'ai_invalid_output'];
+            }
+            $actor = $this->scope->matchingActor($user, $scope['fingerprint']);
+            if ($actor === null) {
+                return self::contextChanged(0);
+            }
+            $prompt = AssistantPrompt::build($history, $this->tools->definitions(), self::context($actor, $page));
             $outcome = $this->ai->run($prompt, self::SUBJECT, $user->id, [], self::WAIT_SECONDS);
         } catch (AiException $e) {
             return ['state' => 'failed', 'request_id' => 0, 'error' => $e->errorCode];
         }
 
-        return $this->result($user, $outcome);
+        return $this->deliver($user, $outcome, $scope['fingerprint'], true);
     }
 
     /**
@@ -84,8 +97,12 @@ final readonly class AssistantChatService
         if ($request === null || $request->purpose !== AiPurpose::AssistantChat || $request->subject_type !== self::SUBJECT || $request->subject_id !== $user->id) {
             return null;
         }
+        $fingerprint = $this->cache->get(AssistantScope::cacheKey($requestId));
+        if (! is_string($fingerprint) || $this->scope->matchingActor($user, $fingerprint) === null) {
+            return self::contextChanged($requestId);
+        }
         if ($request->status === AiRequestStatus::Pending) {
-            return $this->result($user, $this->ai->refresh($request));
+            return $this->deliver($user, $this->ai->refresh($request), $fingerprint);
         }
         if ($request->status === AiRequestStatus::Failed) {
             return ['state' => 'failed', 'request_id' => $request->id, 'error' => $request->error ?? 'ai_provider_error', ...$this->detail($request->id)];
@@ -93,8 +110,32 @@ final readonly class AssistantChatService
         $data = $this->cache->get(AssistantChatHandler::cacheKey($request->id));
 
         return is_array($data)
-            ? $this->result($user, AiOutcome::done($request->id, $data))
+            ? $this->deliver($user, AiOutcome::done($request->id, $data), $fingerprint)
             : ['state' => 'failed', 'request_id' => $request->id, 'error' => 'ai_timeout'];
+    }
+
+    /**
+     * No model answer or server/client tool is delivered under authority that changed while awaiting the broker.
+     *
+     * @return array<string, mixed>
+     */
+    private function deliver(User $user, AiOutcome $outcome, string $fingerprint, bool $bindScope = false): array
+    {
+        $actor = $this->scope->matchingActor($user, $fingerprint);
+        if ($actor === null) {
+            return self::contextChanged($outcome->requestId);
+        }
+        if ($bindScope && $outcome->requestId > 0) {
+            $this->cache->put(AssistantScope::cacheKey($outcome->requestId), $fingerprint, AssistantChatHandler::TTL);
+        }
+
+        return $this->result($actor, $outcome);
+    }
+
+    /** @return array{state: string, request_id: int, error: string} */
+    private static function contextChanged(int $requestId): array
+    {
+        return ['state' => 'failed', 'request_id' => $requestId, 'error' => 'ai_context_changed'];
     }
 
     /** @return array<string, mixed> */
@@ -126,7 +167,7 @@ final readonly class AssistantChatService
                 try {
                     $content = $tool->run($user, $call['args']);
                 } catch (Throwable $e) {
-                    report($e);
+                    Log::warning('assistant.server_tool_failed', ['exception' => $e::class]);
                     $content = ['error' => 'tool_failed'];
                 }
                 $serverResults[] = ['role' => 'tool', 'tool_call_id' => $call['id'], 'content' => (string) json_encode($content, JSON_UNESCAPED_UNICODE)];
@@ -145,35 +186,6 @@ final readonly class AssistantChatService
     }
 
     /**
-     * Keeps the prompt small enough for the free lanes (prod 28.09: a turn with ~30 000 chars of tool results stalled
-     * in the broker): results of the latest tool round are cut to FRESH_TOOL_CHARS, older ones to OLD_TOOL_CHARS —
-     * the model already used them, the SPA still shows the full answers.
-     *
-     * @param  list<array<string, mixed>>  $messages
-     * @return list<array<string, mixed>>
-     */
-    private static function compact(array $messages): array
-    {
-        $lastAssistant = -1;
-        foreach ($messages as $i => $m) {
-            if (($m['role'] ?? null) === 'assistant') {
-                $lastAssistant = $i;
-            }
-        }
-        foreach ($messages as $i => $m) {
-            if (($m['role'] ?? null) !== 'tool' || ! is_string($m['content'] ?? null)) {
-                continue;
-            }
-            $limit = $i > $lastAssistant ? self::FRESH_TOOL_CHARS : self::OLD_TOOL_CHARS;
-            if (mb_strlen($m['content']) > $limit) {
-                $messages[$i]['content'] = mb_substr($m['content'], 0, $limit).'…[trimmed]';
-            }
-        }
-
-        return $messages;
-    }
-
-    /**
      * Why a turn failed, as codes (invalid_reason / finish_reason from ai_requests.meta) — for diagnosis, no text.
      *
      * @return array{detail?: array<string, int|string|bool>}
@@ -189,11 +201,10 @@ final readonly class AssistantChatService
     /** @param  array{path: string, title: string}  $page */
     private static function context(User $user, array $page): string
     {
-        $roles = implode(', ', $user->getRoleNames()->all()) ?: 'employee';
+        $roles = implode(', ', array_intersect($user->getRoleNames()->all(), UserRole::values())) ?: 'employee';
         $today = Carbon::now()->format('Y-m-d (l)');
-        // Client-supplied page data must not be able to close or fake the context marker.
-        $clean = static fn (string $s, int $max): string => mb_substr((string) preg_replace('~[\[\]\r\n\t«»]+~u', ' ', $s), 0, $max);
+        $path = AssistantDataPolicy::pagePath($page['path']);
 
-        return "user {$user->name}, roles: {$roles}; today {$today}; current page {$clean($page['path'], 200)} «{$clean($page['title'], 120)}»";
+        return "roles: {$roles}; today {$today}; current page {$path}";
     }
 }

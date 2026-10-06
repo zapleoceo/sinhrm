@@ -32,6 +32,8 @@ import { NotifyService } from '../../../core/ui/notify.service';
   providers: [BoardStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <button mat-stroked-button type="button" [attr.aria-pressed]="store.rankScreening()" (click)="store.rankScreening.set(!store.rankScreening())">{{ 'recruiting.screening.rank' | transloco }}</button>
+    <p class="muted">{{ 'recruiting.screening.label' | transloco }}</p>
     @if (personal()) {
       <div class="personal-bar">
         <span class="muted">{{ 'recruiting.personalBoard.hint' | transloco }}</span>
@@ -183,6 +185,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
                       </button>
                     }
                   </div>
+                  <span class="meta">{{ 'recruiting.screening.score' | transloco }}: {{ app.screening_score ?? '—' }}</span>
                   <span class="meta muted app-num">{{ app.candidate?.phone ?? app.candidate?.email ?? '' }}</span>
                   @if (lane.kind === 'personal') {
                     <span class="stage-chip" [matTooltip]="'recruiting.personalBoard.stageChip' | transloco">{{ stageName(app.stage_id) }}</span>

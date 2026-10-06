@@ -25,6 +25,7 @@ final class ApplicationResource extends JsonResource
     {
         $data = [
             'id' => $this->id,
+            'screening_score' => $this->resource->getAttribute('screening_score') === null ? null : (int) $this->resource->getAttribute('screening_score'),
             'candidate_id' => $this->candidate_id,
             'vacancy_id' => $this->vacancy_id,
             'stage_id' => $this->stage_id,

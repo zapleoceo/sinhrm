@@ -32,7 +32,7 @@ final class ExtensionTokenServiceTest extends TestCase
         $token->expires_at = Carbon::now()->addDays(90);
 
         $repo = $this->createMock(PersonalTokenRepository::class);
-        $repo->expects($this->once())->method('deleteAll')->with($user, 'extension')->willReturn(1);
+        $repo->expects($this->never())->method('deleteAll'); // Replacement belongs to the atomic repository grant.
         $repo->expects($this->once())->method('create')
             ->with($user, 'extension', ['clipper'], $this->callback(static fn (Carbon $at): bool => $at->eq(Carbon::parse('2026-12-30 10:00:00'))))
             ->willReturn(new NewAccessToken($token, '5|synthetic'));
