@@ -97,7 +97,7 @@
 | Событие | Когда | Кто слушает |
 |---|---|---|
 | `Events/EmployeeHired` | создание сотрудника — вручную (`POST /api/people`, `hired_at` обязателен) и наймом из рекрутинга | TimeOff — начисление отпуска текущего периода; Workflows — запуск шаблонов `employee_hired` (якорь `hired_at`, один раз на сотрудника) |
-| `Events/EmployeeTerminated` | увольнение вступило в силу: сразу из `POST /api/people/{id}/terminate` или cron-задачей `people.terminations` после окончания дня `fired_at` по Киеву, с 00:00 следующего дня (ровно один раз на увольнение) | Workflows — запуск шаблонов `employee_terminated` (якорь `fired_at`); Pulse — вихідне опитування (`exit`, один раз на дату увольнения, [pulse.md](pulse.md)) |
+| `Events/EmployeeTerminated` | увольнение вступило в силу: сразу из `POST /api/people/{id}/terminate` или cron-задачей `people.terminations` после окончания дня `fired_at` по Киеву, с 00:00 следующего дня (ровно один раз на увольнение) | Workflows — запуск шаблонов `employee_terminated` (якорь `fired_at`); Pulse — вихідне опитування (`exit`, один раз на дату увольнения, [pulse.md](pulse.md)); Workflows — задача «Прийняти справи» выбранному коллеге |
 
 | `Events/EmployeeTerminationScheduled` | `POST /api/people/{id}/terminate` с будущей датой (после коммита, изолировано: сбой подписчика только в лог `people.termination_scheduled_event_failed`) | Pulse — вихідне опитування открывается сразу, пока у человека есть доступ ([pulse.md](pulse.md)) |
 | `Events/EmployeeTerminationCancelled` | `POST /api/people/{id}/terminate/cancel` (несёт отменённую дату; изолировано так же) | Pulse — волна exit этой даты удаляется (с ответами — закрывается); Workflows — закрыть задачу передачи дел |
