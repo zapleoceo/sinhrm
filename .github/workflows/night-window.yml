@@ -1,0 +1,50 @@
+name: Night window guard
+
+# Optional weekly guard (NOT a required check, not part of ci.yml): runs the backend phpunit suite with the
+# clock faked to 22:30 UTC = 01:30 Kyiv, the window where UTC date != Kyiv date. Catches UTC-vs-Kyiv date bugs
+# (incident 2026-10-02/03, AssetsApiTest) before they turn main red at night. Postgres keeps real time — fine.
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+  # Self-check: runs on PRs that touch this file (a new workflow cannot be dispatched before it is on main).
+  pull_request:
+    paths: [".github/workflows/night-window.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  night-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults: { run: { working-directory: backend } }
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app_test }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: app_test
+      DB_USERNAME: app
+      DB_PASSWORD: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.4", extensions: "pdo_pgsql, pgsql, intl, sodium", coverage: none }
+      - uses: actions/cache/restore@v6
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - run: sudo apt-get install -y --no-install-recommends faketime
+      - name: Tests at 2026-10-15 22:30:00 UTC (01:30 Kyiv next day)
+        run: |
+          faketime -f '@2026-10-15 22:30:00' php -r 'echo gmdate("c"), PHP_EOL;'
+          faketime -f '@2026-10-15 22:30:00' php artisan test
