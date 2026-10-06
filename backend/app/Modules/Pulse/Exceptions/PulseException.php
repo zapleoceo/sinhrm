@@ -43,6 +43,12 @@ final class PulseException extends RuntimeException
         return new self('invalid_answers', 422, ['questions' => $questionIds]);
     }
 
+    /** Answers on someone's behalf: only for a personal (lifecycle, not anonymous) wave. */
+    public static function notLifecycle(): self
+    {
+        return new self('not_lifecycle', 409);
+    }
+
     /** Individual responses of an anonymous wave do not exist by design. */
     public static function anonymousWave(): self
     {

@@ -62,7 +62,7 @@ final class EloquentEmployeeRepository implements EmployeeRepository
 
     public function find(int $id): ?Employee
     {
-        return Employee::query()->with([...self::RELATIONS, 'user'])->withCount('reports')->find($id);
+        return Employee::query()->with([...self::RELATIONS, 'user', 'handoverTo'])->withCount('reports')->find($id);
     }
 
     public function findByUser(int $userId): ?Employee

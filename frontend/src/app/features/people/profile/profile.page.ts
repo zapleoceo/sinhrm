@@ -111,7 +111,7 @@ import { wideDialog } from '../../../core/ui/dialog';
         </div>
       </header>
       @if (e.termination_scheduled && e.fired_at) {
-        <p class="scheduled app-pill" role="status"><mat-icon aria-hidden="true">event</mat-icon>{{ 'people.terminate.scheduled' | transloco: { date: dateText(e.fired_at) } }}</p>
+        <p class="scheduled app-pill" role="status"><mat-icon aria-hidden="true">event</mat-icon>{{ 'people.terminate.scheduled' | transloco: { date: dateText(e.fired_at) } }}@if (e.handover_to; as h) { · {{ 'people.terminate.handoverScheduled' | transloco: { name: h.full_name } }}}</p>
       }
 
       <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" [selectedIndex]="initialTab()">

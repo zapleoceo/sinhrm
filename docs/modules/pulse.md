@@ -180,9 +180,30 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
 
 ### Опросы жизненного цикла (`Services/LifecycleSurveys`, `Listeners/StartExitSurvey`)
 `hire_30` / `hire_90` — `pulse.tick` находит работающих, у кого сегодня (или до 7 дней назад — пропущенный cron)
-30/90 дней с `hired_at`; `exit` — событие People `EmployeeTerminated`. Волна: `subject_employee_id` = человек,
+30/90 дней с `hired_at`; `exit` — см. ниже. Волна: `subject_employee_id` = человек,
 неанонимная, `min_group_size = 1`, 14 дней, `trigger_key = "<триггер>:<дата>"` → повтор события/cron не создаёт
 вторую волну; повторный найм/увольнение с новой датой — новая волна.
+
+**Exit и дата увольнения (решение владельца 2026-10-07, B).** Увольнение вступает в силу в 00:00 по Киеву дня после
+`fired_at`, и вход в этот момент уже заблокирован — открывать опрос тогда поздно. Поэтому:
+- **будущая дата** — `Listeners/OpenScheduledExitSurvey` на событие People `EmployeeTerminationScheduled` открывает волну
+  сразу при планировании: `trigger_key = exit:<fired_at>`, конец — конец дня `fired_at` по Киеву (`UserTime`), но не
+  позже 14 дней от старта. Последующее `EmployeeTerminated` (`Listeners/StartExitSurvey`) вторую волну не создаёт;
+- **отмена** (`EmployeeTerminationCancelled`, `Listeners/WithdrawExitSurvey`) — волна этой даты удаляется, а если ответ
+  уже есть — закрывается, ответы не теряются; новая дата — новая волна;
+- **сегодня/в прошлом** (доступ снимается сразу) — как раньше: волна на 14 дней по `EmployeeTerminated`. Человек ответить
+  уже не может, поэтому HR вносит ответы сам: `POST waves/{id}/responses-on-behalf {answers}` (`pulse-manage`, только
+  открытая неанонимная lifecycle-волна, иначе 409 `not_lifecycle` / `wave_not_open`). Ответ пишется так же, как свой
+  (тот же отпечаток → один ответ на волну, 409 `already_responded`), в лог — только id волны и HR (`pulse.response_on_behalf`).
+- **Кто видит ответы.** Только HR (`pulse-manage`: суперадмин, админ, HR-менеджер): `GET waves/{id}/responses` и
+  результаты lifecycle-волн; руководитель, сам сотрудник и остальные получают 403 (проверено тестом).
+- **Вопросы шаблона `exit`** (`Support/SurveyTemplates::EXIT_QUESTIONS`, 5 штук): причина ухода (`reason`, выбор),
+  что нравилось (`liked`, текст), что не нравилось (`disliked`, текст), отношения с руководителем (`manager`, шкала 1–5),
+  вернулись бы (`return`: Так / Можливо / Ні). Миграция `2026_10_25_100002_exit_survey_five_questions` переводит
+  сохранённые опросы со старым шаблоном (`reason, enps, comment`): без ответов — вопросы заменяются; с ответами и активный —
+  выключается, создаётся активная копия с пятью вопросами (прежние волны и ответы не трогаются); опрос, переписанный HR, не меняется.
+- Тесты: `tests/Feature/Pulse/ExitSurveyScheduleTest.php` (волна сразу при планировании и конец дня по Киеву, кап 14 дней,
+  отмена с ответом и без, вступление в силу без дубля, «сегодня» по киевской дате + ответ от имени HR, права, миграция).
 
 ### Настроение (`Services/MoodService`, `Services/MoodAlerts`, `Support/MoodStats`)
 `today()` — `ask = есть запись сотрудника ∧ сегодня день из настроек ∧ ещё не отвечал`. Тренд команды: только
@@ -206,6 +227,7 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
 | `GET mood/team?weeks&branch_id&department_id` | руководитель (своё поддерево), админ (все / фильтр) | агрегаты |
 | `GET mood/settings`; `PUT mood/settings` | все; запись — админ | |
 | `GET templates`, `GET/POST/PUT/DELETE surveys[/{id}]`, `GET/POST surveys/{id}/waves`, `GET waves/{id}`, `POST waves/{id}/close`, `GET waves/{id}/responses` | админ (`pulse-manage`) | конструктор, волны, ответы неанонимных волн |
+| `POST waves/{id}/responses-on-behalf {answers}` (30/мин) | HR (`pulse-manage`) | ответ за сотрудника в его открытой lifecycle-волне (exit после блокировки входа); 409 `not_lifecycle` / `wave_not_open` / `already_responded`, 422 `invalid_answers` |
 
 ### Фронтенд (`frontend/src/app/features/pulse`)
 | Файл | Что |

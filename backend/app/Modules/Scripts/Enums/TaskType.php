@@ -26,11 +26,14 @@ enum TaskType: string
     /** "Cover for a colleague during their approved absence" for the chosen handover colleague (TimeOff). */
     case LeaveHandover = 'leave_handover';
 
+    /** "Take over the work of a terminated colleague" for the chosen handover colleague (People termination). */
+    case TerminationHandover = 'exit_handover';
+
     /** Source group of the "Мої задачі" filter. */
     public function source(): TaskSource
     {
         return match ($this) {
-            self::Workflow => TaskSource::Workflows,
+            self::Workflow, self::TerminationHandover => TaskSource::Workflows,
             self::Document => TaskSource::Documents,
             self::MoodAlert => TaskSource::Pulse,
             self::DeskSla => TaskSource::Desk,

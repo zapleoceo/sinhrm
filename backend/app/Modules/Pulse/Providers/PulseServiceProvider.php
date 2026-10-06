@@ -9,11 +9,15 @@ use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\People\Events\EmployeeTerminated;
+use App\Modules\People\Events\EmployeeTerminationCancelled;
+use App\Modules\People\Events\EmployeeTerminationScheduled;
 use App\Modules\Pulse\Contracts\MoodRepository;
 use App\Modules\Pulse\Contracts\ResponseRepository;
 use App\Modules\Pulse\Contracts\SurveyRepository;
 use App\Modules\Pulse\Contracts\WaveMemberRepository;
+use App\Modules\Pulse\Listeners\OpenScheduledExitSurvey;
 use App\Modules\Pulse\Listeners\StartExitSurvey;
+use App\Modules\Pulse\Listeners\WithdrawExitSurvey;
 use App\Modules\Pulse\Repositories\EloquentMoodRepository;
 use App\Modules\Pulse\Repositories\EloquentResponseRepository;
 use App\Modules\Pulse\Repositories\EloquentSurveyRepository;
@@ -59,5 +63,7 @@ final class PulseServiceProvider extends ModuleServiceProvider
 
         $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
         Event::listen(EmployeeTerminated::class, StartExitSurvey::class);
+        Event::listen(EmployeeTerminationScheduled::class, OpenScheduledExitSurvey::class);
+        Event::listen(EmployeeTerminationCancelled::class, WithdrawExitSurvey::class);
     }
 }

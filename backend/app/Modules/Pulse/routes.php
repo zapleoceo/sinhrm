@@ -39,5 +39,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         Route::put('waves/{waveId}', [SurveyController::class, 'updateWave'])->whereNumber('waveId')->name('pulse.waves.update');
         Route::post('waves/{waveId}/close', [SurveyController::class, 'closeWave'])->whereNumber('waveId')->name('pulse.waves.close');
         Route::get('waves/{waveId}/responses', [SurveyController::class, 'responses'])->whereNumber('waveId')->name('pulse.waves.responses');
+        Route::post('waves/{waveId}/responses-on-behalf', [SurveyController::class, 'respondOnBehalf'])->whereNumber('waveId')
+            ->middleware('throttle:30,1')->name('pulse.waves.respond_on_behalf');
     });
 });

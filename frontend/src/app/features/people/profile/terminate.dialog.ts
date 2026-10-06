@@ -10,6 +10,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { Employee } from '../people.model';
 import { PeopleService, peopleErrorKey } from '../people.service';
 import { toIsoDate, today } from '../../../core/date/iso-date';
+import { PersonPicker } from '../picker/person-picker';
 
 /** True for a calendar day after today (local time, like the datepicker). */
 export function isAfterToday(date: Date | null): boolean {
@@ -18,11 +19,12 @@ export function isAfterToday(date: Date | null): boolean {
 
 /**
  * Terminate an employee (HR or a manager above): last working day (default today) and an optional reason. Nothing is
- * deleted. Today or earlier applies at once; a later date schedules the termination (the button says so).
+ * deleted. Today or earlier applies at once; a later date schedules the termination (the button says so). Optional
+ * "who takes over the work" (person picker of the caller; the colleague gets a task when the termination applies).
  */
 @Component({
   selector: 'app-terminate-dialog',
-  imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, TranslocoPipe],
+  imports: [ReactiveFormsModule, PersonPicker, MatButtonModule, MatDialogModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>{{ 'people.terminate.title' | transloco: { name: employee.full_name } }}</h2>
@@ -39,6 +41,8 @@ export function isAfterToday(date: Date | null): boolean {
           <mat-label>{{ 'people.terminate.reason' | transloco }}</mat-label>
           <textarea matInput formControlName="reason" rows="3" maxlength="500"></textarea>
         </mat-form-field>
+        <app-person-picker formControlName="handover_to_employee_id" label="people.terminate.handover" scope="employees" />
+        <p class="muted hint">{{ 'people.terminate.handoverHint' | transloco }}</p>
         @if (error(); as key) {
           <p class="error" role="alert">{{ key | transloco }}</p>
         }
@@ -52,6 +56,7 @@ export function isAfterToday(date: Date | null): boolean {
   styles: `
     mat-dialog-content { display: flex; flex-direction: column; min-width: min(26rem, 80vw); }
     .error { color: var(--app-bad-text); margin: 0; }
+    .hint { margin: 0.25rem 0 0.75rem; font-size: 0.875rem; }
     .danger { background: var(--mat-sys-error); color: var(--mat-sys-on-error); }
   `,
 })
@@ -64,6 +69,7 @@ export class TerminateDialog {
   protected readonly form = inject(NonNullableFormBuilder).group({
     fired_at: [today() as Date | null, Validators.required],
     reason: [''],
+    handover_to_employee_id: [null as number | null],
   });
   private readonly firedAt = toSignal(this.form.controls.fired_at.valueChanges, { initialValue: this.form.controls.fired_at.value });
   /** A date after today: the termination is scheduled, the person keeps working until then. */
@@ -77,7 +83,7 @@ export class TerminateDialog {
     const v = this.form.getRawValue();
     this.saving.set(true);
     this.error.set(null);
-    this.api.terminate(this.employee.id, toIsoDate(v.fired_at), v.reason.trim() || null).subscribe({
+    this.api.terminate(this.employee.id, toIsoDate(v.fired_at), v.reason.trim() || null, v.handover_to_employee_id).subscribe({
       next: (saved) => this.ref.close(saved),
       error: (err: unknown) => {
         this.error.set(peopleErrorKey(err));

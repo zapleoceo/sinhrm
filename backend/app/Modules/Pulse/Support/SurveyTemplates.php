@@ -10,6 +10,15 @@ namespace App\Modules\Pulse\Support;
  */
 final class SurveyTemplates
 {
+    /** Exit survey: reason, liked, disliked, relationship with the manager, would come back. */
+    public const array EXIT_QUESTIONS = [
+        ['id' => 'reason', 'type' => 'single', 'text' => 'Головна причина звільнення', 'options' => ['Зарплата', 'Керівник', 'Задачі', 'Кар\'єрне зростання', 'Особисті обставини', 'Інше'], 'required' => true],
+        ['id' => 'liked', 'type' => 'text', 'text' => 'Що вам подобалося в роботі у нас?', 'required' => false],
+        ['id' => 'disliked', 'type' => 'text', 'text' => 'Що вам не подобалося?', 'required' => false],
+        ['id' => 'manager', 'type' => 'scale5', 'text' => 'Як ви оцінюєте стосунки з керівником?', 'required' => true],
+        ['id' => 'return', 'type' => 'single', 'text' => 'Чи повернулися б ви до нас?', 'options' => ['Так', 'Можливо', 'Ні'], 'required' => true],
+    ];
+
     /** @return list<array{key: string, title: string, type: string, lifecycle_trigger: string|null, questions: list<array<string, mixed>>}> */
     public static function all(): array
     {
@@ -53,11 +62,8 @@ final class SurveyTemplates
                 'title' => 'Вихідне опитування',
                 'type' => 'lifecycle',
                 'lifecycle_trigger' => 'exit',
-                'questions' => [
-                    ['id' => 'reason', 'type' => 'single', 'text' => 'Головна причина звільнення', 'options' => ['Зарплата', 'Керівник', 'Задачі', 'Кар\'єрне зростання', 'Особисті обставини', 'Інше'], 'required' => true],
-                    ['id' => 'enps', 'type' => 'enps', 'text' => 'Чи порекомендуєте ви нас як роботодавця?', 'required' => true],
-                    ['id' => 'comment', 'type' => 'text', 'text' => 'Що ми могли зробити інакше?', 'required' => false],
-                ],
+                // Owner decision 2026-10-07: five short questions (migration 2026_10_25_100002 brings saved copies in line).
+                'questions' => self::EXIT_QUESTIONS,
             ],
         ];
     }

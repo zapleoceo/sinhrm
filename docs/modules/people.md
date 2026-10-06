@@ -78,7 +78,7 @@
 | `GET /api/people/{id}` | любой активный | — | профиль по уровням + `access`; **уволенный** — только админу и руководителям выше него, остальным 404 |
 | `POST /api/people` | admin | `full_name, hired_at` (обязательны), остальные поля; `status` только `active\|on_leave` | 201 |
 | `PATCH /api/people/{id}` | admin | частично; `manager_id` на себя или на подчинённого → 422 `manager_cycle`; занятый `user_id` → 422 | 200 |
-| `POST /api/people/{id}/terminate` | HR — суперадмин, админ, HR-менеджер (`UserRole::hrStaff()`, gate `people-manage`), или руководитель выше по `manager_id`; не сам себя | `{fired_at, reason?}` (`Y-m-d`; может быть в будущем) | 200: `fired_at` ≤ сегодня (Киев) — `status=terminated` сразу; позже — запланировано: `status` прежний, `termination_scheduled=true`, работа и доступ до конца дня `fired_at` по Киеву. Чужой → 403; уволенный вне видимости → 404; уже уволен → 409 `already_terminated`; уже запланировано → 409 `termination_scheduled` |
+| `POST /api/people/{id}/terminate` | HR — суперадмин, админ, HR-менеджер (`UserRole::hrStaff()`, gate `people-manage`), или руководитель выше по `manager_id`; не сам себя | `{fired_at, reason?, handover_to_employee_id?}` (`Y-m-d`; может быть в будущем; коллега — необязательно) | 200: `fired_at` ≤ сегодня (Киев) — `status=terminated` сразу; позже — запланировано: `status` прежний, `termination_scheduled=true`, работа и доступ до конца дня `fired_at` по Киеву. Чужой → 403; уволенный вне видимости → 404; уже уволен → 409 `already_terminated`; уже запланировано → 409 `termination_scheduled`; коллега не подходит → 422 `invalid_handover` |
 | `POST /api/people/{id}/terminate/cancel` | те же | — | 200, `fired_at=null`; нечего отменять → 409 `termination_not_scheduled`; уже уволен → 409 `already_terminated` |
 | `POST /api/people/{id}/restore` | HR — суперадмин, админ, HR-менеджер (`UserRole::hrStaff()`, gate `people-manage`) | `{position_id?, department_id?, branch_id?, manager_id?, hired_at?}`; нет поля — прежнее значение, `null` — очистить, строки `"5"` ок | 200, `status=active`; не уволен → 409 `not_terminated`; данные уже стёрты (Privacy) → 409 `anonymized`; руководитель — сам или подчинённый → 422 `manager_cycle`; неизвестная/неактивная должность, уволенный руководитель → 422 |
 | `GET /api/people/org-chart` | любой активный | `branch_id?`, `root_id?`, `mine=1` (своя ветка) | лес `{id, full_name, avatar_url, position, department, branch, reports_count, reports[]}` без уволенных; только уровень «справочник» |
@@ -99,6 +99,8 @@
 | `Events/EmployeeHired` | создание сотрудника — вручную (`POST /api/people`, `hired_at` обязателен) и наймом из рекрутинга | TimeOff — начисление отпуска текущего периода; Workflows — запуск шаблонов `employee_hired` (якорь `hired_at`, один раз на сотрудника) |
 | `Events/EmployeeTerminated` | увольнение вступило в силу: сразу из `POST /api/people/{id}/terminate` или cron-задачей `people.terminations` после окончания дня `fired_at` по Киеву, с 00:00 следующего дня (ровно один раз на увольнение) | Workflows — запуск шаблонов `employee_terminated` (якорь `fired_at`); Pulse — вихідне опитування (`exit`, один раз на дату увольнения, [pulse.md](pulse.md)) |
 
+| `Events/EmployeeTerminationScheduled` | `POST /api/people/{id}/terminate` с будущей датой (после коммита, изолировано: сбой подписчика только в лог `people.termination_scheduled_event_failed`) | Pulse — вихідне опитування открывается сразу, пока у человека есть доступ ([pulse.md](pulse.md)) |
+| `Events/EmployeeTerminationCancelled` | `POST /api/people/{id}/terminate/cancel` (несёт отменённую дату; изолировано так же) | Pulse — волна exit этой даты удаляется (с ответами — закрывается) |
 | `Events/EmployeeRestored` | `POST /api/people/{id}/restore` | пока никто: онбординг-шаблоны Workflows и опросы Pulse автоматически **не** запускаются — при необходимости HR запускает процесс вручную во вкладке «Воркфлоу» |
 
 Ошибка подписчика Workflows пишется в лог и не ломает запрос найма/увольнения ([workflows.md](workflows.md)).
@@ -138,6 +140,15 @@
   «Користувачі» (`Users/Contracts/AccountBlocker` → `UserAdminRepository`: статус `blocked`, все сессии, токены и remember
   token отзываются в одной транзакции, PR #149). Последнего активного суперадмина увольнение не блокирует (предупреждение в
   логе). В `employees.termination_block_version` запоминается `users.credential_version` после блокировки.
+- **Передача дел (решение владельца 2026-10-07, A).** Необязательное `handover_to_employee_id` в `POST …/terminate`:
+  те же правила, что в заявке на отсутствие (PR #164) — коллега находится запросом справочника вызывающего
+  (`EmployeeService::list`, только работающие), не сам увольняемый; иначе 422 `invalid_handover`, ничего не сохраняется.
+  Хранится в `employees.handover_to_employee_id` (nullable FK, `nullOnDelete`). Когда увольнение вступает в силу (сразу
+  или задачей `people.terminations`), коллеге создаётся задача «Прийняти справи: <имя> звільнений з дд.мм.рррр»
+  (`Services/TerminationHandoverTasks` через контракт Scripts `TaskScheduler`, тип `exit_handover`, источник
+  «Воркфлоу», ключ `people:handover:<fired_at>` с увольняемым — один раз на дату; только имя и дата, без причины).
+  Нет коллеги, у него нет входа или он уже уволен — задачи нет. Отмена и восстановление очищают поле и закрывают задачу.
+  В ответе профиля (уровень `job`) — `handover_to: {id, full_name}`.
 - **Отмена.** `POST …/terminate/cancel` до даты: `fired_at` и причина очищаются. Каждое изменение (назначение, отмена,
   вступление в силу, восстановление) проходит через модель `Employee` и попадает в журнал аудита (вкладка «Історія»:
   кто, `fired_at`, `status`; причина замаскирована).
@@ -147,18 +158,23 @@
   ручная блокировка — до или после увольнения — остаётся. Восстановленного можно уволить снова (новое событие
   `EmployeeTerminated`; повторный запуск offboarding-шаблонов решают правила Workflows, [workflows.md](workflows.md)).
   Отчёты считают по текущим `hired_at`/`fired_at`, отдельной истории периодов работы нет.
-- **Код.** `Services/TerminationService` (terminate, cancel, applyDue, restore), `Http/Requests/RestoreEmployeeRequest`,
+- **Код.** `Services/TerminationService` (terminate, cancel, applyDue, restore), `Services/TerminationHandoverTasks`,
+  `Events/EmployeeTerminationScheduled`, `Events/EmployeeTerminationCancelled`, миграция
+  `2026_10_25_100001_add_termination_handover_to_employees`, `Http/Requests/RestoreEmployeeRequest`,
   `Events/EmployeeRestored`, `DTO/TerminationOutcome`, миграция `2026_10_24_100001_add_termination_block_version_to_employees`
   (`termination_block_version`, `termination_event_pending`).
   Тесты: `tests/Feature/People/TerminationApiTest.php` (права по ролям и цепочке, будущая и прошлая дата, граница суток
   по Киеву с `Carbon::setTestNow`: в день X 21:00/22:00 UTC ещё активен, после конца дня X — уволен, повтор, отмена, восстановление, ручной блок, 403/404/409/422, строковые id),
-  `tests/Unit/Users/AccountBlockServiceTest.php`.
+  `tests/Unit/Users/AccountBlockServiceTest.php`, `tests/Feature/People/TerminationHandoverTest.php` (валидация и права,
+  задача один раз при вступлении в силу по границе суток Киева, сразу при «сегодня», закрытие при отмене/восстановлении).
 - **Фронт.** `profile/terminate.dialog.ts` — дата (по умолчанию сегодня) с подсказкой, кнопка «Звільнити» или
   «Запланувати», если дата позже сегодня (подсказка: доступ до конца этого дня); `profile/restore.dialog.ts` — выбор должности, отдела, филиала (`mat-select` по
   активным справочникам), руководителя (`app-person-picker`) и новой даты приёма; отправляются только изменённые поля.
   В профиле: плашка «Звільнення заплановано на дд.мм.рррр (доступ до кінця дня)» (`role=status`, предупреждающие токены), «Скасувати звільнення»
   с подтверждением (общий `ConfirmDialog`), «Відновити». Строки `people.terminate.*`, `people.restore.*`,
   `people.errors.*` (uk/ru/en). Спека — `profile/restore.dialog.spec.ts`.
+  В диалоге увольнения — необязательное `app-person-picker` «На кого передати справи» с видимой подсказкой; пусто — поле
+  не отправляется. В плашке запланированного увольнения — «· Справи прийме: <имя>». Спека — `profile/terminate.dialog.spec.ts`.
 
 ### Выбор человека (person picker, 2026-09-29)
 Один общий компонент вместо полей «ID співробітника» по всему интерфейсу.

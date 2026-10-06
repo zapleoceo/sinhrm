@@ -6,6 +6,7 @@ namespace App\Modules\Pulse\Http\Controllers;
 
 use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Pulse\Http\Requests\CreateWaveRequest;
+use App\Modules\Pulse\Http\Requests\RespondRequest;
 use App\Modules\Pulse\Http\Requests\SaveSurveyRequest;
 use App\Modules\Pulse\Http\Requests\UpdateWaveRequest;
 use App\Modules\Pulse\Http\Resources\SurveyResource;
@@ -82,6 +83,14 @@ final class SurveyController
     public function closeWave(int $waveId): WaveResource
     {
         return new WaveResource($this->surveys->closeWave($this->surveys->findWave($waveId)));
+    }
+
+    /** HR enters the answers of a lifecycle wave's subject (open wave; one answer per wave, like the person's own). */
+    public function respondOnBehalf(RespondRequest $request, int $waveId): Response
+    {
+        $this->responses->respondOnBehalf($this->actor($request), $waveId, $request->answers());
+
+        return response()->noContent(201);
     }
 
     /** Non-anonymous waves only (409 anonymous_wave otherwise). */
