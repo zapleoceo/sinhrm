@@ -1,0 +1,66 @@
+name: Backup restore proof
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'scripts/backup-restore-proof*'
+      - '.github/workflows/backup-restore.yml'
+      - 'docs/guides/backup-restore.md'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'scripts/backup-restore-proof*'
+      - '.github/workflows/backup-restore.yml'
+      - 'docs/guides/backup-restore.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-restore-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app_dump_source }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app -d app_dump_source" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: app_dump_source
+      DB_USERNAME: app
+      DB_PASSWORD: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 24 }
+      - name: Safety and orchestration checks
+        run: node --test scripts/backup-restore-proof.test.mjs
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.4', extensions: 'pdo_pgsql, pgsql, intl, sodium', coverage: none }
+      - uses: actions/cache/restore@v6
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+      - name: Install locked dependencies
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Create a fresh synthetic encryption key
+        working-directory: backend
+        run: cp .env.example .env && php artisan key:generate
+      - name: Dump and restore synthetic migrated database
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/backup-restore-proof.sh
