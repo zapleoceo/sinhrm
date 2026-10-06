@@ -85,7 +85,7 @@ final class SurveyController
         return new WaveResource($this->surveys->closeWave($this->surveys->findWave($waveId)));
     }
 
-    /** HR enters the answers of a lifecycle wave's subject (open wave; one answer per wave, like the person's own). */
+    /** HR enters the exit answers of a terminated / locked-out employee (one answer per wave, like the person's own). */
     public function respondOnBehalf(RespondRequest $request, int $waveId): Response
     {
         $this->responses->respondOnBehalf($this->actor($request), $waveId, $request->answers());
@@ -102,6 +102,7 @@ final class SurveyController
                 'employee_id' => $r->employee_id,
                 'answers' => (object) $r->answers,
                 'submitted_on' => $r->submitted_on->toDateString(),
+                'entered_by_user_id' => $r->entered_by_user_id,
             ])->values()->all()]);
     }
 }

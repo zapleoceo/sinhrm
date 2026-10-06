@@ -81,6 +81,14 @@ final class EloquentSurveyRepository implements SurveyRepository
             ->where('subject_employee_id', $subjectEmployeeId)->where('trigger_key', $triggerKey)->orderBy('id')->get();
     }
 
+    public function lockWave(int $id): ?SurveyWave
+    {
+        // FOR UPDATE on the wave: inserting a response takes a key-share lock on it (FK), so it waits for this.
+        $wave = SurveyWave::query()->whereKey($id)->lockForUpdate()->first();
+
+        return $wave?->loadCount('responses');
+    }
+
     public function deleteWave(SurveyWave $wave): void
     {
         $wave->delete();

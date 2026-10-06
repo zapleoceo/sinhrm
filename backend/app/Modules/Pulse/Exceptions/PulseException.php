@@ -43,10 +43,16 @@ final class PulseException extends RuntimeException
         return new self('invalid_answers', 422, ['questions' => $questionIds]);
     }
 
-    /** Answers on someone's behalf: only for a personal (lifecycle, not anonymous) wave. */
-    public static function notLifecycle(): self
+    /** Answers on someone's behalf: only for an exit wave (not hire_30/hire_90, not a team wave). */
+    public static function notExitWave(): self
     {
-        return new self('not_lifecycle', 409);
+        return new self('not_exit_wave', 409);
+    }
+
+    /** Answers on someone's behalf: the employee still works and can log in — they answer themself. */
+    public static function employeeCanAnswer(): self
+    {
+        return new self('employee_can_answer', 409);
     }
 
     /** Individual responses of an anonymous wave do not exist by design. */

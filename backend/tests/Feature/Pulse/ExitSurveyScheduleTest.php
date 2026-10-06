@@ -11,6 +11,7 @@ use App\Modules\People\Services\ScheduledTerminationJob;
 use App\Modules\Pulse\Models\Survey;
 use App\Modules\Pulse\Models\SurveyResponse;
 use App\Modules\Pulse\Models\SurveyWave;
+use App\Modules\Pulse\Services\LifecycleSurveys;
 use App\Modules\Pulse\Support\SurveyTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -109,6 +110,29 @@ final class ExitSurveyScheduleTest extends TestCase
         // scheduling again opens a fresh wave for the new date
         $this->terminate($this->org['worker'], '2026-07-25');
         $this->assertSame('exit:2026-07-25', SurveyWave::query()->where('subject_employee_id', $this->org['worker']->id)->sole()->trigger_key);
+
+        // the same date again: the answered wave stays closed (no second wave, answers kept)
+        $this->terminate($this->org['peer'], '2026-07-21');
+        $this->assertSame('closed', SurveyWave::query()->where('subject_employee_id', $this->org['peer']->id)->sole()->status->value);
+        $this->assertSame(1, SurveyResponse::query()->where('wave_id', $answered->id)->count());
+    }
+
+    public function test_a_closed_unanswered_wave_of_the_same_date_is_replaced_by_an_open_one(): void
+    {
+        $this->terminate($this->org['worker'], '2026-07-20');
+        $first = SurveyWave::query()->sole();
+        $this->actingAs($this->hr)->postJson("/api/pulse/waves/{$first->id}/close")->assertOk();
+        $this->actingAs($this->hr)->postJson('/api/people/'.$this->org['worker']->id.'/terminate/cancel')->assertOk();
+        $this->assertSame(0, SurveyWave::query()->count(), 'closed without answers is deleted on cancel');
+
+        // a wave closed by hand (no answers) and the same date scheduled again via the service: replaced
+        $this->terminate($this->org['worker'], '2026-07-20');
+        $second = SurveyWave::query()->sole();
+        $this->actingAs($this->hr)->postJson("/api/pulse/waves/{$second->id}/close")->assertOk();
+        $this->app->make(LifecycleSurveys::class)->terminationScheduled($this->org['worker']->refresh());
+        $third = SurveyWave::query()->sole();
+        $this->assertNotSame($second->id, $third->id);
+        $this->assertSame('open', $third->status->value);
     }
 
     public function test_termination_today_by_kyiv_date_works_as_before_and_hr_may_answer_on_behalf(): void
@@ -126,14 +150,34 @@ final class ExitSurveyScheduleTest extends TestCase
         $this->actingAs($this->hr)->postJson($url, ['answers' => ['reason' => 9]])->assertStatus(422)->assertJsonPath('code', 'invalid_answers');
         $this->actingAs($this->hr)->postJson($url, ['answers' => $this->answers])->assertCreated();
         $this->actingAs($this->hr)->postJson($url, ['answers' => $this->answers])->assertStatus(409)->assertJsonPath('code', 'already_responded');
-        $this->assertSame($this->org['worker']->id, SurveyResponse::query()->sole()->employee_id);
+        $response = SurveyResponse::query()->sole();
+        $this->assertSame([$this->org['worker']->id, $this->hr->id], [$response->employee_id, $response->entered_by_user_id]);
+        $this->actingAs($this->hr)->getJson("/api/pulse/waves/{$wave->id}/responses")->assertJsonPath('data.0.entered_by_user_id', $this->hr->id);
 
-        // not a personal wave → 409; a closed one → 409
+        // not an exit wave (team, hire_30) → 409; a closed one → 409
         $team = $this->wave($this->survey());
-        $this->actingAs($this->hr)->postJson("/api/pulse/waves/{$team->id}/responses-on-behalf", ['answers' => []])
-            ->assertStatus(409)->assertJsonPath('code', 'not_lifecycle');
+        $hire = $this->wave($this->survey(['type' => 'lifecycle', 'lifecycle_trigger' => 'hire_30']), [
+            'anonymous' => false, 'min_group_size' => 1, 'subject_employee_id' => $this->org['peer']->id, 'trigger_key' => 'hire_30:2026-06-14',
+        ]);
+        foreach ([$team, $hire] as $other) {
+            $this->actingAs($this->hr)->postJson("/api/pulse/waves/{$other->id}/responses-on-behalf", ['answers' => []])
+                ->assertStatus(409)->assertJsonPath('code', 'not_exit_wave');
+        }
         $this->actingAs($this->hr)->postJson("/api/pulse/waves/{$wave->id}/close")->assertOk();
         $this->actingAs($this->hr)->postJson($url, ['answers' => $this->answers])->assertStatus(409)->assertJsonPath('code', 'wave_not_open');
+    }
+
+    public function test_hr_cannot_answer_for_an_employee_who_still_can(): void
+    {
+        $this->terminate($this->org['worker'], '2026-07-20');
+        $wave = SurveyWave::query()->sole();
+        $url = "/api/pulse/waves/{$wave->id}/responses-on-behalf";
+        $this->actingAs($this->hr)->postJson($url, ['answers' => $this->answers])->assertStatus(409)->assertJsonPath('code', 'employee_can_answer');
+
+        // the login blocked (e.g. by hand): the person cannot answer any more, HR may
+        $this->userOf($this->org['worker'])->forceFill(['status' => 'blocked'])->save();
+        $this->actingAs($this->hr)->postJson($url, ['answers' => $this->answers])->assertCreated();
+        $this->assertSame($this->hr->id, SurveyResponse::query()->sole()->entered_by_user_id);
     }
 
     public function test_only_hr_reads_exit_answers(): void
@@ -149,20 +193,24 @@ final class ExitSurveyScheduleTest extends TestCase
         }
         $this->actingAs($this->hr)->getJson("/api/pulse/waves/{$wave->id}/responses")->assertOk()
             ->assertJsonPath('data.0.employee_id', $this->org['worker']->id)
+            ->assertJsonPath('data.0.entered_by_user_id', null)
             ->assertJsonPath('data.0.answers.liked', 'Team');
     }
 
     public function test_migration_moves_saved_old_template_surveys_to_five_questions_without_touching_answers(): void
     {
+        // the built-in template before 2026-10-07, keys in another order (jsonb does not keep it)
         $old = [
-            ['id' => 'reason', 'type' => 'single', 'text' => 'R', 'options' => ['A', 'B'], 'required' => true],
-            ['id' => 'enps', 'type' => 'enps', 'text' => 'E', 'required' => true],
-            ['id' => 'comment', 'type' => 'text', 'text' => 'C', 'required' => false],
+            ['required' => true, 'id' => 'reason', 'type' => 'single', 'text' => 'Головна причина звільнення', 'options' => ['Зарплата', 'Керівник', 'Задачі', 'Кар\'єрне зростання', 'Особисті обставини', 'Інше']],
+            ['id' => 'enps', 'type' => 'enps', 'text' => 'Чи порекомендуєте ви нас як роботодавця?', 'required' => true],
+            ['id' => 'comment', 'type' => 'text', 'text' => 'Що ми могли зробити інакше?', 'required' => false],
         ];
+        $rewritten = $old;
+        $rewritten[2]['text'] = 'Що нам змінити?'; // HR's own wording, same ids
         $this->exit->delete();
         $fresh = $this->survey(['title' => 'Fresh', 'type' => 'lifecycle', 'lifecycle_trigger' => 'exit', 'questions' => $old]);
         $used = $this->survey(['title' => 'Used', 'type' => 'lifecycle', 'lifecycle_trigger' => 'exit', 'questions' => $old]);
-        $custom = $this->survey(['title' => 'Custom', 'type' => 'lifecycle', 'lifecycle_trigger' => 'exit', 'questions' => [$old[0]]]);
+        $custom = $this->survey(['title' => 'Custom', 'type' => 'lifecycle', 'lifecycle_trigger' => 'exit', 'questions' => $rewritten]);
         $wave = $this->wave($used, ['anonymous' => false, 'min_group_size' => 1, 'subject_employee_id' => $this->org['worker']->id, 'trigger_key' => 'exit:2026-07-01']);
         $this->answer($wave, $this->org['worker'], ['reason' => 1, 'enps' => 7]);
 
@@ -177,7 +225,8 @@ final class ExitSurveyScheduleTest extends TestCase
         $this->assertFalse($used->active);
         $copy = Survey::query()->where('title', 'Used')->where('active', true)->sole();
         $this->assertSame($five, array_column($copy->questions, 'id'));
-        $this->assertSame(['reason'], array_column($custom->refresh()->questions, 'id'));
+        $this->assertSame('Що нам змінити?', $custom->refresh()->questions[2]['text'], 'rewritten by HR with the same ids: untouched');
+        $this->assertTrue($custom->active);
         $this->assertSame(1, (int) DB::table('survey_responses')->where('wave_id', $wave->id)->count());
     }
 

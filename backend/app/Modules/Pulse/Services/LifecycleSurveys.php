@@ -12,13 +12,17 @@ use App\Modules\Pulse\Enums\LifecycleTrigger;
 use App\Modules\Pulse\Enums\WaveStatus;
 use App\Modules\Pulse\Models\Survey;
 use Illuminate\Support\Carbon;
+use Psr\Log\LoggerInterface;
 
 /**
  * Lifecycle surveys: a personal wave for one employee — 30 / 90 days after hire (found by "pulse.tick", with a
  * catch-up window for missed cron runs) and the exit survey.
  * Exit: a FUTURE termination opens the wave when it is scheduled (People EmployeeTerminationScheduled) — the person
  * keeps access until the end of fired_at (Kyiv), so the wave lasts until then and never longer than 14 days; a
- * cancellation deletes it (or closes it when it already has an answer — answers are never lost). A termination today
+ * cancellation deletes it (or closes it when it already has an answer — answers are never lost; the check and the
+ * delete run under a row lock of the wave, so an answer arriving at that moment waits and is not cascaded away).
+ * Scheduling the same date again: an earlier wave of that date without answers is replaced by a fresh open one; one
+ * with answers stays closed (logged). A termination today
  * or in the past (access ends at once) opens it on EmployeeTerminated for 14 days, as before; HR may then enter the
  * answers on the person's behalf (ResponseService::respondOnBehalf).
  * Idempotent: one wave per (survey, employee, "<trigger>:<date>"); EmployeeTerminated after a scheduled wave does not
@@ -36,6 +40,7 @@ final readonly class LifecycleSurveys
         private SurveyRepository $surveys,
         private EmployeeRepository $employees,
         private WaveLifecycle $lifecycle,
+        private LoggerInterface $log,
     ) {}
 
     /** @return int waves started (0 when the wave of that date already exists, e.g. opened when it was scheduled) */
@@ -58,7 +63,25 @@ final readonly class LifecycleSurveys
         $limit = $now->copy()->addDays(self::DURATION_DAYS);
         $ends = $lastMoment->lt($limit) ? $lastMoment : $limit;
 
-        return $ends->lte($now) ? 0 : $this->startExit($employee, $employee->fired_at, $now, $ends);
+        if ($ends->lte($now)) {
+            return 0;
+        }
+        $key = LifecycleTrigger::Exit->value.':'.$employee->fired_at->toDateString();
+        $started = 0;
+        foreach ($this->surveys->activeLifecycle(LifecycleTrigger::Exit) as $survey) {
+            $existing = $this->surveys->lifecycleWavesOf($employee->id, $key)->firstWhere('survey_id', $survey->id);
+            if ($existing !== null && $existing->status === WaveStatus::Closed) {
+                if ((int) $existing->responses_count > 0) {
+                    $this->log->info('pulse.exit_wave_kept_closed', ['wave' => $existing->id]);
+
+                    continue;
+                }
+                $this->surveys->deleteWave($existing); // closed without answers: open a fresh one instead
+            }
+            $started += $this->start($survey, $employee, LifecycleTrigger::Exit, $employee->fired_at, $now, $ends);
+        }
+
+        return $started;
     }
 
     /** @return int waves deleted or closed for the cancelled date */
@@ -67,11 +90,17 @@ final readonly class LifecycleSurveys
         $now ??= Carbon::now();
         $waves = $this->surveys->lifecycleWavesOf($employee->id, LifecycleTrigger::Exit->value.':'.$firedAt);
         foreach ($waves as $wave) {
-            if ((int) $wave->responses_count === 0) {
-                $this->surveys->deleteWave($wave);
-            } elseif ($wave->status !== WaveStatus::Closed) {
-                $this->lifecycle->close($wave, $now);
-            }
+            $this->surveys->transaction(function () use ($wave, $now): void {
+                $locked = $this->surveys->lockWave($wave->id);
+                if ($locked === null) {
+                    return;
+                }
+                if ((int) $locked->responses_count === 0) {
+                    $this->surveys->deleteWave($locked);
+                } elseif ($locked->status !== WaveStatus::Closed) {
+                    $this->lifecycle->close($locked, $now);
+                }
+            });
         }
 
         return $waves->count();
