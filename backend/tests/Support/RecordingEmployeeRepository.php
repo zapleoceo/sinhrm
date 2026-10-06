@@ -75,6 +75,16 @@ final class RecordingEmployeeRepository implements EmployeeRepository
         return $this->inner->dueTerminations($today);
     }
 
+    public function pendingTerminationEvents(): array
+    {
+        return $this->inner->pendingTerminationEvents();
+    }
+
+    public function markTerminationEventSent(int $id): void
+    {
+        $this->inner->markTerminationEventSent($id);
+    }
+
     public function create(array $attributes): Employee
     {
         return $this->inner->create($attributes);

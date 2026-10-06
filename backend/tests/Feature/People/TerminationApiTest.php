@@ -11,10 +11,14 @@ use App\Modules\People\Events\EmployeeRestored;
 use App\Modules\People\Events\EmployeeTerminated;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Services\ScheduledTerminationJob;
+use App\Modules\Users\Contracts\AccountBlocker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Testing\Fakes\EventFake;
+use RuntimeException;
+use Tests\Support\FailingAccountBlocker;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
@@ -273,8 +277,86 @@ final class TerminationApiTest extends TestCase
 
         $jobs = $this->postJson('/api/ops/jobs/run', [], ['X-Ops-Secret' => 'test-secret'])->assertOk()->json('jobs');
         $this->assertIsArray($jobs);
-        $this->assertSame(['ok' => true, 'people_terminated' => 1], $jobs['people.terminations']);
+        $this->assertSame([
+            'ok' => true,
+            'people_terminated' => 1,
+            'people_termination_failed' => 0,
+            'people_login_block_skipped' => 0,
+            'people_termination_events_resent' => 0,
+        ], $jobs['people.terminations']);
         $this->assertTrue($org['worker']->refresh()->isTerminated());
+    }
+
+    public function test_a_failure_on_one_employee_does_not_stop_the_others(): void
+    {
+        $org = $this->org();
+        $admin = $this->login(UserRole::Admin);
+        foreach (['worker', 'peer'] as $who) {
+            $this->actingAs($admin)->postJson('/api/people/'.$org[$who]->id.'/terminate', ['fired_at' => '2026-07-15'])->assertOk();
+        }
+        // the first due employee (lower id) fails while blocking the login; the second must still be terminated
+        $real = $this->app->make(AccountBlocker::class);
+        $this->app->instance(AccountBlocker::class, new FailingAccountBlocker($real, $this->userOf($org['worker'])->id));
+        Carbon::setTestNow('2026-07-16 09:00:00');
+
+        $result = $this->runJob();
+        $this->assertSame(1, $result['people_terminated']);
+        $this->assertSame(1, $result['people_termination_failed']);
+        $this->assertFalse($org['worker']->refresh()->isTerminated(), 'rolled back, still scheduled');
+        $this->assertTrue($org['worker']->isTerminationScheduled());
+        $this->assertTrue($org['peer']->refresh()->isTerminated());
+
+        // the next run (blocker healthy again) picks the failed one up
+        $this->app->instance(AccountBlocker::class, $real);
+        $again = $this->runJob();
+        $this->assertSame(1, $again['people_terminated']);
+        $this->assertSame(0, $again['people_termination_failed']);
+        $this->assertTrue($org['worker']->refresh()->isTerminated());
+        Event::assertDispatchedTimes(EmployeeTerminated::class, 2);
+    }
+
+    public function test_login_block_skipped_is_counted(): void
+    {
+        $org = $this->org();
+        $this->userOf($org['other'])->forceFill(['status' => UserStatus::Blocked])->save();
+        $this->actingAs($this->login(UserRole::Admin))->postJson('/api/people/'.$org['other']->id.'/terminate', ['fired_at' => '2026-07-15'])->assertOk();
+        Carbon::setTestNow('2026-07-16 09:00:00');
+
+        $result = $this->runJob();
+        $this->assertSame(1, $result['people_terminated']);
+        $this->assertSame(1, $result['people_login_block_skipped']);
+        $this->assertNull($org['other']->refresh()->termination_block_version);
+    }
+
+    public function test_a_failed_terminated_event_is_resent_on_the_next_run(): void
+    {
+        // real dispatcher for this test, with a listener that fails once
+        $fake = Event::getFacadeRoot();
+        $this->assertInstanceOf(EventFake::class, $fake);
+        Event::swap($fake->dispatcher);
+        $calls = 0;
+        Event::listen(EmployeeTerminated::class, function () use (&$calls): void {
+            $calls++;
+            if ($calls === 1) {
+                throw new RuntimeException('listener down');
+            }
+        });
+        $org = $this->org();
+
+        // the termination itself succeeds; the event stays pending
+        $this->actingAs($this->login(UserRole::Admin))->postJson('/api/people/'.$org['worker']->id.'/terminate', ['fired_at' => '2026-07-14'])->assertOk()
+            ->assertJsonPath('data.status', 'terminated');
+        $this->assertTrue($org['worker']->refresh()->termination_event_pending);
+        $this->assertSame(UserStatus::Blocked, $this->userOf($org['worker'])->status);
+
+        $result = $this->runJob();
+        $this->assertSame(1, $result['people_termination_events_resent']);
+        $this->assertSame(0, $result['people_termination_failed']);
+        $this->assertFalse($org['worker']->refresh()->termination_event_pending);
+        $this->assertSame(2, $calls);
+
+        $this->assertSame(0, $this->runJob()['people_termination_events_resent']);
+        $this->assertSame(2, $calls);
     }
 
     /**
@@ -284,8 +366,19 @@ final class TerminationApiTest extends TestCase
      */
     private function due(): int
     {
+        return $this->runJob()['people_terminated'];
+    }
+
+    /**
+     * @return array<string, int>
+     *
+     * @phpstan-impure
+     */
+    private function runJob(): array
+    {
+        /** @var array<string, int> $result */
         $result = $this->app->make(ScheduledTerminationJob::class)->run(Carbon::now());
 
-        return (int) $result['people_terminated'];
+        return $result;
     }
 }

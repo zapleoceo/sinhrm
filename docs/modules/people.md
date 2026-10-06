@@ -78,9 +78,9 @@
 | `GET /api/people/{id}` | любой активный | — | профиль по уровням + `access`; **уволенный** — только админу и руководителям выше него, остальным 404 |
 | `POST /api/people` | admin | `full_name, hired_at` (обязательны), остальные поля; `status` только `active\|on_leave` | 201 |
 | `PATCH /api/people/{id}` | admin | частично; `manager_id` на себя или на подчинённого → 422 `manager_cycle`; занятый `user_id` → 422 | 200 |
-| `POST /api/people/{id}/terminate` | admin или руководитель выше по `manager_id` (не сам себя) | `{fired_at, reason?}` (`Y-m-d`; может быть в будущем) | 200: `fired_at` ≤ сегодня (Киев) — `status=terminated` сразу; позже — запланировано: `status` прежний, `termination_scheduled=true`, работа и доступ до конца дня `fired_at` по Киеву. Чужой → 403; уволенный вне видимости → 404; уже уволен → 409 `already_terminated`; уже запланировано → 409 `termination_scheduled` |
+| `POST /api/people/{id}/terminate` | HR — суперадмин, админ, HR-менеджер (`UserRole::hrStaff()`, gate `people-manage`), или руководитель выше по `manager_id`; не сам себя | `{fired_at, reason?}` (`Y-m-d`; может быть в будущем) | 200: `fired_at` ≤ сегодня (Киев) — `status=terminated` сразу; позже — запланировано: `status` прежний, `termination_scheduled=true`, работа и доступ до конца дня `fired_at` по Киеву. Чужой → 403; уволенный вне видимости → 404; уже уволен → 409 `already_terminated`; уже запланировано → 409 `termination_scheduled` |
 | `POST /api/people/{id}/terminate/cancel` | те же | — | 200, `fired_at=null`; нечего отменять → 409 `termination_not_scheduled`; уже уволен → 409 `already_terminated` |
-| `POST /api/people/{id}/restore` | admin (gate `people-manage`) | `{position_id?, department_id?, branch_id?, manager_id?, hired_at?}`; нет поля — прежнее значение, `null` — очистить, строки `"5"` ок | 200, `status=active`; не уволен → 409 `not_terminated`; данные уже стёрты (Privacy) → 409 `anonymized`; руководитель — сам или подчинённый → 422 `manager_cycle`; неизвестная/неактивная должность, уволенный руководитель → 422 |
+| `POST /api/people/{id}/restore` | HR — суперадмин, админ, HR-менеджер (`UserRole::hrStaff()`, gate `people-manage`) | `{position_id?, department_id?, branch_id?, manager_id?, hired_at?}`; нет поля — прежнее значение, `null` — очистить, строки `"5"` ок | 200, `status=active`; не уволен → 409 `not_terminated`; данные уже стёрты (Privacy) → 409 `anonymized`; руководитель — сам или подчинённый → 422 `manager_cycle`; неизвестная/неактивная должность, уволенный руководитель → 422 |
 | `GET /api/people/org-chart` | любой активный | `branch_id?`, `root_id?`, `mine=1` (своя ветка) | лес `{id, full_name, avatar_url, position, department, branch, reports_count, reports[]}` без уволенных; только уровень «справочник» |
 | `GET /api/me/employee` | любой активный | — | свой профиль; нет связи → 404 `no_employee` |
 | `POST /api/me/employee/change-requests` | сам | `{changes: {phone?, personal_email?, address?, emergency_contact?}, comment?}`; другой ключ → 422 | 201 |
@@ -109,7 +109,7 @@
 (админ = HR, руководитель — поддерево по `manager_id`), `EmployeeRepository::working()` и `managerMap()`.
 
 ### Увольнение с даты и восстановление (2026-10-06, решения владельца PROD-12, PROD-14)
-- **Кто.** Уволить и отменить запланированное увольнение — HR (суперадмин, админ, HR-менеджер) и любой руководитель выше
+- **Кто.** Уволить и отменить запланированное увольнение — HR — суперадмин, админ, HR-менеджер (`UserRole::hrStaff()`, gate `people-manage`) и любой руководитель выше
   по цепочке `manager_id`; себя не увольняет никто. Восстановить — только HR. Видимость уволенных не расширена
   (профиль, справочник, пикер — как раньше).
 - **Дата.** `fired_at` — последний рабочий день. Решение владельца 2026-10-07: при будущей дате доступ снимается **в конце**
@@ -123,6 +123,17 @@
   `status=terminated`, вход заблокирован, событие `EmployeeTerminated`. Повторный прогон ничего не делает
   (идемпотентно). В день X человек ещё активен; первый прогон после 00:00 по Киеву дня X+1 (летом с 21:00 UTC дня X,
   зимой с 22:00 UTC) — уволен, вход заблокирован.
+- **Сбои изолированы.** Каждый сотрудник обрабатывается отдельно: ошибка (блокировка входа, БД, подписчик) пишется в лог
+  только с id (`people.termination_failed`), транзакция этого сотрудника откатывается (он остаётся запланированным и
+  подхватывается следующим прогоном), остальные обрабатываются. Ответ задачи: `people_terminated`,
+  `people_termination_failed`, `people_login_block_skipped` (вход есть, но увольнение его не заблокировало: уже
+  заблокирован вручную или это последний активный суперадмин), `people_termination_events_resent`.
+- **Доставка события.** `EmployeeTerminated` отправляется после коммита и изолирован: при увольнении ставится флаг
+  `employees.termination_event_pending`, после успешной отправки он снимается (без записи в аудит — технический флаг).
+  Если подписчик упал, увольнение не откатывается, ошибка — в лог (`people.termination_event_failed`, только id), а задача
+  `people.terminations` повторяет событие при каждом прогоне, пока оно не пройдёт. Повтор безопасен: подписчики
+  идемпотентны (Workflows — один запуск на триггер и дату-якорь, Pulse — один exit-опрос на дату увольнения).
+  Восстановление снимает флаг.
 - **Блокировка входа.** Если у записи есть пользователь, он блокируется тем же механизмом, что ручная блокировка в
   «Користувачі» (`Users/Contracts/AccountBlocker` → `UserAdminRepository`: статус `blocked`, все сессии, токены и remember
   token отзываются в одной транзакции, PR #149). Последнего активного суперадмина увольнение не блокирует (предупреждение в
@@ -137,7 +148,8 @@
   `EmployeeTerminated`; повторный запуск offboarding-шаблонов решают правила Workflows, [workflows.md](workflows.md)).
   Отчёты считают по текущим `hired_at`/`fired_at`, отдельной истории периодов работы нет.
 - **Код.** `Services/TerminationService` (terminate, cancel, applyDue, restore), `Http/Requests/RestoreEmployeeRequest`,
-  `Events/EmployeeRestored`, миграция `2026_10_24_100001_add_termination_block_version_to_employees`.
+  `Events/EmployeeRestored`, `DTO/TerminationOutcome`, миграция `2026_10_24_100001_add_termination_block_version_to_employees`
+  (`termination_block_version`, `termination_event_pending`).
   Тесты: `tests/Feature/People/TerminationApiTest.php` (права по ролям и цепочке, будущая и прошлая дата, граница суток
   по Киеву с `Carbon::setTestNow`: в день X 21:00/22:00 UTC ещё активен, после конца дня X — уволен, повтор, отмена, восстановление, ручной блок, 403/404/409/422, строковые id),
   `tests/Unit/Users/AccountBlockServiceTest.php`.

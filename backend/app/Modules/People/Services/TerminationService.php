@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\PeopleContext;
+use App\Modules\People\DTO\TerminationOutcome;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Events\EmployeeRestored;
 use App\Modules\People\Events\EmployeeTerminated;
@@ -17,6 +18,7 @@ use App\Modules\Users\Contracts\AccountBlocker;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Termination from a date, its cancellation, and restore (owner decisions PROD-12, PROD-14).
@@ -24,7 +26,8 @@ use Psr\Log\LoggerInterface;
  *   UTC date) it applies at once; a later date is scheduled: the employee keeps working and access until the END of
  *   that day, ScheduledTerminationJob applies it from 00:00 Kyiv of the next day (owner decision 2026-10-07).
  * - Applying: status terminated, the linked login blocked with every credential revoked (AccountBlocker), then
- *   EmployeeTerminated (Workflows offboarding, Pulse exit survey), exactly once per termination.
+ *   EmployeeTerminated (Workflows offboarding, Pulse exit survey) after the commit. A failing listener is logged and
+ *   the event re-sent by the next cron run (employees.termination_event_pending) until it goes through.
  * - Restore: working again; the login is unblocked only if that termination blocked it and nobody blocked it since.
  * Every change goes through the Employee model, so the audit log records it (who, fired_at, status).
  */
@@ -59,8 +62,11 @@ final readonly class TerminationService
             return true;
         });
         $this->log->info($applied ? 'people.employee_terminated' : 'people.termination_scheduled', ['id' => $employee->id, 'by' => $actor->id]);
+        if ($applied) {
+            $this->dispatchTerminated($employee->id);
+        }
 
-        return $this->afterChange($employee->id, $applied);
+        return $this->records->find($employee->id);
     }
 
     /** @throws PeopleException forbidden | already_terminated | termination_not_scheduled */
@@ -87,24 +93,39 @@ final readonly class TerminationService
      * (Kyiv date > fired_at).
      * Idempotent: a row already terminated, cancelled or not yet due is skipped under the row lock.
      */
-    public function applyDue(int $employeeId, Carbon $now): bool
+    public function applyDue(int $employeeId, Carbon $now): TerminationOutcome
     {
         $today = UserTime::today($now)->toDateString();
-        $applied = $this->employees->transaction(function () use ($employeeId, $today): bool {
+        $outcome = $this->employees->transaction(function () use ($employeeId, $today): TerminationOutcome {
             $fresh = $this->locked($employeeId);
             if (! $fresh->isTerminationScheduled() || $fresh->fired_at?->toDateString() >= $today) {
-                return false;
+                return TerminationOutcome::skipped();
             }
-            $this->apply($fresh, null);
 
-            return true;
+            return new TerminationOutcome(true, ! $this->apply($fresh, null));
         });
-        if ($applied) {
+        if ($outcome->applied) {
             $this->log->info('people.employee_terminated', ['id' => $employeeId, 'by' => 'schedule']);
-            $this->afterChange($employeeId, true);
+            $this->dispatchTerminated($employeeId);
         }
 
-        return $applied;
+        return $outcome;
+    }
+
+    /**
+     * Cron: re-sends EmployeeTerminated for a terminated employee whose event did not go through (a listener threw).
+     * Subscribers are idempotent per employee and date (Workflows: unique run per trigger/anchor; Pulse: one exit
+     * survey per termination date), so a repeat after a partial success does not duplicate work.
+     * Returns true when sent, false when a listener failed again, null when there was nothing to send.
+     */
+    public function retryTerminatedEvent(int $employeeId): ?bool
+    {
+        $employee = $this->records->find($employeeId);
+        if (! $employee->isTerminated() || ! $employee->termination_event_pending) {
+            return null;
+        }
+
+        return $this->dispatchTerminated($employeeId);
     }
 
     /**
@@ -131,6 +152,7 @@ final readonly class TerminationService
                 'fired_at' => null,
                 'termination_reason' => null,
                 'termination_block_version' => null,
+                'termination_event_pending' => false,
             ]);
             // A manual block (before or after the termination) is never lifted here.
             $user = $fresh->user;
@@ -145,25 +167,41 @@ final readonly class TerminationService
         return $restored;
     }
 
-    /** Inside the transaction: status terminated, then block the login and remember which block was ours. */
-    private function apply(Employee $employee, ?int $actorId): void
+    /**
+     * Inside the transaction: status terminated, the event marked pending, then block the login and remember which
+     * block was ours. Returns false when a linked login was not blocked by this termination (already blocked, or the
+     * last active superadmin).
+     */
+    private function apply(Employee $employee, ?int $actorId): bool
     {
-        $attributes = ['status' => EmployeeStatus::Terminated->value];
+        $attributes = ['status' => EmployeeStatus::Terminated->value, 'termination_event_pending' => true];
+        $blocked = true;
         $user = $employee->user;
         if ($user !== null) {
             $attributes['termination_block_version'] = $this->accounts->block($user, $actorId);
+            $blocked = $attributes['termination_block_version'] !== null;
         }
         $this->employees->update($employee, $attributes);
+
+        return $blocked;
     }
 
-    private function afterChange(int $employeeId, bool $terminated): Employee
+    /**
+     * After the commit: EmployeeTerminated, isolated. A throwing listener never undoes the termination; the flag
+     * termination_event_pending stays true and ScheduledTerminationJob re-sends the event on the next cron run.
+     */
+    private function dispatchTerminated(int $employeeId): bool
     {
-        $employee = $this->records->find($employeeId);
-        if ($terminated) {
-            $this->events->dispatch(new EmployeeTerminated($employee));
-        }
+        try {
+            $this->events->dispatch(new EmployeeTerminated($this->records->find($employeeId)));
+        } catch (Throwable $e) {
+            $this->log->error('people.termination_event_failed', ['id' => $employeeId, 'error' => $e::class]);
 
-        return $employee;
+            return false;
+        }
+        $this->employees->markTerminationEventSent($employeeId);
+
+        return true;
     }
 
     private function locked(int $id): Employee

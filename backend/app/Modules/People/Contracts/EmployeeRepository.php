@@ -54,6 +54,16 @@ interface EmployeeRepository
      */
     public function dueTerminations(Carbon $today): array;
 
+    /**
+     * Terminated employees whose EmployeeTerminated did not go through yet (termination_event_pending).
+     *
+     * @return list<int>
+     */
+    public function pendingTerminationEvents(): array;
+
+    /** Clears termination_event_pending without model events (a technical flag, not an audited change). */
+    public function markTerminationEventSent(int $id): void;
+
     /** @param  array<string, mixed>  $attributes */
     public function create(array $attributes): Employee;
 

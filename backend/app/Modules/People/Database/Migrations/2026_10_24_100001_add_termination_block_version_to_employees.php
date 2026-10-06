@@ -16,13 +16,15 @@ return new class extends Migration
     {
         Schema::table('employees', function (Blueprint $table): void {
             $table->unsignedInteger('termination_block_version')->nullable();
+            // EmployeeTerminated not delivered yet (a listener threw): the cron job re-sends it.
+            $table->boolean('termination_event_pending')->default(false);
         });
     }
 
     public function down(): void
     {
         Schema::table('employees', function (Blueprint $table): void {
-            $table->dropColumn('termination_block_version');
+            $table->dropColumn(['termination_block_version', 'termination_event_pending']);
         });
     }
 };
