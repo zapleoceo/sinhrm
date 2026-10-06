@@ -3,8 +3,8 @@
 Прочитай перед любой задачей: `docs/README.md`, `docs/guides/development.md`, `docs/architecture/secrets.md`.
 
 ## Жёсткие правила
-1. Одна задача = одна ветка от `main` → PR → зелёный CI → ревью Sonnet 5.5 (approve) → squash-merge. В `main` не пушить.
-2. Код пишет Opus 5.5; ревью — отдельный агент Sonnet 5.5 (с 29.09.2026, раньше — Sonnet 5): SOLID, DRY, модульность, безопасность, тесты, документация.
+1. Одна задача = одна ветка от `main` → PR → зелёный CI → независимое ревью Astra локального и GitHub diff (approve) → разрешённый squash-merge. В `main` не пушить.
+2. По инструкции владельца от 05.10.2026 исполнение передано недорогой Luna; она продолжает сохранённые задачи SOL. Выводы проверяет отдельный агент, код перед merge проверяет независимый Astra: SOLID, DRY, модульность, безопасность, тесты, документация. Эта инструкция имеет приоритет над прежним процессом SOL/Luna и Opus/Sonnet. Вердикт агента и формальный GitHub approval — разные доказательства.
 3. Репозиторий ПУБЛИЧНЫЙ: никаких секретов, токенов, реальных персональных данных, справочников компании,
    внутренних URL с токенами. Секреты — только в БД (`integration_secrets`) или Vercel env (DB_URL, APP_KEY, SUPERADMIN_EMAIL).
 4. Изменил модуль → обнови `docs/modules/<модуль>.md`. Каждый PR добавляет запись в журнал — новый файл
@@ -23,6 +23,8 @@
 11. Тяжёлое тестирование выносим в GitHub Actions, локально минимум (владелец, 02.10.2026): локально только lint и точечные тесты изменённых файлов (`ng test --include <файл>`, `phpunit --filter`); полные `ng test`, `npm run e2e`, ui-parity, весь phpunit/phpstan — в CI. Пушим рано, чиним по логам CI; несколько тяжёлых локальных прогонов параллельно не держим. Исключение — CI недоступен или нужен снимок/реальный запрос для «Доказ» — один точечный прогон. Подробнее — `docs/guides/development.md`, «Тесты: что локально, что в CI».
 
 ## Команды (CI)
+Порядок экономии контекста/логов и передачи состояния для Codex — [docs/guides/agent-efficiency.md](docs/guides/agent-efficiency.md); короткая точка входа — `AGENTS.md`. Он сохраняет все обязательные проверки проекта.
+
 Бэкенд: `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `php artisan test --coverage --min=70`.
 Фронт: `npx ng lint`, `npx ng test --watch=false`, `npm run test:docs`, `npm run build` (собирает справку `/docs` из `docs/` и приложение).
 UI parity: `npm run build && npm run e2e` (job `ui-parity`, пока не обязательный).

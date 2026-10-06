@@ -20,7 +20,7 @@ interface ApplicationRepository
     public function latestActiveFor(int $candidateId): ?Application;
 
     /** @return Collection<int, Application> with vacancy, stage, reject reason and the route (stage changes) */
-    public function forCandidate(int $candidateId): Collection;
+    public function forCandidate(int $candidateId, Scope $scope): Collection;
 
     /** @param  array<string, mixed>  $attributes */
     public function create(array $attributes): Application;

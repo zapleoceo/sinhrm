@@ -9,13 +9,13 @@
   "main \"\""
  ],
  "interactive": [
-  "button \"Next page\"",
-  "button \"Previous page\" [disabled]",
   "button \"Головне меню\"",
   "button \"Додати співробітника\"",
   "button \"Поговорити зі Стіком\"",
-  "combobox \"Items per page:\"",
+  "button \"Наступна сторінка\"",
+  "button \"Попередня сторінка\" [disabled]",
   "combobox \"Відділ\"",
+  "combobox \"На сторінці:\"",
   "combobox \"Посада\"",
   "combobox \"Статус\"",
   "combobox \"Філія\"",

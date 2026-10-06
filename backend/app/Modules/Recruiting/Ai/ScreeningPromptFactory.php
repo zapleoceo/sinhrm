@@ -45,7 +45,7 @@ final readonly class ScreeningPromptFactory
             city: $candidate->city?->name,
             tags: $candidate->tags ?? [],
             names: [$candidate->full_name],
-            materials: $this->screenings->materials($candidate->id, self::MATERIALS_COUNT),
+            materials: $this->screenings->materials($candidate->id, $application->id, self::MATERIALS_COUNT),
         );
     }
 }

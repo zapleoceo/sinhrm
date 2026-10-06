@@ -8,11 +8,11 @@ const DEPLOY_WORKFLOW_ID = 'deploy.yml';
 const DEPLOY_JOB_NAME = 'deploy';
 
 function matchesApi(path) {
-  return path.startsWith('backend/') || path === WORKFLOW_FILE;
+  return path.startsWith('backend/') || path === WORKFLOW_FILE || path === 'scripts/stamp-build.mjs';
 }
 
 function matchesWeb(path) {
-  return path.startsWith('frontend/') || path.startsWith('docs/') || path === WORKFLOW_FILE;
+  return path.startsWith('frontend/') || path.startsWith('docs/') || path === WORKFLOW_FILE || path === 'scripts/stamp-build.mjs';
 }
 
 /**
