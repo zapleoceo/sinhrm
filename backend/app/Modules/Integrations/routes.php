@@ -12,6 +12,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class, 'can:'.Integration
     ->group(function (): void {
         Route::get('/', [IntegrationsController::class, 'index'])->name('integrations.index');
         Route::put('ai-policy', [IntegrationsController::class, 'updateAiPolicy'])->name('integrations.ai-policy');
+        Route::get('itstep-directory/status', [IntegrationsController::class, 'employeeDirectoryStatus'])->name('integrations.itstep-directory.status');
+        Route::get('itstep-directory/preview', [IntegrationsController::class, 'employeeDirectoryPreview'])->name('integrations.itstep-directory.preview');
+        Route::get('itstep-directory/synthetic-preview', [IntegrationsController::class, 'employeeDirectorySyntheticPreview'])->name('integrations.itstep-directory.synthetic-preview');
         Route::put('{integration}', [IntegrationsController::class, 'update'])->name('integrations.update');
         Route::get('{integration}/logs', [IntegrationsController::class, 'logs'])->name('integrations.logs');
         Route::post('{integration}/check', [IntegrationsController::class, 'check'])->name('integrations.check');

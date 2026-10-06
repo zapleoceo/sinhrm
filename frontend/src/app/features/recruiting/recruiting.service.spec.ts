@@ -51,6 +51,21 @@ describe('RecruitingService', () => {
     c.flush(EMPTY);
   });
 
+  it('sends screening ranking with pagination and filters, omitting sort when disabled', () => {
+    api.candidates({ sort: 'screening_score', vacancy_id: 4, status: 'active', page: 2, perPage: 20 }).subscribe();
+    const ranked = http.expectOne((r) => r.url === '/api/candidates');
+    expect(ranked.request.params.get('sort')).toBe('screening_score');
+    expect(ranked.request.params.get('vacancy_id')).toBe('4');
+    expect(ranked.request.params.get('status')).toBe('active');
+    expect(ranked.request.params.get('page')).toBe('2');
+    expect(ranked.request.params.get('perPage')).toBe('20');
+    ranked.flush(EMPTY);
+    api.candidates({ sort: undefined, vacancy_id: 4, page: 1 }).subscribe();
+    const ordinary = http.expectOne((r) => r.url === '/api/candidates');
+    expect(ordinary.request.params.has('sort')).toBe(false);
+    expect(ordinary.request.params.get('vacancy_id')).toBe('4');
+    ordinary.flush(EMPTY);
+  });
   it('sends the timeline filter as a comma list and omits it when empty', () => {
     api.timeline(5, ['call', 'stage'], 2, 30).subscribe();
     const req = http.expectOne((r) => r.url === '/api/candidates/5/timeline');

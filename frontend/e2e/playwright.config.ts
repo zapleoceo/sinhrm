@@ -10,7 +10,7 @@ const common = { locale: 'uk-UA', timezoneId: 'Europe/Kyiv', reducedMotion: 'red
 
 export default defineConfig({
   testDir: '.',
-  testMatch: VISUAL ? ['visual.pw.ts'] : ['parity.pw.ts', 'flows.pw.ts', 'integration-dates.pw.ts'],
+  testMatch: VISUAL ? ['visual.pw.ts'] : ['parity.pw.ts', 'flows.pw.ts', 'assistant-context.pw.ts', 'integration-dates.pw.ts'],
   outputDir: '.out/results',
   snapshotPathTemplate: '.visual/{projectName}/{arg}{ext}',
   fullyParallel: true,

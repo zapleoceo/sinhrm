@@ -28,6 +28,12 @@ interface UserAdminRepository
 
     public function setStatus(User $user, UserStatus $status): void;
 
+    /** Refresh the target under a row lock inside transaction(), before evaluating its current status. */
+    public function lockAndRefresh(User $user): void;
+
+    /** All DB sessions, PAT names and remember token; must share the status change transaction. */
+    public function revokeCredentials(User $user): void;
+
     /** @param  list<int>  $branchIds  replaces the user's branches (Directory module, table branch_user) */
     public function syncBranches(User $user, array $branchIds): void;
 

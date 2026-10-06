@@ -55,6 +55,7 @@
   "button \"Продуктивність\"",
   "button \"Рекрутинг\" [expanded]",
   "button \"Сервіси\"",
+  "button \"Спочатку високий бал ШІ\"",
   "link \"SinHRM\" -> /",
   "link \"Бондаренко Анна [ТЕСТ]\" -> /candidates/57",
   "link \"Вакансії\" -> /vacancies",

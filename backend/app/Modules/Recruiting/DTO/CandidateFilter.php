@@ -18,5 +18,6 @@ final readonly class CandidateFilter
         public ?int $ownerId = null,
         public ?int $channelId = null,
         public int $perPage = 50,
+        public ?string $sort = null,
     ) {}
 }
