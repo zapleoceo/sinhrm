@@ -42,7 +42,7 @@ interface TouchpointRepository
      * @param  list<Channel>|null  $channels
      * @return LengthAwarePaginator<int, TimelineEntry>
      */
-    public function timeline(int $candidateId, ?array $channels, bool $withStages, int $perPage): LengthAwarePaginator;
+    public function timeline(Scope $scope, int $candidateId, ?array $channels, bool $withStages, int $perPage): LengthAwarePaginator;
 
     /** @return LengthAwarePaginator<int, Touchpoint> unmatched (no candidate) touchpoints in scope, newest first */
     public function inbox(Scope $scope, int $perPage): LengthAwarePaginator;

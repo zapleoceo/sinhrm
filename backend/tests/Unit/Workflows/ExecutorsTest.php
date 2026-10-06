@@ -89,6 +89,8 @@ final class ExecutorsTest extends TestCase
         };
         $this->app->instance(CalendarClient::class, $calendar);
         $context = $this->context(new StepSnapshot('Intro', StepAction::AddCalendarEvent, 0, AssigneeRule::HrAdmin, null, ['time' => '14:30', 'duration_minutes' => 30, 'online' => true]), $admin->id, ['work_email' => 'New.Person@Example.test']);
+        // The scheduler stores Oct 5 local midnight as Oct 4 in UTC; the meeting must stay on Oct 5.
+        $context->runStep->update(['due_at' => Carbon::parse('2026-10-04 21:00:00', 'UTC')]);
 
         $outcome = $this->app->make(ExecutorRegistry::class)->for(StepAction::AddCalendarEvent)->execute($context);
 

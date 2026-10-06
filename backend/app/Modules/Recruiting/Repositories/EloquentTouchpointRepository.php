@@ -11,6 +11,7 @@ use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\TimelineItemType;
 use App\Modules\Recruiting\Models\StageChange;
 use App\Modules\Recruiting\Models\Touchpoint;
+use App\Modules\Recruiting\Support\ApplicationVisibility;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
@@ -86,13 +87,15 @@ final class EloquentTouchpointRepository implements TouchpointRepository
         return $touchpoint;
     }
 
-    public function timeline(int $candidateId, ?array $channels, bool $withStages, int $perPage): LengthAwarePaginator
+    public function timeline(Scope $scope, int $candidateId, ?array $channels, bool $withStages, int $perPage): LengthAwarePaginator
     {
         $withTouches = $channels === null || $channels !== [];
         $touches = DB::table('touchpoints')
             ->selectRaw("'touchpoint' as type, id, occurred_at as at")
             ->where('candidate_id', $candidateId)
             ->whereNull('stage_change_id')
+            ->where(fn ($query) => $query->whereNull('application_id')
+                ->orWhereIn('application_id', ApplicationVisibility::query($scope)->select('applications.id')))
             ->when($channels !== null, fn ($q) => $q->whereIn('channel', array_map(
                 static fn (Channel $c): string => $c->value,
                 $channels ?? [],
@@ -100,7 +103,8 @@ final class EloquentTouchpointRepository implements TouchpointRepository
         $stages = DB::table('stage_changes')
             ->join('applications', 'applications.id', '=', 'stage_changes.application_id')
             ->selectRaw("'stage_change' as type, stage_changes.id as id, stage_changes.at as at")
-            ->where('applications.candidate_id', $candidateId);
+            ->where('applications.candidate_id', $candidateId)
+            ->whereIn('applications.id', ApplicationVisibility::query($scope)->select('applications.id'));
 
         $union = match (true) {
             $withTouches && $withStages => $touches->unionAll($stages),
