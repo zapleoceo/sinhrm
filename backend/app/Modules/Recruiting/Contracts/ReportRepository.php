@@ -39,6 +39,22 @@ interface ReportRepository
     public function rejectReasons(Scope $scope, DateRange $range): array;
 
     /**
+     * Applications rejected in the range by reason × the stage they were rejected from × the author of the rejecting
+     * step (the latest stage change into the current reject stage). Null stage/user = no such history (or user deleted).
+     *
+     * @return list<array{reject_reason_id: int|null, name: string|null, stage_id: int|null, stage_name: string|null, stage_position: int|null, user_id: int|null, user_name: string|null, count: int}>
+     */
+    public function rejectionBreakdown(Scope $scope, DateRange $range): array;
+
+    /**
+     * Those of the users that hold a recruiting role (superadmin/admin/recruiter): only they are named in reports.
+     *
+     * @param  list<int>  $userIds
+     * @return list<int>
+     */
+    public function recruitingUserIds(array $userIds): array;
+
+    /**
      * Candidates created in the range by acquisition channel (null = no channel), with their applications, how many
      * applications reached a "select"/"hire" stage, and how many candidates got hired (tz3).
      *

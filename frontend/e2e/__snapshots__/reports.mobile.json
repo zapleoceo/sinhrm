@@ -49,6 +49,9 @@
   "button \"з SinHRM\"",
   "button \"зовні\"",
   "link \"Огляд\" -> /",
+  "radio \"За етапом\"",
+  "radio \"За рекрутером\"",
+  "radio \"Усі\" [checked]",
   "searchbox \"Пошук вакансії\"",
   "textbox \"З\"",
   "textbox \"По\""

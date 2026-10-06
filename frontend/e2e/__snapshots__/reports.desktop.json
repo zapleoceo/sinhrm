@@ -64,6 +64,9 @@
   "link \"Кандидати\" -> /candidates",
   "link \"Мої задачі\" -> /tasks",
   "link \"Огляд\" -> /",
+  "radio \"За етапом\"",
+  "radio \"За рекрутером\"",
+  "radio \"Усі\" [checked]",
   "searchbox \"Пошук вакансії\"",
   "textbox \"З\"",
   "textbox \"По\""

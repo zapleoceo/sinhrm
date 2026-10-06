@@ -121,6 +121,16 @@ describe('ReportsPage tables: header sort and filter (core/ui/table)', () => {
                   { reject_reason_id: 1, name: 'Salary', count: 4 },
                   { reject_reason_id: 2, name: 'Accepted another offer', count: 1 },
                 ],
+                by_stage: [
+                  { reject_reason_id: 1, name: 'Salary', stage_id: 7, stage_name: 'Interview', count: 3 },
+                  { reject_reason_id: 1, name: 'Salary', stage_id: null, stage_name: null, count: 1 },
+                  { reject_reason_id: 2, name: 'Accepted another offer', stage_id: 7, stage_name: 'Interview', count: 1 },
+                ],
+                by_recruiter: [
+                  { reject_reason_id: 1, name: 'Salary', recruiter_id: 5, recruiter_name: 'Olena', recruiter_state: 'user', count: 2 },
+                  { reject_reason_id: 1, name: 'Salary', recruiter_id: null, recruiter_name: null, recruiter_state: 'hidden', count: 2 },
+                  { reject_reason_id: 2, name: 'Accepted another offer', recruiter_id: null, recruiter_name: null, recruiter_state: 'unassigned', count: 1 },
+                ],
                 totals: { total: 5 },
               }),
           },
@@ -181,6 +191,32 @@ describe('ReportsPage tables: header sort and filter (core/ui/table)', () => {
     expect(table(el, 2).querySelector('tfoot td')?.textContent?.trim()).toBe('5');
     expect(footer(table(el, 1))).toBe('recruiting.reports.grandTotal');
   });
+  it('reject reasons switch: by stage and by recruiter, unknowns labelled, own URL prefix, «Разом» last', async () => {
+    const { el, router, detect } = await open('/');
+    const toggles = [...el.querySelectorAll<HTMLButtonElement>('[data-testid="reject-view"] button')];
+    expect(toggles.length).toBe(3);
+    toggles[1].click();
+    await detect();
+    const dim = el.querySelector('[data-testid="reject-dim"]') as HTMLTableElement;
+    const cells = (t: HTMLTableElement): string[] => [...t.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map((c) => c.textContent?.trim()).join('|'));
+    expect(cells(dim)).toEqual(['Salary|Interview|3', 'Salary|recruiting.reports.reject.stageUnknown|1', 'Accepted another offer|Interview|1']);
+    expect(dim.querySelector('tfoot td')?.textContent?.trim()).toBe('5');
+    (dim.querySelectorAll('thead th')[2].querySelector('button.title') as HTMLButtonElement).click();
+    await detect();
+    expect(router.url).toBe('/?rjs_sort=count&rjs_dir=asc');
+    expect(dim.querySelector('tbody tr:last-child td.barcell .num')?.textContent?.trim()).toBe('3');
+    expect(dim.querySelector('tfoot th')?.textContent?.trim()).toBe('recruiting.reports.grandTotal');
+
+    toggles[2].click();
+    await detect();
+    const byRecruiter = el.querySelector('[data-testid="reject-dim"]') as HTMLTableElement;
+    expect(cells(byRecruiter)).toEqual([
+      'Salary|Olena|2',
+      'Salary|recruiting.reports.reject.hidden|2',
+      'Accepted another offer|recruiting.reports.reject.unassigned|1',
+    ]);
+  });
+
   it('live «Рекрутер» filter: rows narrow while typing (contains, any case, no Enter); the URL follows after the pause', async () => {
     const { el, router, detect } = await open('/');
     const touches = table(el, 0);

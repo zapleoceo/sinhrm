@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Recruiting\Contracts\ReportRepository;
 use App\Modules\Recruiting\DTO\DateRange;
 use App\Modules\Recruiting\Support\ChannelMath;
+use App\Modules\Recruiting\Support\RejectionBreakdown;
 
 /** Manager reports; every figure is limited by the actor's scope. Adds totals so the UI need not sum. */
 final readonly class ReportService
@@ -48,12 +49,27 @@ final readonly class ReportService
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Rejections of the range by reason (rows) plus two slices from the stage history (tz4): by_stage — the stage the
+     * candidate was rejected from, by_recruiter — the author of the rejecting step; only users with a recruiting role
+     * are named. Every slice sums to totals.total.
+     *
+     * @return array<string, mixed>
+     */
     public function rejectReasons(User $actor, DateRange $range): array
     {
-        $rows = $this->reports->rejectReasons($this->scope->for($actor), $range);
+        $scope = $this->scope->for($actor);
+        $rows = $this->reports->rejectReasons($scope, $range);
+        $breakdown = $this->reports->rejectionBreakdown($scope, $range);
+        $userIds = array_values(array_unique(array_filter(array_column($breakdown, 'user_id'), static fn (?int $id): bool => $id !== null)));
 
-        return ['range' => $range->toArray(), 'rows' => $rows, 'totals' => ['total' => array_sum(array_column($rows, 'count'))]];
+        return [
+            'range' => $range->toArray(),
+            'rows' => $rows,
+            'by_stage' => RejectionBreakdown::byStage($breakdown),
+            'by_recruiter' => RejectionBreakdown::byRecruiter($breakdown, $this->reports->recruitingUserIds($userIds)),
+            'totals' => ['total' => array_sum(array_column($rows, 'count'))],
+        ];
     }
 
     /**

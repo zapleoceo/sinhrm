@@ -60,7 +60,7 @@
 | `recruiting_funnel` | recruiting | все (по филиалам) | `Recruiting\Services\ReportService::funnel`, сумма по этапам |
 | `time_to_hire` | recruiting | все (по филиалам) | нанятые заявки, закрытые в периоде: среднее и медиана дней |
 | `source_effectiveness` | recruiting | все (по филиалам) | `ReportService::sources` + % найма |
-| `reject_reasons` | recruiting | все (по филиалам) | `ReportService::rejectReasons` |
+| `reject_reasons` | recruiting | все (по видимости заявок) | `ReportService::rejectReasons` (каталог берёт только `rows`; разрезы по этапу и рекрутеру — в блоке «Причини відмов» на `/reports`, [recruiting.md](recruiting.md)) |
 | `recruiter_touches` | recruiting | все (по филиалам) | `ReportService::touches` (рекрутер × канал, из SinHRM) |
 | `script_scores` | recruiting | все (по филиалам) | `Scripts\Services\ScriptReportService::report` |
 | `okr_progress` | performance | админ, руководитель | `objectives`: руководителю — только личные/командные цели своих людей; только числа |

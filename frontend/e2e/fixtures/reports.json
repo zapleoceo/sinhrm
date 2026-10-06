@@ -1214,6 +1214,23 @@
       "count": 1
      }
     ],
+    "by_stage": [
+     { "reject_reason_id": 1, "name": "Не підійшов за досвідом", "stage_id": 2, "stage_name": "Скринінг", "count": 2 },
+     { "reject_reason_id": 2, "name": "Відмовився сам", "stage_id": 3, "stage_name": "Співбесіда", "count": 1 },
+     { "reject_reason_id": 2, "name": "Відмовився сам", "stage_id": null, "stage_name": null, "count": 1 },
+     { "reject_reason_id": 4, "name": "Не влаштували умови", "stage_id": 4, "stage_name": "Пропозиція", "count": 2 },
+     { "reject_reason_id": 6, "name": "Інше", "stage_id": 2, "stage_name": "Скринінг", "count": 1 },
+     { "reject_reason_id": 5, "name": "Не прийшов на зустріч", "stage_id": 3, "stage_name": "Співбесіда", "count": 1 }
+    ],
+    "by_recruiter": [
+     { "reject_reason_id": 1, "name": "Не підійшов за досвідом", "recruiter_id": 3, "recruiter_name": "Рекрутер Демо", "recruiter_state": "user", "count": 2 },
+     { "reject_reason_id": 4, "name": "Не влаштували умови", "recruiter_id": 3, "recruiter_name": "Рекрутер Демо", "recruiter_state": "user", "count": 1 },
+     { "reject_reason_id": 4, "name": "Не влаштували умови", "recruiter_id": null, "recruiter_name": null, "recruiter_state": "hidden", "count": 1 },
+     { "reject_reason_id": 2, "name": "Відмовився сам", "recruiter_id": 3, "recruiter_name": "Рекрутер Демо", "recruiter_state": "user", "count": 1 },
+     { "reject_reason_id": 2, "name": "Відмовився сам", "recruiter_id": null, "recruiter_name": null, "recruiter_state": "unassigned", "count": 1 },
+     { "reject_reason_id": 6, "name": "Інше", "recruiter_id": 3, "recruiter_name": "Рекрутер Демо", "recruiter_state": "user", "count": 1 },
+     { "reject_reason_id": 5, "name": "Не прийшов на зустріч", "recruiter_id": 3, "recruiter_name": "Рекрутер Демо", "recruiter_state": "user", "count": 1 }
+    ],
     "totals": {
      "total": 8
     }

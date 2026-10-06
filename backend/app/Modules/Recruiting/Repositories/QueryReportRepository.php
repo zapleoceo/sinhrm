@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Repositories;
 
+use App\Models\User;
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Recruiting\Contracts\ReportRepository;
 use App\Modules\Recruiting\DTO\DateRange;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Enums\Channel;
+use App\Modules\Recruiting\Support\ApplicationVisibility;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
 /** Plain SQL aggregates (Postgres- and SQLite-compatible). */
@@ -101,12 +105,8 @@ final class QueryReportRepository implements ReportRepository
 
     public function rejectReasons(Scope $scope, DateRange $range): array
     {
-        $rows = DB::table('applications as a')
-            ->join('vacancies as v', 'v.id', '=', 'a.vacancy_id')
+        $rows = $this->rejected($scope, $range)
             ->leftJoin('reject_reasons as r', 'r.id', '=', 'a.reject_reason_id')
-            ->where('a.status', ApplicationStatus::Rejected->value)
-            ->whereBetween('a.closed_at', [$range->from, $range->to])
-            ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->whereIn('v.branch_id', $scope->branchIds ?? []))
             ->groupBy('r.id', 'r.name')
             ->orderByRaw('count(*) desc')
             ->orderBy('r.name')
@@ -118,6 +118,42 @@ final class QueryReportRepository implements ReportRepository
             'name' => $r->name === null ? null : (string) $r->name,
             'count' => (int) $r->cnt,
         ])->all());
+    }
+
+    public function rejectionBreakdown(Scope $scope, DateRange $range): array
+    {
+        // The rejecting step = the latest stage change into the application's current (reject) stage.
+        $last = DB::table('stage_changes')->selectRaw('application_id, to_stage_id, max(id) as id')->groupBy('application_id', 'to_stage_id');
+        $rows = $this->rejected($scope, $range)
+            ->leftJoin('reject_reasons as r', 'r.id', '=', 'a.reject_reason_id')
+            ->leftJoinSub($last, 'lc', fn (JoinClause $j): JoinClause => $j->on('lc.application_id', '=', 'a.id')->on('lc.to_stage_id', '=', 'a.stage_id'))
+            ->leftJoin('stage_changes as sc', 'sc.id', '=', 'lc.id')
+            ->leftJoin('pipeline_stages as fs', 'fs.id', '=', 'sc.from_stage_id')
+            ->leftJoin('users as u', 'u.id', '=', 'sc.by_user_id')
+            ->groupBy('r.id', 'r.name', 'fs.id', 'fs.name', 'fs.position', 'u.id', 'u.name')
+            ->selectRaw('r.id as reject_reason_id, r.name, fs.id as stage_id, fs.name as stage_name, fs.position as stage_position, u.id as user_id, u.name as user_name, count(*) as cnt')
+            ->get();
+
+        return array_values($rows->map(static fn (object $r): array => [
+            'reject_reason_id' => $r->reject_reason_id === null ? null : (int) $r->reject_reason_id,
+            'name' => $r->name === null ? null : (string) $r->name,
+            'stage_id' => $r->stage_id === null ? null : (int) $r->stage_id,
+            'stage_name' => $r->stage_name === null ? null : (string) $r->stage_name,
+            'stage_position' => $r->stage_position === null ? null : (int) $r->stage_position,
+            'user_id' => $r->user_id === null ? null : (int) $r->user_id,
+            'user_name' => $r->user_name === null ? null : (string) $r->user_name,
+            'count' => (int) $r->cnt,
+        ])->all());
+    }
+
+    public function recruitingUserIds(array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        return array_values(User::query()->whereIn('id', $userIds)->role(UserRole::valuesOf(UserRole::recruitingWriters()))
+            ->orderBy('id')->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all());
     }
 
     public function channels(Scope $scope, DateRange $range): array
@@ -187,6 +223,17 @@ final class QueryReportRepository implements ReportRepository
             'added_via' => $r->added_via === null ? null : (string) $r->added_via,
             'count' => (int) $r->cnt,
         ])->all());
+    }
+
+    /** Applications rejected in the range (closed_at) that the user may see (alias "a"; ApplicationVisibility). */
+    private function rejected(Scope $scope, DateRange $range): Builder
+    {
+        $q = DB::table('applications as a')
+            ->where('a.status', ApplicationStatus::Rejected->value)
+            ->whereBetween('a.closed_at', [$range->from, $range->to]);
+        ApplicationVisibility::constrain($q, $scope, 'a');
+
+        return $q;
     }
 
     /** Candidates the scoped user may see: owned/created, or applied to a vacancy of their branches (alias "c"). */

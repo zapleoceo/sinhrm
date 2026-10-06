@@ -451,6 +451,7 @@
       "candidates": "Candidates",
       "hired": "Hired",
       "rejectReasons": "Rejection reasons",
+      "reject": { "view": "Rejection reasons breakdown", "all": "All", "byStage": "By stage", "byRecruiter": "By recruiter", "stage": "Rejected at stage", "recruiter": "Recruiter", "stageUnknown": "Stage not defined", "unassigned": "No recruiter assigned", "hidden": "Other user" },
       "reason": "Reason",
       "count": "Count",
       "funnel": "Funnel (current stages)",
