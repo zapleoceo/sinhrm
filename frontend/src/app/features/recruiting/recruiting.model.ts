@@ -485,7 +485,26 @@ export interface Report<Row, Totals> {
 export type TouchesReport = Report<TouchesRow, { total: number; via_product: number; captured: number }>;
 export type FunnelReport = Report<FunnelRow, { total: number }>;
 export type SourcesReport = Report<SourcesRow, { candidates: number; hired: number }>;
-export type RejectReasonsReport = Report<RejectReasonsRow, { total: number }>;
+/** Reason × the stage the candidate was rejected from (null = no rejecting step in the history). */
+export interface RejectByStageRow extends RejectReasonsRow {
+  stage_id: number | null;
+  stage_name: string | null;
+}
+
+/** user = named recruiter; hidden = author without a recruiting role (not named); unassigned = no author. */
+export type RejectRecruiterState = 'user' | 'hidden' | 'unassigned';
+
+/** Reason × the author of the rejecting step. */
+export interface RejectByRecruiterRow extends RejectReasonsRow {
+  recruiter_id: number | null;
+  recruiter_name: string | null;
+  recruiter_state: RejectRecruiterState;
+}
+
+export type RejectReasonsReport = Report<RejectReasonsRow, { total: number }> & {
+  by_stage: RejectByStageRow[];
+  by_recruiter: RejectByRecruiterRow[];
+};
 
 /** Error codes with their own message (backend RecruitingException). */
 export const RECRUITING_ERROR_CODES = [

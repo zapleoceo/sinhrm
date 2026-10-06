@@ -126,7 +126,52 @@
   </section>
 
   <section class="panel card">
-    <h2>{{ 'recruiting.reports.rejectReasons' | transloco }}</h2>
+    <div class="reject-head">
+      <h2 id="reject-title">{{ 'recruiting.reports.rejectReasons' | transloco }}</h2>
+      <mat-button-toggle-group class="reject-view" data-testid="reject-view" hideSingleSelectionIndicator
+        [attr.aria-label]="'recruiting.reports.reject.view' | transloco" [value]="rejectView()" (change)="rejectView.set($event.value)">
+        <mat-button-toggle value="all">{{ 'recruiting.reports.reject.all' | transloco }}</mat-button-toggle>
+        <mat-button-toggle value="stage">{{ 'recruiting.reports.reject.byStage' | transloco }}</mat-button-toggle>
+        <mat-button-toggle value="recruiter">{{ 'recruiting.reports.reject.byRecruiter' | transloco }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+    @if (dim(); as d) {
+      <div class="scroll">
+      <table class="app-table" data-testid="reject-dim" [appTableSort]="d.sort()" [appTableSortCount]="d.rows().length" (appTableSortChange)="d.setSort($event)">
+        <thead>
+          <tr>
+            <th scope="col" app-column-header key="reason" [label]="'recruiting.reports.reason' | transloco"
+              [filter]="textFilter" [filterValue]="d.filterValue('reason')" (filterChange)="d.setFilter('reason', $event)"></th>
+            <th scope="col" app-column-header key="dim" [label]="(rejectView() === 'stage' ? 'recruiting.reports.reject.stage' : 'recruiting.reports.reject.recruiter') | transloco"
+              [filter]="textFilter" [filterValue]="d.filterValue('dim')" (filterChange)="d.setFilter('dim', $event)"></th>
+            <th scope="col" app-column-header key="count" [label]="'recruiting.reports.count' | transloco"
+              [filter]="numberRange" [filterValue]="d.filterValue('count')" (filterChange)="d.setFilter('count', $event)"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of d.rows(); track r.key) {
+            <tr>
+              <th scope="row">{{ r.reason ?? '—' }}</th>
+              <td [class.muted]="r.dimKey">{{ r.dimKey ? (r.dimKey | transloco) : r.dim }}</td>
+              <td class="barcell"><span class="bar danger" [style.width.%]="bar(r.count, maxDim())"></span><span class="num">{{ r.count }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td class="muted" colspan="3">{{ (dimSource().length ? 'table.noMatches' : 'recruiting.reports.empty') | transloco }}</td></tr>
+          }
+        </tbody>
+        @if (store.rejectReasons(); as rr) {
+          @if (dimSource().length >= 2) {
+            <tfoot>
+              <tr>
+                <th scope="row" colspan="2">{{ (d.filtered() ? 'recruiting.reports.grandTotalAll' : 'recruiting.reports.grandTotal') | transloco }}</th>
+                <td class="num">{{ rr.totals.total }}</td>
+              </tr>
+            </tfoot>
+          }
+        }
+      </table>
+      </div>
+    } @else {
     <div class="scroll">
     <table class="app-table" [appTableSort]="reasons.sort()" [appTableSortCount]="reasons.rows().length" (appTableSortChange)="reasons.setSort($event)">
       <thead>
@@ -159,6 +204,7 @@
       }
     </table>
     </div>
+    }
   </section>
 
   <section class="funnel wide">

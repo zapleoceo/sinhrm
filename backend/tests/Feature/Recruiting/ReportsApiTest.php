@@ -9,6 +9,7 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Recruiting\DTO\MoveData;
 use App\Modules\Recruiting\Enums\Channel;
+use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\RejectReason;
 use App\Modules\Recruiting\Services\ApplicationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -90,6 +91,39 @@ final class ReportsApiTest extends TestCase
             ->assertJsonPath('data.rows.0.count', 1);
         $this->actingAs($this->userWith(UserRole::Viewer, [$this->south]))->getJson('/api/reports/reject-reasons')->assertOk()
             ->assertJsonPath('data.totals.total', 0);
+    }
+
+    public function test_reject_reasons_by_stage_and_recruiter(): void
+    {
+        $reason = RejectReason::query()->orderBy('id')->firstOrFail();
+        $vacancy = $this->vacancyIn($this->north);
+        [$x, $y, $z] = [$this->applied($vacancy, ['phone' => '+380671000011']), $this->applied($vacancy, ['phone' => '+380671000012']), $this->applied($vacancy, ['phone' => '+380671000013'])];
+        $first = $x->stage;
+        $moves = $this->app->make(ApplicationService::class);
+        $moves->move($this->userWith(UserRole::Employee), $x, new MoveData($this->rejectStage()->id, null, $reason->id)); // no recruiting role
+        $moves->move($this->recruiter, $y, new MoveData($this->rejectStage()->id, null, $reason->id));
+        // Legacy row without a rejecting step in the history: stage and recruiter are unknown.
+        Application::query()->whereKey($z->id)->update(['stage_id' => $this->rejectStage()->id, 'status' => 'rejected', 'reject_reason_id' => $reason->id, 'closed_at' => now()]);
+
+        $this->actingAs($this->userWith(UserRole::Admin))->getJson('/api/reports/reject-reasons?from=2026-09-01&to=2026-09-30')->assertOk()
+            ->assertJsonPath('data.totals.total', 4)
+            ->assertJsonPath('data.by_stage', [
+                ['reject_reason_id' => $reason->id, 'name' => $reason->name, 'stage_id' => $first->id, 'stage_name' => $first->name, 'count' => 3],
+                ['reject_reason_id' => $reason->id, 'name' => $reason->name, 'stage_id' => null, 'stage_name' => null, 'count' => 1],
+            ])
+            ->assertJsonPath('data.by_recruiter', [
+                ['reject_reason_id' => $reason->id, 'name' => $reason->name, 'recruiter_id' => $this->recruiter->id, 'recruiter_name' => $this->recruiter->name, 'recruiter_state' => 'user', 'count' => 2],
+                ['reject_reason_id' => $reason->id, 'name' => $reason->name, 'recruiter_id' => null, 'recruiter_name' => null, 'recruiter_state' => 'hidden', 'count' => 1],
+                ['reject_reason_id' => $reason->id, 'name' => $reason->name, 'recruiter_id' => null, 'recruiter_name' => null, 'recruiter_state' => 'unassigned', 'count' => 1],
+            ]);
+
+        // Scope: the north recruiter sees the same; a south viewer and an empty period get empty slices.
+        $this->actingAs($this->recruiter)->getJson('/api/reports/reject-reasons')->assertOk()
+            ->assertJsonPath('data.totals.total', 4)->assertJsonCount(2, 'data.by_stage')->assertJsonCount(3, 'data.by_recruiter');
+        $this->actingAs($this->userWith(UserRole::Viewer, [$this->south]))->getJson('/api/reports/reject-reasons')->assertOk()
+            ->assertJsonPath('data.by_stage', [])->assertJsonPath('data.by_recruiter', []);
+        $this->actingAs($this->recruiter)->getJson('/api/reports/reject-reasons?from=2026-01-01&to=2026-01-31')->assertOk()
+            ->assertJsonPath('data.totals.total', 0)->assertJsonPath('data.by_stage', [])->assertJsonPath('data.by_recruiter', []);
     }
 
     public function test_date_params_are_validated(): void

@@ -1,8 +1,40 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { Channel, DateRange, FunnelReport, FunnelRow, StageKind, VacancyStatus, RejectReasonsReport, SourcesReport, TouchesReport } from '../recruiting.model';
+import { Channel, DateRange, FunnelReport, FunnelRow, StageKind, VacancyStatus, RejectByRecruiterRow, RejectByStageRow, RejectReasonsReport, SourcesReport, TouchesReport } from '../recruiting.model';
 import { lastDays } from '../recruiting.format';
 import { RecruitingService } from '../recruiting.service';
+
+export type RejectView = 'all' | 'stage' | 'recruiter';
+
+/** One row of the reason × slice table: `dim` is the stage/recruiter name, `dimKey` the i18n key when it is unknown. */
+export interface RejectDimRow {
+  key: string;
+  reason: string | null;
+  dim: string | null;
+  dimKey: string | null;
+  count: number;
+}
+
+export function stageRow(r: RejectByStageRow): RejectDimRow {
+  return {
+    key: `${r.reject_reason_id ?? '-'}:${r.stage_id ?? '-'}`,
+    reason: r.name,
+    dim: r.stage_name,
+    dimKey: r.stage_id === null ? 'recruiting.reports.reject.stageUnknown' : null,
+    count: r.count,
+  };
+}
+
+export function recruiterRow(r: RejectByRecruiterRow): RejectDimRow {
+  const named = r.recruiter_state === 'user';
+  return {
+    key: `${r.reject_reason_id ?? '-'}:${r.recruiter_state}:${r.recruiter_id ?? '-'}`,
+    reason: r.name,
+    dim: named ? r.recruiter_name : null,
+    dimKey: named ? null : 'recruiting.reports.reject.' + r.recruiter_state,
+    count: r.count,
+  };
+}
 
 export interface RecruiterTouches {
   name: string;

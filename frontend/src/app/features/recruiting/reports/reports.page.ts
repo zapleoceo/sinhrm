@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { CHANNELS, Channel, RejectReasonsRow, SourcesRow } from '../recruiting.model';
-import { barWidth, RecruiterTouches, ReportsStore } from './reports.store';
+import { barWidth, RecruiterTouches, RejectDimRow, RejectView, ReportsStore, recruiterRow, stageRow } from './reports.store';
 import { fromIsoDate, toIsoDate } from '../../../core/date/iso-date';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { ClientColumn, ClientTable, NUMBER_RANGE, TEXT_FILTER, distinctValues, translatedSelect } from '../../../core/ui/table/client-table';
@@ -21,7 +22,7 @@ import { TableUrlState } from '../../../core/ui/table/table-url-state';
  */
 @Component({
   selector: 'app-reports-page',
-  imports: [ChannelIcon, MatButtonModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, TranslocoPipe, TableSortDirective, ColumnHeader],
+  imports: [ChannelIcon, MatButtonModule, MatButtonToggleModule,MatDatepickerModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, TranslocoPipe, TableSortDirective, ColumnHeader],
   providers: [ReportsStore, TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reports.page.html',
@@ -84,6 +85,24 @@ export class ReportsPage implements OnInit {
     ],
   });
   protected readonly maxReason = computed(() => Math.max(0, ...(this.store.rejectReasons()?.rows ?? []).map((r) => r.count)));
+  /** Slice of the reject reasons block: all reasons, reason × stage, reason × recruiter (tz4). */
+  protected readonly rejectView = signal<RejectView>('all');
+  private readonly stageRows = computed(() => (this.store.rejectReasons()?.by_stage ?? []).map(stageRow));
+  private readonly recruiterRows = computed(() => (this.store.rejectReasons()?.by_recruiter ?? []).map(recruiterRow));
+  private readonly dimColumns = (): ClientColumn<RejectDimRow>[] => [
+    { key: 'reason', value: (r) => r.reason, filter: 'text' },
+    { key: 'dim', value: (r) => r.dim ?? this.i18n.translate(r.dimKey ?? ''), filter: 'text' },
+    { key: 'count', value: (r) => r.count, filter: 'number' },
+  ];
+  protected readonly byStage = new ClientTable<RejectDimRow>({ rows: this.stageRows, prefix: 'rjs', defaultSort: { key: 'count', dir: 'desc' }, columns: this.dimColumns() });
+  protected readonly byRecruiter = new ClientTable<RejectDimRow>({ rows: this.recruiterRows, prefix: 'rjr', defaultSort: { key: 'count', dir: 'desc' }, columns: this.dimColumns() });
+  /** The reason × slice table of the chosen view (null for «all»). */
+  protected readonly dim = computed(() => {
+    const view = this.rejectView();
+    return view === 'stage' ? this.byStage : view === 'recruiter' ? this.byRecruiter : null;
+  });
+  protected readonly dimSource = computed(() => (this.rejectView() === 'stage' ? this.stageRows() : this.recruiterRows()));
+  protected readonly maxDim = computed(() => Math.max(0, ...this.dimSource().map((r) => r.count)));
 
   ngOnInit(): void {
     this.store.load();

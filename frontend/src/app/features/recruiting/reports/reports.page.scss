@@ -25,6 +25,11 @@ h3 { font: var(--mat-sys-title-small); margin: 1rem 0 0.25rem; }
 
 .app-table tfoot th, .app-table tfoot td { font-weight: 700; border-top: var(--app-border-w) solid var(--app-border); border-bottom: 0; background: var(--app-table-head); }
 
+/* Reject reasons: title + the slice switch (all / by stage / by recruiter); wraps on a phone, never scrolls the page. */
+.reject-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+.reject-head h2 { margin: 0; }
+.reject-view { max-width: 100%; flex-wrap: wrap; --mat-standard-button-toggle-height: 36px; font: var(--mat-sys-label-large); }
+
 .funnel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; }
 .funnel-head h2 { margin: 0; }
 .funnel-filter { min-width: 14rem; }
