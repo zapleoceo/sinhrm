@@ -204,7 +204,11 @@ final class TerminationApiTest extends TestCase
         // validation: unknown position, bad date, a manager that is the employee
         $this->actingAs($hr)->postJson("/api/people/{$worker->id}/restore", ['position_id' => 999999])->assertUnprocessable()->assertJsonValidationErrors('position_id');
         $this->actingAs($hr)->postJson("/api/people/{$worker->id}/restore", ['hired_at' => '01.08.2026'])->assertUnprocessable()->assertJsonValidationErrors('hired_at');
-        $this->actingAs($hr)->postJson("/api/people/{$worker->id}/restore", ['manager_id' => (string) $worker->id])->assertUnprocessable()->assertJsonPath('code', 'manager_cycle');
+        // a terminated manager (here: the employee itself) is rejected by validation
+        $this->actingAs($hr)->postJson("/api/people/{$worker->id}/restore", ['manager_id' => (string) $worker->id])->assertUnprocessable()->assertJsonValidationErrors('manager_id');
+        // someone below the restored person → manager_cycle (lead's report peer cannot become lead's manager)
+        $this->actingAs($hr)->postJson('/api/people/'.$org['lead']->id.'/terminate', ['fired_at' => '2026-07-01'])->assertOk();
+        $this->actingAs($hr)->postJson('/api/people/'.$org['lead']->id.'/restore', ['manager_id' => $org['peer']->id])->assertUnprocessable()->assertJsonPath('code', 'manager_cycle');
 
         // new position, string ids are fine
         $this->actingAs($hr)->postJson("/api/people/{$worker->id}/restore", [

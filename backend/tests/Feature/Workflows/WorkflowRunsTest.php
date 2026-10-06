@@ -141,7 +141,12 @@ final class WorkflowRunsTest extends TestCase
         $admin = $this->login(UserRole::Admin);
         $employee = $this->employee();
 
+        // A future date is only scheduled: offboarding starts when the termination comes into force (cron, that day in Kyiv).
         $this->actingAs($admin)->postJson("/api/people/{$employee->id}/terminate", ['fired_at' => '2026-10-20'])->assertOk();
+        $this->assertSame(0, WorkflowRun::query()->where('employee_id', $employee->id)->count());
+        config(['ops.secret' => 'test-secret']);
+        Carbon::setTestNow('2026-10-19 21:30:00'); // 00:30 on 2026-10-20 in Kyiv
+        $this->postJson('/api/ops/jobs/run', [], ['X-Ops-Secret' => 'test-secret'])->assertOk();
 
         $run = WorkflowRun::query()->where('employee_id', $employee->id)->sole();
         $this->assertSame('2026-10-20', $run->anchor_date->toDateString());
