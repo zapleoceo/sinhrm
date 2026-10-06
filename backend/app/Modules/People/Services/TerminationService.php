@@ -34,9 +34,9 @@ use Throwable;
  * - Restore: working again; the login is unblocked only if that termination blocked it and nobody blocked it since.
  * - Scheduling a future date dispatches EmployeeTerminationScheduled (Pulse opens the exit survey while the person still
  *   has access); cancelling dispatches EmployeeTerminationCancelled. Both are isolated: a failing listener is logged.
- * - Optional handover colleague (handover_to_employee_id, person picker rules of the caller, not the employee): when
- *   the termination applies the colleague gets the task "Прийняти справи" (TerminationHandoverTasks), closed on
- *   cancel and restore.
+ * - Optional handover colleague (handover_to_employee_id, person picker rules of the caller, not the employee): stored
+ *   on the employee; Workflows opens the task "Прийняти справи" on EmployeeTerminated and closes it on
+ *   EmployeeTerminationCancelled / EmployeeRestored (both carry the date).
  * Every change goes through the Employee model, so the audit log records it (who, fired_at, status).
  */
 final readonly class TerminationService
@@ -47,7 +47,6 @@ final readonly class TerminationService
         private AccountBlocker $accounts,
         private Dispatcher $events,
         private LoggerInterface $log,
-        private TerminationHandoverTasks $handover,
     ) {}
 
     /** @throws PeopleException forbidden | invalid_handover | already_terminated | termination_scheduled */
@@ -98,8 +97,6 @@ final readonly class TerminationService
                 throw PeopleException::terminationNotScheduled();
             }
             $firedAt = (string) $fresh->fired_at?->toDateString();
-            // No task exists before the date; closing is a no-op kept for symmetry and safety.
-            $this->handover->close($fresh, $firedAt);
             $this->employees->update($fresh, ['fired_at' => null, 'termination_reason' => null, 'handover_to_employee_id' => null]);
 
             return $firedAt;
@@ -160,7 +157,7 @@ final readonly class TerminationService
      */
     public function restore(User $actor, Employee $employee, array $placement): Employee
     {
-        $this->employees->transaction(function () use ($actor, $employee, $placement): void {
+        $firedAt = $this->employees->transaction(function () use ($actor, $employee, $placement): ?string {
             $fresh = $this->locked($employee->id);
             if (! $fresh->isTerminated()) {
                 throw PeopleException::notTerminated();
@@ -169,7 +166,7 @@ final readonly class TerminationService
                 throw PeopleException::anonymized();
             }
             $blockedVersion = $fresh->termination_block_version;
-            $this->handover->close($fresh, $fresh->fired_at?->toDateString());
+            $firedAt = $fresh->fired_at?->toDateString();
             $this->records->update($actor, $fresh, [
                 ...$placement,
                 'status' => EmployeeStatus::Active->value,
@@ -184,10 +181,12 @@ final readonly class TerminationService
             if ($user !== null && $blockedVersion !== null) {
                 $this->accounts->unblockIfBlockedBy($user, $blockedVersion, $actor->id);
             }
+
+            return $firedAt;
         });
         $this->log->info('people.employee_restored', ['id' => $employee->id, 'by' => $actor->id]);
         $restored = $this->records->find($employee->id);
-        $this->events->dispatch(new EmployeeRestored($restored));
+        $this->events->dispatch(new EmployeeRestored($restored, $firedAt));
 
         return $restored;
     }
@@ -207,7 +206,6 @@ final readonly class TerminationService
             $blocked = $attributes['termination_block_version'] !== null;
         }
         $this->employees->update($employee, $attributes);
-        $this->handover->open($employee);
 
         return $blocked;
     }

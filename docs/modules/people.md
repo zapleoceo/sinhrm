@@ -100,8 +100,8 @@
 | `Events/EmployeeTerminated` | увольнение вступило в силу: сразу из `POST /api/people/{id}/terminate` или cron-задачей `people.terminations` после окончания дня `fired_at` по Киеву, с 00:00 следующего дня (ровно один раз на увольнение) | Workflows — запуск шаблонов `employee_terminated` (якорь `fired_at`); Pulse — вихідне опитування (`exit`, один раз на дату увольнения, [pulse.md](pulse.md)) |
 
 | `Events/EmployeeTerminationScheduled` | `POST /api/people/{id}/terminate` с будущей датой (после коммита, изолировано: сбой подписчика только в лог `people.termination_scheduled_event_failed`) | Pulse — вихідне опитування открывается сразу, пока у человека есть доступ ([pulse.md](pulse.md)) |
-| `Events/EmployeeTerminationCancelled` | `POST /api/people/{id}/terminate/cancel` (несёт отменённую дату; изолировано так же) | Pulse — волна exit этой даты удаляется (с ответами — закрывается) |
-| `Events/EmployeeRestored` | `POST /api/people/{id}/restore` | пока никто: онбординг-шаблоны Workflows и опросы Pulse автоматически **не** запускаются — при необходимости HR запускает процесс вручную во вкладке «Воркфлоу» |
+| `Events/EmployeeTerminationCancelled` | `POST /api/people/{id}/terminate/cancel` (несёт отменённую дату; изолировано так же) | Pulse — волна exit этой даты удаляется (с ответами — закрывается); Workflows — закрыть задачу передачи дел |
+| `Events/EmployeeRestored` | `POST /api/people/{id}/restore` (несёт снятую дату `firedAt`) | Workflows — закрыть задачу передачи дел этой даты; онбординг-шаблоны Workflows и опросы Pulse автоматически **не** запускаются — при необходимости HR запускает процесс вручную во вкладке «Воркфлоу» |
 
 Ошибка подписчика Workflows пишется в лог и не ломает запрос найма/увольнения ([workflows.md](workflows.md)).
 Профиль сотрудника на фронтенде получил вкладки «Документи» ([documents.md](documents.md)), «Воркфлоу» и
@@ -144,10 +144,10 @@
   те же правила, что в заявке на отсутствие (PR #164) — коллега находится запросом справочника вызывающего
   (`EmployeeService::list`, только работающие), не сам увольняемый; иначе 422 `invalid_handover`, ничего не сохраняется.
   Хранится в `employees.handover_to_employee_id` (nullable FK, `nullOnDelete`). Когда увольнение вступает в силу (сразу
-  или задачей `people.terminations`), коллеге создаётся задача «Прийняти справи: <имя> звільнений з дд.мм.рррр»
-  (`Services/TerminationHandoverTasks` через контракт Scripts `TaskScheduler`, тип `exit_handover`, источник
-  «Воркфлоу», ключ `people:handover:<fired_at>` с увольняемым — один раз на дату; только имя и дата, без причины).
-  Нет коллеги, у него нет входа или он уже уволен — задачи нет. Отмена и восстановление очищают поле и закрывают задачу.
+  или задачей `people.terminations`), Workflows по `EmployeeTerminated` создаёт коллеге задачу «Прийняти справи: <имя>
+  звільнений з дд.мм.рррр» (один раз на дату; только имя и дата, без причины; [workflows.md](workflows.md)).
+  Нет коллеги, у него нет входа или он уже уволен — задачи нет. Отмена и восстановление очищают поле, а события
+  `EmployeeTerminationCancelled` / `EmployeeRestored` (теперь несут дату `firedAt`) закрывают задачу.
   В ответе профиля (уровень `job`) — `handover_to: {id, full_name}`.
 - **Отмена.** `POST …/terminate/cancel` до даты: `fired_at` и причина очищаются. Каждое изменение (назначение, отмена,
   вступление в силу, восстановление) проходит через модель `Employee` и попадает в журнал аудита (вкладка «Історія»:
@@ -158,15 +158,15 @@
   ручная блокировка — до или после увольнения — остаётся. Восстановленного можно уволить снова (новое событие
   `EmployeeTerminated`; повторный запуск offboarding-шаблонов решают правила Workflows, [workflows.md](workflows.md)).
   Отчёты считают по текущим `hired_at`/`fired_at`, отдельной истории периодов работы нет.
-- **Код.** `Services/TerminationService` (terminate, cancel, applyDue, restore), `Services/TerminationHandoverTasks`,
+- **Код.** `Services/TerminationService` (terminate, cancel, applyDue, restore),
   `Events/EmployeeTerminationScheduled`, `Events/EmployeeTerminationCancelled`, миграция
   `2026_10_25_100001_add_termination_handover_to_employees`, `Http/Requests/RestoreEmployeeRequest`,
   `Events/EmployeeRestored`, `DTO/TerminationOutcome`, миграция `2026_10_24_100001_add_termination_block_version_to_employees`
   (`termination_block_version`, `termination_event_pending`).
   Тесты: `tests/Feature/People/TerminationApiTest.php` (права по ролям и цепочке, будущая и прошлая дата, граница суток
   по Киеву с `Carbon::setTestNow`: в день X 21:00/22:00 UTC ещё активен, после конца дня X — уволен, повтор, отмена, восстановление, ручной блок, 403/404/409/422, строковые id),
-  `tests/Unit/Users/AccountBlockServiceTest.php`, `tests/Feature/People/TerminationHandoverTest.php` (валидация и права,
-  задача один раз при вступлении в силу по границе суток Киева, сразу при «сегодня», закрытие при отмене/восстановлении).
+  `tests/Unit/Users/AccountBlockServiceTest.php`, `tests/Feature/People/TerminationHandoverTest.php` (валидация, права,
+  кто видит `handover_to`; задача — `tests/Feature/Workflows/TerminationHandoverTaskTest.php`).
 - **Фронт.** `profile/terminate.dialog.ts` — дата (по умолчанию сегодня) с подсказкой, кнопка «Звільнити» или
   «Запланувати», если дата позже сегодня (подсказка: доступ до конца этого дня); `profile/restore.dialog.ts` — выбор должности, отдела, филиала (`mat-select` по
   активным справочникам), руководителя (`app-person-picker`) и новой даты приёма; отправляются только изменённые поля.

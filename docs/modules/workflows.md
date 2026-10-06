@@ -57,6 +57,15 @@
 (superadmin/admin/hr_manager, `Repositories/EloquentAssigneeDirectory::firstActiveAdminId`), `specific_user` → указанный пользователь (заблокированный
 = никто). Шаблон без шагов сразу `completed`. Ничего не выполняется при запуске.
 
+**Передача дел при увольнении** (2026-10-07, решение владельца A; `Listeners/HandoverOnTermination`,
+`Services/TerminationHandoverTasks`). Если в увольнении выбран коллега (People `employees.handover_to_employee_id`, [people.md](people.md)),
+на `EmployeeTerminated` ему создаётся задача «Прийняти справи: <имя> звільнений з дд.мм.рррр» через контракт Scripts
+`TaskScheduler` (тип `exit_handover`, источник «Воркфлоу», ключ `people:handover:<fired_at>` с увольняемым — один раз на
+дату, повторная доставка события безопасна; только имя и дата). Нет коллеги, нет входа или он уже уволен — задачи нет.
+`EmployeeTerminationCancelled` и `EmployeeRestored` (несут дату) закрывают её. Код здесь, а не в People: Scripts уже
+зависит от People (`Task` → `Employee`), обратный импорт дал бы цикл модулей. Тест —
+`tests/Feature/Workflows/TerminationHandoverTaskTest.php`.
+
 **Триггеры** (`Services/WorkflowTriggers`, слушатели в `Listeners/`): событие People `EmployeeHired` (ручное создание и
 найм из рекрутинга) → активные шаблоны `employee_hired`, якорь `hired_at`; `EmployeeTerminated` → `employee_terminated`,
 якорь `fired_at` (с 2026-10-06 событие приходит, когда увольнение **вступило в силу**: сразу для даты «сегодня/раньше», для

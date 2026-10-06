@@ -128,7 +128,7 @@
 коллеге, на которого передали дела по согласованной заявке на отсутствие (тип `leave_handover`, источник `timeoff`, ключ
 `timeoff:handover:<id заявки>`, закрывается при отклонении/отмене, [timeoff.md](timeoff.md)) и «Прийняти справи: <имя>
 звільнений з..» коллеге, на которого передали дела при увольнении (тип `exit_handover` — `tasks.type` до 16 символов,
-источник `workflows`, ключ `people:handover:<fired_at>`, закрывается при отмене/восстановлении, [people.md](people.md)). Для них
+источник `workflows`, ключ `people:handover:<fired_at>`, закрывается при отмене/восстановлении, создаёт Workflows, [workflows.md](workflows.md)). Для них
 заполнены `employee_id` (о ком задача) и `link` (относительный путь в интерфейсе, у `request_form` — https-адрес
 внешней формы), идемпотентность — `unique(employee_id, rule_key)` с ключами `wf:<id шага запуска>` и `doc:<id документа>`.
 Другие модули создают задачи через `TaskService::schedule(DTO/NewTask)` (новым модулям — через контракт
