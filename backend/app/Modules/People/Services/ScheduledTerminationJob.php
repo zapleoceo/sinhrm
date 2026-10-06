@@ -10,9 +10,9 @@ use App\Modules\People\Contracts\EmployeeRepository;
 use Illuminate\Support\Carbon;
 
 /**
- * "people.terminations" for POST /api/ops/jobs/run (idempotent): applies every scheduled termination whose date
- * (fired_at) has come in the user's zone (UserTime, Europe/Kyiv), e.g. at 21:30 UTC in summer it is already the
- * next day in Kyiv. Applying = TerminationService::applyDue (status, login block, EmployeeTerminated).
+ * "people.terminations" for POST /api/ops/jobs/run (idempotent): applies every scheduled termination whose day
+ * (fired_at) is over in the user's zone (UserTime, Europe/Kyiv): Kyiv date > fired_at, so access lasts until the end
+ * of that day; e.g. at 21:30 UTC in summer it is already the next day in Kyiv. Applying = TerminationService::applyDue (status, login block, EmployeeTerminated).
  */
 final readonly class ScheduledTerminationJob implements ScheduledJob
 {

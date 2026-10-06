@@ -62,7 +62,7 @@ export interface Employee {
   manager_id?: number | null;
   hired_at?: string;
   fired_at?: string | null;
-  /** fired_at is set but the person still works: the termination comes into force on that date. */
+  /** fired_at is set but the person still works: access lasts until the end of that day (Kyiv). */
   termination_scheduled?: boolean;
   termination_reason?: string | null;
   /** HR-only, optional (pay-gap report). */

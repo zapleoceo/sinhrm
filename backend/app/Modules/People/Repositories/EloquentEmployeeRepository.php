@@ -119,7 +119,7 @@ final class EloquentEmployeeRepository implements EmployeeRepository
         return Employee::query()
             ->where('status', '!=', EmployeeStatus::Terminated->value)
             ->whereNotNull('fired_at')
-            ->whereDate('fired_at', '<=', $today->toDateString())
+            ->whereDate('fired_at', '<', $today->toDateString())
             ->orderBy('id')
             ->pluck('id')
             ->map(static fn (mixed $id): int => (int) $id)

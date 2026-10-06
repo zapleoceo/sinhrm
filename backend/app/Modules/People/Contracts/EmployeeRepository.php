@@ -48,7 +48,7 @@ interface EmployeeRepository
     public function lockForUpdate(int $id): void;
 
     /**
-     * Not terminated employees whose termination date (fired_at) has come: fired_at <= $today (a date).
+     * Scheduled terminations now in force: not terminated, fired_at < $today (a date). Access ends at the end of day fired_at.
      *
      * @return list<int>
      */

@@ -78,7 +78,7 @@
 | `GET /api/people/{id}` | любой активный | — | профиль по уровням + `access`; **уволенный** — только админу и руководителям выше него, остальным 404 |
 | `POST /api/people` | admin | `full_name, hired_at` (обязательны), остальные поля; `status` только `active\|on_leave` | 201 |
 | `PATCH /api/people/{id}` | admin | частично; `manager_id` на себя или на подчинённого → 422 `manager_cycle`; занятый `user_id` → 422 | 200 |
-| `POST /api/people/{id}/terminate` | admin или руководитель выше по `manager_id` (не сам себя) | `{fired_at, reason?}` (`Y-m-d`; может быть в будущем) | 200: `fired_at` ≤ сегодня (Киев) — `status=terminated` сразу; позже — `status` прежний, `termination_scheduled=true`. Чужой → 403; уволенный вне видимости → 404; уже уволен → 409 `already_terminated`; уже запланировано → 409 `termination_scheduled` |
+| `POST /api/people/{id}/terminate` | admin или руководитель выше по `manager_id` (не сам себя) | `{fired_at, reason?}` (`Y-m-d`; может быть в будущем) | 200: `fired_at` ≤ сегодня (Киев) — `status=terminated` сразу; позже — запланировано: `status` прежний, `termination_scheduled=true`, работа и доступ до конца дня `fired_at` по Киеву. Чужой → 403; уволенный вне видимости → 404; уже уволен → 409 `already_terminated`; уже запланировано → 409 `termination_scheduled` |
 | `POST /api/people/{id}/terminate/cancel` | те же | — | 200, `fired_at=null`; нечего отменять → 409 `termination_not_scheduled`; уже уволен → 409 `already_terminated` |
 | `POST /api/people/{id}/restore` | admin (gate `people-manage`) | `{position_id?, department_id?, branch_id?, manager_id?, hired_at?}`; нет поля — прежнее значение, `null` — очистить, строки `"5"` ок | 200, `status=active`; не уволен → 409 `not_terminated`; данные уже стёрты (Privacy) → 409 `anonymized`; руководитель — сам или подчинённый → 422 `manager_cycle`; неизвестная/неактивная должность, уволенный руководитель → 422 |
 | `GET /api/people/org-chart` | любой активный | `branch_id?`, `root_id?`, `mine=1` (своя ветка) | лес `{id, full_name, avatar_url, position, department, branch, reports_count, reports[]}` без уволенных; только уровень «справочник» |
@@ -97,7 +97,7 @@
 | Событие | Когда | Кто слушает |
 |---|---|---|
 | `Events/EmployeeHired` | создание сотрудника — вручную (`POST /api/people`, `hired_at` обязателен) и наймом из рекрутинга | TimeOff — начисление отпуска текущего периода; Workflows — запуск шаблонов `employee_hired` (якорь `hired_at`, один раз на сотрудника) |
-| `Events/EmployeeTerminated` | увольнение вступило в силу: сразу из `POST /api/people/{id}/terminate` или cron-задачей `people.terminations` в день `fired_at` (ровно один раз на увольнение) | Workflows — запуск шаблонов `employee_terminated` (якорь `fired_at`); Pulse — вихідне опитування (`exit`, один раз на дату увольнения, [pulse.md](pulse.md)) |
+| `Events/EmployeeTerminated` | увольнение вступило в силу: сразу из `POST /api/people/{id}/terminate` или cron-задачей `people.terminations` после окончания дня `fired_at` по Киеву, с 00:00 следующего дня (ровно один раз на увольнение) | Workflows — запуск шаблонов `employee_terminated` (якорь `fired_at`); Pulse — вихідне опитування (`exit`, один раз на дату увольнения, [pulse.md](pulse.md)) |
 
 | `Events/EmployeeRestored` | `POST /api/people/{id}/restore` | пока никто: онбординг-шаблоны Workflows и опросы Pulse автоматически **не** запускаются — при необходимости HR запускает процесс вручную во вкладке «Воркфлоу» |
 
@@ -112,15 +112,17 @@
 - **Кто.** Уволить и отменить запланированное увольнение — HR (суперадмин, админ, HR-менеджер) и любой руководитель выше
   по цепочке `manager_id`; себя не увольняет никто. Восстановить — только HR. Видимость уволенных не расширена
   (профиль, справочник, пикер — как раньше).
-- **Дата.** `fired_at` — день, с которого человек уволен (как в отчётах: `workingOn` считает этот день уже нерабочим).
-  «Сегодня» — по `UserTime` (`APP_USER_TIMEZONE`, по умолчанию Europe/Kyiv), **не** по UTC: в 21:00–24:00 UTC летом
+- **Дата.** `fired_at` — последний рабочий день. Решение владельца 2026-10-07: при будущей дате доступ снимается **в конце**
+  дня `fired_at` по Киеву (увольнение вступает в силу с 00:00 по Киеву следующего дня). «Сегодня» — по `UserTime` (`APP_USER_TIMEZONE`, по умолчанию Europe/Kyiv), **не** по UTC: в 21:00–24:00 UTC летом
   (22:00–24:00 зимой) в Киеве уже следующий день. `fired_at` ≤ сегодня — увольнение сразу; позже — запланировано:
-  статус прежний (`active`/`on_leave`), человек есть в справочнике и оргструктуре, вход работает, в ответе
-  `termination_scheduled: true`.
+  статус прежний (`active`/`on_leave`), человек есть в справочнике и оргструктуре, вход работает весь день `fired_at`,
+  в ответе `termination_scheduled: true`; в профиле — «Звільнення заплановано на дд.мм.рррр (доступ до кінця дня)».
+  Отчёты (`workingOn`) по-прежнему считают сам день `fired_at` нерабочим — это статистика, не доступ.
 - **Вступление в силу.** Задача `people.terminations` (`Services/ScheduledTerminationJob`, cron `POST /api/ops/jobs/run`,
-  примерно каждые 30 мин) находит неуволенных с `fired_at` ≤ сегодня (Киев) и применяет каждое под блокировкой строки:
+  примерно каждые 30 мин) находит неуволенных с `fired_at` < сегодня (киевская дата больше `fired_at`) и применяет каждое под блокировкой строки:
   `status=terminated`, вход заблокирован, событие `EmployeeTerminated`. Повторный прогон ничего не делает
-  (идемпотентно). Первый прогон после 00:00 по Киеву в день X — человек уволен.
+  (идемпотентно). В день X человек ещё активен; первый прогон после 00:00 по Киеву дня X+1 (летом с 21:00 UTC дня X,
+  зимой с 22:00 UTC) — уволен, вход заблокирован.
 - **Блокировка входа.** Если у записи есть пользователь, он блокируется тем же механизмом, что ручная блокировка в
   «Користувачі» (`Users/Contracts/AccountBlocker` → `UserAdminRepository`: статус `blocked`, все сессии, токены и remember
   token отзываются в одной транзакции, PR #149). Последнего активного суперадмина увольнение не блокирует (предупреждение в
@@ -137,12 +139,12 @@
 - **Код.** `Services/TerminationService` (terminate, cancel, applyDue, restore), `Http/Requests/RestoreEmployeeRequest`,
   `Events/EmployeeRestored`, миграция `2026_10_24_100001_add_termination_block_version_to_employees`.
   Тесты: `tests/Feature/People/TerminationApiTest.php` (права по ролям и цепочке, будущая и прошлая дата, граница суток
-  по Киеву с `Carbon::setTestNow`, повтор, отмена, восстановление, ручной блок, 403/404/409/422, строковые id),
+  по Киеву с `Carbon::setTestNow`: в день X 21:00/22:00 UTC ещё активен, после конца дня X — уволен, повтор, отмена, восстановление, ручной блок, 403/404/409/422, строковые id),
   `tests/Unit/Users/AccountBlockServiceTest.php`.
 - **Фронт.** `profile/terminate.dialog.ts` — дата (по умолчанию сегодня) с подсказкой, кнопка «Звільнити» или
-  «Запланувати», если дата позже сегодня; `profile/restore.dialog.ts` — выбор должности, отдела, филиала (`mat-select` по
+  «Запланувати», если дата позже сегодня (подсказка: доступ до конца этого дня); `profile/restore.dialog.ts` — выбор должности, отдела, филиала (`mat-select` по
   активным справочникам), руководителя (`app-person-picker`) и новой даты приёма; отправляются только изменённые поля.
-  В профиле: плашка «Звільнення заплановано на дд.мм.рррр» (`role=status`, предупреждающие токены), «Скасувати звільнення»
+  В профиле: плашка «Звільнення заплановано на дд.мм.рррр (доступ до кінця дня)» (`role=status`, предупреждающие токены), «Скасувати звільнення»
   с подтверждением (общий `ConfirmDialog`), «Відновити». Строки `people.terminate.*`, `people.restore.*`,
   `people.errors.*` (uk/ru/en). Спека — `profile/restore.dialog.spec.ts`.
 

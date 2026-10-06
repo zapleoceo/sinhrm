@@ -57,7 +57,7 @@ final class EmployeeResource extends JsonResource
                 'manager_id' => $this->manager_id,
                 'hired_at' => $this->hired_at->toDateString(),
                 'fired_at' => $this->fired_at?->toDateString(),
-                // fired_at set but still working: the termination comes into force on that date (can be cancelled).
+                // fired_at set but still working: access lasts until the end of that day (Kyiv), cancellable before.
                 'termination_scheduled' => $this->isTerminationScheduled(),
                 'termination_reason' => $flags['manage'] ? $this->termination_reason : null,
                 'gender' => $flags['manage'] ? $this->gender : null,

@@ -73,7 +73,7 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
   Но открыть сам раздел «Користувачі» он сможет, только вернувшись к «Суперадмін» или «Усі ролі».
 
 ### Блокировка по жизненному циклу сотрудника (`Contracts\AccountBlocker`, 2026-10-06)
-Для других модулей (сейчас People: увольнение и восстановление, [people.md](people.md)) — без админского экрана и без
+Для других модулей (сейчас People: увольнение — сразу или после окончания запланированного последнего дня по Киеву — и восстановление, [people.md](people.md)) — без админского экрана и без
 актора-пользователя (cron). Реализация `Services\AccountBlockService` переиспользует `UserAdminRepository`: тот же row lock,
 `setStatus` и `revokeCredentials` (все сессии, токены, remember token, `credential_version + 1`) в одной транзакции.
 - `block(user, actorId)` — блокирует только активного; возвращает новую `credential_version` (модуль хранит её как

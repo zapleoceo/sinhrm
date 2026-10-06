@@ -108,7 +108,7 @@ final class TerminationApiTest extends TestCase
         Event::assertDispatchedTimes(EmployeeTerminated::class, 1);
     }
 
-    public function test_future_date_keeps_working_until_the_cron_run_on_that_date(): void
+    public function test_future_date_keeps_working_through_that_day_and_ends_after_it(): void
     {
         $org = $this->org();
         $worker = $org['worker'];
@@ -121,11 +121,13 @@ final class TerminationApiTest extends TestCase
         // still in the directory and the org chart before the date
         $this->actingAs($user)->getJson('/api/people?q=Worker')->assertOk()->assertJsonPath('meta.total', 1);
 
-        Carbon::setTestNow('2026-07-19 12:00:00');
+        // on day X itself (Kyiv) the person still works and keeps access
+        Carbon::setTestNow('2026-07-20 12:00:00');
         $this->assertSame(0, $this->due());
         $this->assertFalse($worker->refresh()->isTerminated());
+        $this->assertSame(UserStatus::Active, $user->refresh()->status);
 
-        Carbon::setTestNow('2026-07-20 06:00:00');
+        Carbon::setTestNow('2026-07-21 06:00:00');
         $this->assertSame(1, $this->due());
         $this->assertTrue($worker->refresh()->isTerminated());
         $this->assertSame(UserStatus::Blocked, $user->refresh()->status);
@@ -135,17 +137,24 @@ final class TerminationApiTest extends TestCase
         Event::assertDispatchedTimes(EmployeeTerminated::class, 1);
     }
 
-    /** Day boundary by Kyiv time, not UTC: 21:00-24:00 UTC is already the next day in Kyiv (summer +3, winter +2). */
+    /**
+     * Access ends at the END of day X in Kyiv (owner, 2026-10-07): applied from 00:00 Kyiv of X+1. Day boundary by Kyiv
+     * time, not UTC: 21:00-24:00 UTC (summer, +3) / 22:00-24:00 UTC (winter, +2) is already the next day in Kyiv.
+     */
     public function test_the_day_boundary_follows_kyiv_not_utc(): void
     {
         $org = $this->org();
         $admin = $this->login(UserRole::Admin);
         $this->actingAs($admin)->postJson('/api/people/'.$org['worker']->id.'/terminate', ['fired_at' => '2026-07-15'])->assertOk();
 
-        Carbon::setTestNow('2026-07-14 20:59:59'); // 23:59:59 Kyiv, still the 14th
+        Carbon::setTestNow('2026-07-14 21:00:00'); // 00:00 Kyiv on X = the 15th: still active all day X
         $this->assertSame(0, $this->due());
-        Carbon::setTestNow('2026-07-14 21:00:00'); // 00:00 Kyiv on the 15th, UTC date is still the 14th
+        Carbon::setTestNow('2026-07-15 20:59:59'); // 23:59:59 Kyiv on X
+        $this->assertSame(0, $this->due());
+        $this->assertFalse($org['worker']->refresh()->isTerminated());
+        Carbon::setTestNow('2026-07-15 21:00:00'); // 00:00 Kyiv on X+1, UTC date is still X
         $this->assertSame(1, $this->due());
+        $this->assertSame(0, $this->due(), 'idempotent');
 
         // the request itself: at 23:30 UTC "today" is the next Kyiv day → applied at once; the day after → scheduled
         Carbon::setTestNow('2026-07-15 23:30:00');
@@ -154,13 +163,14 @@ final class TerminationApiTest extends TestCase
         $this->actingAs($admin)->postJson('/api/people/'.$org['other']->id.'/terminate', ['fired_at' => '2026-07-17'])->assertOk()
             ->assertJsonPath('data.status', 'active');
 
-        // winter (UTC+2): 21:59 UTC is still the same Kyiv day, 22:00 UTC is the next one
+        // winter (UTC+2), X = 2027-01-15: 21:59 UTC on X is still X in Kyiv, 22:00 UTC is X+1
         $this->actingAs($admin)->postJson('/api/people/'.$org['lead']->id.'/terminate', ['fired_at' => '2027-01-15'])->assertOk();
-        Carbon::setTestNow('2027-01-14 21:59:00');
-        $this->assertSame(1, $this->due()); // only "other" (due 2026-07-17)
+        Carbon::setTestNow('2027-01-15 21:59:00');
+        $this->assertSame(1, $this->due()); // only "other" (X = 2026-07-17, long over)
         $this->assertFalse($org['lead']->refresh()->isTerminated());
-        Carbon::setTestNow('2027-01-14 22:00:00');
+        Carbon::setTestNow('2027-01-15 22:00:00');
         $this->assertSame(1, $this->due());
+        $this->assertSame(0, $this->due(), 'idempotent');
         $this->assertTrue($org['lead']->refresh()->isTerminated());
     }
 
@@ -260,7 +270,7 @@ final class TerminationApiTest extends TestCase
     {
         $org = $this->org();
         $this->actingAs($this->login(UserRole::Admin))->postJson('/api/people/'.$org['worker']->id.'/terminate', ['fired_at' => '2026-07-15'])->assertOk();
-        Carbon::setTestNow('2026-07-15 08:00:00');
+        Carbon::setTestNow('2026-07-15 21:00:00'); // 00:00 Kyiv on the 16th: day X (15th) is over
 
         $jobs = $this->postJson('/api/ops/jobs/run', [], ['X-Ops-Secret' => 'test-secret'])->assertOk()->json('jobs');
         $this->assertIsArray($jobs);

@@ -115,7 +115,7 @@ final class Employee extends Model
         return $this->status === EmployeeStatus::Terminated;
     }
 
-    /** Still working, with a termination date set (it comes into force on that date, ScheduledTerminationJob). */
+    /** Still working, with a termination date set (access until the end of that day in Kyiv, then ScheduledTerminationJob applies it). */
     public function isTerminationScheduled(): bool
     {
         return ! $this->isTerminated() && $this->fired_at !== null;

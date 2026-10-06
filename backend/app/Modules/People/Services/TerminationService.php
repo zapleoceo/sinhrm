@@ -20,9 +20,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Termination from a date, its cancellation, and restore (owner decisions PROD-12, PROD-14).
- * - fired_at = the date the termination comes into force. On or before "today" in the user's zone (UserTime,
- *   Europe/Kyiv, never the UTC date) it applies at once; a later date is scheduled: the employee keeps working
- *   and ScheduledTerminationJob applies it once that date has come in the user's zone.
+ * - fired_at = the last working day. On or before "today" in the user's zone (UserTime, Europe/Kyiv, never the
+ *   UTC date) it applies at once; a later date is scheduled: the employee keeps working and access until the END of
+ *   that day, ScheduledTerminationJob applies it from 00:00 Kyiv of the next day (owner decision 2026-10-07).
  * - Applying: status terminated, the linked login blocked with every credential revoked (AccountBlocker), then
  *   EmployeeTerminated (Workflows offboarding, Pulse exit survey), exactly once per termination.
  * - Restore: working again; the login is unblocked only if that termination blocked it and nobody blocked it since.
@@ -83,7 +83,8 @@ final readonly class TerminationService
     }
 
     /**
-     * Cron (ScheduledTerminationJob): applies a scheduled termination whose date has come in the user's zone.
+     * Cron (ScheduledTerminationJob): applies a scheduled termination once its day is over in the user's zone
+     * (Kyiv date > fired_at).
      * Idempotent: a row already terminated, cancelled or not yet due is skipped under the row lock.
      */
     public function applyDue(int $employeeId, Carbon $now): bool
@@ -91,7 +92,7 @@ final readonly class TerminationService
         $today = UserTime::today($now)->toDateString();
         $applied = $this->employees->transaction(function () use ($employeeId, $today): bool {
             $fresh = $this->locked($employeeId);
-            if (! $fresh->isTerminationScheduled() || $fresh->fired_at?->toDateString() > $today) {
+            if (! $fresh->isTerminationScheduled() || $fresh->fired_at?->toDateString() >= $today) {
                 return false;
             }
             $this->apply($fresh, null);
