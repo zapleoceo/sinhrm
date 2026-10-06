@@ -149,9 +149,8 @@ final class TerminationApiTest extends TestCase
 
         Carbon::setTestNow('2026-07-14 21:00:00'); // 00:00 Kyiv on X = the 15th: still active all day X
         $this->assertSame(0, $this->due());
-        Carbon::setTestNow('2026-07-15 20:59:59'); // 23:59:59 Kyiv on X
-        $this->assertSame(0, $this->due());
-        $this->assertFalse($org['worker']->refresh()->isTerminated());
+        Carbon::setTestNow('2026-07-15 20:59:59'); // 23:59:59 Kyiv on X: nothing applied, still working
+        $this->assertSame([0, false], [$this->due(), $org['worker']->refresh()->isTerminated()]);
         Carbon::setTestNow('2026-07-15 21:00:00'); // 00:00 Kyiv on X+1, UTC date is still X
         $this->assertSame(1, $this->due());
         $this->assertSame(0, $this->due(), 'idempotent');
