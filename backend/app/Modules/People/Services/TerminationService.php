@@ -7,11 +7,14 @@ namespace App\Modules\People\Services;
 use App\Models\User;
 use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\DTO\TerminationOutcome;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Events\EmployeeRestored;
 use App\Modules\People\Events\EmployeeTerminated;
+use App\Modules\People\Events\EmployeeTerminationCancelled;
+use App\Modules\People\Events\EmployeeTerminationScheduled;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
 use App\Modules\Users\Contracts\AccountBlocker;
@@ -29,6 +32,11 @@ use Throwable;
  *   EmployeeTerminated (Workflows offboarding, Pulse exit survey) after the commit. A failing listener is logged and
  *   the event re-sent by the next cron run (employees.termination_event_pending) until it goes through.
  * - Restore: working again; the login is unblocked only if that termination blocked it and nobody blocked it since.
+ * - Scheduling a future date dispatches EmployeeTerminationScheduled (Pulse opens the exit survey while the person still
+ *   has access); cancelling dispatches EmployeeTerminationCancelled. Both are isolated: a failing listener is logged.
+ * - Optional handover colleague (handover_to_employee_id, person picker rules of the caller, not the employee): stored
+ *   on the employee; Workflows opens the task "Прийняти справи" on EmployeeTerminated and closes it on
+ *   EmployeeTerminationCancelled / EmployeeRestored (both carry the date).
  * Every change goes through the Employee model, so the audit log records it (who, fired_at, status).
  */
 final readonly class TerminationService
@@ -41,11 +49,12 @@ final readonly class TerminationService
         private LoggerInterface $log,
     ) {}
 
-    /** @throws PeopleException forbidden | already_terminated | termination_scheduled */
-    public function terminate(PeopleContext $ctx, User $actor, Employee $employee, Carbon $firedAt, ?string $reason): Employee
+    /** @throws PeopleException forbidden | invalid_handover | already_terminated | termination_scheduled */
+    public function terminate(PeopleContext $ctx, User $actor, Employee $employee, Carbon $firedAt, ?string $reason, ?int $handoverId = null): Employee
     {
         $this->authorize($ctx, $employee->id);
-        $applied = $this->employees->transaction(function () use ($actor, $employee, $firedAt, $reason): bool {
+        $this->checkHandover($ctx, $employee, $handoverId);
+        $applied = $this->employees->transaction(function () use ($actor, $employee, $firedAt, $reason, $handoverId): bool {
             $fresh = $this->locked($employee->id);
             if ($fresh->isTerminated()) {
                 throw PeopleException::alreadyTerminated();
@@ -53,7 +62,11 @@ final readonly class TerminationService
             if ($fresh->isTerminationScheduled()) {
                 throw PeopleException::terminationScheduled();
             }
-            $this->employees->update($fresh, ['fired_at' => $firedAt->toDateString(), 'termination_reason' => $reason]);
+            $this->employees->update($fresh, [
+                'fired_at' => $firedAt->toDateString(),
+                'termination_reason' => $reason,
+                'handover_to_employee_id' => $handoverId,
+            ]);
             if ($firedAt->toDateString() > UserTime::today()->toDateString()) {
                 return false;
             }
@@ -64,6 +77,8 @@ final readonly class TerminationService
         $this->log->info($applied ? 'people.employee_terminated' : 'people.termination_scheduled', ['id' => $employee->id, 'by' => $actor->id]);
         if ($applied) {
             $this->dispatchTerminated($employee->id);
+        } else {
+            $this->dispatchQuietly(new EmployeeTerminationScheduled($this->records->find($employee->id)), 'people.termination_scheduled_event_failed', $employee->id);
         }
 
         return $this->records->find($employee->id);
@@ -73,7 +88,7 @@ final readonly class TerminationService
     public function cancel(PeopleContext $ctx, User $actor, Employee $employee): Employee
     {
         $this->authorize($ctx, $employee->id);
-        $this->employees->transaction(function () use ($employee): void {
+        $firedAt = $this->employees->transaction(function () use ($employee): string {
             $fresh = $this->locked($employee->id);
             if ($fresh->isTerminated()) {
                 throw PeopleException::alreadyTerminated();
@@ -81,11 +96,16 @@ final readonly class TerminationService
             if (! $fresh->isTerminationScheduled()) {
                 throw PeopleException::terminationNotScheduled();
             }
-            $this->employees->update($fresh, ['fired_at' => null, 'termination_reason' => null]);
+            $firedAt = (string) $fresh->fired_at?->toDateString();
+            $this->employees->update($fresh, ['fired_at' => null, 'termination_reason' => null, 'handover_to_employee_id' => null]);
+
+            return $firedAt;
         });
         $this->log->info('people.termination_cancelled', ['id' => $employee->id, 'by' => $actor->id]);
+        $cancelled = $this->records->find($employee->id);
+        $this->dispatchQuietly(new EmployeeTerminationCancelled($cancelled, $firedAt), 'people.termination_cancelled_event_failed', $employee->id);
 
-        return $this->records->find($employee->id);
+        return $cancelled;
     }
 
     /**
@@ -137,7 +157,7 @@ final readonly class TerminationService
      */
     public function restore(User $actor, Employee $employee, array $placement): Employee
     {
-        $this->employees->transaction(function () use ($actor, $employee, $placement): void {
+        $firedAt = $this->employees->transaction(function () use ($actor, $employee, $placement): ?string {
             $fresh = $this->locked($employee->id);
             if (! $fresh->isTerminated()) {
                 throw PeopleException::notTerminated();
@@ -146,11 +166,13 @@ final readonly class TerminationService
                 throw PeopleException::anonymized();
             }
             $blockedVersion = $fresh->termination_block_version;
+            $firedAt = $fresh->fired_at?->toDateString();
             $this->records->update($actor, $fresh, [
                 ...$placement,
                 'status' => EmployeeStatus::Active->value,
                 'fired_at' => null,
                 'termination_reason' => null,
+                'handover_to_employee_id' => null,
                 'termination_block_version' => null,
                 'termination_event_pending' => false,
             ]);
@@ -159,10 +181,12 @@ final readonly class TerminationService
             if ($user !== null && $blockedVersion !== null) {
                 $this->accounts->unblockIfBlockedBy($user, $blockedVersion, $actor->id);
             }
+
+            return $firedAt;
         });
         $this->log->info('people.employee_restored', ['id' => $employee->id, 'by' => $actor->id]);
         $restored = $this->records->find($employee->id);
-        $this->events->dispatch(new EmployeeRestored($restored));
+        $this->events->dispatch(new EmployeeRestored($restored, $firedAt));
 
         return $restored;
     }
@@ -184,6 +208,33 @@ final readonly class TerminationService
         $this->employees->update($employee, $attributes);
 
         return $blocked;
+    }
+
+    /**
+     * Same rule as the person picker of the caller (EmployeeService::list: scope, working people only), never the
+     * employee being terminated.
+     *
+     * @throws PeopleException invalid_handover
+     */
+    private function checkHandover(PeopleContext $ctx, Employee $employee, ?int $handoverId): void
+    {
+        if ($handoverId === null) {
+            return;
+        }
+        if ($handoverId === $employee->id
+            || $this->records->list($ctx, new EmployeeFilter(perPage: 1, onlyIds: [$handoverId]))->total() !== 1) {
+            throw PeopleException::invalidHandover();
+        }
+    }
+
+    /** After the commit, isolated: a throwing listener is logged (id only) and never undoes the change. */
+    private function dispatchQuietly(object $event, string $logKey, int $employeeId): void
+    {
+        try {
+            $this->events->dispatch($event);
+        } catch (Throwable $e) {
+            $this->log->error($logKey, ['id' => $employeeId, 'error' => $e::class]);
+        }
     }
 
     /**

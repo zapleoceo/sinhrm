@@ -6,6 +6,7 @@ namespace App\Modules\Pulse\Http\Controllers;
 
 use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Pulse\Http\Requests\CreateWaveRequest;
+use App\Modules\Pulse\Http\Requests\RespondRequest;
 use App\Modules\Pulse\Http\Requests\SaveSurveyRequest;
 use App\Modules\Pulse\Http\Requests\UpdateWaveRequest;
 use App\Modules\Pulse\Http\Resources\SurveyResource;
@@ -84,6 +85,14 @@ final class SurveyController
         return new WaveResource($this->surveys->closeWave($this->surveys->findWave($waveId)));
     }
 
+    /** HR enters the exit answers of a terminated / locked-out employee (one answer per wave, like the person's own). */
+    public function respondOnBehalf(RespondRequest $request, int $waveId): Response
+    {
+        $this->responses->respondOnBehalf($this->actor($request), $waveId, $request->answers());
+
+        return response()->noContent(201);
+    }
+
     /** Non-anonymous waves only (409 anonymous_wave otherwise). */
     public function responses(int $waveId): JsonResponse
     {
@@ -93,6 +102,7 @@ final class SurveyController
                 'employee_id' => $r->employee_id,
                 'answers' => (object) $r->answers,
                 'submitted_on' => $r->submitted_on->toDateString(),
+                'entered_by_user_id' => $r->entered_by_user_id,
             ])->values()->all()]);
     }
 }

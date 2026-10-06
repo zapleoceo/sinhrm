@@ -48,6 +48,15 @@ interface SurveyRepository
      */
     public function createSuccessorOnce(array $attributes): ?SurveyWave;
 
+    /** @return Collection<int, SurveyWave> lifecycle waves of one employee and trigger key (any survey), with responses_count */
+    public function lifecycleWavesOf(int $subjectEmployeeId, string $triggerKey): Collection;
+
+    /** The wave row locked FOR UPDATE (inside transaction()), with responses_count: a concurrent answer waits. */
+    public function lockWave(int $id): ?SurveyWave;
+
+    /** Deletes a wave (its responses and audience snapshot go with it, FK cascade). */
+    public function deleteWave(SurveyWave $wave): void;
+
     /** @param  array<string, mixed>  $attributes */
     public function updateWave(SurveyWave $wave, array $attributes): SurveyWave;
 

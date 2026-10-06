@@ -42,7 +42,7 @@ final class TaskTransitionsTest extends TestCase
     public function test_every_type_has_a_source(): void
     {
         $this->assertSame(['followup', 'manual', 'new_applicant'], TaskSource::Recruiting->typeValues());
-        $this->assertSame(['workflow'], TaskSource::Workflows->typeValues());
+        $this->assertSame(['workflow', 'exit_handover'], TaskSource::Workflows->typeValues());
         $this->assertSame(['document'], TaskSource::Documents->typeValues());
     }
 }

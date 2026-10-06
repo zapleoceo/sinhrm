@@ -68,6 +68,12 @@ final class PeopleException extends RuntimeException
         return new self('not_hired', 422);
     }
 
+    /** Terminate: the handover colleague is unknown, terminated, invisible to the caller or the employee themself. */
+    public static function invalidHandover(): self
+    {
+        return new self('invalid_handover', 422);
+    }
+
     public static function forbidden(): self
     {
         return new self('forbidden', 403);

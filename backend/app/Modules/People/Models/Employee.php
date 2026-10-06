@@ -37,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $anonymized_at personal data erased after offboarding (Privacy)
  * @property string|null $termination_reason
  * @property bool $termination_event_pending EmployeeTerminated still to be (re)sent by ScheduledTerminationJob
+ * @property int|null $handover_to_employee_id who takes over the work when the termination applies (optional)
  * @property int|null $termination_block_version users.credential_version after the termination blocked the login
  * @property EmployeeStatus $status
  * @property EmploymentType $employment_type
@@ -68,7 +69,7 @@ final class Employee extends Model
 
     protected $fillable = [
         'user_id', 'full_name', 'work_email', 'phone', 'avatar_url', 'birth_date', 'personal_email', 'address',
-        'emergency_contact', 'custom_fields', 'hired_at', 'fired_at', 'termination_reason', 'termination_block_version', 'termination_event_pending', 'status', 'employment_type',
+        'emergency_contact', 'custom_fields', 'hired_at', 'fired_at', 'termination_reason', 'handover_to_employee_id', 'termination_block_version', 'termination_event_pending', 'status', 'employment_type',
         'work_schedule', 'branch_id', 'department_id', 'position_id', 'manager_id', 'candidate_id', 'application_id', 'gender',
     ];
 
@@ -91,6 +92,12 @@ final class Employee extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /** @return BelongsTo<Employee, $this> the colleague who takes over the work on termination */
+    public function handoverTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'handover_to_employee_id');
     }
 
     /** @return BelongsTo<Position, $this> */

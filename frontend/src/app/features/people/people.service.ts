@@ -69,9 +69,11 @@ export class PeopleService {
     return this.http.patch<{ data: Employee }>(`/api/people/${id}`, body).pipe(map((r) => r.data));
   }
 
-  terminate(id: number, firedAt: string, reason: string | null): Observable<Employee> {
+  /** handoverTo: optional colleague who takes over the work (omitted when nobody is chosen). */
+  terminate(id: number, firedAt: string, reason: string | null, handoverTo: number | null = null): Observable<Employee> {
+    const body = handoverTo === null ? { fired_at: firedAt, reason } : { fired_at: firedAt, reason, handover_to_employee_id: handoverTo };
     return this.http
-      .post<{ data: Employee }>(`/api/people/${id}/terminate`, { fired_at: firedAt, reason })
+      .post<{ data: Employee }>(`/api/people/${id}/terminate`, body)
       .pipe(map((r) => r.data));
   }
 

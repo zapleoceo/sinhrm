@@ -26,6 +26,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
+use Psr\Log\LoggerInterface;
 
 /**
  * Answering and reporting.
@@ -42,6 +43,8 @@ use Illuminate\Support\Carbon;
  *    wave (results, compare, a manager's department); a comparison is withheld when the audiences (or the answer
  *    counts) of the two waves differ by 1..min-1 people.
  * 5. Individual responses are listed only for non-anonymous waves (admins).
+ * 6. HR may enter the answers of an exit wave on behalf of its subject only when the person cannot answer (terminated,
+ *    no login or a blocked login): same token, so one answer per wave; entered_by_user_id marks it as HR's entry.
  * Who reads results: admins — everything; managers — their own department of non-lifecycle waves (same minimum).
  */
 final readonly class ResponseService
@@ -55,6 +58,7 @@ final readonly class ResponseService
         private RespondentHash $hash,
         private EmployeeRepository $employees,
         private WaveMembership $membership,
+        private LoggerInterface $log,
     ) {}
 
     /**
@@ -138,15 +142,53 @@ final readonly class ResponseService
         if ($responded) {
             throw PulseException::alreadyResponded();
         }
+        $this->store($wave, $employee, $answers, $now);
+    }
+
+    /**
+     * HR (route gate pulse-manage): the exit answers of an employee who can no longer answer (terminated, no login or a
+     * blocked login — e.g. a termination applied at once). Stored like the person's own answer plus
+     * entered_by_user_id = HR; logged with the wave and the actor, never the answers.
+     *
+     * @param  array<string, mixed>  $answers
+     *
+     * @throws PulseException not_exit_wave | wave_not_open | employee_can_answer | invalid_answers | already_responded
+     */
+    public function respondOnBehalf(User $actor, int $waveId, array $answers, ?Carbon $now = null): void
+    {
+        $wave = $this->surveys->findWave($waveId) ?? throw (new ModelNotFoundException)->setModel(SurveyWave::class, [$waveId]);
+        if ($wave->subject_employee_id === null || $wave->anonymous || ! str_starts_with((string) $wave->trigger_key, 'exit:')) {
+            throw PulseException::notExitWave();
+        }
+        if ($wave->status !== WaveStatus::Open || $wave->salt === null) {
+            throw PulseException::waveNotOpen();
+        }
+        $employee = $this->employees->find($wave->subject_employee_id)
+            ?? throw (new ModelNotFoundException)->setModel(Employee::class, [$wave->subject_employee_id]);
+        if (! $employee->isTerminated() && $employee->user?->isActive() === true) {
+            throw PulseException::employeeCanAnswer();
+        }
+        $this->store($wave, $employee, $answers, $now, $actor->id);
+        $this->log->info('pulse.response_on_behalf', ['wave' => $wave->id, 'by' => $actor->id]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $answers
+     *
+     * @throws PulseException invalid_answers | already_responded
+     */
+    private function store(SurveyWave $wave, Employee $employee, array $answers, ?Carbon $now, ?int $enteredBy = null): void
+    {
         $clean = AnswerValidator::validate($wave->survey->questions, $answers);
         $created = $this->responses->createOnce([
             'wave_id' => $wave->id,
-            'respondent_hash' => $this->hash->for($wave->salt, $employee->id),
+            'respondent_hash' => $this->hash->for((string) $wave->salt, $employee->id), // callers checked: open wave, salt set
             'employee_id' => $wave->anonymous ? null : $employee->id,
             'branch_id' => $employee->branch_id,
             'department_id' => $employee->department_id,
             'answers' => $clean,
             'submitted_on' => ($now ?? Carbon::now())->toDateString(),
+            'entered_by_user_id' => $enteredBy,
         ]);
         if (! $created) {
             throw PulseException::alreadyResponded();

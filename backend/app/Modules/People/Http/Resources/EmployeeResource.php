@@ -60,6 +60,9 @@ final class EmployeeResource extends JsonResource
                 // fired_at set but still working: access lasts until the end of that day (Kyiv), cancellable before.
                 'termination_scheduled' => $this->isTerminationScheduled(),
                 'termination_reason' => $flags['manage'] ? $this->termination_reason : null,
+                // Who takes over the work when the termination applies: only the id and the name.
+                'handover_to' => $this->handover_to_employee_id !== null && $this->relationLoaded('handoverTo') && $this->handoverTo !== null
+                    ? ['id' => $this->handoverTo->id, 'full_name' => $this->handoverTo->full_name] : null,
                 'gender' => $flags['manage'] ? $this->gender : null,
                 'employment_type' => $this->employment_type->value,
                 'work_schedule' => $this->work_schedule,

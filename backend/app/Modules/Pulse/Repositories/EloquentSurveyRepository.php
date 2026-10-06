@@ -75,6 +75,25 @@ final class EloquentSurveyRepository implements SurveyRepository
         return $this->createUnique($attributes, ['parent_wave_id' => $attributes['parent_wave_id']]);
     }
 
+    public function lifecycleWavesOf(int $subjectEmployeeId, string $triggerKey): Collection
+    {
+        return SurveyWave::query()->with('survey')->withCount('responses')
+            ->where('subject_employee_id', $subjectEmployeeId)->where('trigger_key', $triggerKey)->orderBy('id')->get();
+    }
+
+    public function lockWave(int $id): ?SurveyWave
+    {
+        // FOR UPDATE on the wave: inserting a response takes a key-share lock on it (FK), so it waits for this.
+        $wave = SurveyWave::query()->whereKey($id)->lockForUpdate()->first();
+
+        return $wave?->loadCount('responses');
+    }
+
+    public function deleteWave(SurveyWave $wave): void
+    {
+        $wave->delete();
+    }
+
     public function updateWave(SurveyWave $wave, array $attributes): SurveyWave
     {
         $wave->fill($attributes)->save();

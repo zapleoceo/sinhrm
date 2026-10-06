@@ -65,6 +65,8 @@ export interface Employee {
   /** fired_at is set but the person still works: access lasts until the end of that day (Kyiv). */
   termination_scheduled?: boolean;
   termination_reason?: string | null;
+  /** Who takes over the work when the termination applies (optional; only id and name). */
+  handover_to?: { id: number; full_name: string } | null;
   /** HR-only, optional (pay-gap report). */
   gender?: string | null;
   employment_type?: EmploymentType;
@@ -171,6 +173,7 @@ export const PEOPLE_ERROR_CODES = [
   'already_terminated',
   'termination_scheduled',
   'termination_not_scheduled',
+  'invalid_handover',
   'not_terminated',
   'anonymized',
   'already_decided',

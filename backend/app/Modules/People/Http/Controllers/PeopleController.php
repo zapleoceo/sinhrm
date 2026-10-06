@@ -65,7 +65,7 @@ final class PeopleController
         $ctx = $this->scope->for($actor);
         $employee = $this->service->findVisible($ctx, $employee->id);
 
-        return EmployeeResource::for($this->terminations->terminate($ctx, $actor, $employee, $request->firedAt(), $request->reason()), $ctx);
+        return EmployeeResource::for($this->terminations->terminate($ctx, $actor, $employee, $request->firedAt(), $request->reason(), $request->handoverToEmployeeId()), $ctx);
     }
 
     /** Cancel a scheduled termination before its date: same callers as terminate. */

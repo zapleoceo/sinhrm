@@ -8,7 +8,9 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\People\Events\EmployeeHired;
+use App\Modules\People\Events\EmployeeRestored;
 use App\Modules\People\Events\EmployeeTerminated;
+use App\Modules\People\Events\EmployeeTerminationCancelled;
 use App\Modules\Scripts\Events\TaskCompleted;
 use App\Modules\Workflows\Contracts\AssigneeDirectory;
 use App\Modules\Workflows\Contracts\WorkflowRunRepository;
@@ -24,6 +26,7 @@ use App\Modules\Workflows\Executors\StartWorkflowExecutor;
 use App\Modules\Workflows\Executors\UploadDocumentRequestExecutor;
 use App\Modules\Workflows\Executors\WebhookExecutor;
 use App\Modules\Workflows\Listeners\CompleteStepFromTask;
+use App\Modules\Workflows\Listeners\HandoverOnTermination;
 use App\Modules\Workflows\Listeners\StartOffboardingWorkflows;
 use App\Modules\Workflows\Listeners\StartOnboardingWorkflows;
 use App\Modules\Workflows\Repositories\EloquentAssigneeDirectory;
@@ -85,6 +88,9 @@ final class WorkflowsServiceProvider extends ModuleServiceProvider
 
         Event::listen(EmployeeHired::class, StartOnboardingWorkflows::class);
         Event::listen(EmployeeTerminated::class, StartOffboardingWorkflows::class);
+        Event::listen(EmployeeTerminated::class, [HandoverOnTermination::class, 'terminated']);
+        Event::listen(EmployeeTerminationCancelled::class, [HandoverOnTermination::class, 'cancelled']);
+        Event::listen(EmployeeRestored::class, [HandoverOnTermination::class, 'restored']);
         Event::listen(TaskCompleted::class, CompleteStepFromTask::class);
     }
 }

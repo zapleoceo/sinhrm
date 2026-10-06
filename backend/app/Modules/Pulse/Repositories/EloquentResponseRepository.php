@@ -71,7 +71,7 @@ final class EloquentResponseRepository implements ResponseRepository
     public function identified(int $waveId, int $limit): Collection
     {
         return SurveyResponse::query()->where('wave_id', $waveId)->whereNotNull('employee_id')
-            ->orderBy('id')->limit($limit)->get(['id', 'employee_id', 'answers', 'submitted_on']);
+            ->orderBy('id')->limit($limit)->get(['id', 'employee_id', 'answers', 'submitted_on', 'entered_by_user_id']);
     }
 
     public function segmentNames(string $segment, array $ids): array
