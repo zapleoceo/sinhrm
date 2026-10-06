@@ -278,7 +278,11 @@ final class TerminationApiTest extends TestCase
         $this->assertTrue($org['worker']->refresh()->isTerminated());
     }
 
-    /** One cron pass of the scheduled terminations (the job alone, at the frozen "now"). */
+    /**
+     * One cron pass of the scheduled terminations (the job alone, at the frozen "now").
+     *
+     * @phpstan-impure
+     */
     private function due(): int
     {
         $result = $this->app->make(ScheduledTerminationJob::class)->run(Carbon::now());
