@@ -1,5 +1,7 @@
 # Деплой
 
+Для app-side runtime/build requirements при переносе с Vercel см. [хенд-офф приложения для Itstep](itstep-app-handoff.md). Этот файл ниже описывает действующий Vercel workflow.
+
 ## Простыми словами
 Как только изменение принято в `main`, GitHub сам прогоняет тесты и выкладывает новую версию на Vercel.
 Тестовая копия (preview) выкладывается только для Pull Request с меткой `preview`, ссылка появляется в комментарии к PR.
@@ -81,3 +83,10 @@ preview-API. Вход Google на preview по-прежнему не работ�
 `curl https://sinhrm.vercel.app/api/health` → `{"ok":true,...}`.
 
 - Выкладка только сайта (сервер не менялся): прод-сайт берёт адрес API из закоммиченного `frontend/vercel.json`, поэтому проверка адреса API нужна только для preview (исправлено 2026-09-28: 24 ночные попытки падали с «bad API url»).
+
+## Идентификатор реально собранной ревизии
+Перед `vercel build` Deploy выполняет `node scripts/stamp-build.mjs`. Он получает SHA через Git из checkout,
+а не `github.sha` контекста workflow_run; generated JSON попадает в API function и Web static assets.
+Проверяйте Web `/build.json` и API `/api/health` (поле `version`) отдельно по соответствующему Deploy run.
+Файлы содержат только публичный SHA, без путей, времени, окружения или персональных данных.
+При частичном production deploy разные SHA проектов допустимы; прежний API нельзя объявлять новым по SHA Web.

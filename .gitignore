@@ -15,3 +15,7 @@ SENSITIVE*
 
 # REST client: real session/XSRF values go here, never in the shared env file
 rest/http-client.private.env.json
+
+# Immutable metadata generated from the deploy checkout, never committed.
+backend/build.json
+frontend/public/build.json
