@@ -14,6 +14,7 @@ use App\Modules\TimeOff\Services\LeaveHandoverTasks;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
@@ -154,7 +155,10 @@ final class LeaveHandoverTest extends TestCase
         $this->assertSame(0, Task::query()->count());
     }
 
-    /** @param  array<string, mixed>  $extra */
+    /**
+     * @param  array<string, mixed>  $extra
+     * @return TestResponse<Response>
+     */
     private function file(array $extra): TestResponse
     {
         return $this->actingAs($this->userOf($this->org['worker']))->postJson('/api/timeoff/requests', $this->body($extra));

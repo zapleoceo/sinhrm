@@ -19,6 +19,7 @@ use App\Modules\Scripts\Contracts\EvaluationRepository;
 use App\Modules\Scripts\Contracts\ScriptEvaluator;
 use App\Modules\Scripts\Contracts\ScriptRepository;
 use App\Modules\Scripts\Contracts\TaskRepository;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\Listeners\EvaluateRecordedTouch;
 use App\Modules\Scripts\Models\Task;
 use App\Modules\Scripts\Policies\TaskPolicy;
@@ -29,6 +30,7 @@ use App\Modules\Scripts\Repositories\EloquentTaskRepository;
 use App\Modules\Scripts\Services\FollowupJob;
 use App\Modules\Scripts\Services\RulesScriptEvaluator;
 use App\Modules\Scripts\Services\TaskNavBadges;
+use App\Modules\Scripts\Services\TaskService;
 use App\Modules\Scripts\Support\ScriptTouchpointEvaluations;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -54,6 +56,8 @@ final class ScriptsServiceProvider extends ModuleServiceProvider
         $this->app->bind(ScriptRepository::class, EloquentScriptRepository::class);
         $this->app->bind(EvaluationRepository::class, EloquentEvaluationRepository::class);
         $this->app->bind(TaskRepository::class, EloquentTaskRepository::class);
+        // Other modules schedule/close their tasks through the contract (TimeOff handover).
+        $this->app->bind(TaskScheduler::class, TaskService::class);
         // The always-available engine; EvaluationService adds the AI one when AI is available (Ai module).
         $this->app->bind(ScriptEvaluator::class, RulesScriptEvaluator::class);
         // Evaluation summaries on Recruiting timeline items.

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Services;
 
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\Enums\TaskType;
-use App\Modules\Scripts\Services\TaskService;
 use App\Modules\TimeOff\Models\LeaveRequest;
 use Psr\Log\LoggerInterface;
 
 /**
- * Handover colleague of a leave request → a task in "Мої задачі" (Scripts TaskService, type leave_handover, source
+ * Handover colleague of a leave request → a task in "Мої задачі" (Scripts Contracts\TaskScheduler, type leave_handover, source
  * timeoff): "Заміщення: <name> відсутній з dd.mm.yyyy по dd.mm.yyyy", due on the first day. Only the name and the
  * dates — no leave type, comment or balance. Created when the request is approved, once per request (rule key
  * timeoff:handover:<id> with the absent employee — a repeat returns the stored task); closed when the request is
@@ -22,7 +22,7 @@ final readonly class LeaveHandoverTasks
     public const string RULE = 'timeoff:handover:';
 
     public function __construct(
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
         private LoggerInterface $log,
     ) {}
 

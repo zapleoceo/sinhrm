@@ -84,7 +84,7 @@
 `active`/`on_leave`, уволенные не выбираются даже HR) и не сам отсутствующий сотрудник; иначе 422 `invalid_handover`
 (не число — 422 валидации). Задаётся при создании; отдельного редактирования заявки нет — как и остальные поля, после
 решения не меняется. В ответах — `handover_to: {id, full_name} | null` (список, карточка, «Погодження», календарь).
-Задача (`Services/LeaveHandoverTasks` → `Scripts\TaskService::schedule`, тип `leave_handover`, источник `timeoff`,
+Задача (`Services/LeaveHandoverTasks` → контракт `Scripts\Contracts\TaskScheduler::schedule` (границы модулей), тип `leave_handover`, источник `timeoff`,
 [scripts.md](scripts.md)): при согласовании (и при сразу `approved` типе без согласования) коллеге —
 «Заміщення: <имя> відсутній з дд.мм.рррр по дд.мм.рррр», срок — первый день; только имя и даты, без типа и комментария.
 Ключ `timeoff:handover:<id заявки>` с `employee_id` отсутствующего — повтор не создаёт вторую задачу (повторное
