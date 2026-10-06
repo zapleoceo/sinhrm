@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Workflows\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Models\Employee;
 use App\Modules\Workflows\Contracts\WorkflowRunRepository;
 use App\Modules\Workflows\Enums\RunStatus;
@@ -65,7 +66,8 @@ final readonly class WorkflowStarter
             if ($run === null) {
                 return null;
             }
-            $day = $anchor->copy()->startOfDay();
+            // Anchor is a date, not an instant. Add calendar days locally before converting to storage.
+            $day = Carbon::parse($anchor->toDateString(), UserTime::timezone())->startOfDay();
             $this->runs->createSteps($run, array_values($template->steps->map(function (WorkflowStep $step) use ($employee, $startedBy, $day): array {
                 $snapshot = $step->snapshot();
 
@@ -74,7 +76,7 @@ final readonly class WorkflowStarter
                     'position' => $step->position,
                     'snapshot' => $snapshot->toArray(),
                     'assignee_id' => $this->assignees->resolve($snapshot, $employee, $startedBy),
-                    'due_at' => $day->copy()->addDays($snapshot->offsetDays),
+                    'due_at' => UserTime::toStorage($day->copy()->addDays($snapshot->offsetDays)),
                 ];
             })->all()));
             if ($template->steps->isEmpty()) {

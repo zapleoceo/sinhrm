@@ -10,8 +10,6 @@
   "navigation \"Головне меню\""
  ],
  "interactive": [
-  "button \"Next page\"",
-  "button \"Previous page\" [disabled]",
   "button \"Автоприховування меню\"",
   "button \"Адміністрування\" [expanded]",
   "button \"Дія\"",
@@ -19,7 +17,9 @@
   "button \"Користувач\"",
   "button \"Люди 70 нових\"",
   "button \"Меню користувача\"",
+  "button \"Наступна сторінка\"",
   "button \"Обʼєкт\"",
+  "button \"Попередня сторінка\" [disabled]",
   "button \"Продуктивність\"",
   "button \"Рекрутинг 2 нових\"",
   "button \"Сервіси\"",
@@ -28,7 +28,7 @@
   "button \"Фільтр стовпця «Обʼєкт»\"",
   "button \"Фільтр стовпця «Час»\"",
   "button \"Час\"",
-  "combobox \"Items per page:\"",
+  "combobox \"На сторінці:\"",
   "link \"SinHRM\" -> /",
   "link \"Імпорт з Google Sheets\" -> /admin/sheets-import",
   "link \"Інтеграції\" -> /admin/integrations",

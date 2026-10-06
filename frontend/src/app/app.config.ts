@@ -15,6 +15,7 @@ import { TranslocoHttpLoader } from './core/i18n/transloco-loader';
 import { TranslatedTitleStrategy } from './core/i18n/translated-title.strategy';
 import { ThemeService } from './core/theme/theme.service';
 import { provideAppDialogDefaults } from './core/ui/dialog';
+import { provideAppPaginator } from './core/ui/paginator-intl';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -42,6 +43,8 @@ export const appConfig: ApplicationConfig = {
     }),
     // Material datepicker/timepicker: native Date, Monday-first, dd.MM.yyyy, locale follows the UI language.
     provideAppDates(),
+    // All Material paginators: translated labels/ranges, including runtime language changes.
+    provideAppPaginator(),
     // MatDialog: max 95vw, focus the first field, restore focus on close (core/ui/dialog.ts).
     provideAppDialogDefaults(),
     { provide: MAT_ICON_DEFAULT_OPTIONS, useValue: { fontSet: 'material-symbols-outlined' } },
