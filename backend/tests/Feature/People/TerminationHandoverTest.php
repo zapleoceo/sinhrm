@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\People;
 
-use App\Modules\Auth\Enums\UserRole;
 use App\Modules\People\Models\Employee;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
