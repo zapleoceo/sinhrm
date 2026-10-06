@@ -63,6 +63,7 @@ final class UserAdminService
         }
 
         return $this->users->transaction(function () use ($actor, $target, $roles, $status, $branchIds, $safeSpeakHandler): User {
+            $this->users->lockAndRefresh($target);
             $previous = $this->users->rolesOf($target);
             $wasSuperadmin = in_array(UserRole::Superadmin, $previous, true);
             if ($roles !== null && ! $wasSuperadmin && in_array(UserRole::Superadmin, $roles, true)) {
@@ -82,7 +83,14 @@ final class UserAdminService
                 $this->audit->record('user', $target->id, AuditAction::RoleChanged, ['role' => ['from' => self::names($previous), 'to' => self::names($roles)]], null, $actor->id);
             }
             if ($status !== null) {
+                // Pre-generation blocked accounts may still own credentials from before the upgrade.
+                if ($status === UserStatus::Active && ! $target->isActive() && $target->credential_version === 0) {
+                    $this->users->revokeCredentials($target);
+                }
                 $this->users->setStatus($target, $status);
+                if ($status === UserStatus::Blocked) {
+                    $this->users->revokeCredentials($target);
+                }
             }
             if ($branchIds !== null) {
                 $this->users->syncBranches($target, $branchIds);

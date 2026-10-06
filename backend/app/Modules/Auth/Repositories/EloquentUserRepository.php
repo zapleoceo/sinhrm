@@ -8,8 +8,10 @@ use App\Models\User;
 use App\Modules\Auth\Contracts\UserRepository;
 use App\Modules\Auth\DTO\GoogleProfile;
 use App\Modules\Auth\Enums\AppLocale;
+use App\Modules\Auth\Enums\LoginDenial;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
+use App\Modules\Auth\Exceptions\LoginDenied;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentUserRepository implements UserRepository
@@ -65,6 +67,20 @@ final class EloquentUserRepository implements UserRepository
         $user->forceFill(['locale' => $locale->value])->save();
 
         return $user;
+    }
+
+    public function grantSession(User $user, callable $grant): void
+    {
+        DB::transaction(function () use ($user, $grant): void {
+            $current = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            if (! $current->isActive()) {
+                throw new LoginDenied(LoginDenial::Blocked);
+            }
+            if ($current->credential_version !== $user->credential_version) {
+                throw new LoginDenied(LoginDenial::OauthFailed);
+            }
+            $grant($current);
+        });
     }
 
     public function updateApprovalEmails(User $user, bool $on): User

@@ -83,6 +83,7 @@ final class UserAdminServiceTest extends TestCase
         $this->repo->method('countActiveSuperadmins')->willReturn(1);
         $this->repo->expects($this->never())->method('setStatus');
         $this->repo->expects($this->never())->method('setRoles');
+        $this->repo->expects($this->never())->method('revokeCredentials');
 
         foreach ([[null, UserStatus::Blocked], [[UserRole::Admin], null]] as [$role, $status]) {
             $e = $this->catch(fn () => $this->service->update($this->user(1), $this->user(2), $role, $status));
@@ -97,6 +98,8 @@ final class UserAdminServiceTest extends TestCase
         $this->repo->method('rolesOf')->willReturn([UserRole::Superadmin]);
         $this->repo->method('countActiveSuperadmins')->willReturn(2);
         $this->repo->expects($this->once())->method('setStatus')->with($target, UserStatus::Blocked);
+        $this->repo->expects($this->once())->method('lockAndRefresh')->with($target);
+        $this->repo->expects($this->once())->method('revokeCredentials')->with($target);
 
         $this->service->update($this->user(1), $target, null, UserStatus::Blocked);
     }
@@ -107,8 +110,29 @@ final class UserAdminServiceTest extends TestCase
         $this->repo->method('rolesOf')->willReturn([UserRole::Viewer]);
         $this->repo->expects($this->once())->method('setRoles')->with($target, [UserRole::Admin]);
         $this->repo->expects($this->once())->method('setStatus')->with($target, UserStatus::Active);
+        $this->repo->expects($this->never())->method('revokeCredentials');
 
         $this->assertSame($target, $this->service->update($this->user(1), $target, [UserRole::Admin], UserStatus::Active));
+    }
+
+    public function test_repeated_explicit_block_still_revokes_credentials(): void
+    {
+        $target = $this->user(2)->forceFill(['status' => UserStatus::Blocked]);
+        $this->repo->method('rolesOf')->willReturn([UserRole::Viewer]);
+        $this->repo->expects($this->once())->method('revokeCredentials')->with($target);
+
+        $this->service->update($this->user(1), $target, null, UserStatus::Blocked);
+    }
+
+    public function test_revocation_failure_propagates_out_of_the_transaction(): void
+    {
+        $target = $this->user(2);
+        $this->repo->method('rolesOf')->willReturn([UserRole::Viewer]);
+        $this->repo->expects($this->once())->method('setStatus')->with($target, UserStatus::Blocked);
+        $this->repo->method('revokeCredentials')->willThrowException(new \RuntimeException('synthetic-revocation-failure'));
+        $this->expectException(\RuntimeException::class);
+
+        $this->service->update($this->user(1), $target, null, UserStatus::Blocked);
     }
 
     public function test_several_roles_are_applied_and_audited_with_names(): void
