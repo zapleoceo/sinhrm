@@ -640,5 +640,7 @@
     "enabled": false
    }
   }
- }
+ },
+ "GET /api/integrations/itstep-directory/status": {"status":200,"body":{"data":{"status":"dependency_pending","missing_inputs":["itstep_user_client_sdk","authoritative_response_schema_and_namespace","approved_employee_id_and_catalog_mappings","trusted_service_endpoint_and_auth_configuration"],"scope_configured":false,"writes_enabled":false}}},
+ "GET /api/integrations/itstep-directory/synthetic-preview": {"status":200,"body":{"synthetic":true,"data":{"status":"conflicts_found","namespace":"synthetic-demo","profiles":[{"source_id":"demo-employee-001","link_action":"manual_identity_review","mapping_state":"unconfirmed","mapping_conflicts":["branch_mapping_unconfirmed","position_mapping_unconfirmed","status_mapping_unconfirmed"],"display_name":"Demo Employee One","branch_key":"demo-branch","position_key":"demo-position","status_code":"demo-active"},{"source_id":"demo-employee-002","link_action":"manual_identity_review","mapping_state":"unconfirmed","mapping_conflicts":["branch_mapping_unconfirmed","position_mapping_unconfirmed","status_mapping_unconfirmed"],"display_name":"Demo Employee Two","branch_key":"","position_key":"","status_code":"demo-unknown"}],"duplicate_count":1,"conflicts":[{"source_id":"demo-employee-003","code":"duplicate_id_conflicting_record"}]}}}
 }

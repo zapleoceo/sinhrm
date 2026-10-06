@@ -1,6 +1,6 @@
 {
  "path": "/admin/integrations",
- "state": null,
+ "state": "synthetic-directory-preview",
  "headings": [
   "AI",
   "AI Broker",
@@ -118,6 +118,6 @@
  "counts": {
   "article": 15,
   "img": 4,
-  "listitem": 11
+  "listitem": 14
  }
 }

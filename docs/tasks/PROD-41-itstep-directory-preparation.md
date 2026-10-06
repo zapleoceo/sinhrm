@@ -1,0 +1,28 @@
+# PROD-41: подготовить интеграцию каталога сотрудников Itstep
+
+## Стан
+
+- Час: 2026-10-05 16:43 Asia/Saigon.
+- Worktree / branch / base SHA / last implementation SHA: `D:/Projects/sinhrm-wt/itstep-directory-preparation` / `feat/itstep-directory-preparation` / `38d90eaada1c43363cd64c2f16d7ceaecb611dab` / `7a8a43b99b46fb02221d2dadc4f2dbaa8f6c2fc2` (published PR #157; final formatter fix commit prepared locally).
+- Текущий шаг: publish only actual pinned Pint changes and removed temporary CI formatter diagnostic; then wait on exact final-head CI/Astra review.
+- Сделано / evidence: PR157 CI `37291499808` on `7a8a43b`: docs, API docs, extension, security and worklog passed; frontend lint passed and unit/docs/build are running; ui-parity is running; Pint is red only for source formatting. A temporary failure-only Pint diagnostic left the original `pint --test` gate intact, ran the pinned formatter on exactly three task PHP files, and uploaded `prod41-pint-diagnostic`; downloaded `D:/Projects/_tmp/prod41-pint-diagnostic/prod41-pint.patch`, applied it verbatim, and removed the temporary workflow steps. Exact formatter adjustments include spacing, class-method blank lines/anonymous method expansion, constructor/import ordering and PHPDoc alignment. Added plain-language setup copy in uk/ru/en and successful-preview then failed-refresh regression. Local focused store/service tests PASS 11/11; Angular lint PASS; e2e lint PASS; docs tests PASS 5/5; targeted integrations parity PASS 8/8 across desktop/mobile light/dark; frontend build PASS with existing bundle/style-budget warnings. Four viewports/themes have local synthetic-only screenshots and refreshed inventory/axe baselines.
+- Local screenshot evidence: `frontend/e2e/.out/screens/{desktop-light,desktop-dark,mobile-light,mobile-dark}/integrations{,--synthetic-directory-preview}.png`; all files live in this D: worktree. PR140 remains open/unmerged, so these captures are this branch before the combined PR140 UI.
+- Контекст KB: Rovo-запрос `PROD-41 Itstep employee directory SKUD profiles integration SinHRM` завершился HTTP 502; Confluence-запрос `SinHRM SKUD profile API employee directory mapping authentication integration` не нашёл результатов. По инструкции владельца пока нет ссылки на сервис/OpenAPI или подтверждённой схемы.
+- Следующий шаг: commit/push formatter patch + removal of temporary diagnostic, then run required full CI and exact-head Astra review; do not merge/deploy. Keep the source disconnected, read-only and superadmin-only until owner supplies official SDK/service contract and approved employee mappings.
+- Контекст KB: Rovo-запрос `PROD-41 Itstep employee directory SKUD profiles integration SinHRM` завершился HTTP 502; Confluence-запрос `SinHRM SKUD profile API employee directory mapping authentication integration` не нашёл результатов. По инструкции владельца пока нет ссылки на сервис/OpenAPI или подтверждённой схемы.
+- Следующий шаг: refresh affected snapshots and complete targeted style/test fixes, push PR revision, run full CI and inspect desktop/mobile light/dark screenshots; then request Astra review of exact final SHA.
+- Блокеры: остаются неподтверждёнными owner input: authoritative response schema, подтверждение смысла division/namespace scope, stable canonical employee ID, branch/position/status mappings, trusted service host/auth inputs и установка/инициализация обязательного `itstep/user-client` SDK. Разрешение владельца явно запрещает заменять SDK прямым Illuminate HTTP клиентом. До получения зависимости и контракта не делать source fetch, не включать импорт, не создавать/изменять/назначать роли/деактивировать пользователей и не утверждать подключение к SKUD.
+
+## План
+
+1. Повторно использовать Integration superadmin gate/page patterns, People employee contracts и vault boundary; source identity links сейчас отсутствуют.
+2. Добавить typed `EmployeeDirectoryGateway` contract и явный runtime binding в `dependency_pending`, пока `itstep/user-client` не установлен и source contract не подтверждён. Не копировать SDK, не использовать прямой HTTP клиент, не читать credentials и не вызывать service.
+3. Реализовать typed normalized-snapshot validation, completeness/namespace/profile ID checks, deterministic source-scoped deduplication, branch/position/status mapping conflicts и read-only identity link plan. Ни одного изменения Employee/User/role/status не выполнять.
+4. Выставить superadmin-only локальные SinHRM readiness/live-preview endpoint и отдельно явно помеченный synthetic-preview endpoint; статус `pending/configuration required`, реальные source calls невозможны до approved SDK binding/config.
+5. Подключить UI на странице Integrations к этим реальным API SinHRM: видимый `dependency_pending` и отсутствующие contract inputs, синтетический preview/conflict list; TypeScript, ru/uk/en, существующие service/Material patterns.
+6. Покрыть реальную runtime wiring/no-network, invalid/unknown/incomplete/duplicate snapshots, deterministic preview/idempotent dedup, superadmin auth и отсутствие PII/secrets в ответах/логах; обновить `docs/modules/integrations.md`, `.http` sample и worklog.
+7. Финальные CI, synthetic desktop/mobile UI evidence и независимое Astra review итогового SHA; никаких live API/production/deployment действий.
+
+## Неподтверждённые зависимости
+
+Авторитетный сервисный URL, OpenAPI/schema, tenant/namespace и company scoping, способ получения/хранения bearer token, canonical employee ID и правила преобразования branch/status должны прийти от владельца/сервиса. Сейчас можно подготовить explicit configuration/validation и безопасный preview boundary, но нельзя создавать подставной ответ или считать его доказательством интеграции.
