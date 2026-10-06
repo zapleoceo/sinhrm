@@ -9,11 +9,11 @@
   "main \"\""
  ],
  "interactive": [
-  "button \"Next page\"",
-  "button \"Previous page\" [disabled]",
   "button \"Головне меню\"",
   "button \"Додати співробітника\"",
+  "button \"Наступна сторінка\"",
   "button \"ПІБ\"",
+  "button \"Попередня сторінка\" [disabled]",
   "button \"Посада\"",
   "button \"Фільтр стовпця «ПІБ»\"",
   "button \"Фільтр стовпця «Посада»\"",
@@ -47,8 +47,8 @@
   "checkbox \"\"",
   "checkbox \"\"",
   "checkbox \"\"",
-  "combobox \"Items per page:\"",
   "combobox \"Відділ\"",
+  "combobox \"На сторінці:\"",
   "combobox \"Посада\"",
   "combobox \"Статус\"",
   "combobox \"Філія\"",

@@ -27,6 +27,7 @@ final readonly class TouchpointService
         private ApplicationRepository $applications,
         private Dispatcher $events,
         private TouchpointEvaluations $evaluations,
+        private RecruitingScope $scope,
     ) {}
 
     /**
@@ -67,9 +68,9 @@ final readonly class TouchpointService
      * @param  list<Channel>|null  $channels
      * @return LengthAwarePaginator<int, TimelineEntry>
      */
-    public function timeline(Candidate $candidate, ?array $channels, bool $withStages, int $perPage): LengthAwarePaginator
+    public function timeline(User $actor, Candidate $candidate, ?array $channels, bool $withStages, int $perPage): LengthAwarePaginator
     {
-        $page = $this->touchpoints->timeline($candidate->id, $channels, $withStages, $perPage);
+        $page = $this->touchpoints->timeline($this->scope->for($actor), $candidate->id, $channels, $withStages, $perPage);
         $ids = [];
         foreach ($page->items() as $entry) {
             if ($entry->item instanceof Touchpoint) {
