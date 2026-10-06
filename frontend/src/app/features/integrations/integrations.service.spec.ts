@@ -121,6 +121,7 @@ describe('error and check-result keys', () => {
   it('maps last_error codes', () => {
     expect(checkResultKey('missing_secret:bot_token')).toBe('integrations.check.missing_secret');
     expect(checkResultKey('http_503')).toBe('integrations.check.http');
+    expect(checkResultKey('reconnect_required')).toBe('integrations.check.reconnect_required');
     expect(checkResultKey('unauthorized')).toBe('integrations.check.unauthorized');
     expect(checkResultKey('blocked_host')).toBe('integrations.check.blocked_host');
     expect(checkResultKey('invalid_token')).toBe('integrations.check.invalid_token');
