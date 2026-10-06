@@ -49,6 +49,8 @@ npm run e2e:lint                  # eslint + tsc для e2e/
 Временные файлы — только в `D:\Projects\` (правило 9 в `CLAUDE.md`): перед запуском направьте кеши туда,
 например `PLAYWRIGHT_BROWSERS_PATH=D:/Projects/_tmp/sinhrm/cache/pw`, `npm_config_cache=D:/Projects/_tmp/sinhrm/cache/npm`.
 
+Inventory parsing retains roles, state flags and link URLs even when Playwright YAML-quotes an entire row because its accessible name contains a colon or apostrophe. Parser regressions run offline without a browser server.
+
 ## Осознанное обновление эталонов
 
 Новая кнопка, новая колонка, переименование, новая страница — это нормальное изменение, но оно должно
