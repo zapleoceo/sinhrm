@@ -11,6 +11,7 @@
  "interactive": [
   "button \"Головне меню\"",
   "button \"Надіслати\" [disabled]",
+  "button \"Поговорити зі Стіком\"",
   "combobox \"Категорія\"",
   "link \"Огляд\" -> /",
   "radio \"Нове повідомлення\" [checked]",

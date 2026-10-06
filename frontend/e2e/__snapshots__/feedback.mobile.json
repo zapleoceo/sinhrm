@@ -12,6 +12,7 @@
  "interactive": [
   "button \"Головне меню\"",
   "button \"Надіслати\" [disabled]",
+  "button \"Поговорити зі Стіком\"",
   "combobox \"Видимість\"",
   "combobox \"Співробітник\"",
   "combobox \"Тип\"",
