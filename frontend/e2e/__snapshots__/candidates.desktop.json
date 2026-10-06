@@ -11,14 +11,14 @@
   "navigation \"Головне меню\""
  ],
  "interactive": [
-  "button \"Next page\"",
-  "button \"Previous page\" [disabled]",
   "button \"Автоприховування меню\"",
   "button \"Адміністрування 9 нових\"",
   "button \"Згорнути меню\" [expanded]",
   "button \"Люди 70 нових\"",
   "button \"Меню користувача\"",
+  "button \"Наступна сторінка\"",
   "button \"Новий кандидат\"",
+  "button \"Попередня сторінка\" [disabled]",
   "button \"Продуктивність\"",
   "button \"Рекрутинг\" [expanded]",
   "button \"Сервіси\"",
