@@ -16,6 +16,7 @@ final class CandidateResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'screening_score' => $this->resource->getAttribute('screening_score') === null ? null : (int) $this->resource->getAttribute('screening_score'),
             'full_name' => $this->full_name,
             'phone' => $this->phone,
             'email' => $this->email,

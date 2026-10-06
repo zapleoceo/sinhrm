@@ -12,6 +12,7 @@ import { GoogleConnectPanel } from '../google-workspace/google-connect.panel';
 import { GoogleOAuthState } from '../google-workspace/google.model';
 import { ConfirmAiDialog } from './confirm-ai.dialog';
 import { IntegrationCard } from './integration-card';
+import { IntegrationsDirectoryStore } from './integrations-directory.store';
 import { IntegrationsStore } from './integrations.store';
 import { NotifyService } from '../../core/ui/notify.service';
 
@@ -19,7 +20,7 @@ import { NotifyService } from '../../core/ui/notify.service';
 @Component({
   selector: 'app-integrations-page',
   imports: [MatButtonModule, MatIconModule, MatProgressBarModule, MatSlideToggleModule, TranslocoPipe, IntegrationCard, GoogleConnectPanel, AiPanel],
-  providers: [IntegrationsStore],
+  providers: [IntegrationsDirectoryStore, IntegrationsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './integrations.page.html',
   styleUrl: './integrations.page.scss',
@@ -31,9 +32,11 @@ export class IntegrationsPage implements OnInit {
   protected readonly focusedIntegration = computed(() => this.query()?.get('integration') ?? null);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
+  protected readonly directory = inject(IntegrationsDirectoryStore);
 
   ngOnInit(): void {
     this.store.load();
+    this.directory.loadStatus();
   }
 
   protected toggleAi(change: MatSlideToggleChange): void {

@@ -49,6 +49,18 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
 сохранении из интерфейса снимается. Как филиалы ограничивают данные — `AccessibleBranches` в [directory.md](directory.md).
 
 ### Правила (`Services\UserAdminService`)
+- Явная блокировка (`status=blocked`) в одной транзакции со статусом удаляет **все** DB-сессии пользователя,
+  персональные токены всех имён (клиппер, MCP и другие) и обнуляет remember-token. Других пользователей это не затрагивает.
+  Повторная блокировка снова отзывает credentials; разблокировка меняет статус, но не возвращает старые сессии,
+  токены или remember-cookie — нужен новый вход и новый токен. Запрет менять себя и последнего активного суперадмина сохранён.
+  Перед проверками target перечитывается под row lock, а superadmin rows блокируются в порядке id; конкурентные
+  изменения статуса используют актуальное состояние. Ошибка отзыва откатывает также статус и уже удалённые credentials.
+  Поддерживается проектный database session driver на той же connection, что users; отдельная session connection
+  приводит к ошибке и откату, поскольку атомарность между БД не гарантируется. Другие session drivers не покрыты этим отзывом.
+  Уже автентифицированный запрос может завершиться после блокировки; отмена выполняющихся запросов не реализована.
+  Block увеличивает persisted credential_version; unblock её не сбрасывает. Auth grant проверяет
+  захваченную версию под тем же user lock. Поздняя запись старой web-сессии не восстанавливает
+  доступ после unblock: middleware отклоняет старую/отсутствующую версию. Подробнее: [Auth](auth.md).
 - Приглашение: e-mail приводится к нижнему регистру, проверка занятости без учёта регистра, `invited_by` = кто пригласил.
 - Аудит: `users.invited` / `users.updated` в лог — только id и роль/статус, без e-mail и имён.
 - Смена ролей пишет в журнал «Зміна ролі» с именами ролей «было → стало» (`"recruiter"` → `"hr_manager, recruiter"`).
@@ -107,6 +119,11 @@ safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реа
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ## Как проверить
+`tests/Feature/Users/UserCredentialRevocationTest.php`: реальный DB session-cookie и bearer/remember-cookie действуют
+до блокировки, после блокировки и разблокировки больше не работают; вторая сессия, PAT разных имён,
+другой пользователь, rollback частично выполненного отзыва, повторный block, stale target и запрет self-block.
+`tests/Unit/Users/UserAdminServiceTest.php`: отзыв только при явном block, исключение отзыва выходит из транзакции,
+last-superadmin guard отказывает до изменения credentials.
 Тесты: `tests/Feature/Users/UsersSortFilterApiTest.php` (сортировка по колонкам и `nulls last`, фильтры с датами,
 `"0"`, строковые `perPage`/`page`, 422 на чужую колонку/направление/дату, 403 другой роли), `frontend/.../users.page.spec.ts`
 (адрес → запрос, клик → `sort/dir` и страница 1, отмена устаревшего запроса),
@@ -129,3 +146,5 @@ curl -i "https://sinhrm.vercel.app/api/users?perPage=20"   # без сессии
 Ключ модуля `users`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).
 
 - На узком экране (< 768px) страница не прокручивается вбок: широкие элементы (таблицы, переключатели, длинные строки) прокручиваются или переносятся внутри своего блока. В таблице пользователей все колонки и действия доступны во внутренней горизонтальной прокрутке; scroller изолирует содержимое карточки и не расширяет страницу.
+
+Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.

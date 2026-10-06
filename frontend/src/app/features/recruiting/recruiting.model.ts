@@ -225,6 +225,8 @@ export interface RouteStep {
 }
 
 export interface Application {
+  /** Saved advisory score from board reads; null unless the latest attempt is done. */
+  screening_score?: number | null;
   id: number;
   candidate_id: number;
   vacancy_id: number;
@@ -291,6 +293,8 @@ export interface VacancySourceRow {
 }
 
 export interface Candidate extends CandidateBrief {
+  /** Maximum saved score of matching applications in list reads; null when none are scored. */
+  screening_score?: number | null;
   /** Personal data erased (Privacy): name is "Видалений кандидат #id", contacts are empty. */
   anonymized_at?: string | null;
   channel_id: number | null;
@@ -422,6 +426,7 @@ export interface VacancyQuery {
 }
 
 export interface CandidateQuery {
+  sort?: 'screening_score';
   q?: string;
   vacancy_id?: number;
   status?: ApplicationStatus;

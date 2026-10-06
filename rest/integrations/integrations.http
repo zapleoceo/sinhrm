@@ -9,6 +9,18 @@ GET {{host}}/api/integrations
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 
+### GET /api/integrations/itstep-directory/status — preparation state (superadmin)
+GET {{host}}/api/integrations/itstep-directory/status
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/integrations/itstep-directory/synthetic-preview — fake-only preview (superadmin)
+GET {{host}}/api/integrations/itstep-directory/synthetic-preview
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+# Live preview currently returns 409 dependency_pending: the SDK and source contract are not installed/confirmed.
+
 ### PUT /api/integrations/ai-policy — integrations.ai-policy
 PUT {{host}}/api/integrations/ai-policy
 Accept: application/json

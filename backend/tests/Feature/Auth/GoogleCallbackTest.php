@@ -7,6 +7,11 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use App\Modules\Auth\Contracts\GoogleIdentityProvider;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Auth\Enums\UserStatus;
+use App\Modules\Auth\Exceptions\LoginDenied;
+use App\Modules\Auth\Services\AuthService;
+use App\Modules\Auth\Support\CredentialSession;
+use App\Modules\Users\Services\UserAdminService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\FakeGoogleIdentityProvider;
 use Tests\TestCase;
@@ -53,6 +58,33 @@ final class GoogleCallbackTest extends TestCase
         $this->assertSame('g-42', $invited->google_id);
         $this->assertNotNull($invited->last_login_at);
         $this->assertAuthenticatedAs($invited, 'web');
+        $this->assertSame($invited->credential_version, session(CredentialSession::VERSION_KEY));
+    }
+
+    public function test_a_new_explicit_google_login_after_unblock_captures_the_current_generation(): void
+    {
+        $admin = User::factory()->withRole(UserRole::Superadmin)->create();
+        $target = User::factory()->create(['email' => 'synthetic-login@example.test']);
+        app(UserAdminService::class)->update($admin, $target, null, UserStatus::Blocked);
+        app(UserAdminService::class)->update($admin, $target, null, UserStatus::Active);
+        $this->fakeGoogle(FakeGoogleIdentityProvider::returning('synthetic-login@example.test'));
+        $this->get(self::CALLBACK)->assertRedirect('/');
+        $this->assertAuthenticatedAs($target, 'web');
+        $this->assertSame(1, session(CredentialSession::VERSION_KEY));
+    }
+
+    public function test_a_stale_google_grant_after_block_and_unblock_never_runs_the_login_callback(): void
+    {
+        $admin = User::factory()->withRole(UserRole::Superadmin)->create();
+        $target = User::factory()->create();
+        $stale = User::query()->findOrFail($target->id);
+        app(UserAdminService::class)->update($admin, $target, null, UserStatus::Blocked);
+        app(UserAdminService::class)->update($admin, $target, null, UserStatus::Active);
+        $this->expectException(LoginDenied::class);
+        $this->expectExceptionMessage('oauth_failed');
+        app(AuthService::class)->grantSession($stale, function (User $current): void {
+            $this->fail('Revoked OAuth credentials must not run the login callback');
+        });
     }
 
     public function test_a_new_sign_in_never_inherits_the_previous_work_as_choice(): void

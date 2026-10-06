@@ -66,7 +66,7 @@ final readonly class ApiWriteTool implements AssistantTool
     {
         $method = is_string($args['method'] ?? null) ? strtoupper($args['method']) : '';
         if (! in_array($method, self::METHODS, true)) {
-            return ['status' => 422, 'error' => 'method must be one of '.implode(', ', self::METHODS)];
+            return ['status' => 422, 'error' => 'invalid_method'];
         }
         $body = is_array($args['body'] ?? null) ? $args['body'] : [];
 

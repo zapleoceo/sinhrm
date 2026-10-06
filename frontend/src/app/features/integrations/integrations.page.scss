@@ -30,6 +30,25 @@
   h2 { font: var(--mat-sys-title-large); letter-spacing: var(--mat-sys-title-large-tracking); margin: 0 0 0.75rem; }
 }
 
+.directory {
+  padding: 1rem 1.25rem;
+  margin-bottom: var(--app-gap);
+  border: var(--app-border-w) solid var(--app-border);
+  border-radius: var(--app-radius);
+  background: var(--app-card);
+
+  h2 { font: var(--mat-sys-title-large); margin: 0; }
+  h3 { font: var(--mat-sys-title-medium); margin: 1rem 0 0.5rem; }
+  p { margin: 0.35rem 0; }
+  ul { margin: 0.5rem 0; padding-inline-start: 1.25rem; }
+}
+
+.directory-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.directory-status { font-weight: 600; }
+.directory-preview { display: grid; gap: 0.4rem; margin-top: 1rem; padding-top: 1rem; border-top: var(--app-border-w) solid var(--app-border); }
+.directory-preview ul { display: grid; gap: 0.5rem; list-style: none; padding: 0; }
+.directory-preview li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; overflow-wrap: anywhere; }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));

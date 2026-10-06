@@ -27,6 +27,7 @@ final class ListCandidatesRequest extends FormRequest
             'owner_id' => ['nullable', 'integer', 'min:1'],
             'channel_id' => ['nullable', 'integer', 'min:1'],
             'perPage' => $this->perPageRules(),
+            'sort' => ['nullable', Rule::in(['screening_score'])],
         ];
     }
 
@@ -43,6 +44,7 @@ final class ListCandidatesRequest extends FormRequest
             ownerId: $int('owner_id'),
             channelId: $int('channel_id'),
             perPage: $this->perPageOr(),
+            sort: $this->filled('sort') ? $this->string('sort')->toString() : null,
         );
     }
 }
