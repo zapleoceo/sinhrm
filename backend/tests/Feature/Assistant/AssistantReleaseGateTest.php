@@ -331,7 +331,7 @@ final class AssistantReleaseGateTest extends TestCase
         $this->assertStringNotContainsString('SENTINEL_FOREIGN', (string) json_encode($this->brokerSubmits));
     }
 
-    public function test_shared_candidate_card_preserves_existing_cross_branch_application_reference_contract(): void
+    public function test_shared_candidate_card_hides_applications_the_user_cannot_see(): void
     {
         $north = Branch::factory()->create();
         $user = $this->userWith(UserRole::Recruiter, [$north]);
@@ -341,16 +341,16 @@ final class AssistantReleaseGateTest extends TestCase
         $southApplication = $this->app->make(ApplicationService::class)->apply(null, $candidate, $southVacancy);
         $this->actingAs($user)->getJson('/api/vacancies/'.$southVacancy->id)->assertForbidden();
         $raw = $this->actingAs($user)->getJson('/api/candidates/'.$candidate->id)->assertOk()->json('data.applications');
-        $this->assertContains($southApplication->id, array_column($raw, 'id'), 'The ordinary API authorizes the candidate card as a whole, including all applications.');
+        $this->assertContains($northApplication->id, array_column($raw, 'id'));
+        $this->assertNotContains($southApplication->id, array_column($raw, 'id'), 'The card lists only applications visible to the user (shared-candidate scope).');
         $api = $this->app->make(InternalApi::class);
         $projected = $api->call($user, 'GET', 'candidates/'.$candidate->id);
         $refs = $projected['data']['data']['applications'];
-        $this->assertContains($southApplication->id, array_column($refs, 'id'));
-        $this->assertContains($southVacancy->id, array_column($refs, 'vacancy_id'));
+        $this->assertNotContains($southApplication->id, array_column($refs, 'id'));
+        $this->assertNotContains($southVacancy->id, array_column($refs, 'vacancy_id'));
         $this->assertStringNotContainsString('SENTINEL_SHARED', (string) json_encode($projected));
         $filtered = $api->call($user, 'GET', 'candidates', ['vacancy_id' => $southVacancy->id]);
-        $this->assertSame(1, $filtered['data']['meta']['total'], 'Filtering uses existing candidate visibility, not separate ACL checks on each nested reference.');
-        $this->assertSame($candidate->id, $filtered['data']['data'][0]['id']);
+        $this->assertSame(0, $filtered['data']['meta']['total'], 'Filtering by an invisible vacancy finds nothing.');
     }
 
     /** @param  callable(): void  $revoke */
