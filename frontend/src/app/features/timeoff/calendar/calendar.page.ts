@@ -82,7 +82,9 @@ import { toIsoDate } from '../../../core/date/iso-date';
                     [class.pending]="a.status === 'pending'"
                     [class.half]="a.half_day !== 'none' && ((a.half_day === 'start' && d === a.starts_on) || (a.half_day === 'end' && d === a.ends_on))"
                     [style.--c]="a.leave_type.color"
-                    [matTooltip]="a.leave_type.name + ' · ' + ('timeoff.status.' + a.status | transloco)"
+                    [matTooltip]="
+                      a.leave_type.name + ' · ' + ('timeoff.status.' + a.status | transloco) + (a.handover_to ? ' · ' + ('timeoff.fields.handoverHint' | transloco: { name: a.handover_to.full_name }) : '')
+                    "
                   ></div>
                 } @else {
                   <div class="cell" role="cell" [class.weekend]="weekend(d)" [class.holiday]="store.holidays().has(d)"></div>

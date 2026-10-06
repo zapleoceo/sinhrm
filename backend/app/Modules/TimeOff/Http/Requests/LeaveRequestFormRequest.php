@@ -14,7 +14,8 @@ use Illuminate\Validation\Rule;
 
 /**
  * POST /timeoff/requests and GET /timeoff/requests/preview:
- * {leave_type_id, starts_on, ends_on, half_day?, comment?, employee_id?, override_balance?}.
+ * {leave_type_id, starts_on, ends_on, half_day?, comment?, employee_id?, override_balance?,
+ * handover_to_employee_id?}. The handover colleague is checked against the person picker rules in the service.
  */
 final class LeaveRequestFormRequest extends FormRequest
 {
@@ -29,6 +30,7 @@ final class LeaveRequestFormRequest extends FormRequest
             'comment' => ['nullable', 'string', 'max:2000'],
             'employee_id' => ['nullable', 'integer', 'min:1'],
             'override_balance' => ['nullable', 'boolean'],
+            'handover_to_employee_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -51,6 +53,7 @@ final class LeaveRequestFormRequest extends FormRequest
             halfDay: $this->enum('half_day', HalfDay::class) ?? HalfDay::None,
             comment: $this->filled('comment') ? $this->string('comment')->trim()->toString() : null,
             overrideBalance: $this->boolean('override_balance'),
+            handoverToEmployeeId: $this->filled('handover_to_employee_id') ? $this->integer('handover_to_employee_id') : null,
         );
     }
 

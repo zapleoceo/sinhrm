@@ -20,7 +20,8 @@
 ## Как пользоваться
 Меню → раздел «Люди»:
 - **Мої відсутності** (`/timeoff`) — баланс по типам, форма нового запроса (тип, «з»/«по», пів дня, коментар; количество
-  рабочих дней и остаток считает сервер ещё до отправки), список своих запросов с кнопкой «Скасувати запит» (пока отпуск
+  рабочих дней и остаток считает сервер ещё до отправки; необязательное «На кого передати справи» — выбор коллеги из
+  справочника), список своих запросов с кнопкой «Скасувати запит» (пока отпуск
   не начался).
 - **Календар команди** (`/timeoff/calendar`) — месяц, строка на человека, цвет — тип отсутствия, штриховка — ждёт
   согласования, серым — выходные, жёлтым — праздники. Фильтр по филиалу. Видны: вы, ваши коллеги с тем же руководителем
@@ -44,7 +45,7 @@
 | `leave_policies` | `leave_type_id, branch_id? (null = общая), accrual_mode (yearly_upfront\|monthly), annual_days, carry_over_max? (null = переносится всё), active` | общая политика отпуска: 24 дня, `yearly_upfront` |
 | `holidays` | `date, name, branch_id? (null = все филиалы)` | |
 | `leave_balance_ledger` | `employee_id, leave_type_id, delta, reason (accrual\|request\|adjustment\|carry_over\|expiry), reference_id?, period?, comment?, created_by?, created_at` | только добавление; `unique(employee_id, leave_type_id, reason, period)` — идемпотентность начислений (`period` = `2026` или `2026-10`; у строк запросов `NULL`, они не конфликтуют) |
-| `leave_requests` | `employee_id, leave_type_id, starts_on, ends_on, half_day (none\|start\|end), days, comment?, status (pending\|approved\|rejected\|cancelled), balance_override, approver_id?, decided_at?, decision_comment?, created_by?` | `days` считает сервер |
+| `leave_requests` | `employee_id, leave_type_id, starts_on, ends_on, half_day (none\|start\|end), days, comment?, status (pending\|approved\|rejected\|cancelled), balance_override, approver_id?, decided_at?, decision_comment?, created_by?, calendar_event_id?, handover_to_employee_id?` | `days` считает сервер; `handover_to_employee_id` — FK `employees` (`nullOnDelete`, индекс; миграция `…2026_10_26_100001`) |
 
 Единица `hours` у типа сейчас только справочная: запросы считаются в рабочих днях.
 
@@ -77,6 +78,19 @@
 Отклонение — только из `pending`. Отмена: сотрудник — ожидающий или ещё не начавшийся согласованный; руководитель/админ —
 любой ожидающий/согласованный; отмена согласованного возвращает `+days` в журнал.
 
+**Передача дел (PROD-13, 2026-10-06).** Необязательное `handover_to_employee_id` у заявки любого типа (форма показывает
+его для всех типов — отпуск, больничный и прочие одинаково). Проверка (`EmployeeResolver::handover`, вызывает контроллер
+до создания): правила person-picker — справочник вызывающего (`EmployeeService::list`, scope `employees`, только
+`active`/`on_leave`, уволенные не выбираются даже HR) и не сам отсутствующий сотрудник; иначе 422 `invalid_handover`
+(не число — 422 валидации). Задаётся при создании; отдельного редактирования заявки нет — как и остальные поля, после
+решения не меняется. В ответах — `handover_to: {id, full_name} | null` (список, карточка, «Погодження», календарь).
+Задача (`Services/LeaveHandoverTasks` → `Scripts\TaskService::schedule`, тип `leave_handover`, источник `timeoff`,
+[scripts.md](scripts.md)): при согласовании (и при сразу `approved` типе без согласования) коллеге —
+«Заміщення: <имя> відсутній з дд.мм.рррр по дд.мм.рррр», срок — первый день; только имя и даты, без типа и комментария.
+Ключ `timeoff:handover:<id заявки>` с `employee_id` отсутствующего — повтор не создаёт вторую задачу (повторное
+согласование и так 409). Отклонение/отмена закрывают задачу (`closeByRule`). Нет учётной записи у коллеги или он уволен к
+моменту согласования — задача не создаётся. Пересечения с отсутствиями коллеги не проверяются (ничего нового не вводилось).
+
 ### Начисление (`Services/AccrualService`, фоновая задача `timeoff.accrue`)
 `Services/AccrualJob` зарегистрирован как `Core\Contracts\ScheduledJob` — cron каждые 30 минут через
 `POST /api/ops/jobs/run` ([core.md](core.md)). Для каждого неуволенного сотрудника и каждого активного типа с балансом:
@@ -99,11 +113,11 @@
 | `POST balances/adjust` | admin | `{employee_id, leave_type_id (с балансом), delta ≠ 0, comment?}` | 201, новые балансы |
 | `GET requests` | любой активный | `employee_id?, status?, leave_type_id?, perPage` | admin — все; остальные — свои и людей ниже; `can_decide`, `can_cancel` в строке |
 | `GET requests/preview` | как создание | те же поля, что у создания | `{days, holidays[], tracked, available, sufficient, overlap}` |
-| `POST requests` | сам; за другого — admin или руководитель выше | `{leave_type_id, starts_on, ends_on, half_day?, comment?, employee_id?, override_balance?}` | 201; ошибки — см. «Правила» |
+| `POST requests` | сам; за другого — admin или руководитель выше | `{leave_type_id, starts_on, ends_on, half_day?, comment?, employee_id?, override_balance?, handover_to_employee_id?}` | 201; ошибки — см. «Правила», 422 `invalid_handover` |
 | `GET requests/{id}` | кто видит «работу» сотрудника | — | запрос |
 | `POST requests/{id}/approve\|reject\|cancel` | см. «Правила» | `{comment?}` | 200 / 403 `forbidden` / 409 `invalid_status` / 422 `insufficient_balance` |
 | `GET approvals` | руководитель, admin | — | ожидающие, которые вы можете решить (свои исключены), старые сверху |
-| `GET calendar` | любой активный | `from, to` (по умолч. текущий месяц, ≤ 62 дня), `branch_id?` | `{absences[{employee, leave_type, starts_on, ends_on, half_day, status}], holidays[]}` — только `approved` и `pending` |
+| `GET calendar` | любой активный | `from, to` (по умолч. текущий месяц, ≤ 62 дня), `branch_id?` | `{absences[{employee, leave_type, starts_on, ends_on, half_day, status, handover_to}], holidays[]}` — только `approved` и `pending` |
 
 Главная страница: `TimeOffDashboardSection` (контракт `Overview\Contracts\DashboardSection`, [overview.md](overview.md)) →
 `data.timeoff = {out_today[], my_approvals: {count, items[≤5]}}`.
@@ -121,8 +135,8 @@
 | `timeoff.model.ts`, `timeoff.service.ts` | типы, HTTP, `timeoffErrorKey` |
 | `timeoff.dates.ts` | даты `YYYY-MM-DD` на UTC-полночах: месяц, сдвиг, выходные, раскладка отсутствий по дням, оценка дней до ответа сервера |
 | `leave-requests.store.ts` | список запросов + действия, `version` для перезагрузки балансов |
-| `widgets/` | `BalancesPanel`, `RequestsList`, `LeaveRequestForm` (нативные `type="date"`, превью с сервера с задержкой 300 мс) |
-| `my/`, `calendar/`, `approvals/`, `settings/` | страницы `/timeoff`, `/timeoff/calendar` (CSS grid, без библиотек), `/timeoff/approvals`, `/admin/timeoff` |
+| `widgets/` | `BalancesPanel`, `RequestsList` (строка «На кого передати справи: <имя>»), `LeaveRequestForm` (нативные `type="date"`, превью с сервера с задержкой 300 мс; необязательный `app-person-picker` «На кого передати справи», scope `employees`) |
+| `my/`, `calendar/`, `approvals/`, `settings/` | страницы `/timeoff`, `/timeoff/calendar` (CSS grid, без библиотек; в подсказке ячейки — кто заміщує), `/timeoff/approvals`, `/admin/timeoff` |
 
 Строки — `timeoff.*` в `public/i18n/{uk,ru,en}.json`.
 

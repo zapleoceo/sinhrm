@@ -43,6 +43,12 @@ final class TimeOffException extends RuntimeException
         return new self('inactive_type', 422);
     }
 
+    /** The handover colleague is unknown, terminated, invisible to the caller or the absent employee themself. */
+    public static function invalidHandover(): self
+    {
+        return new self('invalid_handover', 422);
+    }
+
     /** The request is not in a status that allows this action (or someone decided first). */
     public static function invalidStatus(): self
     {

@@ -14,6 +14,7 @@ enum TaskSource: string
     case Desk = 'desk';
     case Hiring = 'hiring';
     case Time = 'time';
+    case TimeOff = 'timeoff';
 
     /** @return list<string> task type values of this source */
     public function typeValues(): array

@@ -124,7 +124,9 @@
 «SLA порушено» по обращению в HR (тип `desk_sla`, источник `desk`, ключ `desk:<id обращения>:first_response|resolve`,
 [desk.md](desk.md)), «Погодити заявку на підбір» и эскалация просрочки (тип `hiring_approval`, источник `hiring`, ключи
 `hrq:<шаг>:<пользователь>` / `hrq-sla:…`, [hiring-requests.md](hiring-requests.md)) и «Заповніть табель» (тип
-`time_reminder`, источник `time`, ключ `time:reminder:<понедельник>`, [time.md](time.md)). Для них
+`time_reminder`, источник `time`, ключ `time:reminder:<понедельник>`, [time.md](time.md)) и «Заміщення: <имя> відсутній з..по..»
+коллеге, на которого передали дела по согласованной заявке на отсутствие (тип `leave_handover`, источник `timeoff`, ключ
+`timeoff:handover:<id заявки>`, закрывается при отклонении/отмене, [timeoff.md](timeoff.md)). Для них
 заполнены `employee_id` (о ком задача) и `link` (относительный путь в интерфейсе, у `request_form` — https-адрес
 внешней формы), идемпотентность — `unique(employee_id, rule_key)` с ключами `wf:<id шага запуска>` и `doc:<id документа>`.
 Другие модули создают задачи через `TaskService::schedule(DTO/NewTask)` (повтор возвращает существующую) и закрывают

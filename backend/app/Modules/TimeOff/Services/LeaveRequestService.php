@@ -30,7 +30,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Leave requests: day count (Mon–Fri minus holidays, half days), no overlaps, balance check for tracked types,
- * approval writes the ledger (−days), cancelling an approved request writes it back (+days).
+ * approval writes the ledger (−days), cancelling an approved request writes it back (+days). An optional handover
+ * colleague (validated by EmployeeResolver::handover) gets a task on approval, closed on reject/cancel (LeaveHandoverTasks).
  */
 final readonly class LeaveRequestService
 {
@@ -45,6 +46,7 @@ final readonly class LeaveRequestService
         private LoggerInterface $log,
         private UserNotifier $notifier,
         private LeaveCalendarSync $calendar,
+        private LeaveHandoverTasks $handover,
     ) {}
 
     /** @return LengthAwarePaginator<int, LeaveRequest> */
@@ -118,6 +120,7 @@ final readonly class LeaveRequestService
                 'status' => LeaveRequestStatus::Pending->value,
                 'balance_override' => $override,
                 'created_by' => $actor->id,
+                'handover_to_employee_id' => $data->handoverToEmployeeId,
             ]);
             if (! $type->requires_approval) {
                 $this->applyApproval($request, $type, null, null);
@@ -129,6 +132,7 @@ final readonly class LeaveRequestService
         $fresh = $this->find($request->id);
         if ($fresh->status === LeaveRequestStatus::Approved) {
             $this->calendar->add($fresh);
+            $this->handover->open($fresh);
         } elseif (($managerUser = $fresh->employee->manager?->user_id) !== null && $managerUser !== $actor->id) {
             $this->notifier->notify($managerUser, self::MODULE, 'Погодити відпустку: '.$fresh->employee->full_name,
                 sprintf('%s просить «%s» %s. Потрібне ваше рішення.', $fresh->employee->full_name, $fresh->leaveType->name, $this->span($fresh)),
@@ -154,6 +158,7 @@ final readonly class LeaveRequestService
         $this->log->info('timeoff.request_approved', ['id' => $request->id, 'by' => $actor->id]);
         $fresh = $this->find($request->id);
         $this->calendar->add($fresh);
+        $this->handover->open($fresh);
         $this->notifyDecision($fresh, true);
 
         return $fresh;
@@ -174,6 +179,7 @@ final readonly class LeaveRequestService
         }
         $this->log->info('timeoff.request_rejected', ['id' => $request->id, 'by' => $actor->id]);
         $fresh = $this->find($request->id);
+        $this->handover->close($fresh);
         $this->notifyDecision($fresh, false);
 
         return $fresh;
@@ -217,6 +223,7 @@ final readonly class LeaveRequestService
         $this->log->info('timeoff.request_cancelled', ['id' => $request->id, 'by' => $actor->id]);
         $fresh = $this->find($request->id);
         $this->calendar->remove($fresh);
+        $this->handover->close($fresh);
 
         return $fresh;
     }

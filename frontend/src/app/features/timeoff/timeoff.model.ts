@@ -18,6 +18,12 @@ export const ACCRUAL_MODES: readonly AccrualMode[] = ['yearly_upfront', 'monthly
 
 export type LeaveUnit = 'days' | 'hours';
 
+/** {id, full_name} of an employee (directory-level data only). */
+export interface PersonRef {
+  id: number;
+  full_name: string;
+}
+
 export interface LeaveType {
   id: number;
   name: string;
@@ -70,6 +76,8 @@ export interface LeaveRequest {
   half_day: HalfDay;
   days: number;
   comment: string | null;
+  /** Colleague who takes over the work during the absence (optional, PROD-13). */
+  handover_to: PersonRef | null;
   status: LeaveRequestStatus;
   balance_override: boolean;
   approver: { id: number; name: string } | null;
@@ -88,6 +96,7 @@ export interface NewLeaveRequest {
   comment?: string | null;
   employee_id?: number;
   override_balance?: boolean;
+  handover_to_employee_id?: number;
 }
 
 export interface LeavePreview {
@@ -107,6 +116,7 @@ export interface Absence {
   ends_on: string;
   half_day: HalfDay;
   status: 'approved' | 'pending';
+  handover_to: PersonRef | null;
 }
 
 export interface CalendarData {
@@ -134,4 +144,5 @@ export const TIMEOFF_ERROR_CODES = [
   'invalid_status',
   'forbidden',
   'no_employee',
+  'invalid_handover',
 ] as const;

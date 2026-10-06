@@ -71,6 +71,8 @@ final class LeaveRequestController
             throw TimeOffException::forbidden();
         }
         $data = $request->leaveData();
+        // Optional handover colleague: person-picker rules for the caller, never the absent employee (422).
+        $this->resolver->handover($ctx, $employee, $data->handoverToEmployeeId);
         $created = $this->service->create($actor, $ctx, $employee, $this->settings->findType($data->leaveTypeId), $data);
 
         return LeaveRequestResource::for($created, $ctx)->response()->setStatusCode(201);

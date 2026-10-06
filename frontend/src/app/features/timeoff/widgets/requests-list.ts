@@ -33,6 +33,9 @@ export interface RequestAction {
                 <span class="muted">({{ 'timeoff.halfDay.' + r.half_day | transloco }})</span>
               }
             </span>
+            @if (r.handover_to; as h) {
+              <span class="muted small">{{ 'timeoff.fields.handover' | transloco }}: {{ h.full_name }}</span>
+            }
             @if (r.comment) {
               <span class="muted small">«{{ r.comment }}»</span>
             }

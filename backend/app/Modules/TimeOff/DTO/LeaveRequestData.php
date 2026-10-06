@@ -16,5 +16,7 @@ final readonly class LeaveRequestData
         public HalfDay $halfDay = HalfDay::None,
         public ?string $comment = null,
         public bool $overrideBalance = false,
+        /** Colleague who takes over the work (optional); validated by EmployeeResolver::handover(). */
+        public ?int $handoverToEmployeeId = null,
     ) {}
 }

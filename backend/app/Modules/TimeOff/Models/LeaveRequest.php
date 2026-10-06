@@ -28,17 +28,20 @@ use Illuminate\Support\Carbon;
  * @property string|null $decision_comment
  * @property int|null $created_by
  * @property string|null $calendar_event_id Google Calendar event of the approved request
+ * @property int|null $handover_to_employee_id colleague who takes over the work during the absence (optional)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Employee $employee
  * @property-read LeaveType $leaveType
  * @property-read User|null $approver
+ * @property-read Employee|null $handoverTo
  */
 final class LeaveRequest extends Model
 {
     protected $fillable = [
         'employee_id', 'leave_type_id', 'starts_on', 'ends_on', 'half_day', 'days', 'comment', 'status',
         'balance_override', 'approver_id', 'decided_at', 'decision_comment', 'created_by', 'calendar_event_id',
+        'handover_to_employee_id',
     ];
 
     /** @var array<string, mixed> */
@@ -60,6 +63,12 @@ final class LeaveRequest extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approver_id');
+    }
+
+    /** @return BelongsTo<Employee, $this> */
+    public function handoverTo(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'handover_to_employee_id');
     }
 
     public function daysValue(): float

@@ -16,6 +16,7 @@ const absence = (id: number, employee: string, from: string, to: string): Absenc
   ends_on: to,
   half_day: 'none',
   status: 'approved',
+  handover_to: null,
 });
 const request = (id: number, status: LeaveRequest['status'] = 'pending'): LeaveRequest =>
   ({ id, status, can_cancel: true, can_decide: true }) as LeaveRequest;
