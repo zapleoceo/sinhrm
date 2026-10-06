@@ -49,12 +49,12 @@
 
 | ID | Задача | Критерий завершения | Состояние / зависимость |
 |---|---|---|---|
-| PROD-11 | Зафиксировать D1: identity/организация/занятость | Полномочный источник, явная mapping, один/несколько Employee/positions, admin без Employee и граница org утверждены; no guessed email mapping | OWNER_PENDING · подготовить конкретные варианты по коду; tenant для multi-org — отдельная реализация |
-| PROD-12 | Зафиксировать D2: увольнение/дата/rejoin | Immediate/scheduled, effective instant/timezone, late/backdated/cancel и reviewed restore выбраны | OWNER_PENDING |
-| PROD-13 | Зафиксировать D3: handover/exit survey | Получатель работы и transfer/cancel/keep, timing survey, старые workflows при rejoin определены | OWNER_PENDING |
-| PROD-14 | Реализовать согласованный Employee↔User lifecycle | При включении автоматизации T01–T14 актуализированы и пройдены: transaction/concurrency, idempotent event, disable/restore/manager scope/handover/last-superadmin, сбои внешних эффектов видимы | QUEUED ·11–13 и release scope; отдельные узкие feature ветки |
+| PROD-11 | Зафиксировать D1: identity/организация/занятость | Полномочный источник, явная mapping, один/несколько Employee/positions, admin без Employee и граница org утверждены; no guessed email mapping | DECIDED 2026-10-06: человек может быть и Employee, и User; admin без Employee допустим; одна учётка может иметь несколько ролей, переключатель роли в меню аватарки (уже есть «Працювати як»), multi-org отдельно · подготовить конкретные варианты по коду; tenant для multi-org — отдельная реализация |
+| PROD-12 | Зафиксировать D2: увольнение/дата/rejoin | Immediate/scheduled, effective instant/timezone, late/backdated/cancel и reviewed restore выбраны | DECIDED 2026-10-06: увольнение с даты, которую задаёт менеджер (по цепочке руководителей), HR/админ тоже; уволенного можно восстановить в прежней или новой должности. Доступ снимается с эффективной даты (по умолчанию конец дня Kyiv) — реализация PROD-14 |
+| PROD-13 | Зафиксировать D3: handover/exit survey | Получатель работы и transfer/cancel/keep, timing survey, старые workflows при rejoin определены | DECIDED 2026-10-06: передача дел — необязательное поле «на кого передать» при увольнении, заявке на отпуск и заявке на больничный; exit-опрос при увольнении нужен (форма/анонимность — по умолчанию именной, видит только HR; уточнить) — реализация PROD-14 |
+| PROD-14 | Реализовать согласованный Employee↔User lifecycle | При включении автоматизации T01–T14 актуализированы и пройдены: transaction/concurrency, idempotent event, disable/restore/manager scope/handover/last-superadmin, сбои внешних эффектов видимы | IN_PROGRESS 2026-10-06: решения D1–D3 приняты; ветки: увольнение с датой и восстановление; передача дел в отпуске/больничном; exit-опрос ·11–13 и release scope; отдельные узкие feature ветки |
 | PROD-15 | Синтетическая backup/restore проверка + runbook | Реальный dump/restore изолированной CI БД, сверка данных/связей/vault; DB proof не покрывает внешние файлы; инструкция передаётся DevOps; не читать production data | DONE (merged 2026-10-06, PR150) · [PR150](https://github.com/zapleoceo/sinhrm/pull/150),081d2a1:11 checks SUCCESS, Astra PASS;20 seed/22 restore assertions; production restore не заявлен |
-| PROD-16 | Передача эксплуатационной приёмки DevOps | При переносе DevOps настраивает production backup/restore, секреты, alerts и реакцию; приложение передаёт проверяемую инструкцию и health | EXTERNAL_PENDING · ответственность DevOps; не блокирует самостоятельную разработку frontend/backend; вопросы RPO/RTO владельцу сняты |
+| PROD-16 | Передача эксплуатационной приёмки DevOps | При переносе DevOps настраивает production backup/restore, секреты, alerts и реакцию; приложение передаёт проверяемую инструкцию и health | EXTERNAL_PENDING · ответственность DevOps; не блокирует самостоятельную разработку frontend/backend; вопросы RPO/RTO владельцу сняты · владелец 2026-10-06: выкладка и откат — зона DevOps, не наша забота |
 
 ## Раунд 4 — сквозная приёмка и внешние потоки
 
@@ -62,10 +62,10 @@
 |---|---|---|---|
 | PROD-17 | API end-to-end выбранного пилотного workflow | Известный dataset, успешный сценарий, повторы, ошибки и forbidden для выбранного пути; hiring/оффер/найм/адаптация и exact reports по периоду/scope проверяются в объёме включённого scope; обнаруженные дефекты закрыты | DONE (merged 2026-10-06, PR151) · [PR151](https://github.com/zapleoceo/sinhrm/pull/151),4626e81:10 checks SUCCESS, Astra PASS; реальный HTTP путь заявки/вакансии/кандидата/решения/отчётов на синтетике; не полная live приёмка |
 | PROD-18 | Матрица включённых модулей/ролей + UI | Проверки прав/ошибок/повторов/PII для каждого включённого модуля; desktop/mobile/light/dark, keyboard и реальные понятные сценарии; known skips перечислены | DONE (merged 2026-10-06, PR152) · протокол и HTTP module boundary [PR152](https://github.com/zapleoceo/sinhrm/pull/152),4bf3524:10 checks SUCCESS, Astra PASS; полная матрица и live UI ещё не приняты |
-| PROD-19 | Google reconnect/send/read/calendar/sheets | Разрешённый владелец аккаунта подтвердил gmail.send; проверены выбранный поток, expiry/refresh/denial/retry и безопасные ошибки | EXTERNAL_PENDING · UI/код в138; подготовка протокола самостоятельная |
+| PROD-19 | Google reconnect/send/read/calendar/sheets | Разрешённый владелец аккаунта подтвердил gmail.send; проверены выбранный поток, expiry/refresh/denial/retry и безопасные ошибки | EXTERNAL_PENDING · UI/код в138; подготовка протокола самостоятельная · владелец 2026-10-06: интегрируем всё, что возможно; каждый модуль включает пользователь/админ сам при необходимости |
 | PROD-20 | Live AI usefulness/safety | Разрешённые синтетические задания и явные критерии полезности, отказа, стоимости/latency/human correction; no autonomous personnel decisions; провайдер проверен | EXTERNAL_PENDING · после10 и scope/data decisions |
-| PROD-21 | Выбранные messaging/telephony потоки | API/договор/права, реальный обезличенный payload, send/read/webhook/retry/disable, дедуп и источник; каждый неподключённый provider отмечен отдельно | EXTERNAL_PENDING · выбрать сервисы; no fabricated live proof |
-| PROD-22 | Clipper live calibration | Все заявленные5 площадок проверены на разрешённых страницах, extraction/dedup/auth/denial, ограничения документированы | EXTERNAL_PENDING · страницы работодателя; fixtures остаются synthetic |
+| PROD-21 | Выбранные messaging/telephony потоки | API/договор/права, реальный обезличенный payload, send/read/webhook/retry/disable, дедуп и источник; каждый неподключённый provider отмечен отдельно | EXTERNAL_PENDING · выбрать сервисы; no fabricated live proof · владелец 2026-10-06: интегрируем всё, что возможно; каждый модуль включает пользователь/админ сам при необходимости |
+| PROD-22 | Clipper live calibration | Все заявленные5 площадок проверены на разрешённых страницах, extraction/dedup/auth/denial, ограничения документированы | EXTERNAL_PENDING · страницы работодателя; fixtures остаются synthetic · владелец 2026-10-06: интегрируем всё, что возможно; каждый модуль включает пользователь/админ сам при необходимости |
 | PROD-23 | Первый сегмент/интервью/метрики пилота | Роли/организация/ценность/явные не-желания, baseline и применимые к выбранному пилоту S-критерии, обезличенный протокол и пользовательская приёмка | OWNER_PENDING / EXTERNAL_PENDING · public reviews уже доступны, контакты и пилот ещё нет |
 
 ## Раунд 5 — подготовленные изменения и shipping
@@ -77,7 +77,7 @@
 | PROD-26 | Source140 mobile mascot | Нет перекрытия changed content/confirmation на mobile; browser limitations перечислены | DONE (merged 2026-10-06, PR140) · [140](https://github.com/zapleoceo/sinhrm/pull/140),10/10 CI, Draft |
 | PROD-27 | Source141 paginator | uk/ru/en labels/range, нулевые/пустые страницы, normal layout | DONE (merged 2026-10-06, PR141) · [141](https://github.com/zapleoceo/sinhrm/pull/141),10/10 CI, Draft |
 | PROD-28 | Combined regression / validation docs | Выбранный shipping набор проверен совместно, конфликты/переводы/inventory не потеряны; lifecycle drafts остаются честно pending | DONE · 2026-10-06: сводные проверочные PR142/144/156 закрыты без мержа, их части влиты отдельными PR; конфликты слияния разрешены, эталоны e2e пересобраны под порядок проверки |
-| PROD-29 | Release/rollback/live acceptance | Конкретный пакет, разрешение production, точные squash SHA и Web/API deploy IDs, stop condition, rollback owner, normal-URL smoke и изменённые сценарии | QUEUED · все применимые gates выше; main автоматически выкладывается |
+| PROD-29 | Release/rollback/live acceptance | Конкретный пакет, разрешение production, точные squash SHA и Web/API deploy IDs, stop condition, rollback owner, normal-URL smoke и изменённые сценарии | QUEUED · все применимые gates выше; main автоматически выкладывается · владелец 2026-10-06: release/rollback ведёт DevOps; с нашей стороны только готовый, проверенный main |
 
 ## Остальные хвосты — очередь продукта, влияние на release выбирается по evidence
 
@@ -92,7 +92,7 @@
 | PROD-34 | TZ5 named mood/mascot decorations | OWNER_PENDING: именованная история требует цели/приватности; декоративное улучшение только по UX evidence |
 | PROD-35 | КЭП / размер файлов / payroll / новые регионы | OWNER_PENDING / EXTERNAL_PENDING: подтверждённые сценарии, рынок, сервис/договор; не считать stub интеграцией |
 | PROD-36 | Межмодульные зависимости/циклы | QUEUED: измерить текущий baseline и уменьшать отдельными модульными PR; не проводить весь legacy rewrite ради release |
-| PROD-37 | Согласовать draft UNIFIED-TZv0.3 | OWNER_PENDING: reconcile с нынешним backlog и security evidence; v0.3 local draft `0dd175d` не считается принятой версией main |
+| PROD-37 | Согласовать draft UNIFIED-TZv0.3 | DONE 2026-10-06: v0.3 принят владельцем, слит в main вместе с актуализацией по текущему backlog |
 | PROD-38 | Рабочие копии/артефакты | QUEUED: inventory выявил44 worktrees, включая активные и unmerged drafts; удаление требует подтверждённой ненужности и проверки ignored data, активные/evidence сохраняются |
 
 ## Обязательная подготовка приложения для Itstep
@@ -102,7 +102,7 @@
 | ID | Задача | Критерий / состояние |
 |---|---|---|
 | PROD-39 | Пакет frontend/backend для DevOps Itstep | DONE (merged 2026-10-06, PR155) · [PR155](https://github.com/zapleoceo/sinhrm/pull/155),c7e638e:10 checks SUCCESS, Astra PASS; runtime/build/start/migrations/queue/scheduler/storage/health и границы текущего Vercel описаны; развёртывание на Itstep не выполнено |
-| PROD-40 | Авторизация в целевой экосистеме | EXTERNAL_PENDING contract · текущий Sintegrum использует локальный пароль и opaque tokens, SSO этим не доказан. Владелец сообщил, что сервис/документацию пока дать не может; записать в долги, подготовить доступную часть кода; существующий login не заменять выдуманным SSO |
+| PROD-40 | Авторизация в целевой экосистеме | DEBT 2026-10-06 (владелец: записать в долги, позже возьмёт разработчик) · EXTERNAL_PENDING contract · текущий Sintegrum использует локальный пароль и opaque tokens, SSO этим не доказан. Владелец сообщил, что сервис/документацию пока дать не может; записать в долги, подготовить доступную часть кода; существующий login не заменять выдуманным SSO |
 | PROD-41 | Импорт и сверка сотрудников СКУД | DONE (merged 2026-10-06, PR157) preparation · [PR157](https://github.com/zapleoceo/sinhrm/pull/157),f006c72:10 checks SUCCESS (CI37292425236), независимый Astra PASS. Typed gateway, явная схема/namespace, read-only preview/conflicts, проверки порядка дубликатов и race error states готовы. Production подключение отсутствует, сотрудники/права не меняются. Владелец предоставит контракт сервиса позже; live import EXTERNAL_PENDING |
 | PROD-42 | Связь аккаунтов и права импортированных сотрудников | QUEUED: source-scoped IDs, уникальность и reviewed conflicts; email не выдаёт ACL; владелец superadmin подтверждён, массовое назначение прав остальным не определено. Подготовить конкретный безопасный сценарий после40/41 |
 | PROD-43 | Проектные правила экономии контекста | DONE · [PR154](https://github.com/zapleoceo/sinhrm/pull/154),00682bd:10 checks SUCCESS, Astra PASS; merged main38d90ea. Короткий AGENTS.md, узкие задачи Luna, дисковый state, краткие логи и exact-head review; новые shared rules master_v3b269a264 и sinhrm adapter прочитаны, автоматическое разрешение release не добавлено |
@@ -128,3 +128,13 @@ Main `3b4ac30`, [CI37212189230](https://github.com/zapleoceo/sinhrm/actions/runs
 2026-10-05: main38d90ea после docs-only154; feature merge/deploy не выполнялись.145/146/148/149/150/151/152 и финальные139/153 имеют зелёный exact-head CI;155 CI/Astra PASS.157f006 preparation-only имеет10 checks SUCCESS и Astra PASS; контракт сервиса и live acceptance остаются долгом, владелец предоставит данные позже.158ccb3 устраняет mobile page overflow,10 checks SUCCESS, Astra static/mobile renders PASS; desktop/final verdict ожидается. Расширенное156c396 проходит новый CI/restore/Astra; прежний PASS156d23 не означает приёмку нового head. Инфраструктуру настраивают DevOps; production readiness OPEN.
 
 2026-10-06: все 17 готовых PR (138–141, 143, 145–153, 155, 157, 158) и пять обновлений зависимостей влиты в main по прямому разрешению владельца; сводные проверочные PR142/144/156 закрыты. Остаются владельческие решения D1–D3 (PROD-11…13), внешние потоки и live acceptance (PROD-19…23, 40), каталог TZ-хвостов (PROD-30…38) и release/rollback (PROD-29). Деплой: Web на SHA сборки из `/build.json`, API на SHA из `/api/health`; бэкенд не менялся после PR150 кроме тестов.
+
+### Решения владельца 2026-10-06
+
+1. Человек может быть и Employee, и User; admin может быть без Employee; несколько ролей на одну учётку, переключатель роли в меню аватарки.
+2. Увольнение с даты, которую указывает менеджер; уволенного можно восстановить в прежней или новой должности.
+3. Передача дел (необязательное поле) при увольнении, заявке на отпуск и заявке на больничный; exit-опрос при увольнении нужен.
+4. Авторизация и сервис сотрудников Itstep: записано в долги, разработчик возьмёт позже.
+5. Интеграции: интегрируем всё, что можно; пользователь сам включает нужный ему модуль.
+6. ТЗ v0.3 принято.
+7. Выкладка и откат — зона DevOps, не наша забота.
