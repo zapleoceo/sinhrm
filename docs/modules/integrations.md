@@ -215,3 +215,16 @@ curl -i "https://sinhrm.vercel.app/api/integrations"   # без сессии →
 ## AI Broker: тексты вакансий (2026-10-25)
 В настройках `ai_broker` два новых поля: `capability_vacancy_text` (по умолчанию `chat:fast`) и выключатель
 `ai_vacancy_text` (по умолчанию `on`) для кнопки «Створити з ШІ» в форме вакансии ([ai.md](ai.md)).
+
+### Переподключение Google
+В карточке Gmail, Календаря или Таблиц есть кнопка подключения через Google. Она открывает существующий общий OAuth-поток для Gmail, Calendar и Sheets; рядом перечислены права на чтение/отправку почты, события календаря и чтение таблиц. Причина истёкшего/отозванного доступа и события журнала переведены. Ссылка с главной раскрывает, фокусирует и прокручивает нужную карточку (`?integration=google_gmail`). Токены вручную не вводятся. Проверка: component-тест integration-card.spec.ts (действие, deep link, ошибка журнала), CI и реальные screenshots preview.
+
+Кнопки в карточках активны только после подтверждения настройки OAuth в общем Google-блоке; при отсутствии настройки или ошибке получения статуса переход недоступен.
+
+Доступность действия различает проверку настройки, готовность, отсутствие настройки и ошибку проверки. Рядом с кнопкой каждого Google-сервиса показаны причина недоступности и следующий шаг: дождаться проверки, обратиться к администратору системы или обновить страницу. Причина истёкшего доступа и записи журнала не предлагают нажимать недоступную кнопку. Верхняя кнопка и карточки используют одинаковое native disabled-состояние Angular Material; на desktop зона описания Google-карточки сохраняет место для двух строк без обрезки текста.
+
+Проверки состояний: `google-connect.panel.spec.ts` и `integration-card.spec.ts` покрывают loading/unconfigured/error/ready и восстановление ссылки. Синтетические Playwright-сценарии `integrations-states.pw.ts` используют `fixtures/scenarios/google-integrations.json`: подключённый Google, истёкший доступ с журналом, ошибка загрузки журнала. Они проверяют доступность действий, переводы, выравнивание, layout/axe и отсутствие OAuth/внешних запросов; screenshots `integrations-google-{connected,reconnect,logs-error}.png` обязательны во всех четырёх viewport/theme проектах CI. Новые screenshots требуют независимого просмотра после CI.
+
+UI parity инвентарь desktop/mobile осознанно дополнен тремя disabled-ссылками подключения Google для синтетического сценария с ненастроенным OAuth. Реальные screenshots CI просмотрены: новые элементы ожидаемы, прежние контролы не удалены; окончательная проверка нового состояния выполняется повторным CI.
+
+Connected/error remain automatic observations: the mode control shows the current translated state as a disabled option, while only off/demo can be assigned manually. Mobile deep-link cards reserve space above their header for the sticky navigation bar; configured-state CI checks both geometry and displayed mode.

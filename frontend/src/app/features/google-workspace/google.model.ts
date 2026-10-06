@@ -2,6 +2,9 @@
 export type GoogleService = 'gmail' | 'calendar' | 'sheets';
 export const GOOGLE_SERVICES: readonly GoogleService[] = ['gmail', 'calendar', 'sheets'];
 
+/** Availability of browser consent, independent of a service's saved connection status. */
+export type GoogleOAuthState = 'loading' | 'ready' | 'unconfigured' | 'error';
+
 /** Item of GET /api/google/status (backend ConnectionState). Tokens are never sent to the browser. */
 export interface GoogleConnection {
   service: GoogleService;

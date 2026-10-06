@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnChanges, SimpleChanges, afterRenderEffect, computed, inject, input, signal } from '@angular/core';
 import { FormControl, FormRecord, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -7,8 +7,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { GOOGLE_SERVICES, GoogleOAuthState, connectUrl } from '../google-workspace/google.model';
 import { ChannelPanel } from '../channels/channel-panel';
-import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, MANUAL_STATUSES, ManualStatus } from './integrations.model';
+import { INTEGRATION_STATUS_TONE, Integration, IntegrationField, IntegrationLog, IntegrationStatus, MANUAL_STATUSES } from './integrations.model';
 import { IntegrationsService, buildUpdate, checkResultKey, integrationErrorKey } from './integrations.service';
 import { IntegrationsStore } from './integrations.store';
 import { ChannelIcon } from '../../core/ui/channel-icon';
@@ -39,14 +40,37 @@ const URL_PATTERN = /^https:\/\/\S+$/i;
   templateUrl: './integration-card.html',
   styleUrl: './integration-card.scss',
 })
-export class IntegrationCard {
-  readonly item = input.required<Integration>();
-
+export class IntegrationCard implements OnChanges {
   private readonly store = inject(IntegrationsStore);
   private readonly api = inject(IntegrationsService);
   private readonly notify = inject(NotifyService);
   private readonly language = inject(LanguageService);
   private readonly dateFormatter = new IntegrationDatePipe();
+
+  readonly item = input.required<Integration>();
+  readonly focused = input(false);
+  readonly googleOAuthState = input<GoogleOAuthState>('loading');
+  protected readonly googleOauthConfigured = computed(() => this.googleOAuthState() === 'ready');
+  protected readonly googleConnectHref = connectUrl(GOOGLE_SERVICES);
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    afterRenderEffect(() => {
+      if (this.focused()) {
+        const card = this.element.nativeElement.querySelector<HTMLElement>('article');
+        card?.focus({ preventScroll: true });
+        card?.scrollIntoView?.({ block: 'start' });
+      }
+    });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['focused'] && this.focused() && !this.expanded()) {
+      this.expanded.set(true);
+      this.resetForm();
+      this.loadLogs();
+    }
+  }
 
   protected readonly manualStatuses = MANUAL_STATUSES;
   protected readonly statusTone = INTEGRATION_STATUS_TONE;
@@ -58,10 +82,6 @@ export class IntegrationCard {
   protected readonly dateLocale = computed(() => DATE_LOCALES[this.language.current()]);
   protected readonly checkedDate = computed(() => this.dateFormatter.transform(this.item().last_checked_at, this.dateLocale()));
   protected readonly busy = computed(() => this.store.pending().has(this.item().key));
-  protected readonly manualStatus = computed<ManualStatus | null>(() => {
-    const status = this.item().status;
-    return status === 'off' || status === 'demo' ? status : null;
-  });
   protected readonly checkKey = computed(() => checkResultKey(this.item().last_error));
 
   protected toggle(): void {
@@ -73,7 +93,9 @@ export class IntegrationCard {
     }
   }
 
-  protected setStatus(status: ManualStatus): void {
+  protected setStatus(status: IntegrationStatus): void {
+    // Connected/error are observations, never user-assigned modes.
+    if (status !== 'off' && status !== 'demo') return;
     this.store.setStatus(this.item(), status, (key) => this.notify.show(key, { duration: 3000 }));
   }
 

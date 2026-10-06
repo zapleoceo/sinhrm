@@ -103,6 +103,7 @@
     }
   },
   "integrations": {
+    "google": {"reconnect": "Reconnect through Google", "scope": "Google will open to request access to Gmail, Calendar and Sheets: reading and sending mail, calendar events and reading spreadsheets. Choose an account and confirm permissions.", "noFields": "The connection is managed through Google; you do not need to enter tokens manually."},
     "options": {"on":"On","off":"Off","chat:fast":"chat:fast — fast","chat:smart":"chat:smart — smart","chat:sales":"chat:sales — sales","structured":"structured — structured","diia_signature":"Diia.Signature","vchasno":"Vchasno"},
     "title": "Integrations",
     "subtitle": "Keys and settings of external services. Secrets are stored encrypted and never shown again.",
@@ -140,6 +141,7 @@
       "willClear": "will be removed on save"
     },
     "check": {
+      "reconnect_required": "Google access expired or was revoked.",
       "run": "Check connection",
       "connection_failed": "Service unreachable",
       "unauthorized": "Key rejected (401)",
@@ -161,6 +163,8 @@
       "empty": "No events yet",
       "error": "Could not load events",
       "messages": {
+        "reconnect_required": "Google access expired or was revoked.",
+        "google_connected": "Google connected and access to the service granted.",
         "webhook_received": "Webhook: new events received",
         "webhook_rejected": "Webhook rejected: bad signature or token",
         "webhook_registered": "Webhook registered",
@@ -619,7 +623,8 @@
   "google": {
     "services": { "gmail": "Gmail", "calendar": "Calendar", "sheets": "Sheets" },
     "openIntegrations": "Open integrations",
-    "connect": { "title": "Google account for mail, calendar and sheets", "explain": "Separate from sign-in. Lets SinHRM read and send mail, create calendar events and read spreadsheets. Tokens are stored only in the database, encrypted.", "button": "Connect Google", "reconnect": "Reconnect", "state": { "connected": "Connected", "off": "Not connected", "error": "Reconnect required" }, "connected": "Google connected", "missing": "No access granted to: {{services}}. Connect again and tick every permission.", "redirectHint": "Redirect URI the owner adds in Google Cloud:", "reconnectToSend": "Sending e-mail is off: Google is connected read-only. Press \"Reconnect\" and allow sending.", "testingHint": "While the Google app is in \"Testing\" mode, access lasts 7 days — then press \"Reconnect\"." },
+    "connect": {
+      "availability": {"loading":"Checking Google setup. Please wait before connecting.","unconfigured":"Google connection is not set up. Ask the system administrator to configure it, then reload this page.","error":"Could not check Google setup. Reload this page to try again."}, "title": "Google account for mail, calendar and sheets", "explain": "Separate from sign-in. Lets SinHRM read and send mail, create calendar events and read spreadsheets. Tokens are stored only in the database, encrypted.", "button": "Connect Google", "reconnect": "Reconnect", "state": { "connected": "Connected", "off": "Not connected", "error": "Reconnect required" }, "connected": "Google connected", "missing": "No access granted to: {{services}}. Connect again and tick every permission.", "redirectHint": "Redirect URI the owner adds in Google Cloud:", "reconnectToSend": "Sending e-mail is off: Google is connected read-only. Press \"Reconnect\" and allow sending.", "testingHint": "While the Google app is in \"Testing\" mode, access lasts 7 days — then press \"Reconnect\"." },
     "meeting": { "button": "Schedule a meeting", "disabledHint": "Google Calendar is not connected (Administration → Integrations)", "title": "Meeting with the candidate", "eventTitle": "Interview: {{name}}", "fields": { "title": "Title", "date": "Date", "time": "Time", "duration": "Duration, min", "type": "Format", "location": "Place", "notes": "Notes", "invite": "Add the candidate as an attendee (Google sends no e-mail)" }, "types": { "branch": "At the branch", "online": "Online (Google Meet)" }, "submit": "Create event", "created": "Event created in Google Calendar", "copy": "Copy link", "copied": "Link copied", "open": "Open in Calendar", "meet": "Google Meet", "noEmail": "The candidate has no e-mail — cannot be added as an attendee" },
     "sheets": { "title": "Google Sheets import", "subtitle": "Paste the sheet link, map the columns and import. Duplicates (same phone, e-mail or Telegram) are not created.", "url": "Sheet link", "sheet": "Tab (empty = first)", "inspect": "Read headers", "mapping": "Column mapping", "none": "— do not import —", "column": "Column {{n}}", "preview": "First 10 rows", "noRows": "No rows under the header", "autoSync": "Load new rows every 30 minutes", "import": "Import", "needContact": "Map at least one contact column: phone, e-mail or Telegram.", "fields": { "full_name": "Full name", "phone": "Phone", "email": "E-mail", "telegram": "Telegram", "source": "Source", "utm_source": "utm_source", "utm_medium": "utm_medium", "utm_campaign": "utm_campaign", "utm_content": "utm_content", "utm_term": "utm_term", "vacancy": "Vacancy", "created_at": "Application date" }, "report": { "title": "Import result", "created": "Created", "matched": "Already existed", "skipped": "Skipped", "applied": "Added to vacancies", "vacancy_unmatched": "Vacancy not found", "errors": "Errors", "row": "Row {{row}}" }, "rowErrors": { "full_name_required": "no full name for a new candidate", "row_failed": "row not processed" }, "saved": "Saved imports", "lastRow": "Last row: {{row}}", "auto": "Every 30 min", "run": "Load new rows", "empty": "No imports yet" },
     "errors": { "google_gmail_not_connected": "Gmail is not connected", "google_calendar_not_connected": "Google Calendar is not connected", "google_sheets_not_connected": "Google Sheets is not connected", "reconnect_required": "Google must be reconnected", "google_oauth_not_configured": "The Google OAuth client is not configured on the server", "google_unauthorized": "Google refused access", "google_forbidden": "No access (check permissions or sheet sharing)", "google_not_found": "Not found (check the link and access)", "google_unreachable": "Google is unreachable, try later", "invalid_sheet_url": "A link like https://docs.google.com/spreadsheets/d/… is required", "consent_denied": "Access was not granted", "invalid_state": "The connection session expired — try again", "invalid_services": "Unknown Google services", "validation": "Check the fields", "generic": "The Google action failed" }

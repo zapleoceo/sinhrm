@@ -105,6 +105,7 @@ export const INTEGRATION_ERROR_CODES = ['check_not_supported'] as const;
 
 /** Codes a check stores in last_error (prefix before ":"), translated on the page. */
 export const CHECK_RESULT_CODES = [
+  'reconnect_required',
   'connection_failed',
   'unauthorized',
   'missing_secret',

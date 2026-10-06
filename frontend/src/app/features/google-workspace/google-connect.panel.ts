@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { CONNECT_ERROR_CODES, GOOGLE_SERVICES, GoogleConnection, connectUrl } from './google.model';
+import { CONNECT_ERROR_CODES, GOOGLE_SERVICES, GoogleConnection, GoogleOAuthState, connectUrl } from './google.model';
 import { GoogleService } from './google.service';
 import { ChannelIcon } from '../../core/ui/channel-icon';
 
@@ -23,7 +23,7 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
           <strong>{{ 'google.connect.title' | transloco }}</strong>
           <span class="muted">{{ 'google.connect.explain' | transloco }}</span>
         </div>
-        <a mat-flat-button [href]="href" [class.disabled]="notConfigured()" [attr.aria-disabled]="notConfigured()">
+        <a mat-flat-button role="link" [attr.href]="availability() === 'ready' ? href : null" [disabled]="availability() !== 'ready'" [attr.aria-describedby]="availability() === 'ready' ? null : 'google-availability'">
           <mat-icon>link</mat-icon>
           {{ (anyConnected() ? 'google.connect.reconnect' : 'google.connect.button') | transloco }}
         </a>
@@ -32,8 +32,8 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
       @if (result(); as r) {
         <p class="notice" [class.error]="r.error" role="status">{{ r.key | transloco: r.params }}</p>
       }
-      @if (notConfigured()) {
-        <p class="notice error">{{ 'google.errors.google_oauth_not_configured' | transloco }}</p>
+      @if (availability() !== 'ready') {
+        <p id="google-availability" class="notice" [class.error]="availability() !== 'loading'">{{ 'google.connect.availability.' + availability() | transloco }}</p>
       }
 
       <ul class="services">
@@ -45,14 +45,16 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
             @if (c.account_email) {
               <span class="muted">{{ c.account_email }}</span>
             }
-            @if (c.service === 'gmail' && c.connected && !c.can_send) {
+            @if (availability() === 'ready' && c.service === 'gmail' && c.connected && !c.can_send) {
               <span class="notice error">{{ 'google.connect.reconnectToSend' | transloco }}</span>
             }
           </li>
         }
       </ul>
       <p class="muted small">
-        {{ 'google.connect.testingHint' | transloco }}
+        @if (availability() === 'ready') {
+          {{ 'google.connect.testingHint' | transloco }}
+        }
         @if (redirectUri(); as uri) {
           <br />{{ 'google.connect.redirectHint' | transloco }} <code>{{ uri }}</code>
         }
@@ -64,15 +66,15 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
     .head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
     .text { display: flex; flex-direction: column; flex: 1; min-width: 14rem; }
     .services { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; gap: 1.5rem; flex-wrap: wrap; }
-    .services li { display: flex; align-items: center; gap: 0.4rem; }
+    .services li { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; min-width: 0; }
     .notice { margin: 0.5rem 0 0; }
     .notice.error { color: var(--app-warn-text); }
     .small { font-size: 0.8rem; margin-bottom: 0; }
-    a.disabled { pointer-events: none; opacity: 0.5; }
     code { word-break: break-all; }
   `,
 })
 export class GoogleConnectPanel implements OnInit {
+  readonly oauthState = output<GoogleOAuthState>();
   private readonly api = inject(GoogleService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -80,7 +82,7 @@ export class GoogleConnectPanel implements OnInit {
   protected readonly href = connectUrl(GOOGLE_SERVICES);
   protected readonly connections = signal<GoogleConnection[]>([]);
   protected readonly redirectUri = signal<string | null>(null);
-  protected readonly notConfigured = signal(false);
+  protected readonly availability = signal<GoogleOAuthState>('loading');
   protected readonly result = signal<{ key: string; params: Record<string, string>; error: boolean } | null>(null);
   protected readonly anyConnected = computed(() => this.connections().some((c) => c.connected || c.error !== null));
 
@@ -90,9 +92,15 @@ export class GoogleConnectPanel implements OnInit {
       next: (s) => {
         this.connections.set(s.data);
         this.redirectUri.set(s.meta.redirect_uri);
-        this.notConfigured.set(!s.meta.oauth_configured);
+        const state = s.meta.oauth_configured ? 'ready' : 'unconfigured';
+        this.availability.set(state);
+        this.oauthState.emit(state);
       },
-      error: () => this.connections.set([]),
+      error: () => {
+        this.connections.set([]);
+        this.availability.set('error');
+        this.oauthState.emit('error');
+      },
     });
   }
 
@@ -123,6 +131,6 @@ export class GoogleConnectPanel implements OnInit {
     } else {
       return;
     }
-    void this.router.navigate([], { queryParams: {}, replaceUrl: true });
+    void this.router.navigate([], { queryParams: { connected: null, missing: null, google_error: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 }
