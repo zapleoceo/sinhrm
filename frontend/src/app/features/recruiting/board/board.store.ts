@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Application, Board, MoveApplication, PersonalBoard, PersonalColumn, RejectReason, SavePersonalColumn, Stage } from '../recruiting.model';
+import { rankByScreening } from '../screening-ranking';
 import { groupByStage, statusForStage } from '../recruiting.format';
 import { RecruitingService, recruitingErrorKey } from '../recruiting.service';
 
@@ -37,6 +38,7 @@ export function moveInLayout(layout: readonly string[], visible: readonly string
 export class BoardStore {
   private readonly api = inject(RecruitingService);
 
+  readonly rankScreening = signal(false);
   readonly board = signal<Board | null>(null);
   readonly personal = signal<PersonalBoard | null>(null);
   readonly rejectReasons = signal<RejectReason[]>([]);
@@ -73,12 +75,13 @@ export class BoardStore {
     const layout = this.personal()?.layout ?? [...stageCols.keys()];
     const keys = [...layout, ...[...stageCols.keys()].filter((k) => !layout.includes(k))];
     return keys.flatMap((key): BoardLane[] => {
+      const rank = (items: Application[]): Application[] => this.rankScreening() ? rankByScreening(items) : items;
       const s = stageCols.get(key);
       if (s) {
-        return [{ key, kind: 'stage', stage: s.stage, items: s.items }];
+        return [{ key, kind: 'stage', stage: s.stage, items: rank(s.items) }];
       }
       const c = ownCols.get(key);
-      return c ? [{ key, kind: 'personal', column: c.column, items: c.items }] : [];
+      return c ? [{ key, kind: 'personal', column: c.column, items: rank(c.items) }] : [];
     });
   });
   readonly hiddenColumns = computed(() => (this.personal()?.columns ?? []).filter((c) => c.hidden));
@@ -137,7 +140,8 @@ export class BoardStore {
     this.setPending(application.id, true);
     this.api.move(application.id, { stage_id: stage.id, ...extra }).subscribe({
       next: (saved) => {
-        this.replace({ ...saved, candidate: previous.candidate });
+        // Move responses do not select the read-only board score; moving keeps the saved result.
+        this.replace({ ...saved, screening_score: previous.screening_score, candidate: previous.candidate });
         this.setPending(application.id, false);
         onDone?.();
       },

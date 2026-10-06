@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth\Http\Controllers;
 
+use App\Models\User;
 use App\Modules\Auth\Contracts\GoogleIdentityProvider;
 use App\Modules\Auth\Enums\LoginDenial;
 use App\Modules\Auth\Exceptions\GoogleAuthFailed;
 use App\Modules\Auth\Exceptions\LoginDenied;
 use App\Modules\Auth\Http\Middleware\ApplyActiveRole;
 use App\Modules\Auth\Services\AuthService;
+use App\Modules\Auth\Support\CredentialSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,16 +43,18 @@ final class GoogleAuthController
 
         try {
             $user = $this->auth->handleGoogle($this->google->profile());
+            $this->auth->grantSession($user, function (User $current) use ($request): void {
+                Auth::guard('web')->login($current, remember: true);
+                $request->session()->regenerate();
+                $request->session()->put(CredentialSession::VERSION_KEY, $current->credential_version);
+                // "Працювати як" belongs to one person's session: a new sign-in starts with all roles.
+                $request->session()->forget(ApplyActiveRole::SESSION_KEY);
+            });
         } catch (GoogleAuthFailed $e) {
             return $this->fail(LoginDenial::OauthFailed, $e->getMessage());
         } catch (LoginDenied $e) {
             return $this->fail($e->reason);
         }
-
-        Auth::guard('web')->login($user, remember: true);
-        $request->session()->regenerate();
-        // "Працювати як" belongs to one person's session: a new sign-in always starts with all roles.
-        $request->session()->forget(ApplyActiveRole::SESSION_KEY);
 
         return new RedirectResponse('/');
     }

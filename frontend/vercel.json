@@ -11,11 +11,15 @@
       "destination": "https://sinhrm-api.vercel.app/sanctum/:path*"
     },
     {
-      "source": "/((?!api/|sanctum/).*)",
+      "source": "/((?!api/|sanctum/|build\\.json$).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/build.json",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
     {
       "source": "/((?!api/|sanctum/).*)",
       "headers": [

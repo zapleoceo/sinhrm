@@ -21,6 +21,8 @@ export interface Mock {
   mutations: Mutation[];
   /** GET requests without a recorded answer — re-record fixtures (docs/guides/ui-parity.md). */
   missing: string[];
+  /** Requests deliberately made by named page states, for proving the selected fixture was exercised. */
+  requests: string[];
 }
 
 const here = __dirname;
@@ -60,7 +62,7 @@ function mutationAnswer(method: string, path: string, body: unknown): { status: 
 
 /** Answers /api/** and /sanctum/** from fixtures and logs mutations; every other host is cut off. */
 export async function installMock(context: BrowserContext, opts: { guest?: boolean } = {}): Promise<Mock> {
-  const mock: Mock = { mutations: [], missing: [] };
+  const mock: Mock = { mutations: [], missing: [], requests: [] };
   // Fonts are local (e2e/serve.mjs rewrites the inlined Google Fonts); any other host = network dependence.
   await context.route((url) => /^https?:$/.test(url.protocol) && url.host !== E2E_HOST, (route) => route.abort('blockedbyclient'));
   await context.route((url) => url.protocol === 'http:' && url.host === E2E_HOST && /^\/(api|sanctum)\//.test(url.pathname), async (route) => {
@@ -69,6 +71,7 @@ export async function installMock(context: BrowserContext, opts: { guest?: boole
     const method = req.method();
     if (method === 'GET') {
       const key = fixtureKey('GET', url);
+      mock.requests.push(key);
       const hit = (opts.guest ? lookup(fixtures.guest, key) : undefined) ?? lookup(fixtures.user, key);
       if (!hit) {
         mock.missing.push(key);

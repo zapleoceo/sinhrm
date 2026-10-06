@@ -6,18 +6,31 @@ namespace Tests\Feature\Core;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Core\Contracts\ModuleSettingsRepository;
 use App\Modules\Core\Models\ModuleSetting;
 use App\Modules\Core\Services\ModuleAccess;
 use App\Modules\Core\Services\ModuleRegistry;
 use App\Modules\Knowledge\Models\KbArticle;
+use App\Modules\People\Models\Employee;
+use App\Modules\Scripts\Models\Task;
+use App\Modules\Workflows\Models\WorkflowRun;
+use App\Modules\Workflows\Models\WorkflowRunStep;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Tests\Support\WorkflowFixtures;
 use Tests\TestCase;
 
 /** docs/modules/modules-access.md: company-wide on/off + per-role visibility, enforced on the server. */
 final class ModuleAccessTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WorkflowFixtures;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
     public function test_every_module_declares_metadata_and_core_modules_are_marked(): void
     {
@@ -99,6 +112,53 @@ final class ModuleAccessTest extends TestCase
         $this->assertTrue($response->json('jobs')['workflows.tick']['ok']);
     }
 
+    public function test_disabled_due_workflow_keeps_its_data_then_executes_after_reenable(): void
+    {
+        // Safe daytime on both UTC and local-day scheduler versions; no dependence on wall clock.
+        Carbon::setTestNow(Carbon::parse('2026-10-05 12:00:00', 'UTC'));
+        config(['ops.secret' => self::OPS_SECRET]);
+        $super = $this->user(UserRole::Superadmin);
+        $employee = Employee::factory()->create(['user_id' => $super->id]);
+        $template = $this->workflow([['create_task', 0, 'employee', ['title' => 'Synthetic pilot task']]]);
+        $runId = $this->actingAs($super)->postJson('/api/workflows/runs', [
+            'template_id' => $template->id, 'employee_id' => $employee->id, 'anchor_date' => '2026-10-05',
+        ])->assertCreated()->json('data.id');
+        $run = WorkflowRun::query()->findOrFail($runId);
+        $step = WorkflowRunStep::query()->where('run_id', $runId)->sole();
+        $this->assertTrue($step->due_at->lte(Carbon::now()));
+        $beforeRun = $run->getAttributes();
+        $beforeStep = $step->getAttributes();
+        $this->assertSame(0, Task::query()->where('type', 'workflow')->count());
+
+        $setting = ['enabled' => false, 'roles' => UserRole::values()];
+        $this->putJson('/api/modules/workflows', $setting)->assertOk()->assertJsonPath('data.enabled', false);
+        $disabled = $this->postJson(self::OPS_URL, [], ['X-Ops-Secret' => self::OPS_SECRET])->assertOk()
+            ->assertJsonPath('ok', true);
+        $this->assertSame(['ok' => true, 'skipped' => 'module_disabled'], $disabled->json('jobs')['workflows.tick']);
+        $this->assertSame($beforeRun, $run->refresh()->getAttributes());
+        $this->assertSame($beforeStep, $step->refresh()->getAttributes());
+        $this->assertSame(0, Task::query()->where('type', 'workflow')->count());
+        $unrelated = $disabled->json('jobs.followups');
+        $this->assertIsArray($unrelated);
+        $this->assertTrue($unrelated['ok']);
+        $this->assertArrayNotHasKey('skipped', $unrelated);
+
+        $this->putJson('/api/modules/workflows', ['enabled' => true, 'roles' => UserRole::values()])->assertOk();
+        $enabled = $this->postJson(self::OPS_URL, [], ['X-Ops-Secret' => self::OPS_SECRET])->assertOk();
+        $this->assertSame(1, $enabled->json('jobs')['workflows.tick']['executed']);
+        $this->assertSame($unrelated, $enabled->json('jobs.followups'));
+        $this->assertNotNull($step->refresh()->executed_at);
+        $this->assertSame('pending', $step->status->value, 'Human task waits for completion after execution.');
+        $task = Task::query()->where('type', 'workflow')->sole();
+        $this->assertSame('Synthetic pilot task', $task->title);
+        $this->assertSame($task->id, $step->result['task_id']);
+        $this->assertSame('wf:'.$step->id, $task->rule_key);
+        $this->assertSame($super->id, $task->assignee_id);
+        $again = $this->postJson(self::OPS_URL, [], ['X-Ops-Secret' => self::OPS_SECRET])->assertOk();
+        $this->assertSame(0, $again->json('jobs')['workflows.tick']['executed']);
+        $this->assertSame(1, Task::query()->where('type', 'workflow')->count());
+    }
+
     public function test_nav_badges_skip_disabled_modules(): void
     {
         $user = $this->user(UserRole::Employee);
@@ -155,6 +215,30 @@ final class ModuleAccessTest extends TestCase
 
         // The old cached copy was dropped: the cache now holds the saved value, not the stale one.
         $this->assertFalse(Cache::get(ModuleAccess::CACHE_KEY)['pulse']['enabled']);
+    }
+
+    public function test_explicit_refresh_bypasses_both_caches_and_reuses_normal_access_rules(): void
+    {
+        $access = $this->app->make(ModuleAccess::class);
+        $settings = $this->app->make(ModuleSettingsRepository::class);
+        $super = $this->user(UserRole::Superadmin);
+        $employee = $this->user(UserRole::Employee);
+        $admin = $this->user(UserRole::Admin);
+        $this->assertTrue($access->allows($super, 'knowledge'));
+        $settings->save('knowledge', false, []);
+        $this->assertTrue($access->allows($super, 'knowledge'), 'Ordinary calls still use the request-local cache.');
+        $snapshot = $access->refreshSettings();
+        $this->assertSame(['enabled' => false, 'roles' => []], $snapshot['knowledge']);
+        $this->assertFalse($access->allows($super, 'knowledge'), 'Disabled modules deny even superadmin.');
+        $this->assertTrue(Cache::get(ModuleAccess::CACHE_KEY)['knowledge']['enabled'], 'Explicit refresh does not rewrite the normal shared cache.');
+        $settings->save('knowledge', true, [UserRole::Admin->value]);
+        $access->refreshSettings();
+        $this->assertFalse($access->allows($employee, 'knowledge'));
+        $this->assertTrue($access->allows($admin, 'knowledge'));
+        $this->assertTrue($access->allows($super, 'knowledge'));
+        $this->assertNotContains('knowledge', $access->allowedKeys($employee));
+        $this->assertContains('knowledge', $access->allowedKeys($admin));
+        $this->assertTrue($access->allows($employee, 'auth'), 'Core modules retain their usual always-on rule.');
     }
 
     public function test_settings_page_is_superadmin_only(): void

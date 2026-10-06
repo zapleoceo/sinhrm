@@ -64,6 +64,7 @@ describe('trimHistory', () => {
   it('maps error codes to i18n keys', () => {
     expect(turnErrorKey('ai_provider_http_500')).toBe('assistant.errors.ai_provider');
     expect(turnErrorKey('ai_budget_exceeded')).toBe('assistant.errors.ai_budget_exceeded');
+    expect(turnErrorKey('ai_context_changed')).toBe('assistant.errors.ai_context_changed');
     expect(turnErrorKey('weird')).toBe('assistant.errors.generic');
     expect(httpErrorKey(new HttpErrorResponse({ status: 429 }))).toBe('assistant.errors.throttled');
     expect(httpErrorKey(new HttpErrorResponse({ status: 503, error: { code: 'ai_disabled' } }))).toBe('assistant.errors.ai_disabled');
@@ -168,6 +169,27 @@ describe('AssistantConversation loop', () => {
     expect(api.turn).toHaveBeenCalledTimes(MAX_ROUNDS);
     expect(conv.errorKey()).toBe('assistant.errors.lost');
     expect(conv.mood().mood).toBe('shrug');
+  });
+
+  it('a pending answer rejected after access changes shows the retry message without running tools', async () => {
+    vi.useFakeTimers();
+    try {
+      const { conv, api, tools } = setup(
+        () => of({ state: 'pending', request_id: 7 }),
+        () => of({ state: 'failed', request_id: 7, error: 'ai_context_changed' }),
+      );
+      const sending = conv.send('Скільки записів мені доступно?');
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+      await sending;
+      expect(api.poll).toHaveBeenCalledTimes(1);
+      expect(conv.errorKey()).toBe('assistant.errors.ai_context_changed');
+      expect(conv.busy()).toBe(false);
+      expect(conv.pendingWrite()).toBeNull();
+      expect(tools.run).not.toHaveBeenCalled();
+      expect(conv.transcript()).toEqual([{ role: 'user', text: 'Скільки записів мені доступно?' }]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('failed turn and 429 show localized errors', async () => {

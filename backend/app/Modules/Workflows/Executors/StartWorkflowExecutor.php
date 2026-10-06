@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Workflows\Executors;
 
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Workflows\Contracts\StepExecutor;
 use App\Modules\Workflows\Contracts\WorkflowTemplateRepository;
 use App\Modules\Workflows\DTO\StepContext;
@@ -42,7 +43,7 @@ final readonly class StartWorkflowExecutor implements StepExecutor
             return StepOutcome::skipped('template_inactive');
         }
         try {
-            $run = $this->starter->start($template, $context->employee, $context->now->copy()->startOfDay(), null, null, $context->run);
+            $run = $this->starter->start($template, $context->employee, UserTime::today($context->now), null, null, $context->run);
         } catch (WorkflowException $e) {
             return StepOutcome::failed($e->errorCode);
         }

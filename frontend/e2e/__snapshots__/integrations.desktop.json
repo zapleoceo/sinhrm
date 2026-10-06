@@ -22,13 +22,16 @@
   "Джерела кандидатів",
   "Документи",
   "КЕП-підпис документів (Дія.Підпис / Вчасно)",
+  "Каталог співробітників Itstep",
   "Месенджери",
+  "Необхідні відомості",
   "Телефонія"
  ],
  "landmarks": [
   "complementary \"\"",
   "main \"\"",
-  "navigation \"Головне меню\""
+  "navigation \"Головне меню\"",
+  "region \"Каталог співробітників Itstep\""
  ],
  "interactive": [
   "button \"Автоприховування меню\"",
@@ -55,6 +58,7 @@
   "button \"Перевірити з'єднання\"",
   "button \"Перевірити з'єднання\"",
   "button \"Перевірити з'єднання\"",
+  "button \"Показати синтетичний приклад\"",
   "button \"Продуктивність\"",
   "button \"Промпт\"",
   "button \"Промпт\"",
@@ -99,7 +103,10 @@
   "link \"Персональні дані\" -> /admin/privacy",
   "link \"Помилки\" -> /admin/errors",
   "link \"Пошта\" -> /admin/mail",
-  "link \"Підключити Google\" [disabled] -> /api/google/connect?services=gmail,calendar,sheets",
+  "link \"Підключити Google\" [disabled]",
+  "link \"Підключити Google\" [disabled]",
+  "link \"Підключити Google\" [disabled]",
+  "link \"Підключити Google\" [disabled]",
   "link \"Скрипти\" -> /admin/scripts",
   "link \"Стан системи\" -> /status",
   "link \"Цикли оцінювання\" -> /admin/perform/reviews",
@@ -114,6 +121,6 @@
  "counts": {
   "article": 15,
   "img": 4,
-  "listitem": 7
+  "listitem": 11
  }
 }

@@ -6,7 +6,9 @@ namespace App\Modules\Auth\Repositories;
 
 use App\Models\User;
 use App\Modules\Auth\Contracts\PersonalTokenRepository;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\NewAccessToken;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -14,7 +16,20 @@ final class SanctumPersonalTokenRepository implements PersonalTokenRepository
 {
     public function create(User $user, string $name, array $abilities, Carbon $expiresAt): NewAccessToken
     {
-        return $user->createToken($name, $abilities, $expiresAt);
+        return DB::transaction(function () use ($user, $name, $abilities, $expiresAt): NewAccessToken {
+            // Serialize the grant with Users blocking: an authenticated request may hold a stale active user.
+            $current = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            if (! $current->isActive()) {
+                throw new AuthorizationException('blocked');
+            }
+            if ($current->credential_version !== $user->credential_version) {
+                throw new AuthorizationException('credentials_revoked');
+            }
+
+            $this->deleteAll($current, $name);
+
+            return $current->createToken($name, $abilities, $expiresAt);
+        });
     }
 
     public function find(User $user, string $name): ?PersonalAccessToken

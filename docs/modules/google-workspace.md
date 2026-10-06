@@ -218,3 +218,8 @@ curl -i https://sinhrm.vercel.app/api/google/connect         # без сесси
 ## Листи про погодження (UserNotifier)
 
 `MailUserNotifier` реалізує `Core\Contracts\UserNotifier`: тема + 2 рядки + посилання (`app.frontend_url` + шлях) на e-mail користувача. Мовчки пропускає, якщо користувач вимкнув «Листи про погодження» у «Мій профіль» (`users.approval_emails`, за замовчуванням увімкнено), модуль закритий для нього, або Mailer не готовий (`not_connected` / `reconnect_to_send` → лог `notify.mail_skipped`; помилка Gmail → `notify.mail_failed`). `CalendarClient` має також `insertAllDayEvent` / `deleteEvent` (TimeOff).
+
+### Контекст переподключения
+После обработки OAuth callback удаляются только параметры результата connected/missing/google_error; остальные query параметры, включая выбранную карточку integration, сохраняются. Тест google-connect.panel.spec.ts проверяет отказ в согласии и сохранение контекста. Подключение из карточки использует тот же общий URL для Gmail, Calendar и Sheets; scopes и серверный OAuth-контракт не изменены.
+
+Google-блок передаёт карточкам состояние доступности подключения: loading, ready, unconfigured или error. Только ready включает OAuth-ссылки; остальные состояния показывают локализованную причину и следующий шаг около действия. Верхняя ссылка использует тот же Material disabled-механизм, что и карточки, без отдельного затемнения. Регрессионные тесты `google-connect.panel.spec.ts` проверяют начальную блокировку, успешную проверку, отсутствие настройки и сетевую ошибку; OAuth-согласие и реальные токены для этих проверок не используются.

@@ -83,6 +83,22 @@ Enum `Enums\UserStatus`: `active` | `blocked`.
 Заблокированный пользователь с живой сессией на следующем запросе получает 403 `{"message":"blocked"}`
 и разлогинивается (`Http\Middleware\EnsureUserIsActive`).
 
+PAT и Google login блокируют user row и проверяют свежий active status и захваченную
+`credential_version`. Block увеличивает версию; unblock её не сбрасывает. Старый actor после
+block не получает PAT (403 blocked), после block/unblock — 403 credentials_revoked.
+Замена PAT выполняется после проверок в той же транзакции: stale grant не удаляет новый токен.
+Google grant со старой версией отклоняется как oauth_failed.
+
+Google login создаёт remember-token и сохраняет захваченную версию в web session под user lock.
+Поздняя DB-запись старой сессии после block/unblock не восстанавливает доступ: middleware
+отклоняет durable web credential со старым/отсутствующим stamp (401 credentials_revoked).
+Обычный запрос не обновляет stamp. Валидный remember-cookie является новым grant с версией
+загруженного пользователя; старый cookie отозван обнулением remember-token.
+Миграция 2026_10_09_180000_add_user_credential_version нужна перед выпуском кода.
+Legacy durable sessions без stamp требуют нового Google login. Новый вход после unblock разрешён.
+Выполняющиеся запросы не отменяются. Feature regressions используют настоящие DI repositories:
+TokenGrantRevocationTest, GoogleCallbackTest, UserCredentialRevocationTest.
+
 ### «Працювати як» (активная роль)
 Простыми словами: если у аккаунта **несколько** глобальных ролей, в меню пользователя (аватар внизу слева) можно
 выбрать, в какой из них сейчас работать, или «Усі ролі» (по умолчанию — как раньше, права всех ролей вместе).
@@ -194,3 +210,5 @@ CORS (`config/cors.php`) открыт только для `api/clipper/*`, то�
 Ключ модуля `auth`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).
 
 `PATCH /api/auth/me/notifications {approval_emails: bool}` — вимикач листів про погодження («Мій профіль»); `GET /me` повертає `approval_emails`.
+
+Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.

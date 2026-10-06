@@ -135,7 +135,8 @@
   "link \"Цикли оцінювання\" -> /admin/perform/reviews",
   "link \"Черга звернень 9 нових\" -> /desk/queue",
   "link \"Шаблони документів\" -> /admin/documents/templates",
-  "link \"Шевчук Роман [ТЕСТ]\" -> /people/12?tab=assets"
+  "link \"Шевчук Роман [ТЕСТ]\" -> /people/12?tab=assets",
+  "searchbox \"Пошук: номер, назва, серійний\""
  ],
  "columns": [
   "Інв. номер",

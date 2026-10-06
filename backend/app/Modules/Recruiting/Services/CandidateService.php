@@ -52,10 +52,10 @@ final readonly class CandidateService
         return $this->candidates->find($id) ?? throw (new ModelNotFoundException)->setModel(Candidate::class, [$id]);
     }
 
-    /** @return Collection<int, Application> every application of the candidate with its route */
-    public function applications(Candidate $candidate): Collection
+    /** @return Collection<int, Application> visible applications of the candidate with their routes */
+    public function applications(User $actor, Candidate $candidate): Collection
     {
-        return $this->applications->forCandidate($candidate->id);
+        return $this->applications->forCandidate($candidate->id, $this->scope->for($actor));
     }
 
     /**

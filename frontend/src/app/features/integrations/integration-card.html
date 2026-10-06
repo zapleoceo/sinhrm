@@ -1,5 +1,5 @@
 @let it = item();
-<article class="card" [class.open]="expanded()">
+<article class="card" [class.google]="it.group === 'google'" [class.open]="expanded()" [attr.id]="'integration-' + it.key" tabindex="-1">
   <header class="head">
     <div class="title">
       <h3><app-channel-icon [key]="it.key" /> {{ 'integrations.items.' + it.key + '.name' | transloco }}</h3>
@@ -15,16 +15,29 @@
       } @else {
         {{ it.last_error }}
       }
-      @if (it.last_checked_at) {
-        <span class="muted">· {{ it.last_checked_at | date: 'short' }}</span>
+      @if (checkedDate(); as timestamp) {
+        <span class="muted">· {{ timestamp }}</span>
       }
     </p>
+  }
+
+  @if (it.group === 'google') {
+    <div class="google-connect">
+      <p class="muted" [attr.id]="'google-guidance-' + it.key">{{ (googleOauthConfigured() ? 'integrations.google.scope' : 'google.connect.availability.' + googleOAuthState()) | transloco }}</p>
+      <a mat-flat-button role="link" [attr.href]="googleOauthConfigured() ? googleConnectHref : null" [disabled]="!googleOauthConfigured()" [attr.aria-describedby]="'google-guidance-' + it.key">
+        <mat-icon>link</mat-icon>
+        {{ ((it.status === 'off' || it.status === 'demo') && !it.last_error ? 'google.connect.button' : 'integrations.google.reconnect') | transloco }}
+      </a>
+    </div>
   }
 
   <div class="actions">
     <mat-form-field class="status" subscriptSizing="dynamic">
       <mat-label>{{ 'integrations.mode' | transloco }}</mat-label>
-      <mat-select [value]="manualStatus()" [disabled]="busy()" (valueChange)="setStatus($event)">
+      <mat-select [value]="it.status" [disabled]="busy()" (valueChange)="setStatus($event)">
+        @if (it.status === 'connected' || it.status === 'error') {
+          <mat-option [value]="it.status" disabled>{{ 'integrations.status.' + it.status | transloco }}</mat-option>
+        }
         @for (s of manualStatuses; track s) {
           <mat-option [value]="s">{{ 'integrations.status.' + s | transloco }}</mat-option>
         }
@@ -97,7 +110,7 @@
         }
       }
       @if (it.fields.length === 0) {
-        <p class="muted">{{ 'integrations.noFields' | transloco }}</p>
+        <p class="muted">{{ (it.group === 'google' ? 'integrations.google.noFields' : 'integrations.noFields') | transloco }}</p>
       } @else {
         <div class="form-actions">
           <button mat-flat-button type="submit" [disabled]="busy()">{{ 'integrations.save' | transloco }}</button>
@@ -123,7 +136,7 @@
           <ul>
             @for (log of list; track log.id) {
               <li [class.error]="log.level === 'error'">
-                <span class="muted">{{ log.created_at | date: 'short' }}</span>
+                <span class="muted">{{ log.created_at | integrationDate: dateLocale() }}</span>
                 {{ 'integrations.logs.messages.' + log.message | transloco }}
               </li>
             }

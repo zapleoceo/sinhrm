@@ -26,18 +26,69 @@
 } @else if (!store.loading() && store.groups().length === 0) {
   <p class="state muted">{{ 'integrations.empty' | transloco }}</p>
 } @else {
+  <section class="directory" aria-labelledby="directory-title">
+    <div class="directory-head">
+      <div>
+        <h2 id="directory-title">{{ 'integrations.directory.title' | transloco }}</h2>
+        <p class="muted">{{ 'integrations.directory.explain' | transloco }}</p>
+      </div>
+      <button mat-stroked-button type="button" [disabled]="directory.previewLoading()" (click)="directory.loadSyntheticPreview()">
+        {{ (directory.previewLoading() ? 'integrations.directory.loading' : 'integrations.directory.showPreview') | transloco }}
+      </button>
+    </div>
+    @if (directory.statusError() || directory.previewError()) {
+      <p role="alert">{{ 'integrations.directory.error' | transloco }}</p>
+      <button mat-stroked-button type="button" (click)="directory.retry()">{{ 'common.retry' | transloco }}</button>
+    }
+    @if (directory.status(); as status) {
+      <p class="directory-status" role="status">
+        {{ (status.status === 'dependency_pending' ? 'integrations.directory.pending' : 'integrations.directory.ready') | transloco }}
+      </p>
+      @if (status.missing_inputs.length > 0) {
+        <h3>{{ 'integrations.directory.inputsTitle' | transloco }}</h3>
+        <ul>
+          @for (input of status.missing_inputs; track input) {
+            <li>{{ ('integrations.directory.inputs.' + input) | transloco }}</li>
+          }
+        </ul>
+      }
+    }
+    @if (directory.preview(); as preview) {
+      <div class="directory-preview">
+        <strong>{{ 'integrations.directory.syntheticLabel' | transloco }}</strong>
+        <span>{{ 'integrations.directory.previewCount' | transloco: { count: preview.profiles.length } }}</span>
+        <span>{{ 'integrations.directory.duplicateCount' | transloco: { count: preview.duplicate_count } }}</span>
+        <ul>
+          @for (profile of preview.profiles; track profile.source_id) {
+            <li>
+              <span>{{ profile.display_name }} · {{ profile.source_id }}</span>
+              <span class="muted">{{ 'integrations.directory.manualReview' | transloco }}</span>
+            </li>
+          }
+        </ul>
+        @if (preview.conflicts.length > 0) {
+          <strong>{{ 'integrations.directory.conflictsTitle' | transloco }}</strong>
+          <ul>
+            @for (conflict of preview.conflicts; track $index) {
+              <li>{{ conflict.source_id }} · {{ ('integrations.directory.conflicts.' + conflict.code) | transloco }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </section>
   @for (g of store.groups(); track g.group) {
     <section class="group">
       <h2>{{ 'integrations.groups.' + g.group | transloco }}</h2>
       @if (g.group === 'google') {
-        <app-google-connect-panel />
+        <app-google-connect-panel (oauthState)="googleOAuthState.set($event)" />
       }
       @if (g.group === 'ai') {
         <app-ai-panel />
       }
       <div class="grid">
         @for (item of g.items; track item.key) {
-          <app-integration-card [item]="item" />
+          <app-integration-card [item]="item" [focused]="focusedIntegration() === item.key" [googleOAuthState]="googleOAuthState()" />
         }
       </div>
     </section>

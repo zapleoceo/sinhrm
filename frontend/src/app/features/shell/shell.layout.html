@@ -7,6 +7,11 @@
       </button>
       <a class="topbar-brand" routerLink="/" [attr.aria-label]="'shell.nav.overview' | transloco"><app-logo /></a>
       <span class="topbar-title">{{ pageTitleKey() ? (pageTitleKey()! | transloco) : 'SinHRM' }}</span>
+      @if (can('assistant')) {
+        <button mat-icon-button type="button" class="assistant-launcher" [attr.aria-label]="'shell.menu.assistant' | transloco" (click)="openAssistant()">
+          <mat-icon>sentiment_satisfied</mat-icon>
+        </button>
+      }
     </header>
     @if (drawerOpen()) {
       <div class="backdrop" aria-hidden="true" (click)="closeDrawer()"></div>
@@ -466,7 +471,7 @@
   </div>
   @if (can('assistant')) {
     @defer (on idle) {
-      <app-assistant-mascot />
+      <app-assistant-mascot [compact]="narrow()" />
     }
   }
 </div>

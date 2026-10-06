@@ -22,12 +22,15 @@
   "Джерела кандидатів",
   "Документи",
   "КЕП-підпис документів (Дія.Підпис / Вчасно)",
+  "Каталог співробітників Itstep",
   "Месенджери",
+  "Необхідні відомості",
   "Телефонія"
  ],
  "landmarks": [
   "banner \"\"",
-  "main \"\""
+  "main \"\"",
+  "region \"Каталог співробітників Itstep\""
  ],
  "interactive": [
   "button \"Головне меню\"",
@@ -50,6 +53,8 @@
   "button \"Перевірити з'єднання\"",
   "button \"Перевірити з'єднання\"",
   "button \"Перевірити з'єднання\"",
+  "button \"Поговорити зі Стіком\"",
+  "button \"Показати синтетичний приклад\"",
   "button \"Промпт\"",
   "button \"Промпт\"",
   "button \"Промпт\"",
@@ -71,7 +76,10 @@
   "combobox \"Режим\"",
   "combobox \"Режим\"",
   "link \"Огляд\" -> /",
-  "link \"Підключити Google\" [disabled] -> /api/google/connect?services=gmail,calendar,sheets",
+  "link \"Підключити Google\" [disabled]",
+  "link \"Підключити Google\" [disabled]",
+  "link \"Підключити Google\" [disabled]",
+  "link \"Підключити Google\" [disabled]",
   "radio \"30 днів\"",
   "radio \"7 днів\"",
   "radio \"Сьогодні\" [checked]",
@@ -81,6 +89,6 @@
  "counts": {
   "article": 15,
   "img": 2,
-  "listitem": 7
+  "listitem": 11
  }
 }

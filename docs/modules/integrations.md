@@ -129,6 +129,17 @@ Gate `manage-integrations` (`Providers\IntegrationsServiceProvider::MANAGE_INTEG
 | `POST /{key}/status` | `{status: off\|demo}` | `{data: integration}` |
 | `GET /{key}/logs` | — | `{data: [{id, level, message, context, created_at}]}`, последние 50 |
 | `PUT /ai-policy` | `{enabled: bool}` | `{data: {enabled}}`, пишется в журнал `ai_policy` (уровень warning) |
+| `GET /itstep-directory/status` | — | `{data: {status, missing_inputs, scope_configured, writes_enabled: false}}`; доступен только суперадмину |
+| `GET /itstep-directory/preview` | — | read-only preview complete normalized snapshot from the injected gateway; `409 dependency_pending` пока SDK/source contract не готовы, `422 snapshot_invalid` для unknown/incomplete payload |
+| `GET /itstep-directory/synthetic-preview` | — | `{synthetic: true, data: preview}` на фиксированных демонстрационных данных; не вызывает source gateway |
+
+### Каталог сотрудников Itstep — подготовка
+
+`EmployeeDirectoryGateway` зарегистрирован на `PendingEmployeeDirectoryGateway`: состояние `dependency_pending`, fetch завершается типизированной ошибкой и не выполняет сетевых запросов. Preview разрешается только если gateway явно сообщает настроенный namespace, а полный snapshot содержит ровно тот же namespace. Источник блокирует получение данных до установки `itstep/user-client` и подтверждения схемы ответа, namespace/company scope, доверенного endpoint/auth и правил stable employee ID. SDK path `/api/v1/profiles` сам по себе не подтверждает response contract.
+
+`EmployeeDirectoryPreview` принимает только полный normalized snapshot с точным набором известных полей; unknown shape, пустой source ID и incomplete pages отклоняются. Идентичные повторы сворачиваются детерминированно, разные строки с одним ID показываются как конфликт. Результат — только ручной план identity review; branch/position/status явно остаются `unconfirmed`. Ни Employee, ни User, ни роли/статусы не меняются. Synthetic preview использует выдуманные demo-значения и отдельно помечен в API/UI; он не доказывает доступность или схему Itstep. В панели состояние источника и synthetic preview загружаются независимо: ошибка одного запроса остаётся видна независимо от порядка завершения второго, а при повторной загрузке старый preview сразу очищается.
+
+После получения недостающих входных данных нужно добавить адаптер поверх установленного официального SDK и подтвердить mapping до подключения данных. Не включать автоназначение ролей, создание пользователей или деактивацию сотрудников на этом этапе.
 
 `integration` (`Http/Resources/IntegrationResource`): `key, group, status, supports_check, last_checked_at,
 last_error, updated_at, fields[]`. Поле: `name, type, required, options, default` + `value` (несекретное) или
@@ -182,10 +193,12 @@ placeholder маска или «не задано», кнопка «Очисти
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ## Как проверить
+Даты последней проверки и событий журнала используют активный язык интерфейса: `uk-UA`, `ru-RU`, `en-GB` (существующая карта `DATE_LOCALES`). Переключение языка обновляет уже показанные даты; формат `short` берётся из locale data Angular, часовой пояс остаётся локальным браузерным. Значения ISO/API, часовой пояс пользователя и настройки профиля не изменяются. Null, пустые и некорректные даты показываются пустыми без ошибки карточки; дата последней проверки в таком случае скрыта. Проверки: `integration-date.spec.ts` и `integration-dates.pw.ts` (uk/ru/en × UTC/Kyiv/Los Angeles, зимний/летний offset и переход через полночь); тесты CI создают 12 viewport PNG.
+
 Тесты: `tests/Feature/Integrations/IntegrationsApiTest.php` (401/403, 404 неизвестного ключа, список и маскирование
 со сканированием всего ответа, шифрование в БД, семантика set/unchanged/delete, валидация, проверки через
 `Http::fake` — Telegram ok/401/обрыв, AI Broker health ok/503, логи без секретов, лимит 50,
-AI-флаг, битый токен без запроса и без записи в лог, любой Throwable → код, https-only, SSRF-блокировки, сброс статуса после изменения), `tests/Unit/Integrations/*` (в т.ч. `OutboundUrlGuardTest` — все запрещённые диапазоны, `SecretScrubberTest` — редактирование через обработчик исключений и `Log::spy`) (хранилище: шифротекст ≠ открытый текст, маска; реестр; сервис: очистка
+AI-флаг, битый токен без запроса и без записи в лог, любой Throwable → код, https-only, SSRF-блокировки, сброс статуса после изменения), `tests/Feature/Integrations/EmployeeDirectoryApiTest.php` (superadmin access, pending/no-network, complete and incomplete snapshots, synthetic endpoint, no employee/user writes), `tests/Unit/Integrations/EmployeeDirectoryPreviewTest.php` (shape/scope, ID validation, duplicate conflicts, deterministic plan), `tests/Unit/Integrations/*` (в т.ч. `OutboundUrlGuardTest` — все запрещённые диапазоны, `SecretScrubberTest` — редактирование через обработчик исключений и `Log::spy`) (хранилище: шифротекст ≠ открытый текст, маска; реестр; сервис: очистка
 секретов из сообщений, пропуск проверки без ключа). Фронт: `integrations.service.spec.ts`, `integrations.store.spec.ts`.
 
 Вручную (нужна сессия суперадмина):
@@ -202,3 +215,16 @@ curl -i "https://sinhrm.vercel.app/api/integrations"   # без сессии →
 ## AI Broker: тексты вакансий (2026-10-25)
 В настройках `ai_broker` два новых поля: `capability_vacancy_text` (по умолчанию `chat:fast`) и выключатель
 `ai_vacancy_text` (по умолчанию `on`) для кнопки «Створити з ШІ» в форме вакансии ([ai.md](ai.md)).
+
+### Переподключение Google
+В карточке Gmail, Календаря или Таблиц есть кнопка подключения через Google. Она открывает существующий общий OAuth-поток для Gmail, Calendar и Sheets; рядом перечислены права на чтение/отправку почты, события календаря и чтение таблиц. Причина истёкшего/отозванного доступа и события журнала переведены. Ссылка с главной раскрывает, фокусирует и прокручивает нужную карточку (`?integration=google_gmail`). Токены вручную не вводятся. Проверка: component-тест integration-card.spec.ts (действие, deep link, ошибка журнала), CI и реальные screenshots preview.
+
+Кнопки в карточках активны только после подтверждения настройки OAuth в общем Google-блоке; при отсутствии настройки или ошибке получения статуса переход недоступен.
+
+Доступность действия различает проверку настройки, готовность, отсутствие настройки и ошибку проверки. Рядом с кнопкой каждого Google-сервиса показаны причина недоступности и следующий шаг: дождаться проверки, обратиться к администратору системы или обновить страницу. Причина истёкшего доступа и записи журнала не предлагают нажимать недоступную кнопку. Верхняя кнопка и карточки используют одинаковое native disabled-состояние Angular Material; на desktop зона описания Google-карточки сохраняет место для двух строк без обрезки текста.
+
+Проверки состояний: `google-connect.panel.spec.ts` и `integration-card.spec.ts` покрывают loading/unconfigured/error/ready и восстановление ссылки. Синтетические Playwright-сценарии `integrations-states.pw.ts` используют `fixtures/scenarios/google-integrations.json`: подключённый Google, истёкший доступ с журналом, ошибка загрузки журнала. Они проверяют доступность действий, переводы, выравнивание, layout/axe и отсутствие OAuth/внешних запросов; screenshots `integrations-google-{connected,reconnect,logs-error}.png` обязательны во всех четырёх viewport/theme проектах CI. Новые screenshots требуют независимого просмотра после CI.
+
+UI parity инвентарь desktop/mobile осознанно дополнен тремя disabled-ссылками подключения Google для синтетического сценария с ненастроенным OAuth. Реальные screenshots CI просмотрены: новые элементы ожидаемы, прежние контролы не удалены; окончательная проверка нового состояния выполняется повторным CI.
+
+Connected/error remain automatic observations: the mode control shows the current translated state as a disabled option, while only off/demo can be assigned manually. Mobile deep-link cards reserve space above their header for the sticky navigation bar; configured-state CI checks both geometry and displayed mode.

@@ -12,6 +12,7 @@
   "button \"25\"",
   "button \"7\" [pressed]",
   "button \"Головне меню\"",
+  "button \"Поговорити зі Стіком\"",
   "link \"Огляд\" -> /",
   "link \"Редагувати\" -> /admin/knowledge/1",
   "link \"← База знань\" -> /knowledge"

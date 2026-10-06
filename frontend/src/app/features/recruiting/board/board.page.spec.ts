@@ -12,6 +12,7 @@ import { PeopleService } from '../../people/people.service';
 import { Application, Board, PersonalBoard, Stage } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
 import { BoardPage } from './board.page';
+import { BoardStore } from './board.store';
 import { dropHint } from './drop-hint';
 
 const stage = (id: number, name: string, kind: Stage['kind']): Stage => ({
@@ -249,5 +250,34 @@ describe('BoardPage route look', () => {
     const el = (await render(['recruiter'])).nativeElement as HTMLElement;
     expect(el.querySelectorAll('article.card .app-station').length).toBe(0);
     expect(el.querySelector('.board-wrap > .board')).not.toBeNull();
+  });
+});
+
+describe('BoardPage screening ranking', () => {
+  it('has one accessible board-wide toggle and restores the card order on a second click', async () => {
+    const f = await render(['recruiter']);
+    const store = f.debugElement.injector.get(BoardStore);
+    store.board.update((current) => current ? {
+      ...current,
+      applications: current.applications.map((card) => ({ ...card, screening_score: card.id === 2 ? 82 : 0 })),
+    } : current);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const toggles = el.querySelectorAll<HTMLButtonElement>('button[aria-pressed]');
+    expect(toggles.length).toBe(1);
+    expect(el.querySelector('section.column button[aria-pressed]')).toBeNull();
+    expect(toggles[0].getAttribute('aria-pressed')).toBe('false');
+    const names = (): string[] => Array.from(el.querySelectorAll('#cards-stage\\:1 article.card .name')).map((node) => node.textContent!.trim());
+    expect(names()).toEqual(['C1', 'C2']);
+    toggles[0].click();
+    f.detectChanges();
+    expect(toggles[0].getAttribute('aria-pressed')).toBe('true');
+    expect(names()).toEqual(['C2', 'C1']);
+    toggles[0].click();
+    f.detectChanges();
+    expect(toggles[0].getAttribute('aria-pressed')).toBe('false');
+    expect(names()).toEqual(['C1', 'C2']);
+    expect(api.move).not.toHaveBeenCalled();
+    expect(api.fileCard).not.toHaveBeenCalled();
   });
 });

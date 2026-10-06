@@ -25,9 +25,8 @@ final readonly class PersonalTokens
 
     public function issue(User $user, TokenKind $kind): PersonalTokenStatus
     {
-        $revoked = $this->tokens->deleteAll($user, $kind->name);
         $new = $this->tokens->create($user, $kind->name, [$kind->ability], Carbon::now()->addDays($kind->ttlDays));
-        $this->log->info($kind->logEvent.'_issued', ['user' => $user->id, 'revoked' => $revoked]);
+        $this->log->info($kind->logEvent.'_issued', ['user' => $user->id]);
         $token = $new->accessToken;
 
         return new PersonalTokenStatus(true, $token->created_at, null, $token->expires_at, $new->plainTextToken);
