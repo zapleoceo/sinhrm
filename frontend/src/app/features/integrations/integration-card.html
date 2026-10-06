@@ -15,8 +15,8 @@
       } @else {
         {{ it.last_error }}
       }
-      @if (it.last_checked_at) {
-        <span class="muted">· {{ it.last_checked_at | date: 'short' }}</span>
+      @if (checkedDate(); as timestamp) {
+        <span class="muted">· {{ timestamp }}</span>
       }
     </p>
   }
@@ -123,7 +123,7 @@
           <ul>
             @for (log of list; track log.id) {
               <li [class.error]="log.level === 'error'">
-                <span class="muted">{{ log.created_at | date: 'short' }}</span>
+                <span class="muted">{{ log.created_at | integrationDate: dateLocale() }}</span>
                 {{ 'integrations.logs.messages.' + log.message | transloco }}
               </li>
             }
