@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Contracts;
 
+use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\CandidateScreening;
 use Illuminate\Support\Carbon;
@@ -27,7 +28,7 @@ interface ScreeningRepository
     public function finish(int $id, string $status, array $attributes): bool;
 
     /** @return Collection<int, CandidateScreening> the latest screening of each application of the candidate, newest first */
-    public function latestForCandidate(int $candidateId): Collection;
+    public function latestForCandidate(int $candidateId, Scope $scope): Collection;
 
     public function pendingFor(int $applicationId): ?CandidateScreening;
 
@@ -40,5 +41,5 @@ interface ScreeningRepository
      *
      * @return list<array{channel: string, body: string}>
      */
-    public function materials(int $candidateId, int $limit): array;
+    public function materials(int $candidateId, int $applicationId, int $limit): array;
 }

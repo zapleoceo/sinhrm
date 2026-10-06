@@ -41,6 +41,7 @@ final readonly class ScreeningService
         private AiRequestRepository $requests,
         private ScreeningRepository $screenings,
         private ScreeningPromptFactory $prompts,
+        private RecruitingScope $scope,
     ) {}
 
     /**
@@ -89,9 +90,10 @@ final readonly class ScreeningService
      *
      * @return Collection<int, CandidateScreening>
      */
-    public function forCandidate(Candidate $candidate): Collection
+    public function forCandidate(User $actor, Candidate $candidate): Collection
     {
-        $list = $this->screenings->latestForCandidate($candidate->id);
+        $scope = $this->scope->for($actor);
+        $list = $this->screenings->latestForCandidate($candidate->id, $scope);
         $polled = 0;
         foreach ($list as $screening) {
             if ($screening->status !== CandidateScreening::PENDING || $screening->ai_request_id === null || $polled >= self::REFRESH_LIMIT) {
@@ -104,7 +106,7 @@ final readonly class ScreeningService
             }
         }
 
-        return $polled === 0 ? $list : $this->screenings->latestForCandidate($candidate->id);
+        return $polled === 0 ? $list : $this->screenings->latestForCandidate($candidate->id, $scope);
     }
 
     /** @return array<string, int|string|bool> counters for the ai.screen job */

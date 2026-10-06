@@ -21,8 +21,6 @@
   "region \"Скринінг ШІ\""
  ],
  "interactive": [
-  "button \"Next page\"",
-  "button \"Previous page\" [disabled]",
   "button \"Автоприховування меню\"",
   "button \"Адміністрування 9 нових\"",
   "button \"Записати\" [disabled]",
@@ -30,9 +28,11 @@
   "button \"Згорнути меню\" [expanded]",
   "button \"Люди 70 нових\"",
   "button \"Меню користувача\"",
+  "button \"Наступна сторінка\"",
   "button \"Новий кандидат\"",
   "button \"Перемістити\"",
   "button \"Персональні дані\"",
+  "button \"Попередня сторінка\" [disabled]",
   "button \"Продуктивність\"",
   "button \"Рекрутинг\" [expanded]",
   "button \"Сервіси\"",
