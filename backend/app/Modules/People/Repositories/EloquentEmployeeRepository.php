@@ -197,7 +197,8 @@ final class EloquentEmployeeRepository implements EmployeeRepository
             return;
         }
         // $dir is one of two literals above, never request text.
-        $q->orderByRaw('('.$related->toSql().') '.$dir.' nulls last', $related->getBindings())
+        $q->orderByRaw('case when ('.$related->toSql().') is null then 1 else 0 end', $related->getBindings())
+            ->orderByRaw('('.$related->toSql().') '.$dir, $related->getBindings())
             ->orderBy('employees.full_name')
             ->orderBy('employees.id');
     }

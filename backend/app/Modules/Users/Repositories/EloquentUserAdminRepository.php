@@ -138,7 +138,8 @@ final class EloquentUserAdminRepository implements UserAdminRepository
             UserSort::Status => 'users.status',
             UserSort::LastLogin => 'users.last_login_at',
         };
-        $query->orderByRaw($column.' '.($descending ? 'desc' : 'asc').' nulls last')
+        $query->orderByRaw('case when '.$column.' is null then 1 else 0 end')
+            ->orderBy($column, $descending ? 'desc' : 'asc')
             ->orderBy('users.name')
             ->orderBy('users.id');
     }

@@ -84,7 +84,8 @@ final class EloquentDictionaryRepository implements DictionaryRepository
             DictionarySort::Status => 'status',
             DictionarySort::City => '(select cities.name from cities where cities.id = branches.city_id)',
         };
-        $query->orderByRaw($column.' '.($descending ? 'desc' : 'asc').' nulls last')->orderBy('name')->orderBy('id');
+        $query->orderByRaw('case when '.$column.' is null then 1 else 0 end')
+            ->orderByRaw($column.' '.($descending ? 'desc' : 'asc'))->orderBy('name')->orderBy('id');
     }
 
     private static function withoutCity(DictionarySort $sort): DictionarySort

@@ -111,7 +111,8 @@ final class EloquentAuditLogRepository implements AuditLogRepository
             AuditSort::Entity => ['audit_log.entity_type', 'audit_log.entity_id'],
         };
         foreach ($columns as $column) {
-            $q->orderByRaw($column.' '.$dir.' nulls last');
+            $q->orderByRaw('case when '.$column.' is null then 1 else 0 end')
+                ->orderByRaw($column.' '.$dir);
         }
         $q->orderByDesc('audit_log.id');
     }

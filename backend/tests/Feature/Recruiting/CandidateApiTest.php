@@ -121,8 +121,8 @@ final class CandidateApiTest extends TestCase
 
     public function test_candidates_without_contacts_are_allowed_many_times(): void
     {
-        Candidate::factory()->count(2)->create(['phone' => null, 'email' => null, 'telegram_username' => null]);
-        $this->assertSame(2, Candidate::query()->whereNull('phone')->count());
+        Candidate::factory()->count(3)->create(['phone' => null, 'email' => null, 'telegram_username' => null]);
+        $this->assertSame(3, Candidate::query()->whereNull('phone')->whereNull('email')->whereNull('telegram_username')->count());
     }
 
     public function test_invalid_contacts_and_roles(): void

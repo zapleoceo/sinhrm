@@ -51,7 +51,13 @@ final class EloquentCandidateRepository implements CandidateRepository
             ->when($filter->source, fn (Builder $q, CandidateSource $s) => $q->where('source', $s->value))
             ->when($filter->ownerId, fn (Builder $q, int $id) => $q->where('owner_id', $id))
             ->when($filter->channelId, fn (Builder $q, int $id) => $q->where('channel_id', $id))
-            ->when($filter->sort === 'screening_score', fn (Builder $q) => $q->orderByRaw('screening_score desc nulls last'))
+            ->when($filter->sort === 'screening_score', function (Builder $q): void {
+                if (DB::getDriverName() === 'mysql') {
+                    $q->orderByRaw('screening_score is null')->orderByDesc('screening_score');
+                } else {
+                    $q->orderByRaw('screening_score desc nulls last');
+                }
+            })
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->paginate($filter->perPage);
