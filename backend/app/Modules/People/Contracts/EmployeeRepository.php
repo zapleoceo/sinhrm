@@ -61,7 +61,10 @@ interface EmployeeRepository
      */
     public function pendingTerminationEvents(): array;
 
-    /** Clears termination_event_pending without model events (a technical flag, not an audited change). */
+    /** Failed deliveries in a row after +1 (atomic, no model events: a technical counter, not an audited change). */
+    public function bumpTerminationEventAttempts(int $id): int;
+
+    /** Clears termination_event_pending and the attempts counter without model events (technical, not audited). */
     public function markTerminationEventSent(int $id): void;
 
     /** @param  array<string, mixed>  $attributes */

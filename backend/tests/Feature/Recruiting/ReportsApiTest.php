@@ -10,6 +10,7 @@ use App\Modules\Directory\Models\Branch;
 use App\Modules\Recruiting\DTO\MoveData;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\RejectReason;
 use App\Modules\Recruiting\Services\ApplicationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -124,6 +125,40 @@ final class ReportsApiTest extends TestCase
             ->assertJsonPath('data.by_stage', [])->assertJsonPath('data.by_recruiter', []);
         $this->actingAs($this->recruiter)->getJson('/api/reports/reject-reasons?from=2026-01-01&to=2026-01-31')->assertOk()
             ->assertJsonPath('data.totals.total', 0)->assertJsonPath('data.by_stage', [])->assertJsonPath('data.by_recruiter', []);
+    }
+
+    public function test_reject_reasons_visibility_of_hiring_manager_interviewer_and_shared_candidate(): void
+    {
+        $reason = RejectReason::query()->orderBy('id')->firstOrFail();
+        $moves = $this->app->make(ApplicationService::class);
+        $mine = $this->vacancyIn($this->south);
+        $foreign = $this->vacancyIn($this->south);
+        $manager = $this->userWith(UserRole::Employee);
+        $mine->forceFill(['hiring_manager_id' => $manager->id])->save();
+        $interviewer = $this->userWith(UserRole::Employee);
+
+        $shared = Candidate::factory()->create(['phone' => '+380671000021']);
+        $mineApp = $moves->apply(null, $shared, $mine);
+        $foreignApp = $moves->apply(null, $shared, $foreign); // the same candidate also applied to a vacancy nobody here manages
+        $other = $this->applied($foreign, ['phone' => '+380671000022']);
+        $admin = $this->userWith(UserRole::Admin);
+        foreach ([$mineApp, $foreignApp, $other] as $application) {
+            $moves->move($admin, $application, new MoveData($this->rejectStage()->id, null, $reason->id));
+        }
+        $foreignApp->interviewers()->attach($interviewer->id);
+
+        // Hiring manager: rejections of their own vacancy only (1 of the 3 in the south).
+        $this->actingAs($manager)->getJson('/api/reports/reject-reasons?from=2026-09-01&to=2026-09-30')->assertOk()
+            ->assertJsonPath('data.totals.total', 1);
+        // Interviewer: only the application they are assigned to, not the candidate's other applications.
+        $this->actingAs($interviewer)->getJson('/api/reports/reject-reasons?from=2026-09-01&to=2026-09-30')->assertOk()
+            ->assertJsonPath('data.totals.total', 1);
+        // North recruiter: the shared candidate's southern applications are not disclosed (only the 1 of setUp).
+        $this->actingAs($this->recruiter)->getJson('/api/reports/reject-reasons?from=2026-09-01&to=2026-09-30')->assertOk()
+            ->assertJsonPath('data.totals.total', 1);
+        // A south viewer sees the three southern rejections, never the northern one.
+        $this->actingAs($this->userWith(UserRole::Viewer, [$this->south]))->getJson('/api/reports/reject-reasons?from=2026-09-01&to=2026-09-30')->assertOk()
+            ->assertJsonPath('data.totals.total', 3);
     }
 
     public function test_date_params_are_validated(): void

@@ -139,9 +139,16 @@ final class EloquentEmployeeRepository implements EmployeeRepository
             ->all();
     }
 
+    public function bumpTerminationEventAttempts(int $id): int
+    {
+        Employee::query()->whereKey($id)->increment('termination_event_attempts');
+
+        return (int) Employee::query()->whereKey($id)->value('termination_event_attempts');
+    }
+
     public function markTerminationEventSent(int $id): void
     {
-        Employee::query()->whereKey($id)->update(['termination_event_pending' => false]);
+        Employee::query()->whereKey($id)->update(['termination_event_pending' => false, 'termination_event_attempts' => 0]);
     }
 
     public function create(array $attributes): Employee

@@ -30,7 +30,8 @@ use Throwable;
  *   that day, ScheduledTerminationJob applies it from 00:00 Kyiv of the next day (owner decision 2026-10-07).
  * - Applying: status terminated, the linked login blocked with every credential revoked (AccountBlocker), then
  *   EmployeeTerminated (Workflows offboarding, Pulse exit survey) after the commit. A failing listener is logged and
- *   the event re-sent by the next cron run (employees.termination_event_pending) until it goes through.
+ *   the event re-sent by the next cron run (employees.termination_event_pending) until it goes through; failures are
+ *   counted (termination_event_attempts) and past EVENT_ATTEMPTS_WARN_AFTER a warning people.termination_event_stuck is logged.
  * - Restore: working again; the login is unblocked only if that termination blocked it and nobody blocked it since.
  * - Scheduling a future date dispatches EmployeeTerminationScheduled (Pulse opens the exit survey while the person still
  *   has access); cancelling dispatches EmployeeTerminationCancelled. Both are isolated: a failing listener is logged.
@@ -41,6 +42,9 @@ use Throwable;
  */
 final readonly class TerminationService
 {
+    /** More failed deliveries of EmployeeTerminated than this in a row → warning people.termination_event_stuck. */
+    public const int EVENT_ATTEMPTS_WARN_AFTER = 5;
+
     public function __construct(
         private EmployeeRepository $employees,
         private EmployeeService $records,
@@ -184,6 +188,7 @@ final readonly class TerminationService
 
             return $firedAt;
         });
+        $this->employees->markTerminationEventSent($employee->id); // drops the retry counter of the old termination
         $this->log->info('people.employee_restored', ['id' => $employee->id, 'by' => $actor->id]);
         $restored = $this->records->find($employee->id);
         $this->events->dispatch(new EmployeeRestored($restored, $firedAt));
@@ -247,6 +252,11 @@ final readonly class TerminationService
             $this->events->dispatch(new EmployeeTerminated($this->records->find($employeeId)));
         } catch (Throwable $e) {
             $this->log->error('people.termination_event_failed', ['id' => $employeeId, 'error' => $e::class]);
+            $attempts = $this->employees->bumpTerminationEventAttempts($employeeId);
+            if ($attempts > self::EVENT_ATTEMPTS_WARN_AFTER) {
+                // A permanent error would be retried on every cron run forever: make it loud (id and counter only).
+                $this->log->warning('people.termination_event_stuck', ['id' => $employeeId, 'attempts' => $attempts]);
+            }
 
             return false;
         }

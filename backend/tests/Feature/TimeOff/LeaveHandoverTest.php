@@ -117,7 +117,8 @@ final class LeaveHandoverTest extends TestCase
         $this->assertSame($peer->id, $task->assignee_id);
         $this->assertSame('leave_handover', $task->type->value);
         $this->assertSame('Заміщення: Worker Person відсутній з 12.10.2026 по 16.10.2026', $task->title);
-        $this->assertSame('2026-10-12', $task->due_at->toDateString());
+        // Day of the first absence in the storage zone (config app.timezone), whatever the application zone is.
+        $this->assertSame('2026-10-12', $task->due_at->copy()->setTimezone((string) config('app.timezone'))->toDateString());
         $this->assertSame('timeoff:handover:'.$id, $task->rule_key);
         $this->assertNull($task->done_at);
         $this->actingAs($peer)->getJson('/api/tasks?mine=1&source=timeoff')->assertOk()->assertJsonCount(1, 'data');
@@ -129,6 +130,21 @@ final class LeaveHandoverTest extends TestCase
 
         $this->actingAs($lead)->postJson("/api/timeoff/requests/$id/cancel")->assertOk();
         $this->assertNotNull($task->fresh()?->done_at);
+    }
+
+    public function test_sick_leave_task_title_does_not_reveal_the_leave_type_or_a_reason(): void
+    {
+        $sick = LeaveType::query()->where('code', 'sick')->firstOrFail();
+        $this->file([
+            'leave_type_id' => $sick->id, 'handover_to_employee_id' => $this->org['peer']->id,
+            'comment' => 'Synthetic private reason: flu',
+        ])->assertCreated();
+        $id = LeaveRequest::query()->sole()->id;
+        $this->actingAs($this->userOf($this->org['lead']))->postJson("/api/timeoff/requests/$id/approve")->assertOk();
+
+        $task = Task::query()->sole();
+        $this->assertSame('Заміщення: Worker Person відсутній з 12.10.2026 по 16.10.2026', $task->title);
+        $this->assertDoesNotMatchRegularExpression('/больнич|лікарнян|sick|хвороб|private reason|flu/iu', $task->title.' '.(string) $task->link);
     }
 
     public function test_rejection_leaves_no_open_task(): void

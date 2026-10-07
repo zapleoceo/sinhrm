@@ -73,7 +73,10 @@
 смещением от `fired_at` при запланированном увольнении создаются уже просроченными); `probation_end` — в тике: неуволенные сотрудники, у которых `hired_at + probation_days` попадает в
 последние 7 дней (`PROBATION_WINDOW_DAYS`, переживает пропуски cron), якорь — эта дата. Повторное событие того же случая (тот же триггер и та же дата-якорь) не создаёт
 второй запуск; повторный найм с новой датой приёма — создаёт (уникальный индекс + `insertOrIgnore`, безопасно при гонке). Ошибка одного шаблона пишется в лог
-`workflows.trigger_failed` и **не ломает** запрос найма/увольнения.
+`workflows.trigger_failed` и **не ломает** запрос найма/увольнения. Для `employee_terminated` сбой запуска после того, как
+перебраны все шаблоны, пробрасывается (`Exceptions/WorkflowTriggerFailed`): слушатель падает, People оставляет событие
+`pending` и повторяет его на следующем прогоне `people.terminations` ([people.md](people.md)); уже запущенные шаблоны не
+дублируются (`trigger_key`), упавший запускается ровно один раз. Для `employee_hired` и `probation_end` сбой по-прежнему только в лог.
 
 ### Выполнение (`Services/StepRunner`, задание `workflows.tick`)
 `Services/WorkflowTickJob` зарегистрирован как `Core\Contracts\ScheduledJob` → `POST /api/ops/jobs/run` (cron ~30 мин):
