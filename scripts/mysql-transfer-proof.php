@@ -64,7 +64,11 @@ $constraints = [];
 foreach ($relations as $relation) {
     $child = $relation['table_name'];
     $parent = $relation['referenced_table_name'];
-    if ($child !== $parent) {
+    // scripts.active_version_id is a nullable back-reference to script_versions.
+    // Insert scripts first with NULL, then versions, then restore the back-reference.
+    $deferredScriptVersion = $child === 'scripts' && $relation['column_name'] === 'active_version_id'
+        && $parent === 'script_versions';
+    if ($child !== $parent && ! $deferredScriptVersion) {
         $dependencies[$child][$parent] = true;
     }
     $key = $child.':'.$relation['constraint_name'];
@@ -103,6 +107,7 @@ foreach ($target->query("SELECT table_name, column_name FROM information_schema.
 }
 
 $copied = 0;
+$deferredScriptVersions = [];
 foreach ($ordered as $table) {
     $pgTable = quoted($table, 'pgsql');
     $myTable = quoted($table, 'mysql');
@@ -135,11 +140,23 @@ foreach ($ordered as $table) {
             }
         }
         unset($value);
+        if ($table === 'scripts' && $row['active_version_id'] !== null) {
+            $deferredScriptVersions[(int) $row['id']] = $row['active_version_id'];
+            $row['active_version_id'] = null;
+        }
         insertRow($target, $table, $row, 'mysql');
         $copied++;
     }
     if ((int) $target->query("SELECT COUNT(*) FROM $myTable")->fetchColumn() !== $sourceCount) {
         throw new RuntimeException("Row count mismatch in $table");
+    }
+}
+
+foreach ($deferredScriptVersions as $scriptId => $versionId) {
+    $update = $target->prepare('UPDATE scripts SET active_version_id = ? WHERE id = ?');
+    $update->execute([$versionId, $scriptId]);
+    if ($update->rowCount() !== 1) {
+        throw new RuntimeException('Script version back-reference was not restored');
     }
 }
 

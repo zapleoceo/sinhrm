@@ -82,6 +82,12 @@ final class MySqlTransferProofTest extends TestCase
             'tags' => '["Україна","🙂"]', 'audience' => '{"type":"all"}',
         ]);
         DB::table('kb_article_versions')->insert(['article_id' => $articleId, 'version' => 1, 'title' => 'Transfer article', 'body_md' => $body]);
+        $scriptId = DB::table('scripts')->insertGetId(['name' => 'Transfer script', 'channel' => 'call']);
+        $versionId = DB::table('script_versions')->insertGetId([
+            'script_id' => $scriptId, 'version' => 1, 'steps' => '[]', 'objections' => '[]',
+            'templates' => '[]', 'followups' => '[]', 'next_step_patterns' => '{}',
+        ]);
+        DB::table('scripts')->where('id', $scriptId)->update(['active_version_id' => $versionId]);
         app(SecretVault::class)->put('transfer-proof', 'fixture', self::SECRET, $user->id);
         $this->assertSame(1, Application::query()->where('candidate_id', $candidate->id)->count());
         $this->assertGreaterThan(65535, strlen($body));
@@ -119,6 +125,9 @@ final class MySqlTransferProofTest extends TestCase
         $this->assertStringContainsString('Марія', $article->body_html);
         $this->assertSame(['Україна', '🙂'], json_decode($article->tags, true, 512, JSON_THROW_ON_ERROR));
         $this->assertSame($this->longBody(), DB::table('kb_article_versions')->where('article_id', $article->id)->value('body_md'));
+        $script = DB::table('scripts')->where('name', 'Transfer script')->sole();
+        $version = DB::table('script_versions')->where('script_id', $script->id)->sole();
+        $this->assertSame($version->id, $script->active_version_id);
         $this->assertSame('2026-01-02 03:04:05', DB::table('document_templates')->where('name', 'Transfer template')->value('created_at'));
         $sourceCiphertext = $source->query("SELECT value FROM integration_secrets WHERE name = 'fixture'")->fetchColumn();
         $this->assertSame($sourceCiphertext, DB::table('integration_secrets')->where('name', 'fixture')->value('value'));
