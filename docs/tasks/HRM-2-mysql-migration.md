@@ -2,7 +2,7 @@
 
 ## Стан
 - Час: 2026-10-07 UTC.
-- Worktree / branch / base SHA / last pushed head: `D:/Projects/sinhrm-wt/mysql-migration`, `feat/mysql-migration`, `fbb18bfa1eeb526cc1517846ab765d3a70140dba` (`origin/main`), `11c96fb1b7138f1f71e2c8f5d1f37c027c6b804c`. Draft PR #169.
+- Worktree / branch / base SHA: `D:/Projects/sinhrm-wt/mysql-migration`, `feat/mysql-migration`, `fbb18bfa1eeb526cc1517846ab765d3a70140dba` (`origin/main`). Draft PR #169 tracks the pushed head.
 - Текущий шаг: application compatibility and MySQL CI rehearsal. Production stays on PostgreSQL/Neon.
 - Сделано / evidence: isolated worktree; reviewed repository rules, handoff and backup guide; Vercel UI confirmed `sinhrm-api` and `sinhrm` on Hobby, production API variables include Neon PostgreSQL integration and no visible MySQL variables. Secret values were not opened. Source defaults, Vercel environment and production traffic were not changed. Local docs/tests/worklog policy checks passed. Independent Astra reviewed committed head and the Reports/MySQL 8.4 delta, found and verified the PostgreSQL rollback fix. CI run 37669398014 and synthetic restore run 37669398064 belong to the previously pushed SHA; the latter passed.
 - Непроверено: CI MySQL job, full test suite, target MySQL version/provider/TLS, data export/import, production restore and rollback, live feature matrix.
