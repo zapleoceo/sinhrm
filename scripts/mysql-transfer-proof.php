@@ -46,18 +46,24 @@ function canonicalValue(mixed $value, string $type): mixed
         return in_array($value, [true, 't', '1', 1], true) ? '1' : '0';
     }
     if (in_array($type, ['json', 'jsonb'], true)) {
-        $decoded = json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
+        $decoded = json_decode((string) $value, false, 512, JSON_THROW_ON_ERROR);
         $sort = static function (mixed $item) use (&$sort): mixed {
-            if (! is_array($item)) {
-                return $item;
+            if ($item instanceof stdClass) {
+                $properties = get_object_vars($item);
+                ksort($properties);
+                foreach ($properties as &$child) {
+                    $child = $sort($child);
+                }
+                unset($child);
+
+                return (object) $properties;
             }
-            if (! array_is_list($item)) {
-                ksort($item);
+            if (is_array($item)) {
+                foreach ($item as &$child) {
+                    $child = $sort($child);
+                }
+                unset($child);
             }
-            foreach ($item as &$child) {
-                $child = $sort($child);
-            }
-            unset($child);
 
             return $item;
         };
@@ -69,6 +75,11 @@ function canonicalValue(mixed $value, string $type): mixed
     }
 
     return (string) $value;
+}
+
+if (canonicalValue('{}', 'jsonb') === canonicalValue('[]', 'jsonb')
+    || canonicalValue('{"0":"x"}', 'jsonb') === canonicalValue('["x"]', 'jsonb')) {
+    throw new RuntimeException('JSON object and array must remain distinct');
 }
 
 if ($argv[1] === 'replay-candidate') {
