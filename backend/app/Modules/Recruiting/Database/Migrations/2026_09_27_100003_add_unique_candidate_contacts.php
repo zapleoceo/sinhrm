@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -23,6 +24,13 @@ return new class extends Migration
     public function up(): void
     {
         foreach (self::COLUMNS as $column => $plain) {
+            if (DB::getDriverName() === 'pgsql') {
+                // Keep the original index DDL for already-deployed PostgreSQL migration history.
+                DB::statement("DROP INDEX IF EXISTS {$plain}");
+                DB::statement("CREATE UNIQUE INDEX candidates_{$column}_unique ON candidates ({$column}) WHERE {$column} IS NOT NULL");
+
+                continue;
+            }
             Schema::table('candidates', function (Blueprint $table) use ($column, $plain): void {
                 $table->dropIndex($plain);
                 $table->unique($column, "candidates_{$column}_unique");
@@ -33,6 +41,12 @@ return new class extends Migration
     public function down(): void
     {
         foreach (self::COLUMNS as $column => $plain) {
+            if (DB::getDriverName() === 'pgsql') {
+                DB::statement("DROP INDEX IF EXISTS candidates_{$column}_unique");
+                DB::statement("CREATE INDEX {$plain} ON candidates ({$column})");
+
+                continue;
+            }
             Schema::table('candidates', function (Blueprint $table) use ($column, $plain): void {
                 $table->dropUnique("candidates_{$column}_unique");
                 $table->index($column, $plain);
