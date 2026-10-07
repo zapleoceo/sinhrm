@@ -39,6 +39,8 @@ final class WorkflowRunsTest extends TestCase
 
     private const string SECRET = 'synthetic-signing-key-0042'; // gitleaks:allow (test fixture, not a real key)
 
+    private bool $failStepCreation = false;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -161,9 +163,9 @@ final class WorkflowRunsTest extends TestCase
     {
         $this->workflow([['create_task', -1, 'hr_admin']], ['kind' => 'offboarding', 'trigger' => 'employee_terminated']);
         $employee = $this->employee();
-        $state = (object) ['failing' => true];
-        WorkflowRunStep::creating(static function () use ($state): void {
-            if ($state->failing) {
+        $this->failStepCreation = true;
+        WorkflowRunStep::creating(function (): void {
+            if ($this->failStepCreation) {
                 throw new RuntimeException('steps table down');
             }
         });
@@ -174,7 +176,7 @@ final class WorkflowRunsTest extends TestCase
         $this->assertSame(0, WorkflowRun::query()->where('employee_id', $employee->id)->count());
         $this->assertTrue($employee->refresh()->termination_event_pending);
 
-        $state->failing = false;
+        $this->failStepCreation = false;
         $job = $this->app->make(ScheduledTerminationJob::class);
         $this->assertSame(1, $job->run(Carbon::now())['people_termination_events_resent']);
         $this->assertSame(1, WorkflowRun::query()->where('employee_id', $employee->id)->count());
