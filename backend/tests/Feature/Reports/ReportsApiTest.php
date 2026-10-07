@@ -167,6 +167,8 @@ final class ReportsApiTest extends TestCase
         $this->assertEqualsCanonicalizing(['Lead Person', 'Worker Person', 'Peer Person'], $names);
         $run($admin, ['dataset' => 'employees', 'columns' => ['full_name', 'birth_date'], 'filters' => [['column' => 'full_name', 'op' => 'contains', 'value' => 'work']]])
             ->assertOk()->assertJsonPath('data.rows', [['full_name' => 'Worker Person', 'birth_date' => '1990-05-01']]);
+        $run($admin, ['dataset' => 'employees', 'columns' => ['full_name'], 'filters' => [['column' => 'full_name', 'op' => 'contains', 'value' => 'WORK']]])
+            ->assertOk()->assertJsonPath('data.rows', [['full_name' => 'Worker Person']]);
         $run($admin, ['dataset' => 'employees', 'columns' => ['full_name'], 'filters' => [['column' => 'birth_date', 'op' => 'gte', 'value' => '1990-05-01']]])
             ->assertOk()->assertJsonCount(1, 'data.rows');
         $grouped = $run($admin, ['dataset' => 'employees', 'group_by' => 'status', 'aggregate' => ['fn' => 'count']])->assertOk()->json('data');

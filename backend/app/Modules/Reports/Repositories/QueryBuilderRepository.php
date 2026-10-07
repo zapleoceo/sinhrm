@@ -111,7 +111,8 @@ final class QueryBuilderRepository implements BuilderRepository
         }
         if ($op === 'contains') {
             $pattern = Like::contains(mb_strtolower((string) $value), Like::PORTABLE);
-            $query->whereRaw("lower(cast({$expr} as varchar(255))) like ? escape '!'", [$pattern]);
+            $castType = DB::getDriverName() === 'mysql' ? 'char(255)' : 'varchar(255)';
+            $query->whereRaw("lower(cast({$expr} as {$castType})) like ? escape '!'", [$pattern]);
 
             return;
         }
