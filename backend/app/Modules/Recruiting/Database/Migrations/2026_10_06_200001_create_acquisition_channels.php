@@ -63,9 +63,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('candidates', function (Blueprint $table): void {
+            // MySQL will not drop an index that still supports a foreign key.
+            $table->dropForeign(['channel_id']);
             $table->dropIndex(['channel_id']);
-            $table->dropConstrainedForeignId('channel_id');
-            $table->dropColumn('added_via');
+            $table->dropColumn(['channel_id', 'added_via']);
         });
         Schema::dropIfExists('channel_utm_rules');
         Schema::dropIfExists('acquisition_channel_costs');

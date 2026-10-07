@@ -102,6 +102,10 @@ jobs:
           key: composer-${{ hashFiles('backend/composer.lock') }}
       - run: composer install --no-interaction --no-progress --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
+      - name: Verify MySQL test connection
+        run: |
+          test -z "${DB_URL:-}" && test -z "${DATABASE_URL:-}"
+          php -r '$app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $db = Illuminate\Support\Facades\DB::connection(); $version = (string) $db->selectOne("SELECT VERSION() AS version")->version; if ($db->getDriverName() !== "mysql" || !str_starts_with($version, "8.4.")) { fwrite(STDERR, "Unexpected MySQL test driver/version\n"); exit(1); } echo "MySQL 8.4 connection verified\n";'
       - name: MySQL migrations and feature suite
         run: php artisan test --coverage --min=70
 

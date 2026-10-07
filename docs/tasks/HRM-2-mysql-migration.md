@@ -74,3 +74,7 @@ The existing `backend/tests/Feature/<Module>` suites cover the modules below. Th
 ## Release gate
 
 No production DB switch, destructive seed/reset, source DB deletion or new service/plan/credentials before target details, backup and isolated restore are verified. Keep source database and `APP_KEY` for rollback. A draft PR, green CI on the final SHA and independent review are required before any authorized deployment.
+
+### CI checkpoint, 2026-10-07
+
+Run 37670048366 reached MySQL 8.4.11 but failed because Laravel emitted `JSON DEFAULT '{}'` for `integrations.settings`; the other 1,167 failures cascaded from migration setup. This branch now omits that MySQL database default, preserves the Eloquent default, uses binary collation for opaque IDs and URLs, expands accepted Unicode text fields to LONGTEXT, and adds corresponding database roundtrip tests. These changes require a fresh full CI run before any merge or cutover. Production remains on PostgreSQL.
