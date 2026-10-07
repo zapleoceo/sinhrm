@@ -15,6 +15,7 @@ $target = new PDO('mysql:host=127.0.0.1;port=3306;dbname=app_transfer_target;cha
 foreach ([$source, $target] as $connection) {
     $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $connection->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $connection->setAttribute(PDO::ATTR_CASE, PDO::CASE_LOWER);
 }
 
 function quoted(string $name, string $driver): string
@@ -56,7 +57,9 @@ if ($tables !== $targetTables) {
     throw new RuntimeException('Source and target table inventories differ');
 }
 
-$relations = $target->query("SELECT table_name, column_name, referenced_table_name, referenced_column_name, constraint_name
+$relations = $target->query("SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name,
+    REFERENCED_TABLE_NAME AS referenced_table_name, REFERENCED_COLUMN_NAME AS referenced_column_name,
+    CONSTRAINT_NAME AS constraint_name
     FROM information_schema.key_column_usage WHERE table_schema = DATABASE() AND referenced_table_name IS NOT NULL")
     ->fetchAll();
 $dependencies = array_fill_keys($tables, []);
@@ -102,7 +105,7 @@ foreach ($source->query("SELECT table_name, column_name, data_type FROM informat
     $sourceTypes[$column['table_name']][$column['column_name']] = $column['data_type'];
 }
 $keys = [];
-foreach ($target->query("SELECT table_name, column_name FROM information_schema.key_column_usage WHERE table_schema = DATABASE() AND constraint_name = 'PRIMARY' ORDER BY ordinal_position") as $column) {
+foreach ($target->query("SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name FROM information_schema.key_column_usage WHERE table_schema = DATABASE() AND constraint_name = 'PRIMARY' ORDER BY ordinal_position") as $column) {
     $keys[$column['table_name']][] = $column['column_name'];
 }
 
