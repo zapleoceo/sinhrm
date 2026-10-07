@@ -33,11 +33,15 @@ final class MySqlTransferProofTest extends TestCase
         if (! in_array($phase, ['seed', 'verify', 'write', 'rollback'], true)) {
             $this->markTestSkipped('Only the isolated cross-database workflow runs this proof.');
         }
+        $this->assertSame('true', getenv('GITHUB_ACTIONS'));
+        $this->assertSame('', (string) getenv('DB_URL'));
+        $this->assertSame('', (string) getenv('DATABASE_URL'));
         $driver = in_array($phase, ['seed', 'rollback'], true) ? 'pgsql' : 'mysql';
         $database = $driver === 'pgsql' ? 'app_transfer_source' : 'app_transfer_target';
         $this->assertSame('testing', config('app.env'));
         $this->assertSame($driver, DB::connection()->getDriverName());
-        $this->assertSame('127.0.0.1', config("database.connections.$driver.host"));
+        $this->assertSame('127.0.0.1', DB::connection()->getConfig('host'));
+        $this->assertEmpty(DB::connection()->getConfig('url'));
         $this->assertSame($database, DB::connection()->getDatabaseName());
     }
 
@@ -122,7 +126,10 @@ final class MySqlTransferProofTest extends TestCase
 
         $article = DB::table('kb_articles')->where('title', 'Transfer article')->sole();
         $this->assertSame($this->longBody(), $article->body_md);
-        $this->assertStringContainsString('Марія', $article->body_html);
+        $expectedHtml = '<p>'.htmlspecialchars($this->longBody(), ENT_QUOTES, 'UTF-8').'</p>';
+        $this->assertSame($expectedHtml, $article->body_html);
+        $sourceHtml = $source->query('SELECT body_html FROM kb_articles WHERE id = '.$article->id)->fetchColumn();
+        $this->assertSame(hash('sha256', $sourceHtml), hash('sha256', $article->body_html));
         $this->assertSame(['Україна', '🙂'], json_decode($article->tags, true, 512, JSON_THROW_ON_ERROR));
         $this->assertSame($this->longBody(), DB::table('kb_article_versions')->where('article_id', $article->id)->value('body_md'));
         $script = DB::table('scripts')->where('name', 'Transfer script')->sole();

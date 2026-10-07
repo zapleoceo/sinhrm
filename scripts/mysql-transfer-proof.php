@@ -36,6 +36,41 @@ function insertRow(PDO $db, string $table, array $row, string $driver): void
     $db->prepare($sql)->execute(array_values($row));
 }
 
+/** Normalize driver-specific representations without printing any row contents. */
+function canonicalValue(mixed $value, string $type): mixed
+{
+    if ($value === null) {
+        return null;
+    }
+    if ($type === 'boolean') {
+        return in_array($value, [true, 't', '1', 1], true) ? '1' : '0';
+    }
+    if (in_array($type, ['json', 'jsonb'], true)) {
+        $decoded = json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
+        $sort = static function (mixed $item) use (&$sort): mixed {
+            if (! is_array($item)) {
+                return $item;
+            }
+            if (! array_is_list($item)) {
+                ksort($item);
+            }
+            foreach ($item as &$child) {
+                $child = $sort($child);
+            }
+            unset($child);
+
+            return $item;
+        };
+
+        return json_encode($sort($decoded), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    }
+    if ($type === 'timestamp with time zone') {
+        return (new DateTimeImmutable((string) $value))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
+    }
+
+    return (string) $value;
+}
+
 if ($argv[1] === 'replay-candidate') {
     // One synthetic post-cutover insert is replayed before rollback to the retained source.
     $row = $target->query("SELECT * FROM candidates WHERE email = 'after-cutover@example.test'")->fetch();
@@ -129,10 +164,21 @@ foreach ($ordered as $table) {
     foreach ($rows as $row) {
         $where = implode(' AND ', array_map(fn ($key) => quoted($key, 'mysql').' = ?', $keys[$table]));
         $parameters = array_map(fn ($key) => $row[$key], $keys[$table]);
-        $exists = $target->prepare("SELECT 1 FROM $myTable WHERE $where LIMIT 1");
+        $exists = $target->prepare("SELECT * FROM $myTable WHERE $where LIMIT 1");
         $exists->execute($parameters);
-        if ($exists->fetchColumn()) {
-            continue; // Migration-seeded baseline row already exists in the fresh target.
+        $baseline = $exists->fetch();
+        if ($baseline !== false) {
+            foreach ($row as $column => $value) {
+                // Migration-generated wall-clock timestamps differ between the two fresh schemas.
+                if (in_array($column, ['created_at', 'updated_at'], true)) {
+                    continue;
+                }
+                $type = $sourceTypes[$table][$column] ?? '';
+                if (canonicalValue($value, $type) !== canonicalValue($baseline[$column] ?? null, $type)) {
+                    throw new RuntimeException("Migration baseline mismatch in $table.$column");
+                }
+            }
+            continue;
         }
         foreach ($row as $column => &$value) {
             $type = $sourceTypes[$table][$column] ?? '';
