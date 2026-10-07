@@ -228,3 +228,4 @@ curl -i "https://sinhrm.vercel.app/api/integrations"   # без сессии →
 UI parity инвентарь desktop/mobile осознанно дополнен тремя disabled-ссылками подключения Google для синтетического сценария с ненастроенным OAuth. Реальные screenshots CI просмотрены: новые элементы ожидаемы, прежние контролы не удалены; окончательная проверка нового состояния выполняется повторным CI.
 
 Connected/error remain automatic observations: the mode control shows the current translated state as a disabled option, while only off/demo can be assigned manually. Mobile deep-link cards reserve space above their header for the sticky navigation bar; configured-state CI checks both geometry and displayed mode.
+MySQL compatibility: `integrations.settings` has no database JSON default on MySQL; the Integration model supplies an empty object for lazily created rows. PostgreSQL retains its existing default.

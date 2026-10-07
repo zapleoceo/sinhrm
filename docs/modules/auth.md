@@ -212,3 +212,4 @@ CORS (`config/cors.php`) открыт только для `api/clipper/*`, то�
 `PATCH /api/auth/me/notifications {approval_emails: bool}` — вимикач листів про погодження («Мій профіль»); `GET /me` повертає `approval_emails`.
 
 Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.
+MySQL compatibility: `google_id` uses `utf8mb4_bin` so distinct Google account identifiers do not merge. The production database remains PostgreSQL until cutover proof passes.

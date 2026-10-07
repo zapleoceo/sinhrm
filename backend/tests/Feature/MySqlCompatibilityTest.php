@@ -11,7 +11,9 @@ use App\Modules\Recruiting\Models\Touchpoint;
 use App\Modules\Recruiting\Repositories\EloquentCandidateRepository;
 use App\Modules\Recruiting\Repositories\EloquentTouchpointRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
@@ -72,5 +74,20 @@ final class MySqlCompatibilityTest extends TestCase
         $this->assertSame($body, DB::table('kb_articles')->where('id', $articleId)->value('body_md'));
         $this->assertSame($rendered, DB::table('kb_articles')->where('id', $articleId)->value('body_html'));
         $this->assertSame($body, DB::table('kb_article_versions')->where('article_id', $articleId)->value('body_md'));
+    }
+
+    public function test_database_cache_session_and_queue_tables_accept_runtime_writes(): void
+    {
+        Cache::store('database')->put('mysql-compatibility', 'persisted', 60);
+        $this->assertSame('persisted', Cache::store('database')->get('mysql-compatibility'));
+
+        $session = app('session')->driver('database');
+        $session->start();
+        $session->put('mysql-compatibility', 'persisted');
+        $session->save();
+        $this->assertTrue(DB::table('sessions')->where('id', $session->getId())->exists());
+
+        Queue::connection('database')->pushRaw('{"job":"compatibility"}');
+        $this->assertTrue(DB::table('jobs')->where('payload', '{"job":"compatibility"}')->exists());
     }
 }

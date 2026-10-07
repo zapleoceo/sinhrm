@@ -81,3 +81,4 @@ Postgres и SQLite.
 ## Доступ к модулю
 
 Ключ модуля `knowledge`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
+MySQL compatibility: article Markdown, rendered HTML and version history use `LONGTEXT` so accepted Unicode bodies exceeding 64 KiB roundtrip.
