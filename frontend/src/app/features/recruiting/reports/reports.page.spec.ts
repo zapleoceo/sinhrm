@@ -93,6 +93,14 @@ describe('ReportsPage funnel cards', () => {
   });
 });
 
+describe('ReportsPage imports', () => {
+  it('renders the period datepicker toggle and the reject view switch (Material modules are imported)', () => {
+    const { el } = render([]);
+    expect(el.querySelector('mat-datepicker-toggle')).not.toBeNull();
+    expect(el.querySelectorAll('[data-testid="reject-view"] mat-button-toggle').length).toBe(3);
+  });
+});
+
 describe('ReportsPage tables: header sort and filter (core/ui/table)', () => {
   async function open(url: string): Promise<{ el: HTMLElement; router: Router; detect: () => Promise<void> }> {
     TestBed.configureTestingModule({

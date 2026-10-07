@@ -161,9 +161,9 @@ final class WorkflowRunsTest extends TestCase
     {
         $this->workflow([['create_task', -1, 'hr_admin']], ['kind' => 'offboarding', 'trigger' => 'employee_terminated']);
         $employee = $this->employee();
-        $failing = true;
-        WorkflowRunStep::creating(static function () use (&$failing): void {
-            if ($failing) {
+        $state = (object) ['failing' => true];
+        WorkflowRunStep::creating(static function () use ($state): void {
+            if ($state->failing) {
                 throw new RuntimeException('steps table down');
             }
         });
@@ -174,7 +174,7 @@ final class WorkflowRunsTest extends TestCase
         $this->assertSame(0, WorkflowRun::query()->where('employee_id', $employee->id)->count());
         $this->assertTrue($employee->refresh()->termination_event_pending);
 
-        $failing = false;
+        $state->failing = false;
         $job = $this->app->make(ScheduledTerminationJob::class);
         $this->assertSame(1, $job->run(Carbon::now())['people_termination_events_resent']);
         $this->assertSame(1, WorkflowRun::query()->where('employee_id', $employee->id)->count());
