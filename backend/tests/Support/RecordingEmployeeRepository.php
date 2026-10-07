@@ -80,6 +80,11 @@ final class RecordingEmployeeRepository implements EmployeeRepository
         return $this->inner->pendingTerminationEvents();
     }
 
+    public function bumpTerminationEventAttempts(int $id): int
+    {
+        return $this->inner->bumpTerminationEventAttempts($id);
+    }
+
     public function markTerminationEventSent(int $id): void
     {
         $this->inner->markTerminationEventSent($id);

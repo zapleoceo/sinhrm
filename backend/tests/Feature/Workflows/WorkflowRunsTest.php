@@ -11,6 +11,7 @@ use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Integrations\Contracts\HostResolver;
 use App\Modules\People\Events\EmployeeHired;
 use App\Modules\People\Models\Employee;
+use App\Modules\People\Services\ScheduledTerminationJob;
 use App\Modules\Scripts\Models\Task;
 use App\Modules\Workflows\Contracts\WorkflowRunRepository;
 use App\Modules\Workflows\Models\WorkflowRun;
@@ -22,6 +23,7 @@ use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use Tests\Support\FakeHostResolver;
 use Tests\Support\GoogleFixtures;
 use Tests\Support\PeopleFixtures;
@@ -153,6 +155,34 @@ final class WorkflowRunsTest extends TestCase
         $step = WorkflowRunStep::query()->where('run_id', $run->id)->sole();
         $this->assertSame('2026-10-18 21:00:00', $step->due_at->format('Y-m-d H:i:s'));
         $this->assertSame($admin->id, $step->assignee_id);
+    }
+
+    public function test_a_failed_offboarding_start_is_retried_by_the_termination_job_with_exactly_one_run(): void
+    {
+        $this->workflow([['create_task', -1, 'hr_admin']], ['kind' => 'offboarding', 'trigger' => 'employee_terminated']);
+        $employee = $this->employee();
+        $failing = true;
+        WorkflowRunStep::creating(static function () use (&$failing): void {
+            if ($failing) {
+                throw new RuntimeException('steps table down');
+            }
+        });
+
+        // The termination itself succeeds, the start failed: no run, the event stays pending.
+        $this->actingAs($this->login(UserRole::Admin))->postJson("/api/people/{$employee->id}/terminate", ['fired_at' => '2026-10-05'])
+            ->assertOk()->assertJsonPath('data.status', 'terminated');
+        $this->assertSame(0, WorkflowRun::query()->where('employee_id', $employee->id)->count());
+        $this->assertTrue($employee->refresh()->termination_event_pending);
+
+        $failing = false;
+        $job = $this->app->make(ScheduledTerminationJob::class);
+        $this->assertSame(1, $job->run(Carbon::now())['people_termination_events_resent']);
+        $this->assertSame(1, WorkflowRun::query()->where('employee_id', $employee->id)->count());
+        $this->assertFalse($employee->refresh()->termination_event_pending);
+
+        // Another pass (and a repeated event) never duplicates the run.
+        $this->assertSame(0, $job->run(Carbon::now())['people_termination_events_resent']);
+        $this->assertSame(1, WorkflowRun::query()->where('employee_id', $employee->id)->count());
     }
 
     public function test_run_keeps_its_snapshot_when_the_template_changes(): void

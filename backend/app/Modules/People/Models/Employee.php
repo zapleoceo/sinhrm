@@ -37,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $anonymized_at personal data erased after offboarding (Privacy)
  * @property string|null $termination_reason
  * @property bool $termination_event_pending EmployeeTerminated still to be (re)sent by ScheduledTerminationJob
+ * @property int $termination_event_attempts failed deliveries of EmployeeTerminated in a row (technical counter, not audited)
  * @property int|null $handover_to_employee_id who takes over the work when the termination applies (optional)
  * @property int|null $termination_block_version users.credential_version after the termination blocked the login
  * @property EmployeeStatus $status

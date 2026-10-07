@@ -22,7 +22,7 @@ import { TableUrlState } from '../../../core/ui/table/table-url-state';
  */
 @Component({
   selector: 'app-reports-page',
-  imports: [ChannelIcon, MatButtonModule, MatButtonToggleModule,MatDatepickerModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, TranslocoPipe, TableSortDirective, ColumnHeader],
+  imports: [ChannelIcon, MatButtonModule, MatButtonToggleModule, MatDatepickerModule, MatFormFieldModule, MatInputModule, MatProgressBarModule, TranslocoPipe, TableSortDirective, ColumnHeader],
   providers: [ReportsStore, TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './reports.page.html',

@@ -123,7 +123,10 @@ final class QueryReportRepository implements ReportRepository
     public function rejectionBreakdown(Scope $scope, DateRange $range): array
     {
         // The rejecting step = the latest stage change into the application's current (reject) stage.
-        $last = DB::table('stage_changes')->selectRaw('application_id, to_stage_id, max(id) as id')->groupBy('application_id', 'to_stage_id');
+        // Only the rejected applications of the period (not the whole history); index (application_id, to_stage_id).
+        $last = DB::table('stage_changes')->selectRaw('application_id, to_stage_id, max(id) as id')
+            ->whereIn('application_id', $this->rejected($scope, $range)->select('a.id'))
+            ->groupBy('application_id', 'to_stage_id');
         $rows = $this->rejected($scope, $range)
             ->leftJoin('reject_reasons as r', 'r.id', '=', 'a.reject_reason_id')
             ->leftJoinSub($last, 'lc', fn (JoinClause $j): JoinClause => $j->on('lc.application_id', '=', 'a.id')->on('lc.to_stage_id', '=', 'a.stage_id'))

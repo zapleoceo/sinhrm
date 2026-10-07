@@ -9,6 +9,7 @@ use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Models\Employee;
 use App\Modules\Workflows\Contracts\WorkflowTemplateRepository;
 use App\Modules\Workflows\Enums\WorkflowTrigger;
+use App\Modules\Workflows\Exceptions\WorkflowTriggerFailed;
 use App\Modules\Workflows\Models\WorkflowTemplate;
 use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
@@ -18,6 +19,8 @@ use Throwable;
  * Automatic starts. Each active template with the trigger starts at most once per employee (unique
  * template + employee + trigger), so a repeated event or cron run never duplicates a run. A failing template is
  * logged and does not stop the others — and never breaks the hire / terminate request that raised the event.
+ * Termination is the exception to "swallow": once every template was tried, a failure is rethrown
+ * (WorkflowTriggerFailed) so the listener fails and People re-sends EmployeeTerminated on the next cron run.
  */
 final readonly class WorkflowTriggers
 {
@@ -38,7 +41,7 @@ final readonly class WorkflowTriggers
 
     public function employeeTerminated(Employee $employee): int
     {
-        return $this->startAll(WorkflowTrigger::EmployeeTerminated, $employee, $employee->fired_at ?? UserTime::today());
+        return $this->startAll(WorkflowTrigger::EmployeeTerminated, $employee, $employee->fired_at ?? UserTime::today(), rethrow: true);
     }
 
     /** Called by the tick job. @return int runs started */
@@ -54,7 +57,7 @@ final readonly class WorkflowTriggers
             foreach ($templates as $template) {
                 $end = $employee->hired_at->copy()->startOfDay()->addDays($template->probation_days);
                 if ($end->lte($today) && $end->gte($today->copy()->subDays(self::PROBATION_WINDOW_DAYS))) {
-                    $started += $this->startOne($template, $employee, $end, WorkflowTrigger::ProbationEnd);
+                    $started += $this->startOne($template, $employee, $end, WorkflowTrigger::ProbationEnd) ?? 0;
                 }
             }
         }
@@ -71,17 +74,24 @@ final readonly class WorkflowTriggers
         return $trigger->value.':'.$anchor->toDateString();
     }
 
-    private function startAll(WorkflowTrigger $trigger, Employee $employee, Carbon $anchor): int
+    /** @throws WorkflowTriggerFailed only with $rethrow, after all templates were tried */
+    private function startAll(WorkflowTrigger $trigger, Employee $employee, Carbon $anchor, bool $rethrow = false): int
     {
         $started = 0;
+        $failed = 0;
         foreach ($this->templates->activeByTrigger($trigger) as $template) {
-            $started += $this->startOne($template, $employee, $anchor, $trigger);
+            $result = $this->startOne($template, $employee, $anchor, $trigger);
+            $result === null ? $failed++ : $started += $result;
+        }
+        if ($rethrow && $failed > 0) {
+            throw WorkflowTriggerFailed::for($trigger, $employee->id, $failed);
         }
 
         return $started;
     }
 
-    private function startOne(WorkflowTemplate $template, Employee $employee, Carbon $anchor, WorkflowTrigger $trigger): int
+    /** @return int|null 1 started, 0 duplicate event, null failed (logged) */
+    private function startOne(WorkflowTemplate $template, Employee $employee, Carbon $anchor, WorkflowTrigger $trigger): ?int
     {
         try {
             return $this->starter->start($template, $employee, $anchor, null, self::occurrenceKey($trigger, $anchor)) === null ? 0 : 1;
@@ -90,7 +100,7 @@ final readonly class WorkflowTriggers
                 'template' => $template->id, 'employee' => $employee->id, 'trigger' => $trigger->value, 'exception' => $e::class,
             ]);
 
-            return 0;
+            return null;
         }
     }
 }

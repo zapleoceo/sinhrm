@@ -11,11 +11,13 @@ use App\Modules\People\Events\EmployeeRestored;
 use App\Modules\People\Events\EmployeeTerminated;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Services\ScheduledTerminationJob;
+use App\Modules\People\Services\TerminationService;
 use App\Modules\Users\Contracts\AccountBlocker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Testing\Fakes\EventFake;
 use RuntimeException;
 use Tests\Support\FailingAccountBlocker;
@@ -353,10 +355,37 @@ final class TerminationApiTest extends TestCase
         $this->assertSame(1, $result['people_termination_events_resent']);
         $this->assertSame(0, $result['people_termination_failed']);
         $this->assertFalse($org['worker']->refresh()->termination_event_pending);
+        $this->assertSame(0, $org['worker']->termination_event_attempts, 'success drops the counter');
         $this->assertSame(2, $calls);
 
         $this->assertSame(0, $this->runJob()['people_termination_events_resent']);
         $this->assertSame(2, $calls);
+    }
+
+    public function test_a_permanently_failing_event_is_counted_and_warns_after_the_limit(): void
+    {
+        $log = Log::spy();
+        $fake = Event::getFacadeRoot();
+        $this->assertInstanceOf(EventFake::class, $fake);
+        Event::swap($fake->dispatcher);
+        Event::listen(EmployeeTerminated::class, static function (): void {
+            throw new RuntimeException('listener down for good');
+        });
+        $org = $this->org();
+        $id = $org['worker']->id;
+
+        // Attempt 1 is the termination request itself, attempts 2..5 are cron runs: no warning yet.
+        $this->actingAs($this->login(UserRole::Admin))->postJson('/api/people/'.$id.'/terminate', ['fired_at' => '2026-07-14'])->assertOk();
+        for ($i = 2; $i <= TerminationService::EVENT_ATTEMPTS_WARN_AFTER; $i++) {
+            $this->assertSame(1, $this->runJob()['people_termination_failed']);
+        }
+        $this->assertSame(TerminationService::EVENT_ATTEMPTS_WARN_AFTER, $org['worker']->refresh()->termination_event_attempts);
+        $log->shouldNotHaveReceived('warning');
+
+        // The next failure crosses the limit: one warning with the id and the counter, still pending, no data about the person.
+        $this->assertSame(1, $this->runJob()['people_termination_failed']);
+        $this->assertTrue($org['worker']->refresh()->termination_event_pending);
+        $log->shouldHaveReceived('warning')->once()->with('people.termination_event_stuck', ['id' => $id, 'attempts' => TerminationService::EVENT_ATTEMPTS_WARN_AFTER + 1]);
     }
 
     /**
