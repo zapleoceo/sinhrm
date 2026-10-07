@@ -17,6 +17,7 @@
 - Raw SQL `NULLS LAST` occurs in Audit, Directory, People, Recruiting and Users sorts. User-input search also relies on SQL `LIKE` escape and database collation. Other SQL uses views, JSON selectors, upserts, transactions and report aggregates.
 - Sessions, cache and Laravel queue tables are in the database; application jobs run through `POST /api/ops/jobs/run` from GitHub Actions every 30 minutes. No `ShouldQueue` handler was found in the handoff inventory. Documents use `documents_files.content` as base64 `longText` for files up to 2 MiB; encrypted integration secrets require the same `APP_KEY`.
 - CI, optional night-window CI and synthetic backup proof use PostgreSQL 17. The existing backup proof verifies only PostgreSQL dump/restore and does not establish a MySQL transfer or production RTO.
+- Before import, preflight target collation for new unique-key collisions (including case/accent folding), MySQL timestamp date range and timezone conversion, JSON null/order semantics, and maximum index lengths. These cannot be inferred from PostgreSQL green tests.
 
 ## Functional acceptance matrix
 
@@ -33,6 +34,42 @@ All rows are pending MySQL integration execution. Existing PostgreSQL tests are 
 | Data operations | row counts, PK/FK, sequences/auto increments, JSON semantics, timezone, binary attachment checksums, sessions/cache, encrypted values | Backup, isolated restore, cutover and rollback drill |
 
 The matrix must be expanded to per-endpoint evidence before declaring every function verified. Preview mocks or SQLite cannot satisfy the MySQL rows.
+
+### Module inventory for the MySQL test run
+
+The existing `backend/tests/Feature/<Module>` suites cover the modules below. Their presence identifies a test entry point; no row is marked verified until the final MySQL job passes. Provider calls are faked in CI and need a separate approved live check.
+
+| Module | Existing feature coverage | Additional cutover evidence |
+|---|---|---|
+| Ai | prompts, editor, service | configured broker request and limits |
+| Assets | inventory API and routes | assignment/return with real roles |
+| Assistant | chat, voice, tools, data minimization | approved provider/browser flow |
+| Audit | log, filters and sorting | retention and access masking |
+| Auth | Google callback, active role, tokens | real Google login and cookie session |
+| Channels | administration, messages, webhook | authorized channel/webhook sample |
+| Core | health, role gates, module access, cron, ops | live health and scheduler run |
+| Desk | desk API/routes | role-scoped task flow |
+| Directory | dictionary CRUD and sorting | branch and city scope |
+| Documents | templates, signatures, upload/download | 2 MiB checksum and download |
+| GoogleWorkspace | connect/token, Gmail send, meetings, Sheets | authorized provider callback and send |
+| HiringRequests | request/approval and hiring acceptance | approval-to-recruiter flow |
+| Integrations | integration settings, employee directory, messenger checks | ciphertext under retained `APP_KEY` and provider check |
+| Knowledge | article API/routes | case-insensitive search |
+| MailAgent | admin, AI classification, sync | approved mailbox ingestion |
+| Observability | error log | retention and alert visibility |
+| Overview | dashboard API/access/routes | role-scoped dashboard data |
+| People | employee changes, hire, termination, sorting | lifecycle and handover |
+| Perform | feedback, reviews, objectives, plans, KPIs, 1:1 | access to review cycle |
+| Privacy | personal-data API | data subject request and masking |
+| Pulse | surveys, mood, anonymity, scheduled exit survey | anonymity and cron boundary |
+| Recruiting | candidates, vacancies, pipeline, screening, offers, career site, inbox, reports | scoped end-to-end application and screening |
+| Reports | catalog, builder, saved reports, CSV | filters and export download |
+| SafeSpeak | confidential API/routes | anonymity boundary |
+| Scripts | scripts, evaluations, templates, follow-ups, task scheduler | scheduled follow-up and reports |
+| Time | time API/routes | schedule and timesheet |
+| TimeOff | leave, accrual, approvals, calendar, concurrency | leave approval, mail/calendar, cron |
+| Users | roles, administration, sorting, credential revocation | revoked sessions and tokens |
+| Workflows | templates, runs, termination handover | scheduled tick and retry |
 
 ## Release gate
 
