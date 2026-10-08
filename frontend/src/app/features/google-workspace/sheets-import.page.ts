@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { SHEET_FIELDS, SheetField, SheetImport, SheetImportReport, SheetInspection, SheetMapping, isSheetUrl } from './google.model';
 import { GoogleService, googleErrorKey } from './google.service';
+import { Observable } from 'rxjs';
 
 /**
  * Admin → Import from Google Sheets (superadmin): paste the sheet URL → read the header → map columns (suggested
@@ -242,29 +243,11 @@ export class SheetsImportPage implements OnInit {
   }
 
   protected runImport(): void {
-    this.start();
-    this.api
-      .saveImport({ url: this.url().trim(), sheet: this.sheet().trim(), mapping: this.mapping(), auto_sync: this.autoSync() })
-      .subscribe({
-        next: (r) => {
-          this.report.set(r.report);
-          this.busy.set(false);
-          this.loadImports();
-        },
-        error: (e: unknown) => this.fail(e),
-      });
+    this.importWith(this.api.saveImport({ url: this.url().trim(), sheet: this.sheet().trim(), mapping: this.mapping(), auto_sync: this.autoSync() }));
   }
 
   protected rerun(imp: SheetImport): void {
-    this.start();
-    this.api.runImport(imp.id).subscribe({
-      next: (r) => {
-        this.report.set(r.report);
-        this.busy.set(false);
-        this.loadImports();
-      },
-      error: (e: unknown) => this.fail(e),
-    });
+    this.importWith(this.api.runImport(imp.id));
   }
 
   protected toggleAuto(imp: SheetImport, on: boolean): void {
@@ -280,6 +263,19 @@ export class SheetsImportPage implements OnInit {
 
   private loadImports(): void {
     this.api.imports().subscribe({ next: (list) => this.imports.set(list), error: () => this.imports.set([]) });
+  }
+
+  /** A new or repeated import: its report is shown, the list of saved imports is reloaded. */
+  private importWith(call: Observable<{ report: SheetImportReport }>): void {
+    this.start();
+    call.subscribe({
+      next: (r) => {
+        this.report.set(r.report);
+        this.busy.set(false);
+        this.loadImports();
+      },
+      error: (e: unknown) => this.fail(e),
+    });
   }
 
   private start(): void {

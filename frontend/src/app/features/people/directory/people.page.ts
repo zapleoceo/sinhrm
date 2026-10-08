@@ -33,6 +33,7 @@ import { TableSortDirective } from '../../../core/ui/table/table-sort.directive'
 import { ColumnFilter, FilterValue, TableSort, idToFilter } from '../../../core/ui/table/table-state';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { peopleQueryFromParams } from './people.query';
+import { withMember } from '../../../core/ui/with-member';
 
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 
@@ -386,9 +387,7 @@ export class PeoplePage implements OnInit {
   }
 
   protected toggle(id: number): void {
-    const next = new Set(this.selected());
-    if (!next.delete(id)) next.add(id);
-    this.selected.set(next);
+    this.selected.update((s) => withMember(s, id, !s.has(id)));
   }
 
   protected clear(): void {
