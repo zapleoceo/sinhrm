@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -10,9 +10,10 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
 import { Employee, RestoreEmployee } from '../people.model';
-import { PeopleService, peopleErrorKey } from '../people.service';
+import { PeopleService } from '../people.service';
 import { PersonPicker } from '../picker/person-picker';
 import { toIsoDateOrNull } from '../../../core/date/iso-date';
+import { DialogSave } from './dialog-save';
 
 type PlacementField = 'branch_id' | 'department_id' | 'position_id' | 'manager_id';
 const PLACEMENT: readonly PlacementField[] = ['branch_id', 'department_id', 'position_id', 'manager_id'];
@@ -85,11 +86,11 @@ const PLACEMENT: readonly PlacementField[] = ['branch_id', 'department_id', 'pos
 })
 export class RestoreDialog implements OnInit {
   protected readonly employee = inject<Employee>(MAT_DIALOG_DATA);
-  private readonly ref = inject<MatDialogRef<RestoreDialog, Employee>>(MatDialogRef);
   private readonly api = inject(PeopleService);
   private readonly directory = inject(DirectoryService);
-  protected readonly saving = signal(false);
-  protected readonly error = signal<string | null>(null);
+  private readonly dialog = new DialogSave<Employee>();
+  protected readonly saving = this.dialog.saving;
+  protected readonly error = this.dialog.error;
   protected readonly branches = signal<DictionaryItem[]>([]);
   protected readonly departments = signal<DictionaryItem[]>([]);
   protected readonly positions = signal<DictionaryItem[]>([]);
@@ -114,15 +115,7 @@ export class RestoreDialog implements OnInit {
   }
 
   protected submit(): void {
-    this.saving.set(true);
-    this.error.set(null);
-    this.api.restore(this.employee.id, this.body()).subscribe({
-      next: (saved) => this.ref.close(saved),
-      error: (err: unknown) => {
-        this.error.set(peopleErrorKey(err));
-        this.saving.set(false);
-      },
-    });
+    this.dialog.save(this.api.restore(this.employee.id, this.body()));
   }
 
   private body(): RestoreEmployee {

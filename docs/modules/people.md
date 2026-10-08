@@ -56,6 +56,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PeopleException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): сохранение в диалогах профиля (сотрудник, восстановление, увольнение, запрос на изменение) — общий `DialogSave<R>` (`profile/dialog-save.ts`): `saving`, `error` (ключ `peopleErrorKey`), успешный ответ закрывает диалог с ним. Раньше четыре копии. Тест — `profile/dialog-save.spec.ts`.
 - Фронт (2026-10-08): `PeopleStore` держит список в `PagedList` (`core/ui/table/paged-list.ts`); `ProfileStore` вместо ручного счётчика `seq` отменяет загрузку предыдущего профиля через `LatestRequest` — поздний ответ не покажет прежнего человека.
 Бэкенд — `backend/app/Modules/People`. Маршруты под `/api` (`routes.php`), все за `auth:sanctum` + `EnsureUserIsActive`.
 
