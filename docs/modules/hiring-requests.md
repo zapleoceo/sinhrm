@@ -51,7 +51,7 @@
 (руководитель из People, пользователь, роль; неразрешимые шаги — `skipped`); `Support/RequestAttributes` — колонки из
 формы (только отправленные ключи, сброс `replaced_employee_id`, проверка вилки зарплаты, очистка доп. полей);
 `Support/VacancyDraft` — поля и описание вакансии из заявки; `Services/HiringProgress` — прогресс найма по вакансиям
-(`progress()` сервиса передаёт вызов). Эскалация в `ApproverNotifier` берёт роли из `Auth\Enums\UserRole`, без строк.
+(`progress()` сервиса передаёт вызов). Эскалация в `ApproverNotifier` берёт роли из `Auth\Enums\UserRole`, без строк; задачи согласующих он создаёт и закрывает (`closeByRulePrefix` по шагу) через контракт Scripts `TaskScheduler`, а не класс `TaskService` (тест `tests/Unit/HiringRequests/ApproverTaskSchedulerTest.php`).
 Тест — `tests/Unit/HiringRequests/HiringRequestPartsTest`.
 
 ### Статусы

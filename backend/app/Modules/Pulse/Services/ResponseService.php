@@ -7,8 +7,8 @@ namespace App\Modules\Pulse\Services;
 use App\Models\User;
 use App\Modules\Core\Support\MembershipDifferencing;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\Models\Employee;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\Pulse\Contracts\ResponseRepository;
 use App\Modules\Pulse\Contracts\SurveyRepository;
 use App\Modules\Pulse\Enums\WaveStatus;
@@ -55,7 +55,7 @@ final readonly class ResponseService
     public function __construct(
         private SurveyRepository $surveys,
         private ResponseRepository $responses,
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private RespondentHash $hash,
         private EmployeeRepository $employees,
         private WaveMembership $membership,
