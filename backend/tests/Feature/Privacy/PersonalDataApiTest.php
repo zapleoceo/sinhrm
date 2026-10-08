@@ -101,6 +101,23 @@ final class PersonalDataApiTest extends TestCase
         $this->actingAs($this->userWith(UserRole::Admin))->getJson('/api/privacy/candidate/999999/export')->assertNotFound();
     }
 
+    /** Validation lives in FormRequests: 422 with the field error, nothing exported or stored. */
+    public function test_export_and_settings_validation(): void
+    {
+        $id = $this->fullCandidate()->candidate_id;
+        $admin = $this->userWith(UserRole::Admin);
+
+        $this->actingAs($admin)->getJson("/api/privacy/candidate/{$id}/export?format=pdf")->assertUnprocessable()->assertJsonValidationErrors('format');
+        $this->assertSame(0, PrivacyRequest::query()->count(), 'a refused export is not journaled');
+
+        foreach ([[], ['retention_rejected_months' => 0], ['retention_rejected_months' => 121], ['retention_rejected_months' => 'abc'], ['retention_rejected_months' => 1.5]] as $body) {
+            $this->actingAs($admin)->putJson('/api/privacy/settings', $body)->assertUnprocessable()->assertJsonValidationErrors('retention_rejected_months');
+        }
+        // A string from a form is a number all the same; null switches the rule off.
+        $this->actingAs($admin)->putJson('/api/privacy/settings', ['retention_rejected_months' => '12'])->assertOk()->assertJsonPath('data.retention_rejected_months', 12);
+        $this->actingAs($admin)->putJson('/api/privacy/settings', ['retention_rejected_months' => null])->assertOk()->assertJsonPath('data.retention_rejected_months', null);
+    }
+
     public function test_export_contains_every_section_as_json_and_html(): void
     {
         $id = $this->fullCandidate()->candidate_id;

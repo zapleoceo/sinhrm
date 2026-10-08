@@ -9,7 +9,8 @@ use App\Modules\Documents\Providers\DocumentsServiceProvider;
 use Illuminate\Support\Facades\Route;
 
 // /api/* of the Documents module. Reading: PeopleScope (admin / the employee / managers above); writing and
-// templates: gate documents-manage (superadmin, admin — they act as HR). No DELETE: documents are archived.
+// templates: gate documents-manage (HR staff, UserRole::hrStaff(): superadmin, admin, hr_manager). No DELETE:
+// documents are archived. Uploading a file is throttled per user (DocumentsServiceProvider::UPLOAD_THROTTLE).
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('me/documents', [DocumentController::class, 'mine'])->name('documents.mine');
@@ -28,7 +29,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
         Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
         Route::patch('documents/{document}', [DocumentController::class, 'update'])->whereNumber('document')->name('documents.update');
-        Route::post('documents/{document}/file', [DocumentController::class, 'upload'])->whereNumber('document')->name('documents.upload');
+        Route::post('documents/{document}/file', [DocumentController::class, 'upload'])->whereNumber('document')
+            ->middleware(DocumentsServiceProvider::UPLOAD_THROTTLE)->name('documents.upload');
         Route::post('documents/{document}/send', [DocumentController::class, 'send'])->whereNumber('document')->name('documents.send');
     });
 });

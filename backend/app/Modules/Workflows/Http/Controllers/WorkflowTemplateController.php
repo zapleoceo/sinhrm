@@ -16,7 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-/** Workflow templates (route gate workflows-manage: superadmin, admin). */
+/** Workflow templates (route gate workflows-manage: HR staff (UserRole::hrStaff(): superadmin, admin, hr_manager)). */
 final class WorkflowTemplateController
 {
     use ResolvesActor;

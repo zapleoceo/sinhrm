@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * Builds the report scope from the existing access models (never a wider one).
- * $now is the current moment in the user's zone (Kyiv): "today" of headcount/tenure/age/pay is the user's date â€” at
+ * $now is the current moment in the user's zone (Kyiv): "today" of headcount/tenure/age/pay is the user's date — at
  * 22:30 UTC on Oct 10 it is already Oct 11 in Kyiv. Never bind it to a query as is (format, not convert): dates only.
  */
 final readonly class ScopedContextFactory

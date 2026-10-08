@@ -47,7 +47,7 @@ final class WorkflowsServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'people';
 
-    /** Templates, start / cancel runs, retry steps: superadmin, admin (HR). */
+    /** Templates, start / cancel runs, retry steps: HR staff (UserRole::hrStaff(): superadmin, admin, hr_manager). */
     public const string MANAGE = 'workflows-manage';
 
     /** Container tag of StepExecutor classes. */

@@ -12,9 +12,6 @@ use App\Modules\Desk\Contracts\DeskRepository;
 use App\Modules\Desk\Repositories\EloquentDeskRepository;
 use App\Modules\Desk\Services\DeskNavBadges;
 use App\Modules\Desk\Services\DeskSlaJob;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Desk: HR helpdesk cases (categories with SLA, thread with internal notes, attachments), the "desk.sla" job.
@@ -26,7 +23,7 @@ final class DeskServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'services';
 
-    /** Queue, categories, assignment, internal notes: superadmin, admin (HR). */
+    /** Queue, categories, assignment, internal notes: HR staff (UserRole::hrStaff(): superadmin, admin, hr_manager). */
     public const string MANAGE = 'desk-manage';
 
     /**
@@ -55,7 +52,6 @@ final class DeskServiceProvider extends ModuleServiceProvider
 
         $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
 
-        RateLimiter::for(self::WRITE_LIMITER, static fn (Request $request): Limit => Limit::perMinute(self::WRITES_PER_MINUTE)
-            ->by('desk|'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
+        $this->definePerUserLimiter(self::WRITE_LIMITER, self::WRITES_PER_MINUTE);
     }
 }

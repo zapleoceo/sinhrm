@@ -37,7 +37,7 @@ final class AnonymityTest extends TestCase
         parent::tearDown();
     }
 
-    /** The only time trace of an answer is its day â€” the respondent's Kyiv day (00:30 Kyiv is not yesterday of UTC). */
+    /** The only time trace of an answer is its day — the respondent's Kyiv day (00:30 Kyiv is not yesterday of UTC). */
     public function test_submitted_on_is_the_kyiv_day(): void
     {
         foreach (['2026-10-11 21:30:00' => '2026-10-12', '2026-01-11 22:30:00' => '2026-01-12', '2026-12-31 22:30:00' => '2027-01-01'] as $utc => $kyiv) {

@@ -62,8 +62,8 @@ final class DocumentsSupportTest extends TestCase
         config(['app.user_timezone' => 'Europe/Kyiv']);
         $values = DocumentVariables::sample(Carbon::parse('2026-12-31 22:30:00', 'UTC'));
 
-        $this->assertSame('01.01.2027', $values['Ð¡ÑŒÐ¾Ð³Ð¾Ð´Ð½Ñ–']);
-        $this->assertSame('01.12.2026', $values['Ð”Ð°Ñ‚Ð° Ð¿Ñ€Ð¸Ð¹Ð¾Ð¼Ñƒ']);
+        $this->assertSame('01.01.2027', $values['Сьогодні']);
+        $this->assertSame('01.12.2026', $values['Дата прийому']);
         $this->assertSame('15.01.2027', $values[DocumentVariable::StartDate->value]);
     }
 

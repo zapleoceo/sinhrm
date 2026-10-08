@@ -30,7 +30,7 @@ final class PerformServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'perform';
 
-    /** Review setup (scales, competencies, cycles), 1:1 templates: superadmin, admin. */
+    /** Review setup (scales, competencies, cycles), 1:1 templates: HR staff (UserRole::hrStaff(): superadmin, admin, hr_manager). */
     public const string MANAGE = 'perform-manage';
 
     protected string $prefix = 'perform';

@@ -8,6 +8,7 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\People\Models\EmployeeCompensation;
 use App\Modules\Pulse\Models\SurveyWave;
+use App\Modules\Reports\Providers\ReportsServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
@@ -193,6 +194,23 @@ final class ReportsApiTest extends TestCase
             'attachment; filename="headcount-2026-11-01.csv"',
             $this->actingAs($admin)->get('/api/reports/catalog/headcount/csv')->assertOk()->headers->get('Content-Disposition'),
         );
+    }
+
+    /** builder/run and builder/csv share one per-user bucket (reports-builder, 30 per minute); catalog reports do not. */
+    public function test_builder_run_and_csv_are_throttled_per_user(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $other = $this->login(UserRole::Admin);
+        $spec = ['dataset' => 'employees', 'columns' => ['full_name']];
+
+        for ($i = 0; $i < ReportsServiceProvider::BUILDS_PER_MINUTE - 1; $i++) {
+            $this->actingAs($admin)->postJson('/api/reports/builder/run', $spec)->assertOk();
+        }
+        $this->actingAs($admin)->post('/api/reports/builder/csv', $spec, ['Accept' => 'application/json'])->assertOk();
+        $this->actingAs($admin)->postJson('/api/reports/builder/run', $spec)->assertStatus(429);
+        $this->actingAs($admin)->post('/api/reports/builder/csv', $spec, ['Accept' => 'application/json'])->assertStatus(429);
+        $this->actingAs($other)->postJson('/api/reports/builder/run', $spec)->assertOk();
+        $this->actingAs($admin)->getJson('/api/reports/catalog/headcount')->assertOk();
     }
 
     public function test_csv_export_is_streamed_and_injection_safe(): void

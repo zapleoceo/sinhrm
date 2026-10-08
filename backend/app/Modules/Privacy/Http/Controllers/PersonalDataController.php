@@ -10,11 +10,12 @@ use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Core\Http\Responses\Download;
 use App\Modules\Privacy\Contracts\PrivacyRepository;
 use App\Modules\Privacy\Http\Requests\ErasePersonalDataRequest;
+use App\Modules\Privacy\Http\Requests\ExportPersonalDataRequest;
+use App\Modules\Privacy\Http\Requests\UpdatePrivacySettingsRequest;
 use App\Modules\Privacy\Models\PrivacyRequest;
 use App\Modules\Privacy\Services\ExportHtmlRenderer;
 use App\Modules\Privacy\Services\PersonalDataService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 /** Personal-data rights (superadmin, admin): export (JSON or HTML file), erase (anonymize), journal, retention rule. */
@@ -29,12 +30,11 @@ final class PersonalDataController
     ) {}
 
     /** GET /api/privacy/{type}/{id}/export?format=json|html — a downloadable file with everything we keep. */
-    public function export(Request $request, string $type, int $id): Response
+    public function export(ExportPersonalDataRequest $request, string $type, int $id): Response
     {
-        $request->validate(['format' => ['nullable', 'in:json,html']]);
         $export = $this->service->export($this->subject($type, $id), $this->actor($request)->id);
         $name = 'personal-data-'.$type.'-'.$id;
-        if ($request->query('format') === 'html') {
+        if ($request->wantsHtml()) {
             return new Response($this->html->render($export), 200, [
                 'Content-Type' => 'text/html; charset=utf-8',
                 'Content-Disposition' => Download::disposition($name.'.html'),
@@ -79,11 +79,9 @@ final class PersonalDataController
     }
 
     /** PUT /api/privacy/settings {retention_rejected_months: 1..120 | null (off)}. */
-    public function updateSettings(Request $request): JsonResponse
+    public function updateSettings(UpdatePrivacySettingsRequest $request): JsonResponse
     {
-        $data = $request->validate(['retention_rejected_months' => ['present', 'nullable', 'integer', 'min:1', 'max:120']]);
-        $months = $data['retention_rejected_months'];
-        $stored = $this->privacy->setRetentionRejectedMonths($months === null ? null : (int) $months);
+        $stored = $this->privacy->setRetentionRejectedMonths($request->retentionRejectedMonths());
 
         return new JsonResponse(['data' => ['retention_rejected_months' => $stored]]);
     }

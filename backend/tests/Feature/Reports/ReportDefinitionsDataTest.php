@@ -203,7 +203,7 @@ final class ReportDefinitionsDataTest extends TestCase
 
     /**
      * Report days are Kyiv days: "today" of headcount at 00:30 Kyiv (21:30 UTC) is the new day, and a range day covers
-     * 00:00â€“24:00 Kyiv (21:00 UTC of the day before â€“ 21:00 UTC), not the UTC day.
+     * 00:00–24:00 Kyiv (21:00 UTC of the day before – 21:00 UTC), not the UTC day.
      */
     public function test_report_days_are_kyiv_days(): void
     {
