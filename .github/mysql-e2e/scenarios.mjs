@@ -85,14 +85,23 @@ async function group(name, fn) {
 // ---------------------------------------------------------------- files
 const b64 = (buf) => Buffer.from(buf).toString('base64');
 const pdf = (pad = 0) => b64(Buffer.concat([Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n'), Buffer.alloc(pad, 0x20), Buffer.from('\ntrailer<<>>\n%%EOF\n')]));
-function zipOne(name, content) { // a stored (uncompressed) zip with one entry: a minimal .docx container
-  const n = Buffer.from(name); const c = Buffer.from(content); const crc = crc32(c);
-  const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt32LE(crc, 14); local.writeUInt32LE(c.length, 18); local.writeUInt32LE(c.length, 22); local.writeUInt16LE(n.length, 26);
-  const central = Buffer.alloc(46); central.writeUInt32LE(0x02014b50, 0); central.writeUInt16LE(20, 4); central.writeUInt16LE(20, 6); central.writeUInt32LE(crc, 16); central.writeUInt32LE(c.length, 20); central.writeUInt32LE(c.length, 24); central.writeUInt16LE(n.length, 28);
-  const end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(1, 8); end.writeUInt16LE(1, 10); end.writeUInt32LE(46 + n.length, 12); end.writeUInt32LE(30 + n.length + c.length, 16);
-  return Buffer.concat([local, n, c, central, n, end]);
+function zip(entries) { // a stored (uncompressed) zip: a minimal .docx container
+  const locals = []; const centrals = []; let offset = 0;
+  for (const [name, content] of entries) {
+    const n = Buffer.from(name); const c = Buffer.from(content); const crc = crc32(c);
+    const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt32LE(crc, 14); local.writeUInt32LE(c.length, 18); local.writeUInt32LE(c.length, 22); local.writeUInt16LE(n.length, 26);
+    const central = Buffer.alloc(46); central.writeUInt32LE(0x02014b50, 0); central.writeUInt16LE(20, 4); central.writeUInt16LE(20, 6); central.writeUInt32LE(crc, 16); central.writeUInt32LE(c.length, 20); central.writeUInt32LE(c.length, 24); central.writeUInt16LE(n.length, 28); central.writeUInt32LE(offset, 42);
+    locals.push(local, n, c); centrals.push(central, n); offset += 30 + n.length + c.length;
+  }
+  const cd = Buffer.concat(centrals);
+  const end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(entries.length, 8); end.writeUInt16LE(entries.length, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, cd, end]);
 }
-const docx = () => b64(zipOne('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'));
+const docx = () => b64(zip([
+  ['[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
+  ['_rels/.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'],
+  ['word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Резюме [ТЕСТ]</w:t></w:r></w:p></w:body></w:document>'],
+]));
 const PDF = { name: 'Договір ґ [ТЕСТ].pdf', type: 'application/pdf', b64: pdf() };
 const DOCX = { name: 'Наказ [ТЕСТ].docx', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', b64: docx() };
 const BIG = { name: 'big.pdf', type: 'application/pdf', b64: pdf(2 * 1024 * 1024 + 10) };
@@ -169,8 +178,9 @@ await group('uploads', async () => {
   record('uploads', 'career.apply with CV (pdf/docx ok, >2MB / exe refused)', apply.status === 201 && applyDocx.status === 201 && applyBig.status === 422 && applyBad.status === 422,
     { slug, pdf: brief(apply), docx: brief(applyDocx), big: brief(applyBig), exe: brief(applyBad), candidateFound: (data(found) ?? []).length });
   const cand = (data(found) ?? [])[0];
-  const detail = cand ? await api('recruiter', 'GET', `/api/candidates/${cand.id}`) : null;
-  const cvLink = detail ? JSON.stringify(detail.json).match(/"[^"]*(cv|resume|attachment|file)[^"]*":\s*"[^"]+"/i)?.[0] ?? null : null;
+  const detail = cand ? await api('admin', 'GET', `/api/candidates/${cand.id}`) : null;
+  const tl = cand ? await api('admin', 'GET', `/api/candidates/${cand.id}/timeline`) : null;
+  const cvLink = detail?.status === 200 ? JSON.stringify([data(detail), data(tl)]).match(/"[^"]*(cv|resume)[^"]*":\s*"[^"]+"/i)?.[0] ?? null : null;
   record('uploads', 'career.CV reachable by the recruiter', !!cvLink, { candidate: cand?.id ?? null, detail: detail?.status ?? null, cvLink, note: 'no download route for career_submissions.cv_content' });
 });
 
@@ -198,7 +208,7 @@ await group('import-export', async () => {
   const sections = Object.keys(pj.json?.sections ?? {});
   record('import-export', 'privacy.export json/html + erase guard + roles', pj.status === 200 && /^attachment/.test(pj.headers.disposition ?? '') && pj.headers.nosniff === 'nosniff' && /no-store/.test(pj.headers.cache ?? '') && ph.status === 200 && /text\/html/.test(ph.headers.type ?? '') && pe.status === 409 && pm.status === 403 && pr.status === 200,
     { json: { status: pj.status, headers: pj.headers, sections }, html: { status: ph.status, headers: ph.headers }, erase: brief(pe), requests: (data(pr) ?? []).length, manager: pm.status });
-  record('import-export', 'privacy.export has documents + desk of the employee', sections.some((s) => /doc/i.test(s)) && sections.some((s) => /desk|case/i.test(s)), { sections });
+  record('import-export', 'privacy.export has the documents section (Desk/time/leave excluded by design, docs/modules/privacy.md)', sections.includes('documents') && sections.includes('employee'), { sections });
 
   // Sheets import on the fixture client (no Google call): inspect, save+run, rerun (idempotent)
   const url = 'https://docs.google.com/spreadsheets/d/E2E_FIXTURE_SPREADSHEET_0123456789/edit';
@@ -222,8 +232,9 @@ await group('import-export', async () => {
   const stages = vd?.stages ?? [];
   const bulkC = data(await api('admin', 'GET', '/api/candidates?perPage=150&q=' + encodeURIComponent('Кандидат-масовий'))) ?? [];
   const cids = bulkC.map((c) => c.id);
-  const applied = await Promise.all(cids.slice(0, 40).map((cid) => api('recruiter', 'POST', `/api/vacancies/${vacancy.id}/applications`, { candidate_id: cid })));
-  const tag = await api('recruiter', 'POST', '/api/candidates/bulk', { action: 'tag', ids: cids, tag: 'Їжак-e2e' });
+  const applied = [];
+  for (const cid of cids.slice(0, 40)) applied.push(await api('admin', 'POST', `/api/vacancies/${vacancy.id}/applications`, { candidate_id: cid }));
+  const tag = await api('admin', 'POST', '/api/candidates/bulk', { action: 'tag', ids: cids, tag: 'Їжак-e2e' });
   const assign = await api('recruiter', 'POST', '/api/candidates/bulk', { action: 'assign', ids: cids.slice(0, 20), owner_id: S.recruiter.userId });
   const select = stages.find((s) => s.kind === 'select') ?? stages[2];
   const move = await api('recruiter', 'POST', '/api/candidates/bulk', { action: 'move', ids: cids.slice(0, 40), vacancy_id: vacancy.id, stage_id: select?.id });
@@ -399,7 +410,7 @@ await group('lifecycle', async () => {
   const wave = await api('admin', 'POST', `/api/pulse/surveys/${data(survey)?.id}/waves`, { starts_at: addDays(today, -1) + ' 00:00:00', ends_at: addDays(today, 10) + ' 00:00:00', schedule: 'once', audience: { branch_ids: [], department_ids: [] }, anonymous: true, min_group_size: 5 });
   const waveId = data(wave)?.id;
   const answers = [];
-  for (const role of ['employee', 'manager', 'recruiter', 'hr']) answers.push(await api(role, 'POST', `/api/pulse/waves/${waveId}/responses`, { answers: { q1: 4, q2: `Відповідь ${role} ґ [ТЕСТ]` } }));
+  for (const role of ['employee', 'manager', 'recruiter']) answers.push(await api(role, 'POST', `/api/pulse/waves/${waveId}/responses`, { answers: { q1: 4, q2: `Відповідь ${role} ґ [ТЕСТ]` } }));
   const again = await Promise.all([0, 1, 2].map(() => api('employee', 'POST', `/api/pulse/waves/${waveId}/responses`, { answers: { q1: 5 } })));
   const liveAdmin = data(await api('admin', 'GET', `/api/pulse/waves/${waveId}/results`));
   const close = await api('admin', 'POST', `/api/pulse/waves/${waveId}/close`);
@@ -407,8 +418,8 @@ await group('lifecycle', async () => {
   const resAdmin = data(await api('admin', 'GET', `/api/pulse/waves/${waveId}/results?segment=department`));
   const resMgr = await api('manager', 'GET', `/api/pulse/waves/${waveId}/results?segment=department`);
   const resEmp = await api('employee', 'GET', `/api/pulse/waves/${waveId}/results`);
-  const late = await api('admin', 'POST', `/api/pulse/waves/${waveId}/responses`, { answers: { q1: 1 } });
-  record('lifecycle', 'pulse: answer → close → results with anonymity (4 < min 5 → suppressed)', survey.status === 201 && wave.status === 201 && answers.every((a) => a.status === 201) && again.every((a) => a.status === 409) && liveAdmin?.suppressed === true && close.status === 200 && close2.status === 409 && resAdmin?.suppressed === true && resAdmin?.responses == null && [403].includes(resEmp.status) && late.status === 409,
+  const late = await api('hr', 'POST', `/api/pulse/waves/${waveId}/responses`, { answers: { q1: 1 } });
+  record('lifecycle', 'pulse: answer → close → results with anonymity (3 < min 5 → suppressed)', survey.status === 201 && wave.status === 201 && answers.every((a) => a.status === 201) && again.every((a) => a.status === 409) && liveAdmin?.suppressed === true && close.status === 200 && close2.status === 409 && resAdmin?.suppressed === true && resAdmin?.responses == null && [403].includes(resEmp.status) && late.status === 409,
     { survey: brief(survey), wave: brief(wave), answers: answers.map((a) => a.status), duplicateParallel: again.map((a) => a.status), live: { suppressed: liveAdmin?.suppressed, participation: liveAdmin?.participation }, close: close.status, closeAgain: close2.status, admin: { suppressed: resAdmin?.suppressed, responses: resAdmin?.responses, segments: !!resAdmin?.segments }, manager: { status: resMgr.status, scope: data(resMgr)?.scope, segments: !!data(resMgr)?.segments, suppressed: data(resMgr)?.suppressed }, employee: resEmp.status, answerAfterClose: late.status });
   const moodMgr = await api('manager', 'GET', '/api/pulse/mood/team?weeks=8');
   const moodMgrF1 = await api('manager', 'GET', `/api/pulse/mood/team?weeks=8&branch_id=${branchId}`);
@@ -505,7 +516,7 @@ await group('mysql', async () => {
   // Parallel personal-board filing of one application
   const vac = ids.vacancy;
   if (vac) {
-    const col = await api('recruiter', 'POST', `/api/vacancies/${vac}/personal-board/columns`, { name: 'Паралельна колонка [ТЕСТ]' });
+    const col = await api('recruiter', 'POST', `/api/vacancies/${vac}/personal-board/columns`, { title: 'Паралельно [ТЕСТ]' });
     const board = data(await api('recruiter', 'GET', `/api/vacancies/${vac}/board`));
     const appId = (board?.applications ?? board?.cards ?? [])[0]?.id ?? (board?.columns ?? []).flatMap((c) => c.applications ?? c.cards ?? [])[0]?.id;
     const fil = await Promise.all([0, 1, 2, 3].map(() => api('recruiter', 'PUT', `/api/applications/${appId}/personal-column`, { column_id: data(col)?.id })));

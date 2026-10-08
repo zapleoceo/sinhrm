@@ -36,6 +36,8 @@ jobs:
       DB_USERNAME: app
       DB_PASSWORD: app
       SESSION_DRIVER: database
+      # Long lifetime: the faked-clock server writes last_activity in the past; the real server's session GC must not drop it.
+      SESSION_LIFETIME: 43200
       SANCTUM_STATEFUL_DOMAINS: 127.0.0.1:4317,127.0.0.1:4318
       LOG_CHANNEL: single
       QUEUE_CONNECTION: sync

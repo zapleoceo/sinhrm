@@ -61,6 +61,12 @@ foreach (['user_id', 'manager_id', 'work_email', 'personal_email', 'email', 'pho
 }
 $formulaId = DB::table('employees')->insertGetId($formula);
 
+// Gmail connected with a fake token (sending is answered by E2eStubsProvider's Http::fake, nothing leaves the box).
+app(App\Modules\GoogleWorkspace\Services\GoogleConnectionStore::class)->connect(
+    App\Modules\GoogleWorkspace\Enums\GoogleService::Gmail, 'e2e-refresh', 'e2e-access', now()->addDays(60), 'recruiting-box@sinhrm.test',
+    [...App\Modules\GoogleWorkspace\Enums\GoogleService::Gmail->scopes(), App\Modules\GoogleWorkspace\Enums\GoogleService::GMAIL_SEND_SCOPE], $admin->id,
+);
+
 // Role users from the demo org chart. "hr": a recruiter user with an employee card made hr_manager (self-decision checks).
 $hr = User::query()->where('email', 'demo+hr-2@sinhrm.test')->firstOrFail();
 $hr->assignRole('hr_manager');

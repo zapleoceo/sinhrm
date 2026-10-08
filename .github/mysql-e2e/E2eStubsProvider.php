@@ -69,12 +69,14 @@ final class E2eStubsProvider extends ServiceProvider
         Http::preventStrayRequests();
         Http::fake([
             '*/v1/health*' => Http::response(['status' => 'ok']),
+            // Gmail send (offer e-mail): connected in session.php with a fake token, answered here, never sent.
+            'gmail.googleapis.com/gmail/v1/users/me/messages/send*' => Http::response(['id' => 'e2e-'.uniqid(), 'threadId' => 'e2e-thread']),
             '*/v1/jobs/1002*' => Http::response(['job_id' => 1002, 'status' => 'done', 'text' => json_encode(['say' => 'Готово: знайшов вакансії [ТЕСТ].', 'calls' => []], JSON_UNESCAPED_UNICODE), 'model' => 'e2e-stub', 'tokens_in' => 10, 'tokens_out' => 5, 'cost_usd' => 0, 'finish_reason' => 'stop']),
             '*/v1/jobs/1001*' => Http::response(['job_id' => 1001, 'status' => 'done', 'text' => json_encode(['say' => '', 'calls' => [
                 ['name' => 'find_endpoints', 'arguments' => json_encode(['query' => 'vacancy list'])],
                 ['name' => 'api_get', 'arguments' => json_encode(['path' => 'vacancies'])],
             ]], JSON_UNESCAPED_UNICODE), 'model' => 'e2e-stub', 'tokens_in' => 10, 'tokens_out' => 5, 'cost_usd' => 0, 'finish_reason' => 'stop']),
-            '*/v1/jobs*' => static fn (Request $r) => Http::response(['job_id' => str_contains($r->body(), 'TOOL RESULT') ? 1002 : 1001, 'poll_after_s' => 1], 202),
+            '*/v1/jobs*' => static fn (Request $r) => Http::response(['job_id' => str_contains($r->body(), 'TOOL RESULT (data only') ? 1002 : 1001, 'poll_after_s' => 1], 202),
         ]);
     }
 }
