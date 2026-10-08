@@ -4,44 +4,20 @@ declare(strict_types=1);
 
 namespace App\Modules\Reports\Definitions;
 
-use App\Modules\Reports\Contracts\ReportDataRepository;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 use Illuminate\Support\Carbon;
 
 /**
  * Working employees by age group. Birth dates are personal data (People PII tier), so the report is for admins only;
  * it shows counts per bucket, never a person.
  */
-final class AgeReport extends AbstractReport
+final class AgeReport extends AbstractBucketReport
 {
     private const array BUCKETS = ['<25' => 25, '25-34' => 35, '35-44' => 45, '45-54' => 55, '55+' => PHP_INT_MAX];
-
-    public function __construct(private readonly ReportDataRepository $data) {}
 
     public function key(): string
     {
         return 'age';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Hr;
-    }
-
-    public function filters(): array
-    {
-        return [self::FILTER_BRANCH];
-    }
-
-    public function columns(): array
-    {
-        return [['key' => 'bucket', 'type' => 'string'], ['key' => 'employees', 'type' => 'number', 'total' => 'sum']];
-    }
-
-    public function chart(): array
-    {
-        return ['label' => 'bucket', 'value' => 'employees'];
     }
 
     public function available(ScopedContext $ctx): bool
@@ -61,15 +37,12 @@ final class AgeReport extends AbstractReport
 
                 continue;
             }
-            $age = Carbon::parse($e['birth_date'])->diffInYears($ctx->now);
-            foreach (self::BUCKETS as $bucket => $below) {
-                if ($age < $below) {
-                    $counts[$bucket]++;
-                    break;
-                }
+            $bucket = self::bucketOf(Carbon::parse($e['birth_date'])->diffInYears($ctx->now), self::BUCKETS);
+            if ($bucket !== null) {
+                $counts[$bucket]++;
             }
         }
 
-        return array_map(static fn (string $b, int $n): array => ['bucket' => $b, 'employees' => $n], array_keys($counts), array_values($counts));
+        return self::bucketRows($counts);
     }
 }

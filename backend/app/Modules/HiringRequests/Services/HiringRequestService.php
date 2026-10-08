@@ -10,12 +10,12 @@ use App\Modules\HiringRequests\Contracts\HiringRequestRepository;
 use App\Modules\HiringRequests\Enums\ApprovalStatus;
 use App\Modules\HiringRequests\Enums\HiringReason;
 use App\Modules\HiringRequests\Enums\HiringRequestStatus;
-use App\Modules\HiringRequests\Enums\RouteStepKind;
 use App\Modules\HiringRequests\Exceptions\HiringException;
 use App\Modules\HiringRequests\Models\HiringApproval;
 use App\Modules\HiringRequests\Models\HiringRequest;
 use App\Modules\HiringRequests\Support\FormFields;
-use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\HiringRequests\Support\RequestAttributes;
+use App\Modules\HiringRequests\Support\VacancyDraft;
 use App\Modules\Recruiting\DTO\VacancyData;
 use App\Modules\Recruiting\Enums\VacancyStatus;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
@@ -38,7 +38,8 @@ final readonly class HiringRequestService
         private HiringRequestRepository $requests,
         private HiringAccess $access,
         private ApproverNotifier $notifier,
-        private EmployeeRepository $employees,
+        private RouteSnapshot $route,
+        private HiringProgress $progress,
         private VacancyService $vacancies,
         private LoggerInterface $log,
         private WorkingCalendar $calendar,
@@ -126,7 +127,7 @@ final readonly class HiringRequestService
             if (! $this->requests->transition($request, HiringRequestStatus::Draft, ['status' => HiringRequestStatus::Pending->value, 'submitted_at' => $now])) {
                 throw HiringException::invalidStatus($request->status->value);
             }
-            $this->requests->createApprovals($request, $this->snapshotRoute($request));
+            $this->requests->createApprovals($request, $this->route->of($request));
         });
         $this->log->info('hiring.request_submitted', ['id' => $request->id, 'by' => $user->id]);
 
@@ -234,7 +235,7 @@ final readonly class HiringRequestService
                 throw HiringException::invalidStatus($fresh->status->value);
             }
             try {
-                $vacancy = $this->vacancies->openOnBehalf(new VacancyData($this->vacancyAttributes($fresh)), $recruiter);
+                $vacancy = $this->vacancies->openOnBehalf(new VacancyData(VacancyDraft::from($fresh)), $recruiter);
             } catch (RecruitingException) {
                 throw HiringException::noDefaultPipeline();
             }
@@ -277,27 +278,7 @@ final readonly class HiringRequestService
      */
     public function progress(iterable $requests): array
     {
-        $list = [];
-        $vacancyIds = [];
-        foreach ($requests as $r) {
-            $list[] = $r;
-            if ($r->vacancy_id !== null) {
-                $vacancyIds[] = $r->vacancy_id;
-            }
-        }
-        $hires = $this->requests->hiresByVacancy($vacancyIds);
-        $out = [];
-        foreach ($list as $r) {
-            $hired = $r->vacancy_id === null ? 0 : ($hires[$r->vacancy_id] ?? 0);
-            $out[$r->id] = [
-                'vacancy_status' => $r->vacancy?->status->value,
-                'hired' => $hired,
-                'headcount' => $r->headcount,
-                'percent' => $r->headcount > 0 ? (int) min(100, round($hired / $r->headcount * 100)) : 0,
-            ];
-        }
-
-        return $out;
+        return $this->progress->of($requests);
     }
 
     /**
@@ -344,49 +325,6 @@ final readonly class HiringRequestService
     }
 
     /**
-     * The route template → steps of this request; unresolvable steps (no manager, self-approval) are skipped.
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function snapshotRoute(HiringRequest $request): array
-    {
-        $steps = [];
-        foreach ($this->requests->routeSteps() as $step) {
-            $approver = match ($step->kind) {
-                RouteStepKind::Manager => $this->managerUserId($request->requester_id),
-                RouteStepKind::User => $step->user_id,
-                RouteStepKind::Role => null,
-            };
-            $skip = match ($step->kind) {
-                RouteStepKind::Role => $step->role === null,
-                default => $approver === null || $approver === $request->requester_id || ! $this->requests->isActiveUser($approver),
-            };
-            $steps[] = [
-                'position' => $step->position,
-                'name' => $step->name,
-                'kind' => $step->kind->value,
-                'role' => $step->kind === RouteStepKind::Role ? $step->role : null,
-                'approver_id' => $skip ? null : $approver,
-                'sla_days' => $step->sla_days,
-                'status' => ($skip ? ApprovalStatus::Skipped : ApprovalStatus::Waiting)->value,
-            ];
-        }
-
-        return $steps;
-    }
-
-    private function managerUserId(?int $requesterId): ?int
-    {
-        if ($requesterId === null) {
-            return null;
-        }
-        $self = $this->employees->findByUser($requesterId);
-        $manager = $self?->manager_id === null ? null : $this->employees->find($self->manager_id);
-
-        return $manager?->user_id;
-    }
-
-    /**
      * @param  array<string, mixed>  $data
      * @param  array<string, mixed>|null  $given  keys actually sent (partial update)
      * @return array<string, mixed>
@@ -395,54 +333,7 @@ final readonly class HiringRequestService
      */
     private function attributes(array $data, bool $creating, ?array $given = null): array
     {
-        $given ??= $data;
-        $keys = ['title', 'branch_id', 'department_id', 'position_id', 'headcount', 'reason', 'replaced_employee_id',
-            'desired_start_date', 'salary_min', 'salary_max', 'currency', 'requirements', 'priority'];
-        $out = [];
-        foreach ($keys as $key) {
-            if (array_key_exists($key, $given)) {
-                $out[$key] = $given[$key];
-            }
-        }
-        $rawReason = $data['reason'] ?? null;
-        $reason = $rawReason instanceof HiringReason ? $rawReason : HiringReason::tryFrom(is_string($rawReason) ? $rawReason : '');
-        if ($reason !== HiringReason::Replacement && array_key_exists('reason', $given)) {
-            $out['replaced_employee_id'] = null;
-        }
-        $min = $data['salary_min'] ?? null;
-        $max = $data['salary_max'] ?? null;
-        if ($min !== null && $max !== null && (float) $min > (float) $max) {
-            throw HiringException::salaryRange();
-        }
-        if (array_key_exists('extra', $given) || $creating) {
-            $extra = is_array($given['extra'] ?? null) ? $given['extra'] : [];
-            /** @var array<string, mixed> $extra */
-            $out['extra'] = FormFields::clean($this->fields(), $extra);
-        }
-
-        return $out;
-    }
-
-    /** @return array<string, mixed> vacancy prefilled from the request */
-    private function vacancyAttributes(HiringRequest $r): array
-    {
-        $lines = array_filter([
-            $r->requirements,
-            'Кількість позицій: '.$r->headcount,
-            $r->desired_start_date === null ? null : 'Бажана дата виходу: '.$r->desired_start_date->format('d.m.Y'),
-            $r->salary_min === null && $r->salary_max === null ? null
-                : 'Зарплата: '.trim(($r->salary_min ?? '').' – '.($r->salary_max ?? '').' '.($r->currency ?? '')),
-            'Заявка на підбір #'.$r->id,
-        ]);
-
-        return [
-            'title' => $r->title,
-            'branch_id' => $r->branch_id,
-            'department_id' => $r->department_id,
-            'position_id' => $r->position_id,
-            'description' => mb_substr(implode("\n\n", $lines), 0, 10000),
-            'status' => VacancyStatus::Open->value,
-        ];
+        return RequestAttributes::from($data, $creating, $given, fn (): array => $this->fields());
     }
 
     /**

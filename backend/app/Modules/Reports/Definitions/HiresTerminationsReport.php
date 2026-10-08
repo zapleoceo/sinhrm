@@ -6,21 +6,15 @@ namespace App\Modules\Reports\Definitions;
 
 use App\Modules\Reports\Contracts\ReportDataRepository;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 
 /** Hires (hired_at) and terminations (fired_at) per month of the range. */
-final class HiresTerminationsReport extends AbstractReport
+final class HiresTerminationsReport extends AbstractTeamReport
 {
     public function __construct(private readonly ReportDataRepository $data) {}
 
     public function key(): string
     {
         return 'hires_terminations';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Hr;
     }
 
     public function filters(): array
@@ -36,11 +30,6 @@ final class HiresTerminationsReport extends AbstractReport
     public function chart(): array
     {
         return ['label' => 'month', 'value' => 'hires'];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->seesTeam();
     }
 
     public function rows(ScopedContext $ctx, array $filters): array

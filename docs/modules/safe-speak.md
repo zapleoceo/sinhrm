@@ -18,6 +18,7 @@
   `closed`). Без флага обработчика — 403 даже админу.
 
 ## Как устроено
+- Тема и текст обращения (`Http/Requests/SubmitReportRequest`): правила `subject`/`body` и чтение — общий трейт `Core\Http\Requests\Concerns\HasSubjectAndBody` (тот же, что у Desk); лимиты 200/10000 и trim темы прежние, об отправителе по-прежнему ничего не читается.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/SafeSpeakNavBadges` — ключ `safe_speak` («Вхідні Safe Speak», только обработчики — тот же gate `safe-speak-handle`): новые обращения (статус `new`), которые ещё никто не взял. Ничего об отправителе не раскрывается — это просто число.
 Бэкенд — `backend/app/Modules/SafeSpeak`.
 

@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\GoogleWorkspace\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /**
  * Error of a Google call or of the connection; rendered as {message, code} with its HTTP status.
  * Codes never contain tokens, URLs with credentials or texts of upstream responses.
  */
-final class GoogleException extends RuntimeException
+final class GoogleException extends BusinessRuleException
 {
-    private function __construct(public readonly string $errorCode, public readonly int $status)
-    {
-        parent::__construct($errorCode);
-    }
-
     /** The service was never connected (or switched off by hand). */
     public static function notConnected(string $service): self
     {
@@ -86,10 +80,5 @@ final class GoogleException extends RuntimeException
     public static function invalidSheetUrl(): self
     {
         return new self('invalid_sheet_url', 422);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode], $this->status);
     }
 }

@@ -6,26 +6,15 @@ namespace App\Modules\Reports\Definitions;
 
 use App\Modules\Recruiting\Services\ReportService;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 
 /** Candidates by source with hires and the hire rate (reuses Recruiting's sources report). */
-final class SourceEffectivenessReport extends AbstractReport
+final class SourceEffectivenessReport extends AbstractRecruitingReport
 {
     public function __construct(private readonly ReportService $recruiting) {}
 
     public function key(): string
     {
         return 'source_effectiveness';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Recruiting;
-    }
-
-    public function filters(): array
-    {
-        return [self::FILTER_FROM, self::FILTER_TO];
     }
 
     public function columns(): array
@@ -36,11 +25,6 @@ final class SourceEffectivenessReport extends AbstractReport
     public function chart(): array
     {
         return ['label' => 'source', 'value' => 'candidates'];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->user->isActive();
     }
 
     public function rows(ScopedContext $ctx, array $filters): array

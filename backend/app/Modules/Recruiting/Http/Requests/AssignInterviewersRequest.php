@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Http\Requests;
 
 use App\Models\User;
+use App\Modules\Auth\Enums\UserStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,7 +22,7 @@ final class AssignInterviewersRequest extends FormRequest
     {
         return [
             'user_ids' => ['present', 'array', 'max:20'],
-            'user_ids.*' => ['integer', 'distinct', Rule::exists(User::class, 'id')->where('status', 'active')],
+            'user_ids.*' => ['integer', 'distinct', Rule::exists(User::class, 'id')->where('status', UserStatus::Active->value)],
         ];
     }
 

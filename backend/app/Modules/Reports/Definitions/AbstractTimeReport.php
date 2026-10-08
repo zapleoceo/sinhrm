@@ -5,32 +5,21 @@ declare(strict_types=1);
 namespace App\Modules\Reports\Definitions;
 
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 use App\Modules\Time\Services\TimeReportService;
 
 /**
  * Shared base of the Time reports: week rows of the employees in the People scope (admin — all, manager — subtree +
  * self) from Time\Services\TimeReportService (whole weeks, at most 26). Default period: the last 4 weeks.
  */
-abstract class AbstractTimeReport extends AbstractReport
+abstract class AbstractTimeReport extends AbstractTeamReport
 {
     protected const int DEFAULT_WEEKS_DAYS = 28;
 
     public function __construct(private readonly TimeReportService $time) {}
 
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Hr;
-    }
-
     public function filters(): array
     {
         return [self::FILTER_FROM, self::FILTER_TO, self::FILTER_BRANCH];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->seesTeam();
     }
 
     /**

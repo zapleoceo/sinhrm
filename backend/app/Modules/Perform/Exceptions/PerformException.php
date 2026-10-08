@@ -4,17 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Perform\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in Perform; rendered as {message, code} with its HTTP status. */
-final class PerformException extends RuntimeException
+final class PerformException extends BusinessRuleException
 {
-    private function __construct(public readonly string $errorCode, public readonly int $status)
-    {
-        parent::__construct($errorCode);
-    }
-
     /** The user has no employee record: 1:1s, feedback and reviews need one. */
     public static function noEmployee(): self
     {
@@ -67,10 +61,5 @@ final class PerformException extends RuntimeException
     public static function duplicate(): self
     {
         return new self('duplicate', 409);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode], $this->status);
     }
 }

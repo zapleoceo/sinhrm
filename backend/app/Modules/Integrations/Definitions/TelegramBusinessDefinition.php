@@ -4,28 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\Integrations\Definitions;
 
-use App\Modules\Integrations\Contracts\ConnectionChecker;
 use App\Modules\Integrations\DTO\CheckResult;
 use App\Modules\Integrations\DTO\FieldSpec;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Integrations\Enums\IntegrationGroup;
-use App\Modules\Integrations\Support\OutboundUrlGuard;
-use Illuminate\Http\Client\Factory as Http;
-use Throwable;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 
 /**
  * Telegram bot (business account). Check: read-only getMe.
  * The request URL contains the token, so neither the URL nor exception texts are ever logged or returned.
  */
-final class TelegramBusinessDefinition extends AbstractDefinition implements ConnectionChecker
+final class TelegramBusinessDefinition extends AbstractHttpCheckedDefinition
 {
     public const string API = 'https://api.telegram.org';
 
-    private const int TIMEOUT_SECONDS = 10;
-
     public const string TOKEN_PATTERN = '/^\d+:[A-Za-z0-9_-]+$/';
-
-    public function __construct(private readonly Http $http, private readonly OutboundUrlGuard $guard) {}
 
     public function key(): string
     {
@@ -59,16 +53,9 @@ final class TelegramBusinessDefinition extends AbstractDefinition implements Con
             return CheckResult::error('invalid_token');
         }
         $url = self::API.'/bot'.$token.'/getMe';
-        $blocked = $this->guard->check($url);
-        if ($blocked !== null) {
-            return CheckResult::error($blocked);
-        }
-
-        try {
-            $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)->acceptJson()->get($url);
-        } catch (Throwable) {
-            // Never the exception text: it may contain the request URL.
-            return CheckResult::error('connection_failed');
+        $response = $this->probe($url, static fn (PendingRequest $r): Response => $r->get($url));
+        if ($response instanceof CheckResult) {
+            return $response;
         }
 
         if ($response->successful() && $response->json('ok') === true) {

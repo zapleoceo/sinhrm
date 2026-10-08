@@ -4,17 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Channels\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business error of the Channels module; rendered as {message, code} with its HTTP status. Never contains secrets. */
-final class ChannelException extends RuntimeException
+final class ChannelException extends BusinessRuleException
 {
-    private function __construct(public readonly string $errorCode, public readonly int $status)
-    {
-        parent::__construct($errorCode);
-    }
-
     /** The channel is off, has no adapter or no credentials: the UI offers "log manually". */
     public static function notConnected(): self
     {
@@ -80,10 +74,5 @@ final class ChannelException extends RuntimeException
     public static function unsupported(): self
     {
         return new self('unsupported', 422);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode], $this->status);
     }
 }

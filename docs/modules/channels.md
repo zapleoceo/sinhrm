@@ -42,6 +42,9 @@
 `ringostat`, `binotel`). Точный адрес показан на странице — копируйте его оттуда.
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/ChannelException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 ### Один путь приёма
 ```
 провайдер ─POST /api/webhooks/{key}─► LimitWebhookBody (≤1 МБ) ─► throttle ─► WebhookService::receive

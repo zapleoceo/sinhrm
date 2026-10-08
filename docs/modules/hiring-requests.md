@@ -38,10 +38,20 @@
   сроком шага; при просрочке — HR. Главная: блок «Заявки на підбір чекають мого рішення».
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/HiringException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/HiringNavBadges` — ключ `hiring_inbox` на пункте «Заявки на підбір»: заявки, чей текущий шаг ждёт моего решения (тот же список, что `GET /api/hiring-requests/inbox`; право решать проверяется в PHP, поэтому считается длина этого списка).
 Бэкенд — `backend/app/Modules/HiringRequests`, маршруты `/api/hiring-requests/*` (`routes.php`), `auth:sanctum` +
 `EnsureUserIsActive`; gate `hiring-manage` = `PeopleScope::isAdmin` (настройки, вакансия, закрытие). Права —
 `Services/HiringAccess`, логика — `Services/HiringRequestService`, SQL — `Repositories/EloquentHiringRequestRepository`.
+`HiringRequestService` ведёт жизненный цикл заявки (черновик → маршрут → решение → вакансия → закрытие) и делегирует
+отдельные ответственности (SRP, 2026-10-08): `Services/RouteSnapshot` — шаблон маршрута → шаги заявки при отправке
+(руководитель из People, пользователь, роль; неразрешимые шаги — `skipped`); `Support/RequestAttributes` — колонки из
+формы (только отправленные ключи, сброс `replaced_employee_id`, проверка вилки зарплаты, очистка доп. полей);
+`Support/VacancyDraft` — поля и описание вакансии из заявки; `Services/HiringProgress` — прогресс найма по вакансиям
+(`progress()` сервиса передаёт вызов). Эскалация в `ApproverNotifier` берёт роли из `Auth\Enums\UserRole`, без строк.
+Тест — `tests/Unit/HiringRequests/HiringRequestPartsTest`.
 
 ### Статусы
 `draft → pending → approved → in_progress (есть вакансия) → closed`; `pending → rejected`; `draft | pending | approved →

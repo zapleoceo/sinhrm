@@ -21,6 +21,7 @@ DB/key/storage требования и незакрытые решения вл�
 ## Как устроено
 - Включение и роли модулей — таблица `module_settings` (`module`, `enabled`, `roles`), сервис `ModuleAccess`; подробности и правила — [modules-access.md](modules-access.md), решение — [ADR 0009](../adr/0009-module-access.md).
 - `ModuleAccess::refreshSettings()` перечитывает настройки напрямую из репозитория, сохраняет снимок в текущем экземпляре и возвращает его вызывающему сервису. Следующие `allows` и `allowedKeys` проверяют этот же снимок по обычным правилам ролей и отключения модулей. Assistant использует обновление перед проверкой свежего пользователя и после ожидания брокера; общий кеш обычных запросов сохраняется. Контракт и регрессия обхода двух кешей — [modules-access.md](modules-access.md), `ModuleAccessTest`.
+- `Exceptions\BusinessRuleException` — база ошибок бизнес-правил модулей (2026-10-08): код (`errorCode`, он же i18n-ключ фронта), HTTP-статус, необязательные поля `extra`; `render()` отдаёт `{message: code, code, ...extra}`. Конструктор `final protected`: модуль объявляет только именованные фабрики (`PeopleException::noEmployee()`). Наследуют 19 модульных исключений; `SafeSpeakException` остаётся отдельным — он добавляет заголовок `Retry-After`.
 - `GET /api/health` → `{"version": "...", "ok": true, "checks": {"database": {"ok": true}}}`; код 200 или 503.
 - Каждая зависимость — класс, реализующий `Contracts\HealthCheck`; модули добавляют свои проверки через
   `$app->tag([...], HealthCheck::class)`. Ошибка проверки не раскрывает детали подключения — только класс исключения.
@@ -202,12 +203,13 @@ IP клиента или адрес края фронтенд-проекта —
 | `Http/Concerns/ResolvesActor` | `actor(Request): User` — пользователь запроса за `auth:sanctum` (`assert`, гость сюда не доходит) | контроллеры 20 модулей (было 31 приватная копия + трейт Recruiting `Actor`, удалён) |
 | `Support/Database/Like` | `escape/contains/startsWith`: экранирует `%`, `_` и сам символ экранирования; `Like::BACKSLASH` (по умолчанию) для `like ?` без `ESCAPE` (MySQL по умолчанию экранирует обратной косой), `Like::PORTABLE` (`!`) для `like ? escape '!'` | репозитории Assets, Directory, Knowledge, People, Recruiting (3), Reports, Scripts, Users |
 | `Http/Requests/Concerns/Paginates` | `perPageRules($max = 200)` → `nullable, integer, between:1,$max`; `perPageOr($default = 50)` — `integer('perPage')`, строка `"20"` → 20 | 11 FormRequest: Audit (2, `1..100`/20), Users (`1..100`/20), Directory, People (2), Recruiting (4), TimeOff |
+| `Http/Requests/Concerns/HasSubjectAndBody` | `subjectAndBodyRules()` → `subject: required, string, max:200`, `body: required, string, max:10000`; `subject()` (trim), `body()` (как ввели) | Desk `OpenCaseRequest`, SafeSpeak `SubmitReportRequest` (2026-10-08, было два одинаковых набора) |
 | `Support/ModuleServiceProvider::defineRoleGate($ability, $roles)` | gate «активный пользователь с одной из ролей»; `UserRole::hrStaff()` = набор `PeopleScope::isAdmin` | 17 gate: `*-manage` 11 HR-модулей, superadmin-only (audit, modules, integrations, users), superadmin+admin (directory, privacy) |
 | `Http/Responses/Download` | `file()` — загруженный файл как attachment (ASCII-имя + `filename*`, `nosniff`, `private, no-store`, `Content-Length`); `disposition($name)` — `attachment; filename="…"` для своих имён | Desk, Documents (`file`); Privacy, People, Reports (`disposition`) |
 | `Support/Export/Csv` | CSV без формул (`= + - @ \t \r` → префикс `'`), BOM, строка «Total» | Reports (`CsvResponse`), People (`bulk` export) — перенесён из `Reports/Support` |
 | `Support/UserTime::today()` | «сегодня» пользователя (см. выше) | Assets, People, TimeOff, Workflows (13 вызовов `Carbon::today()`) |
 
-Тесты: `tests/Unit/Core/{LikeTest,DownloadTest,CsvTest,ResolvesActorTest,UserTimeTest}`, `tests/Feature/Core/{PaginatesTest,RoleGateTest}`
+Тесты: `tests/Unit/Core/{LikeTest,DownloadTest,CsvTest,ResolvesActorTest,UserTimeTest,HasSubjectAndBodyTest,BusinessRuleExceptionTest}`, `tests/Feature/Core/{PaginatesTest,RoleGateTest}`
 (каждый gate × каждая роль, заблокированный пользователь, совпадение HR-gate с `PeopleScope::isAdmin`).
 Не перенесены: `actor()` в Ai (там `abort(401)`, другое поведение) и Assistant (статические, модуль в ожидании решения по MCP);
 ~49 inline `assert($user instanceof User)` в методах — переводятся при следующих правках этих файлов.

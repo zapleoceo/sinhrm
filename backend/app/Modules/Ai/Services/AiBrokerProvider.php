@@ -79,15 +79,8 @@ final readonly class AiBrokerProvider implements AiProvider, AiTranscriber
         $capability = $prompt->capability ?? $settings->capabilityFor($prompt->purpose);
         $url = $settings->baseUrl.'/v1/jobs?capability='.rawurlencode($capability);
         $response = $this->send(fn (PendingRequest $r): Response => $r->post($url, $body), $url);
-        if (! $response->successful()) {
-            throw AiException::provider('http_'.$response->status());
-        }
-        $jobId = $response->json('job_id');
-        if (! is_int($jobId) && ! (is_string($jobId) && ctype_digit($jobId))) {
-            throw AiException::provider('bad_response');
-        }
 
-        return new AiJobRef(self::KEY, (string) $jobId, max(1, (int) $response->json('poll_after_s', 2)));
+        return self::jobRef($response);
     }
 
     /** POST {base}/v1/transcribe/jobs (multipart "file", ≤ 25 MB) → 202 {job_id}; polled like chat jobs. */
@@ -95,6 +88,13 @@ final readonly class AiBrokerProvider implements AiProvider, AiTranscriber
     {
         $url = $this->settings->read()->baseUrl.'/v1/transcribe/jobs?workflow='.rawurlencode($workflow);
         $response = $this->send(fn (PendingRequest $r): Response => $r->attach('file', $audio->bytes, $audio->filename)->post($url), $url);
+
+        return self::jobRef($response);
+    }
+
+    /** 202 {job_id, poll_after_s?} of a submitted job → its reference; any other answer is a provider error. */
+    private static function jobRef(Response $response): AiJobRef
+    {
         if (! $response->successful()) {
             throw AiException::provider('http_'.$response->status());
         }

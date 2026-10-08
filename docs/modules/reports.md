@@ -76,6 +76,20 @@
 «Рекрутинговые» отчёты доступны любому активному пользователю, как и прежняя страница `/reports`, — данные ограничены
 его филиалами (у пользователя без филиалов — пусто).
 
+**Общие каркасы определений (DRY, 2026-10-08).** Повторяющиеся `group()/filters()/available()/columns()` вынесены
+в абстрактные базы `Definitions/*`, сами отчёты описывают только ключ, колонки и сборку строк:
+- `AbstractReport` — хелперы периода (`range`, `months`), `pct`, `workingOn`, `branch`;
+- `AbstractRecruitingReport` — группа `recruiting`, фильтр `from/to`, доступ любому активному пользователю
+  (7 рекрутинговых отчётов: funnel, time_to_hire, source/channel effectiveness, reject_reasons, recruiter_touches,
+  script_scores);
+- `AbstractTeamReport` — группа `hr`, доступ `seesTeam()` (headcount, hires_terminations, turnover, leave_balances,
+  а также `AbstractTimeReport` для четырёх Time-отчётов);
+- `AbstractLeaveReport` (наследник `AbstractTeamReport`) — фильтр `from/to`, `ReportDataRepository` и `countPeople()`:
+  число разных сотрудников в строке и округление дней до 2 знаков (leave_usage, absences_summary);
+- `AbstractBucketReport` — группа `hr`, фильтр `branch_id`, колонки/диаграмма `bucket/employees`, `bucketOf()` (первая
+  корзина с верхней границей выше значения) и `bucketRows()` (age, tenure; доступ у каждого свой).
+Колонки, порядок строк, значения и CSV не изменились — это фиксирует `tests/Unit/Reports/ReportBaseClassesTest`.
+
 ### Конструктор (`Services/BuilderService`, `Repositories/QueryBuilderRepository`)
 Наборы — `Datasets/*` (тег `reports.datasets`): **белый список** колонок `ключ → фиксированное SQL-выражение, тип,
 pii`. Пользователь присылает только ключи: неизвестный набор/колонка — 422 `unknown_dataset`/`unknown_column`,

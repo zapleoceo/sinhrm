@@ -6,27 +6,16 @@ namespace App\Modules\Reports\Definitions;
 
 use App\Modules\Reports\Contracts\ReportDataRepository;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 use Illuminate\Support\Carbon;
 
 /** Days from application to hire (closed in the range) per vacancy: count, average and median. */
-final class TimeToHireReport extends AbstractReport
+final class TimeToHireReport extends AbstractRecruitingReport
 {
     public function __construct(private readonly ReportDataRepository $data) {}
 
     public function key(): string
     {
         return 'time_to_hire';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Recruiting;
-    }
-
-    public function filters(): array
-    {
-        return [self::FILTER_FROM, self::FILTER_TO];
     }
 
     public function columns(): array
@@ -37,11 +26,6 @@ final class TimeToHireReport extends AbstractReport
     public function chart(): array
     {
         return ['label' => 'vacancy', 'value' => 'avg_days'];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->user->isActive();
     }
 
     public function rows(ScopedContext $ctx, array $filters): array

@@ -34,6 +34,9 @@
   филиал) и праздники по годам (общие или для филиала).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/TimeOffException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeOffNavBadges` — ключ `timeoff_approvals`: заявки, которые я могу решить (как «Погодження»; своя не считается). `LeaveRequestService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`. Не руководителю — 0 (значка нет).
 Бэкенд — `backend/app/Modules/TimeOff`, маршруты `/api/timeoff/*` (`auth:sanctum` + `EnsureUserIsActive`). Права берутся из
 модуля People (`PeopleScope`, [people.md](people.md)); запись настроек — gate `timeoff-manage` (superadmin, admin, hr_manager — `PeopleScope::isAdmin`, т. е. `UserRole::hrStaff()`).
@@ -64,6 +67,9 @@
   (20 дней → 20.00, без дрейфа 20.04), а первый запуск в году догоняет прошедшие месяцы этого года; `expiring(balance, carryMax)` — сколько сгорает.
 
 ### Правила запросов (`Services/LeaveRequestService`)
+Письма потока (руководителю — «Погодити відпустку: …» по новой заявке на согласование, сотруднику — решение с
+комментарием) вынесены из сервиса в `Services/LeaveNotifications` (SRP, 2026-10-08): те же получатели, тексты и ссылки,
+автор заявки-руководитель письма о своей заявке не получает (`tests/Unit/TimeOff/LeaveNotificationsTest`).
 **Гонки.** Создание, согласование и отмена берут блокировку строки сотрудника
 (`EmployeeRepository::lockForUpdate` → `SELECT … FOR UPDATE` в транзакции): проверки пересечения и баланса — «прочитал,
 потом записал», и два параллельных запроса одного сотрудника выполняются по очереди (на MySQL; в SQLite-тестах путь

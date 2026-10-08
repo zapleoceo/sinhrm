@@ -4,18 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\HiringRequests\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in HiringRequests; rendered as {message, code, ...extra} with its HTTP status. */
-final class HiringException extends RuntimeException
+final class HiringException extends BusinessRuleException
 {
-    /** @param  array<string, mixed>  $extra */
-    private function __construct(public readonly string $errorCode, public readonly int $status, public readonly array $extra = [])
-    {
-        parent::__construct($errorCode);
-    }
-
     /** The action is not allowed in the request's current status (someone decided first, already closed, …). */
     public static function invalidStatus(string $status): self
     {
@@ -76,10 +69,5 @@ final class HiringException extends RuntimeException
     public static function noDefaultPipeline(): self
     {
         return new self('no_default_pipeline', 422);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);
     }
 }

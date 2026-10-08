@@ -52,6 +52,9 @@ SinHRM умеет работать с **одним Google-аккаунтом к�
    ограничение — перевести приложение в Production (для Gmail-scopes Google требует верификацию).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/GoogleException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 ### OAuth-подключение (`Http/Controllers/GoogleConnectController`, `routes.web.php`, группа `web`)
 - `GET /api/google/connect?services=gmail,calendar,sheets` (по умолчанию все три; неизвестные имена игнорируются) —
   суперадмин (`auth:sanctum` + активный + `can:manage-integrations`). Генерирует `state` (40 символов), кладёт в сессию

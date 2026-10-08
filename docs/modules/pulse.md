@@ -76,6 +76,9 @@
 - **«Мої задачі»** — задачи «Настрій команди знизився» (источник «Опитування», `?source=pulse`).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PulseException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/PulseNavBadges` — ключ `surveys` («Опитування»): открытые волны для меня, на которые я ещё не ответил (`responded = false` в `GET /api/pulse/my/waves`). Анонимность не страдает: считается только мой собственный признак «ответил», как и на странице. Кто в аудитории волны, решает PHP (`WaveAudience`), поэтому открытые волны перебираются в коде (их единицы), а ответы считаются одним `count(*)` (`ResponseService::countPending`).
 Бэкенд — `backend/app/Modules/Pulse`, маршруты `/api/pulse/*`, все за `auth:sanctum` + `EnsureUserIsActive`.
 Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::isAdmin` — конструктор, волны,
@@ -129,6 +132,10 @@ Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::i
 Сравнение: предыдущая волна того же опроса (не lifecycle, уже начатая) или `?with=`; для числовых вопросов
 «заголовочное» число (`WaveResults::headline`: среднее шкалы или eNPS), по всем и по каждому отделу/филиалу
 (`?segment=department|branch`), `delta = current − previous`.
+Арифметика сравнения вынесена из `ResponseService` в чистый `Support/WaveComparison` (SRP, 2026-10-08):
+`groupBy()` — ответы по сегменту (без сегмента — только в итоге), `row()` — строка сравнения (ниже минимума группы —
+`null`, небезопасная строка — без `previous`/`delta`, `hidden_reason = anonymity`). Что безопасно показывать, решает
+по-прежнему `ResponseService::compare` (`SafeSegments`, `SafeComparison`, `WaveMembership`); тест — `WaveComparisonTest`.
 **Защита от вычитания между волнами** (`Support/SafeComparison::allowed(now, then, min)`): число ответов группы
 в двух волнах должно совпадать или отличаться не меньше чем на `min = max(min_group_size обеих волн)`. Проверяется
 для строки «Все» (итоги волн), для каждого отдела/филиала (по сырым числам ответов, до `SafeSegments`) и для его
