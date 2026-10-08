@@ -492,7 +492,15 @@ await group('mysql', async () => {
   const back = data(await api('admin', 'GET', `/api/people/${S.employee.employeeId}`))?.custom_fields;
   const same = back && JSON.stringify(Object.entries(back).sort()) === JSON.stringify(Object.entries(cf).sort());
   record('mysql', 'json custom_fields round trip (values)', patch.status === 200 && same, { patch: brief(patch), back: back && Object.fromEntries(Object.entries(back).map(([k, v]) => [k, String(v).slice(0, 30)])) });
-  record('mysql', 'json custom_fields key order preserved', !!back && JSON.stringify(Object.keys(back)) === JSON.stringify(Object.keys(cf)), { sent: Object.keys(cf), back: back && Object.keys(back) });
+  // MySQL normalizes JSON key order (shorter first): the API order is MySQL's; the card must show a stable order (by name).
+  const card = await pages.admin.ctx.newPage();
+  await card.goto(`${BASE}/people/${S.employee.employeeId}`);
+  await card.waitForTimeout(2500);
+  const dts = (await card.locator('dl.facts dt').allTextContents()).map((t) => t.trim()).filter((t) => Object.keys(cf).includes(t));
+  const sorted = [...Object.keys(cf)].sort((a, b) => a.localeCompare(b, 'uk', { numeric: true, sensitivity: 'base' }));
+  await card.screenshot({ path: `${OUT}/custom-fields-card.png`, fullPage: true }).catch(() => {});
+  await card.close();
+  record('mysql', 'json custom_fields: card shows them by name, not in the MySQL key order', JSON.stringify(dts) === JSON.stringify(sorted), { sent: Object.keys(cf), apiOrder: back && Object.keys(back), cardOrder: dts, expected: sorted });
   // JSON meta: audit search by meta, touchpoint meta kind=offer survived (see offer scenario)
   const audit = await api('admin', 'GET', `/api/audit?entity_type=employee&entity_id=${S.employee.employeeId}&perPage=20`);
   record('mysql', 'json audit meta of the custom_fields change', audit.status === 200 && (data(audit) ?? []).length > 0, { status: audit.status, rows: (data(audit) ?? []).length, first: (data(audit) ?? [])[0] && { action: data(audit)[0].action, changes: JSON.stringify(data(audit)[0].changes ?? data(audit)[0].meta ?? {}).slice(0, 200) } });
