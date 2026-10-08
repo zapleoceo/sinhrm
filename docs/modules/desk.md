@@ -24,6 +24,8 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/DeskException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+**Тема и текст обращения**: правила `subject`/`body` и их чтение в `Http/Requests/OpenCaseRequest` — общий трейт `Core\Http\Requests\Concerns\HasSubjectAndBody` (тот же, что у SafeSpeak); лимиты 200/10000 и trim темы прежние.
+
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/DeskNavBadges` — ключ `desk_mine` («Мої звернення»): мои обращения в статусе «Очікує відповіді» (`waiting`, HR ждёт ответа от меня); ключ `desk_queue` («Черга звернень», только HR с правом `desk-manage`): открытые обращения — как фильтр очереди по умолчанию. Оба числа — один `count(*)` (`DeskService::countMine/countQueue`, общий с `cases()` построитель запроса).
 Бэкенд — `backend/app/Modules/Desk`, маршруты `/api/desk/*` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`; gate `desk-manage` = `PeopleScope::isAdmin` (очередь, категории).
