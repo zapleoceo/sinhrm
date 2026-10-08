@@ -18,6 +18,7 @@ use App\Modules\MailAgent\Enums\ParserKey;
 use App\Modules\MailAgent\Enums\SenderKind;
 use App\Modules\MailAgent\Support\ParserRegistry;
 use App\Modules\MailAgent\Support\SenderSuggester;
+use App\Modules\Recruiting\Contracts\CandidateIntake;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\TouchpointIngestor;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
@@ -28,7 +29,6 @@ use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Touchpoint;
-use App\Modules\Recruiting\Services\CandidateService;
 use App\Modules\Recruiting\Support\ContactNormalizer;
 use App\Modules\Scripts\Contracts\TaskScheduler;
 
@@ -53,7 +53,7 @@ final readonly class MailMessageProcessor
         private UnknownSenderRepository $unknown,
         private ParserRegistry $parsers,
         private CandidateRepository $candidateRepository,
-        private CandidateService $candidates,
+        private CandidateIntake $candidates,
         private VacancyRepository $vacancies,
         private TouchpointIngestor $ingestor,
         private ContactNormalizer $normalizer,

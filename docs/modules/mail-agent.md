@@ -173,6 +173,7 @@ Auth — `UserRepository::find` (фоновый actor).
 - `MailMessageProcessor` ставит задачу «перезвонить новому кандидату» через контракт Scripts `TaskScheduler::scheduleNewApplicantCall()`.
 - `AiMailClassifier` зовёт ИИ через контракт Ai `AiGateway`. Тест — `tests/Unit/MailAgent/MailAiGatewayTest.php` (ИИ выключен → ничего не отправляется).
 - `MailAgentService` и `MailSyncService` узнают состояние Gmail и того, кто его подключил, через контракт GoogleWorkspace `GoogleConnections`.
+- `MailMessageProcessor` создаёт или находит кандидата через контракт Recruiting `CandidateIntake::createOrMatch()`.
 
 ## Как проверить
 Бэкенд (Gmail подменён `Http::fake`, письма **выдуманы**, `tests/Support/MailFixtures`):

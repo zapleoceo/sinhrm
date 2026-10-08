@@ -7,17 +7,27 @@ namespace Tests\Unit\Recruiting;
 use App\Models\User;
 use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\CandidateIntake;
 use App\Modules\Recruiting\Contracts\RecruitingAccess;
+use App\Modules\Recruiting\Contracts\TouchpointLogger;
+use App\Modules\Recruiting\Services\CandidateService;
 use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Recruiting\Services\StalenessService;
+use App\Modules\Recruiting\Services\TouchpointService;
 use Tests\TestCase;
 
-/** Other modules use RecruitingAccess (bound to RecruitingScope) and ApplicationRepository::STALE_DAYS. */
+/** Other modules use Recruiting's contracts (RecruitingAccess, CandidateIntake, TouchpointLogger) and STALE_DAYS. */
 final class RecruitingAccessTest extends TestCase
 {
     public function test_the_contract_is_bound_to_recruiting_scope(): void
     {
         $this->assertInstanceOf(RecruitingScope::class, $this->app->make(RecruitingAccess::class));
+    }
+
+    public function test_intake_and_touch_logging_are_bound_to_their_services(): void
+    {
+        $this->assertInstanceOf(CandidateService::class, $this->app->make(CandidateIntake::class));
+        $this->assertInstanceOf(TouchpointService::class, $this->app->make(TouchpointLogger::class));
     }
 
     public function test_an_inactive_user_has_no_rights_and_an_empty_scope(): void

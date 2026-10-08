@@ -183,6 +183,7 @@ e-mail / Telegram (глобально) — **matched**, иначе **created** (
 
 ### Зависимости через контракты (2026-10-08)
 - Другим модулям состояние подключений Google отдаётся контрактом `Contracts\GoogleConnections` (`state`, `connectedBy`; реализация — `Services\GoogleConnectionStore`, биндинг в `GoogleWorkspaceServiceProvider`). Токены и запись подключения остаются внутри модуля. Тест — `tests/Unit/GoogleWorkspace/GoogleConnectionsTest.php`.
+- `SheetsImportService` создаёт кандидатов через контракт Recruiting `CandidateIntake`, `MeetingService` пишет касание через `TouchpointLogger` — без импорта классов сервисов Recruiting.
 
 ## Как проверить
 Бэкенд (Google везде подменён `Http::fake`, `Http::preventStrayRequests()`; все значения синтетические):

@@ -124,10 +124,6 @@ return [
     'GoogleWorkspace/Services/MeetingService.php' => [
         'App\Modules\Recruiting\Models\Candidate',
         'App\Modules\Recruiting\Models\Touchpoint',
-        'App\Modules\Recruiting\Services\TouchpointService',
-    ],
-    'GoogleWorkspace/Services/SheetsImportService.php' => [
-        'App\Modules\Recruiting\Services\CandidateService',
     ],
     'HiringRequests/Http/Requests/SaveHiringRequestRequest.php' => [
         'App\Modules\Directory\Models\Branch',
@@ -153,7 +149,6 @@ return [
     ],
     'MailAgent/Services/MailMessageProcessor.php' => [
         'App\Modules\Recruiting\Models\Touchpoint',
-        'App\Modules\Recruiting\Services\CandidateService',
     ],
     'Overview/Services/DashboardService.php' => [
         'App\Modules\Recruiting\Models\Application',

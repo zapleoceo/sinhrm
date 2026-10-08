@@ -19,6 +19,7 @@ use App\Modules\Recruiting\Ai\VacancyTextPrompt;
 use App\Modules\Recruiting\Console\RecruitingDemoCommand;
 use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\CandidateIntake;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\HiringTeamRepository;
 use App\Modules\Recruiting\Contracts\PersonalBoardRepository;
@@ -28,6 +29,7 @@ use App\Modules\Recruiting\Contracts\ReportRepository;
 use App\Modules\Recruiting\Contracts\ScreeningRepository;
 use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
 use App\Modules\Recruiting\Contracts\TouchpointIngestor;
+use App\Modules\Recruiting\Contracts\TouchpointLogger;
 use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\Events\TouchpointRecorded;
@@ -54,10 +56,12 @@ use App\Modules\Recruiting\Repositories\EloquentTouchpointRepository;
 use App\Modules\Recruiting\Repositories\EloquentVacancyRepository;
 use App\Modules\Recruiting\Repositories\QueryReportRepository;
 use App\Modules\Recruiting\Services\AutoScreeningJob;
+use App\Modules\Recruiting\Services\CandidateService;
 use App\Modules\Recruiting\Services\ExtensionTokenService;
 use App\Modules\Recruiting\Services\InboxNavBadges;
 use App\Modules\Recruiting\Services\MatchingTouchpointIngestor;
 use App\Modules\Recruiting\Services\RecruitingScope;
+use App\Modules\Recruiting\Services\TouchpointService;
 use App\Modules\Recruiting\Support\NullTouchpointEvaluations;
 use App\Modules\SafeSpeak\Http\Middleware\ForceJson;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -97,6 +101,8 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         $this->app->bind(PersonalBoardRepository::class, EloquentPersonalBoardRepository::class);
         // Visibility and rights for other modules (Scripts, Reports, Overview) — docs/architecture/overview.md.
         $this->app->bind(RecruitingAccess::class, RecruitingScope::class);
+        $this->app->bind(CandidateIntake::class, CandidateService::class);
+        $this->app->bind(TouchpointLogger::class, TouchpointService::class);
         $this->app->bind(ReportRepository::class, QueryReportRepository::class);
         $this->app->bind(TouchpointIngestor::class, MatchingTouchpointIngestor::class);
         // Replaced by the Scripts module (script evaluations on timeline items).
