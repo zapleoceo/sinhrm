@@ -6,11 +6,9 @@ on:
     workflows: [CI]
     types: [completed]
 
+# Least privilege per job (docs/security/audit-2026-10.md): only `deploy` may write (the preview comment).
 permissions:
   contents: read
-  pull-requests: write
-  issues: read # gate: labels of the PR
-  actions: read # gate: find the last successful production Deploy run
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -23,6 +21,10 @@ concurrency:
 
 jobs:
   gate:
+    permissions:
+      contents: read
+      issues: read # gate: labels of the PR
+      actions: read # gate: find the last successful production Deploy run
     # Public repo: never run PR code with secrets unless the branch lives in this repository (no forks).
     # Vercel is frozen (docs/guides/deploy.md): runs only when the repository variable VERCEL_DEPLOY_ENABLED is 'true'.
     if: >-
@@ -36,12 +38,12 @@ jobs:
       web: ${{ steps.paths.outputs.web }}
     steps:
       # Needed only so the "paths" step below can `require` .github/scripts/deploy-gate.js.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { ref: "${{ github.event.workflow_run.head_sha }}" }
 
       # main → production always; a pull request → preview only with the "preview" label (deploy budget).
       - id: check
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const run = context.payload.workflow_run;
@@ -60,7 +62,7 @@ jobs:
         # Fail-safe: even if this step crashes, gate succeeds with empty api/web outputs and
         # deploy treats "not 'false'" as deploy -> both projects go out.
         continue-on-error: true
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const gate = require('./.github/scripts/deploy-gate.js');
@@ -74,23 +76,26 @@ jobs:
 
   deploy:
     needs: gate
+    permissions:
+      contents: read
+      pull-requests: write # preview links comment
     # Same switch as in gate (defence in depth: a skipped gate already skips this job).
     if: vars.VERCEL_DEPLOY_ENABLED == 'true' && needs.gate.outputs.go == 'true'
     runs-on: ubuntu-latest
     env:
       TARGET: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && 'production' || 'preview' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { ref: "${{ github.event.workflow_run.head_sha }}" }
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: { node-version: 24 }
       - name: Stamp immutable Web and API build SHA from checkout
         run: node scripts/stamp-build.mjs
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with: { php-version: "8.4", extensions: "intl, sodium" }
       # Pinned CLI (was @latest; 61.0.0 in the last green deploy). Bump deliberately, not on every run.
       # ~/.npm only caches downloaded tarballs; npm still installs exactly this version.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.npm
           key: npm-vercel-61.0-${{ runner.os }}
@@ -99,7 +104,7 @@ jobs:
       - id: composer-cache
         working-directory: backend
         run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: composer-dl-${{ hashFiles('backend/composer.lock') }}
@@ -109,13 +114,15 @@ jobs:
         id: api
         if: needs.gate.outputs.api != 'false'
         working-directory: backend
-        env: { VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_API }}" }
+        env:
+          VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_API }}"
+          VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}"
         run: |
           PROD=$([ "$TARGET" = production ] && echo --prod || true)
-          vercel pull --yes --environment=$TARGET --token=${{ secrets.VERCEL_TOKEN }}
+          vercel pull --yes --environment=$TARGET --token="$VERCEL_TOKEN"
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-          vercel build $PROD --token=${{ secrets.VERCEL_TOKEN }}
-          url=$(vercel deploy --prebuilt $PROD --token=${{ secrets.VERCEL_TOKEN }})
+          vercel build $PROD --token="$VERCEL_TOKEN"
+          url=$(vercel deploy --prebuilt $PROD --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: API — migrations via /api/ops/migrate (DB credentials stay in Vercel)
@@ -139,10 +146,11 @@ jobs:
         working-directory: frontend
         env:
           VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_WEB }}"
+          VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}"
           API_URL: "${{ steps.api.outputs.url }}"
         run: |
           PROD=$([ "$TARGET" = production ] && echo --prod || true)
-          vercel pull --yes --environment=$TARGET --token=${{ secrets.VERCEL_TOKEN }}
+          vercel pull --yes --environment=$TARGET --token="$VERCEL_TOKEN"
           # Preview web must talk to the preview API of the same PR, not to prod: rewrite the /api and /sanctum
           # destinations in vercel.json (only in this CI checkout; the committed file keeps the prod URL).
           # Production web keeps the committed prod API URL, so a web-only deploy (API step skipped) needs no API_URL.
@@ -164,8 +172,8 @@ jobs:
             ' "$API_URL"
             grep -c "$API_URL" vercel.json
           fi
-          vercel build $PROD --token=${{ secrets.VERCEL_TOKEN }}
-          url=$(vercel deploy --prebuilt $PROD --token=${{ secrets.VERCEL_TOKEN }})
+          vercel build $PROD --token="$VERCEL_TOKEN"
+          url=$(vercel deploy --prebuilt $PROD --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Smoke — /api/health
@@ -186,7 +194,7 @@ jobs:
           env.TARGET == 'preview' &&
           (needs.gate.outputs.api != 'false' || needs.gate.outputs.web != 'false') &&
           always()
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           WEB_URL: ${{ steps.web.outputs.url }}
           API_URL: ${{ steps.api.outputs.url }}
