@@ -282,9 +282,7 @@ recruiter 1, остальные 0; у действующего берётся р
 (`{message, code}`). Фабрика `Database/Factories/EmployeeFactory` — синтетика на `example.test`.
 История оплаты (`employee_compensations`) тоже идёт через `EmployeeRepository` (`addCompensation()`,
 `compensationHistory()` — новые сверху по `effective_on`, затем id); `CompensationService` только выбирает действующую
-запись и собирает ответ. Тест — `tests/Unit/People/CompensationServiceTest.php`. «Действующая» — по дате пользователя
-(`Core\Support\UserTime::today()`, Киев), не UTC: повышение с сегодняшней даты действует с 00:00 по Киеву (2026-10-08, MySQL e2e
-раунд 2; тест `CompensationAndBulkTest::test_compensation_effective_today_is_current_after_kyiv_midnight`).
+запись и собирает ответ. Тест — `tests/Unit/People/CompensationServiceTest.php`.
 
 ### Сортировка и фильтры списка (2026-10-02)
 `ListPeopleRequest` проверяет `sort` по `Enums/EmployeeSort` и `dir` по `asc|desc` (белый список; текст запроса в SQL не
@@ -346,7 +344,9 @@ recruiter 1, остальные 0; у действующего берётся р
   → `{data: [{id, ok, error}]}` (`not_found`, `terminated`, `manager_cycle`); каждый элемент идёт через `EmployeeService::update`
   (те же правила, аудит-обсервер). `export` → `text/csv` (справочный и рабочий уровень, без PII и зарплаты).
 - **Компенсация** (`employee_compensations`): сумма, валюта UAH/USD/EUR, период month/hour, дата начала действия, причина.
-  Текущая — последняя запись с `effective_on ≤ сегодня`. `GET|POST /api/people/{id}/compensation` — только HR (gate `people-manage`);
+  Текущая — последняя запись с `effective_on ≤ сегодня`, где «сегодня» — день пользователя (`UserTime::today()`, Europe/Kyiv),
+  а не дата UTC: с 00:00 по Киеву повышение с сегодняшней датой уже действующее (до 08.10.2026 оно становилось текущим
+  только в 02:00/03:00 Киева; регрессия `CompensationServiceTest::test_current_follows_the_users_day_not_the_utc_day`). `GET|POST /api/people/{id}/compensation` — только HR (gate `people-manage`);
   `POST` **на собственную запись → 403 `forbidden`** (разделение обязанностей, см. выше): свою зарплату не вписывает
   никто, кроме break-glass единственного суперадмина (с записью `self_decision` в журнале); чтение своей истории через `GET` остаётся.
   сотрудник видит свою только для чтения: `GET /api/me/employee/compensation`, вкладка «Компенсація» в «Мій профіль».

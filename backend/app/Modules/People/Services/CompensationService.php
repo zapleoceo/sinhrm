@@ -48,7 +48,9 @@ final readonly class CompensationService
     public function payload(Employee $employee): array
     {
         $history = $this->employees->compensationHistory($employee->id);
-        $today = UserTime::today()->toDateString(); // the user's (Kyiv) date: a raise effective today is current from 00:00 Kyiv
+        // The user's day (Europe/Kyiv), not the UTC day: right after midnight in Kyiv a raise effective "today" is
+        // already current, although the UTC date is still yesterday (UserTime::today, docs/modules/people.md).
+        $today = UserTime::today()->toDateString();
         $current = $history->first(static fn (EmployeeCompensation $c): bool => $c->effective_on->toDateString() <= $today);
         $row = static fn (EmployeeCompensation $c): array => [
             'id' => $c->id,

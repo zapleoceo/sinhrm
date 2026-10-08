@@ -182,8 +182,22 @@ final class ReportsApiTest extends TestCase
         $this->assertArrayNotHasKey('assets', $datasets);
     }
 
+    /** 22:30 UTC on 31 Oct is 00:30 on 1 Nov in Kyiv: the export downloaded then is the 1 Nov file, not 31 Oct. */
+    public function test_csv_file_name_carries_the_users_date_not_the_utc_date(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+        Carbon::setTestNow(Carbon::parse('2026-10-31 22:30:00', 'UTC'));
+        $admin = $this->login(UserRole::Admin);
+
+        $this->assertSame(
+            'attachment; filename="headcount-2026-11-01.csv"',
+            $this->actingAs($admin)->get('/api/reports/catalog/headcount/csv')->assertOk()->headers->get('Content-Disposition'),
+        );
+    }
+
     public function test_csv_export_is_streamed_and_injection_safe(): void
     {
+        Carbon::setTestNow('2026-10-05 10:00:00');
         $admin = $this->login(UserRole::Admin);
         $this->employee(['full_name' => '=HYPERLINK("http://example.test","click")']);
         $this->employee(['full_name' => '+SUM(A1:A2)']);
@@ -191,7 +205,7 @@ final class ReportsApiTest extends TestCase
         $response = $this->actingAs($admin)->post('/api/reports/builder/csv', ['dataset' => 'employees', 'columns' => ['full_name', 'id']], ['Accept' => 'application/json'])->assertOk();
         $this->assertStringContainsString('text/csv', (string) $response->headers->get('Content-Type'));
         // Core Download::disposition: the quoted "<name>-<date>.csv" form, plus no sniffing and no caching.
-        $this->assertSame('attachment; filename="employees-'.date('Y-m-d').'.csv"', $response->headers->get('Content-Disposition'));
+        $this->assertSame('attachment; filename="employees-2026-10-05.csv"', $response->headers->get('Content-Disposition'));
         $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
         $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));

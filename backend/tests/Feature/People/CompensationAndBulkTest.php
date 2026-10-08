@@ -80,16 +80,19 @@ final class CompensationAndBulkTest extends TestCase
         Carbon::setTestNow();
     }
 
-    /** A raise effective "today" is current from 00:00 Kyiv, not from 00:00 UTC (MySQL e2e, round 2). */
-    public function test_compensation_effective_today_is_current_after_kyiv_midnight(): void
+    /** 00:30 Kyiv on 1 Nov (still 31 Oct in UTC): the raise effective 1 Nov is the current compensation in the API. */
+    public function test_current_compensation_switches_at_midnight_in_kyiv(): void
     {
-        Carbon::setTestNow('2026-10-11 21:30:00'); // 2026-10-12 00:30 in Kyiv
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+        Carbon::setTestNow(Carbon::parse('2026-10-31 22:30:00', 'UTC'));
         $hr = $this->login(UserRole::HrManager);
-        $url = '/api/people/'.$this->org()['worker']->id.'/compensation';
+        $url = "/api/people/{$this->org()['worker']->id}/compensation";
         $this->actingAs($hr)->postJson($url, ['amount' => 30000, 'currency' => 'UAH', 'period' => 'month', 'effective_on' => '2026-01-01'])->assertCreated();
-        $this->actingAs($hr)->postJson($url, ['amount' => 36000, 'currency' => 'UAH', 'period' => 'month', 'effective_on' => '2026-10-12'])->assertCreated();
+        $this->actingAs($hr)->postJson($url, ['amount' => 35000, 'currency' => 'UAH', 'period' => 'month', 'effective_on' => '2026-11-01'])->assertCreated();
 
-        $this->actingAs($hr)->getJson($url)->assertOk()->assertJsonPath('data.current.effective_on', '2026-10-12');
+        $this->actingAs($hr)->getJson($url)->assertOk()
+            ->assertJsonPath('data.current.effective_on', '2026-11-01')
+            ->assertJsonPath('data.current.amount', '35000.00');
         Carbon::setTestNow();
     }
 

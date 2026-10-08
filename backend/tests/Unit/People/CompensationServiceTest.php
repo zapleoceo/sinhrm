@@ -35,6 +35,29 @@ final class CompensationServiceTest extends TestCase
         $this->assertSame([false, true, false], array_column($payload['history'], 'current'));
     }
 
+    /**
+     * Night window: 22:30 UTC on 31 Oct is 00:30 on 1 Nov in Kyiv. A raise effective 1 Nov is already in force for
+     * the user (UserTime::today), although the UTC date is still 31 Oct.
+     */
+    public function test_current_follows_the_users_day_not_the_utc_day(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+        Carbon::setTestNow(Carbon::parse('2026-10-31 22:30:00', 'UTC'));
+        /** @var EmployeeRepository&MockInterface $employees */
+        $employees = $this->mock(EmployeeRepository::class);
+        $employees->expects('compensationHistory')->with(5)->andReturn(new Collection([
+            $this->record(3, '2026-11-01', '2000'),
+            $this->record(2, '2026-06-01', '1500'),
+        ]));
+        $employee = new Employee;
+        $employee->id = 5;
+
+        $payload = $this->app->make(CompensationService::class)->payload($employee);
+
+        $this->assertSame(3, $payload['current']['id'] ?? null);
+        $this->assertSame([true, false], array_column($payload['history'], 'current'));
+    }
+
     private function record(int $id, string $effectiveOn, string $amount): EmployeeCompensation
     {
         $record = new EmployeeCompensation(['effective_on' => $effectiveOn, 'amount' => $amount, 'currency' => 'UAH', 'period' => 'month']);

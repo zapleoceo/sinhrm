@@ -6,6 +6,7 @@ namespace App\Modules\Reports\Http\Resources;
 
 use App\Modules\Core\Http\Responses\Download;
 use App\Modules\Core\Support\Export\Csv;
+use App\Modules\Core\Support\UserTime;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /** A streamed CSV download (rows are written as they are produced; never inline). */
@@ -18,7 +19,8 @@ final class CsvResponse
      */
     public static function make(string $name, array $columns, iterable $rows, ?array $total = null): StreamedResponse
     {
-        $filename = (preg_replace('/[^a-z0-9_-]+/i', '_', $name) ?: 'report').'-'.date('Y-m-d').'.csv';
+        // The date is the user's day (Europe/Kyiv): a report exported right after midnight in Kyiv is today's file.
+        $filename = (preg_replace('/[^a-z0-9_-]+/i', '_', $name) ?: 'report').'-'.UserTime::today()->toDateString().'.csv';
 
         return new StreamedResponse(static function () use ($columns, $rows, $total): void {
             $out = fopen('php://output', 'wb');

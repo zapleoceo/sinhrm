@@ -13,6 +13,7 @@ use App\Modules\GoogleWorkspace\Support\MimeText;
 use App\Modules\Integrations\Contracts\HostResolver;
 use App\Modules\Integrations\Support\OutboundUrlGuard;
 use App\Modules\People\Models\Employee;
+use App\Modules\Scripts\Models\Task;
 use App\Modules\Workflows\DTO\StepContext;
 use App\Modules\Workflows\DTO\StepSnapshot;
 use App\Modules\Workflows\Enums\AssigneeRule;
@@ -215,6 +216,26 @@ final class ExecutorsTest extends TestCase
 
         $this->assertSame(['http_status' => 200], $executor->execute($context)->result);
         $this->assertSame(2, $resolver->calls, 'one lookup per execution, reused for the connection');
+    }
+
+    public function test_request_form_task_links_to_the_form_or_falls_back_to_the_profile(): void
+    {
+        $admin = User::factory()->withRole(UserRole::Admin)->create();
+        $executor = $this->app->make(ExecutorRegistry::class)->for(StepAction::RequestForm);
+
+        $withForm = $this->context(new StepSnapshot('Survey', StepAction::RequestForm, 0, AssigneeRule::HrAdmin, null, ['url' => 'https://forms.example.test/f/1']), $admin->id);
+        $outcome = $executor->execute($withForm);
+
+        $this->assertTrue($outcome->waiting, 'the step waits for the person to fill in the form');
+        $task = Task::query()->findOrFail($outcome->result['task_id']);
+        $this->assertSame('https://forms.example.test/f/1', $task->link);
+        $this->assertSame('Survey', $task->title);
+        $this->assertSame($admin->id, $task->assignee_id);
+
+        $noForm = $this->context(new StepSnapshot('Form', StepAction::RequestForm, 0, AssigneeRule::HrAdmin, null, ['title' => 'Fill in the form']), $admin->id);
+        $task = Task::query()->findOrFail($executor->execute($noForm)->result['task_id']);
+        $this->assertSame('/people/'.$noForm->employee->id, $task->link);
+        $this->assertSame('Fill in the form', $task->title);
     }
 
     public function test_assignee_rules(): void
