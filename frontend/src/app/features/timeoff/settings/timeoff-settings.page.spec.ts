@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { NotifyService } from '../../../core/ui/notify.service';
 import { DirectoryService } from '../../directory/directory.service';
 import { Holiday, LeavePolicy, LeaveType } from '../timeoff.model';
@@ -41,7 +41,7 @@ function render() {
   const api = {
     types: vi.fn(() => of([type(1, 'Vacation', true), type(2, 'Sick', false)])),
     policies: vi.fn(() => of([policy(1)])),
-    holidays: vi.fn((_year: number) => of<Holiday[]>([])),
+    holidays: vi.fn<(year: number) => Observable<Holiday[]>>(() => of([])),
     savePolicy: vi.fn((_id: number | null, body: Partial<LeavePolicy>) => of(policy(9, { ...body, branch: null }))),
     saveHoliday: vi.fn(() => of({ id: 3, date: '2027-01-01', name: 'New year', branch_id: null, branch: null })),
     saveType: vi.fn(),
