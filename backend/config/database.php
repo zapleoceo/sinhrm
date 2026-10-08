@@ -90,7 +90,6 @@ return [
             ]) : [],
         ],
 
-
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL', env('DATABASE_URL')),
