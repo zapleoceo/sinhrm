@@ -67,7 +67,8 @@ SinHRM умеет просить языковую модель о трёх ве�
 ```
 backend/app/Modules/Ai/
   Contracts/  AiProvider (submit/poll) · AiResultHandler (parse/apply/failed/rebuild) · AiPromptTemplate · AiRequestRepository
-  Services/   AiService (единственный вход) · AiBrokerProvider (по умолчанию) · OpenRouterProvider (альтернатива)
+  Services/   AiService (единственный вход) · AiGate (ворота) · AiBudget (дневные лимиты)
+              AiBrokerProvider (по умолчанию) · OpenRouterProvider (альтернатива)
               AiPollJob ("ai.poll") · AiAdminService (статус/тест)
   Support/    PromptBuilder · JsonOutput · PiiRedactor · AiSettingsReader · AiHandlerRegistry · AiPromptRegistry
   Prompts/    TestPrompt (+ handler) · Console/AiExperimentCommand (ai:experiment)
@@ -75,6 +76,13 @@ Scripts/Ai/     ScriptEvaluationPrompt · AiEvaluationMapper · ScriptEvaluation
 MailAgent/Ai/   MailClassificationPrompt · MailClassificationAiHandler                  (+ Services/AiMailClassifier, MailReprocessService)
 Recruiting/Ai/  ScreeningPrompt · ScreeningInput · ScreeningPromptFactory · ScreeningAiHandler (+ Services/ScreeningService, AutoScreeningJob)
 ```
+`AiService` оркестрирует путь запроса и делегирует две отдельные ответственности (SRP, 2026-10-08): **`AiGate`** —
+шаг 1 ниже (`unavailableReason`/`assertAvailable`, тот же порядок проверок и коды), **`AiBudget`** — шаг 2
+(`usageToday`, `assertWithin`; проверяется перед первой отправкой и перед повтором). Публичный API `AiService` прежний —
+он просто передаёт вызов. Первая отправка чата и транскрипции — общий приватный `submitAndAwait`; разбор ответа
+брокера `202 {job_id}` для чата и аудио — общий `AiBrokerProvider::jobRef`. Тесты — `tests/Unit/Ai/AiGateAndBudgetTest`.
+Тексты промптов и версии не менялись.
+
 Модуль Ai не знает предметной области: каждая функция живёт в своём модуле и регистрирует обработчик
 (`AiServiceProvider::HANDLERS_TAG`) и шаблон промпта (`PROMPTS_TAG`).
 

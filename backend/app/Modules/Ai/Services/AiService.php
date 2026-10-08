@@ -24,7 +24,7 @@ use App\Modules\Ai\Support\AiSettingsReader;
 use App\Modules\Ai\Support\JsonOutput;
 use App\Modules\Ai\Support\PromptOverrides;
 use App\Modules\Ai\Support\ToolEmulation;
-use App\Modules\Integrations\Contracts\AiPolicy;
+use Closure;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Sleep;
@@ -56,27 +56,20 @@ final readonly class AiService
     public const string TRANSCRIPTION = 'transcription';
 
     public function __construct(
-        private AiPolicy $policy,
+        private AiGate $gate,
         private AiProvider $provider,
         private AiTranscriber $transcriber,
         private AiSettingsReader $settings,
         private AiRequestRepository $requests,
         private AiHandlerRegistry $handlers,
         private PromptOverrides $overrides,
+        private AiBudget $budget,
     ) {}
 
     /** null = AI can run for this purpose; otherwise the refusal code (ai_disabled | ai_not_configured | ai_purpose_disabled). */
     public function unavailableReason(AiPurpose $purpose): ?string
     {
-        if (! $this->policy->enabled()) {
-            return 'ai_disabled';
-        }
-        $settings = $this->settings->read();
-        if (! $this->providerConfigured()) {
-            return 'ai_not_configured';
-        }
-
-        return $settings->purposeEnabled($purpose) ? null : 'ai_purpose_disabled';
+        return $this->gate->unavailableReason($purpose);
     }
 
     public function available(AiPurpose $purpose): bool
@@ -86,7 +79,7 @@ final readonly class AiService
 
     public function usageToday(): AiUsage
     {
-        return $this->requests->usageSince(self::dayStart());
+        return $this->budget->usageToday();
     }
 
     /**
@@ -97,7 +90,7 @@ final readonly class AiService
     public function run(AiPrompt $prompt, ?string $subjectType = null, ?int $subjectId = null, array $meta = [], int $waitSeconds = self::WAIT_SECONDS): AiOutcome
     {
         $this->assertAvailable($prompt->purpose);
-        $this->assertBudget();
+        $this->budget->assertWithin();
         // Active edited version from the admin prompt editor (instruction part only; OUTPUT stays code-owned).
         $prompt = $this->overrides->apply($prompt);
         $prompt = $prompt->withCapability($prompt->capability ?? $this->settings->read()->capabilityFor($prompt->purpose));
@@ -118,14 +111,8 @@ final readonly class AiService
             'status' => AiRequestStatus::Pending->value,
             'attempts' => 1,
         ]);
-        try {
-            $job = $this->provider->submit($prompt);
-        } catch (AiException $e) {
-            return $this->fail($request, $e->errorCode);
-        }
-        $this->requests->setJob($request, mb_substr($job->jobId, 0, 64), 1);
 
-        return $this->await($request, $job, $prompt, min(self::WAIT_SECONDS, max(0, $waitSeconds)));
+        return $this->submitAndAwait($request, fn (): AiJobRef => $this->provider->submit($prompt), $prompt, $waitSeconds);
     }
 
     /**
@@ -137,7 +124,7 @@ final readonly class AiService
     public function transcribe(AiPurpose $purpose, AiAudio $audio, ?string $subjectType = null, ?int $subjectId = null, int $waitSeconds = self::WAIT_SECONDS): AiOutcome
     {
         $this->assertAvailable($purpose);
-        $this->assertBudget();
+        $this->budget->assertWithin();
         $request = $this->requests->create([
             'purpose' => $purpose->value,
             'subject_type' => $subjectType,
@@ -148,14 +135,8 @@ final readonly class AiService
             'status' => AiRequestStatus::Pending->value,
             'attempts' => 1,
         ]);
-        try {
-            $job = $this->transcriber->submitAudio($audio, 'sinhrm.'.$purpose->value);
-        } catch (AiException $e) {
-            return $this->fail($request, $e->errorCode);
-        }
-        $this->requests->setJob($request, mb_substr($job->jobId, 0, 64), 1);
 
-        return $this->await($request, $job, null, min(self::WAIT_SECONDS, max(0, $waitSeconds)));
+        return $this->submitAndAwait($request, fn (): AiJobRef => $this->transcriber->submitAudio($audio, 'sinhrm.'.$purpose->value), null, $waitSeconds);
     }
 
     /**
@@ -179,6 +160,24 @@ final readonly class AiService
     public function expire(AiRequest $request): void
     {
         $this->fail($request, 'ai_timeout');
+    }
+
+    /**
+     * First submit of a fresh request: provider refusal → failed; otherwise the job id is stored (attempt 1) and the
+     * answer is awaited for at most WAIT_SECONDS.
+     *
+     * @param  Closure(): AiJobRef  $submit
+     */
+    private function submitAndAwait(AiRequest $request, Closure $submit, ?AiPrompt $prompt, int $waitSeconds): AiOutcome
+    {
+        try {
+            $job = $submit();
+        } catch (AiException $e) {
+            return $this->fail($request, $e->errorCode);
+        }
+        $this->requests->setJob($request, mb_substr($job->jobId, 0, 64), 1);
+
+        return $this->await($request, $job, $prompt, min(self::WAIT_SECONDS, max(0, $waitSeconds)));
     }
 
     /** $prompt null = nothing to resend (a transcription): an invalid answer then fails without a retry. */
@@ -283,7 +282,7 @@ final readonly class AiService
             return null;
         }
         try {
-            $this->assertBudget();
+            $this->budget->assertWithin();
             $job = $this->provider->submit($prompt);
         } catch (AiException $e) {
             return $this->fail($request, $e->errorCode);
@@ -306,35 +305,6 @@ final readonly class AiService
     /** @throws AiException ai_disabled | ai_not_configured | ai_purpose_disabled */
     public function assertAvailable(AiPurpose $purpose): void
     {
-        $reason = $this->unavailableReason($purpose);
-        if ($reason !== null) {
-            throw match ($reason) {
-                'ai_disabled' => AiException::disabled(),
-                'ai_not_configured' => AiException::notConfigured(),
-                default => AiException::purposeDisabled(),
-            };
-        }
-    }
-
-    private function assertBudget(): void
-    {
-        $settings = $this->settings->read();
-        $usage = $this->usageToday();
-        if ($usage->requests >= $settings->maxRequestsPerDay || $usage->costUsd >= $settings->maxCostPerDay) {
-            Log::warning('ai.budget_exceeded', ['requests' => $usage->requests, 'cost_usd' => $usage->costUsd]);
-
-            throw AiException::budgetExceeded();
-        }
-    }
-
-    /** The configured provider has what it needs: the broker needs its key + integration on; others their own key. */
-    private function providerConfigured(): bool
-    {
-        return $this->provider->key() === AiBrokerProvider::KEY ? $this->settings->read()->configured() : true;
-    }
-
-    private static function dayStart(): Carbon
-    {
-        return Carbon::now('UTC')->startOfDay();
+        $this->gate->assertAvailable($purpose);
     }
 }
