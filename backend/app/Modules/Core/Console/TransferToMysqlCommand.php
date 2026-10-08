@@ -61,6 +61,11 @@ final class TransferToMysqlCommand extends Command
                 return self::FAILURE;
             }
             $dbs->open();
+            if ($writes && $dbs->targetIsAppServer($db->connection())) {
+                $this->error('Цель — тот же сервер MySQL и та же база, что у приложения (@@server_uuid): перенос в живую базу запрещён.');
+
+                return self::FAILURE;
+            }
             $schema = new SchemaInspector($dbs);
             $chunk = max(1, (int) $config->get('db_transfer.chunk', 500));
 
@@ -70,7 +75,7 @@ final class TransferToMysqlCommand extends Command
 
             $this->info('Preflight (без записи)…');
             $preflight = (new Preflight($dbs, $schema, new MysqlCollationKeys($dbs->target), $chunk))
-                ->run(fn (): StringEncrypter => $this->laravel->make('encrypter'));
+                ->run(fn (): StringEncrypter => $this->laravel->make('encrypter'), $writes && (bool) $this->option('truncate-target'));
             $this->printFindings($preflight);
             if (! $preflight->ok()) {
                 $this->error('Preflight: FAIL — перенос не начат. Исправьте данные в источнике (или схему миграцией) и повторите.');
@@ -153,8 +158,7 @@ final class TransferToMysqlCommand extends Command
             }
             $secrets[] = $url;
             $password = parse_url($url, PHP_URL_PASS);
-            // Short throwaway CI passwords would mask ordinary words; real ones are long.
-            if (is_string($password) && strlen($password) >= 8) {
+            if (is_string($password) && $password !== '') {
                 $secrets[] = $password;
                 $secrets[] = rawurldecode($password);
             }

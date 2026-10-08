@@ -100,7 +100,7 @@ final class MysqlDataTransferTest extends TestCase
 
         [$code, $out] = $this->transfer(['--confirm-target' => self::TARGET_DB]);
         $this->assertSame(0, $code, $out);
-        $this->assertStringContainsString('Скопировано строк: 0', $out);
+        $this->assertMatchesRegularExpression('/^Скопировано строк: 0$/mu', $out);
         $this->assertStringContainsString('ИТОГ: OK', $out);
 
         // A crash in the middle: the tail of users is missing on the target; the re-run copies exactly that tail.
@@ -113,7 +113,7 @@ final class MysqlDataTransferTest extends TestCase
         $this->assertGreaterThan(0, $removed);
         [$code, $out] = $this->transfer(['--confirm-target' => self::TARGET_DB]);
         $this->assertSame(0, $code, $out);
-        $this->assertStringContainsString("Скопировано строк: {$removed}", $out);
+        $this->assertMatchesRegularExpression('/^Скопировано строк: '.$removed.'$/mu', $out);
         $this->assertStringContainsString('ИТОГ: OK', $out);
 
         $target = $this->target();
@@ -170,6 +170,101 @@ final class MysqlDataTransferTest extends TestCase
         $this->assertSame(1, $code, $out);
         $this->assertMatchesRegularExpression('/foreign_key\s*\|\s*documents/', $out);
         $this->assertMatchesRegularExpression('/auto_increment\s*\|\s*candidates/', $out);
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out); // leaves the target equal to the source for the CLI steps
+    }
+
+    public function test_target_rows_foreign_to_the_source_block_a_run_without_truncate(): void
+    {
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out);
+        $target = $this->target();
+        $row = (array) $target->table('users')->orderBy('id')->first();
+        $original = $row;
+        $row['id'] = 999999;
+        $row['email'] = 'foreign.row@example.test';
+        $target->table('users')->insert($row);
+
+        [$code, $out] = $this->transfer(['--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(1, $code, $out);
+        $this->assertMatchesRegularExpression('/target_not_empty\s*\|\s*users\s*\|\s*в цели 1 строк с ключами, которых нет в источнике/u', $out);
+        $this->assertStringContainsString('перенос не начат', $out);
+        $this->assertStringNotContainsString('foreign.row@example.test', $out);
+        $this->assertSame(1, $this->target()->table('users')->where('id', 999999)->count(), 'nothing written');
+
+        $this->target()->table('users')->where('id', 999999)->delete();
+        $this->target()->table('users')->where('id', $original['id'])->update(['name' => 'Changed On Target']);
+        [$code, $out] = $this->transfer(['--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(1, $code, $out);
+        $this->assertMatchesRegularExpression('/target_not_empty\s*\|\s*users\s*\|\s*в цели 1 строк отличаются от источника/u', $out);
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString('ИТОГ: OK', $out);
+    }
+
+    public function test_verify_fails_on_schema_drift(): void
+    {
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out);
+        $target = $this->target();
+        try {
+            $target->statement('ALTER TABLE `users` ADD COLUMN `drift_probe` int NULL');
+            $target->statement('CREATE TABLE `zz_drift_probe` (`id` int PRIMARY KEY)');
+            $target->table('migrations')->insert(['migration' => '2099_01_01_000000_drift_probe', 'batch' => 99]);
+
+            [$code, $out] = $this->transfer(['--verify' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertStringContainsString('ИТОГ: FAIL', $out);
+            $this->assertMatchesRegularExpression('/schema\s*\|\s*users\s*\|\s*колонка users\.drift_probe/u', $out);
+            $this->assertMatchesRegularExpression('/schema\s*\|\s*zz_drift_probe\s*\|\s*таблица есть только в цели/u', $out);
+            $this->assertMatchesRegularExpression('/schema\s*\|\s*migrations\s*\|\s*версии схемы расходятся/u', $out);
+        } finally {
+            $target = $this->target();
+            $target->statement('ALTER TABLE `users` DROP COLUMN `drift_probe`');
+            $target->statement('DROP TABLE IF EXISTS `zz_drift_probe`');
+            $target->table('migrations')->where('migration', '2099_01_01_000000_drift_probe')->delete();
+        }
+        [$code, $out] = $this->transfer(['--verify' => true]);
+        $this->assertSame(0, $code, $out);
+    }
+
+    /** The app's own MySQL connection pointing at the target through loopback aliases or a socket is refused. */
+    public function test_target_equal_to_the_app_database_is_refused_through_aliases_and_sockets(): void
+    {
+        $base = (array) config('database.connections.mysql');
+        $app = ['url' => null, 'port' => 3306, 'database' => self::TARGET_DB, 'username' => 'app', 'password' => 'app', 'unix_socket' => ''];
+        $cases = [
+            'localhost' => ['host' => 'localhost'],
+            '127.0.0.1' => ['host' => '127.0.0.1'],
+            '::1' => ['host' => '::1'],
+            'socket' => ['host' => 'localhost', 'unix_socket' => '/var/run/mysqld/mysqld.sock'],
+            'hostname' => ['host' => (string) gethostname()],
+        ];
+        $before = $this->target()->table('users')->count();
+        foreach ($cases as $name => $override) {
+            config(['database.default' => 'mysql', 'database.connections.mysql' => array_merge($base, $app, $override)]);
+            DB::purge('mysql');
+            [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+            $this->assertSame(1, $code, "{$name}: {$out}");
+            $this->assertStringContainsString('перенос в живую базу запрещён', $out, $name);
+        }
+        $this->assertSame($before, $this->target()->table('users')->count(), 'nothing truncated');
+    }
+
+    public function test_target_through_a_unix_socket_is_refused_and_the_app_socket_is_not_inherited(): void
+    {
+        config(['db_transfer.target_url' => getenv('TRANSFER_TARGET_URL').'?unix_socket=/var/run/mysqld/mysqld.sock']);
+        [$code, $out] = $this->transfer(['--preflight' => true]);
+        $this->assertSame(1, $code, $out);
+        $this->assertStringContainsString('unix_socket не поддерживается', $out);
+
+        // DB_SOCKET of the app (mysql connection) must not redirect the target away from the URL host.
+        config(['db_transfer.target_url' => getenv('TRANSFER_TARGET_URL'), 'database.connections.mysql.unix_socket' => '/nonexistent/mysqld.sock']);
+        [$code, $out] = $this->transfer(['--verify' => true]);
+        $this->assertStringNotContainsString('Остановлено', $out);
+        $this->assertStringContainsString('ИТОГ:', $out);
     }
 
     public function test_wrong_app_key_stops_before_any_write(): void

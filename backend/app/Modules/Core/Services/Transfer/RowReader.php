@@ -6,6 +6,7 @@ namespace App\Modules\Core\Services\Transfer;
 
 use Generator;
 use Illuminate\Database\Connection;
+use Illuminate\Database\Query\Builder;
 
 /**
  * Keyset pagination by primary key (single or composite) on either side; tables without a key are streamed.
@@ -78,5 +79,48 @@ final class RowReader
                 yield $rows;
             }
         } while (count($rows) === $size);
+    }
+
+    /**
+     * Rows of $table whose primary key equals the key of one of $rows (single or composite key).
+     *
+     * @param  list<string>  $primary
+     * @param  list<array<string, mixed>>  $rows
+     * @param  list<string>  $columns
+     * @return list<array<string, mixed>>
+     */
+    public static function byKeys(Connection $db, string $table, array $primary, array $rows, array $columns = ['*']): array
+    {
+        if ($rows === []) {
+            return [];
+        }
+        $query = $db->table($table)->select($columns);
+        if (count($primary) === 1) {
+            $query->whereIn($primary[0], array_column($rows, $primary[0]));
+        } else {
+            $query->where(function (Builder $q) use ($rows, $primary): void {
+                foreach ($rows as $row) {
+                    $q->orWhere(function (Builder $one) use ($row, $primary): void {
+                        foreach ($primary as $column) {
+                            $one->where($column, $row[$column]);
+                        }
+                    });
+                }
+            });
+        }
+
+        return array_values(array_map(fn (object $r): array => (array) $r, $query->get()->all()));
+    }
+
+    /**
+     * Lookup key of a row. Primary keys are integers in practice; string keys are lower-cased like the ci collation
+     * of the target — a near-miss only means a duplicate-key error on insert (the run stops), never a silent loss.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  list<string>  $primary
+     */
+    public static function keyOf(array $row, array $primary): string
+    {
+        return implode("\x1F", array_map(fn (string $c): string => mb_strtolower((string) $row[$c]), $primary));
     }
 }

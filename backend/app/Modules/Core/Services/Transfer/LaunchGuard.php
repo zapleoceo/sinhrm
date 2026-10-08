@@ -7,7 +7,20 @@ namespace App\Modules\Core\Services\Transfer;
 /** Protection against a run against production by accident. Pure decisions; the command asks and prints. */
 final class LaunchGuard
 {
-    private const array LOCAL_HOSTS = ['127.0.0.1', 'localhost', '::1', ''];
+    private const array LOCAL_HOSTS = ['127.0.0.1', 'localhost', '::1', '[::1]', ''];
+
+    /** Loopback aliases (any 127.x address, localhost, ::1, [::1], empty) collapse to one value; other hosts lower-cased. */
+    public static function normalizeHost(string $host): string
+    {
+        return self::isLoopback($host) ? 'loopback' : strtolower(trim($host, '[] '));
+    }
+
+    public static function isLoopback(string $host): bool
+    {
+        $host = strtolower(trim($host));
+
+        return in_array($host, self::LOCAL_HOSTS, true) || str_starts_with($host, '127.') || $host === '0:0:0:0:0:0:0:1';
+    }
 
     /**
      * --production is required when the app runs as production or either database is not on this machine
@@ -21,7 +34,7 @@ final class LaunchGuard
             return true;
         }
         foreach ($hosts as $host) {
-            if (! in_array(strtolower($host), self::LOCAL_HOSTS, true)) {
+            if (! self::isLoopback($host)) {
                 return true;
             }
         }

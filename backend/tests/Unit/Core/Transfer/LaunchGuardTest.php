@@ -17,6 +17,15 @@ final class LaunchGuardTest extends TestCase
         $this->assertTrue(LaunchGuard::needsProductionFlag('local', ['127.0.0.1', 'mysql.internal']));
     }
 
+    public function test_loopback_aliases_are_one_host(): void
+    {
+        foreach (['localhost', '127.0.0.1', '::1', '[::1]', '127.0.1.1', 'LOCALHOST', ''] as $alias) {
+            $this->assertSame('loopback', LaunchGuard::normalizeHost($alias), $alias);
+        }
+        $this->assertSame('mysql.internal', LaunchGuard::normalizeHost('MySQL.internal'));
+        $this->assertFalse(LaunchGuard::needsProductionFlag('testing', ['[::1]', '127.0.1.1']));
+    }
+
     public function test_write_is_confirmed_only_by_the_exact_target_database_name(): void
     {
         $this->assertTrue(LaunchGuard::confirmed('sinhrm', 'sinhrm'));

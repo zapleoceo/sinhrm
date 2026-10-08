@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Core\Services\Transfer;
 
 use Closure;
-use Illuminate\Database\Query\Builder;
 use RuntimeException;
 
 /**
@@ -120,41 +119,15 @@ final class DataCopier
     private function withoutExisting(array $table, array $rows): array
     {
         $primary = $table['primary'];
-        $query = $this->dbs->target->table($table['name'])->select($primary);
-        if (count($primary) === 1) {
-            $query->whereIn($primary[0], array_column($rows, $primary[0]));
-        } else {
-            $query->where(function (Builder $q) use ($rows, $primary): void {
-                foreach ($rows as $row) {
-                    $q->orWhere(function (Builder $one) use ($row, $primary): void {
-                        foreach ($primary as $column) {
-                            $one->where($column, $row[$column]);
-                        }
-                    });
-                }
-            });
-        }
         $existing = [];
-        foreach ($query->get() as $found) {
-            $existing[$this->keyOf((array) $found, $primary)] = true;
+        foreach (RowReader::byKeys($this->dbs->target, $table['name'], $primary, $rows, $primary) as $found) {
+            $existing[RowReader::keyOf($found, $primary)] = true;
         }
         if ($existing === []) {
             return $rows;
         }
 
-        return array_values(array_filter($rows, fn (array $row): bool => ! isset($existing[$this->keyOf($row, $primary)])));
-    }
-
-    /**
-     * Primary keys are integers in practice; string keys are compared lower-cased like the ci collation. A near-miss
-     * here only means a duplicate-key error on insert (the run stops), never a silently lost row.
-     *
-     * @param  array<string, mixed>  $row
-     * @param  list<string>  $primary
-     */
-    private function keyOf(array $row, array $primary): string
-    {
-        return implode("\x1F", array_map(fn (string $c): string => mb_strtolower((string) $row[$c]), $primary));
+        return array_values(array_filter($rows, fn (array $row): bool => ! isset($existing[RowReader::keyOf($row, $primary)])));
     }
 
     /** @param  Table  $table */

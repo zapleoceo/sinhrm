@@ -9,6 +9,7 @@ use Illuminate\Database\Connection;
 /**
  * Read-only reconciliation source <-> target, result OK/FAIL. The report holds table/column names and counters only.
  *
+ * - schema identity (SchemaCheck: migrations, tables and columns on one side only);
  * - row count per table;
  * - per-column checksum: XOR of sha256(primary key + canonical value) over all rows — order-independent (MySQL and
  *   PostgreSQL sort strings differently) and sensitive to any changed cell; tables without a primary key get one
@@ -30,9 +31,9 @@ final class Reconciler
     public function run(): TransferReport
     {
         $report = new TransferReport;
-        foreach (array_diff($this->schema->sourceTables(), $this->schema->targetTables()) as $table) {
-            $report->fail('tables', $table, 'таблицы нет на цели');
-        }
+        // Same schema gate as the preflight: a table or column on one side only, or other migration versions, is a
+        // FAIL — comparing just the intersection would report OK for data that has nowhere to go.
+        SchemaCheck::check($this->schema, $report);
         foreach ($this->schema->tables() as $table) {
             $source = $this->digest($this->dbs->source, $table);
             $target = $this->digest($this->dbs->target, $table);
@@ -64,7 +65,9 @@ final class Reconciler
      */
     public function digest(Connection $db, array $table): array
     {
-        $kinds = array_map(fn (array $c): string => ValueCanonicalizer::kind($c), $table['columns']);
+        // Only columns present on both sides (a target-only column has no source type; drift is reported by SchemaCheck).
+        $common = array_filter($table['columns'], fn (array $c): bool => $c['source'] !== '');
+        $kinds = array_map(fn (array $c): string => ValueCanonicalizer::kind($c), $common);
         $primary = $table['primary'];
         $sums = array_fill_keys(array_keys($kinds), str_repeat("\0", 32));
         $rowHashes = [];

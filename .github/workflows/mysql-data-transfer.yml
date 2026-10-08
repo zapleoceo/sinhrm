@@ -86,7 +86,7 @@ jobs:
       - name: CLI second run copies nothing (idempotent)
         run: |
           php artisan db:transfer-to-mysql --confirm-target=app_transfer_target --no-interaction | tee "$RUNNER_TEMP/second-run.txt"
-          grep -q 'Скопировано строк: 0' "$RUNNER_TEMP/second-run.txt"
+          grep -qx 'Скопировано строк: 0' "$RUNNER_TEMP/second-run.txt"
       - name: CLI reconciliation only
         run: php artisan db:transfer-to-mysql --verify --no-interaction
       - name: Record scope of proof

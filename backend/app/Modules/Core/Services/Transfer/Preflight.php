@@ -37,16 +37,24 @@ final class Preflight
         private readonly int $chunk,
     ) {}
 
-    /** @param  callable(): StringEncrypter  $encrypter */
-    public function run(callable $encrypter): TransferReport
+    /**
+     * @param  callable(): StringEncrypter  $encrypter
+     * @param  bool  $truncate  the run will empty the target first (then rows already on the target do not matter)
+     */
+    public function run(callable $encrypter, bool $truncate = false): TransferReport
     {
         $report = new TransferReport;
-        if (! $this->checkSchema($report)) {
+        if (! SchemaCheck::check($this->schema, $report)) {
             return $report; // further checks need identical schemas
         }
         $this->checkSession($report);
         KeyCheck::check($this->dbs->source, $encrypter, $report);
         $tables = $this->schema->tables();
+        if (! $truncate) {
+            foreach ($tables as $table) {
+                $this->checkTargetRows($table, $report);
+            }
+        }
         foreach ($this->schema->uniqueIndexes() as $index) {
             if (isset($tables[$index['table']])) {
                 $this->checkCollisions($tables[$index['table']], $index, $report);
@@ -63,31 +71,56 @@ final class Preflight
         return $report;
     }
 
-    private function checkSchema(TransferReport $report): bool
+    /**
+     * Without --truncate-target the copy only ADDS missing rows, so whatever the target already holds must be a part of
+     * the source: same primary keys, identical content. Otherwise foreign rows (another environment, migration
+     * baseline rows with other timestamps, rows changed after an earlier run) would be mixed into production data.
+     *
+     * @param  Table  $table
+     */
+    private function checkTargetRows(array $table, TransferReport $report): void
     {
-        $source = $this->schema->migrations(true);
-        $target = $this->schema->migrations(false);
-        if ($target === []) {
-            $report->fail('schema', '-', 'на цели не выполнены миграции: сначала `php artisan migrate --force` с DB_CONNECTION=mysql');
+        $target = $this->dbs->target;
+        if (! $target->table($table['name'])->exists()) {
+            return;
+        }
+        if ($table['primary'] === []) {
+            if ($target->table($table['name'])->count() !== $this->dbs->source->table($table['name'])->count()) {
+                $report->fail('target_not_empty', $table['name'], 'в цели уже есть строки таблицы без первичного ключа — перенос только с --truncate-target');
+            }
 
-            return false;
+            return;
         }
-        $missing = count(array_diff($source, $target));
-        $extra = count(array_diff($target, $source));
-        if ($missing + $extra > 0) {
-            $report->fail('schema', 'migrations', "версии схемы расходятся: нет на цели {$missing}, лишних на цели {$extra} — выровнять релиз кода", $missing + $extra);
-        }
-        foreach (array_diff($this->schema->sourceTables(), $this->schema->targetTables()) as $table) {
-            $report->fail('schema', $table, 'таблица есть только в источнике');
-        }
-        foreach (array_diff($this->schema->targetTables(), $this->schema->sourceTables()) as $table) {
-            $report->fail('schema', $table, 'таблица есть только в цели');
-        }
-        foreach ($this->schema->columnDrift() as $column) {
-            $report->fail('schema', explode('.', $column)[0], "колонка {$column} есть только на одной стороне");
-        }
+        $kinds = array_map(fn (array $c): string => ValueCanonicalizer::kind($c), $table['columns']);
+        $foreign = 0;
+        $different = 0;
+        foreach (RowReader::chunks($target, $table['name'], $table['primary'], RowReader::sizeFor($table, $this->chunk)) as $rows) {
+            $sourceRows = [];
+            foreach (RowReader::byKeys($this->dbs->source, $table['name'], $table['primary'], $rows) as $row) {
+                $sourceRows[RowReader::keyOf($row, $table['primary'])] = $row;
+            }
+            foreach ($rows as $row) {
+                $match = $sourceRows[RowReader::keyOf($row, $table['primary'])] ?? null;
+                if ($match === null) {
+                    $foreign++;
 
-        return $report->ok();
+                    continue;
+                }
+                foreach ($kinds as $column => $kind) {
+                    if (ValueCanonicalizer::canonical($row[$column], $kind) !== ValueCanonicalizer::canonical($match[$column], $kind)) {
+                        $different++;
+
+                        break;
+                    }
+                }
+            }
+        }
+        if ($foreign > 0) {
+            $report->fail('target_not_empty', $table['name'], "в цели {$foreign} строк с ключами, которых нет в источнике (чужие данные) — перенос только с --truncate-target", $foreign);
+        }
+        if ($different > 0) {
+            $report->fail('target_not_empty', $table['name'], "в цели {$different} строк отличаются от источника — перенос только с --truncate-target", $different);
+        }
     }
 
     private function checkSession(TransferReport $report): void
@@ -117,6 +150,9 @@ final class Preflight
         foreach ($index['columns'] as $part) {
             $column = $table['columns'][$part['column']] ?? null;
             if ($column === null) {
+                // Functional key part (column_name is NULL in information_schema): say so instead of skipping silently.
+                $report->note('unique_collision', $table['name'], "индекс {$index['name']} по выражению не проверен на коллизии — проверить вручную");
+
                 return;
             }
             $collation = $column['collation'];
@@ -129,6 +165,9 @@ final class Preflight
         }
         $finder = new CollisionFinder;
         $idColumns = $table['primary'];
+        $numericId = count($idColumns) === 1
+            && in_array($table['columns'][$idColumns[0]]['type'] ?? '', ['tinyint', 'smallint', 'mediumint', 'int', 'bigint'], true);
+        $ordinal = 0;
         $select = array_values(array_unique(array_merge($idColumns, $columns)));
         $scope = function (Builder $query) use ($columns): void {
             foreach ($columns as $column) {
@@ -150,7 +189,10 @@ final class Preflight
             }
             foreach ($rows as $i => $row) {
                 $key = hash('sha256', implode("\x1F", array_map(fn (array $p): string => $p[$i], $parts)));
-                $id = $idColumns === [] ? '?' : implode('/', array_map(fn (string $c): string => (string) $row[$c], $idColumns));
+                $ordinal++;
+                // Integer ids are safe to print; string keys (password_reset_tokens.email, sessions.id) are not:
+                // then the row number in primary-key order of the source is shown instead.
+                $id = $numericId ? (string) $row[$idColumns[0]] : '#'.$ordinal;
                 $finder->add($key, $id);
             }
         }
@@ -166,7 +208,7 @@ final class Preflight
             'unique_collision',
             $table['name'],
             "индекс {$index['name']} (".implode(', ', $columns).'): '.count($groups).' групп значений совпадут под '
-            .implode('/', array_unique(array_column($collated, 'collation'))).'; id строк: '.implode(' ', $shown).(count($groups) > self::SHOW_GROUPS ? ' …' : ''),
+            .implode('/', array_unique(array_column($collated, 'collation'))).($numericId ? '; id строк: ' : '; номера строк (по порядку ключа среди непустых значений): ').implode(' ', $shown).(count($groups) > self::SHOW_GROUPS ? ' …' : ''),
             count($groups),
         );
     }

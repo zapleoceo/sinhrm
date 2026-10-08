@@ -8,9 +8,11 @@ use Illuminate\Database\QueryException;
 use Throwable;
 
 /**
- * Error text safe for the console/CI log: no SQL with bindings (Laravel's QueryException message contains them),
- * no quoted cell values from driver messages ("Duplicate entry '<email>'…"), no connection URL or password.
- * Quoted identifiers after "column", "key" or "table" are kept — they tell the operator where to look.
+ * Error text safe for the console/CI log: no SQL with bindings (Laravel's QueryException message contains them), no
+ * quoted fragments of the driver message at all — everything from the first to the last quote (single or double) is
+ * replaced by '…': cell values ("Duplicate entry 'O'Brien@x'…", apostrophes included), logins and hosts
+ * ('user "app"', 'server at "db"'). The SQLSTATE/error code and the unquoted text stay; connection URLs and passwords
+ * are masked as well.
  */
 final class SafeError
 {
@@ -18,17 +20,13 @@ final class SafeError
     public static function text(Throwable $e, array $secrets = []): string
     {
         $message = $e instanceof QueryException && $e->getPrevious() !== null ? $e->getPrevious()->getMessage() : $e->getMessage();
-        $out = '';
-        $offset = 0;
-        if (preg_match_all("/'[^']*'/", $message, $matches, PREG_OFFSET_CAPTURE) > 0) {
-            foreach ($matches[0] as [$quoted, $position]) {
-                $before = substr($message, max(0, $position - 12), min(12, $position));
-                $keep = preg_match('/(column|key|table)\s*$/i', $before) === 1;
-                $out .= substr($message, $offset, $position - $offset).($keep ? $quoted : "'…'");
-                $offset = $position + strlen($quoted);
-            }
+        $first = strcspn($message, "'\"");
+        if ($first < strlen($message)) {
+            $single = strrpos($message, "'");
+            $double = strrpos($message, '"');
+            $last = max($single === false ? -1 : $single, $double === false ? -1 : $double);
+            $message = substr($message, 0, $first)."'…'".($last > $first ? substr($message, $last + 1) : '');
         }
-        $message = $out.substr($message, $offset);
         foreach ($secrets as $secret) {
             if ($secret !== '') {
                 $message = str_replace($secret, '***', $message);
