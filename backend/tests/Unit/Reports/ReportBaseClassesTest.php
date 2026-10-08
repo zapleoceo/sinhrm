@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Reports;
 
 use App\Models\User;
+use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Reports\Contracts\ReportDataRepository;
@@ -122,7 +123,7 @@ final class ReportBaseClassesTest extends TestCase
     private function ctx(bool $admin, bool $active = true, array $subtree = []): ScopedContext
     {
         $user = new User;
-        $user->status = $active ? 'active' : 'blocked';
+        $user->status = $active ? UserStatus::Active : UserStatus::Blocked;
 
         return new ScopedContext($user, new PeopleContext(1, $admin, null, $subtree), new Scope(1, null), Carbon::parse('2026-10-01'));
     }
