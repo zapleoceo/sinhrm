@@ -8,12 +8,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { SHEET_FIELDS, SheetField, SheetImport, SheetImportReport, SheetInspection, SheetMapping, isSheetUrl } from './google.model';
 import { GoogleService, googleErrorKey } from './google.service';
 import { Observable } from 'rxjs';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * Admin → Import from Google Sheets (superadmin): paste the sheet URL → read the header → map columns (suggested
@@ -192,8 +192,7 @@ import { Observable } from 'rxjs';
 })
 export class SheetsImportPage implements OnInit {
   private readonly api = inject(GoogleService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly fields = SHEET_FIELDS;
   protected readonly url = signal('');
@@ -253,7 +252,7 @@ export class SheetsImportPage implements OnInit {
   protected toggleAuto(imp: SheetImport, on: boolean): void {
     this.api.updateImport(imp.id, { auto_sync: on }).subscribe({
       next: (saved) => this.imports.update((list) => list.map((i) => (i.id === saved.id ? saved : i))),
-      error: (e: unknown) => this.snack.open(this.i18n.translate(googleErrorKey(e)), undefined, { duration: 3000 }),
+      error: (e: unknown) => this.notify.show(googleErrorKey(e), { duration: 3000 }),
     });
   }
 

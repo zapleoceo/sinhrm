@@ -9,9 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
@@ -23,6 +22,7 @@ import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { PersonPicker, PickerValue } from '../people/picker/person-picker';
 import { ASSET_STATUSES, ASSET_STATUS_TONE, Asset, AssetQuery, AssetStatus, AssetType, RETURN_STATUSES } from './assets.model';
 import { AssetsService, assetsErrorKey } from './assets.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * Columns of the inventory table (sorted and filtered on the page). Status and type also go to the API as server
@@ -210,8 +210,7 @@ export function assetQueryFromParams(params: ParamMap): AssetQuery {
 })
 export class AssetsPage implements OnInit {
   private readonly api = inject(AssetsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly statusTone = ASSET_STATUS_TONE;
   protected readonly returnStatuses = RETURN_STATUSES;
@@ -333,6 +332,6 @@ export class AssetsPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

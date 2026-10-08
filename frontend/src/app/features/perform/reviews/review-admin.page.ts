@@ -7,9 +7,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { CYCLE_STATUSES, Competency, REVIEW_TYPES, RatingScale, ReviewCycle, ReviewType, parseIds } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { toIsoDate } from '../../../core/date/iso-date';
@@ -17,6 +16,7 @@ import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } 
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Columns of the cycles list (all on the page). Period filters by its start; progress sorts by the submitted share. */
 export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
@@ -218,8 +218,7 @@ export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
 })
 export class ReviewAdminPage implements OnInit {
   private readonly api = inject(PerformService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly reviewTypes = REVIEW_TYPES;
   protected readonly scales = signal<RatingScale[]>([]);
   protected readonly competencies = signal<Competency[]>([]);
@@ -318,6 +317,6 @@ export class ReviewAdminPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

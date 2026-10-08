@@ -10,13 +10,13 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { DevelopmentPlan, Kpi, Objective, OneOnOne, ReviewResult, progressTone } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { ReviewResults } from '../reviews/review-results';
 import { toIsoDate } from '../../../core/date/iso-date';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Profile tab "Performance": objectives, KPIs, development plans (managers/admins add a plan and KPIs; the
@@ -193,8 +193,7 @@ export class PerformanceTab {
   readonly canManage = input(false);
 
   private readonly api = inject(PerformService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly objectives = signal<Objective[]>([]);
   protected readonly kpis = signal<Kpi[]>([]);
   protected readonly plans = signal<DevelopmentPlan[]>([]);
@@ -267,6 +266,6 @@ export class PerformanceTab {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

@@ -4,7 +4,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -13,6 +12,7 @@ import { TimeService, timeErrorKey } from './time.service';
 import { toIsoDate } from '../../core/date/iso-date';
 import { addIsoDays } from '../../core/date/iso-day';
 import { WeekPicker } from './week-picker';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * The week grid (/time?week=&employee_id=): lines (project / category / note) × Monday…Sunday hours, leave and
@@ -176,7 +176,7 @@ export class MyWeekPage {
   });
   private readonly api = inject(TimeService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   protected readonly statusTone = TIMESHEET_STATUS_TONE;
   protected readonly data = signal<TimeWeek | null>(null);
@@ -283,6 +283,6 @@ export class MyWeekPage {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

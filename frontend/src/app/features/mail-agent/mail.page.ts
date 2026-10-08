@@ -9,10 +9,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
@@ -20,6 +19,7 @@ import { oneOfParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { MAIL_OUTCOMES, PARSER_KEYS, ParserKey, ProcessedMail, SENDER_KINDS, SenderKind, SenderRule, UnknownSender, isSenderPattern } from './mail.model';
 import { MailStore } from './mail.store';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** Columns of the processed-mail log (all rows are on the page: sorted and filtered here, state in the URL). */
 export const MAIL_LOG_COLUMNS: readonly ClientColumn<ProcessedMail>[] = [
@@ -82,8 +82,7 @@ interface Draft {
 })
 export class MailPage implements OnInit {
   protected readonly store = inject(MailStore);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly url = inject(TableUrlState);
   private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
   /** Open tab (in the URL, so a shared link or «back» lands on the same tab). */
@@ -107,7 +106,7 @@ export class MailPage implements OnInit {
     return MAIL_OUTCOMES.filter((o) => o !== 'skipped').map((outcome) => ({ outcome, n: counts[outcome] ?? 0 }));
   });
   protected readonly toast = (key: string): void => {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.notify.show(key, { duration: 3000 });
   };
 
   ngOnInit(): void {

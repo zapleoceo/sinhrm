@@ -8,7 +8,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDialog, ConfirmDialogData } from '../confirm.dialog';
@@ -19,6 +18,7 @@ import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { PagedList } from '../../../core/ui/table/paged-list';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Columns of the templates list (all rows are on the page). Kind and trigger sort in their list order. */
 export const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
@@ -153,7 +153,7 @@ export const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
 export class WorkflowTemplatesPage implements OnInit {
   private readonly api = inject(WorkflowsService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   private readonly dialog = inject(MatDialog);
 
@@ -224,6 +224,6 @@ export class WorkflowTemplatesPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 5000 });
+    this.notify.show(key, { duration: 5000 });
   }
 }

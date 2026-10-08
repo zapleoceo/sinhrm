@@ -8,9 +8,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { parseIds } from '../../perform/perform.model';
 import {
   LIFECYCLE_TRIGGERS,
@@ -34,6 +33,7 @@ import { ClientTable, DATE_RANGE, NUMBER_RANGE, translatedSelect } from '../../.
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Surveys (/admin/pulse, admins): the builder (from a template or from scratch; questions: scales 1–5 / 1–10,
@@ -256,8 +256,7 @@ import { TableUrlState } from '../../../core/ui/table/table-url-state';
 })
 export class SurveysPage implements OnInit {
   private readonly api = inject(PulseService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly surveyTypes = SURVEY_TYPES;
   protected readonly questionTypes = QUESTION_TYPES;
   protected readonly triggers = LIFECYCLE_TRIGGERS;
@@ -372,6 +371,6 @@ export class SurveysPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

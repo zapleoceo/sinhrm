@@ -5,9 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { PagedList } from '../../core/ui/table/paged-list';
@@ -16,6 +15,7 @@ import { oneOfParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { HIRING_STATUSES, HiringRequest, HiringStatus, PILL_TONE, statusTone } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 type ListMode = 'all' | 'mine' | 'inbox';
 
@@ -134,8 +134,7 @@ export class HiringListPage implements OnInit {
   /** Route data: "inbox" opens the approval inbox. */
   readonly view = input<ListMode>('all');
   private readonly api = inject(HiringRequestsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly mode = signal<ListMode>('all');
   /** A newer mode or status wins: the previous request is cancelled, so an older answer never overwrites the list. */
   private readonly list = new PagedList<HiringRequest>();
@@ -179,6 +178,6 @@ export class HiringListPage implements OnInit {
     const mode = this.mode();
     this.loadedStatus = this.status();
     const call = mode === 'inbox' ? this.api.inbox() : this.api.list({ status: this.loadedStatus ?? undefined, mine: mode === 'mine' });
-    this.list.load(call, { error: (e) => this.snack.open(this.i18n.translate(hiringErrorKey(e)), undefined, { duration: 4000 }) });
+    this.list.load(call, { error: (e) => this.notify.show(hiringErrorKey(e)) });
   }
 }

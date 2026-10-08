@@ -3,7 +3,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,7 +11,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { saveBlob } from '../../../core/http/api-error';
 import { EmployeeBulkData, EmployeeBulkDialog } from './employee-bulk.dialog';
 import { EmployeeBulkResult } from '../people.model';
@@ -34,6 +33,7 @@ import { ColumnFilter, FilterValue, TableSort, idToFilter } from '../../../core/
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { peopleQueryFromParams } from './people.query';
 import { withMember } from '../../../core/ui/with-member';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 
@@ -321,8 +321,7 @@ export class PeoplePage implements OnInit {
   protected readonly departments = signal<DictionaryItem[]>([]);
   protected readonly positions = signal<DictionaryItem[]>([]);
   private readonly people = inject(PeopleService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly selected = signal(new Set<number>());
   protected readonly canManage = computed(() => canManagePeople(this.auth.user()?.roles ?? []));
 
@@ -407,7 +406,7 @@ export class PeoplePage implements OnInit {
       .subscribe((results: EmployeeBulkResult[] | undefined) => {
         if (!results) return;
         const ok = results.filter((r) => r.ok).length;
-        this.snack.open(this.i18n.translate('bulk.done', { ok, total: results.length }), undefined, { duration: 5000 });
+        this.notify.show('bulk.done', { params: { ok, total: results.length }, duration: 5000 });
         this.clear();
         this.store.load();
       });

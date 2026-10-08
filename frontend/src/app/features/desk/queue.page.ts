@@ -8,9 +8,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, NUMBER_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { PagedList } from '../../core/ui/table/paged-list';
@@ -20,6 +19,7 @@ import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { CASE_STATUSES, CASE_STATUS_TONE, DeskCase, DeskCategory, QueueQuery, slaState } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
+import { NotifyService } from '../../core/ui/notify.service';
 
 const SLA_STATES = ['breached', 'due', 'ok'] as const;
 /** «All cases» in the URL (no param = the default «open» view). */
@@ -178,8 +178,7 @@ export function queueQueryFromParams(params: ParamMap): QueueQuery {
 })
 export class DeskQueuePage implements OnInit {
   private readonly api = inject(DeskService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly statusTone = CASE_STATUS_TONE;
   /** A newer filter wins: the previous request is cancelled, so an older answer never overwrites the list. */
   private readonly list = new PagedList<DeskCase>();
@@ -260,6 +259,6 @@ export class DeskQueuePage implements OnInit {
     this.list.load(this.api.queue(query), { error: (e) => this.toast(deskErrorKey(e)) });
   }
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

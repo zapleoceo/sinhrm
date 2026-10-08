@@ -24,7 +24,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -54,6 +53,7 @@ import {
 import { OrgChartAction, OrgChartControls, OrgChartLegend } from './org-chart-controls';
 import { OrgPersonPanel } from './org-person-panel';
 import { withMember } from '../../../core/ui/with-member';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 type ArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
 const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
@@ -559,7 +559,7 @@ export class OrgChartPage {
   readonly root = input<string | undefined>(undefined);
 
   private readonly api = inject(PeopleService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   private readonly viewportRef = viewChild.required<ElementRef<HTMLElement>>('viewport');
 
@@ -849,9 +849,7 @@ export class OrgChartPage {
       ids = pathTo(this.nodes(), id);
     }
     if (ids.length === 0) {
-      this.snack.open(this.i18n.translate('people.orgChart.notInChart'), undefined, {
-        duration: 3000,
-      });
+      this.notify.show('people.orgChart.notInChart', { duration: 3000 });
       return;
     }
     this.open.update((s) => new Set([...s, ...ids.slice(0, -1)]));
@@ -882,9 +880,7 @@ export class OrgChartPage {
         this.locate(me.id);
       },
       error: () =>
-        this.snack.open(this.i18n.translate('people.orgChart.notInChart'), undefined, {
-          duration: 3000,
-        }),
+        this.notify.show('people.orgChart.notInChart', { duration: 3000 }),
     });
   }
 

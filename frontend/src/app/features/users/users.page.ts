@@ -9,9 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus, isHrStaff } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { ColumnHeader } from '../../core/ui/table/column-header';
@@ -33,6 +32,7 @@ import { AdminUser, UpdateUser, UsersQuery, nextRoles } from './users.model';
 import { USERS_PAGE_SIZE, usersQueryFromParams } from './users.query';
 import { UsersService, userErrorKey } from './users.service';
 import { withMember } from '../../core/ui/with-member';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** API order without ?sort (by name, A→Z): the name column carries the arrow. */
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
@@ -66,8 +66,7 @@ const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 export class UsersPage implements OnInit {
   private readonly api = inject(UsersService);
   private readonly dialog = inject(MatDialog);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly url = inject(TableUrlState);
   /** A newer query cancels the request still in flight: an old answer never lands over the new filters. */
   private readonly list = new PagedList<AdminUser>();
@@ -237,6 +236,6 @@ export class UsersPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.notify.show(key, { duration: 3000 });
   }
 }

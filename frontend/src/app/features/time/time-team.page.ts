@@ -3,9 +3,8 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input } f
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { TIMESHEET_STATUSES, TIMESHEET_STATUS_TONE, TeamRow, addWeeks, mondayOf } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
 import { toIsoDate } from '../../core/date/iso-date';
@@ -15,6 +14,7 @@ import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { PagedList } from '../../core/ui/table/paged-list';
+import { NotifyService } from '../../core/ui/notify.service';
 
 const NUMBER_KEYS = ['expected', 'worked', 'overtime', 'missing', 'absence'] as const;
 
@@ -94,8 +94,7 @@ export class TimeTeamPage {
   private readonly api = inject(TimeService);
   protected readonly statusTone = TIMESHEET_STATUS_TONE;
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly list = new PagedList<TeamRow>();
   protected readonly rows = this.list.items;
   protected readonly loading = this.list.loading;
@@ -121,6 +120,6 @@ export class TimeTeamPage {
   }
 
   private load(week: string): void {
-    this.list.load(this.api.team(week), { error: (e) => this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 }) });
+    this.list.load(this.api.team(week), { error: (e) => this.notify.show(timeErrorKey(e)) });
   }
 }

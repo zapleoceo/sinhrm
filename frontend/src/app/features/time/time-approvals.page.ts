@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/cor
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { TimesheetApproval } from './time.model';
@@ -13,6 +12,7 @@ import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { PagedList } from '../../core/ui/table/paged-list';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** Columns of the approvals list (all submitted weeks are on the page). */
 export const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
@@ -87,7 +87,7 @@ export const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
 })
 export class TimeApprovalsPage implements OnInit {
   private readonly api = inject(TimeService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   private readonly list = new PagedList<TimesheetApproval>();
   protected readonly items = this.list.items;
@@ -108,11 +108,11 @@ export class TimeApprovalsPage implements OnInit {
     }
     this.api.decide(t.id, approve, comment).subscribe({
       next: () => this.items.update((list) => list.filter((x) => x.id !== t.id)),
-      error: (e: unknown) => this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 }),
+      error: (e: unknown) => this.notify.show(timeErrorKey(e)),
     });
   }
 
   private load(): void {
-    this.list.load(this.api.approvals(), { error: (e) => this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 }) });
+    this.list.load(this.api.approvals(), { error: (e) => this.notify.show(timeErrorKey(e)) });
   }
 }

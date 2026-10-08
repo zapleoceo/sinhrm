@@ -10,11 +10,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../../core/auth/auth.service';
 import { EvaluationView } from '../evaluation/evaluation-view';
 import { canManageScripts } from '../scripts.access';
@@ -26,6 +25,7 @@ import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { eventValue } from '../../../core/ui/event-value';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Script editor (Admin → Скрипти → script): tabs for steps (drag to reorder), objections, message templates
@@ -68,8 +68,7 @@ export class ScriptEditorPage {
 
   protected readonly store = inject(ScriptEditorStore);
   private readonly auth = inject(AuthService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly conditions = FOLLOWUP_CONDITIONS;
   protected readonly variables = TEMPLATE_VARIABLES;
@@ -166,6 +165,6 @@ export class ScriptEditorPage {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.notify.show(key, { duration: 3000 });
   }
 }

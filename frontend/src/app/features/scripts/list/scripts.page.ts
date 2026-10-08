@@ -8,9 +8,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../../core/ui/table/client-table';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
@@ -32,6 +31,7 @@ export const SCRIPT_COLUMNS: readonly ClientColumn<Script>[] = [
 ];
 import { ScriptsService, scriptsErrorKey } from '../scripts.service';
 import { PagedList } from '../../../core/ui/table/paged-list';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Admin → Скрипти: all scripts with their active version / draft state (sortable / filterable headers), creation of a new one. */
 @Component({
@@ -141,8 +141,7 @@ import { PagedList } from '../../../core/ui/table/paged-list';
 export class ScriptsPage implements OnInit {
   private readonly api = inject(ScriptsService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly channels = SCRIPT_CHANNELS;
   private readonly list = new PagedList<Script>();
@@ -186,7 +185,7 @@ export class ScriptsPage implements OnInit {
       },
       error: (e: unknown) => {
         this.busy.set(false);
-        this.snack.open(this.i18n.translate(scriptsErrorKey(e)), undefined, { duration: 3000 });
+        this.notify.show(scriptsErrorKey(e), { duration: 3000 });
       },
     });
   }

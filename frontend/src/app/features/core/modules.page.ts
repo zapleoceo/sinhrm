@@ -4,12 +4,12 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { SUPERADMIN_ROLE, USER_ROLES, UserRole } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { ModuleSetting, ModulesService } from './modules.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** Editable copy of a row; `confirming` = the "switch off?" question is shown. */
 interface Draft {
@@ -124,8 +124,7 @@ interface Draft {
 export class ModulesPage implements OnInit {
   private readonly api = inject(ModulesService);
   private readonly auth = inject(AuthService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly roles = USER_ROLES;
   /** Every module is always open to the superadmin: its column is ticked and locked. */
@@ -200,6 +199,6 @@ export class ModulesPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.notify.show(key, { duration: 3000 });
   }
 }
