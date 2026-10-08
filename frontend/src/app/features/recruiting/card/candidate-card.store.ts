@@ -4,6 +4,7 @@ import { Application, Candidate, LogTouch, MoveApplication, RejectReason, Timeli
 import { SendMessage } from '../../channels/channels.model';
 import { ChannelsService } from '../../channels/channels.service';
 import { RecruitingService } from '../recruiting.service';
+import { LatestRequest } from '../../../core/ui/table/latest-request';
 
 const PER_PAGE = 30;
 
@@ -12,8 +13,9 @@ const PER_PAGE = 30;
 export class CandidateCardStore {
   private readonly api = inject(RecruitingService);
   private readonly channels = inject(ChannelsService);
-  private candidateSeq = 0;
-  private timelineSeq = 0;
+  /** Another candidate / timeline page cancels the request still in flight: a late answer never lands. */
+  private readonly candidateRequest = new LatestRequest();
+  private readonly timelineRequest = new LatestRequest();
 
   readonly candidate = signal<Candidate | null>(null);
   readonly loading = signal(false);
@@ -26,21 +28,16 @@ export class CandidateCardStore {
   readonly rejectReasons = signal<RejectReason[]>([]);
 
   open(id: number): void {
-    const seq = ++this.candidateSeq;
     this.loading.set(true);
     this.failed.set(false);
-    this.api.candidate(id).subscribe({
+    this.candidateRequest.run(this.api.candidate(id), {
       next: (c) => {
-        if (seq === this.candidateSeq) {
-          this.candidate.set(c);
-          this.loading.set(false);
-        }
+        this.candidate.set(c);
+        this.loading.set(false);
       },
       error: () => {
-        if (seq === this.candidateSeq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
+        this.failed.set(true);
+        this.loading.set(false);
       },
     });
     this.loadTimeline(id, 1);
@@ -103,23 +100,15 @@ export class CandidateCardStore {
   }
 
   private loadTimeline(id: number, page: number): void {
-    const seq = ++this.timelineSeq;
     this.timelineLoading.set(true);
-    this.api.timeline(id, this.filters(), page, PER_PAGE).subscribe({
+    this.timelineRequest.run(this.api.timeline(id, this.filters(), page, PER_PAGE), {
       next: (res) => {
-        if (seq !== this.timelineSeq) {
-          return;
-        }
         this.timeline.update((list) => (page === 1 ? res.data : [...list, ...res.data]));
         this.timelineTotal.set(res.meta.total);
         this.timelinePage.set(page);
         this.timelineLoading.set(false);
       },
-      error: () => {
-        if (seq === this.timelineSeq) {
-          this.timelineLoading.set(false);
-        }
-      },
+      error: () => this.timelineLoading.set(false),
     });
   }
 }

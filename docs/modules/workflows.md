@@ -42,6 +42,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/WorkflowException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): `RunsStore` держит запуски в `PagedList` (`core/ui/table/paged-list.ts`) вместо ручного счётчика `seq`: новый запрос отменяется HttpClient, а не только игнорируется.
 Бэкенд — `backend/app/Modules/Workflows`, маршруты `/api/workflows/*` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`. Gate `workflows-manage` (`Providers/WorkflowsServiceProvider::MANAGE`) = `PeopleScope::isAdmin`.
 

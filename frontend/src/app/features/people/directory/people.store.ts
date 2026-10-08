@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { safeStorage } from '../../../core/storage/safe-storage';
-import { LatestRequest } from '../../../core/ui/table/latest-request';
+import { PagedList } from '../../../core/ui/table/paged-list';
 import { Employee, PeopleQuery } from '../people.model';
 import { PeopleService } from '../people.service';
 import { PEOPLE_PAGE_SIZE, sameQuery } from './people.query';
@@ -11,20 +11,20 @@ const DEFAULT_QUERY: PeopleQuery = { page: 1, perPage: PEOPLE_PAGE_SIZE };
 
 /**
  * Directory page state (provided per page). The query comes from the URL (people.query.ts): the page calls
- * `apply()` on every URL change. A newer query cancels the request still in flight (LatestRequest), so an old
+ * `apply()` on every URL change. A newer query cancels the request still in flight (PagedList), so an old
  * answer never lands over the new filters.
  */
 @Injectable()
 export class PeopleStore {
   private readonly api = inject(PeopleService);
-  private readonly request = new LatestRequest();
+  private readonly list = new PagedList<Employee>();
   private loaded = false;
 
   readonly query = signal<PeopleQuery>(DEFAULT_QUERY);
-  readonly items = signal<Employee[]>([]);
-  readonly total = signal(0);
-  readonly loading = signal(false);
-  readonly failed = signal(false);
+  readonly items = this.list.items;
+  readonly total = this.list.total;
+  readonly loading = this.list.loading;
+  readonly failed = this.list.failed;
   readonly view = signal<PeopleView>(safeStorage.get(VIEW_KEY) === 'cards' ? 'cards' : 'table');
 
   /** New query from the URL: loads unless it is the same as the one already shown. */
@@ -38,19 +38,7 @@ export class PeopleStore {
 
   load(): void {
     this.loaded = true;
-    this.loading.set(true);
-    this.failed.set(false);
-    this.request.run(this.api.list(this.query()), {
-      next: (page) => {
-        this.items.set(page.data);
-        this.total.set(page.meta.total);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.list(this.query()));
   }
 
   setView(view: PeopleView): void {

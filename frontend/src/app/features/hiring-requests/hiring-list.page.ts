@@ -10,7 +10,7 @@ import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angula
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { oneOfParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
@@ -137,8 +137,10 @@ export class HiringListPage implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly mode = signal<ListMode>('all');
-  protected readonly items = signal<HiringRequest[]>([]);
-  protected readonly loading = signal(false);
+  /** A newer mode or status wins: the previous request is cancelled, so an older answer never overwrites the list. */
+  private readonly list = new PagedList<HiringRequest>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly canCreate = signal(false);
   protected readonly tone = statusTone;
   protected readonly pill = PILL_TONE;
@@ -148,7 +150,6 @@ export class HiringListPage implements OnInit {
   private started = false;
   /** Status the shown list was loaded with (undefined = not loaded yet). */
   private loadedStatus: HiringStatus | null | undefined;
-  private readonly request = new LatestRequest();
   protected readonly table = new ClientTable({ rows: this.items, columns: HIRING_COLUMNS });
   protected readonly textFilter = TEXT_FILTER;
   protected readonly dateFilter = DATE_RANGE;
@@ -175,20 +176,9 @@ export class HiringListPage implements OnInit {
     this.load();
   }
   private load(): void {
-    this.loading.set(true);
     const mode = this.mode();
     this.loadedStatus = this.status();
     const call = mode === 'inbox' ? this.api.inbox() : this.api.list({ status: this.loadedStatus ?? undefined, mine: mode === 'mine' });
-    // A newer mode or status wins: the previous request is cancelled, so an older answer never overwrites the list.
-    this.request.run(call, {
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.snack.open(this.i18n.translate(hiringErrorKey(e)), undefined, { duration: 4000 });
-      },
-    });
+    this.list.load(call, { error: (e) => this.snack.open(this.i18n.translate(hiringErrorKey(e)), undefined, { duration: 4000 }) });
   }
 }

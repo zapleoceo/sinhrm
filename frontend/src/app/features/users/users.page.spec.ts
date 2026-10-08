@@ -146,6 +146,16 @@ describe('UsersPage: sortable / filterable headers bound to the URL', () => {
     expect(inFlight.observed).toBe(false);
   });
 
+  it('a failed load shows the error state and stops the progress bar', async () => {
+    await harness.navigateByUrl('/admin/users?q=err');
+    harness.detectChanges();
+    expect(harness.routeNativeElement!.querySelector('mat-progress-bar')).not.toBeNull();
+    answers.at(-1)!.error(new Error('down'));
+    harness.detectChanges();
+    expect(harness.routeNativeElement!.querySelector('mat-progress-bar')).toBeNull();
+    expect(harness.routeNativeElement!.textContent).toContain('users.loadError');
+  });
+
   it('keeps the headers when nothing matches, so the filter can be cleared in place', async () => {
     await harness.navigateByUrl('/admin/users?q=nobody');
     answers.at(-1)!.next({ data: [], meta: { current_page: 1, per_page: 20, total: 0, last_page: 1 } });

@@ -70,6 +70,7 @@
 
 **Новый кандидат** (DRY, 2026-10-08): колонки при ручном создании (`CandidateService::create`) и при импорте/сопоставлении (`createOrMatch`) собирает один приватный `newCandidate()` — различаются только значение «как добавлен» по умолчанию (`manual` / `import`) и то, что импорт может идти без пользователя. Статусы в правилах и запросах берутся из enum, без строк: активный пользователь в `AssignInterviewersRequest`/`SaveVacancyRequest` — `Auth\Enums\UserStatus::Active`, статус заявки по умолчанию в `Repositories/ScreeningRanking` — `ApplicationStatus::Active` (`tests/Unit/Recruiting/NewCandidateAttributesTest`).
 
+- Фронт (2026-10-08): `CandidatesStore`, `VacanciesStore` (счётчик `active_count` — через `next`), `InboxStore` держат списки в `PagedList` (`core/ui/table/paged-list.ts`); `BoardStore` и `CandidateCardStore` вместо ручных счётчиков `seq` отменяют устаревшие запросы через `LatestRequest` (доска и личный слой, карточка и лента).
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/InboxNavBadges` — ключ `inbox`: сообщения во «Вхідні» без кандидата в области видимости пользователя (`InboxService::list(..., 1)->total()`, то же число, что `meta.total` списка).
 
 ### Сущности и таблицы (`backend/app/Modules/Recruiting/Database/Migrations`)

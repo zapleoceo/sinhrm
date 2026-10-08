@@ -4,6 +4,7 @@ import { Application, Board, MoveApplication, PersonalBoard, PersonalColumn, Rej
 import { rankByScreening } from '../screening-ranking';
 import { groupByStage, statusForStage } from '../recruiting.format';
 import { RecruitingService, recruitingErrorKey } from '../recruiting.service';
+import { LatestRequest } from '../../../core/ui/table/latest-request';
 
 /** Where a card can go: a shared funnel stage (real move) or an own column (personal filing, stage untouched). */
 export type BoardTarget = { type: 'stage'; stage: Stage } | { type: 'personal'; column: PersonalColumn };
@@ -87,33 +88,30 @@ export class BoardStore {
   readonly hiddenColumns = computed(() => (this.personal()?.columns ?? []).filter((c) => c.hidden));
   readonly staleCount = computed(() => this.board()?.applications.filter((a) => a.is_stale).length ?? 0);
 
-  private seq = 0;
+  /** Another load() cancels both requests of the previous one: a late answer never shows another vacancy. */
+  private readonly boardRequest = new LatestRequest();
+  private readonly personalRequest = new LatestRequest();
   /** Vacancy of the last load(): late answers to calls made for another vacancy are ignored. */
   private vacancyId: number | null = null;
 
   load(vacancyId: number, withPersonal = false): void {
-    const seq = ++this.seq;
     this.vacancyId = vacancyId;
     this.loading.set(true);
     this.failed.set(false);
-    this.api.board(vacancyId).subscribe({
+    this.boardRequest.run(this.api.board(vacancyId), {
       next: (board) => {
-        if (seq !== this.seq) {
-          return;
-        }
         this.board.set(board);
         this.loading.set(false);
       },
       error: () => {
-        if (seq === this.seq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
+        this.failed.set(true);
+        this.loading.set(false);
       },
     });
     this.personal.set(null);
+    this.personalRequest.cancel();
     if (withPersonal) {
-      this.api.personalBoard(vacancyId).subscribe({ next: (p) => seq === this.seq && this.personal.set(p), error: () => undefined });
+      this.personalRequest.run(this.api.personalBoard(vacancyId), { next: (p) => this.personal.set(p), error: () => undefined });
     }
     if (this.rejectReasons().length === 0) {
       this.api.rejectReasons().subscribe({ next: (list) => this.rejectReasons.set(list), error: () => undefined });

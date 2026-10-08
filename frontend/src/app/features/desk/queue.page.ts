@@ -13,7 +13,7 @@ import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angula
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, NUMBER_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { ColumnFilter, FilterValue, intParam, oneOfParam, sameQuery } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
@@ -181,9 +181,11 @@ export class DeskQueuePage implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   protected readonly statusTone = CASE_STATUS_TONE;
-  protected readonly items = signal<DeskCase[]>([]);
+  /** A newer filter wins: the previous request is cancelled, so an older answer never overwrites the list. */
+  private readonly list = new PagedList<DeskCase>();
+  protected readonly items = this.list.items;
   protected readonly categories = signal<DeskCategory[]>([]);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
   protected readonly textFilter = TEXT_FILTER;
   protected readonly numberRange = NUMBER_RANGE;
   protected readonly activeFilter = translatedSelect(() => ['true', 'false'], (v) => (v === 'true' ? 'table.yes' : 'table.no'));
@@ -204,7 +206,6 @@ export class DeskQueuePage implements OnInit {
   private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
   /** Server part of the URL (status, category): only its change reloads the queue. */
   private readonly query = computed(() => queueQueryFromParams(this.params()), { equal: sameQuery });
-  private readonly request = new LatestRequest();
   protected readonly table = new ClientTable({ rows: this.items, columns: QUEUE_COLUMNS });
   protected readonly statusFilter = translatedSelect(
     () => ['open', ...CASE_STATUSES],
@@ -256,18 +257,7 @@ export class DeskQueuePage implements OnInit {
   }
 
   private load(query: QueueQuery): void {
-    this.loading.set(true);
-    // A newer filter wins: the previous request is dropped, so an older answer never overwrites the list.
-    this.request.run(this.api.queue(query), {
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.toast(deskErrorKey(e));
-      },
-    });
+    this.list.load(this.api.queue(query), { error: (e) => this.toast(deskErrorKey(e)) });
   }
   private toast(key: string): void {
     this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });

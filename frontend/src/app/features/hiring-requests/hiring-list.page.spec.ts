@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { HiringListPage } from './hiring-list.page';
 import { HiringRequest, HiringStatus } from './hiring-requests.model';
@@ -55,5 +55,26 @@ describe('HiringListPage: sortable / filterable headers bound to the URL', () =>
     expect(calls.at(-1)).toEqual({ status: undefined, mine: false });
     expect(titles()).toEqual(['Бухгалтер', 'Аналітик']);
     expect(sortCount(page.fixture)).toBe(2); // what an open header filter announces
+  });
+});
+
+describe('HiringListPage: only the latest list request counts', () => {
+  it('another status in the URL cancels the request still in flight; its late answer never lands', async () => {
+    const answers: Subject<HiringRequest[]>[] = [];
+    const list = (): Subject<HiringRequest[]> => {
+      const answer = new Subject<HiringRequest[]>();
+      answers.push(answer);
+      return answer;
+    };
+    const api = { list, inbox: list, meta: () => of({ can_create: false, can_manage: false, form_fields: [] }) };
+    const page = await openTablePage(HiringListPage, '/?status=pending', [{ provide: HiringRequestsService, useValue: api }]);
+    await page.router.navigateByUrl('/?status=approved');
+    await page.settle();
+    expect(answers.length).toBe(2);
+    expect(answers[0].observed).toBe(false);
+    answers[0].next(LIST);
+    answers[1].next([LIST[1]]);
+    await page.settle();
+    expect([...page.el.querySelectorAll('tbody tr td:first-child a')].map((a) => a.textContent?.trim())).toEqual(['Аналітик']);
   });
 });

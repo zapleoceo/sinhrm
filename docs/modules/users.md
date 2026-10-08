@@ -26,6 +26,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/UserAdminException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): список `/admin/users` держит строки, итог, загрузку и ошибку в `PagedList` (`core/ui/table/paged-list.ts`); новый запрос отменяет предыдущий.
 ### Доступ
 Gate `manage-users` (`Providers\UsersServiceProvider::MANAGE_USERS`): активный пользователь с ролью `superadmin`.
 Назначаемые роли (приглашение и смена): `admin`, `hr_manager`, `recruiter`, `employee`, `viewer` — что каждая значит, см.

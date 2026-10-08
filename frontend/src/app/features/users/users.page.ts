@@ -15,7 +15,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus, isHrStaff } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { ColumnHeader } from '../../core/ui/table/column-header';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import {
   ColumnFilter,
@@ -70,7 +70,8 @@ export class UsersPage implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
   private readonly url = inject(TableUrlState);
-  private readonly request = new LatestRequest();
+  /** A newer query cancels the request still in flight: an old answer never lands over the new filters. */
+  private readonly list = new PagedList<AdminUser>();
   private loaded = false;
 
   /** Superadmin is bootstrap-only (SUPERADMIN_EMAIL) and cannot be assigned from the UI. */
@@ -99,10 +100,10 @@ export class UsersPage implements OnInit {
     const q = this.query();
     return q.last_login_from || q.last_login_to ? { from: q.last_login_from ?? null, to: q.last_login_to ?? null } : null;
   });
-  protected readonly users = signal<AdminUser[]>([]);
-  protected readonly total = signal(0);
-  protected readonly loading = signal(false);
-  protected readonly failed = signal(false);
+  protected readonly users = this.list.items;
+  protected readonly total = this.list.total;
+  protected readonly loading = this.list.loading;
+  protected readonly failed = this.list.failed;
   protected readonly pending = signal<ReadonlySet<number>>(new Set());
   /**
    * Selected branch ids per branch-scoped user (recruiter/viewer/employee; HR staff see every branch).
@@ -127,20 +128,7 @@ export class UsersPage implements OnInit {
 
   protected load(): void {
     this.loaded = true;
-    this.loading.set(true);
-    this.failed.set(false);
-    // A newer query cancels the request still in flight: an old answer never lands over the new filters.
-    this.request.run(this.api.list(this.query()), {
-      next: (page) => {
-        this.users.set(page.data);
-        this.total.set(page.meta.total);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.list(this.query()));
   }
 
   protected onPage(e: PageEvent): void {

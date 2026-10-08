@@ -22,6 +22,7 @@
 - Филиалы пользователя — в «Адміністрування → Користувачі», колонка «Філії» (см. [users.md](users.md)).
 
 ## Как устроено
+- Фронт (2026-10-08): `DirectoryStore` держит строки, итог, загрузку и ошибку в `PagedList` (`core/ui/table/paged-list.ts`) — общий помощник списков вместо своих сигналов и `LatestRequest`.
 ### Таблицы (миграции `Database/Migrations/2026_09_26_120001_create_directory_tables.php`, `2026_10_07_100001_drop_directory_external_ids.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|

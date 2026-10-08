@@ -16,7 +16,7 @@ import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
 import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { ColumnFilter, intParam, oneOfParam, sameQuery, textParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
@@ -215,9 +215,11 @@ export class AssetsPage implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly statusTone = ASSET_STATUS_TONE;
   protected readonly returnStatuses = RETURN_STATUSES;
-  protected readonly items = signal<Asset[]>([]);
+  /** A newer query wins: the previous request is cancelled, so an older answer never overwrites the list. */
+  private readonly list = new PagedList<Asset>();
+  protected readonly items = this.list.items;
   protected readonly types = signal<AssetType[]>([]);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
   protected readonly formOpen = signal(false);
   protected readonly newType = signal<number | null>(null);
   protected readonly moving = signal<{ asset: Asset; kind: 'assign' | 'return' } | null>(null);
@@ -228,7 +230,6 @@ export class AssetsPage implements OnInit {
   private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
   /** Server part of the URL (search, status, type): only its change reloads the list, not sort or page filters. */
   private readonly query = computed(() => assetQueryFromParams(this.params()), { equal: sameQuery });
-  private readonly request = new LatestRequest();
   protected readonly search$ = new Subject<string>();
   /** Search box value from the URL. */
   protected readonly search = computed(() => this.query().q ?? '');
@@ -316,18 +317,7 @@ export class AssetsPage implements OnInit {
   }
 
   private load(query: AssetQuery): void {
-    this.loading.set(true);
-    // A newer query wins: the previous request is cancelled, so an older answer never overwrites the list.
-    this.request.run(this.api.list(query), {
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.toast(assetsErrorKey(e));
-      },
-    });
+    this.list.load(this.api.list(query), { error: (e) => this.toast(assetsErrorKey(e)) });
   }
 
   private apply(call: Observable<Asset>): void {
