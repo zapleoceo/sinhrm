@@ -1,6 +1,6 @@
 # HRM-38 - MySQL 8.4 backup/restore proof
 
-## State
+## Стан
 
 - 2026-10-08 UTC. In progress on Codex-owned branch `feat/mysql-backup-restore`, isolated worktree `D:/Projects/sinhrm-wt/mysql-backup`. Draft PR [#174](https://github.com/zapleoceo/sinhrm/pull/174) is rebased on MySQL-only main (ADR 0011).
 - Scope: CI-only synthetic MySQL 8.4 logical dump and isolated restore, exact table/count comparison, linked fixture, 2 MiB attachment, encrypted-vault check, and operator runbook. The backup workflow has only one MySQL job.
