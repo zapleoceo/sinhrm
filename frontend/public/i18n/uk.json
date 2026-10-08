@@ -660,7 +660,7 @@
     "invalidEmail": "Невірний e-mail",
     "save": "Зберегти",
     "directory": { "title": "Співробітники", "subtitle": "{{n}} осіб", "search": "Імʼя, e-mail або телефон", "add": "Додати співробітника", "working": "Працюючі", "empty": "Нікого не знайдено", "view": "Вигляд", "table": "Таблиця", "cards": "Картки" },
-    "fields": { "fullName": "ПІБ", "position": "Посада", "department": "Відділ", "branch": "Філія", "manager": "Керівник", "status": "Статус", "contacts": "Контакти", "workEmail": "Робочий e-mail", "phone": "Телефон", "hiredAt": "Дата прийому", "firedAt": "Останній робочий день", "employmentType": "Тип зайнятості", "birthDate": "Дата народження", "personalEmail": "Особистий e-mail", "address": "Адреса", "emergencyContact": "Екстрений контакт", "reports": "Прямі підлеглі", "gender": "Стать", "schedule": "Графік роботи" },
+    "fields": { "fullName": "ПІБ", "position": "Посада", "department": "Відділ", "branch": "Філія", "manager": "Керівник", "status": "Статус", "contacts": "Контакти", "workEmail": "Робочий e-mail", "phone": "Телефон", "hiredAt": "Дата прийому", "firedAt": "Останній робочий день", "employmentType": "Тип зайнятості", "birthDate": "Дата народження", "personalEmail": "Особистий e-mail", "personalPhone": "Особистий телефон", "address": "Адреса", "emergencyContact": "Екстрений контакт", "reports": "Прямі підлеглі", "gender": "Стать", "schedule": "Графік роботи" },
     "status": { "active": "Працює", "on_leave": "У відпустці", "terminated": "Звільнений" },
     "employmentType": { "full_time": "Повна зайнятість", "part_time": "Часткова зайнятість", "contractor": "Підрядник" },
     "weekday": { "1": "Пн", "2": "Вт", "3": "Ср", "4": "Чт", "5": "Пт", "6": "Сб", "7": "Нд" },

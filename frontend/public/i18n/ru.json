@@ -660,7 +660,7 @@
     "invalidEmail": "Неверный e-mail",
     "save": "Сохранить",
     "directory": { "title": "Сотрудники", "subtitle": "{{n}} чел.", "search": "Имя, e-mail или телефон", "add": "Добавить сотрудника", "working": "Работающие", "empty": "Никого не найдено", "view": "Вид", "table": "Таблица", "cards": "Карточки" },
-    "fields": { "fullName": "ФИО", "position": "Должность", "department": "Отдел", "branch": "Филиал", "manager": "Руководитель", "status": "Статус", "contacts": "Контакты", "workEmail": "Рабочий e-mail", "phone": "Телефон", "hiredAt": "Дата приёма", "firedAt": "Последний рабочий день", "employmentType": "Тип занятости", "birthDate": "Дата рождения", "personalEmail": "Личный e-mail", "address": "Адрес", "emergencyContact": "Экстренный контакт", "reports": "Прямые подчинённые", "gender": "Пол", "schedule": "График работы" },
+    "fields": { "fullName": "ФИО", "position": "Должность", "department": "Отдел", "branch": "Филиал", "manager": "Руководитель", "status": "Статус", "contacts": "Контакты", "workEmail": "Рабочий e-mail", "phone": "Телефон", "hiredAt": "Дата приёма", "firedAt": "Последний рабочий день", "employmentType": "Тип занятости", "birthDate": "Дата рождения", "personalEmail": "Личный e-mail", "personalPhone": "Личный телефон", "address": "Адрес", "emergencyContact": "Экстренный контакт", "reports": "Прямые подчинённые", "gender": "Пол", "schedule": "График работы" },
     "status": { "active": "Работает", "on_leave": "В отпуске", "terminated": "Уволен" },
     "employmentType": { "full_time": "Полная занятость", "part_time": "Частичная занятость", "contractor": "Подрядчик" },
     "weekday": { "1": "Пн", "2": "Вт", "3": "Ср", "4": "Чт", "5": "Пт", "6": "Сб", "7": "Вс" },

@@ -7,6 +7,7 @@ namespace App\Modules\TimeOff\Services;
 use App\Models\User;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
+use App\Modules\People\Support\SelfDecisionAudit;
 use App\Modules\TimeOff\Contracts\LeaveRequestRepository;
 use App\Modules\TimeOff\Contracts\LeaveSettingsRepository;
 use App\Modules\TimeOff\Contracts\LedgerRepository;
@@ -28,6 +29,7 @@ final readonly class BalanceService
         private LeaveRequestRepository $requests,
         private LeaveSettingsRepository $settings,
         private LoggerInterface $log,
+        private SelfDecisionAudit $selfDecisions,
     ) {}
 
     /** @return list<array<string, mixed>> one row per active leave type */
@@ -67,13 +69,14 @@ final readonly class BalanceService
 
     /**
      * Manual correction of someone's balance (HR, route gate). Separation of duties: never one's own balance —
-     * that would be HR granting themselves leave days with nobody signing off.
+     * that would be HR granting themselves leave days with nobody signing off. Only break-glass (sole superadmin) may,
+     * audited as self_decision (ref_id = leave type).
      *
      * @throws TimeOffException forbidden
      */
     public function adjust(User $actor, PeopleContext $ctx, Employee $employee, LeaveType $type, float $delta, ?string $comment): void
     {
-        if (! $ctx->canDecideFor($employee->id)) {
+        if (! $ctx->canDecideOrBreakGlass($employee->id)) {
             throw TimeOffException::forbidden();
         }
         $this->ledger->append([
@@ -84,6 +87,7 @@ final readonly class BalanceService
             'comment' => $comment,
             'created_by' => $actor->id,
         ]);
+        $this->selfDecisions->record($ctx, $employee->id, 'timeoff.balance_adjusted', $type->id);
         $this->log->info('timeoff.balance_adjusted', ['employee' => $employee->id, 'type' => $type->id, 'by' => $actor->id]);
     }
 

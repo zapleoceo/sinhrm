@@ -136,6 +136,10 @@ import { NotifyService } from '../../../core/ui/notify.service';
               <dd>{{ e.birth_date ? (e.birth_date | date: 'dd.MM.yyyy') : '—' }}</dd>
               <dt>{{ 'people.fields.personalEmail' | transloco }}</dt>
               <dd>{{ e.personal_email ?? '—' }}</dd>
+              <dt>{{ 'people.fields.personalPhone' | transloco }}</dt>
+              <dd>
+                @if (personalPhone(); as phone) { <a class="mono" [href]="'tel:' + phone">{{ phone }}</a> } @else { — }
+              </dd>
               <dt>{{ 'people.fields.address' | transloco }}</dt>
               <dd>{{ e.address ?? '—' }}</dd>
               <dt>{{ 'people.fields.emergencyContact' | transloco }}</dt>
@@ -333,7 +337,11 @@ export class ProfilePage {
     if (id === undefined || !canManagePeople(this.auth.user()?.roles ?? [])) return null;
     return (paging) => this.audit.employeeHistory(id, paging);
   });
-  protected readonly customFields = computed(() => Object.entries(this.store.employee()?.custom_fields ?? {}));
+  /** Candidate's phone carried over at hire (HireService): PII tier, shown as its own row, not as a raw custom key. */
+  protected readonly personalPhone = computed(() => this.store.employee()?.custom_fields?.['personal_phone'] ?? null);
+  protected readonly customFields = computed(() =>
+    Object.entries(this.store.employee()?.custom_fields ?? {}).filter(([key]) => key !== 'personal_phone'),
+  );
 
   constructor() {
     effect(() => {

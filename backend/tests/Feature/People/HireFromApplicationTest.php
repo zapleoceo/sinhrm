@@ -97,6 +97,10 @@ final class HireFromApplicationTest extends TestCase
         $this->actingAs($this->userWith(UserRole::Viewer))->getJson('/api/people/'.$id)->assertOk()
             ->assertJsonPath('data.phone', null)
             ->assertJsonMissingPath('data.custom_fields');
+
+        // HR (PII tier) sees it: the profile shows custom_fields.personal_phone as "Особистий телефон".
+        $this->actingAs($this->userWith(UserRole::HrManager))->getJson('/api/people/'.$id)->assertOk()
+            ->assertJsonPath('data.custom_fields.personal_phone', '+380501234567');
     }
 
     public function test_access(): void

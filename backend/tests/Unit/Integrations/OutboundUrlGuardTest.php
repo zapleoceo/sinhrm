@@ -147,4 +147,21 @@ final class OutboundUrlGuardTest extends TestCase
         $this->assertNull($target->error);
         $this->assertSame(['v6.test:8443:[2606:4700:4700::1111],93.184.216.34'], $target->curlResolve());
     }
+
+    /** An IP literal is not resolved, so it is not pinned: no "[2606:4700::1]:443:…" entry curl would reject. */
+    public function test_inspect_does_not_pin_an_ip_literal_host(): void
+    {
+        $v6 = $this->guard()->inspect('https://[2606:4700::1]/hook');
+        $this->assertNull($v6->error);
+        $this->assertSame(['2606:4700::1'], $v6->ips);
+        $this->assertSame([], $v6->curlResolve());
+        $this->assertSame([], $v6->httpOptions()['curl'][CURLOPT_RESOLVE]);
+
+        $v4 = $this->guard()->inspect('https://93.184.216.34/hook');
+        $this->assertNull($v4->error);
+        $this->assertSame([], $v4->curlResolve());
+
+        // A private literal is still refused by the guard itself.
+        $this->assertSame('blocked_host', $this->guard()->inspect('https://[::1]/hook')->error);
+    }
 }

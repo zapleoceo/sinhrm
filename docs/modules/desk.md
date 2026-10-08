@@ -71,7 +71,7 @@
 
 | Лимит | Значение | Что отвечает |
 |---|---|---|
-| Частота записи (`POST` обращение / комментарий / вложение) | `DeskServiceProvider::WRITE_THROTTLE` = `throttle:20,1` (20 запросов в минуту на пользователя) | 429 |
+| Частота записи (`POST` обращение / комментарий / вложение) | именованный лимитер `DeskServiceProvider::WRITE_LIMITER` = `desk-write`: `WRITES_PER_MINUTE` = 20 в минуту, ключ `desk` + id пользователя — своя корзина, не общая с `throttle:N,1` Channels/Recruiting (обычный `throttle:20,1` считает по пользователю на все такие маршруты сразу) | 429 |
 | Открытых обращений на сотрудника | `DeskService::MAX_OPEN_CASES` = 20 (считаются незакрытые; закрытие освобождает слот) | 422 `too_many_open_cases` |
 | Файлов на обращение | `DeskService::MAX_FILES` = 10 | 422 `too_many_files` |
 | Суммарный размер вложений обращения | `DeskService::MAX_CASE_BYTES` = 25 МБ (`DeskRepository::attachmentBytes` — сумма `size`) | 422 `attachment_quota_exceeded` |

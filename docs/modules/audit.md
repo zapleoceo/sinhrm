@@ -31,7 +31,7 @@
 | `user` | `App\Models\User` | `status_changed` (активация/блокировка), `role_changed` (приглашение и смена роли, из `Users\Services\UserAdminService`) |
 | `integration` | `Integrations\Models\Integration` | `secret_set` / `secret_cleared` с `meta.secret` = имя ключа (из `IntegrationSecret`) |
 | `ai_prompt_version` | `Ai\Models\AiPromptVersion` | `prompt_activated`; текст промпта не пишется (`body` маскируется) |
-| `employee` | `People\Models\Employee` | `status_changed` (в т.ч. увольнение) |
+| `employee` | `People\Models\Employee` | `status_changed` (в т.ч. увольнение); `updated` с `meta.self_decision = true`, `meta.operation`, `meta.ref_id` — break-glass единственного суперадмина, решившего своё (`People/Support/SelfDecisionAudit`, [people.md](people.md)) |
 | `vacancy`, `candidate`, `application` | `Recruiting\Models\*` | `stage_changed` у отклика, `meta.candidate_id` |
 | `leave_request` | `TimeOff\Models\LeaveRequest` | `status_changed` = решение по отсутствию |
 | `document` | `Documents\Models\Document` | `status_changed` |

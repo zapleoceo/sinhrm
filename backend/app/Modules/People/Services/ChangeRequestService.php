@@ -13,6 +13,7 @@ use App\Modules\People\Enums\ChangeRequestStatus;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Models\EmployeeChangeRequest;
+use App\Modules\People\Support\SelfDecisionAudit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -28,6 +29,7 @@ final readonly class ChangeRequestService
         private ChangeRequestRepository $requests,
         private EmployeeRepository $employees,
         private LoggerInterface $log,
+        private SelfDecisionAudit $selfDecisions,
     ) {}
 
     /**
@@ -64,7 +66,7 @@ final readonly class ChangeRequestService
     /** @throws PeopleException forbidden | already_decided */
     public function decide(User $actor, PeopleContext $ctx, EmployeeChangeRequest $request, bool $approve, ?string $comment): EmployeeChangeRequest
     {
-        if (! $ctx->canDecideFor($request->employee_id)) {
+        if (! $ctx->canDecideOrBreakGlass($request->employee_id)) {
             throw PeopleException::forbidden();
         }
         $status = $approve ? ChangeRequestStatus::Approved : ChangeRequestStatus::Rejected;
@@ -83,6 +85,7 @@ final readonly class ChangeRequestService
                 $this->employees->update($request->employee, array_intersect_key($request->changes, array_flip(ChangeableField::values())));
             }
         });
+        $this->selfDecisions->record($ctx, $request->employee_id, 'people.change_'.$status->value, $request->id);
         $this->log->info('people.change_decided', ['id' => $request->id, 'status' => $status->value, 'by' => $actor->id]);
 
         return $this->find($request->id);

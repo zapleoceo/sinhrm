@@ -52,7 +52,7 @@ final class ChangeRequestResource extends JsonResource
             'decided_by' => $this->decider === null ? null : ['id' => $this->decider->id, 'name' => $this->decider->name],
             'decided_at' => $this->decided_at?->toIso8601String(),
             'decision_comment' => $this->decision_comment,
-            'can_decide' => $this->context !== null && $this->context->canDecideFor($this->employee_id),
+            'can_decide' => $this->context !== null && $this->context->canDecideOrBreakGlass($this->employee_id),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

@@ -29,7 +29,7 @@ final class LeaveRequestResource extends JsonResource
     {
         $ctx = $this->context;
         $open = in_array($this->status, [LeaveRequestStatus::Pending, LeaveRequestStatus::Approved], true);
-        $decider = $ctx !== null && $ctx->canDecideFor($this->employee_id);
+        $decider = $ctx !== null && $ctx->canDecideOrBreakGlass($this->employee_id);
         $ownCancellable = $ctx !== null && $ctx->isSelf($this->employee_id)
             && ($this->status === LeaveRequestStatus::Pending || $this->starts_on->gt(UserTime::today()));
 

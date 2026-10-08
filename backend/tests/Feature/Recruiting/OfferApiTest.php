@@ -143,6 +143,51 @@ final class OfferApiTest extends TestCase
         );
     }
 
+    /** Data migration 2026_10_28_100001: offer e-mails sent before meta.kind existed get marked, nothing else does. */
+    public function test_backfill_marks_offer_touches_sent_before_the_fix_and_is_idempotent(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $this->actingAs($recruiter)->postJson($url, [
+            'template_id' => $this->template->id, 'position' => 'Manager', 'salary' => '30000 UAH',
+        ])->assertCreated();
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
+
+        // The touch as the pre-fix code stored it: no meta.kind. Plus an old row with no meta.subject at all.
+        $offerTouch = Touchpoint::query()->where('application_id', $this->application->id)->where('channel', 'email')->sole();
+        $offerTouch->update(['meta' => ['subject' => 'Оффер: Manager', 'gmail_thread' => 't1']]);
+        $legacy = $this->touch(['body' => "Оффер: Manager\n\n30000 UAH", 'meta' => null]);
+        // Not offers: another e-mail on the same application, an inbound reply, a touch of an application without a sent offer.
+        $plain = $this->touch(['body' => "Interview\n\nTomorrow", 'meta' => ['subject' => 'Interview']]);
+        $reply = $this->touch(['direction' => 'in', 'body' => 'Re: Оффер: Manager', 'meta' => ['subject' => 'Оффер: Manager']]);
+        $otherApplication = $this->applied($this->vacancyIn($this->branch), ['full_name' => 'Petro Sample', 'email' => 'petro.sample@example.test']);
+        $unsent = $this->touch([
+            'application_id' => $otherApplication->id,
+            'candidate_id' => $otherApplication->candidate_id,
+            'meta' => ['subject' => 'Оффер: Draft'],
+        ]);
+
+        $migration = require base_path('app/Modules/Recruiting/Database/Migrations/2026_10_28_100001_mark_sent_offer_touchpoints.php');
+        $migration->up();
+        $migration->up(); // idempotent
+
+        $this->assertSame(['subject' => 'Оффер: Manager', 'gmail_thread' => 't1', 'kind' => 'offer'], $offerTouch->fresh()?->meta);
+        $this->assertSame(['kind' => 'offer'], $legacy->fresh()?->meta);
+        $this->assertSame(['subject' => 'Interview'], $plain->fresh()?->meta);
+        $this->assertSame(['subject' => 'Оффер: Manager'], $reply->fresh()?->meta);
+        $this->assertSame(['subject' => 'Оффер: Draft'], $unsent->fresh()?->meta);
+    }
+
+    /** @param  array<string, mixed>  $attributes */
+    private function touch(array $attributes): Touchpoint
+    {
+        return Touchpoint::query()->create($attributes + [
+            'candidate_id' => $this->application->candidate_id, 'application_id' => $this->application->id,
+            'channel' => 'email', 'direction' => 'out', 'occurred_at' => now(), 'body' => 'Оффер: Draft', 'via_product' => true,
+        ]);
+    }
+
     public function test_template_must_be_an_offer_template(): void
     {
         $this->application->update(['stage_id' => $this->stageAt(6)->id]);

@@ -16,6 +16,7 @@
   "button \"Поговорити зі Стіком\"",
   "button \"Редагувати\"",
   "link \"+380503000000\" -> tel:+380503000000",
+  "link \"+380509990001\" -> tel:+380509990001",
   "link \"demo+emp-01@sinhrm.test\" -> mailto:demo+emp-01@sinhrm.test",
   "link \"Огляд\" -> /",
   "link \"Показати в оргструктурі\" -> /people/org-chart?root=1",

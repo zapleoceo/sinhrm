@@ -50,13 +50,15 @@ final readonly class PinnedTarget
     }
 
     /**
-     * CURLOPT_RESOLVE entries ("host:port:ip[,ip…]", IPv6 bracketed); empty when the target was blocked.
+     * CURLOPT_RESOLVE entries ("host:port:ip[,ip…]", IPv6 bracketed); empty when the target was blocked, and empty for
+     * an IP-literal host (https://[2606:4700::1]/, https://93.184.216.34/): no DNS lookup happens, so there is nothing
+     * to pin, and parse_url keeps the brackets of an IPv6 literal ("[::1]"), which curl would reject as a host name.
      *
      * @return list<string>
      */
     public function curlResolve(): array
     {
-        if ($this->error !== null || $this->ips === []) {
+        if ($this->error !== null || $this->ips === [] || filter_var(trim($this->host, '[]'), FILTER_VALIDATE_IP) !== false) {
             return [];
         }
         $addresses = array_map(

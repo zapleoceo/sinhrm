@@ -660,7 +660,7 @@
     "invalidEmail": "Invalid email",
     "save": "Save",
     "directory": { "title": "Employees", "subtitle": "{{n}} people", "search": "Name, e-mail or phone", "add": "Add employee", "working": "Working", "empty": "Nobody found", "view": "View", "table": "Table", "cards": "Cards" },
-    "fields": { "fullName": "Full name", "position": "Position", "department": "Department", "branch": "Branch", "manager": "Manager", "status": "Status", "contacts": "Contacts", "workEmail": "Work e-mail", "phone": "Phone", "hiredAt": "Hire date", "firedAt": "Last working day", "employmentType": "Employment type", "birthDate": "Birth date", "personalEmail": "Personal e-mail", "address": "Address", "emergencyContact": "Emergency contact", "reports": "Direct reports", "gender": "Gender", "schedule": "Work schedule" },
+    "fields": { "fullName": "Full name", "position": "Position", "department": "Department", "branch": "Branch", "manager": "Manager", "status": "Status", "contacts": "Contacts", "workEmail": "Work e-mail", "phone": "Phone", "hiredAt": "Hire date", "firedAt": "Last working day", "employmentType": "Employment type", "birthDate": "Birth date", "personalEmail": "Personal e-mail", "personalPhone": "Personal phone", "address": "Address", "emergencyContact": "Emergency contact", "reports": "Direct reports", "gender": "Gender", "schedule": "Work schedule" },
     "status": { "active": "Working", "on_leave": "On leave", "terminated": "Terminated" },
     "employmentType": { "full_time": "Full time", "part_time": "Part time", "contractor": "Contractor" },
     "weekday": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },

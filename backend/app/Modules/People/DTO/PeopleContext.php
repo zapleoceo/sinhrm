@@ -10,6 +10,9 @@ namespace App\Modules\People\DTO;
  * - self — own profile incl. PII, own leave;
  * - manager — job data and leave of every employee below them (direct and indirect reports), approvals;
  * - everyone active — the directory tier only (name, position, branch, department, work contacts, manager).
+ *
+ * breakGlass: the user acts as superadmin and no OTHER active superadmin/admin exists (PeopleScope::for). Only then may
+ * they decide their own requests (canDecideOrBreakGlass) — otherwise a sole administrator would be stuck.
  */
 final readonly class PeopleContext
 {
@@ -19,6 +22,7 @@ final readonly class PeopleContext
         public bool $admin,
         public ?int $selfId,
         public array $subtreeIds,
+        public bool $breakGlass = false,
     ) {}
 
     public function isManager(): bool
@@ -58,14 +62,31 @@ final readonly class PeopleContext
     }
 
     /**
-     * Approve / reject requests (change requests, leave) and write someone's salary or leave balance.
-     * Separation of duties: NOBODY decides their own, superadmin included — a second pair of eyes always signs off.
-     * A sole superadmin who is also an employee therefore files requests like everyone else and has them approved by
-     * another admin; bootstrapping the system does not need this path (HR data is written directly, not requested).
+     * Role-only decision rule, own record included: HR staff over everyone, a manager over their subtree. Used by
+     * timesheets (Time) and filing leave for someone — owner's decision: timesheet approval is governed by roles only,
+     * an admin approves their own week (docs/modules/time.md). Requests, salary and leave balance use the stricter
+     * canDecideOrBreakGlass.
      */
     public function canDecideFor(int $employeeId): bool
     {
-        return ! $this->isSelf($employeeId) && $this->hasAuthorityOver($employeeId);
+        return $this->hasAuthorityOver($employeeId);
+    }
+
+    /**
+     * Approve / reject change requests and leave, write someone's salary or leave balance. Separation of duties:
+     * nobody decides their own, with one break-glass exception (default decision, the owner may change it): a
+     * superadmin with no other active superadmin/admin decides their own — every such action is audited with
+     * self_decision (SelfDecisionAudit). hr_manager, admin, or a superadmin who has a peer: 403 on their own record.
+     */
+    public function canDecideOrBreakGlass(int $employeeId): bool
+    {
+        return (! $this->isSelf($employeeId) && $this->hasAuthorityOver($employeeId)) || $this->isSelfDecision($employeeId);
+    }
+
+    /** The decision is allowed only by break-glass: own record of a sole superadmin. */
+    public function isSelfDecision(int $employeeId): bool
+    {
+        return $this->breakGlass && $this->admin && $this->isSelf($employeeId);
     }
 
     /**
@@ -83,7 +104,7 @@ final readonly class PeopleContext
         return [
             'job' => $this->canSeeJob($employeeId),
             'pii' => $this->canSeePii($employeeId),
-            'decide' => $this->canDecideFor($employeeId),
+            'decide' => $this->canDecideOrBreakGlass($employeeId),
             'manage' => $this->admin,
             'self' => $this->isSelf($employeeId),
             'terminate' => $this->canTerminate($employeeId),

@@ -1577,7 +1577,9 @@
     "personal_email": null,
     "address": null,
     "emergency_contact": null,
-    "custom_fields": {}
+    "custom_fields": {
+     "personal_phone": "+380509990001"
+    }
    }
   }
  },

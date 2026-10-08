@@ -14,6 +14,7 @@ use App\Modules\Desk\Services\DeskService;
 use App\Modules\People\Models\Employee;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Route;
 use Tests\Support\PeopleFixtures;
 use Tests\TestCase;
 
@@ -52,6 +53,23 @@ final class DeskLimitsTest extends TestCase
         }
 
         $open()->assertStatus(429);
+    }
+
+    /** Desk has its own bucket (named limiter desk-write): other "throttle:20,1" routes do not eat into it. */
+    public function test_desk_bucket_is_not_shared_with_other_throttled_routes(): void
+    {
+        Route::post('/api/_test/shared-throttle', static fn () => response()->noContent())->middleware('throttle:20,1');
+        [$user] = $this->requester();
+        $category = $this->category();
+
+        for ($i = 0; $i < 20; $i++) {
+            $this->actingAs($user)->postJson('/api/_test/shared-throttle')->assertNoContent();
+        }
+        $this->actingAs($user)->postJson('/api/_test/shared-throttle')->assertStatus(429);
+
+        // The generic bucket is exhausted, Desk still accepts the user's case.
+        $this->actingAs($user)->postJson('/api/desk/cases', ['category_id' => $category->id, 'subject' => 'Card', 'body' => 'Broken'])
+            ->assertCreated();
     }
 
     public function test_commenting_is_throttled(): void
