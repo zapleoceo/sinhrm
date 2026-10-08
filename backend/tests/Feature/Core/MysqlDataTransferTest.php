@@ -248,9 +248,40 @@ final class MysqlDataTransferTest extends TestCase
             DB::purge('mysql');
             [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
             $this->assertSame(1, $code, "{$name}: {$out}");
-            $this->assertStringContainsString('перенос в живую базу запрещён', $out, $name);
+            $this->assertMatchesRegularExpression('/перенос (в живую базу )?запрещён/u', $out, $name);
         }
         $this->assertSame($before, $this->target()->table('users')->count(), 'nothing truncated');
+    }
+
+    /** Fail-closed: the app uses MySQL but its connection cannot be compared (here: nothing listens on 3307). */
+    public function test_app_mysql_connection_that_cannot_be_compared_refuses_the_write(): void
+    {
+        $before = $this->target()->table('users')->count();
+        config(['database.default' => 'mysql', 'database.connections.mysql' => array_merge((array) config('database.connections.mysql'), [
+            'url' => null, 'host' => '127.0.0.1', 'port' => 3307, 'database' => 'app_other', 'username' => 'app', 'password' => 'app', 'unix_socket' => '',
+        ])]);
+        DB::purge('mysql');
+
+        $this->assertSame(TransferDatabases::APP_UNKNOWN, TransferDatabases::connect(app('db'), config())->appServerVerdict(DB::connection()));
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+
+        $this->assertSame(1, $code, $out);
+        $this->assertStringContainsString('Не удалось сравнить цель с MySQL-подключением приложения', $out);
+        $this->assertStringNotContainsString((string) getenv('TRANSFER_TARGET_URL'), $out);
+        $this->assertSame($before, $this->target()->table('users')->count(), 'nothing truncated');
+    }
+
+    /** Before the cutover the app is on PostgreSQL: the server comparison is skipped and the transfer runs. */
+    public function test_app_on_pgsql_skips_the_server_comparison(): void
+    {
+        $this->assertSame('pgsql', DB::connection()->getDriverName());
+        $this->assertSame(TransferDatabases::APP_NOT_MYSQL, TransferDatabases::connect(app('db'), config())->appServerVerdict(DB::connection()));
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+
+        $this->assertSame(0, $code, $out);
+        $this->assertStringNotContainsString('Не удалось сравнить', $out);
+        $this->assertStringContainsString('ИТОГ: OK', $out);
     }
 
     public function test_target_through_a_unix_socket_is_refused_and_the_app_socket_is_not_inherited(): void

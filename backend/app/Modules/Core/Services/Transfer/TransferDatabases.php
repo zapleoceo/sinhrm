@@ -22,6 +22,15 @@ final class TransferDatabases
 
     public const string TARGET = 'transfer_target';
 
+    /** Verdicts of appServerVerdict(). */
+    public const string APP_NOT_MYSQL = 'skip';
+
+    public const string APP_SAME = 'same';
+
+    public const string APP_DIFFERENT = 'different';
+
+    public const string APP_UNKNOWN = 'unknown';
+
     private function __construct(public readonly Connection $source, public readonly Connection $target) {}
 
     /**
@@ -102,22 +111,34 @@ final class TransferDatabases
     }
 
     /**
-     * By the servers themselves (after the guard by configuration): the app's MySQL connection and the target are the
-     * same server (@@server_uuid) and the same database — catches DNS aliases, proxies and port forwards. An app
-     * connection that cannot be opened proves nothing and is not treated as a match.
+     * By the servers themselves (after the guard by configuration): is the app's MySQL connection the same server and
+     * database as the target? Catches DNS aliases, proxies and port forwards. Fail-closed: when the app uses MySQL and
+     * the comparison cannot be made (connection does not open, query fails), the verdict is APP_UNKNOWN and the caller
+     * must refuse to write. Only an app on another driver (pgsql before the cutover) skips the check.
+     *
+     * Identity: @@server_uuid + database(); servers without @@server_uuid (MariaDB) — @@hostname + @@port + database().
      */
-    public function targetIsAppServer(Connection $app): bool
+    public function appServerVerdict(Connection $app): string
     {
         if ($app->getDriverName() !== 'mysql') {
-            return false;
+            return self::APP_NOT_MYSQL;
         }
-        try {
-            $mine = $app->selectOne('select @@server_uuid as u, database() as d');
-        } catch (Throwable) {
-            return false;
-        }
-        $theirs = $this->target->selectOne('select @@server_uuid as u, database() as d');
+        foreach (['select @@server_uuid as server, database() as db', "select concat(@@hostname, ':', @@port) as server, database() as db"] as $sql) {
+            try {
+                $mine = $app->selectOne($sql);
+                $theirs = $this->target->selectOne($sql);
+            } catch (Throwable) {
+                continue; // try the next identity, finally fail closed
+            }
+            if (! is_object($mine) || ! is_object($theirs) || (string) $mine->server === '' || (string) $theirs->server === '') {
+                continue;
+            }
 
-        return (string) $mine->u === (string) $theirs->u && (string) $mine->d === (string) $theirs->d;
+            return (string) $mine->server === (string) $theirs->server && (string) $mine->db === (string) $theirs->db
+                ? self::APP_SAME
+                : self::APP_DIFFERENT;
+        }
+
+        return self::APP_UNKNOWN;
     }
 }

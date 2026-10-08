@@ -61,8 +61,15 @@ final class TransferToMysqlCommand extends Command
                 return self::FAILURE;
             }
             $dbs->open();
-            if ($writes && $dbs->targetIsAppServer($db->connection())) {
+            $verdict = $writes ? $dbs->appServerVerdict($db->connection()) : TransferDatabases::APP_NOT_MYSQL;
+            if ($verdict === TransferDatabases::APP_SAME) {
                 $this->error('Цель — тот же сервер MySQL и та же база, что у приложения (@@server_uuid): перенос в живую базу запрещён.');
+
+                return self::FAILURE;
+            }
+            if ($verdict === TransferDatabases::APP_UNKNOWN) {
+                $this->error('Не удалось сравнить цель с MySQL-подключением приложения (DB_CONNECTION=mysql, DB_URL/DB_*): перенос запрещён. '
+                    .'Проверьте доступность БД приложения или запускайте с DB_CONNECTION=pgsql (приложение ещё на Neon).');
 
                 return self::FAILURE;
             }
