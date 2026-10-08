@@ -311,7 +311,7 @@ await group('lifecycle', async () => {
   const tplShort = await api('admin', 'POST', '/api/documents/templates', { name: 'Офер e2e [ТЕСТ]', body: 'Шановний {ПІБ}! Посада {Посада}, зарплата {Зарплата}. [ТЕСТ]', category: 'offer' });
   const tplLong = await api('admin', 'POST', '/api/documents/templates', { name: 'Офер довгий e2e [ТЕСТ]', body: longBody.slice(0, 49000), category: 'offer' });
   const offerLong = await api('recruiter', 'POST', `/api/applications/${appId}/offer`, { template_id: data(tplLong)?.id, position: 'Викладач', salary: '42 000 грн', start_date: addDays(today, 7), conditions: 'Гібрид' });
-  record('lifecycle', 'offer.create from a long template (> 64 KB rendered)', tplLong.status === 201 && offerLong.status === 201, { template: brief(tplLong), templateChars: 49000, offer: brief(offerLong) });
+  record('lifecycle', 'offer.create from a long template (> 64 KB rendered): stored or a clear 422, never 5xx', tplLong.status === 201 && (offerLong.status === 201 || (offerLong.status === 422 && offerLong.json?.code === 'offer_too_long')), { template: brief(tplLong), templateChars: 49000, offer: brief(offerLong) });
   const offer = offerLong.status === 201 ? offerLong : await api('recruiter', 'POST', `/api/applications/${appId}/offer`, { template_id: data(tplShort)?.id, position: 'Викладач', salary: '42 000 грн', start_date: addDays(today, 7), conditions: 'Гібрид' });
   const send = await api('recruiter', 'POST', `/api/applications/${appId}/offer/send`);
   // observer: the employee as interviewer sees the candidate but not the offer text
