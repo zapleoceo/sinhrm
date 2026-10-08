@@ -109,20 +109,7 @@ final readonly class CandidateService
             $source = $data->source ?? CandidateSource::Import;
             $channelId = $this->channels->resolve($data->channelId, $source, $data->utm);
             try {
-                $candidate = $this->candidates->create([
-                    'full_name' => $data->fullName,
-                    'phone' => $keys->phone,
-                    'email' => $keys->email,
-                    'telegram_username' => $keys->telegram,
-                    'city_id' => $data->cityId,
-                    'source' => $source->value,
-                    'channel_id' => $channelId,
-                    'added_via' => ($data->addedVia ?? AddedVia::Import)->value,
-                    'utm' => $data->utm,
-                    'tags' => $data->tags,
-                    'owner_id' => $data->ownerId ?? $actor?->id,
-                    'created_by' => $actor?->id,
-                ]);
+                $candidate = $this->candidates->create(self::newCandidate($data, $keys, $source, $channelId, AddedVia::Import, $actor));
                 $created = true;
                 $this->log->info('recruiting.candidate_created', ['id' => $candidate->id, 'by' => $actor?->id, 'via' => 'match']);
             } catch (UniqueConstraintViolationException) {
@@ -147,20 +134,7 @@ final readonly class CandidateService
         $channelId = $this->channels->resolve($data->channelId, $source, $data->utm);
 
         return $this->applications->transaction(function () use ($actor, $data, $keys, $vacancy, $source, $channelId): Candidate {
-            $candidate = $this->candidates->create([
-                'full_name' => (string) $data->fullName,
-                'phone' => $keys->phone,
-                'email' => $keys->email,
-                'telegram_username' => $keys->telegram,
-                'city_id' => $data->cityId,
-                'source' => $source->value,
-                'channel_id' => $channelId,
-                'added_via' => ($data->addedVia ?? AddedVia::Manual)->value,
-                'utm' => $data->utm,
-                'tags' => $data->tags,
-                'owner_id' => $data->ownerId ?? $actor->id,
-                'created_by' => $actor->id,
-            ]);
+            $candidate = $this->candidates->create(self::newCandidate($data, $keys, $source, $channelId, AddedVia::Manual, $actor));
             if ($vacancy !== null) {
                 $this->applicationService->apply($actor, $candidate, $vacancy);
             }
@@ -168,6 +142,30 @@ final readonly class CandidateService
 
             return $candidate;
         });
+    }
+
+    /**
+     * Columns of a new candidate (manual create and import/match). $defaultVia when the data does not say how it was
+     * added; the owner defaults to the actor (null actor = a system import).
+     *
+     * @return array<string, mixed>
+     */
+    private static function newCandidate(CandidateData $data, ContactKeys $keys, CandidateSource $source, ?int $channelId, AddedVia $defaultVia, ?User $actor): array
+    {
+        return [
+            'full_name' => (string) $data->fullName,
+            'phone' => $keys->phone,
+            'email' => $keys->email,
+            'telegram_username' => $keys->telegram,
+            'city_id' => $data->cityId,
+            'source' => $source->value,
+            'channel_id' => $channelId,
+            'added_via' => ($data->addedVia ?? $defaultVia)->value,
+            'utm' => $data->utm,
+            'tags' => $data->tags,
+            'owner_id' => $data->ownerId ?? $actor?->id,
+            'created_by' => $actor?->id,
+        ];
     }
 
     /**
