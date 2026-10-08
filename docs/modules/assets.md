@@ -15,6 +15,9 @@
 - **Воркфлоу:** шаг «Зібрати активи» (`collect_assets`) в шаблоне офбординга ([workflows.md](workflows.md)).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/AssetException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 Бэкенд — `backend/app/Modules/Assets`, маршруты `/api/assets/*`; реестр — gate `assets-manage` = `PeopleScope::isAdmin`.
 
 ### Таблицы (`Database/Migrations/2026_10_05_500001_create_assets_tables.php`)

@@ -48,6 +48,9 @@
    `tests/Unit/MailAgent/MailParsersTest`). Реальные письма в репозиторий **не коммитить** — он публичный.
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/MailAgentException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/MailNavBadges` — ключ `mail_unknown` («Пошта», только суперадмин): неизвестные отправители в очереди; не больше 50 — столько же показывает список на странице.
 ### Таблицы (миграция `Database/Migrations/2026_09_29_110001_create_mail_agent_tables.php`)
 | Таблица | Колонки | Заметки |

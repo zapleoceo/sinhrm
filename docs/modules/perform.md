@@ -47,6 +47,9 @@
   (основное → участники и типы → компетенции → создать), «Запустити» (создаются формы), «Завершити». Список циклов — таблица со строкой заголовков: сортировка и фильтры (название, период — по дате начала, статус; прогресс — сортировка по доле сданных), состояние в адресе. Открытый фильтр колонки объявляет число показанных строк — «Знайдено: N» (`appTableSortCount` = `rows().length`, с 2026-10-03). Так же — у блока KPI во вкладке «Продуктивність».
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PerformException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 Бэкенд — `backend/app/Modules/Perform`, маршруты `/api/perform/*` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`. Доступ строится на People: `Services/PerformAccess::viewer()` → `DTO/PerformViewer`
 (обёртка над `PeopleContext`: `admin()`, `isSelf()`, `isAbove()` — руководитель выше по `manager_id`,

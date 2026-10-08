@@ -4,18 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in TimeOff; rendered as {message, code, ...extra} with its HTTP status. */
-final class TimeOffException extends RuntimeException
+final class TimeOffException extends BusinessRuleException
 {
-    /** @param  array<string, mixed>  $extra */
-    private function __construct(public readonly string $errorCode, public readonly int $status, public readonly array $extra = [])
-    {
-        parent::__construct($errorCode);
-    }
-
     public static function insufficientBalance(float $available, float $requested): self
     {
         return new self('insufficient_balance', 422, ['available' => $available, 'requested' => $requested]);
@@ -58,10 +51,5 @@ final class TimeOffException extends RuntimeException
     public static function forbidden(): self
     {
         return new self('forbidden', 403);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);
     }
 }

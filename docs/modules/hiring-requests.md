@@ -38,6 +38,9 @@
   сроком шага; при просрочке — HR. Главная: блок «Заявки на підбір чекають мого рішення».
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/HiringException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/HiringNavBadges` — ключ `hiring_inbox` на пункте «Заявки на підбір»: заявки, чей текущий шаг ждёт моего решения (тот же список, что `GET /api/hiring-requests/inbox`; право решать проверяется в PHP, поэтому считается длина этого списка).
 Бэкенд — `backend/app/Modules/HiringRequests`, маршруты `/api/hiring-requests/*` (`routes.php`), `auth:sanctum` +
 `EnsureUserIsActive`; gate `hiring-manage` = `PeopleScope::isAdmin` (настройки, вакансия, закрытие). Права —

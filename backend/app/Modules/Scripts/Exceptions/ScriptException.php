@@ -4,18 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Scripts\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in Scripts; rendered as {message, code, ...extra} with its HTTP status. */
-final class ScriptException extends RuntimeException
+final class ScriptException extends BusinessRuleException
 {
-    /** @param  array<string, mixed>  $extra */
-    private function __construct(public readonly string $errorCode, public readonly int $status, public readonly array $extra = [])
-    {
-        parent::__construct($errorCode);
-    }
-
     /** Publish without a draft: nothing to publish. */
     public static function noDraft(): self
     {
@@ -51,10 +44,5 @@ final class ScriptException extends RuntimeException
     public static function notEvaluated(): self
     {
         return new self('not_evaluated', 404);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);
     }
 }

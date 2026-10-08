@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Ai\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /**
  * AI refused or failed; rendered as {message, code} with its HTTP status. Codes only — never provider messages,
  * prompts or keys (docs/modules/ai.md, "Коди помилок").
  */
-final class AiException extends RuntimeException
+final class AiException extends BusinessRuleException
 {
-    private function __construct(public readonly string $errorCode, public readonly int $status)
-    {
-        parent::__construct($errorCode);
-    }
-
     /** The global AI switch (AiPolicy) is off. */
     public static function disabled(): self
     {
@@ -51,10 +45,5 @@ final class AiException extends RuntimeException
     public static function invalidOutput(): self
     {
         return new self('ai_invalid_output', 502);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode], $this->status);
     }
 }

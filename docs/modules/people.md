@@ -53,6 +53,9 @@
   «Створити співробітника». Повторное нажатие не создаёт дубль — откроется тот же сотрудник.
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PeopleException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 Бэкенд — `backend/app/Modules/People`. Маршруты под `/api` (`routes.php`), все за `auth:sanctum` + `EnsureUserIsActive`.
 
 ### Таблицы (миграция `Database/Migrations/2026_10_02_100001_create_people_tables.php`)

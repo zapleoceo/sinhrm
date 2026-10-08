@@ -4,18 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in Recruiting; rendered as {message, code, ...extra} with its HTTP status. */
-final class RecruitingException extends RuntimeException
+final class RecruitingException extends BusinessRuleException
 {
-    /** @param  array<string, mixed>  $extra */
-    private function __construct(public readonly string $errorCode, public readonly int $status, public readonly array $extra = [])
-    {
-        parent::__construct($errorCode);
-    }
-
     /** Same person already exists (phone / e-mail / Telegram match). */
     public static function duplicateCandidate(int $existingId, string $matchedBy): self
     {
@@ -120,11 +113,6 @@ final class RecruitingException extends RuntimeException
     public static function alreadyLinked(): self
     {
         return new self('already_linked', 409);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);
     }
 
     /** Offers are created only on an application in the offer stage (kind "hire", not terminal). */
