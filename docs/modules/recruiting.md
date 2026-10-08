@@ -285,6 +285,9 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 ### Слои
 `Http/Controllers/*` (оркестрация) → `Http/Requests/*` (валидация + `authorize()`) → `Services/*` → `Contracts/*Repository`
 (`Repositories/Eloquent*`, `QueryReportRepository`). Привязки — `Providers/RecruitingServiceProvider`.
+- Шаблоны формы вакансии (`vacancy_templates`) хранит `Contracts\VacancyRepository` (`templates()`, `createTemplate()`,
+  `saveTemplate()`, `deleteTemplate()`): `VacancyTemplateController` только проверяет политику и отдаёт ответ.
+  Тест — `tests/Unit/Recruiting/VacancyTemplateControllerTest.php`.
 
 ### Фронтенд (`frontend/src/app/features/recruiting`)
 | Файл | Что |

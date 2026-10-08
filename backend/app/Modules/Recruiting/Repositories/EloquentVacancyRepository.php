@@ -11,6 +11,7 @@ use App\Modules\Recruiting\DTO\VacancyFilter;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Enums\VacancyStatus;
 use App\Modules\Recruiting\Models\Vacancy;
+use App\Modules\Recruiting\Models\VacancyTemplate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -79,6 +80,26 @@ final class EloquentVacancyRepository implements VacancyRepository
             ->orderByDesc('stage_entered_at')
             ->orderByDesc('id')
             ->get();
+    }
+
+    public function templates(int $limit): Collection
+    {
+        return VacancyTemplate::query()->orderBy('name')->orderBy('id')->limit($limit)->get();
+    }
+
+    public function createTemplate(string $name, array $data, int $createdBy): VacancyTemplate
+    {
+        return VacancyTemplate::query()->create(['name' => $name, 'data' => $data, 'created_by' => $createdBy]);
+    }
+
+    public function saveTemplate(VacancyTemplate $template): void
+    {
+        $template->save();
+    }
+
+    public function deleteTemplate(VacancyTemplate $template): void
+    {
+        $template->delete();
     }
 
     /** @return Builder<Vacancy> */

@@ -8,6 +8,7 @@ use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\DTO\VacancyFilter;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Vacancy;
+use App\Modules\Recruiting\Models\VacancyTemplate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -33,4 +34,18 @@ interface VacancyRepository
 
     /** @return Collection<int, Application> every application of the vacancy with its candidate */
     public function boardApplications(Vacancy $vacancy): Collection;
+
+    /**
+     * Vacancy form templates by name, then id.
+     *
+     * @return Collection<int, VacancyTemplate>
+     */
+    public function templates(int $limit): Collection;
+
+    /** @param  array<string, mixed>  $data */
+    public function createTemplate(string $name, array $data, int $createdBy): VacancyTemplate;
+
+    public function saveTemplate(VacancyTemplate $template): void;
+
+    public function deleteTemplate(VacancyTemplate $template): void;
 }

@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Http\Controllers;
 
 use App\Models\User;
 use App\Modules\Core\Http\Concerns\ResolvesActor;
+use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\Http\Requests\SaveVacancyTemplateRequest;
 use App\Modules\Recruiting\Models\VacancyTemplate;
 use Illuminate\Http\JsonResponse;
@@ -20,11 +21,13 @@ final class VacancyTemplateController
 {
     use ResolvesActor;
 
+    public function __construct(private readonly VacancyRepository $vacancies) {}
+
     public function index(Request $request): JsonResponse
     {
         $actor = $this->actor($request);
         Gate::forUser($actor)->authorize('viewAny', VacancyTemplate::class);
-        $rows = VacancyTemplate::query()->orderBy('name')->orderBy('id')->limit(200)->get();
+        $rows = $this->vacancies->templates(200);
 
         return new JsonResponse(['data' => $rows->map(fn (VacancyTemplate $t): array => $this->present($t, $actor))->values()]);
     }
@@ -32,11 +35,7 @@ final class VacancyTemplateController
     public function store(SaveVacancyTemplateRequest $request): JsonResponse
     {
         $actor = $this->actor($request);
-        $template = VacancyTemplate::query()->create([
-            'name' => $request->string('name')->trim()->toString(),
-            'data' => $request->templateData(),
-            'created_by' => $actor->id,
-        ]);
+        $template = $this->vacancies->createTemplate($request->string('name')->trim()->toString(), $request->templateData(), $actor->id);
 
         return new JsonResponse(['data' => $this->present($template, $actor)], 201);
     }
@@ -51,7 +50,7 @@ final class VacancyTemplateController
         if ($request->has('data')) {
             $template->data = $request->templateData();
         }
-        $template->save();
+        $this->vacancies->saveTemplate($template);
 
         return new JsonResponse(['data' => $this->present($template, $actor)]);
     }
@@ -59,7 +58,7 @@ final class VacancyTemplateController
     public function destroy(Request $request, VacancyTemplate $template): JsonResponse
     {
         Gate::forUser($this->actor($request))->authorize('delete', $template);
-        $template->delete();
+        $this->vacancies->deleteTemplate($template);
 
         return new JsonResponse(null, 204);
     }
