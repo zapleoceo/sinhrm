@@ -6,6 +6,8 @@ namespace App\Modules\Core\Support\Database;
 
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Database\Query\Grammars\PostgresGrammar;
+use Illuminate\Database\Query\Grammars\SQLiteGrammar;
 use InvalidArgumentException;
 
 /**
@@ -26,6 +28,7 @@ final class Sql
     /**
      * ORDER BY $expression $direction with NULL rows after the others in both directions
      * (PostgreSQL sorts NULL first on DESC, MySQL first on ASC — neither matches without this).
+     * $expression may be a select alias (e.g. a computed score) on every driver.
      *
      * @param  EloquentBuilder<*>|QueryBuilder  $query
      * @param  list<mixed>  $bindings  bindings of $expression (for a subquery)
@@ -99,8 +102,15 @@ final class Sql
         if ($direction !== 'asc' && $direction !== 'desc') {
             throw new InvalidArgumentException('Direction must be asc or desc.');
         }
-        // A 0/1 flag sorts first: portable on every driver, unlike NULLS FIRST/LAST (pg/sqlite only).
-        $query->orderByRaw('case when '.$expression.' is null then '.($last ? '1 else 0' : '0 else 1').' end', $bindings)
+        $grammar = ($query instanceof EloquentBuilder ? $query->getQuery() : $query)->getGrammar();
+        if ($grammar instanceof PostgresGrammar || $grammar instanceof SQLiteGrammar) {
+            // Native clause: PostgreSQL rejects a select alias inside an expression (case when alias ...), NULLS LAST is fine.
+            $query->orderByRaw($expression.' '.$direction.($last ? ' nulls last' : ' nulls first'), $bindings);
+
+            return;
+        }
+        // MySQL has no NULLS FIRST/LAST: a 0/1 null flag sorts first (MySQL accepts aliases inside the expression).
+        $query->orderByRaw($expression.' is null '.($last ? 'asc' : 'desc'), $bindings)
             ->orderByRaw($expression.' '.$direction, $bindings);
     }
 }

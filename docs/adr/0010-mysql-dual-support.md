@@ -29,7 +29,7 @@ MySQL; без этого перенос на инфраструктуру IT STE
 
 | Нужно | Переносимый способ |
 |---|---|
-| NULL в конце/начале | `Core\Support\Database\Sql::orderByNullsLast/First($q, $expr, $dir)` |
+| NULL в конце/начале | `Core\Support\Database\Sql::orderByNullsLast/First($q, $expr, $dir)` (PostgreSQL/SQLite — родной `NULLS LAST`, он работает и с алиасом select; MySQL — `expr is null` первым ключом) |
 | регистронезависимое «содержит» | `Sql::whereContainsCi($q, $expr, $needle)` (`lower(..) like ? escape '!'`, `Like::PORTABLE`) |
 | текст по JSON-ключу в select/order | `Sql::jsonText($driver, $column, $key)`; в `where` — Laravel `'col->key'`, `whereJsonContains`, `whereJsonLength` |
 | приведение к строке | `Sql::castText($driver, $expr)` |

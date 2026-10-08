@@ -110,7 +110,7 @@ final class QueryBuilderRepository implements BuilderRepository
             return;
         }
         if ($op === 'contains') {
-            Sql::whereContainsCi($query, Sql::castText($query->getConnection()->getDriverName(), $expr), (string) $value);
+            Sql::whereContainsCi($query, Sql::castText(DB::getDriverName(), $expr), (string) $value);
 
             return;
         }
