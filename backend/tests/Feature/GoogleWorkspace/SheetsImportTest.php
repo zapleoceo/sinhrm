@@ -178,6 +178,25 @@ final class SheetsImportTest extends TestCase
         $this->assertSame(1, Candidate::query()->where('phone', '+380672223344')->count());
     }
 
+    /** A name cell longer than the column (VARCHAR 255) is cut, not a failed row (MySQL strict mode, e2e round 2). */
+    public function test_name_longer_than_the_column_is_cut_not_a_failed_row(): void
+    {
+        $long = 'Довге '.str_repeat("Ім'я ", 80).'[ТЕСТ]';
+        Http::fake(['sheets.googleapis.com/*' => Http::sequence()
+            ->push(['values' => [self::HEADER]])
+            ->push(['values' => [['2026-09-22 09:00', $long, '+380 67 555 00 11', '', '', '', '']]])]);
+
+        $this->actingAs($this->superadmin)->postJson('/api/google/sheets/imports', [
+            'url' => self::URL, 'mapping' => ['created_at' => 0, 'full_name' => 1, 'phone' => 2],
+        ])->assertCreated()->assertJsonPath('report.created', 1)->assertJsonPath('report.errors', []);
+
+        $name = Candidate::query()->where('phone', '+380675550011')->value('full_name');
+        $this->assertIsString($name);
+        $this->assertStringStartsWith('Довге Ім', $name);
+        $this->assertLessThanOrEqual(255, mb_strlen($name));
+        $this->assertGreaterThan(250, mb_strlen($name));
+    }
+
     public function test_update_mapping_and_auto_sync_job(): void
     {
         Http::fake(['sheets.googleapis.com/*' => Http::sequence()

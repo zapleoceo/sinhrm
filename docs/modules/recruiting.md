@@ -113,7 +113,9 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
   - Гонка двух одновременных созданий: второй `INSERT` падает на индексе (`UniqueConstraintViolationException`), сервис отвечает
     тем же 409 (с тем же правилом раскрытия).
 - **Импорт-готовый DTO:** `DTO/CandidateData::fromArray(array)` принимает «грязную» строку (таблица, выгрузка job-сайта):
-  обрезает пробелы, чистит UTM/теги, неизвестный источник → `import`.
+  обрезает пробелы, чистит UTM/теги, неизвестный источник → `import`. ФИО длиннее колонки (`MAX_NAME` = 255 символов) обрезается
+  (2026-10-08, MySQL e2e раунд 2): иначе строка таблицы падала целиком (`row_failed`, SQLSTATE 22001 в strict-режиме MySQL).
+  Тест — `tests/Unit/Recruiting/CandidateDataTest.php`.
 - **Создать или найти (для машинных источников)** — `CandidateService::createOrMatch(?User $actor, CandidateData, ?Vacancy,
   ?Carbon $at): DTO/CandidateMatch {candidate, created, application?, applicationCreated}`. Используют импорт из Google Sheets и
   почтовый агент ([google-workspace.md](google-workspace.md), [mail-agent.md](mail-agent.md)). Вместо 409 при совпадении

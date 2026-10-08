@@ -13,6 +13,9 @@ use App\Modules\Recruiting\Enums\CandidateSource;
  */
 final readonly class CandidateData
 {
+    /** candidates.full_name is VARCHAR(255) (characters in utf8mb4). */
+    public const int MAX_NAME = 255;
+
     /**
      * @param  array<string, string>|null  $utm
      * @param  list<string>|null  $tags
@@ -68,8 +71,12 @@ final readonly class CandidateData
         }
         $int = static fn (string $key): ?int => isset($row[$key]) && is_numeric($row[$key]) ? (int) $row[$key] : null;
 
+        // full_name is VARCHAR(255): a longer cell (spreadsheet, job board) would fail the whole row under MySQL strict mode
+        // (SQLSTATE 22001) — cut it like the UTM values instead of losing the person.
+        $name = $str('full_name');
+
         return new self(
-            fullName: $str('full_name'),
+            fullName: $name === null ? null : rtrim(mb_substr($name, 0, self::MAX_NAME)),
             phone: $str('phone'),
             email: $str('email'),
             telegram: $str('telegram_username') ?? $str('telegram'),
