@@ -114,6 +114,8 @@ is_active, activated_by, activated_at, created_at, updated_at`. Хранится
 пробный запрос не повторяется). Пример для проб — `backend/app/Modules/Ai/Samples/<purpose>.json` (первый кейс из
 тестовых фикстур, только синтетика). Аудит: автор и кто активировал — в строке, плюс строки лога `ai.prompt_saved`,
 `ai.prompt_activated`, `ai.prompt_builtin` (id пользователя, без текста); смена возможности — `integration_logs`.
+Имена авторов версий `AiPromptAdminService` берёт через контракт Auth `UserRepository::namesByIds()`, а не запросом
+к модели `User` (тест `AiPromptEditorTest::test_each_version_shows_its_own_author`).
 Кеш промпта: текст версии стабилен (без дат/id — проверяется при сохранении), так что префикс кешируется так же, как у
 встроенного.
 

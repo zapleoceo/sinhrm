@@ -142,6 +142,9 @@ Google спрятан за `Contracts/GoogleIdentityProvider` (`Services/Sociali
 `UserRepository::find(id)` нужен другим модулям, чтобы найти пользователя фоновой задачи (почтовый агент, авто-импорт из
 Google Sheets действуют от имени суперадмина, подключившего Google). Подключение Gmail/Calendar/Sheets — **отдельный** OAuth-поток
 того же клиента с другим redirect URI, он не входит в систему и не меняет сессию: [google-workspace.md](google-workspace.md).
+Другие модули не строят запросы к `users` сами: получатель письма (`GoogleWorkspace\Services\MailUserNotifier`) ищется
+через `UserRepository::find()`, имена авторов версий промптов (Ai) — через `UserRepository::namesByIds()` (id → имя,
+отсутствующие id пропускаются). Тест — `tests/Feature/Auth/UserRepositoryTest.php`.
 
 ### Настройки
 `config/services.php` → `google`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (Vercel env, в репозитории пусто),

@@ -26,6 +26,14 @@ final class EloquentUserRepository implements UserRepository
         return User::query()->find($id);
     }
 
+    public function namesByIds(array $ids): array
+    {
+        /** @var array<int, string> $names */
+        $names = User::query()->whereIn('id', $ids)->pluck('name', 'id')->all();
+
+        return $names;
+    }
+
     public function findByEmail(string $email): ?User
     {
         return User::query()->whereRaw('lower(email) = ?', [mb_strtolower($email)])->first();

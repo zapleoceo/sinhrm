@@ -16,6 +16,7 @@ use App\Modules\Ai\Support\AiPromptRegistry;
 use App\Modules\Ai\Support\AiSamples;
 use App\Modules\Ai\Support\AiSettingsReader;
 use App\Modules\Ai\Support\PromptOverrides;
+use App\Modules\Auth\Contracts\UserRepository;
 use App\Modules\Integrations\Definitions\AiBrokerDefinition;
 use App\Modules\Integrations\Services\IntegrationService;
 use Illuminate\Support\Facades\Log;
@@ -42,6 +43,7 @@ final readonly class AiPromptAdminService
         private AiBrokerDefinition $broker,
         private AiService $ai,
         private AiRequestRepository $requests,
+        private UserRepository $users,
     ) {}
 
     /** @return array<string, mixed> */
@@ -50,9 +52,7 @@ final readonly class AiPromptAdminService
         $built = $this->builtin($purpose);
         $builtinBody = PromptOverrides::body($built->system);
         $active = $this->versions->active($purpose);
-        $authors = User::query()
-            ->whereIn('id', $this->versions->list($purpose)->pluck('author_id')->filter()->unique()->all())
-            ->pluck('name', 'id');
+        $authors = $this->users->namesByIds(array_values($this->versions->list($purpose)->pluck('author_id')->filter()->unique()->all()));
 
         return [
             'purpose' => $purpose->value,
@@ -71,7 +71,7 @@ final readonly class AiPromptAdminService
                 'base_version' => $v->base_version,
                 'body' => $v->body,
                 'is_active' => $v->is_active,
-                'author' => $v->author_id === null ? null : $authors->get($v->author_id),
+                'author' => $v->author_id === null ? null : ($authors[$v->author_id] ?? null),
                 'created_at' => $v->created_at?->toIso8601String(),
                 'activated_at' => $v->activated_at?->toIso8601String(),
             ])->values()->all(),
