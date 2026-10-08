@@ -197,6 +197,7 @@ export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
     </section>
   `,
   styles: `
+    @use '../../../core/ui/styles/trace';
     .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
     /* The hidden «actions» column title is position: absolute — keep it inside the scrolling panel, or it widens the page on phones. */
     .box:has(> .cycles) { position: relative; }
@@ -208,12 +209,7 @@ export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
     .cycles tbody tr:last-child th { border-bottom: 0; }
     .app-num { font-size: 0.8rem; white-space: nowrap; }
     .mini { display: inline-block; width: 5rem; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; vertical-align: middle; margin-right: 0.35rem; }
-    .mini span {
-      display: block; height: 100%; border-radius: inherit; background: var(--app-success);
-      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    }
-    @keyframes trace { from { transform: scaleX(0); } }
-    @media (prefers-reduced-motion: reduce) { .mini span { animation: none; } }
+    @include trace.fill('.mini span', var(--app-success));
   `,
 })
 export class ReviewAdminPage implements OnInit {

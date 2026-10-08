@@ -161,6 +161,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
     </section>
   `,
   styles: `
+    @use '../../../core/ui/styles/trace';
     :host { display: block; padding: 1rem 0; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
     .box { padding: 1rem 1.25rem; }
@@ -168,12 +169,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
     .line { display: grid; grid-template-columns: minmax(0, 1fr) 6rem 3rem; gap: 0.5rem; align-items: center; margin-bottom: 0.35rem; }
     .pct { font: 500 0.8rem var(--app-font-mono); text-align: right; }
     .bar { display: block; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; }
-    .bar span {
-      display: block; height: 100%; border-radius: inherit; background: var(--app-success);
-      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    }
-    @keyframes trace { from { transform: scaleX(0); } }
-    @media (prefers-reduced-motion: reduce) { .bar span { animation: none; } }
+    @include trace.fill('.bar span', var(--app-success));
     .bar span[data-tone='danger'] { background: var(--app-danger); }
     .bar span[data-tone='warning'] { background: var(--app-warning); }
     .scroll { overflow-x: auto; }
