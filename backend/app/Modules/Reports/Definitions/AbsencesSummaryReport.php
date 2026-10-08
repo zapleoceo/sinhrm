@@ -4,31 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Reports\Definitions;
 
-use App\Modules\Reports\Contracts\ReportDataRepository;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 
 /**
  * Absence calendar summary per month: how many people were away and the approved days, attributed to the month
  * the request starts in (a request crossing months is counted once, in its first month).
  */
-final class AbsencesSummaryReport extends AbstractReport
+final class AbsencesSummaryReport extends AbstractLeaveReport
 {
-    public function __construct(private readonly ReportDataRepository $data) {}
-
     public function key(): string
     {
         return 'absences_summary';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Hr;
-    }
-
-    public function filters(): array
-    {
-        return [self::FILTER_FROM, self::FILTER_TO];
     }
 
     public function columns(): array
@@ -39,11 +25,6 @@ final class AbsencesSummaryReport extends AbstractReport
     public function chart(): array
     {
         return ['label' => 'month', 'value' => 'days'];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->seesTeam();
     }
 
     public function rows(ScopedContext $ctx, array $filters): array
@@ -62,12 +43,7 @@ final class AbsencesSummaryReport extends AbstractReport
             $rows[$month]['days'] += $r['days'];
             $people[$month][$r['employee_id']] = true;
         }
-        foreach ($rows as $m => &$row) {
-            $row['employees_absent'] = count($people[$m] ?? []);
-            $row['days'] = round($row['days'], 2);
-        }
-        unset($row);
 
-        return array_values($rows);
+        return array_values(self::countPeople($rows, $people, 'employees_absent'));
     }
 }

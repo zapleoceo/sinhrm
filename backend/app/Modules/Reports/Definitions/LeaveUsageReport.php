@@ -4,28 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Reports\Definitions;
 
-use App\Modules\Reports\Contracts\ReportDataRepository;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 
 /** Approved leave by type: requests and days (requests overlapping the range count whole). */
-final class LeaveUsageReport extends AbstractReport
+final class LeaveUsageReport extends AbstractLeaveReport
 {
-    public function __construct(private readonly ReportDataRepository $data) {}
-
     public function key(): string
     {
         return 'leave_usage';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Hr;
-    }
-
-    public function filters(): array
-    {
-        return [self::FILTER_FROM, self::FILTER_TO];
     }
 
     public function columns(): array
@@ -36,11 +22,6 @@ final class LeaveUsageReport extends AbstractReport
     public function chart(): array
     {
         return ['label' => 'leave_type', 'value' => 'days'];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->seesTeam();
     }
 
     public function rows(ScopedContext $ctx, array $filters): array
@@ -54,11 +35,7 @@ final class LeaveUsageReport extends AbstractReport
             $rows[$r['leave_type']]['days'] += $r['days'];
             $people[$r['leave_type']][$r['employee_id']] = true;
         }
-        foreach ($rows as $type => &$row) {
-            $row['employees'] = count($people[$type] ?? []);
-            $row['days'] = round($row['days'], 2);
-        }
-        unset($row);
+        $rows = self::countPeople($rows, $people, 'employees');
         ksort($rows);
 
         return array_values($rows);
