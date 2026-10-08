@@ -73,7 +73,7 @@ MySQL; без этого перенос на инфраструктуру IT STE
 
 **Последствия.** Нужна дисциплина ревью (запрет pg-only синтаксиса), второй CI-прогон (~+3 мин, не блокирует merge).
 Индекс по `touchpoints (channel, meta->>'thread')` есть только на PostgreSQL — на MySQL это задача производительности
-(PROD-50). Перенос данных Neon → MySQL и backup/restore (`mysqldump`) — отдельные этапы (PROD-47, PROD-48).
+(PROD-50). Перенос данных Neon → MySQL — команда `db:transfer-to-mysql` и runbook [mysql-cutover.md](../guides/mysql-cutover.md) (PROD-47); backup/restore (`mysqldump`) — отдельный этап (PROD-48).
 
 **Альтернативы.** Остаться на PostgreSQL (DevOps IT STEP не поддерживает); разовый переход без двойной поддержки
 (остановка прода на время переписывания и отладки); ORM-only без сырого SQL (отчёты и сортировки по подзапросам требуют

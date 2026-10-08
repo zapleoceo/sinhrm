@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Core\Providers;
 
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Core\Console\TransferToMysqlCommand;
 use App\Modules\Core\Contracts\HealthCheck;
 use App\Modules\Core\Contracts\MigrationRunner;
 use App\Modules\Core\Contracts\ModuleSettingsRepository;
@@ -65,5 +66,10 @@ final class CoreServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         $this->defineRoleGate(self::MANAGE_MODULES, [UserRole::Superadmin]);
+
+        // PostgreSQL -> MySQL cutover tool (ADR 0010, docs/guides/mysql-cutover.md).
+        if ($this->app->runningInConsole()) {
+            $this->commands([TransferToMysqlCommand::class]);
+        }
     }
 }
