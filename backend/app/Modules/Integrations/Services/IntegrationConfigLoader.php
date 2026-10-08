@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Integrations\Services;
 
+use App\Modules\Integrations\Contracts\IntegrationConfigs;
 use App\Modules\Integrations\Contracts\IntegrationDefinition;
 use App\Modules\Integrations\Contracts\IntegrationRepository;
 use App\Modules\Integrations\Contracts\SecretVault;
@@ -14,7 +15,7 @@ use App\Modules\Integrations\Enums\IntegrationStatus;
  * Builds the runtime config of an integration: non-secret settings (defaults applied) + decrypted secrets from the
  * vault. Shared by connection checks and by modules that talk to the service (Channels webhooks and sending).
  */
-final readonly class IntegrationConfigLoader
+final readonly class IntegrationConfigLoader implements IntegrationConfigs
 {
     public function __construct(
         private IntegrationRepository $integrations,

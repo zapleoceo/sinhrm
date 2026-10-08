@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Integrations\Contracts\ConnectionChecker;
 use App\Modules\Integrations\Contracts\IntegrationDefinition;
 use App\Modules\Integrations\Contracts\IntegrationRepository;
+use App\Modules\Integrations\Contracts\IntegrationSettings;
 use App\Modules\Integrations\Contracts\SecretVault;
 use App\Modules\Integrations\DTO\CheckResult;
 use App\Modules\Integrations\DTO\FieldSpec;
@@ -26,7 +27,7 @@ use Illuminate\Support\Collection;
  * Integrations admin: read (masked), update settings/secrets, run checks, switch status.
  * Audit goes to integration_logs with field NAMES only: values (secrets above all) are never logged.
  */
-final class IntegrationService
+final class IntegrationService implements IntegrationSettings
 {
     public const int LOG_LIMIT = 50;
 

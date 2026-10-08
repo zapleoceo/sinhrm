@@ -412,6 +412,7 @@ AIB_PROJECT_KEY=<ключ, только в своей оболочке> php arti
 
 ### Зависимости через контракты (2026-10-08)
 - Другие модули зависят от контракта `Contracts\AiGateway` (`available`, `unavailableReason`, `assertAvailable`, `run`, `transcribe`, `refresh`, константа `WAIT_SECONDS`), а не от класса `AiService`. Реализует контракт только `Services\AiService` (правило 7 CLAUDE.md: шлюзы, лимиты, отсрочка и запрет логирования промптов живут там), биндинг — `AiServiceProvider`. Значение `WAIT_SECONDS` пока объявлено и в контракте, и в `AiService` (класс параллельно правит ветка DRY-правок); равенство проверяет `tests/Unit/Ai/AiGatewayTest.php`.
+- `AiSettingsReader` и `OpenRouterProvider` читают настройки брокера через контракт Integrations `IntegrationConfigs`, `AiPromptAdminService` меняет возможность функции через `IntegrationSettings::update()`. Тест — `tests/Unit/Ai/AiSettingsReaderContractTest.php`.
 
 ## Как проверить
 - `tests/Feature/Ai/AiServiceTest` — submit/poll, возможность и модель (пусто → без `model`), бэкофф в пределах 40 с →

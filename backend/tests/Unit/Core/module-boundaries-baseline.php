@@ -10,15 +10,6 @@ declare(strict_types=1);
  */
 
 return [
-    'Ai/Services/AiPromptAdminService.php' => [
-        'App\Modules\Integrations\Services\IntegrationService',
-    ],
-    'Ai/Services/OpenRouterProvider.php' => [
-        'App\Modules\Integrations\Services\IntegrationConfigLoader',
-    ],
-    'Ai/Support/AiSettingsReader.php' => [
-        'App\Modules\Integrations\Services\IntegrationConfigLoader',
-    ],
     'Assets/Http/Requests/AssetMoveRequest.php' => [
         'App\Modules\People\Models\Employee',
     ],
@@ -82,9 +73,6 @@ return [
     ],
     'Channels/Services/CallService.php' => [
         'App\Modules\Recruiting\Models\Candidate',
-    ],
-    'Channels/Services/ChannelContext.php' => [
-        'App\Modules\Integrations\Services\IntegrationConfigLoader',
     ],
     'Channels/Services/DemoSeedFactory.php' => [
         'App\Modules\Recruiting\Models\Candidate',

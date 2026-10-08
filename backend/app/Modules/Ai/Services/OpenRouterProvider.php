@@ -10,8 +10,8 @@ use App\Modules\Ai\DTO\AiPrompt;
 use App\Modules\Ai\DTO\AiResult;
 use App\Modules\Ai\Exceptions\AiException;
 use App\Modules\Ai\Support\AiSettingsReader;
+use App\Modules\Integrations\Contracts\IntegrationConfigs;
 use App\Modules\Integrations\Definitions\OpenRouterDefinition;
-use App\Modules\Integrations\Services\IntegrationConfigLoader;
 use App\Modules\Integrations\Support\OutboundUrlGuard;
 use App\Modules\Integrations\Support\SecretScrubber;
 use Illuminate\Http\Client\Factory as Http;
@@ -38,7 +38,7 @@ final readonly class OpenRouterProvider implements AiProvider
         private Http $http,
         private OutboundUrlGuard $guard,
         private AiSettingsReader $settings,
-        private IntegrationConfigLoader $loader,
+        private IntegrationConfigs $loader,
         private OpenRouterDefinition $definition,
         private SecretScrubber $scrubber,
     ) {}

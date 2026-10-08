@@ -17,8 +17,8 @@ use App\Modules\Ai\Support\AiSamples;
 use App\Modules\Ai\Support\AiSettingsReader;
 use App\Modules\Ai\Support\PromptOverrides;
 use App\Modules\Auth\Contracts\UserRepository;
+use App\Modules\Integrations\Contracts\IntegrationSettings;
 use App\Modules\Integrations\Definitions\AiBrokerDefinition;
-use App\Modules\Integrations\Services\IntegrationService;
 use Illuminate\Support\Facades\Log;
 use LogicException;
 
@@ -39,7 +39,7 @@ final readonly class AiPromptAdminService
         private AiPromptVersionRepository $versions,
         private PromptOverrides $overrides,
         private AiSettingsReader $settings,
-        private IntegrationService $integrations,
+        private IntegrationSettings $integrations,
         private AiBrokerDefinition $broker,
         private AiService $ai,
         private AiRequestRepository $requests,
