@@ -49,6 +49,9 @@ interface DeskRepository
 
     public function attachmentCount(int $caseId): int;
 
+    /** Total size in bytes of the originals attached to the case (the per-case storage quota). */
+    public function attachmentBytes(int $caseId): int;
+
     public function findAttachment(int $caseId, int $id): ?DeskAttachment;
 
     /**

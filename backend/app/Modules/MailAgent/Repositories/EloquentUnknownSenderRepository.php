@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\MailAgent\Repositories;
 
+use App\Modules\Core\Support\Database\Like;
 use App\Modules\MailAgent\Contracts\UnknownSenderRepository;
 use App\Modules\MailAgent\Enums\ParserKey;
 use App\Modules\MailAgent\Enums\SenderKind;
@@ -71,10 +72,13 @@ final class EloquentUnknownSenderRepository implements UnknownSenderRepository
 
     public function deleteDomain(string $domain): int
     {
-        $domain = mb_strtolower($domain);
+        // "_" and "%" are legal in a domain label, so they must stay literal in the LIKE pattern (Like::escape),
+        // otherwise assigning "@a_b.example.test" would also sweep axb.example.test out of the queue.
+        $domain = Like::escape(mb_strtolower($domain), Like::PORTABLE);
 
         return UnknownSender::query()
-            ->where(fn (Builder $q) => $q->where('email', 'like', '%@'.$domain)->orWhere('email', 'like', '%.'.$domain))
+            ->where(fn (Builder $q) => $q->whereRaw("email like ? escape '!'", ['%@'.$domain])
+                ->orWhereRaw("email like ? escape '!'", ['%.'.$domain]))
             ->delete();
     }
 

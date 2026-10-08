@@ -14,6 +14,7 @@ import { LeaveRequestForm } from '../../timeoff/widgets/leave-request-form';
 import { RequestAction, RequestsList } from '../../timeoff/widgets/requests-list';
 import { initials } from '../org-tree';
 import { CHANGEABLE_FIELDS, ChangeRequest, Employee, fieldLabelKey } from '../people.model';
+import { HiddenChangesLine } from '../hidden-changes';
 import { EmployeeDocumentsTab } from '../../documents/profile/employee-documents.tab';
 import { EmployeeRunsTab } from '../../workflows/runs/employee-runs.tab';
 import { PerformanceTab } from '../../perform/profile/performance.tab';
@@ -62,6 +63,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
     EmployeeAssetsTab,
     AuditHistory,
     PrivacyActions,
+    HiddenChangesLine,
   ],
   providers: [ProfileStore, LeaveRequestsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -134,6 +136,10 @@ import { NotifyService } from '../../../core/ui/notify.service';
               <dd>{{ e.birth_date ? (e.birth_date | date: 'dd.MM.yyyy') : '—' }}</dd>
               <dt>{{ 'people.fields.personalEmail' | transloco }}</dt>
               <dd>{{ e.personal_email ?? '—' }}</dd>
+              <dt>{{ 'people.fields.personalPhone' | transloco }}</dt>
+              <dd>
+                @if (personalPhone(); as phone) { <a class="mono" [href]="'tel:' + phone">{{ phone }}</a> } @else { — }
+              </dd>
               <dt>{{ 'people.fields.address' | transloco }}</dt>
               <dd>{{ e.address ?? '—' }}</dd>
               <dt>{{ 'people.fields.emergencyContact' | transloco }}</dt>
@@ -194,6 +200,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
                         <span><span class="muted">{{ label(f) | transloco }}:</span> {{ c.changes[f] ?? '—' }}</span>
                       }
                     }
+                    <app-hidden-changes [fields]="c.hidden_changes" />
                     @if (c.comment) {
                       <span class="muted">«{{ c.comment }}»</span>
                     }
@@ -330,7 +337,11 @@ export class ProfilePage {
     if (id === undefined || !canManagePeople(this.auth.user()?.roles ?? [])) return null;
     return (paging) => this.audit.employeeHistory(id, paging);
   });
-  protected readonly customFields = computed(() => Object.entries(this.store.employee()?.custom_fields ?? {}));
+  /** Candidate's phone carried over at hire (HireService): PII tier, shown as its own row, not as a raw custom key. */
+  protected readonly personalPhone = computed(() => this.store.employee()?.custom_fields?.['personal_phone'] ?? null);
+  protected readonly customFields = computed(() =>
+    Object.entries(this.store.employee()?.custom_fields ?? {}).filter(([key]) => key !== 'personal_phone'),
+  );
 
   constructor() {
     effect(() => {

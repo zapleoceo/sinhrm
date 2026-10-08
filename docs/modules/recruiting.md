@@ -360,6 +360,16 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 политику (`move` для заявки, `update` для кандидата) и тот же сервис (`ApplicationService::move`, `CandidateService::update`), что и
 одиночное действие; ошибки по элементу: `not_found`, `no_application`, `forbidden`, коды `RecruitingException` (`same_stage`, …).
 
+**Ответ не рассказывает лишнего (2026-10-08).** Раньше по кодам на элемент можно было перебрать чужой скоуп: `not_found`
+против `no_application` против `forbidden` отвечали, существует ли кандидат, подавался ли он на эту вакансию и в чьей
+она ветке, а `vacancy_id` проверялся только правилом `exists`. Теперь `CandidateBulkService`:
+- для `move`/`reject` один раз проверяет вакансию (`RecruitingScope::canSeeVacancy`); чужая → 403 `vacancy_out_of_scope`
+  на весь запрос, как в расширении-клипере, а не перебор по кандидатам;
+- кандидат вне скоупа (`RecruitingScope::canSeeCandidate`) даёт `not_found` — тот же код, что и несуществующий id,
+  поэтому «есть, но не ваш» и «нет такого» снаружи неразличимы.
+
+Остальные коды (`no_application`, `forbidden`, `same_stage`, …) остаются, но только для кандидатов, которых актор и так видит.
+
 **Вид доски (2026-10-02, рестайл C «Маршрут»).** Заголовки колонок — станции на одной линии, которая идёт через всю
 доску: кольцо-станция (`.app-station` из `styles.scss`) и отрезок до следующей станции в цвете **типа** этапа
 (`data-kind`: attract / select / hire / closed → токены `--app-stage-*`; закрытый этап — квадрат, а не только красный), число
@@ -419,6 +429,23 @@ Documents категории `offer` (переменные `{ПІБ}`, `{Пос�
 | GET/POST | `/api/applications/{id}/offer` | оффер заявки / создать (422 `not_in_offer_stage`, `template_not_offer`; 409 `offer_exists`) |
 | POST | `/api/applications/{id}/offer/send` | отправить (422 `offer_status`) |
 | POST | `/api/applications/{id}/offer/decision` | `{status: accepted\|declined}` |
+
+**Текст оффера не утекает через таймлайн (2026-10-08).** «Надіслати» кладёт письмо в таймлайн заявки, а карточка кандидата
+открыта шире оффера: её видят читатели филиала и сотрудники, назначенные интервьюерами на заявку. Раньше они читали
+в `GET /api/candidates/{id}/timeline` тело этого касания вместе с зарплатой, минуя `ApplicationPolicy::offer`.
+Теперь касание оффера помечается `meta.kind = offer` (`Touchpoint::KIND_OFFER`, ставит `OfferService::send`; офферы,
+отправленные раньше, помечает миграция данных `2026_10_28_100001_mark_sent_offer_touchpoints` — исходящее e-mail-касание
+заявки с отправленным оффером и темой «Оффер: …», порциями, идемпотентно), а
+`Support/TouchpointRedaction::restricted()` — единственное место, где решается, можно ли читать его текст:
+`Gate::allows('offer', $application)`, и «нет заявки / нет пользователя» трактуется как «нельзя».
+Через неё проходят все пути чтения касаний:
+- `TouchpointResource` (таймлайн, «Вхідні», ответ на отправку сообщения, встречи) — `body: null`, из `meta` убраны
+  `subject` и `recording_url`, добавлено поле `redacted: true|false` (оно есть у каждого касания, UI по нему рисует
+  «текст приховано» вместо пустого сообщения);
+- `TimelineEntryResource` — у скрытого касания `evaluation` тоже `null` (оценка цитирует тот же текст);
+- `GET /api/touchpoints/{id}/evaluation` (Scripts) — 403.
+
+Пишущие рекрутинг в скоупе и нанимающий менеджер видят текст как прежде (`redacted: false`).
 
 ## Личная доска на «Кандидатах» (Список | Дошка)
 

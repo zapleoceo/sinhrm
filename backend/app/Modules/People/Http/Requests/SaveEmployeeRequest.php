@@ -12,6 +12,8 @@ use App\Modules\Directory\Models\Position;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Enums\EmploymentType;
 use App\Modules\People\Models\Employee;
+use App\Modules\People\Support\RoleRank;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -38,7 +40,8 @@ final class SaveEmployeeRequest extends FormRequest
             'full_name' => [$req, 'required', 'string', 'max:255'],
             'hired_at' => [$req, 'required', 'date_format:Y-m-d'],
             'user_id' => ['sometimes', 'nullable', 'integer', Rule::exists(User::class, 'id'),
-                Rule::unique(Employee::class, 'user_id')->ignore($employee instanceof Employee ? $employee->id : null)],
+                Rule::unique(Employee::class, 'user_id')->ignore($employee instanceof Employee ? $employee->id : null),
+                $this->notAboveTheActor()],
             'work_email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
             'avatar_url' => ['sometimes', 'nullable', 'url:https', 'max:512'],
@@ -61,6 +64,22 @@ final class SaveEmployeeRequest extends FormRequest
             'position_id' => ['sometimes', 'nullable', 'integer', $active(Position::class)],
             'manager_id' => ['sometimes', 'nullable', 'integer', Rule::exists(Employee::class, 'id')],
         ];
+    }
+
+    /**
+     * An employee record is fully controlled by its HR owner (edit, terminate → the linked login gets blocked), so
+     * it may never carry a login stronger than the person doing the editing: an hr_manager linking an admin or a
+     * superadmin account to a record they manage would own that account's fate. 422 user_outranks_actor.
+     */
+    private function notAboveTheActor(): Closure
+    {
+        return function (string $attribute, mixed $value, Closure $fail): void {
+            $actor = $this->user();
+            $target = $value === null || $value === '' ? null : User::query()->find((int) $value);
+            if ($actor instanceof User && $target !== null && RoleRank::outranks($target, $actor)) {
+                $fail('user_outranks_actor');
+            }
+        };
     }
 
     /** @return array<string, mixed> */

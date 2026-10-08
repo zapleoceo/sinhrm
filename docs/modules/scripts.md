@@ -181,9 +181,9 @@ viewer — например, новый сотрудник) и, как рань�
 | `POST /api/scripts/{id}/publish` | superadmin, admin | черновик → новая активная версия; нет черновика → 422 `no_draft` |
 | `POST /api/scripts/{id}/activate/{version}` | superadmin, admin | откат к опубликованной; черновик/нет такой → 422 `version_not_published` |
 | `GET /api/scripts/{id}/versions` | все | версии с контентом, новые сверху; `meta.active_version_id` |
-| `POST /api/scripts/{id}/test` | все | `{text, version?: draft\|active}` → оценка без сохранения |
+| `POST /api/scripts/{id}/test` | superadmin, admin + `throttle:10,1` | `{text, version?: draft\|active}` → оценка без сохранения |
 | `GET /api/candidates/{id}/templates` | кто видит карточку | заполненные шаблоны `{script_id, script_name, channel, key, title, text, missing[]}` |
-| `GET /api/touchpoints/{id}/evaluation` | кто видит кандидата (или сообщение во «Вхідних») | полная оценка; не оценено → 404 `not_evaluated` |
+| `GET /api/touchpoints/{id}/evaluation` | кто видит кандидата **и** заявку касания (или сообщение во «Вхідних») | полная оценка; не оценено → 404 `not_evaluated`; скрытое касание (оффер) → 403 |
 | `GET /api/reports/scripts` | все, в пределах филиалов | `from, to` (как у отчётов Recruiting) → `recruiters[{avg_score, next_step_fixed_pct, evaluations}]`, `steps[{title, total, missed, miss_rate_pct}]` (шаги группируются по названию), `totals` |
 | `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents\|pulse\|desk\|hiring\|time` (`Enums/TaskSource`; иное → 422), `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
 | `PATCH /api/tasks/{id}` | исполнитель задачи (любая роль); superadmin, admin, recruiter (видящие задачу) | `{done: bool}`; чужая задача у viewer / чужой филиал → 403 |
@@ -191,6 +191,23 @@ viewer — например, новый сотрудник) и, как рань�
 Доступ к задачам: без ограничений — superadmin/admin; остальные видят задачи, назначенные им, и задачи по заявкам вакансий
 своих филиалов (`Repositories/EloquentTaskRepository::scoped`, `Policies/TaskPolicy`). Закрыть задачу может её
 исполнитель или writer, который её видит (`TaskService::canUpdate`).
+
+### Два закрытых места (2026-10-08)
+**Оценка касания отвечала только за карточку кандидата.** `CandidateScriptController::evaluation` спрашивал
+`RecruitingScope::canSeeCandidate` и на этом останавливался. Но кандидат может подаваться в несколько филиалов, и лента
+карточки это учитывает: `GET /api/candidates/{id}/timeline` показывает только касания заявок в скоупе
+(`Recruiting\Support\ApplicationVisibility`). Оценка же отдавалась по любому `touchpoint_id`, то есть рекрутер филиала A
+читал разбор звонка по заявке филиала B вместе с цитатами из разговора. Теперь, если у касания есть `application_id`,
+заявка проверяется тем же `ApplicationVisibility`, что и лента; касание без кандидата («Вхідні») — как прежде,
+`canSeeInboxItem`. Сюда же добавлена проверка `Recruiting\Support\TouchpointRedaction::restricted()`: у скрытого
+касания (оффер) оценка закрыта вместе с текстом — она его цитирует.
+
+**«Тест на тексті» тратил общий бюджет ШІ без спроса.** `POST /api/scripts/{id}/test` стоял вне гейта
+(«чтение доступно всем»), хотя это полноценный вызов оценщика: любой активный сотрудник мог гонять его в цикле и выбрать
+дневной лимит AI на всех. Единственный клиент эндпоинта — вкладка «Тест» редактора скрипта
+(`features/scripts/editor`, маршрут `admin/scripts/:id` под `roleGuard('superadmin','admin')`), не-менеджеры его не
+вызывают. Поэтому эндпоинт переехал в группу `can:scripts-manage` и сверху получил `throttle:10,1` — лимит на пользователя,
+чтобы и менеджер случайным автоповтором не выжег бюджет. Не-менеджеру — 403, 11-й вызов в минуту — 429.
 
 ### Слои и связи с другими модулями
 `Http/Controllers/*` → `Http/Requests/*` → `Services/*` (`ScriptService`, `EvaluationService`, `TemplateService`,

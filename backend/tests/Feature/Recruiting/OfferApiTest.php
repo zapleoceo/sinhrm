@@ -111,6 +111,84 @@ final class OfferApiTest extends TestCase
         $this->actingAs($manager)->getJson($url)->assertOk()->assertJsonPath('data.salary', '30000 UAH');
     }
 
+    /** The sent offer becomes a touchpoint on the application: its text must not leak the salary through the timeline. */
+    public function test_sent_offer_text_is_redacted_in_the_timeline_for_non_writers(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $this->actingAs($recruiter)->postJson($url, [
+            'template_id' => $this->template->id, 'position' => 'Manager', 'salary' => '30000 UAH',
+        ])->assertCreated();
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
+        $timeline = '/api/candidates/'.$this->application->candidate_id.'/timeline?channel=email';
+
+        $interviewer = User::factory()->withRole(UserRole::Employee)->create();
+        $this->application->interviewers()->sync([$interviewer->id => ['created_at' => now()]]);
+        foreach ([$this->userWith(UserRole::Viewer, [$this->branch]), $interviewer] as $reader) {
+            $touchpoint = $this->actingAs($reader)->getJson($timeline)->assertOk()
+                ->assertJsonPath('data.0.touchpoint.channel', 'email')
+                ->json('data.0.touchpoint');
+            $this->assertStringNotContainsString('30000 UAH', json_encode($touchpoint, JSON_THROW_ON_ERROR));
+            $this->assertNull($touchpoint['body']);
+            $this->assertSame('offer', $touchpoint['meta']['kind'] ?? null);
+            $this->assertTrue($touchpoint['redacted'] ?? false);
+        }
+
+        $this->actingAs($recruiter)->getJson($timeline)->assertOk()
+            ->assertJsonPath('data.0.touchpoint.redacted', false);
+        $this->assertStringContainsString(
+            '30000 UAH',
+            (string) $this->actingAs($recruiter)->getJson($timeline)->json('data.0.touchpoint.body'),
+        );
+    }
+
+    /** Data migration 2026_10_28_100001: offer e-mails sent before meta.kind existed get marked, nothing else does. */
+    public function test_backfill_marks_offer_touches_sent_before_the_fix_and_is_idempotent(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $this->actingAs($recruiter)->postJson($url, [
+            'template_id' => $this->template->id, 'position' => 'Manager', 'salary' => '30000 UAH',
+        ])->assertCreated();
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
+
+        // The touch as the pre-fix code stored it: no meta.kind. Plus an old row with no meta.subject at all.
+        $offerTouch = Touchpoint::query()->where('application_id', $this->application->id)->where('channel', 'email')->sole();
+        $offerTouch->update(['meta' => ['subject' => 'Оффер: Manager', 'gmail_thread' => 't1']]);
+        $legacy = $this->touch(['body' => "Оффер: Manager\n\n30000 UAH", 'meta' => null]);
+        // Not offers: another e-mail on the same application, an inbound reply, a touch of an application without a sent offer.
+        $plain = $this->touch(['body' => "Interview\n\nTomorrow", 'meta' => ['subject' => 'Interview']]);
+        $reply = $this->touch(['direction' => 'in', 'body' => 'Re: Оффер: Manager', 'meta' => ['subject' => 'Оффер: Manager']]);
+        $otherApplication = $this->applied($this->vacancyIn($this->branch), ['full_name' => 'Petro Sample', 'email' => 'petro.sample@example.test']);
+        $unsent = $this->touch([
+            'application_id' => $otherApplication->id,
+            'candidate_id' => $otherApplication->candidate_id,
+            'meta' => ['subject' => 'Оффер: Draft'],
+        ]);
+
+        $migration = require base_path('app/Modules/Recruiting/Database/Migrations/2026_10_28_100001_mark_sent_offer_touchpoints.php');
+        $migration->up();
+        $migration->up(); // idempotent
+
+        // assertEquals: MySQL JSON stores object keys in its own order (shorter keys first), not insertion order.
+        $this->assertEquals(['subject' => 'Оффер: Manager', 'gmail_thread' => 't1', 'kind' => 'offer'], $offerTouch->fresh()?->meta);
+        $this->assertEquals(['kind' => 'offer'], $legacy->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Interview'], $plain->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Оффер: Manager'], $reply->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Оффер: Draft'], $unsent->fresh()?->meta);
+    }
+
+    /** @param  array<string, mixed>  $attributes */
+    private function touch(array $attributes): Touchpoint
+    {
+        return Touchpoint::query()->create($attributes + [
+            'candidate_id' => $this->application->candidate_id, 'application_id' => $this->application->id,
+            'channel' => 'email', 'direction' => 'out', 'occurred_at' => now(), 'body' => 'Оффер: Draft', 'via_product' => true,
+        ]);
+    }
+
     public function test_template_must_be_an_offer_template(): void
     {
         $this->application->update(['stage_id' => $this->stageAt(6)->id]);

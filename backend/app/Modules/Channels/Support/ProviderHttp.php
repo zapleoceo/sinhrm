@@ -48,11 +48,12 @@ final readonly class ProviderHttp
      */
     private function send(string $url, array $headers, ?string $bearer, bool $form, array $body): Response
     {
-        if ($this->guard->check($url) !== null) {
+        $target = $this->guard->inspect($url);
+        if ($target->error !== null) {
             throw ChannelException::sendFailed();
         }
         try {
-            $request = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)
+            $request = $this->http->withOptions($target->httpOptions())->timeout(self::TIMEOUT_SECONDS)
                 ->acceptJson()->withHeaders($headers);
             if ($bearer !== null) {
                 $request = $request->withToken($bearer);

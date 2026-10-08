@@ -10,6 +10,7 @@ use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Audit\Services\AuditRetentionJob;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\ScheduledJob;
+use App\Modules\Core\Models\ModuleSetting;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Documents\Models\Document;
 use App\Modules\People\Models\Employee;
@@ -287,6 +288,20 @@ final class AuditLogTest extends TestCase
             $this->assertStringNotContainsString($value, $raw);
         }
         $this->assertGreaterThan(0, AuditEntry::query()->where('entity_type', 'candidate')->where('entity_id', $id)->where('action', 'updated')->count());
+    }
+
+    public function test_safe_speak_handler_grant_and_module_settings_are_logged_in_clear(): void
+    {
+        $user = User::factory()->withRole(UserRole::Admin)->create();
+        $this->actingAs($this->superadmin);
+        $this->patchJson("/api/users/{$user->id}", ['safe_speak_handler' => true])->assertOk();
+        $this->assertEquals(['from' => false, 'to' => true], $this->entry('user', $user->id, 'updated')->changes['safe_speak_handler'] ?? null);
+
+        $this->putJson('/api/modules/workflows', ['enabled' => false, 'roles' => ['admin']])->assertOk();
+        $entry = AuditEntry::query()->where('entity_type', 'module_setting')->latest('id')->firstOrFail();
+        $this->assertSame($this->superadmin->id, $entry->user_id);
+        $this->assertSame(ModuleSetting::query()->where('module', 'workflows')->value('id'), $entry->entity_id);
+        $this->assertFalse($entry->changes['enabled']['to'] ?? true);
     }
 
     private function entry(string $type, int $id, string $action): AuditEntry

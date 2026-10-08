@@ -103,7 +103,12 @@ Ringostat станет доступен только после появлени
 - Секреты — только через `SecretVault` (`Integrations\Services\IntegrationConfigLoader`), в логах их нет: журнал хранит коды и
   счётчики, исключения HTTP-клиента не сохраняются (URL Telegram содержит токен) — `Support/ProviderHttp` превращает любой
   сбой в `send_failed`; общий `SecretScrubber` дополнительно чистит логи исключений.
-- Любой исходящий URL проходит `OutboundUrlGuard` (https, 443, только публичные IP), редиректы выключены, таймаут 10 с.
+- Любой исходящий URL проходит `OutboundUrlGuard::inspect()` (https, 443, только публичные IP — таблица запрещённых
+  диапазонов в [integrations.md](integrations.md)), редиректы выключены, таймаут 10 с. `ProviderHttp` отправляет запрос
+  с `PinnedTarget::httpOptions()`: соединение прибито к уже проверенным IP (`CURLOPT_RESOLVE`), имя повторно не
+  резолвится, поэтому между проверкой и отправкой DNS нельзя перенаправить внутрь (DNS-rebinding). Заголовок `Host`,
+  SNI и проверка сертификата не меняются — в URL остаётся имя хоста. Тест —
+  `MessagesApiTest::test_outbound_provider_call_pins_the_connection_to_the_approved_ips`.
 - Текст сообщений хранится как есть и выводится в интерфейсе как текст (Angular-интерполяция), **сырой HTML не рендерится**.
   Ссылка на запись разговора — только `https://`.
 - `?token=` в адресе телефонии виден в логах доступа провайдера/Vercel — это временная схема, пока не подтверждены

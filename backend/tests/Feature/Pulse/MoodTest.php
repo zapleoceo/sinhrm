@@ -6,6 +6,7 @@ namespace Tests\Feature\Pulse;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Directory\Models\Department;
 use App\Modules\People\Models\Employee;
 use App\Modules\Pulse\Models\MoodCheckin;
 use App\Modules\Scripts\Models\Task;
@@ -121,6 +122,62 @@ final class MoodTest extends TestCase
         // Employees without reports have no team view; admins see everyone.
         $this->actingAs($this->userOf($worker))->getJson('/api/pulse/mood/team')->assertForbidden();
         $this->actingAs($this->login(UserRole::Admin))->getJson('/api/pulse/mood/team?weeks=1')->assertOk()->assertJsonPath('data.weeks.0.respondents', 5);
+    }
+
+    /**
+     * A manager must not slice their own team: "everybody" minus "one department" is the score and the comment of
+     * the people left over (here: one person).
+     */
+    public function test_a_manager_cannot_slice_the_team_trend_by_branch_or_department(): void
+    {
+        ['lead' => $lead] = $this->org();
+        $sales = Department::factory()->create(['name' => 'Sales']);
+        $ops = Department::factory()->create(['name' => 'Ops']);
+        $team = $this->people(5, ['manager_id' => $lead->id, 'department_id' => $sales->id]);
+        [$alone] = $this->people(1, ['manager_id' => $lead->id, 'department_id' => $ops->id]);
+        $this->moods($team, '2026-10-06', 5);
+        $this->moods([$alone], '2026-10-06', 1);
+        MoodCheckin::query()->where('employee_id', $alone->id)->update(['comment' => 'I am leaving']);
+        $manager = $this->userOf($lead);
+
+        $this->actingAs($manager)->getJson('/api/pulse/mood/team?weeks=1')->assertOk()
+            ->assertJsonPath('data.weeks.0.respondents', 6);
+        // Filters belong to admins only: for a manager they are the second half of a differencing attack.
+        $this->actingAs($manager)->getJson('/api/pulse/mood/team?weeks=1&department_id='.$sales->id)->assertForbidden();
+        $this->actingAs($manager)->getJson('/api/pulse/mood/team?weeks=1&branch_id=1')->assertForbidden();
+    }
+
+    /** The same subtraction with an admin's filters: a slice is shown only when the rest of the scope stays safe. */
+    public function test_an_admin_slice_is_hidden_when_the_rest_of_the_company_is_a_handful_of_people(): void
+    {
+        $org = array_values($this->org());
+        $sales = Department::factory()->create(['name' => 'Sales']);
+        $ops = Department::factory()->create(['name' => 'Ops']);
+        Employee::query()->whereIn('id', array_map(static fn (Employee $e): int => $e->id, $org))->update(['department_id' => $sales->id]);
+        $more = $this->people(2, ['department_id' => $sales->id]);
+        [$alone] = $this->people(1, ['department_id' => $ops->id]);
+        $this->moods([...$org, ...$more], '2026-10-06', 5);
+        $this->moods([$alone], '2026-10-06', 1);
+        $admin = $this->login(UserRole::Admin);
+
+        $this->actingAs($admin)->getJson('/api/pulse/mood/team?weeks=1')->assertOk()
+            ->assertJsonPath('data.weeks.0.respondents', 8);
+        // Sales is 7 of the 8 people: "everybody minus Sales" would be the one person in Ops.
+        $this->actingAs($admin)->getJson('/api/pulse/mood/team?weeks=1&department_id='.$sales->id)->assertOk()
+            ->assertJsonPath('data.team_size', null)
+            ->assertJsonPath('data.coverage', null)
+            ->assertJsonPath('data.weeks.0.suppressed', true)
+            ->assertJsonPath('data.weeks.0.average', null)
+            ->assertJsonPath('data.comments', []);
+
+        // Ops grown to 5: both slices and the remainder are at least the minimum group, so both may be shown.
+        $this->moods($this->people(4, ['department_id' => $ops->id]), '2026-10-06', 3);
+        $this->actingAs($admin)->getJson('/api/pulse/mood/team?weeks=1&department_id='.$sales->id)->assertOk()
+            ->assertJsonPath('data.weeks.0.respondents', 7)
+            ->assertJsonPath('data.weeks.0.suppressed', false);
+        $this->actingAs($admin)->getJson('/api/pulse/mood/team?weeks=1&department_id='.$ops->id)->assertOk()
+            ->assertJsonPath('data.weeks.0.respondents', 5)
+            ->assertJsonPath('data.weeks.0.suppressed', false);
     }
 
     public function test_manager_alert_when_team_mood_drops(): void

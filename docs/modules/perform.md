@@ -125,7 +125,7 @@ hidden_reason: "anonymity"}`, без баллов и комментариев. �
 | `GET one-on-one-templates`; `POST/PUT/DELETE one-on-one-templates[/{id}]` | все; запись — админ | шаблоны повестки |
 | `GET objectives?period&owner_employee_id`, `GET objectives/{id}` (с `checkins`), `POST`, `PUT objectives/{id}`, `DELETE`, `POST objectives/{id}/check-ins {key_results:[{id,current}], comment?}` | см. матрицу | цели |
 | `GET kpis?employee_id&period`, `POST kpis`, `PUT/DELETE kpis/{id}` | см. матрицу | `attainment` = факт / план, % |
-| `GET feedback?box=received\|given\|requests\|team\|public`, `POST feedback {to_employee_id \| request_id, type, text, visibility?}` | все | `team`: руководителю — `manager`+`public` о людях ниже, админу — всё |
+| `GET feedback?box=received\|given\|requests\|team\|public`, `POST feedback {to_employee_id \| request_id, type, text, visibility?}` | все | `team`: руководителю — `manager`+`public` о людях ниже, админу — всё; `box` проверяет `ListFeedbackRequest` (`Rule::in`, пусто → `received`), любое другое значение и нескалярное `box[]=x` — 422, а не 500 (аудит безопасности 2026-10-08) |
 | `GET development-plans?employee_id`, `POST`, `PUT/DELETE development-plans/{id}`, `PATCH development-plans/{id}/actions/{actionId} {done}` | см. матрицу | `progress {done,total}` |
 | `GET review/assignments`, `GET review/assignments/{id}`, `POST review/assignments/{id}/submit {answers}` | оценщик | свои формы |
 | `GET review/cycles/{cycle}/results/{employee}`, `GET review/employees/{employee}/results` | см. матрицу | агрегаты `ReviewResults` |

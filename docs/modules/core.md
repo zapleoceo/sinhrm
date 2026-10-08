@@ -288,3 +288,12 @@ Generated файлы игнорируются git; новых обязатель
 - тесты — `tests/Unit/Core/Transfer/*` (job `tests`), `tests/Feature/Core/Transfer/MysqlDataTransferTest` (workflow `MySQL data transfer`, необязательный);
 - устройство, порядок переключения, откат, проверка и чек-лист удаления — [mysql-cutover.md](../guides/mysql-cutover.md).
 - Проверка «цель ≠ рабочая БД приложения» по `@@server_uuid` больше не делает исключения для приложения на другом драйвере: приложение только на MySQL, несравнимое соединение — отказ (fail-closed); feature-тест запускает команду с приложением на соседней БД MySQL.
+- Миграции данных после заморозки (2026-10-08, #183): `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS` — список миграций
+  `main`, которых нет на замороженном источнике переноса и которые не меняют схему (сейчас одна:
+  `2026_10_28_100001_mark_sent_offer_touchpoints`, пометка писем отправленных офферов). Если цель уже мигрирована
+  текущим релизом, такие миграции «лишние на цели» не считаются расхождением: preflight/`--verify` печатают строку
+  `info`, а таблицы и колонки сравниваются строго, как раньше. После копирования команда снимает их с учёта в
+  `migrations` цели (`SchemaCheck::requeuePostFreeze` → `SchemaInspector::forgetTargetMigrations`, единственная запись в
+  эту таблицу) и печатает напоминание: `php artisan migrate --force` повторит их по перенесённым строкам (до копирования
+  они отработали по пустой таблице). Миграцию со схемой в список не добавлять — это спрятало бы реальный дрейф. Тест —
+  `MysqlDataTransferTest::test_post_freeze_data_migration_is_accepted_and_requeued_after_copy`.

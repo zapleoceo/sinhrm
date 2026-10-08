@@ -246,7 +246,10 @@ final readonly class ResponseService
                 + $this->participation($wave, count($this->responses->answersOf($wave->id, $department)), $department);
         }
         $previous = $with ?? $this->surveys->previousWave($wave);
-        if ($previous !== null && ($previous->survey_id !== $wave->survey_id || ! $this->revealed($previous, $department))) {
+        // A lifecycle release is the answers of one named person: never a "previous" value, however it is requested
+        // (?with=<exit wave>). Both sides are checked — a manual wave of a lifecycle survey is not a team wave either.
+        if ($previous !== null && ($previous->survey_id !== $wave->survey_id || ! $this->revealed($previous, $department)
+            || self::lifecycle($previous) || self::lifecycle($wave))) {
             $previous = null;
         }
         $questions = array_values(array_filter(
@@ -329,11 +332,17 @@ final readonly class ResponseService
         }
         $ctx = $this->scope->for($user);
         $self = $this->scope->employeeOf($user);
-        if (! $ctx->isManager() || $self?->department_id === null || $wave->isLifecycle()) {
+        if (! $ctx->isManager() || $self?->department_id === null || self::lifecycle($wave)) {
             throw new AuthorizationException;
         }
 
         return $self->department_id;
+    }
+
+    /** A personal wave, or any wave of a lifecycle survey: HR only, no manager view, no comparison. */
+    private static function lifecycle(SurveyWave $wave): bool
+    {
+        return $wave->isLifecycle() || $wave->survey->isLifecycle();
     }
 
     /**

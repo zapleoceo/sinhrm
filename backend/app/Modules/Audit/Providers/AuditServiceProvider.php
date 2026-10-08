@@ -19,6 +19,7 @@ use App\Modules\Audit\Support\SecretAuditObserver;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
+use App\Modules\Core\Models\ModuleSetting;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Documents\Models\Document;
 use App\Modules\HiringRequests\Models\HiringApproval;
@@ -60,6 +61,7 @@ final class AuditServiceProvider extends ModuleServiceProvider
         HiringRequest::class => 'hiring_request',
         HiringApproval::class => 'hiring_approval',
         WorkflowTemplate::class => 'workflow_template',
+        ModuleSetting::class => 'module_setting',
     ];
 
     protected string $prefix = 'audit';

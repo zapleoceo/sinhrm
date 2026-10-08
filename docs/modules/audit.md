@@ -31,12 +31,13 @@
 | `user` | `App\Models\User` | `status_changed` (активация/блокировка), `role_changed` (приглашение и смена роли, из `Users\Services\UserAdminService`) |
 | `integration` | `Integrations\Models\Integration` | `secret_set` / `secret_cleared` с `meta.secret` = имя ключа (из `IntegrationSecret`) |
 | `ai_prompt_version` | `Ai\Models\AiPromptVersion` | `prompt_activated`; текст промпта не пишется (`body` маскируется) |
-| `employee` | `People\Models\Employee` | `status_changed` (в т.ч. увольнение) |
+| `employee` | `People\Models\Employee` | `status_changed` (в т.ч. увольнение); `updated` с `meta.self_decision = true`, `meta.operation`, `meta.ref_id` — break-glass единственного суперадмина, решившего своё (`People/Support/SelfDecisionAudit`, [people.md](people.md)) |
 | `vacancy`, `candidate`, `application` | `Recruiting\Models\*` | `stage_changed` у отклика, `meta.candidate_id` |
 | `leave_request` | `TimeOff\Models\LeaveRequest` | `status_changed` = решение по отсутствию |
 | `document` | `Documents\Models\Document` | `status_changed` |
 | `hiring_request`, `hiring_approval` | `HiringRequests\Models\*` | `status_changed` = решение согласующего |
 | `workflow_template` | `Workflows\Models\WorkflowTemplate` | — |
+| `module_setting` | `Core\Models\ModuleSetting` (вкл/выкл модуля и роли, аудит безопасности 2026-10) | — |
 
 Список — `Providers\AuditServiceProvider::TRACKED`: новая модель = одна строка. Запись делает общий наблюдатель
 Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Действие уточняется по изменённым полям:
@@ -56,7 +57,8 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
   ФИО сотрудника и кандидата, зарплаты, контакты, заметки, ключи и любое поле, добавленное позже, — пишется только
   как «изменилось»: `***` (или `null`, если поле было/стало пустым). Добавить поле в список = осознанно решить, что
   оно не личное; тест `AuditPolicyTest` проходит по всем колонкам всех отслеживаемых моделей и проверяет, что
-  значения вне списка не сохраняются, а в самих списках нет «опасных» имён.
+  значения вне списка не сохраняются, а в самих списках нет «опасных» имён. У `user` в открытую пишется и
+  `safe_speak_handler` (кто получил/потерял доступ к анонимным обращениям); у `module_setting` — `module`, `enabled`, `roles`.
 - Не пишутся: `id`, `created_at`, `updated_at`, `remember_token`, `last_login_at`, `last_touch_at`, `stage_entered_at`,
   `last_checked_at`, `last_error`, `notified`, `escalated`. Правка только этих полей строку не создаёт.
 - Модели из `App\Modules\SafeSpeak\` и `App\Modules\Pulse\` и типы `safe_speak*`, `pulse*`, `survey*`, `mood*`

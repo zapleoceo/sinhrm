@@ -35,7 +35,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // No signed storage/{path} routes: the app never hands out temporary URLs (files are served by modules).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

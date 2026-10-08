@@ -46,9 +46,10 @@ final readonly class HireService
         try {
             $employee = $this->employees->create([
                 'full_name' => $candidate->full_name,
-                // The candidate's e-mail is personal; the work e-mail is set by an admin later.
+                // The candidate's e-mail and phone are personal contacts: they stay in the PII tier (admins and the
+                // person themselves). The directory fields work_email / phone are filled in by an admin later.
                 'personal_email' => $candidate->email,
-                'phone' => $candidate->phone,
+                'custom_fields' => $candidate->phone === null ? null : ['personal_phone' => $candidate->phone],
                 'hired_at' => $hiredAt->toDateString(),
                 'status' => EmployeeStatus::Active->value,
                 'employment_type' => EmploymentType::FullTime->value,

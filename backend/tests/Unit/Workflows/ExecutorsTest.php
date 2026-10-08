@@ -11,11 +11,13 @@ use App\Modules\GoogleWorkspace\DTO\MeetingData;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
 use App\Modules\GoogleWorkspace\Support\MimeText;
 use App\Modules\Integrations\Contracts\HostResolver;
+use App\Modules\Integrations\Support\OutboundUrlGuard;
 use App\Modules\People\Models\Employee;
 use App\Modules\Workflows\DTO\StepContext;
 use App\Modules\Workflows\DTO\StepSnapshot;
 use App\Modules\Workflows\Enums\AssigneeRule;
 use App\Modules\Workflows\Enums\StepAction;
+use App\Modules\Workflows\Executors\WebhookExecutor;
 use App\Modules\Workflows\Models\WorkflowRun;
 use App\Modules\Workflows\Models\WorkflowRunStep;
 use App\Modules\Workflows\Models\WorkflowTemplate;
@@ -172,6 +174,47 @@ final class ExecutorsTest extends TestCase
             $this->assertSame(['error' => $code], $outcome->result, $url);
         }
         Http::assertNothingSent();
+    }
+
+    /**
+     * DNS rebinding: the guard approves a public answer, a second lookup would return 169.254.169.254. The
+     * executor must resolve once and pin the connection to the approved IP (CURLOPT_RESOLVE), never follow a
+     * redirect, and keep the hostname in the URL so Host/SNI/certificate stay intact.
+     */
+    public function test_webhook_pins_the_connection_to_the_ips_the_guard_approved(): void
+    {
+        Http::fake(['hooks.example.test/*' => Http::response(['ok' => true])]);
+        $resolver = new class implements HostResolver
+        {
+            public int $calls = 0;
+
+            /** @return list<string> */
+            public function resolve(string $host): array
+            {
+                $this->calls++;
+
+                // One public answer per guard check; any extra lookup (the one a connection would make on its
+                // own) returns the metadata service — the rebinding attack this test pins against.
+                return $this->calls <= 2 ? ['93.184.216.34'] : ['169.254.169.254'];
+            }
+        };
+        $this->app->instance(HostResolver::class, $resolver);
+        $executor = $this->app->make(WebhookExecutor::class);
+
+        $target = $this->app->make(OutboundUrlGuard::class)->inspect('https://hooks.example.test/x');
+        $options = $executor->requestOptions($target);
+
+        $this->assertSame(['hooks.example.test:443:93.184.216.34'], $options['curl'][CURLOPT_RESOLVE]);
+        $this->assertFalse($options['curl'][CURLOPT_FOLLOWLOCATION]);
+        $this->assertSame(1, $resolver->calls, 'the host must be resolved once, by the guard');
+
+        // A whole step execution must not resolve a second time either.
+        $admin = User::factory()->withRole(UserRole::Admin)->create();
+        $context = $this->context(new StepSnapshot('Hook', StepAction::Webhook, 0, AssigneeRule::HrAdmin, null, ['url' => 'https://hooks.example.test/x']));
+        $this->app->make(WebhookSecrets::class)->put($context->run->template_id, 'k-0123456789abcdef', $admin->id);
+
+        $this->assertSame(['http_status' => 200], $executor->execute($context)->result);
+        $this->assertSame(2, $resolver->calls, 'one lookup per execution, reused for the connection');
     }
 
     public function test_assignee_rules(): void

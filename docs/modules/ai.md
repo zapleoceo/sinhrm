@@ -105,7 +105,9 @@ Recruiting/Ai/  ScreeningPrompt · ScreeningInput · ScreeningPromptFactory · S
 
 Логи: только id, счётчики и коды (`ai.request_done`, `ai.request_failed`, `ai.invalid_output`, `ai.budget_exceeded`).
 Промпты, ответы и ключ **никогда** не пишутся ни в лог, ни в БД. Ключ регистрируется в `SecretScrubber`, URL проверяет
-`OutboundUrlGuard` (https, публичный IP, без редиректов), ошибки провайдера — коды `ai_provider_http_401`,
+`OutboundUrlGuard::inspect()` (https, публичный IP, без редиректов; соединение прибито к проверенным IP через
+`PinnedTarget::httpOptions()` — `CURLOPT_RESOLVE`, поэтому DNS-rebinding между проверкой и запросом не уводит
+ключ проекта на внутренний адрес; тест `AiServiceTest::test_broker_call_pins_the_connection_to_the_approved_ips`), ошибки провайдера — коды `ai_provider_http_401`,
 `ai_provider_connection_failed`, `ai_provider_budget` (дневной лимит самого брокера) и т.п.
 
 ### Таблица `ai_requests`

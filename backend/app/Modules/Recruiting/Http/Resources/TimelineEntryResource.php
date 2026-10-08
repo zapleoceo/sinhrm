@@ -35,7 +35,8 @@ final class TimelineEntryResource extends JsonResource
             ];
         } else {
             $data['touchpoint'] = (new TouchpointResource($item))->toArray($request);
-            $data['touchpoint']['evaluation'] = $entry->evaluation;
+            // A redacted touch hides its text, so its evaluation (quotes from that text) goes with it.
+            $data['touchpoint']['evaluation'] = $data['touchpoint']['redacted'] === true ? null : $entry->evaluation;
         }
 
         return $data;

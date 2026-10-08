@@ -114,6 +114,23 @@ final class MailAdminApiTest extends TestCase
         $this->assertSame(0, UnknownSender::query()->count());
     }
 
+    /**
+     * The domain of a new rule is swept out of the queue with a LIKE pattern. "_" and "%" in the domain are
+     * literal characters, not wildcards: assigning "@a_b.example.test" must not drop axb.example.test.
+     */
+    public function test_domain_sweep_treats_like_wildcards_literally(): void
+    {
+        $target = $this->unknown('notify@a_b.example.test', 3);
+        $innocent = $this->unknown('notify@axb.example.test', 2);
+        $alsoInnocent = $this->unknown('notify@a-b.example.test', 1);
+
+        $this->actingAs($this->superadmin)->postJson('/api/mail/unknown-senders/'.$target->id.'/assign', [
+            'kind' => 'job_board', 'scope' => 'domain',
+        ])->assertCreated()->assertJsonPath('data.pattern', '@a_b.example.test');
+
+        $this->assertSame([$innocent->id, $alsoInnocent->id], UnknownSender::query()->orderBy('id')->pluck('id')->all());
+    }
+
     public function test_dismiss_and_status_and_messages(): void
     {
         $sender = $this->unknown('someone@example.test', 1);

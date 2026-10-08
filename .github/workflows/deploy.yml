@@ -116,13 +116,14 @@ jobs:
         working-directory: backend
         env:
           VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_API }}"
+          # Vercel CLI reads VERCEL_TOKEN from env: the token never appears in argv (process list, xtrace).
           VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}"
         run: |
           PROD=$([ "$TARGET" = production ] && echo --prod || true)
-          vercel pull --yes --environment=$TARGET --token="$VERCEL_TOKEN"
+          vercel pull --yes --environment=$TARGET
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-          vercel build $PROD --token="$VERCEL_TOKEN"
-          url=$(vercel deploy --prebuilt $PROD --token="$VERCEL_TOKEN")
+          vercel build $PROD
+          url=$(vercel deploy --prebuilt $PROD)
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: API — migrations via /api/ops/migrate (DB credentials stay in Vercel)
@@ -146,11 +147,12 @@ jobs:
         working-directory: frontend
         env:
           VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID_WEB }}"
+          # Vercel CLI reads VERCEL_TOKEN from env: the token never appears in argv (process list, xtrace).
           VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}"
           API_URL: "${{ steps.api.outputs.url }}"
         run: |
           PROD=$([ "$TARGET" = production ] && echo --prod || true)
-          vercel pull --yes --environment=$TARGET --token="$VERCEL_TOKEN"
+          vercel pull --yes --environment=$TARGET
           # Preview web must talk to the preview API of the same PR, not to prod: rewrite the /api and /sanctum
           # destinations in vercel.json (only in this CI checkout; the committed file keeps the prod URL).
           # Production web keeps the committed prod API URL, so a web-only deploy (API step skipped) needs no API_URL.
@@ -172,8 +174,8 @@ jobs:
             ' "$API_URL"
             grep -c "$API_URL" vercel.json
           fi
-          vercel build $PROD --token="$VERCEL_TOKEN"
-          url=$(vercel deploy --prebuilt $PROD --token="$VERCEL_TOKEN")
+          vercel build $PROD
+          url=$(vercel deploy --prebuilt $PROD)
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Smoke — /api/health

@@ -6,7 +6,7 @@ namespace App\Modules\Pulse\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-/** GET /api/pulse/mood/me?days=30, /api/pulse/mood/team?weeks=8&branch_id=&department_id= (filters: admins). */
+/** GET /api/pulse/mood/me?days=30, /api/pulse/mood/team?weeks=8&branch_id=&department_id= (filters: admins only, 403 for managers). */
 final class MoodReportRequest extends FormRequest
 {
     /** @return array<string, mixed> */

@@ -103,12 +103,38 @@
 - только `https`, без логина/пароля в URL и без пробелов (иначе `invalid_url`); поля типа `url` и в API принимают только https;
 - порт только 443, другие — лишь если checker явно их разрешил (иначе `blocked_port`);
 - хост резолвится (`Contracts/HostResolver`, реализация `Support/DnsHostResolver`: `gethostbynamel` + AAAA),
-  **каждый** адрес должен быть публичным: запрещены loopback (127/8, `::1`), RFC1918 (10/8, 172.16/12, 192.168/16),
-  link-local 169.254/16 (включая метаданные облака 169.254.169.254), `fc00::/7`, `fe80::/10`, IPv4-mapped IPv6,
-  0/8 и прочие зарезервированные диапазоны (иначе `blocked_host`); не резолвится — `unresolved_host`;
+  **каждый** адрес должен быть публичным (иначе `blocked_host`); не резолвится — `unresolved_host`;
 - HTTP-клиент чекеров работает с `allow_redirects: false`, чтобы публичный хост не перенаправил запрос внутрь.
-Ограничение: DNS-rebinding между проверкой и запросом не исключён (резолв делается до запроса).
 В тестах `HostResolver` подменяется `tests/Support/FakeHostResolver`.
+
+**«Публичный» — это явный список CIDR (`BLOCKED_V4`/`BLOCKED_V6`), а не только флаги `FILTER_FLAG_NO_PRIV_RANGE|NO_RES_RANGE`.**
+Эти флаги пропускают CGNAT, benchmark-диапазон, multicast и почти весь спец-IPv6, поэтому запрещены явно:
+
+| Семейство | Запрещённые диапазоны |
+|---|---|
+| IPv4 | `0.0.0.0/8`, `10/8`, `100.64/10` (CGNAT), `127/8`, `169.254/16` (включая метаданные облака 169.254.169.254), `172.16/12`, `192.0.0/24`, `192.0.2/24`, `192.168/16`, `198.18/15` (benchmark), `198.51.100/24`, `203.0.113/24`, `224/4` (multicast), `240/4` (включая broadcast) |
+| IPv6 | `::/128`, `::1/128`, `100::/64`, `2001::/32` (Teredo), `2001:db8::/32`, `fc00::/7`, `fe80::/10`, `fec0::/10`, `ff00::/8` |
+| IPv6 c вложенным IPv4 | 6to4 `2002::/16`, NAT64 `64:ff9b::/96`, IPv4-compatible `::/96`, IPv4-mapped `::ffff:0:0/96` — вложенный IPv4 извлекается и проверяется по таблице IPv4, поэтому `[::ffff:169.254.169.254]` и `[2002:a9fe:a9fe::1]` блокируются, а `[::ffff:93.184.216.34]` остаётся доступным |
+
+### Пиннинг соединения против DNS-rebinding (`Support/PinnedTarget`)
+`OutboundUrlGuard::inspect()` возвращает `PinnedTarget` — код ошибки **или** хост, порт и те самые IP, которые
+прошли проверку. Вызывающий код прибивает соединение к этим адресам (`CURLOPT_RESOLVE` через
+`PinnedTarget::curlResolve()`, IPv6 в скобках), а не резолвит имя второй раз (хост-литерал IP — `https://[2606:4700::1]/`,
+`https://93.184.216.34/` — не пиннится: DNS нет, а `parse_url` оставляет скобки IPv6, которые curl не принял бы как имя): иначе между проверкой и запросом
+второй DNS-ответ мог бы увести запрос на внутренний адрес. URL остаётся с именем хоста, поэтому заголовок `Host`,
+SNI и проверка сертификата не меняются; редиректы остаются выключенными.
+
+`PinnedTarget::httpOptions()` отдаёт готовые опции HTTP-клиента (`allow_redirects: false` + `CURLOPT_RESOLVE` +
+`CURLOPT_FOLLOWLOCATION: false`), поэтому вызывающий код пишет `->withOptions($target->httpOptions())` вместо
+прежнего `['allow_redirects' => false]`. **На пиннинг переведены все исходящие вызовы**: чекеры
+`AiBrokerDefinition`, `TelegramBusinessDefinition`, `ViberDefinition`, `WhatsappCloudDefinition`,
+`Channels\Support\ProviderHttp`, `Ai\Services\AiBrokerProvider` и `OpenRouterProvider`,
+`Workflows\Executors\WebhookExecutor`. `check()` остаётся тонкой обёрткой (`inspect()->error`) для проверок без
+последующего запроса. Тесты пиннинга — по одному на модуль:
+`MessengerChecksTest::test_check_pins_the_connection_to_the_approved_ips` (Integrations),
+`MessagesApiTest::test_outbound_provider_call_pins_the_connection_to_the_approved_ips` (Channels),
+`AiServiceTest::test_broker_call_pins_the_connection_to_the_approved_ips` (Ai),
+`ExecutorsTest::test_webhook_pins_the_connection_to_the_ips_the_guard_approved` (Workflows).
 
 ### Кто использует интеграции
 | Интеграция | Потребитель | Что берёт |
@@ -123,6 +149,8 @@
 содержит Telegram-токен (`bot\d+:[A-Za-z0-9_-]+`), значение `Bearer …` или любой секрет, расшифрованный или
 записанный хранилищем в этом запросе (`EloquentSecretVault` сообщает их скрабберу), в лог пишется одна строка с
 заменой на `[redacted]` без стека, а стандартный отчёт отменяется. Исключения без секретов логируются как обычно.
+Личные токены Sanctum (расширение, MCP) имеют префикс `sinhrm_` (`config/sanctum.php`, `SANCTUM_TOKEN_PREFIX`),
+скраббер распознаёт и их (`(?:\d+\|)?sinhrm_…`). Выданные до префикса токены продолжают работать до истечения.
 
 ### Доступ
 Gate `manage-integrations` (`Providers\IntegrationsServiceProvider::MANAGE_INTEGRATIONS`): активный суперадмин.

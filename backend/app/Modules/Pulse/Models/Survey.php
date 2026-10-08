@@ -34,6 +34,15 @@ final class Survey extends Model
     /** @var array<string, mixed> */
     protected $attributes = ['active' => true];
 
+    /**
+     * A lifecycle survey (hire_30 / hire_90 / exit): its waves are personal — one known subject, read by HR only,
+     * never broken down and never the other side of a comparison. It takes no manual (team) waves.
+     */
+    public function isLifecycle(): bool
+    {
+        return $this->type === SurveyType::Lifecycle || $this->lifecycle_trigger !== null;
+    }
+
     /** @return HasMany<SurveyWave, $this> */
     public function waves(): HasMany
     {

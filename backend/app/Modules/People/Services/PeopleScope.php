@@ -6,6 +6,7 @@ namespace App\Modules\People\Services;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\DTO\PeopleContext;
@@ -39,6 +40,23 @@ final readonly class PeopleScope implements PeopleAccess
         $self = $this->employeeOf($user);
         $subtree = $self === null ? [] : ReportingTree::descendants($this->employees->managerMap(), $self->id);
 
-        return new PeopleContext($user->id, $this->isAdmin($user), $self?->id, $subtree);
+        return new PeopleContext($user->id, $this->isAdmin($user), $self?->id, $subtree, $self !== null && $this->isSoleAdministrator($user));
+    }
+
+    /**
+     * Break-glass for self-decisions (PeopleContext::canDecideOrBreakGlass): the user acts as superadmin ("Працювати
+     * як" respected) and no other active superadmin/admin could decide in their place.
+     */
+    private function isSoleAdministrator(User $user): bool
+    {
+        if (! $user->hasRole(UserRole::Superadmin->value)) {
+            return false;
+        }
+
+        return ! User::query()
+            ->role([UserRole::Superadmin->value, UserRole::Admin->value])
+            ->where('status', UserStatus::Active->value)
+            ->whereKeyNot($user->id)
+            ->exists();
     }
 }

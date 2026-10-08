@@ -49,9 +49,10 @@ final class BalanceController
 
     public function adjust(AdjustBalanceRequest $request, EmployeeLookup $employees, LeaveSettingsService $settings): JsonResponse
     {
+        $actor = $this->actor($request);
         $employee = $employees->find($request->integer('employee_id'));
         $type = $settings->findType($request->integer('leave_type_id'));
-        $this->balances->adjust($this->actor($request), $employee, $type, $request->float('delta'), $request->comment());
+        $this->balances->adjust($actor, $this->scope->for($actor), $employee, $type, $request->float('delta'), $request->comment());
 
         return new JsonResponse(['data' => $this->balances->balances($employee, Carbon::now())], 201);
     }

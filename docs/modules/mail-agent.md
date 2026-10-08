@@ -33,6 +33,10 @@
   галочка «Для всього домену» → «Застосувати»: создаётся правило, отправитель (и весь домен) уходит из очереди. Новые
   письма от него дальше обрабатываются по правилу; уже пропущенные письма не перечитываются.
 - **Правила**: `hr@site.ua` — один адрес, `@site.ua` — домен и его поддомены (`@work.ua` покрывает `notify.work.ua`).
+  Созданное доменное правило вычищает из очереди адреса этого домена (`UnknownSenderRepository::deleteDomain`): шаблон
+  LIKE строится через `Core\Support\Database\Like::escape` c `escape '!'`, поэтому `_` и `%` в домене — обычные символы,
+  а не подстановочные (правило `@a_b.example.test` не трогает `axb.example.test`; тест —
+  `MailAdminApiTest::test_domain_sweep_treats_like_wildcards_literally`).
   Точный адрес важнее домена, более длинный домен — важнее короткого. Тип, разбор, счётчик срабатываний, удаление.
 - **Журнал**: последние 50 писем — когда, от кого, тема, результат (ссылка на кандидата или «Вхідні»); новые сверху, заголовки сортируют и фильтруют (дата — диапазон, отправитель и тема — текст, результат — выбор), состояние в адресе ([guides/tables.md](../guides/tables.md)). Открытая вкладка тоже в адресе (`?tab=unknown|rules|log`); ссылка без `tab`, но с параметрами журнала (`?sort=sender`, `?outcome=…`), открывает «Журнал». Открытый фильтр колонки объявляет число показанных строк — «Знайдено: N» (`appTableSortCount` = `rows().length`, с 2026-10-03).
 
@@ -87,7 +91,13 @@
 | ничего не подошло | `unknown_senders` (адрес + тема + подсказка правил) → `unknown`; для отправителя без ответа ШІ — запрос ШІ без ожидания (`ai_status = pending`) |
 
 **Отклик (`job_board`):** парсер правила → `DTO/IncomingApplication {fullName, phone, email, vacancyTitle, vacancyRef,
-cvUrl}`; нет ни телефона, ни e-mail → `parse_failed`. Вакансия ищется по названию: открытая вакансия с **точно таким же
+cvUrl}`; нет ни телефона, ни e-mail → `parse_failed`.
+`cvUrl` показывается рекрутеру кнопкой «CV» в карточке кандидата, а входящее письмо подконтрольно отправителю,
+поэтому ссылка сохраняется **только если её хост** — сайт вакансий, который мы разбираем (`AbstractMailParser::CV_HOSTS`:
+`work.ua`, `robota.ua`, `rabota.ua`, `djinni.co`, `dou.ua`, `linkedin.com` и их поддомены). Сравнивается именно хост
+(`parse_url`), а не подстрока URL, и отбрасываются ссылки с логином/паролем: `https://djinni.co@evil.test/cv/1`,
+`https://work.ua.evil.test/resume/1`, `https://evil.test/download?from=djinni.co` дают `cv_url = null`. Проверка —
+`tests/Unit/MailAgent/MailParsersTest::test_cv_url_is_kept_only_for_known_job_boards`. Вакансия ищется по названию: открытая вакансия с **точно таким же
 названием без учёта регистра**, ровно одна (`VacancyRepository::findOpenByTitle`).
 - Нашлась → `CandidateService::createOrMatch()` (совпадение по телефону/e-mail/Telegram — тот же кандидат; иначе новый,
   источник по парсеру: `work_ua | robota_ua | djinni | other`, способ добавления `added_via = mail`, канал привлечения — по

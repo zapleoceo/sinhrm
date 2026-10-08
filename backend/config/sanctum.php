@@ -68,7 +68,8 @@ return [
     |
     */
 
-    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
+    // "sinhrm_" lets secret scanners (SecretScrubber, GitHub secret scanning custom patterns) recognise a leaked token.
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', 'sinhrm_'),
 
     /*
     |--------------------------------------------------------------------------

@@ -71,11 +71,39 @@
 `PeopleScope::for(User)` один раз на запрос строит контекст: `admin` (активный superadmin/admin/hr_manager — `PeopleScope::isAdmin` → `UserRole::hrStaff()`), `selfId` (запись,
 связанная с пользователем), `subtreeIds` — все сотрудники ниже по `manager_id` (обход в `Support/ReportingTree`,
 устойчив к циклам в данных). Флаги по сотруднику: `job` (admin, сам, руководитель выше), `pii` (admin, сам),
-`decide` (admin или руководитель выше; своё не решает никто, кроме админа), `manage` (admin), `terminate`
+`decide` (admin или руководитель выше, **но никогда не своя запись** — `PeopleContext::canDecideFor`), `manage` (admin), `terminate`
 (admin или руководитель выше, но не сам себя — `PeopleContext::canTerminate`). Ответ профиля
 (`Http/Resources/EmployeeResource`) **не содержит** скрытых уровней вовсе (ключей нет), а `access` говорит интерфейсу,
 какие вкладки показывать. Gate `people-manage` (`Providers/PeopleServiceProvider::MANAGE`) — запись сотрудников.
 Эти же правила использует модуль TimeOff ([timeoff.md](timeoff.md)).
+
+#### Разделение обязанностей: своё не решаем (2026-10-08)
+`PeopleContext::canDecideOrBreakGlass` **исключает собственную запись**: нельзя одобрить свою заявку на
+изменение данных, вписать себе компенсацию (`CompensationService::add` → 403 `forbidden`), скорректировать свой баланс
+отпусков (TimeOff `BalanceService::adjust` → 403) и одобрить свою заявку на отпуск; своя заявка не попадает ни в
+очередь согласований, ни в счётчик бейджа. Решает второй человек. Первичные данные HR заносит напрямую
+(`PATCH /api/people/{id}`, gate `people-manage`), через очередь согласований они не идут.
+
+**Break-glass для единственного администратора — решение по умолчанию, владелец может изменить (ревью #183).** Чтобы единственный администратор не застревал, своё решает только суперадмин и только если в системе нет другого
+активного superadmin/admin (`PeopleScope::for` → `PeopleContext::$breakGlass`; учитывается «Працювати як»).
+Каждое такое действие пишется в «Журнал дій» на запись сотрудника с `meta.self_decision = true`,
+`meta.operation` и `meta.ref_id` (`People/Support/SelfDecisionAudit`), плюс предупреждение `people.self_decision` в лог.
+hr_manager — 403 всегда; admin и суперадмин при наличии второго активного superadmin/admin — 403.
+Тест: `tests/Feature/People/BreakGlassSelfDecisionTest.php`.
+
+`canDecideFor` осталось ролевым правилом без запрета «себе» (админ или руководитель выше): им пользуются табели
+(решение владельца — согласование табеля регулируется ролями, [time.md](time.md)) и подача заявки на отпуск за другого.
+Там, где действие над собой законно и ничего себе не присуждает, используется `PeopleContext::hasAuthorityOver`:
+отмена собственного отпуска остаётся доступной.
+
+#### Нельзя привязать или уволить более сильную учётку (2026-10-08)
+Запись сотрудника полностью подконтрольна HR (правка + увольнение блокирует связанный логин), поэтому она не может
+нести логин сильнее того, кто её редактирует. Порядок ролей — `Support/RoleRank` (superadmin 4, admin 3, hr_manager 2,
+recruiter 1, остальные 0; у действующего берётся роль, с которой он работает сейчас, у цели — все её назначенные роли):
+- `POST/PATCH /api/people` с `user_id` более сильной учётки → 422 `user_outranks_actor` (`SaveEmployeeRequest`);
+- `POST /api/people/{id}/terminate` для сотрудника, связанного с более сильной учёткой → 403 `forbidden`
+  (`TerminationService::terminate`), иначе HR-менеджер мог бы заблокировать админа или суперадмина.
+Отмена увольнения и восстановление ограничений не получают: они доступ не отнимают.
 
 ### Эндпоинты
 | Метод и путь | Кто | Параметры / тело | Ответ |
@@ -90,11 +118,14 @@
 | `GET /api/people/org-chart` | любой активный | `branch_id?`, `root_id?`, `mine=1` (своя ветка) | лес `{id, full_name, avatar_url, position, department, branch, reports_count, reports[]}` без уволенных; только уровень «справочник» |
 | `GET /api/me/employee` | любой активный | — | свой профиль; нет связи → 404 `no_employee` |
 | `POST /api/me/employee/change-requests` | сам | `{changes: {phone?, personal_email?, address?, emergency_contact?}, comment?}`; другой ключ → 422 | 201 |
-| `GET /api/people/change-requests` | любой активный | `status?, employee_id?, perPage` | admin — все; остальные — свои и людей ниже себя; `can_decide` в строке |
-| `POST /api/people/change-requests/{id}/approve\|reject` | admin или руководитель выше | `{comment?}` | 200; чужой → 403; уже решён → 409 `already_decided`. Одобрение применяет значения (белый список проверяется ещё раз при применении) |
+| `GET /api/people/change-requests` | любой активный | `status?, employee_id?, perPage` | admin — все; остальные — свои и людей ниже себя; `can_decide` в строке. Значения уровня PII (`personal_email`, `address`, `emergency_contact`) видят только admin и сам сотрудник; руководителю они из `changes` убраны, их имена — в `hidden_changes` (`phone` — уровень «справочник», виден всегда) |
+| `POST /api/people/change-requests/{id}/approve\|reject` | admin или руководитель выше, **не автор заявки** | `{comment?}` | 200; чужой или своя заявка → 403 `forbidden` (своя — кроме break-glass единственного суперадмина, см. выше); уже решён → 409 `already_decided`. Одобрение применяет значения (белый список проверяется ещё раз при применении) |
 | `POST /api/applications/{id}/hire` | кто может двигать заявку (`ApplicationPolicy::move` → `RecruitingScope::canWorkVacancy`: superadmin, admin, recruiter — в своей области филиалов — или нанимающий менеджер вакансии; `hr_manager` сам по себе нанять не может) | `{hired_at?}` (`Y-m-d`, по умолч. сегодня) | 201 `{data: employee, meta: {created: true}}`; уже есть сотрудник для заявки/кандидата → 200 `created: false`; заявка не на этапе найма → 422 `not_hired` |
 
-Найм (`Services/HireService`): ФИО и телефон — из кандидата, e-mail кандидата → `personal_email` (рабочий задаёт админ),
+Найм (`Services/HireService`): ФИО — из кандидата, e-mail кандидата → `personal_email`, телефон кандидата →
+`custom_fields.personal_phone` (оба — уровень PII; справочные `work_email`/`phone` задаёт админ позже, личный телефон
+в общий справочник не попадает; в профиле HR/админ и сам сотрудник видят его строкой «Особистий телефон»
+со ссылкой `tel:`, остальные `custom_fields` выводятся как раньше),
 филиал/отдел/должность — из вакансии, `employment_type = full_time`. Гонка двух кликов ловится уникальным индексом и
 возвращает существующего. `create()` тоже проверяет цикл руководителя (сейчас он невозможен у новой записи, проверка —
 на случай будущего переноса поддерева). Удаления нет (405): людей увольняют.
@@ -271,8 +302,14 @@
 | `profile/` | `/people/:id`, `/me` — вкладки по `access` (`ProfileStore`, `profileTabs`), диалоги: сотрудник, увольнение, запрос на изменение |
 | `org-chart/` | `/people/org-chart` — раскладка `d3-hierarchy` (tidy tree), своя отрисовка HTML+SVG; чистая геометрия/поиск/фильтры/экспорт в `org-layout.ts` (спеки), панель человека, пульт управления и легенда |
 | `hire.action.ts` | «Створити співробітника» с доски и карточки кандидата, снекбар «Відкрити» |
+| `hidden-changes.ts` | `<app-hidden-changes>` — строка «Приховано: Адреса, Особистий e-mail» по `hidden_changes` заявки (ярлыки — из `people.fields.*`); руководитель решает заявку подчинённого, не читая личных значений. Используется во вкладке «Зміни» профиля и в «Погодження» (`features/timeoff/approvals`); пустой список — ничего не рисует (`hidden-changes.spec.ts`) |
 
 Строки — `people.*` в `public/i18n/{uk,ru,en}.json`.
+
+`peopleErrorKey` переводит и код из тела `{code}`, и правило поля из 422 Laravel
+(`errors.user_id = ['user_outranks_actor']` — попытка связать запись с аккаунтом сильнее своего):
+ключ `people.errors.user_outranks_actor`; неизвестное правило остаётся общим «Перевірте поля»
+(`people.spec.ts`).
 
 **Вид — рестайл C «Маршрут» (2026-10-02, [design-direction.md §4.2](../architecture/design-direction.md)).**
 Только стили и классы в шаблонах; функции, подписи, кнопки и поля прежние (инвентарь ui-parity тот же).
@@ -306,6 +343,8 @@
   (те же правила, аудит-обсервер). `export` → `text/csv` (справочный и рабочий уровень, без PII и зарплаты).
 - **Компенсация** (`employee_compensations`): сумма, валюта UAH/USD/EUR, период month/hour, дата начала действия, причина.
   Текущая — последняя запись с `effective_on ≤ сегодня`. `GET|POST /api/people/{id}/compensation` — только HR (gate `people-manage`);
+  `POST` **на собственную запись → 403 `forbidden`** (разделение обязанностей, см. выше): свою зарплату не вписывает
+  никто, кроме break-glass единственного суперадмина (с записью `self_decision` в журнале); чтение своей истории через `GET` остаётся.
   сотрудник видит свою только для чтения: `GET /api/me/employee/compensation`, вкладка «Компенсація» в «Мій профіль».
   Аудит: сумма и причина маскируются (`employee_compensation` в белом списке только ids, валюта, период, дата).
   Privacy: `CompensationPersonalData` — экспорт всех записей; при удалении данных записи сохраняются как трудовой документ (как подписанные документы).

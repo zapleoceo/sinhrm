@@ -65,9 +65,14 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => 'InnoDB',
+            // Security audit 2026-10: a QueryException must not carry the bound values (names, notes, salaries)
+            // into the error log / error_events — the SQL text keeps "?" placeholders.
+            'mask_bindings_in_exception_messages' => true,
+            // TLS: with a CA the server certificate is verified too (no silent MITM-able encryption).
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+                Mysql::ATTR_SSL_VERIFY_SERVER_CERT => env('MYSQL_ATTR_SSL_CA') ? true : null,
+            ], static fn (mixed $v): bool => $v !== null && $v !== '') : [],
         ],
 
         'mariadb' => [

@@ -35,8 +35,8 @@ final class SecretScrubber
         $text = str_replace($known, self::REDACTED, $text);
 
         return (string) preg_replace(
-            ['/bot\d+:[A-Za-z0-9_-]+/', '/Bearer\s+[A-Za-z0-9._~+\/=-]+/i'],
-            ['bot'.self::REDACTED, 'Bearer '.self::REDACTED],
+            ['/bot\d+:[A-Za-z0-9_-]+/', '/Bearer\s+[A-Za-z0-9._~+\/=-]+/i', '/\b(?:\d+\|)?sinhrm_[A-Za-z0-9]{20,}/'],
+            ['bot'.self::REDACTED, 'Bearer '.self::REDACTED, self::REDACTED],
             $text,
         );
     }

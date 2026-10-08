@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
+use App\Modules\People\Support\SelfDecisionAudit;
 use App\Modules\TimeOff\Contracts\LeaveRequestRepository;
 use App\Modules\TimeOff\Contracts\LeaveSettingsRepository;
 use App\Modules\TimeOff\Contracts\LedgerRepository;
@@ -46,6 +47,7 @@ final readonly class LeaveRequestService
         private LeaveNotifications $notifications,
         private LeaveCalendarSync $calendar,
         private LeaveHandoverTasks $handover,
+        private SelfDecisionAudit $selfDecisions,
     ) {}
 
     /** @return LengthAwarePaginator<int, LeaveRequest> */
@@ -152,6 +154,7 @@ final readonly class LeaveRequestService
             $this->assertBalance($request->employee, $request->leaveType, $request->daysValue(), $request->balance_override, $request->id);
             $this->applyApproval($request, $request->leaveType, $actor, $comment);
         });
+        $this->selfDecisions->record($ctx, $request->employee_id, 'timeoff.request_approved', $request->id);
         $this->log->info('timeoff.request_approved', ['id' => $request->id, 'by' => $actor->id]);
         $fresh = $this->find($request->id);
         $this->calendar->add($fresh);
@@ -174,6 +177,7 @@ final readonly class LeaveRequestService
         if (! $done) {
             throw TimeOffException::invalidStatus();
         }
+        $this->selfDecisions->record($ctx, $request->employee_id, 'timeoff.request_rejected', $request->id);
         $this->log->info('timeoff.request_rejected', ['id' => $request->id, 'by' => $actor->id]);
         $fresh = $this->find($request->id);
         $this->handover->close($fresh);
@@ -194,7 +198,9 @@ final readonly class LeaveRequestService
         if (! in_array($status, [LeaveRequestStatus::Pending, LeaveRequestStatus::Approved], true)) {
             throw TimeOffException::invalidStatus();
         }
-        $decider = $ctx->canDecideFor($request->employee_id);
+        // Cancelling is not a decision in favour of oneself (the days go back to the ledger), so HR may cancel their
+        // own leave at any time — hasAuthorityOver, not canDecideOrBreakGlass.
+        $decider = $ctx->hasAuthorityOver($request->employee_id);
         $ownFuture = $ctx->isSelf($request->employee_id)
             && ($status === LeaveRequestStatus::Pending || $request->starts_on->gt($today));
         if (! $decider && ! $ownFuture) {
@@ -226,7 +232,8 @@ final readonly class LeaveRequestService
     }
 
     /**
-     * Pending requests the user may decide (admin: all; manager: everyone below), own excluded.
+     * Pending requests the user may decide (admin: all; manager: everyone below). Own requests are excluded —
+     * nobody approves their own leave — except break-glass (sole superadmin, PeopleContext::canDecideOrBreakGlass).
      *
      * @return Collection<int, LeaveRequest>
      */
@@ -236,7 +243,7 @@ final readonly class LeaveRequestService
             return new Collection;
         }
 
-        return $this->requests->pendingFor($ctx->admin ? null : $ctx->subtreeIds, $ctx->admin ? null : $ctx->selfId, $limit);
+        return $this->requests->pendingFor($ctx->admin ? null : $ctx->subtreeIds, $this->excludedSelf($ctx), $limit);
     }
 
     /** How many approvals() would list without the limit (sidebar counter). */
@@ -246,7 +253,13 @@ final readonly class LeaveRequestService
             return 0;
         }
 
-        return $this->requests->countPendingFor($ctx->admin ? null : $ctx->subtreeIds, $ctx->admin ? null : $ctx->selfId);
+        return $this->requests->countPendingFor($ctx->admin ? null : $ctx->subtreeIds, $this->excludedSelf($ctx));
+    }
+
+    /** Own employee id kept out of the approvals inbox; none for break-glass (they may decide their own). */
+    private function excludedSelf(PeopleContext $ctx): ?int
+    {
+        return $ctx->selfId !== null && $ctx->isSelfDecision($ctx->selfId) ? null : $ctx->selfId;
     }
 
     public function days(Employee $employee, Carbon $from, Carbon $to, HalfDay $halfDay): float
@@ -289,7 +302,7 @@ final readonly class LeaveRequestService
 
     private function assertCanDecide(PeopleContext $ctx, LeaveRequest $request): void
     {
-        if (! $ctx->canDecideFor($request->employee_id)) {
+        if (! $ctx->canDecideOrBreakGlass($request->employee_id)) {
             throw TimeOffException::forbidden();
         }
     }

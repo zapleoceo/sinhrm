@@ -29,6 +29,7 @@ import { AuditLoader } from '../../audit/audit.model';
 import { AuditService } from '../../audit/audit.service';
 import { InterviewersPanel } from './interviewers-panel';
 import { OfferPanel } from './offer-panel';
+import { TouchBody } from './touch-body';
 import { TouchComposer } from './touch-composer';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { PrivacyActions } from '../../privacy/privacy-actions';
@@ -54,6 +55,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
     MatTooltipModule,
     TranslocoPipe,
     TouchComposer,
+    TouchBody,
     EvaluationBadge,
     TasksWidget,
     ScreeningPanel,

@@ -6,6 +6,7 @@ namespace Tests\Feature\Pulse;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Directory\Models\Department;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Services\ScheduledTerminationJob;
 use App\Modules\Pulse\Models\Survey;
@@ -195,6 +196,68 @@ final class ExitSurveyScheduleTest extends TestCase
             ->assertJsonPath('data.0.employee_id', $this->org['worker']->id)
             ->assertJsonPath('data.0.entered_by_user_id', null)
             ->assertJsonPath('data.0.answers.liked', 'Team');
+    }
+
+    /**
+     * A manual (team) wave of the exit survey makes the manager a reader of that survey; "compare with the exit wave"
+     * then prints the leaving person's own answers as the previous value. Lifecycle answers never leave HR.
+     */
+    public function test_a_manager_cannot_read_exit_answers_through_a_comparison(): void
+    {
+        $dept = Department::factory()->create(['name' => 'Sales']);
+        Employee::query()->whereIn('id', [$this->org['lead']->id, $this->org['worker']->id, $this->org['peer']->id])
+            ->update(['department_id' => $dept->id]);
+        $this->terminate($this->org['worker'], '2026-07-20');
+        $exitWave = SurveyWave::query()->where('subject_employee_id', $this->org['worker']->id)->sole();
+        $this->answer($exitWave, $this->org['worker']->refresh(), $this->answers);
+        $this->actingAs($this->hr)->postJson("/api/pulse/waves/{$exitWave->id}/close")->assertOk();
+
+        // A manual wave of the same (lifecycle) survey, as it could exist from before the rule below.
+        $manual = $this->wave($this->exit, [
+            'anonymous' => false, 'min_group_size' => 1,
+            'audience' => ['branch_ids' => [], 'department_ids' => [$dept->id]],
+        ]);
+        // A different rating, so a leaked "previous" is recognisably the leaving person's own 4.
+        $this->answer($manual, $this->org['peer']->refresh(), ['reason' => 1, 'liked' => 'Pay', 'disliked' => '', 'manager' => 2, 'return' => 0]);
+        $this->actingAs($this->hr)->postJson("/api/pulse/waves/{$manual->id}/close")->assertOk();
+
+        $manager = $this->userOf($this->org['lead']);
+        $this->actingAs($manager)->getJson("/api/pulse/waves/{$manual->id}/compare?with={$exitWave->id}")->assertForbidden();
+        $this->actingAs($manager)->getJson("/api/pulse/waves/{$manual->id}/results")->assertForbidden();
+
+        // Even for HR a lifecycle wave is never the other side of a comparison.
+        $data = $this->actingAs($this->hr)->getJson("/api/pulse/waves/{$manual->id}/compare?with={$exitWave->id}")
+            ->assertOk()->json('data');
+        $this->assertIsArray($data);
+        $this->assertNull($data['previous']);
+        foreach ($data['rows'] as $row) {
+            foreach ($row['questions'] as $cell) {
+                $this->assertNull($cell['previous']);
+                $this->assertNull($cell['delta']);
+            }
+        }
+    }
+
+    public function test_a_lifecycle_survey_takes_no_manual_waves_and_no_survey_becomes_one_after_its_waves(): void
+    {
+        $wave = [
+            'starts_at' => '2026-07-14 00:00:00', 'ends_at' => '2026-07-18 00:00:00', 'schedule' => 'once',
+            'audience' => ['branch_ids' => [], 'department_ids' => []], 'anonymous' => false, 'min_group_size' => 1,
+        ];
+        $this->actingAs($this->hr)->postJson("/api/pulse/surveys/{$this->exit->id}/waves", $wave)
+            ->assertStatus(409)->assertJsonPath('code', 'lifecycle_survey');
+
+        $team = $this->survey(['title' => 'Team pulse']);
+        $this->actingAs($this->hr)->postJson("/api/pulse/surveys/{$team->id}/waves", $wave)->assertCreated();
+        $payload = ['title' => 'Team pulse', 'type' => 'lifecycle', 'lifecycle_trigger' => 'exit', 'questions' => $team->questions];
+        $this->actingAs($this->hr)->putJson("/api/pulse/surveys/{$team->id}", $payload)
+            ->assertStatus(409)->assertJsonPath('code', 'has_waves');
+        $this->assertSame('engagement', $team->refresh()->type->value);
+
+        // A survey without waves may still become a lifecycle one.
+        $fresh = $this->survey(['title' => 'Fresh pulse']);
+        $this->actingAs($this->hr)->putJson("/api/pulse/surveys/{$fresh->id}", ['title' => 'Fresh pulse', 'type' => 'lifecycle', 'lifecycle_trigger' => 'exit', 'questions' => $fresh->questions])
+            ->assertOk();
     }
 
     public function test_migration_moves_saved_old_template_surveys_to_five_questions_without_touching_answers(): void

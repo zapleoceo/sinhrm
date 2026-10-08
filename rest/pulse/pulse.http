@@ -65,6 +65,11 @@ GET {{host}}/api/pulse/mood/team
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 
+### GET /api/pulse/mood/team?department_id — срез: только админу (руководителю 403), и только если остаток области 0 или >= min_group
+GET {{host}}/api/pulse/mood/team?weeks=8&department_id=1
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
 ### GET /api/pulse/mood/settings — pulse.mood.settings
 GET {{host}}/api/pulse/mood/settings
 Accept: application/json

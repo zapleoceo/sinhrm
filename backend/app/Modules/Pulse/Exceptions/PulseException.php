@@ -60,6 +60,18 @@ final class PulseException extends BusinessRuleException
         return new self('has_responses', 409);
     }
 
+    /** A lifecycle survey runs personal waves only: a manual (team) wave of it would make its answers readable as a team. */
+    public static function lifecycleSurvey(): self
+    {
+        return new self('lifecycle_survey', 409);
+    }
+
+    /** A survey that already has waves cannot become a lifecycle one (its team releases would turn personal). */
+    public static function hasWaves(): self
+    {
+        return new self('has_waves', 409);
+    }
+
     /** The minimum group of a wave can only be raised (lowering would reveal groups hidden so far). */
     public static function minGroupLower(): self
     {

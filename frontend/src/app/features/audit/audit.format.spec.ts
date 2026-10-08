@@ -19,7 +19,7 @@ describe('auditEntityLink', () => {
   });
 
   it('returns null for entities without a page', () => {
-    for (const t of ['ai_prompt_version', 'leave_request', 'document', 'hiring_request', 'hiring_approval', 'workflow_template', 'x']) {
+    for (const t of ['ai_prompt_version', 'leave_request', 'document', 'hiring_request', 'hiring_approval', 'workflow_template', 'module_setting', 'x']) {
       expect(auditEntityLink(e(t))).toBeNull();
     }
   });

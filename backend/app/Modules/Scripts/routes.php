@@ -10,15 +10,18 @@ use App\Modules\Scripts\Http\Controllers\TaskController;
 use App\Modules\Scripts\Providers\ScriptsServiceProvider;
 use Illuminate\Support\Facades\Route;
 
-// /api/* of the Scripts module. Reading: any active user; script changes: gate scripts-manage (superadmin, admin).
+// /api/* of the Scripts module. Reading: any active user; script changes and the AI preview: gate scripts-manage
+// (superadmin, admin).
 // No DELETE: scripts are archived, versions are immutable.
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('scripts', [ScriptController::class, 'index'])->name('scripts.index');
     Route::get('scripts/{script}', [ScriptController::class, 'show'])->whereNumber('script')->name('scripts.show');
     Route::get('scripts/{script}/versions', [ScriptController::class, 'versions'])->whereNumber('script')->name('scripts.versions');
-    Route::post('scripts/{script}/test', [ScriptController::class, 'test'])->whereNumber('script')->name('scripts.test');
-
     Route::middleware('can:'.ScriptsServiceProvider::MANAGE)->group(function (): void {
+        // Preview spends the shared AI budget, so it stays with the script editor (the only caller is the
+        // admin-only editor page) and is capped per user on top of the gate.
+        Route::post('scripts/{script}/test', [ScriptController::class, 'test'])
+            ->whereNumber('script')->middleware('throttle:10,1')->name('scripts.test');
         Route::post('scripts', [ScriptController::class, 'store'])->name('scripts.store');
         Route::patch('scripts/{script}', [ScriptController::class, 'update'])->whereNumber('script')->name('scripts.update');
         Route::put('scripts/{script}/draft', [ScriptController::class, 'saveDraft'])->whereNumber('script')->name('scripts.draft');
