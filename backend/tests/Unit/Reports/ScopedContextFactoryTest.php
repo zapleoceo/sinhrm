@@ -25,7 +25,7 @@ final class ScopedContextFactoryTest extends TestCase
         $this->app->instance(PeopleAccess::class, new FakePeopleAccess(admin: false, subtree: [8]));
         /** @var RecruitingAccess&MockInterface $recruiting */
         $recruiting = $this->mock(RecruitingAccess::class);
-        $recruiting->expects('for')->with($user)->andReturn($scope);
+        $recruiting->expects('for')->with($user)->twice()->andReturn($scope);
         $now = Carbon::parse('2026-10-08 09:00:00');
 
         $ctx = $this->app->make(ScopedContextFactory::class)->for($user, $now);
@@ -33,6 +33,11 @@ final class ScopedContextFactoryTest extends TestCase
         $this->assertSame($scope, $ctx->recruiting);
         $this->assertSame([8], $ctx->people->subtreeIds);
         $this->assertFalse($ctx->people->admin);
-        $this->assertSame($now, $ctx->now);
+        // The same moment in the user's zone: "today" of the reports is the Kyiv date.
+        $this->assertTrue($now->equalTo($ctx->now));
+        $this->assertSame('Europe/Kyiv', $ctx->now->getTimezone()->getName());
+        $this->assertSame('UTC', $now->getTimezone()->getName(), 'the input is not changed');
+        $night = $this->app->make(ScopedContextFactory::class)->for($user, Carbon::parse('2026-12-31 22:30:00'));
+        $this->assertSame('2027-01-01', $night->now->toDateString());
     }
 }
