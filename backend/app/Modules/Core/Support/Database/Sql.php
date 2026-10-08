@@ -57,7 +57,7 @@ final class Sql
     /**
      * WHERE $expression contains $needle, case-insensitively, wildcards in $needle literal — replaces ILIKE.
      * lower() on both sides behaves the same on PostgreSQL, MySQL (the _ci collation already ignores case) and SQLite.
-     * Known divergence (ADR 0010): on MySQL (utf8mb4_0900_ai_ci) the search also ignores diacritics (й = и, é = e),
+     * Known divergence (ADR 0010): on MySQL (utf8mb4_0900_ai_ci) the search also ignores Latin diacritics (é = e; Cyrillic й is not folded into и),
      * on PostgreSQL only case — MySQL finds more.
      * $asText casts the column to a string type first (numbers, dates), per the query's driver.
      *

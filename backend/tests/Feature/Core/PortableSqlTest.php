@@ -69,7 +69,7 @@ final class PortableSqlTest extends TestCase
     }
 
     /**
-     * Known divergence (ADR 0010): MySQL utf8mb4_0900_ai_ci ignores diacritics (й = и, é = e), PostgreSQL ignores only case.
+     * Known divergence (ADR 0010): MySQL utf8mb4_0900_ai_ci ignores Latin diacritics (é = e), PostgreSQL ignores only case; Cyrillic й is not folded into и on either (verified in CI).
      * The test pins it so a change of collation or of the helper does not slip by unnoticed.
      */
     public function test_contains_diacritics_known_divergence_mysql_is_wider(): void
@@ -84,7 +84,7 @@ final class PortableSqlTest extends TestCase
         $mysql = in_array(DB::getDriverName(), ['mysql', 'mariadb'], true);
 
         $this->assertSame([$user->id], $find('йосип'), 'case-insensitivity is the same on every driver');
-        $this->assertSame($mysql ? [$user->id] : [], $find('иосип'), 'й = и only on MySQL');
+        $this->assertSame([], $find('иосип'), 'й is not folded into и on any driver');
         $this->assertSame($mysql ? [$user->id] : [], $find('resume'), 'é = e only on MySQL');
     }
 
