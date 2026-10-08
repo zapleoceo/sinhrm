@@ -33,9 +33,10 @@ final class DataCopier
 
     /**
      * @param  Closure(string, int, int): void  $progress  table, copied now, rows on source
+     * @param  list<string>  $skip  tables not copied (--without-secrets): emptied by --truncate-target, then left empty
      * @return array<string, int> table => rows copied in this run
      */
-    public function copy(bool $truncate, Closure $progress): array
+    public function copy(bool $truncate, Closure $progress, array $skip = []): array
     {
         $target = $this->dbs->target;
         $packet = (int) $target->selectOne('select @@max_allowed_packet as p')->p;
@@ -49,6 +50,11 @@ final class DataCopier
                 }
             }
             foreach ($this->schema->tables() as $table) {
+                if (in_array($table['name'], $skip, true)) {
+                    $this->resetAutoIncrement($table); // empty table: counter back to 1, as the reconciliation expects
+
+                    continue;
+                }
                 $copied[$table['name']] = $this->copyTable($table, $maxBytes);
                 $progress($table['name'], $copied[$table['name']], $this->dbs->source->table($table['name'])->count());
             }

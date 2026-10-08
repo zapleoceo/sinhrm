@@ -90,10 +90,18 @@ jobs:
             $demo = $app->make(App\Modules\Core\Services\Demo\DemoDataService::class);
             foreach ($demo->steps() as $step) { $demo->run($step); }
             echo "demo steps: ".count($demo->done())."\n";'
-      - name: Feature tests (collisions, idempotency/resume, corruption -> FAIL, APP_KEY, guards)
+      - name: Feature tests (collisions, idempotency/resume, corruption -> FAIL, APP_KEY, --without-secrets, guards)
         run: php artisan test --filter MysqlDataTransferTest
       - name: CLI preflight (read-only)
         run: php artisan db:transfer-to-mysql --preflight --no-interaction
+      - name: CLI preflight --without-secrets with no APP_KEY (test dump mode)
+        run: |
+          if APP_KEY= php artisan db:transfer-to-mysql --preflight --no-interaction; then
+            echo '::error::without --without-secrets a missing APP_KEY must fail the preflight'; exit 1
+          fi
+          APP_KEY= php artisan db:transfer-to-mysql --preflight --without-secrets --no-interaction | tee "$RUNNER_TEMP/without-secrets.txt"
+          grep -q 'Пропущены таблицы (--without-secrets, на цели пусто): integration_secrets' "$RUNNER_TEMP/without-secrets.txt"
+          grep -qx 'Preflight: OK' "$RUNNER_TEMP/without-secrets.txt"
       - name: CLI refuses a write without confirmation
         run: '! php artisan db:transfer-to-mysql --truncate-target --no-interaction'
       - name: CLI transfer + reconciliation
