@@ -127,7 +127,8 @@ CI: `MySQL data transfer` — PostgreSQL 17 + MySQL 8.4; источник миг
 
 1. Удалить `backend/app/Modules/Core/Transfer/`, `backend/tests/Unit/Core/Transfer/`, `backend/tests/Feature/Core/Transfer/`,
    `.github/workflows/mysql-data-transfer.yml`.
-2. В `CoreServiceProvider::register()` убрать строку `$this->app->register(TransferServiceProvider::class)` и её `use`.
+2. В `CoreServiceProvider::register()` убрать строку `$this->app->register(TransferServiceProvider::class)` и её `use`;
+   в `backend/phpstan.neon` убрать `ignoreErrors` для `app/Modules/Core/Transfer/config.php`.
 3. В `scripts/mysql-only-guard.mjs` убрать эти пути из `ALLOWED`; `node scripts/mysql-only-guard.mjs` должен остаться зелёным.
 4. Этот документ свести к истории (или удалить), строку PROD-49 в [production-backlog.md](../product/production-backlog.md) закрыть;
    ветку `legacy/vercel-postgres` и Neon удаляет владелец отдельно.
