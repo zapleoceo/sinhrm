@@ -15,6 +15,7 @@ use App\Modules\GoogleWorkspace\Enums\MailerState;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Touchpoint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
 
@@ -197,5 +198,18 @@ final class OfferApiTest extends TestCase
         $this->actingAs($this->userWith(UserRole::Admin))->postJson('/api/applications/'.$this->application->id.'/offer', [
             'template_id' => $other->id, 'position' => 'Manager', 'salary' => '1',
         ])->assertUnprocessable()->assertJsonPath('message', 'template_not_offer');
+    }
+
+    /** {Сьогодні} in the offer is the Kyiv date: at 00:30 Kyiv (21:30 UTC) it is already the new day (MySQL e2e, round 2). */
+    public function test_offer_today_variable_is_the_kyiv_date_after_midnight(): void
+    {
+        Carbon::setTestNow('2026-10-11 21:30:00'); // 2026-10-12 00:30 in Kyiv
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $template = DocumentTemplate::query()->create(['name' => 'Dated offer', 'category' => 'offer', 'body' => '{ПІБ}, {Сьогодні}']);
+
+        $this->actingAs($this->userWith(UserRole::Recruiter, [$this->branch]))
+            ->postJson('/api/applications/'.$this->application->id.'/offer', ['template_id' => $template->id, 'position' => 'Manager', 'salary' => '1'])
+            ->assertCreated()->assertJsonPath('data.content_md', 'Olena Sample, 12.10.2026');
+        Carbon::setTestNow();
     }
 }

@@ -75,7 +75,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 ### API
 | Метод и путь | Кто | Что |
 |---|---|---|
-| `GET /api/time/week?week=Y-m-d&employee_id=` | сам / руководитель / админ | неделя: дни (график, праздник, отпуск, ожидаемо), записи, итоги, `can.edit`, `can.decide`; без карточки — 422 `no_employee` |
+| `GET /api/time/week?week=Y-m-d&employee_id=` | сам / руководитель / админ | неделя: дни (график, праздник, отпуск, ожидаемо), записи, итоги, `can.edit`, `can.decide`; без карточки — 422 `no_employee`. Без `week` — неделя «сегодня» по Киеву (`UserTime::today()`), как и «Мій тиждень» на главной: в понедельник 00:00–03:00 по Киеву уже новая неделя (2026-10-08, MySQL e2e раунд 2; тест `TimeApiTest::test_default_week_follows_the_kyiv_day`) |
 | `PUT /api/time/week` `{week, employee_id?, entries[]}` | сам, админ | замена записей; даты вне недели → 422 `outside_week`, > 24 ч за день → 422 `day_overflow`, отправленная → 409 `not_editable`; возвращённая становится черновиком |
 | `POST /api/time/week/submit` `{week, employee_id?}` | сам, админ | `draft/rejected → submitted`, иначе 409 |
 | `POST /api/time/timesheets/{id}/decision` `{decision, comment (обязателен при reject)}` | админ (любой табель, включая свой), руководитель выше сотрудника | 403 нет права решать (сотрудник по своему, руководитель по своему или по табелю вне подчинения, но в области видимости), 404 вне области видимости, 409 не `submitted` |

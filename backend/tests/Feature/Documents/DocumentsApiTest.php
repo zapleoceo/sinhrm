@@ -126,6 +126,20 @@ final class DocumentsApiTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors(['title']);
     }
 
+    /** {Сьогодні} is the Kyiv date: at 00:30 Kyiv (21:30 UTC) it is already the new day (MySQL e2e, round 2). */
+    public function test_today_variable_is_the_kyiv_date_after_midnight(): void
+    {
+        Carbon::setTestNow('2026-10-11 21:30:00'); // 2026-10-12 00:30 in Kyiv
+        $admin = $this->login(UserRole::Admin);
+        $worker = $this->org()['worker'];
+        $template = DocumentTemplate::query()->create(['name' => 'Today', 'category' => 'orders', 'body' => 'Дата: {Сьогодні}']);
+
+        $this->actingAs($admin)->postJson('/api/documents', ['employee_id' => $worker->id, 'template_id' => $template->id])
+            ->assertCreated()->assertJsonPath('data.content_md', 'Дата: 12.10.2026');
+        $this->actingAs($admin)->postJson('/api/documents/templates/preview', ['body' => '{Сьогодні}'])
+            ->assertOk()->assertJsonPath('data.markdown', '12.10.2026');
+    }
+
     public function test_access_matrix_and_drafts_hidden_from_non_admins(): void
     {
         $admin = $this->login(UserRole::Admin);

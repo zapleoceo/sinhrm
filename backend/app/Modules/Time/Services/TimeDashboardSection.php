@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Time\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Overview\Contracts\DashboardSection;
 use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\Time\Models\Timesheet;
@@ -35,7 +36,7 @@ final readonly class TimeDashboardSection implements DashboardSection
         $self = $this->scope->employeeOf($user);
         $week = null;
         if ($self !== null) {
-            $s = $this->summaries->week($self, WeekCalculator::weekStart($now));
+            $s = $this->summaries->week($self, WeekCalculator::weekStart(UserTime::today($now)));
             $week = ['week_start' => $s['week_start'], 'status' => $s['status'], 'expected' => $s['expected'], 'worked' => $s['worked'], 'missing' => $s['missing']];
         }
         $approvals = $this->timesheets->approvals($user);

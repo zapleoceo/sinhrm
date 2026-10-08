@@ -17,6 +17,17 @@ export function fieldLabelKey(field: string): string {
   return 'people.fields.' + field.replace(/_(\w)/g, (_m, c: string) => c.toUpperCase());
 }
 
+/**
+ * Rows of the employee's custom fields for the card: without personal_phone (shown as its own PII row), sorted by name.
+ * The order of the stored JSON is not the user's: MySQL normalizes object keys (shorter key first), so without a sort the
+ * rows came back shuffled after a save (MySQL e2e, round 2).
+ */
+export function customFieldRows(fields: Record<string, string | null> | null | undefined): [string, string | null][] {
+  return Object.entries(fields ?? {})
+    .filter(([key]) => key !== 'personal_phone')
+    .sort(([a], [b]) => a.localeCompare(b, 'uk', { numeric: true, sensitivity: 'base' }));
+}
+
 export interface Ref {
   id: number;
   name: string;

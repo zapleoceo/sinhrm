@@ -7,7 +7,7 @@ import { PEOPLE_PAGE_SIZE, peopleQueryFromParams, sameQuery } from './directory/
 import { PeopleStore } from './directory/people.store';
 import { countNodes, expandedToDepth, filterTree, initials } from './org-tree';
 import { canManagePeople } from './people.access';
-import { Employee, OrgNode, fieldLabelKey } from './people.model';
+import { Employee, OrgNode, customFieldRows, fieldLabelKey } from './people.model';
 import { Paged } from '../../core/api/api.model';
 import { PeopleService, diffChanges, peopleErrorKey } from './people.service';
 import { ProfileStore, profileTabs } from './profile/profile.store';
@@ -97,6 +97,20 @@ describe('People helpers', () => {
       personal_email: 'a@example.test',
     });
     expect(diffChanges({ phone: '1' }, { phone: '' })).toEqual({ phone: null });
+  });
+
+  it('lists custom fields by name, not in the stored JSON order, without personal_phone', () => {
+    // MySQL returns {"n", "zeta", "alpha", "Мова"} for {"zeta", "alpha", "Мова", "n"}: the card must not depend on it.
+    expect(customFieldRows({ n: '42', zeta: 'z', alpha: 'a', personal_phone: '+380', field10: 'x', field2: 'y' })).toEqual([
+      ['alpha', 'a'],
+      ['field2', 'y'],
+      ['field10', 'x'],
+      ['n', '42'],
+      ['zeta', 'z'],
+    ]);
+    expect(customFieldRows({ Мова: 'uk', Адреса: null }).map(([k]) => k)).toEqual(['Адреса', 'Мова']);
+    expect(customFieldRows(undefined)).toEqual([]);
+    expect(customFieldRows(null)).toEqual([]);
   });
 
   it('builds field label keys', () => {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Channels\Services\MessageService;
 use App\Modules\Documents\Contracts\DocumentTemplateRepository;
 use App\Modules\Documents\Enums\DocumentVariable;
@@ -83,7 +84,7 @@ final readonly class OfferService
             DocumentVariable::FirstName->value => (preg_split('/\s+/u', trim($name)) ?: [])[0] ?? null,
             DocumentVariable::Position->value => $data['position'],
             DocumentVariable::Branch->value => $application->vacancy->branch->name,
-            DocumentVariable::Today->value => $today->format('d.m.Y'),
+            DocumentVariable::Today->value => UserTime::now($today)->format('d.m.Y'), // the Kyiv date, not the UTC one
             DocumentVariable::Salary->value => $data['salary'],
             DocumentVariable::StartDate->value => $start?->format('d.m.Y'),
             DocumentVariable::Conditions->value => $data['conditions'],

@@ -80,6 +80,19 @@ final class CompensationAndBulkTest extends TestCase
         Carbon::setTestNow();
     }
 
+    /** A raise effective "today" is current from 00:00 Kyiv, not from 00:00 UTC (MySQL e2e, round 2). */
+    public function test_compensation_effective_today_is_current_after_kyiv_midnight(): void
+    {
+        Carbon::setTestNow('2026-10-11 21:30:00'); // 2026-10-12 00:30 in Kyiv
+        $hr = $this->login(UserRole::HrManager);
+        $url = '/api/people/'.$this->org()['worker']->id.'/compensation';
+        $this->actingAs($hr)->postJson($url, ['amount' => 30000, 'currency' => 'UAH', 'period' => 'month', 'effective_on' => '2026-01-01'])->assertCreated();
+        $this->actingAs($hr)->postJson($url, ['amount' => 36000, 'currency' => 'UAH', 'period' => 'month', 'effective_on' => '2026-10-12'])->assertCreated();
+
+        $this->actingAs($hr)->getJson($url)->assertOk()->assertJsonPath('data.current.effective_on', '2026-10-12');
+        Carbon::setTestNow();
+    }
+
     public function test_gender_is_hr_only(): void
     {
         $admin = $this->login(UserRole::Admin);

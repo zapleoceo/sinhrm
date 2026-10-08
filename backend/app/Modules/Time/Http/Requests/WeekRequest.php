@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Time\Http\Requests;
 
+use App\Modules\Core\Support\UserTime;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 
 /**
- * Week selector of the Time API: ?week=Y-m-d (any day of the week; default today) and ?employee_id= (default: self).
+ * Week selector of the Time API: ?week=Y-m-d (any day of the week; default today in the user time zone) and ?employee_id= (default: self).
  * Also the body of PUT /api/time/week (entries) and POST /api/time/week/submit.
  */
 class WeekRequest extends FormRequest
@@ -25,7 +26,7 @@ class WeekRequest extends FormRequest
 
     public function week(): Carbon
     {
-        return $this->filled('week') ? Carbon::parse($this->string('week')->toString()) : Carbon::now();
+        return $this->filled('week') ? Carbon::parse($this->string('week')->toString()) : UserTime::today();
     }
 
     public function employeeId(): ?int

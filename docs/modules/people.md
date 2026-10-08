@@ -125,7 +125,9 @@ recruiter 1, остальные 0; у действующего берётся р
 Найм (`Services/HireService`): ФИО — из кандидата, e-mail кандидата → `personal_email`, телефон кандидата →
 `custom_fields.personal_phone` (оба — уровень PII; справочные `work_email`/`phone` задаёт админ позже, личный телефон
 в общий справочник не попадает; в профиле HR/админ и сам сотрудник видят его строкой «Особистий телефон»
-со ссылкой `tel:`, остальные `custom_fields` выводятся как раньше),
+со ссылкой `tel:`, остальные `custom_fields` — по имени поля (`customFieldRows` в `people.model.ts`, 2026-10-08: MySQL хранит JSON
+с ключами в своём порядке — короткие первыми, и без сортировки строки карточки перемешивались после сохранения; найдено MySQL e2e,
+раунд 2, тест — `people.spec.ts`),
 филиал/отдел/должность — из вакансии, `employment_type = full_time`. Гонка двух кликов ловится уникальным индексом и
 возвращает существующего. `create()` тоже проверяет цикл руководителя (сейчас он невозможен у новой записи, проверка —
 на случай будущего переноса поддерева). Удаления нет (405): людей увольняют.
@@ -280,7 +282,9 @@ recruiter 1, остальные 0; у действующего берётся р
 (`{message, code}`). Фабрика `Database/Factories/EmployeeFactory` — синтетика на `example.test`.
 История оплаты (`employee_compensations`) тоже идёт через `EmployeeRepository` (`addCompensation()`,
 `compensationHistory()` — новые сверху по `effective_on`, затем id); `CompensationService` только выбирает действующую
-запись и собирает ответ. Тест — `tests/Unit/People/CompensationServiceTest.php`.
+запись и собирает ответ. Тест — `tests/Unit/People/CompensationServiceTest.php`. «Действующая» — по дате пользователя
+(`Core\Support\UserTime::today()`, Киев), не UTC: повышение с сегодняшней даты действует с 00:00 по Киеву (2026-10-08, MySQL e2e
+раунд 2; тест `CompensationAndBulkTest::test_compensation_effective_today_is_current_after_kyiv_midnight`).
 
 ### Сортировка и фильтры списка (2026-10-02)
 `ListPeopleRequest` проверяет `sort` по `Enums/EmployeeSort` и `dir` по `asc|desc` (белый список; текст запроса в SQL не

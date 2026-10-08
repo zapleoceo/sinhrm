@@ -206,6 +206,15 @@ final class TimeApiTest extends TestCase
         return $jobs['time.reminders'];
     }
 
+    /** The default week follows the Kyiv day: Monday 00:30 Kyiv is already the new week (MySQL e2e, round 2). */
+    public function test_default_week_follows_the_kyiv_day(): void
+    {
+        $worker = $this->userOf($this->org()['worker']);
+        Carbon::setTestNow('2026-10-11 21:30:00'); // Monday 2026-10-12 00:30 in Kyiv, still Sunday in UTC
+        $this->actingAs($worker)->getJson('/api/time/week')->assertOk()->assertJsonPath('data.week_start', '2026-10-12');
+        $this->actingAs($worker)->getJson('/api/dashboard')->assertOk()->assertJsonPath('data.time.my_week.week_start', '2026-10-12');
+    }
+
     /**
      * Report rows keyed by a column.
      *

@@ -530,6 +530,9 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 - Компоненты не ходят в HTTP сами: оффер — через `card/offers.service.ts` (`OffersService`), публичные страницы вакансий — через `careers/careers.service.ts` (`PublicCareersService`); запросы и ответы прежние.
 
+**Дата в оффере (2026-10-08, MySQL e2e раунд 2).** `{Сьогодні}` в тексте оффера — дата по Киеву (`Core\Support\UserTime`), а не UTC:
+в 00:30 по Киеву кандидат получал вчерашнюю дату. Тест — `OfferApiTest::test_offer_today_variable_is_the_kyiv_date_after_midnight`.
+
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,
 дубль 409 по трём ключам, скрытие id для чужого филиала, уникальные индексы в БД, поиск, карточка с маршрутом и длительностями, права), перемещения (stage_change + системное
