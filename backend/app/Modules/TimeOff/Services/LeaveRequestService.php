@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\TimeOff\Services;
 
 use App\Models\User;
-use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
@@ -44,7 +43,7 @@ final readonly class LeaveRequestService
         private EmployeeRepository $employees,
         private BalanceService $balances,
         private LoggerInterface $log,
-        private UserNotifier $notifier,
+        private LeaveNotifications $notifications,
         private LeaveCalendarSync $calendar,
         private LeaveHandoverTasks $handover,
     ) {}
@@ -133,10 +132,8 @@ final readonly class LeaveRequestService
         if ($fresh->status === LeaveRequestStatus::Approved) {
             $this->calendar->add($fresh);
             $this->handover->open($fresh);
-        } elseif (($managerUser = $fresh->employee->manager?->user_id) !== null && $managerUser !== $actor->id) {
-            $this->notifier->notify($managerUser, self::MODULE, 'Погодити відпустку: '.$fresh->employee->full_name,
-                sprintf('%s просить «%s» %s. Потрібне ваше рішення.', $fresh->employee->full_name, $fresh->leaveType->name, $this->span($fresh)),
-                '/timeoff/approvals');
+        } else {
+            $this->notifications->askManager($fresh, $actor->id);
         }
 
         return $fresh;
@@ -159,7 +156,7 @@ final readonly class LeaveRequestService
         $fresh = $this->find($request->id);
         $this->calendar->add($fresh);
         $this->handover->open($fresh);
-        $this->notifyDecision($fresh, true);
+        $this->notifications->decided($fresh, true);
 
         return $fresh;
     }
@@ -180,7 +177,7 @@ final readonly class LeaveRequestService
         $this->log->info('timeoff.request_rejected', ['id' => $request->id, 'by' => $actor->id]);
         $fresh = $this->find($request->id);
         $this->handover->close($fresh);
-        $this->notifyDecision($fresh, false);
+        $this->notifications->decided($fresh, false);
 
         return $fresh;
     }
@@ -255,23 +252,6 @@ final readonly class LeaveRequestService
     public function days(Employee $employee, Carbon $from, Carbon $to, HalfDay $halfDay): float
     {
         return WorkingDayCalculator::days($from, $to, $halfDay, $this->settings->holidayDates($from, $to, $employee->branch_id));
-    }
-
-    private function notifyDecision(LeaveRequest $request, bool $approved): void
-    {
-        $userId = $request->employee->user_id;
-        if ($userId === null) {
-            return;
-        }
-        $this->notifier->notify($userId, self::MODULE, $approved ? 'Відпустку погоджено' : 'Відпустку відхилено',
-            sprintf('«%s» %s: %s.', $request->leaveType->name, $this->span($request), $approved ? 'погоджено' : 'відхилено')
-            .($request->decision_comment !== null ? "\nКоментар: ".$request->decision_comment : ''),
-            '/timeoff');
-    }
-
-    private function span(LeaveRequest $request): string
-    {
-        return $request->starts_on->format('d.m.Y').'–'.$request->ends_on->format('d.m.Y');
     }
 
     private function applyApproval(LeaveRequest $request, LeaveType $type, ?User $actor, ?string $comment): void
