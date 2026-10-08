@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Core;
 
 use App\Models\User;
+use App\Modules\Core\Services\Transfer\MysqlCollationKeys;
 use App\Modules\Core\Services\Transfer\TransferDatabases;
 use App\Modules\Documents\Models\Document;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
@@ -41,17 +42,25 @@ final class MysqlDataTransferTest extends TestCase
         $this->ensureFixtures();
     }
 
+    /**
+     * Measured on MySQL 8.4 (utf8mb4_0900_ai_ci): case and Latin accents collide, "Й" and "И" do NOT (Й has its own
+     * primary weight in UCA 9.0) — the preflight reports what the server itself decides, via WEIGHT_STRING.
+     */
     public function test_preflight_blocks_unique_collisions_without_printing_values(): void
     {
-        $emails = ['collide.transfer@example.test', 'COLLIDE.transfer@example.test', 'йосип.transfer@example.test', 'иосип.transfer@example.test'];
+        $emails = [
+            'collide.transfer@example.test', 'COLLIDE.transfer@example.test',
+            'jose.transfer@example.test', 'josé.transfer@example.test',
+            'йосип.transfer@example.test', 'иосип.transfer@example.test',
+        ];
         $ids = array_map(fn (string $email): int => User::factory()->create(['email' => $email])->id, $emails);
         try {
             [$code, $out] = $this->transfer(['--preflight' => true]);
-            fwrite(STDERR, $out); // synthetic data only: the CI log shows the report format
             $this->assertSame(1, $code, $out);
-            $this->assertStringContainsString('unique_collision', $out);
-            $this->assertStringContainsString('users_email_unique', $out);
-            $this->assertStringContainsString('2 групп', $out, $out);
+            $this->assertMatchesRegularExpression('/unique_collision\s*\|\s*users\s*\|\s*индекс users_email_unique \(email\): 2 групп/u', $out);
+            $this->assertStringContainsString("[{$ids[0]}, {$ids[1]}]", $out);
+            $this->assertStringContainsString("[{$ids[2]}, {$ids[3]}]", $out);
+            $this->assertStringNotContainsString("[{$ids[4]}, {$ids[5]}]", $out);
             $this->assertStringContainsString('перенос не начат', $out);
             foreach ($emails as $email) {
                 $this->assertStringNotContainsString(mb_strtolower($email), mb_strtolower($out));
@@ -64,6 +73,23 @@ final class MysqlDataTransferTest extends TestCase
         } finally {
             User::query()->whereIn('id', $ids)->delete();
         }
+    }
+
+    /** Facts behind ADR 0010 "Отличия MySQL": which letter pairs utf8mb4_0900_ai_ci treats as equal (keys from the server). */
+    public function test_mysql_collation_keys_for_cyrillic_and_latin_pairs(): void
+    {
+        $keys = new MysqlCollationKeys($this->target());
+        $equal = fn (string $a, string $b): bool => count(array_unique($keys->keys('utf8mb4_0900_ai_ci', [$a, $b]))) === 1;
+
+        $this->assertTrue($equal('a@x.test', 'A@x.test'));
+        $this->assertTrue($equal('jose', 'josé'));
+        $this->assertFalse($equal('Йосип', 'Иосип'));
+        $this->assertFalse($equal('trailing ', 'trailing'), 'NO PAD: a trailing space is significant');
+        fwrite(STDERR, sprintf(
+            "collation facts: ё=е %s, ї=і %s, Ї=І %s, ґ=г %s\n",
+            var_export($equal('ёж', 'еж'), true), var_export($equal('їжак', 'іжак'), true),
+            var_export($equal('Їжак', 'Іжак'), true), var_export($equal('ґанок', 'ганок'), true),
+        ));
     }
 
     public function test_transfer_is_idempotent_resumable_and_keeps_attachments_and_ciphertexts(): void

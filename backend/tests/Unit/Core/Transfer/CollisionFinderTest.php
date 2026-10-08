@@ -14,7 +14,7 @@ final class CollisionFinderTest extends TestCase
 {
     public function test_case_and_accent_variants_collide_and_distinct_values_do_not(): void
     {
-        $values = ['1' => 'a@x.test', '2' => 'A@x.test', '3' => 'Йосип', '4' => 'Иосип', '5' => 'Ганна', '6' => 'b@x.test'];
+        $values = ['1' => 'a@x.test', '2' => 'A@x.test', '3' => 'jose', '4' => 'josé', '5' => 'Ганна', '6' => 'b@x.test'];
         $keys = $this->accentAndCaseInsensitive()->keys('utf8mb4_0900_ai_ci', array_values($values));
         $finder = new CollisionFinder;
         foreach (array_keys($values) as $i => $id) {

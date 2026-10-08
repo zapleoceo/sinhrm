@@ -6,7 +6,7 @@ namespace App\Modules\Core\Contracts;
 
 /**
  * Comparison keys of strings under a target collation: two strings get the same key exactly when the collation
- * considers them equal (e.g. "a@x" and "A@x", "Йосип" and "Иосип" under utf8mb4_0900_ai_ci). Used by the transfer
+ * considers them equal (e.g. "a@x" and "A@x", "jose" and "josé" under utf8mb4_0900_ai_ci). Used by the transfer
  * preflight to find unique values that would collide on MySQL. Keys are opaque and never printed.
  */
 interface CollationKeys
