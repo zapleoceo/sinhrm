@@ -6,6 +6,7 @@ namespace Tests\Feature\Core\Transfer;
 
 use App\Models\User;
 use App\Modules\Core\Transfer\MysqlCollationKeys;
+use App\Modules\Core\Transfer\SchemaCheck;
 use App\Modules\Core\Transfer\TransferDatabases;
 use App\Modules\Documents\Models\Document;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
@@ -208,6 +209,29 @@ final class MysqlDataTransferTest extends TestCase
         [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
         $this->assertSame(0, $code, $out);
         $this->assertStringContainsString('ИТОГ: OK', $out);
+    }
+
+    /**
+     * A post-freeze data migration already applied on the target is not drift (info line), and a copy un-records it so
+     * `php artisan migrate` re-runs it over the transferred rows.
+     */
+    public function test_post_freeze_data_migration_is_accepted_and_requeued_after_copy(): void
+    {
+        $name = SchemaCheck::POST_FREEZE_DATA_MIGRATIONS[0];
+        $target = $this->target();
+        if (! $target->table('migrations')->where('migration', $name)->exists()) {
+            $target->table('migrations')->insert(['migration' => $name, 'batch' => 99]);
+        }
+
+        [$code, $out] = $this->transfer(['--preflight' => true]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString($name, $out);
+        $this->assertStringNotContainsString('версии схемы расходятся', $out);
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString('php artisan migrate --force', $out);
+        $this->assertFalse($this->target()->table('migrations')->where('migration', $name)->exists());
     }
 
     public function test_verify_fails_on_schema_drift(): void

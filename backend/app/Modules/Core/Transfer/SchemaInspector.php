@@ -58,6 +58,20 @@ final class SchemaInspector
             ->map(fn (mixed $m): string => (string) $m)->all());
     }
 
+    /**
+     * The only write to the target bookkeeping table: un-record the given migrations (SchemaCheck::requeuePostFreeze).
+     *
+     * @param  list<string>  $names
+     */
+    public function forgetTargetMigrations(array $names): int
+    {
+        if ($names === [] || ! $this->dbs->target->getSchemaBuilder()->hasTable(self::MIGRATIONS)) {
+            return 0;
+        }
+
+        return $this->dbs->target->table(self::MIGRATIONS)->whereIn('migration', $names)->delete();
+    }
+
     /** @return array<string, Table> tables present on BOTH sides, by name */
     public function tables(): array
     {

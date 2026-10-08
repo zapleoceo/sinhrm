@@ -106,6 +106,9 @@ final class TransferToMysqlCommand extends Command
                 },
             );
             $this->info('Скопировано строк: '.array_sum($copied));
+            if (SchemaCheck::requeuePostFreeze($schema) > 0) {
+                $this->warn('Миграции данных после заморозки сняты с учёта на цели: выполните `php artisan migrate --force` (docs/guides/mysql-cutover.md).');
+            }
 
             return $this->verify(new Reconciler($dbs, $schema, $chunk));
         } catch (Throwable $e) {

@@ -172,11 +172,12 @@ final class OfferApiTest extends TestCase
         $migration->up();
         $migration->up(); // idempotent
 
-        $this->assertSame(['subject' => 'Оффер: Manager', 'gmail_thread' => 't1', 'kind' => 'offer'], $offerTouch->fresh()?->meta);
-        $this->assertSame(['kind' => 'offer'], $legacy->fresh()?->meta);
-        $this->assertSame(['subject' => 'Interview'], $plain->fresh()?->meta);
-        $this->assertSame(['subject' => 'Оффер: Manager'], $reply->fresh()?->meta);
-        $this->assertSame(['subject' => 'Оффер: Draft'], $unsent->fresh()?->meta);
+        // assertEquals: MySQL JSON stores object keys in its own order (shorter keys first), not insertion order.
+        $this->assertEquals(['subject' => 'Оффер: Manager', 'gmail_thread' => 't1', 'kind' => 'offer'], $offerTouch->fresh()?->meta);
+        $this->assertEquals(['kind' => 'offer'], $legacy->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Interview'], $plain->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Оффер: Manager'], $reply->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Оффер: Draft'], $unsent->fresh()?->meta);
     }
 
     /** @param  array<string, mixed>  $attributes */
