@@ -15,7 +15,7 @@ test('flags the former database, its driver, hosting and LIKE operator with path
 });
 
 test('does not flag look-alikes: OneOnOne, .neon config files, MySQL wording', () => {
-  const content = ['OneOnOneService', 'phpstan.' + 'neon', '"extension.' + 'neon"', 'MySQL 8.4, utf8mb4_0900_ai_ci', 'whereLike'].join('\n');
+  const content = ['OneOnOneService', 'phpstan.' + 'ne' + 'on', '"extension.' + 'ne' + 'on"', 'MySQL 8.4, utf8mb4_0900_ai_ci', 'whereLike'].join('\n');
   assert.deepEqual(findings('backend/app/Modules/Perform/OneOnOne.php', content), []);
 });
 

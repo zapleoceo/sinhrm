@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 const WORDS = ['post' + 'gres', 'pg' + 'sql', 'i' + 'like'];
-/** "neon" as a word, but not the `.neon` extension (phpstan.neon, extension.neon). */
+/** The hosting name as a word, but not the same letters as a config file extension (phpstan.neon). */
 const HOSTING = '(?<![.\\w-])' + 'ne' + 'on' + '\\b';
 export const FORBIDDEN = new RegExp(`${WORDS.join('|')}|${HOSTING}`, 'i');
 
