@@ -108,6 +108,9 @@ People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайо�
 
 Категория `offer` — шаблоны офферов для Recruiting (`docs/modules/recruiting.md`). Добавлены переменные `{Зарплата}`,
 `{Дата виходу}`, `{Умови}`: их заполняет только оффер; в документах сотрудника они остаются «—».
+Recruiting берёт шаблоны через контракт `Contracts\DocumentTemplateRepository` (`find()` и `activeOfCategory()` —
+неархивные шаблоны категории по имени, только id и имя), а не через модель `DocumentTemplate`. Тест —
+`DocumentsApiTest::test_active_of_category_gives_live_templates_of_one_category_by_name`.
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Статус документа — пилюля `.app-pill` (`DOCUMENT_STATUS_TONE`: черновик/архив — пунктирный ○, отправлен ◆ warn, подписан ● good, отклонён ■ bad); архивный документ — приглушённое название без потери контраста (не opacity); кнопка-название в профиле — 44px на телефоне; пустой список — `.app-empty` (пунктирная ветка). Тест вида — `features/documents/documents.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 

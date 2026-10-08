@@ -7,6 +7,7 @@ namespace Tests\Feature\Documents;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Position;
 use App\Modules\Documents\Contracts\DocumentStorage;
+use App\Modules\Documents\Contracts\DocumentTemplateRepository;
 use App\Modules\Documents\Models\Document;
 use App\Modules\Documents\Models\DocumentFile;
 use App\Modules\Documents\Models\DocumentTemplate;
@@ -31,6 +32,19 @@ final class DocumentsApiTest extends TestCase
     {
         Carbon::setTestNow();
         parent::tearDown();
+    }
+
+    public function test_active_of_category_gives_live_templates_of_one_category_by_name(): void
+    {
+        DocumentTemplate::query()->create(['name' => 'Senior offer', 'category' => 'offer', 'body' => 'a']);
+        DocumentTemplate::query()->create(['name' => 'Archived offer', 'category' => 'offer', 'body' => 'b', 'archived' => true]);
+        DocumentTemplate::query()->create(['name' => 'Base offer', 'category' => 'offer', 'body' => 'c']);
+        DocumentTemplate::query()->create(['name' => 'Order', 'category' => 'orders', 'body' => 'd']);
+
+        $templates = $this->app->make(DocumentTemplateRepository::class)->activeOfCategory('offer');
+
+        $this->assertSame(['Base offer', 'Senior offer'], $templates->pluck('name')->all());
+        $this->assertNull($templates->first()?->getAttributes()['body'] ?? null); // a picker loads id and name only
     }
 
     public function test_guest_401_and_writes_admin_only(): void

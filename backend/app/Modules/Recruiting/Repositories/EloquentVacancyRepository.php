@@ -10,6 +10,7 @@ use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\DTO\VacancyFilter;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Enums\VacancyStatus;
+use App\Modules\Recruiting\Models\CareerSubmission;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Models\VacancyTemplate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -18,6 +19,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class EloquentVacancyRepository implements VacancyRepository
 {
+    /** What the public career page shows. */
+    private const array PUBLIC_RELATIONS = ['branch', 'position', 'city'];
+
     private const array RELATIONS = ['branch', 'department', 'position', 'recruiter', 'hiringManager', 'pipeline.stages', 'category', 'city'];
 
     public function paginate(Scope $scope, VacancyFilter $filter): LengthAwarePaginator
@@ -80,6 +84,22 @@ final class EloquentVacancyRepository implements VacancyRepository
             ->orderByDesc('stage_entered_at')
             ->orderByDesc('id')
             ->get();
+    }
+
+    public function published(): Collection
+    {
+        return Vacancy::query()->with(self::PUBLIC_RELATIONS)->active()
+            ->orderByDesc('opened_at')->orderByDesc('id')->get();
+    }
+
+    public function findPublishedBySlug(string $slug): ?Vacancy
+    {
+        return Vacancy::query()->with(self::PUBLIC_RELATIONS)->active()->where('slug', $slug)->first();
+    }
+
+    public function createCareerSubmission(array $attributes): CareerSubmission
+    {
+        return CareerSubmission::query()->create($attributes);
     }
 
     public function templates(int $limit): Collection

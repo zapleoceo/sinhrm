@@ -387,7 +387,6 @@ return [
     ],
     'Recruiting/Services/OfferService.php' => [
         'App\Modules\Channels\Services\MessageService',
-        'App\Modules\Documents\Models\DocumentTemplate',
     ],
     'Recruiting/Services/RecruitingDemoData.php' => [
         'App\Modules\Directory\Models\Branch',
@@ -400,8 +399,6 @@ return [
     'Recruiting/Services/VacancyTextService.php' => [
         'App\Modules\Ai\Models\AiRequest',
         'App\Modules\Ai\Services\AiService',
-        'App\Modules\Directory\Models\Branch',
-        'App\Modules\Directory\Models\VacancyCategory',
     ],
     'Reports/Definitions/AbstractTimeReport.php' => [
         'App\Modules\Time\Services\TimeReportService',

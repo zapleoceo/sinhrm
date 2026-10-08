@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Contracts;
 
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\Offer;
 use App\Modules\Recruiting\Models\StageChange;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -30,6 +31,15 @@ interface ApplicationRepository
 
     /** @param  array<string, mixed>  $attributes */
     public function recordStageChange(array $attributes): StageChange;
+
+    /** The offer of the application (at most one). */
+    public function offerFor(int $applicationId): ?Offer;
+
+    /** @param  array<string, mixed>  $attributes */
+    public function createOffer(array $attributes): Offer;
+
+    /** @param  array<string, mixed>  $attributes */
+    public function updateOffer(Offer $offer, array $attributes): void;
 
     /** Moves last_touch_at forward (never back): one application, or all active ones of the candidate. */
     public function bumpLastTouch(int $candidateId, ?int $applicationId, Carbon $at): void;

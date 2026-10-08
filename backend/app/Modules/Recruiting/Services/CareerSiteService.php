@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Services;
 
 use App\Modules\Documents\Contracts\DocumentStorage;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
+use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\DTO\CandidateData;
 use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Enums\CandidateSource;
@@ -38,19 +39,18 @@ final readonly class CareerSiteService
         private TaskService $tasks,
         private RateLimiter $limiter,
         private LoggerInterface $log,
+        private VacancyRepository $vacancies,
     ) {}
 
     /** @return Collection<int, Vacancy> */
     public function published(): Collection
     {
-        return Vacancy::query()->with(['branch', 'position', 'city'])->active()
-            ->orderByDesc('opened_at')->orderByDesc('id')->get();
+        return $this->vacancies->published();
     }
 
     public function findPublished(string $slug): Vacancy
     {
-        return Vacancy::query()->with(['branch', 'position', 'city'])->active()->where('slug', $slug)
-            ->first() ?? abort(404);
+        return $this->vacancies->findPublishedBySlug($slug) ?? abort(404);
     }
 
     /** Slug for a published vacancy without one: transliterated title + id (stable after title edits). */
@@ -94,7 +94,7 @@ final readonly class CareerSiteService
         if ($match->applicationCreated && $match->application !== null) {
             $this->tasks->scheduleNewApplicantCall($vacancy->recruiter_id, $match->candidate->id, $match->application->id, $now);
         }
-        $submission = CareerSubmission::query()->create([
+        $submission = $this->vacancies->createCareerSubmission([
             'vacancy_id' => $vacancy->id,
             'candidate_id' => $match->candidate->id,
             'application_id' => $match->application?->id,

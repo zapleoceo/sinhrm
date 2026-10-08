@@ -25,6 +25,11 @@ final class EloquentDocumentTemplateRepository implements DocumentTemplateReposi
         return DocumentTemplate::query()->find($id);
     }
 
+    public function activeOfCategory(string $category): Collection
+    {
+        return DocumentTemplate::query()->where('category', $category)->where('archived', false)->orderBy('name')->get(['id', 'name']);
+    }
+
     public function create(array $attributes): DocumentTemplate
     {
         return DocumentTemplate::query()->create($attributes);

@@ -7,6 +7,7 @@ namespace App\Modules\Recruiting\Contracts;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\DTO\VacancyFilter;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\CareerSubmission;
 use App\Modules\Recruiting\Models\Vacancy;
 use App\Modules\Recruiting\Models\VacancyTemplate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -34,6 +35,18 @@ interface VacancyRepository
 
     /** @return Collection<int, Application> every application of the vacancy with its candidate */
     public function boardApplications(Vacancy $vacancy): Collection;
+
+    /**
+     * Career page: active vacancies with branch, position and city, newest opened first.
+     *
+     * @return Collection<int, Vacancy>
+     */
+    public function published(): Collection;
+
+    public function findPublishedBySlug(string $slug): ?Vacancy;
+
+    /** @param  array<string, mixed>  $attributes */
+    public function createCareerSubmission(array $attributes): CareerSubmission;
 
     /**
      * Vacancy form templates by name, then id.

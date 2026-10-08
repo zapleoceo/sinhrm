@@ -288,6 +288,10 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 - Шаблоны формы вакансии (`vacancy_templates`) хранит `Contracts\VacancyRepository` (`templates()`, `createTemplate()`,
   `saveTemplate()`, `deleteTemplate()`): `VacancyTemplateController` только проверяет политику и отдаёт ответ.
   Тест — `tests/Unit/Recruiting/VacancyTemplateControllerTest.php`.
+- Сервисы не строят запросы сами: офферы (`offers`, один на отклик) — `ApplicationRepository::offerFor()/createOffer()/updateOffer()`,
+  шаблоны офферов — контракт Documents `DocumentTemplateRepository` (`activeOfCategory('offer')`, `find()`), страница
+  карьеры — `VacancyRepository::published()/findPublishedBySlug()/createCareerSubmission()`, категория и филиал для
+  «Створити з ШІ» — `Directory\Contracts\DictionaryRepository::find()`. Тест — `tests/Unit/Recruiting/RecruitingRepositoriesTest.php`.
 
 ### Фронтенд (`frontend/src/app/features/recruiting`)
 | Файл | Что |
