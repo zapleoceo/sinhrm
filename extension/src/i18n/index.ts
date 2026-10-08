@@ -29,10 +29,6 @@ export function setLang(lang: Lang): void {
   current = lang;
 }
 
-export function getLang(): Lang {
-  return current;
-}
-
 export function t(key: MessageKey, lang: Lang = current): string {
   return dictionaries[lang][key] ?? dictionaries.en[key] ?? key;
 }

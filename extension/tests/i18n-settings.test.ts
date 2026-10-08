@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dictionaries, pickLang, t } from '../src/i18n';
+import { dictionaries, pickLang, setLang, t } from '../src/i18n';
 import { normalizeBaseUrl } from '../src/settings';
 
 describe('i18n', () => {
@@ -24,6 +24,13 @@ describe('i18n', () => {
   it('t() translates by language', () => {
     expect(t('add', 'en')).toBe('Add to SinHRM');
     expect(t('add', 'uk')).toBe('Додати в SinHRM');
+  });
+
+  it('t() without a language uses the one chosen by setLang()', () => {
+    setLang('uk');
+    expect(t('add')).toBe('Додати в SinHRM');
+    setLang('en');
+    expect(t('add')).toBe('Add to SinHRM');
   });
 });
 
