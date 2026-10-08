@@ -8,7 +8,6 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { saveBlob } from '../../core/http/api-error';
 import { DictionaryItem } from '../directory/directory.model';
 import { DirectoryService } from '../directory/directory.service';
 import { ReportFilter, ReportResult } from './reports.model';
@@ -16,6 +15,7 @@ import { ReportTable } from './report-table';
 import { ReportsService, reportsErrorKey } from './reports.service';
 import { fromIsoDate, toIsoDate } from '../../core/date/iso-date';
 import { NotifyService } from '../../core/ui/notify.service';
+import { ReportRun } from './report-run';
 
 type Filters = Partial<Record<ReportFilter, string>>;
 
@@ -101,10 +101,11 @@ export class ReportViewPage implements OnInit {
   private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   protected readonly String = String;
-  protected readonly result = signal<ReportResult | null>(null);
+  private readonly report = new ReportRun<ReportResult>();
+  protected readonly result = this.report.result;
   protected readonly filters = signal<Filters>({});
   protected readonly branches = signal<DictionaryItem[]>([]);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.report.loading;
 
   constructor() {
     effect(() => {
@@ -133,21 +134,11 @@ export class ReportViewPage implements OnInit {
   }
 
   protected run(): void {
-    this.loading.set(true);
-    this.api.run(this.key(), this.filters()).subscribe({
-      next: (res) => {
-        this.result.set(res);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(reportsErrorKey(e));
-      },
-    });
+    this.report.run(this.api.run(this.key(), this.filters()));
   }
 
   protected csv(): void {
-    this.api.csv(this.key(), this.filters()).subscribe({ next: (blob) => saveBlob(blob, `${this.key()}.csv`), error: (e: unknown) => this.notify.show(reportsErrorKey(e)) });
+    this.report.download(this.api.csv(this.key(), this.filters()), `${this.key()}.csv`);
   }
 
   protected save(): void {

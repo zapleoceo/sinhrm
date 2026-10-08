@@ -7,7 +7,6 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { saveBlob } from '../../core/http/api-error';
 import {
   BUILDER_AGGREGATES,
   BUILDER_OPERATORS,
@@ -22,6 +21,7 @@ import {
 import { ReportTable } from './report-table';
 import { ReportsService, reportsErrorKey } from './reports.service';
 import { NotifyService } from '../../core/ui/notify.service';
+import { ReportRun } from './report-run';
 
 /**
  * Custom report builder (/reports/builder[?saved=id]): dataset → columns → filters → group by + aggregate.
@@ -164,8 +164,9 @@ export class ReportBuilderPage implements OnInit {
   protected readonly aggregateColumn = signal<string | null>(null);
   protected readonly name = signal('');
   protected readonly savedId = signal<number | null>(null);
-  protected readonly result = signal<BuilderResult | null>(null);
-  protected readonly loading = signal(false);
+  private readonly report = new ReportRun<BuilderResult>();
+  protected readonly result = this.report.result;
+  protected readonly loading = this.report.loading;
   protected readonly available = computed(() => this.datasets().find((d) => d.key === this.dataset())?.columns ?? []);
   protected readonly numeric = computed(() => this.available().filter((c) => c.type === 'number'));
   protected readonly resultColumns = computed(() => {
@@ -241,21 +242,11 @@ export class ReportBuilderPage implements OnInit {
   }
 
   protected run(): void {
-    this.loading.set(true);
-    this.api.build(this.spec()).subscribe({
-      next: (res) => {
-        this.result.set(res);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(reportsErrorKey(e));
-      },
-    });
+    this.report.run(this.api.build(this.spec()));
   }
 
   protected csv(): void {
-    this.api.buildCsv(this.spec()).subscribe({ next: (blob) => saveBlob(blob, `${this.dataset()}.csv`), error: (e: unknown) => this.notify.show(reportsErrorKey(e)) });
+    this.report.download(this.api.buildCsv(this.spec()), `${this.dataset()}.csv`);
   }
 
   protected save(): void {
