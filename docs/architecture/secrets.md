@@ -37,7 +37,7 @@
 
 ## Правила
 1. Секрет никогда не пишется в код, логи, ответы API, описание PR и документацию.
-2. CI запускает `gitleaks` на каждом PR; в репозитории включены GitHub secret scanning и push protection.
+2. CI (job `security`) прогоняет `gitleaks` по **всей** истории git на каждом PR и push, плюс `composer audit` и `npm audit` (high+); в репозитории включены GitHub secret scanning и push protection. Все GitHub Actions закреплены по SHA коммита (тег — в комментарии; обновляет dependabot), у каждого job минимальные `permissions`, секреты попадают в shell только через `env`.
 3. Preview-окружения и тесты работают **только на синтетических данных** — ветка БД preview не копирует prod.
 4. Ротация `APP_KEY`: новый ключ в `APP_KEY`, старый — в `APP_PREVIOUS_KEYS`, затем команда перешифровки секретов.
    Снимки аудитории опросов (`survey_wave_members`) — HMAC от `APP_KEY`, у каждого записан `key_id` (16 знаков
