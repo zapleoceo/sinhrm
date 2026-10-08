@@ -8,30 +8,31 @@ use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\Grammars\Grammar;
-use Illuminate\Database\Query\Grammars\PostgresGrammar;
-use Illuminate\Database\Query\Grammars\SQLiteGrammar;
 use InvalidArgumentException;
 
 /**
- * Portable SQL fragments for the places where PostgreSQL and MySQL 8.4 differ (ADR 0010, dual support).
- * New code uses these (or the Laravel builder) instead of pg-only syntax: NULLS FIRST/LAST, ILIKE, ->>, @>.
+ * SQL fragments the Laravel builder does not express on MySQL 8.4 — the only supported database (ADR 0011).
+ * New code uses these (or the Laravel builder) instead of hand-written variants: NULLS FIRST/LAST does not exist
+ * in MySQL, a case-insensitive "contains" needs literal wildcards, a JSON key read in select/order needs json_unquote.
  *
  * Every $expression is SQL written in code, never request text; user values travel only as bindings. A plain string must be
  * a column identifier (`col` or `table.col`) — anything else (spaces, quotes, `;`, `--`) is rejected. A computed expression
  * or a correlated subquery is passed explicitly as `new Illuminate\Database\Query\Expression('(select ...)')`.
  *
- * Upserts are not wrapped: Builder::upsert()/insertOrIgnore()/insertGetId() are portable. On MySQL upsert() ignores
+ * Upserts are not wrapped: Builder::upsert()/insertOrIgnore()/insertGetId() work as is. On MySQL upsert() ignores
  * $uniqueBy and reacts to ANY unique index of the table — keep exactly one unique key on upserted tables.
- * JSON in where(): Laravel's 'column->key', whereJsonContains() and whereJsonLength() compile per driver.
+ * JSON in where(): Laravel's 'column->key', whereJsonContains() and whereJsonLength().
  */
 final class Sql
 {
     private const string IDENTIFIER = '/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$/';
 
+    /** Drivers accepted by jsonText()/castText(): MySQL and its wire-compatible MariaDB driver of Laravel. */
+    private const array DRIVERS = ['mysql', 'mariadb'];
+
     /**
      * ORDER BY $expression $direction with NULL rows after the others in both directions
-     * (PostgreSQL sorts NULL first on DESC, MySQL first on ASC — neither matches without this).
-     * $expression may be a select alias (e.g. a computed score) on every driver.
+     * (MySQL alone sorts NULL first on ASC and last on DESC). $expression may be a select alias (e.g. a computed score).
      *
      * @param  EloquentBuilder<*>|QueryBuilder  $query
      * @param  list<mixed>  $bindings  bindings of $expression (for a subquery)
@@ -55,11 +56,10 @@ final class Sql
     }
 
     /**
-     * WHERE $expression contains $needle, case-insensitively, wildcards in $needle literal — replaces ILIKE.
-     * lower() on both sides behaves the same on PostgreSQL, MySQL (the _ci collation already ignores case) and SQLite.
-     * Known divergence (ADR 0010): on MySQL (utf8mb4_0900_ai_ci) the search also ignores Latin diacritics (é = e; Cyrillic й is not folded into и),
-     * on PostgreSQL only case — MySQL finds more.
-     * $asText casts the column to a string type first (numbers, dates), per the query's driver.
+     * WHERE $expression contains $needle, case-insensitively, wildcards in $needle literal.
+     * lower() on both sides keeps the result independent of the column collation (a _bin column stays case-insensitive too).
+     * With utf8mb4_0900_ai_ci the search also ignores Latin diacritics (é = e); Cyrillic й is not folded into и.
+     * $asText casts the column to a string first (numbers, dates).
      *
      * @param  EloquentBuilder<*>|QueryBuilder  $query
      *
@@ -69,48 +69,40 @@ final class Sql
     {
         $sql = self::sql($expression, $query);
         if ($asText) {
-            $sql = self::castText(self::driverOf(self::grammarOf($query)), $sql);
+            $sql = self::castText('mysql', $sql);
         }
         $query->whereRaw('lower('.$sql.") like ? escape '!'", [Like::contains(mb_strtolower($needle), Like::PORTABLE)], $boolean);
     }
 
     /**
-     * Text value of a top-level JSON key, for raw select/order by (where() should use Laravel's 'column->key').
-     * PostgreSQL: column->>'key'; MySQL: json_unquote(json_extract(column, '$."key"')); SQLite: json_extract.
+     * Text value of a top-level JSON key, for raw select/order by (where() should use Laravel's 'column->key'):
+     * json_unquote(json_extract(column, '$."key"')) — the same expression Laravel compiles for 'column->key'.
+     * A key holding JSON null gives the string 'null', a missing key gives SQL NULL: do not rely on `is null` /
+     * nulls-last for keys that may hold JSON null — store the key absent instead.
      *
-     * JSON null differs: a key holding JSON null gives the string 'null' on MySQL (json_unquote of the JSON null literal)
-     * and SQL NULL on PostgreSQL (->> returns NULL) and SQLite; a missing key is SQL NULL everywhere. Do not rely on
-     * `is null` / nulls-last for keys that may hold JSON null — store the key absent, or compare with 'null' on MySQL.
+     * @param  string  $driver  'mysql' (or 'mariadb'); kept in the signature so a call site states its driver explicitly
      */
     public static function jsonText(string $driver, string $column, string $key): string
     {
         if (preg_match(self::IDENTIFIER, $column) !== 1 || preg_match('/^[A-Za-z0-9_]+$/', $key) !== 1) {
             throw new InvalidArgumentException('Unsafe JSON column or key.');
         }
+        self::assertDriver($driver);
 
-        return match ($driver) {
-            'pgsql' => "{$column}->>'{$key}'",
-            'mysql', 'mariadb' => "json_unquote(json_extract({$column}, '$.\"{$key}\"'))",
-            'sqlite' => "json_extract({$column}, '$.\"{$key}\"')",
-            default => throw new InvalidArgumentException("Unsupported driver {$driver}."),
-        };
+        return "json_unquote(json_extract({$column}, '$.\"{$key}\"'))";
     }
 
-    /**
-     * cast($expression as <string type>) — MySQL has no CAST(.. AS VARCHAR/TEXT), only CHAR(n).
-     * $length bounds the result on PostgreSQL/MySQL (SQLite ignores it).
-     */
+    /** cast($expression as char($length)) — MySQL has no CAST(.. AS VARCHAR/TEXT). */
     public static function castText(string $driver, string $expression, int $length = 255): string
     {
-        return match ($driver) {
-            'pgsql' => "cast({$expression} as varchar({$length}))",
-            'mysql', 'mariadb' => "cast({$expression} as char({$length}))",
-            'sqlite' => "cast({$expression} as text)",
-            default => throw new InvalidArgumentException("Unsupported driver {$driver}."),
-        };
+        self::assertDriver($driver);
+
+        return "cast({$expression} as char({$length}))";
     }
 
     /**
+     * MySQL has no NULLS FIRST/LAST: a 0/1 null flag sorts first, then the value (aliases are accepted in both terms).
+     *
      * @param  EloquentBuilder<*>|QueryBuilder  $query
      * @param  list<mixed>  $bindings
      */
@@ -121,31 +113,21 @@ final class Sql
             throw new InvalidArgumentException('Direction must be asc or desc.');
         }
         $expression = self::sql($expression, $query);
-        $grammar = self::grammarOf($query);
-        if ($grammar instanceof PostgresGrammar || $grammar instanceof SQLiteGrammar) {
-            // Native clause: PostgreSQL rejects a select alias inside an expression (case when alias ...), NULLS LAST is fine.
-            $query->orderByRaw($expression.' '.$direction.($last ? ' nulls last' : ' nulls first'), $bindings);
-
-            return;
-        }
-        // MySQL has no NULLS FIRST/LAST: a 0/1 null flag sorts first (MySQL accepts aliases inside the expression).
         $query->orderByRaw($expression.' is null '.($last ? 'asc' : 'desc'), $bindings)
             ->orderByRaw($expression.' '.$direction, $bindings);
+    }
+
+    private static function assertDriver(string $driver): void
+    {
+        if (! in_array($driver, self::DRIVERS, true)) {
+            throw new InvalidArgumentException("Unsupported driver {$driver}: SinHRM runs on MySQL 8.4 only (ADR 0011).");
+        }
     }
 
     /** @param  EloquentBuilder<*>|QueryBuilder  $query */
     private static function grammarOf(EloquentBuilder|QueryBuilder $query): Grammar
     {
         return ($query instanceof EloquentBuilder ? $query->getQuery() : $query)->getGrammar();
-    }
-
-    private static function driverOf(Grammar $grammar): string
-    {
-        return match (true) {
-            $grammar instanceof PostgresGrammar => 'pgsql',
-            $grammar instanceof SQLiteGrammar => 'sqlite',
-            default => 'mysql',
-        };
     }
 
     /**

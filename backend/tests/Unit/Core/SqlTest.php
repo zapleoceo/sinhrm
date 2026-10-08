@@ -9,21 +9,20 @@ use Illuminate\Database\Query\Builder;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
-/** Driver-specific JSON text expression and input guards of the portable SQL helper (ADR 0010). */
+/** SQL fragments of the MySQL-only helper (ADR 0011) and its input guards. */
 final class SqlTest extends TestCase
 {
-    public function test_json_text_per_driver(): void
+    public function test_json_text_is_the_expression_laravel_compiles_for_column_arrow_key(): void
     {
-        $this->assertSame("meta->>'thread'", Sql::jsonText('pgsql', 'meta', 'thread'));
         $this->assertSame("json_unquote(json_extract(t.meta, '$.\"thread\"'))", Sql::jsonText('mysql', 't.meta', 'thread'));
-        $this->assertSame("json_extract(meta, '$.\"thread\"')", Sql::jsonText('sqlite', 'meta', 'thread'));
+        $this->assertSame("json_unquote(json_extract(meta, '$.\"thread\"'))", Sql::jsonText('mariadb', 'meta', 'thread'));
     }
 
     public function test_json_text_rejects_unsafe_identifiers(): void
     {
         foreach ([['meta;drop', 'k'], ['meta', "k'"], ['meta', 'a.b']] as [$column, $key]) {
             try {
-                Sql::jsonText('pgsql', $column, $key);
+                Sql::jsonText('mysql', $column, $key);
                 $this->fail("accepted {$column}/{$key}");
             } catch (InvalidArgumentException) {
                 $this->addToAssertionCount(1);
@@ -31,11 +30,10 @@ final class SqlTest extends TestCase
         }
     }
 
-    public function test_cast_text_uses_a_string_type_each_driver_accepts(): void
+    public function test_cast_text_uses_char_because_mysql_has_no_varchar_cast(): void
     {
-        $this->assertSame('cast(x.cost as varchar(255))', Sql::castText('pgsql', 'x.cost'));
+        $this->assertSame('cast(x.cost as char(255))', Sql::castText('mysql', 'x.cost'));
         $this->assertSame('cast(x.cost as char(64))', Sql::castText('mysql', 'x.cost', 64));
-        $this->assertSame('cast(x.cost as text)', Sql::castText('sqlite', 'x.cost'));
     }
 
     public function test_expression_guard_rejects_anything_but_a_column_identifier(): void
@@ -58,9 +56,21 @@ final class SqlTest extends TestCase
         }
     }
 
-    public function test_unknown_driver_is_rejected(): void
+    /** PostgreSQL and SQLite are not supported any more (ADR 0011): asking for their dialect is a programming error. */
+    public function test_drivers_other_than_mysql_are_rejected(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        Sql::jsonText('sqlsrv', 'meta', 'k');
+        foreach (['pgsql', 'sqlite', 'sqlsrv'] as $driver) {
+            foreach ([
+                static fn () => Sql::jsonText($driver, 'meta', 'k'),
+                static fn () => Sql::castText($driver, 'x.cost'),
+            ] as $call) {
+                try {
+                    $call();
+                    $this->fail("accepted driver {$driver}");
+                } catch (InvalidArgumentException) {
+                    $this->addToAssertionCount(1);
+                }
+            }
+        }
     }
 }

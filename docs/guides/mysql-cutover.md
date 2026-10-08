@@ -1,6 +1,6 @@
 # Переезд Neon (PostgreSQL) → MySQL 8.4: перенос данных, переключение, откат
 
-Решение — [ADR 0010](../adr/0010-mysql-dual-support.md), задача PROD-47 ([production-backlog.md](../product/production-backlog.md)).
+Решение — [ADR 0010](../adr/0010-mysql-dual-support.md) и [ADR 0011](../adr/0011-mysql-only.md) (с 2026-10-08 `main` — только MySQL; боевой Vercel + Neon заморожен на ветке `legacy/vercel-postgres`), задача PROD-47 ([production-backlog.md](../product/production-backlog.md)).
 Инструмент — команда `php artisan db:transfer-to-mysql` (модуль Core, [core.md](../modules/core.md)).
 Доказательство на синтетике — workflow `MySQL data transfer` (`.github/workflows/mysql-data-transfer.yml`, необязательный).
 
@@ -47,14 +47,16 @@
   порт, имя базы; приложение на unix-сокете + цель на loopback) и по самим серверам (`@@server_uuid` + `database()`,
   для MariaDB — `@@hostname:@@port` + `database()`). Сравнение **fail-closed**: если приложение на MySQL
   (`DB_CONNECTION=mysql`), а сравнить не удалось (БД приложения недоступна, запрос упал) — перенос запрещён; проверка
-  пропускается только когда приложение на другом драйвере (до переключения — `pgsql`, Neon).
+  пропускается только когда соединение приложения на другом драйвере (в `main` его нет: приложение — только MySQL, ADR 0011).
   Цель через unix-сокет не поддерживается; `DB_SOCKET` приложения на цель не наследуется.
 - **Финальный боевой прогон — без `--confirm-target`**: имя базы вводится в диалоге руками (флаг — для CI и репетиций).
 
 ## Где запускать
 
-С машины/контейнера DevOps IT STEP рядом с MySQL (Vercel для этого не годится), из релиза кода, совпадающего с продом
-(preflight сверяет список миграций). Окружение: `APP_KEY` — **тот же, что у прода** (Vercel env), `APP_ENV=production`,
+С машины/контейнера DevOps IT STEP рядом с MySQL (Vercel для этого не годится), из релиза `main`, чей список миграций совпадает с Neon
+(preflight сверяет список миграций; Neon мигрирован релизом `legacy/vercel-postgres`). Миграции, появившиеся в `main` после
+заморозки, накатываются на MySQL **после** переноса (`php artisan migrate` текущим релизом); перенос запускается релизом без них.
+Команде нужен `pdo_pgsql` с libpq ≥ 14 (SNI для Neon). Окружение: `APP_KEY` — **тот же, что у прода** (Vercel env), `APP_ENV=production`,
 `TRANSFER_SOURCE_URL`, `TRANSFER_TARGET_URL`. Секреты — через env/секрет-хранилище, не в истории shell, не во временных
 файлах. Память: `php -d memory_limit=1G artisan …` (таблицы с вложениями читаются порциями по 4 строки).
 
@@ -90,17 +92,19 @@
 
 ## Откат на Neon
 
-- **До снятия заморозки** (новых записей в MySQL нет): вернуть `DB_CONNECTION=pgsql`, `DB_URL=<neon>`, деплой, вернуть
+- **До снятия заморозки** (новых записей в MySQL нет): выкатить на Vercel релиз ветки `legacy/vercel-postgres` (`main` PostgreSQL не
+  поддерживает) с `DB_CONNECTION=pgsql`, `DB_URL=<neon>`, вернуть
   роли приложения в Neon права записи (`GRANT INSERT, UPDATE, DELETE, TRUNCATE …`), включить `cron.yml`, снять заморозку. Данные Neon не менялись — откат без потерь.
 - **После снятия заморозки** в MySQL появились новые записи: снова заморозка, перенос новых строк обратно в Neon
-  (репетиция одного append-only случая — `backup-restore.yml`, `scripts/mysql-transfer-proof.php replay-candidate`;
+  (репетиция одного append-only случая была в снятом `backup-restore.yml` — `scripts/mysql-transfer-proof.php replay-candidate`, запускать из релиза `legacy/vercel-postgres`;
   правки и удаления после переключения переносятся вручную по журналу аудита), затем `setval` последовательностей и
   переключение `DB_URL`. Поэтому решение об откате принимается в окне, до снятия заморозки.
 - MySQL после отката не удалять до разбора причины.
 
 ## Проверка
 
-CI: `MySQL data transfer` — PostgreSQL 17 + MySQL 8.4, демо-данные (`db:seed` + `DemoDataService`), feature-тест
+CI: `MySQL data transfer` — PostgreSQL 17 + MySQL 8.4; источник мигрирует и наполняет демо-данными (`db:seed` + `DemoDataService`)
+замороженный релиз `legacy/vercel-postgres` (как боевой Neon), цель и команда — текущий код, приложение — отдельная БД MySQL; feature-тест
 `MysqlDataTransferTest` (коллизии `a@x/A@x` и `jose/josé` блокируют перенос без печати значений, `Йосип/Иосип` — не коллизия на MySQL 8.4; повторный запуск и
 возобновление после «сбоя»; порча вложения/ячейки/FK/`AUTO_INCREMENT` → `ИТОГ: FAIL`; чужой `APP_KEY` → стоп; без
 подтверждения и без `--production` → отказ), затем те же шаги через CLI. Unit: `tests/Unit/Core/Transfer/*`.

@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-/** Sql helper on the real database: the same assertions run in the PostgreSQL job (tests) and MySQL job (tests-mysql). */
+/** Sql helper on the real MySQL 8.4 database (CI job `tests`, ADR 0011): NULLS LAST/FIRST, contains, JSON, session. */
 final class PortableSqlTest extends TestCase
 {
     use RefreshDatabase;
@@ -69,10 +69,10 @@ final class PortableSqlTest extends TestCase
     }
 
     /**
-     * Known divergence (ADR 0010): MySQL utf8mb4_0900_ai_ci ignores Latin diacritics (é = e), PostgreSQL ignores only case; Cyrillic й is not folded into и on either (verified in CI).
-     * The test pins it so a change of collation or of the helper does not slip by unnoticed.
+     * utf8mb4_0900_ai_ci (ADR 0011): the search ignores case and Latin diacritics (é = e), Cyrillic й is not folded into и.
+     * Under PostgreSQL only case was ignored — accepted widening, pinned so a collation change does not slip by.
      */
-    public function test_contains_diacritics_known_divergence_mysql_is_wider(): void
+    public function test_contains_ignores_latin_diacritics_but_keeps_cyrillic_short_i(): void
     {
         $user = User::factory()->create(['name' => 'Йосип Résumé']);
         $find = static function (string $needle): array {
@@ -81,11 +81,10 @@ final class PortableSqlTest extends TestCase
 
             return $q->pluck('id')->all();
         };
-        $mysql = in_array(DB::getDriverName(), ['mysql', 'mariadb'], true);
 
-        $this->assertSame([$user->id], $find('йосип'), 'case-insensitivity is the same on every driver');
-        $this->assertSame([], $find('иосип'), 'й is not folded into и on any driver');
-        $this->assertSame($mysql ? [$user->id] : [], $find('resume'), 'é = e only on MySQL');
+        $this->assertSame([$user->id], $find('йосип'), 'case-insensitive');
+        $this->assertSame([], $find('иосип'), 'й is not folded into и');
+        $this->assertSame([$user->id], $find('resume'), 'é = e under utf8mb4_0900_ai_ci');
     }
 
     public function test_json_text_reads_a_key_on_the_current_driver(): void
@@ -93,16 +92,15 @@ final class PortableSqlTest extends TestCase
         DB::table('integrations')->insert(['key' => 'portable_sql_probe', 'status' => 'off', 'settings' => json_encode(['mode' => 'Тест']), 'created_at' => now(), 'updated_at' => now()]);
 
         $value = DB::table('integrations')->where('key', 'portable_sql_probe')
-            ->selectRaw(Sql::jsonText(DB::getDriverName(), 'settings', 'mode').' as mode')->value('mode');
+            ->selectRaw(Sql::jsonText('mysql', 'settings', 'mode').' as mode')->value('mode');
 
         $this->assertSame('Тест', $value);
     }
 
     public function test_mysql_session_is_utf8mb4_strict_and_utc(): void
     {
-        if (DB::getDriverName() !== 'mysql') {
-            $this->markTestSkipped('MySQL session settings (ADR 0010) — checked in the tests-mysql job.');
-        }
+        $this->assertSame('mysql', DB::getDriverName());
+        $this->assertStringStartsWith('8.4.', (string) DB::selectOne('select version() as v')->v);
         $row = DB::selectOne('select @@session.time_zone as tz, @@session.sql_mode as mode, @@session.collation_connection as coll, @@session.character_set_connection as cs');
 
         $this->assertSame('+00:00', $row->tz);

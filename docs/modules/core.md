@@ -3,7 +3,8 @@
 ## Что это и зачем
 Общий фундамент: проверка, что система жива и видит базу данных, и базовый механизм подключения модулей.
 
-Восстановимость схемы и синтетических связей проверяет отдельный CI `Backup restore proof` на PostgreSQL 17:
+Восстановимость схемы и синтетических связей проверял отдельный CI `Backup restore proof` на PostgreSQL 17 (снят 2026-10-08
+вместе с PostgreSQL, ADR 0011; MySQL-вариант — HRM-38, PR #174):
 реальные миграции → связанные данные и зашифрованный vault → dump → новая БД → чтение тем же CI APP_KEY.
 Это не production backup и не проверка внешних файлов; [runbook](../guides/backup-restore.md) описывает отдельные
 DB/key/storage требования и незакрытые решения владельца по RPO/RTO, retention и доступу.
@@ -95,12 +96,10 @@ DB/key/storage требования и незакрытые решения вл�
 `paginator-intl.spec.ts` (все подписи ru/uk/en, совпадение числовых диапазонов со штатным `MatPaginatorIntl`, отложенная загрузка/быстрая смена языка, aria-label существующего пагинатора, освобождение подписки), `api-error.spec.ts`, `http-params.spec.ts`, `unwrap-data.spec.ts`, `notify.service.spec.ts`, `auth.service.spec.ts`, `auth.guards.spec.ts`, `csrf.interceptor.spec.ts`, `language.service.spec.ts`, `translated-title.strategy.spec.ts`.
 Вручную: `curl -i https://sinhrm.vercel.app/api/health`.
 
-## Подключение к Neon из Vercel
-Библиотека libpq в рантайме vercel-php не поддерживает SNI, и Neon отвечает «Endpoint ID is not specified».
-`Support\NeonConnectionConfig` (применяется в `CoreServiceProvider::register`) разбирает `DATABASE_URL` и передаёт
-id эндпоинта внутри пароля (`endpoint=<id>;<пароль>`) — документированный обход Neon. Применяется только если libpq < 14
-(`PGSQL_LIBPQ_VERSION`): современный клиент (CI) шлёт SNI, и тогда префикс ломает пароль. Для не-Neon URL ничего не меняется.
-Проверено: до исправления `/api/health` → 503 с этой ошибкой, после → 200.
+## Подключение к Neon из Vercel (удалено 2026-10-08)
+`Support\NeonConnectionConfig` (обход старого libpq vercel-php без SNI: id эндпоинта в пароле) удалён вместе с
+поддержкой PostgreSQL ([ADR 0011](../adr/0011-mysql-only.md)); замороженный Vercel-прод живёт на ветке
+`legacy/vercel-postgres` со своей копией обхода. Neon теперь читает только `db:transfer-to-mysql` — с libpq ≥ 14 (SNI).
 
 ## Заголовки безопасности
 `Http\Middleware\SecurityHeaders` (подключён в `bootstrap/app.php`) ставит на каждый ответ API CSP `default-src 'none'`,
@@ -271,20 +270,19 @@ Generated файлы игнорируются git; новых обязатель
 После разрешённого deploy сравнить `/build.json` и `/api/health` с HEAD конкретного успешного Deploy checkout.
 До этого runtime provenance не считается подтверждённым.
 
-## Переносимый SQL и MySQL 8.4 (2026-10-08)
+## SQL на MySQL 8.4 (2026-10-08; только MySQL — с ADR 0011)
 
-Переходный период — двойная поддержка PostgreSQL (прод на Neon) и MySQL 8.4 (целевая инфраструктура IT STEP), [ADR 0010](../adr/0010-mysql-dual-support.md).
+Единственная СУБД — MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md), заменил двойную поддержку [ADR 0010](../adr/0010-mysql-dual-support.md)). `DB_CONNECTION` по умолчанию — `mysql`, соединения `pgsql` в `config/database.php` нет.
 
-- `Core\Support\Database\Sql` — единственное место для расхождений драйверов: `orderByNullsLast/First` (вместо `NULLS LAST/FIRST`), `whereContainsCi` (вместо `ILIKE`), `jsonText` (вместо `->>` в сыром SQL), `castText` (MySQL не знает `CAST AS VARCHAR/TEXT`). Выражение — только идентификатор колонки (`col`/`table.col`); подзапрос или вычисляемое — явным `new Illuminate\Database\Query\Expression(...)`, иная строка (пробелы, кавычки, `;`, `--`) → `InvalidArgumentException`. `jsonText`: JSON null даёт строку `'null'` на MySQL и SQL NULL на PostgreSQL. Апсерты — `upsert()/insertOrIgnore()/insertGetId()` Laravel, JSON в `where` — `'col->key'`/`whereJsonContains`.
-- Соединение `mysql` (`config/database.php`): `utf8mb4`, collation `utf8mb4_0900_ai_ci` (`DB_COLLATION`), `strict` (включая `ONLY_FULL_GROUP_BY`), сессия `+00:00`, InnoDB. Проверка — `PortableSqlTest` (jobs `tests` и `tests-mysql`), `SqlTest`.
-- `NeonConnectionConfig` применяется только когда `DB_CONNECTION=pgsql`.
+- `Core\Support\Database\Sql` — то, чего нет в билдере Laravel на MySQL: `orderByNullsLast/First` (в MySQL нет `NULLS LAST/FIRST`: `expr is null asc/desc, expr dir`), `whereContainsCi` (`lower(..) like ? escape '!'`, подстановочные знаки литеральны), `jsonText` (`json_unquote(json_extract(..))` — то же, что Laravel строит для `'col->key'`), `castText` (`cast(.. as char(n))`, MySQL не знает `CAST AS VARCHAR/TEXT`). API прежний; `jsonText`/`castText` с драйвером, отличным от `mysql`/`mariadb`, — `InvalidArgumentException`. Выражение — только идентификатор колонки (`col`/`table.col`); подзапрос или вычисляемое — явным `new Illuminate\Database\Query\Expression(...)`, иная строка (пробелы, кавычки, `;`, `--`) → `InvalidArgumentException`. `jsonText`: JSON null даёт строку `'null'`, отсутствующий ключ — SQL NULL. Апсерты — `upsert()/insertOrIgnore()/insertGetId()` Laravel, JSON в `where` — `'col->key'`/`whereJsonContains`.
+- Соединение `mysql` (`config/database.php`): `utf8mb4`, collation `utf8mb4_0900_ai_ci` (`DB_COLLATION`), `strict` (включая `ONLY_FULL_GROUP_BY`), сессия `+00:00`, InnoDB. Проверка — `PortableSqlTest` (job `tests` на MySQL 8.4: NULLS LAST/FIRST, «содержит» с кириллицей и `é = e`, JSON, сессия 8.4/UTC/strict), `SqlTest`.
 
 ## Перенос данных PostgreSQL → MySQL: `db:transfer-to-mysql` (2026-10-08, PROD-47)
 
-Боевая команда переезда Neon → MySQL 8.4; порядок переключения и откат — [mysql-cutover.md](../guides/mysql-cutover.md), решение — [ADR 0010](../adr/0010-mysql-dual-support.md).
+Боевая команда переезда Neon → MySQL 8.4; порядок переключения и откат — [mysql-cutover.md](../guides/mysql-cutover.md), решение — [ADR 0010](../adr/0010-mysql-dual-support.md), исключение из «только MySQL» — [ADR 0011](../adr/0011-mysql-only.md).
 
 - `Console/TransferToMysqlCommand` — оркестрация: `--preflight` (без записи), `--verify` (без записи), по умолчанию preflight → подтверждение именем целевой БД (`--confirm-target=<имя>` без диалога) → перенос (`--truncate-target` — очистить цель) → сверка. `--production` обязателен при `APP_ENV=production` или не локальных хостах. Подключения — только env `TRANSFER_SOURCE_URL`/`TRANSFER_TARGET_URL` (`config/db_transfer.php`), цель собирается из настроек соединения `mysql` (тот же `sql_mode`, `+00:00`).
-- `Services/Transfer/*`: `TransferDatabases` (подключения, без печати URL), `SchemaInspector` (каталоги; схема цели — эталон), `Preflight` (коллизии уникальных значений через `Contracts/CollationKeys` → `MysqlCollationKeys` = `WEIGHT_STRING` на цели, `CollisionFinder`; 2038; длины; JSON; `max_allowed_packet`; `KeyCheck` — расшифровка `integration_secrets` ключом окружения), `DataCopier` (порции по PK, пропуск уже перенесённых id, `FOREIGN_KEY_CHECKS=0` на сессию, `AUTO_INCREMENT = max+1`), `Reconciler` (строки, XOR-суммы sha256 по колонкам, SHA-256 вложений, сироты FK, `AUTO_INCREMENT`), `ValueCanonicalizer` (bool/JSON/даты/decimal к общему виду), `LaunchGuard`, `SafeError` (ошибки без значений и секретов), `TransferReport` (только имена и счётчики).
+- `Services/Transfer/*`: `TransferDatabases` (подключения, без печати URL; база соединения-источника PostgreSQL — константа `SOURCE_BASE`, в `config/database.php` её нет), `SchemaInspector` (каталоги; схема цели — эталон), `Preflight` (коллизии уникальных значений через `Contracts/CollationKeys` → `MysqlCollationKeys` = `WEIGHT_STRING` на цели, `CollisionFinder`; 2038; длины; JSON; `max_allowed_packet`; `KeyCheck` — расшифровка `integration_secrets` ключом окружения), `DataCopier` (порции по PK, пропуск уже перенесённых id, `FOREIGN_KEY_CHECKS=0` на сессию, `AUTO_INCREMENT = max+1`), `Reconciler` (строки, XOR-суммы sha256 по колонкам, SHA-256 вложений, сироты FK, `AUTO_INCREMENT`), `ValueCanonicalizer` (bool/JSON/даты/decimal к общему виду), `LaunchGuard`, `SafeError` (ошибки без значений и секретов), `TransferReport` (только имена и счётчики).
 - Ревью безопасности (PR #175): цель ≠ рабочая БД — по настройкам с нормализацией loopback-алиасов и сокета и по `@@server_uuid` (MariaDB — `@@hostname:@@port`), fail-closed: приложение на MySQL и сравнить не удалось → отказ (`TransferDatabases::appServerVerdict`); без `--truncate-target` строки цели должны быть подмножеством источника (`target_not_empty`); `--verify` включает проверку схемы (`SchemaCheck`: миграции, таблицы и колонки только на одной стороне); текстовые ключи в отчёте коллизий не печатаются; `SafeError` вырезает всё в кавычках; пароли маскируются любой длины.
-- Исключение из правила ADR «ветки драйверов только в `Sql`»: инструмент по определению читает каталоги PostgreSQL и MySQL; код приложения его не вызывает.
-- Проверка: Unit `tests/Unit/Core/Transfer/*` (jobs `tests`, `tests-mysql`); feature `MysqlDataTransferTest` и CLI-прогон — workflow `MySQL data transfer` (PostgreSQL 17 + MySQL 8.4, синтетика), необязательный.
+- Единственный PostgreSQL-код проекта (ADR 0011): инструмент по определению читает каталоги PostgreSQL и MySQL; код приложения его не вызывает.
+- Проверка: Unit `tests/Unit/Core/Transfer/*` (job `tests`); feature `MysqlDataTransferTest` и CLI-прогон — workflow `MySQL data transfer` (PostgreSQL 17 + MySQL 8.4, синтетика), необязательный. Источник PostgreSQL в нём строит замороженный релиз `legacy/vercel-postgres` (миграции, `db:seed`, демо-данные) — как боевой Neon; приложение и цель — MySQL текущего кода, фикстуры теста пишутся через отдельное тестовое соединение `transfer_fixtures`.

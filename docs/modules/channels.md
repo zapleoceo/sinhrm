@@ -59,7 +59,11 @@
 WhatsApp — `wa_id`, Viber — `sender.id`. Ingestor сначала ищет кандидата, уже привязанного к этой ветке в этом канале
 (`TouchpointRepository::candidateIdByThread`), и только потом — по контакту. Поэтому Viber (не отдаёт телефон) после одной
 ручной привязки во «Вхідних» дальше сам попадает в карточку. Ответ из карточки берёт ветку последнего касания канала
-(`latestThreadOf`). Для Postgres есть индекс по `(channel, meta->>'thread')` (миграция модуля).
+(`latestThreadOf`). Индекс — функциональный индекс MySQL 8.4 `touchpoints_channel_thread_index` по
+`(channel, cast(json_unquote(json_extract(meta, '$."thread"')) as char(255)) collate utf8mb4_bin)` (PROD-50, ADR 0011;
+раньше — выражный индекс PostgreSQL, миграция правлена на месте). Оптимизатор сопоставляет его с `where('meta->thread', …)`
+Laravel; `meta.thread` длиннее 255 символов MySQL отклоняет. Тест: `tests/Feature/Channels/TouchpointThreadIndexTest`
+(части индекса, `EXPLAIN` запроса `candidateIdByThread` — индекс в `possible_keys`, регистрозависимость треда, отказ на 256 символах).
 
 ### Адаптеры (`Adapters/`)
 Интерфейс `Contracts/ChannelAdapter`: `key()`, `channel()`, `auth()`, `verify(Request, IntegrationConfig)`,

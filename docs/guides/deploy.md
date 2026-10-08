@@ -43,18 +43,18 @@ merge-base) или падение самого шага — всё это даё
 ## Как устроено
 | Workflow | Когда | Что делает |
 |---|---|---|
-| `ci.yml` | каждый PR и push в `main` | бэкенд (параллельные job `lint` / `tests` / `api-docs` + агрегатор `backend`, см. ниже): Pint, PHPStan, PHPUnit на Postgres (сервис в CI); фронт: lint, test, build; расширение (`extension`): lint, typecheck, test, package → артефакт `sinhrm-clipper` (zip); gitleaks; `docs` (содержательная правка `docs/modules/<модуль>.md` и тест в том же модуле — [development.md](development.md)); `worklog` |
+| `ci.yml` | каждый PR и push в `main` | бэкенд (параллельные job `lint` / `tests` / `api-docs` + агрегатор `backend`, см. ниже): Pint, PHPStan, PHPUnit на MySQL 8.4 (сервис в CI); фронт: lint, test, build; расширение (`extension`): lint, typecheck, test, package → артефакт `sinhrm-clipper` (zip); gitleaks; `docs` (содержательная правка `docs/modules/<модуль>.md` и тест в том же модуле — [development.md](development.md)); `worklog` |
 | `deploy.yml` | после зелёного CI (push в `main` / PR) | `vercel pull` → `vercel build` → `vercel deploy --prebuilt` для `sinhrm-api` и `sinhrm`; миграции через `POST /api/ops/migrate` (prod) / `?fresh=1` (preview, синтетика) |
 | `demo-fill.yml` | вручную (Run workflow, флаг `reset`) | заполняет прод синтетическими данными (один филиал «Тестовий філіал», пометка « [ТЕСТ]» в конце имён) по шагам (`confirm=demo&step=…`) или удаляет только строки из `demo_records` и старые тестовые строки (`reset`; с `dry` — только показывает, что удалит); секрет `X-Ops-Secret` не покидает GitHub Actions |
 | `cron.yml` | каждые 30 мин (и вручную: Run workflow) | обычный `curl -X POST https://sinhrm-api.vercel.app/api/ops/jobs/run` с `X-Ops-Secret` (секрет только через `env`, не в тексте скрипта) — все `ScheduledJob` (напоминания Scripts, начисление отпусков, шаги воркфлоу `workflows.tick` и др.); в лог — только счётчики и вердикт `jobs: ok/FAILED` |
 
 ### Раскладка CI: параллельные job и обязательные проверки
-Бэкенд в `ci.yml` разбит на три параллельных job: `lint` (Pint `--parallel` + PHPStan, без Postgres; кеши
-результатов Pint и PHPStan в `actions/cache`), `tests` (Postgres, PHPUnit + покрытие не ниже 70 %) и `api-docs`
+Бэкенд в `ci.yml` разбит на три параллельных job: `lint` (Pint `--parallel` + PHPStan, без БД; кеши
+результатов Pint и PHPStan в `actions/cache`), `tests` (MySQL 8.4, PHPUnit + покрытие не ниже 70 %) и `api-docs`
 (миграции, экспорт OpenAPI через Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
 Job `backend` — агрегатор: `needs` всех трёх, `if: always()`, зелёный только если все три `success`.
 
-Job `tests-mysql` (MySQL 8.4, тот же полный PHPUnit с покрытием) — **необязательный и не входит в агрегатор `backend`** на переходный период двойной поддержки ([ADR 0010](../adr/0010-mysql-dual-support.md)); в «Protect main» не добавлять, пока не станет стабильно зелёным. Целевая БД на инфраструктуре IT STEP — MySQL 8.4: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)); Vercel-прод до переезда остаётся на Neon (`pgsql`).
+Отдельного job `tests-mysql` больше нет: `tests` сам идёт на MySQL 8.4 — единственной БД проекта ([ADR 0011](../adr/0011-mysql-only.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)). Боевой Vercel + Neon (`pgsql`) заморожен на ветке `legacy/vercel-postgres`; `main` на Vercel не выкладывается (заморозка `VERCEL_DEPLOY_ENABLED`, PR #176, раздел ниже).
 Job `frontend`: `ng lint`, `ng test --watch=false --coverage` (Vitest + `@vitest/coverage-v8`) с порогами покрытия
 в `frontend/angular.json` → `test.options.coverageThresholds`: statements 45,5 %, branches 57 %, functions 54,5 %,
 lines 54 % — замер 02.10.2026 (47,6 / 59,1 / 56,7 / 56,3 %) минус запас ≈ 2 п.п.; ниже порога job падает. Порог

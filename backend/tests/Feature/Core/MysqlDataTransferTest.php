@@ -20,11 +20,15 @@ use Tests\TestCase;
 /**
  * `db:transfer-to-mysql` against real PostgreSQL 17 + MySQL 8.4 with synthetic data. Runs only in the
  * mysql-data-transfer workflow (env TRANSFER_SOURCE_URL / TRANSFER_TARGET_URL on 127.0.0.1); skipped elsewhere.
- * Default connection = the source, so factories write synthetic rows into PostgreSQL.
+ * The app runs on MySQL only (ADR 0011); for fixtures this test makes a PostgreSQL connection to the synthetic source
+ * (built by the frozen legacy/vercel-postgres release in the workflow) the default, so factories write rows there.
  */
 final class MysqlDataTransferTest extends TestCase
 {
     private const string TARGET_DB = 'app_transfer_target';
+
+    /** Test-only connection to the synthetic PostgreSQL source (not TransferDatabases::SOURCE, which the command purges). */
+    private const string FIXTURES = 'transfer_fixtures';
 
     private const string SECRET = 'synthetic-transfer-secret';
 
@@ -36,6 +40,8 @@ final class MysqlDataTransferTest extends TestCase
         if ((string) getenv('TRANSFER_TARGET_URL') === '' || getenv('GITHUB_ACTIONS') !== 'true') {
             $this->markTestSkipped('Only the mysql-data-transfer workflow runs the cross-database transfer.');
         }
+        config(['database.connections.'.self::FIXTURES => array_merge(TransferDatabases::SOURCE_BASE, ['url' => (string) getenv('TRANSFER_SOURCE_URL')])]);
+        DB::setDefaultConnection(self::FIXTURES);
         $this->assertSame('pgsql', DB::connection()->getDriverName());
         $this->assertSame('app_transfer_source', DB::connection()->getDatabaseName());
         $this->assertSame('127.0.0.1', DB::connection()->getConfig('host'));
@@ -271,7 +277,7 @@ final class MysqlDataTransferTest extends TestCase
         $this->assertSame($before, $this->target()->table('users')->count(), 'nothing truncated');
     }
 
-    /** Before the cutover the app is on PostgreSQL: the server comparison is skipped and the transfer runs. */
+    /** An app connection on another driver (here the PostgreSQL fixture connection) is not compared with the target. */
     public function test_app_on_pgsql_skips_the_server_comparison(): void
     {
         $this->assertSame('pgsql', DB::connection()->getDriverName());

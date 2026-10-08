@@ -6,7 +6,6 @@ use App\Modules\Auth\Enums\AppLocale;
 use App\Modules\Auth\Enums\UserStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -16,11 +15,8 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table): void {
             // Users sign in with Google only; invited users have no password.
             $table->string('password')->nullable()->change();
-            $googleId = $table->string('google_id')->nullable();
-            if (DB::getDriverName() === 'mysql') {
-                $googleId->collation('utf8mb4_bin');
-            }
-            $googleId->unique();
+            // Opaque id: utf8mb4_bin, the default _ai_ci collation would merge ids differing only in case.
+            $table->string('google_id')->nullable()->collation('utf8mb4_bin')->unique();
             $table->string('avatar_url', 2048)->nullable();
             $table->string('status', 16)->default(UserStatus::Active->value)->index();
             $table->string('locale', 5)->default(AppLocale::Uk->value);

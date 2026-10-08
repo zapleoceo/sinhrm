@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,10 +13,7 @@ return new class extends Migration
         // A remembered Google Sheets import: column mapping + the last imported row for incremental re-sync.
         Schema::create('sheet_imports', function (Blueprint $table): void {
             $table->id();
-            $spreadsheetId = $table->string('spreadsheet_id', 128);
-            if (DB::getDriverName() === 'mysql') {
-                $spreadsheetId->collation('utf8mb4_bin');
-            }
+            $table->string('spreadsheet_id', 128)->collation('utf8mb4_bin');
             // Sheet (tab) title; '' = the first sheet.
             $table->string('sheet', 100)->default('');
             $table->jsonb('headers');

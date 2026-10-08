@@ -109,7 +109,7 @@ final class CandidateServiceTest extends TestCase
         $this->candidates->method('findByContacts')->willReturnOnConsecutiveCalls(null, [$existing, 'phone']);
         $this->candidates->method('isVisible')->willReturn(true);
         $this->candidates->method('create')->willThrowException(
-            new UniqueConstraintViolationException('pgsql', 'insert into candidates', [], new \PDOException('23505')),
+            new UniqueConstraintViolationException('mysql', 'insert into candidates', [], new \PDOException('23000')),
         );
 
         try {

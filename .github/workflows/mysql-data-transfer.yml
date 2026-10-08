@@ -2,6 +2,9 @@ name: MySQL data transfer
 
 # `php artisan db:transfer-to-mysql` (PROD-47, docs/guides/mysql-cutover.md) on real PostgreSQL 17 -> MySQL 8.4 with
 # synthetic demo data only. NOT a required check. No production URL, dump or secret is involved.
+# The app supports MySQL only (ADR 0011): the PostgreSQL source is built exactly like Neon was — by the frozen
+# release legacy/vercel-postgres (LEGACY_SHA), checked out next to the current code; the target and the command
+# come from the current code.
 on:
   pull_request:
     paths:
@@ -42,33 +45,45 @@ jobs:
           --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       APP_ENV: testing
-      # The app's own connection = the synthetic source (factories in the feature test write there).
-      DB_CONNECTION: pgsql
+      # The app's own connection: MySQL, a third database on the same server (the guard refuses target == app DB).
+      DB_CONNECTION: mysql
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_DATABASE: app_transfer_source
+      DB_PORT: 3306
+      DB_DATABASE: app_test
       DB_USERNAME: app
       DB_PASSWORD: app
+      # Frozen PostgreSQL release = schema of production Neon (branch legacy/vercel-postgres).
+      LEGACY_SHA: 8875ac4e57e3224373afa76859de60cbce0b9c9a
     steps:
       - uses: actions/checkout@v7
+      - name: Checkout the frozen PostgreSQL release (source schema and seeders)
+        uses: actions/checkout@v7
+        with: { ref: '${{ env.LEGACY_SHA }}', path: legacy }
       - uses: shivammathur/setup-php@v2
         with: { php-version: '8.4', extensions: 'pdo_pgsql, pgsql, pdo_mysql, intl, sodium', coverage: none, ini-values: 'memory_limit=1G' }
       - uses: actions/cache/restore@v6
         with:
           path: backend/vendor
           key: composer-${{ hashFiles('backend/composer.lock') }}
-      - name: Install locked dependencies and create one synthetic key
-        run: composer install --no-interaction --no-progress --prefer-dist && cp .env.example .env && php artisan key:generate
+      - name: Install locked dependencies and create one synthetic key (shared by both releases)
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist && cp .env.example .env && php artisan key:generate
+          (cd ../legacy/backend && composer install --no-interaction --no-progress --prefer-dist) && cp .env ../legacy/backend/.env
+      - name: App database next to the target (same MySQL server, different database)
+        run: mysql -h 127.0.0.1 -uroot -proot -e "CREATE DATABASE app_test; GRANT ALL ON app_test.* TO 'app'@'%';"
       - name: Transfer connections from local synthetic services (env only, never arguments)
         run: |
           test -z "${DB_URL:-}" && test -z "${DATABASE_URL:-}"
           echo "TRANSFER_SOURCE_URL=pgsql://${DB_USERNAME}:${DB_PASSWORD}@127.0.0.1:5432/app_transfer_source" >> "$GITHUB_ENV"
           echo "TRANSFER_TARGET_URL=mysql://${DB_USERNAME}:${DB_PASSWORD}@127.0.0.1:3306/app_transfer_target" >> "$GITHUB_ENV"
-      - name: Migrate source (PostgreSQL) and target (MySQL)
+      - name: Migrate source (PostgreSQL, frozen release) and target (MySQL, current code)
         run: |
+          (cd ../legacy/backend && DB_CONNECTION=pgsql DB_PORT=5432 DB_DATABASE=app_transfer_source php artisan migrate --force --no-interaction)
+          DB_DATABASE=app_transfer_target php artisan migrate --force --no-interaction
           php artisan migrate --force --no-interaction
-          DB_CONNECTION=mysql DB_PORT=3306 DB_DATABASE=app_transfer_target php artisan migrate --force --no-interaction
-      - name: Seed synthetic demo data into the source
+      - name: Seed synthetic demo data into the source (frozen release)
+        working-directory: legacy/backend
+        env: { DB_CONNECTION: pgsql, DB_PORT: 5432, DB_DATABASE: app_transfer_source }
         run: |
           php artisan db:seed --force --no-interaction
           php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();

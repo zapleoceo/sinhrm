@@ -13,6 +13,7 @@
               │
               ▼
            Neon Postgres (Frankfurt) — данные, сессии, очередь задач, зашифрованные секреты
+           (заморожено: ветка legacy/vercel-postgres; main — только MySQL 8.4, ADR 0011)
 Chrome «SinHRM Clipper» ──► sinhrm.vercel.app/api/clipper/* (Bearer-токен, только эти маршруты)
 GitHub Actions ──► тесты на каждый PR ─► деплой на Vercel ─► cron (30 мин): POST /api/ops/jobs/run
 ```
@@ -20,8 +21,8 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 | Решение | Почему |
 |---|---|
 | Один домен для фронта и API (rewrite) | `vercel.app` — публичный суффикс, cookie между двумя `*.vercel.app` не работают |
-| Сессии, кэш, очередь — в Postgres | у serverless нет постоянного диска и процессов |
-| Целевая БД — MySQL 8.4, переходный период: код работает на PostgreSQL и MySQL | DevOps IT STEP поддерживают только MySQL; прод остаётся на Neon до переезда; расхождения SQL — только в `Core\Support\Database\Sql` ([ADR 0010](../adr/0010-mysql-dual-support.md)) |
+| Сессии, кэш, очередь — в БД приложения | у serverless нет постоянного диска и процессов |
+| Единственная БД — MySQL 8.4 (`main`); PostgreSQL не поддерживается | DevOps IT STEP поддерживают только MySQL; боевой Vercel + Neon заморожен на ветке `legacy/vercel-postgres` до переезда; PostgreSQL читает только `db:transfer-to-mysql` ([ADR 0011](../adr/0011-mysql-only.md), заменил [ADR 0010](../adr/0010-mysql-dual-support.md)) |
 | Фоновые задачи через cron GitHub Actions | у vercel-php нет воркеров; Vercel Hobby cron — 1 раз в сутки |
 | Деплой из GitHub Actions (Vercel CLI) | деплой только после зелёных тестов; аккаунт Vercel не привязан к GitHub |
 
@@ -92,12 +93,12 @@ Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн �
   и уведомления о падении настроения — с задержкой до ~30 мин. Анонимность обеспечивает сервер: в ответах анонимных
   волн нет id сотрудника и времени, соль хэша стирается при закрытии, группы меньше минимума не показываются
   ([pulse.md](../modules/pulse.md)).
-- Файлы документов до 2 МБ хранятся в Postgres (base64) за интерфейсом `DocumentStorage` — до выбора объектного
+- Файлы документов до 2 МБ хранятся в БД (base64 в `longText`) за интерфейсом `DocumentStorage` — до выбора объектного
   хранилища ([documents.md](../modules/documents.md)).
 - Анонимная сторона Safe Speak (`/api/safe-speak/public/*`) подключена вне групп `api`/`web`: без сессии, Sanctum и
   CSRF, лимиты — по HMAC-хэшу адреса в кэше ([safe-speak.md](../modules/safe-speak.md)).
 - Отчёты считаются на лету в запросе (без хранилища/материализации): группировки по месяцам и корзинам — в PHP
-  (одинаково на Postgres и SQLite), конструктор — до 5000 строк, CSV — потоком ([reports.md](../modules/reports.md)).
+  (не зависит от SQL-диалекта), конструктор — до 5000 строк, CSV — потоком ([reports.md](../modules/reports.md)).
 - Заявки на подбор и табели (`hiring.sla`, `time.reminders` тем же cron): уведомления согласующим — задачи при активации
   шага (сразу), эскалация просрочки SLA и автозакрытие заявок, пятничные напоминания о табеле — с задержкой до ~30 мин
   ([hiring-requests.md](../modules/hiring-requests.md), [time.md](../modules/time.md)).
