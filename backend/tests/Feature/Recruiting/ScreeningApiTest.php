@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Recruiting;
 
+use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Models\AiRequest;
 use App\Modules\Ai\Services\AiPollJob;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
+use App\Modules\Recruiting\Ai\ScreeningAiHandler;
+use App\Modules\Recruiting\Ai\ScreeningPrompt;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Models\Application;
@@ -162,5 +165,41 @@ final class ScreeningApiTest extends TestCase
         $this->assertSame(['done', 'auto', 82], [
             CandidateScreening::query()->value('status'), CandidateScreening::query()->value('trigger'), CandidateScreening::query()->value('score'),
         ]);
+    }
+
+    /** Handler hooks AiService calls on a final failure (failed) and on a retry after a restart (rebuild). */
+    public function test_handler_marks_the_screening_failed_once_and_rebuilds_its_prompt(): void
+    {
+        $handler = $this->app->make(ScreeningAiHandler::class);
+        $screening = CandidateScreening::query()->create([
+            'application_id' => $this->application->id, 'candidate_id' => $this->application->candidate_id,
+            'vacancy_id' => $this->application->vacancy_id, 'status' => CandidateScreening::PENDING, 'trigger' => 'manual',
+            'prompt_version' => ScreeningPrompt::VERSION,
+        ]);
+        $request = new AiRequest(['subject_type' => ScreeningAiHandler::SUBJECT, 'subject_id' => $screening->id]);
+
+        // rebuild: the stored screening → a fresh screening prompt for its application.
+        $prompt = $handler->rebuild($request);
+        $this->assertNotNull($prompt);
+        $this->assertSame(AiPurpose::CandidateScreening, $prompt->purpose);
+        $this->assertSame(ScreeningPrompt::VERSION, $prompt->version);
+        $this->assertStringContainsString('Laravel від 3 років', $prompt->user);
+        $this->assertNull($handler->rebuild(new AiRequest(['subject_type' => ScreeningAiHandler::SUBJECT, 'subject_id' => null])));
+        $this->assertNull($handler->rebuild(new AiRequest(['subject_type' => ScreeningAiHandler::SUBJECT, 'subject_id' => $screening->id + 1000])));
+
+        // failed: another subject is ignored; ours goes pending → failed with the code cut to the column size.
+        $handler->failed(new AiRequest(['subject_type' => 'touchpoint', 'subject_id' => $screening->id]), 'ai_provider_http_500');
+        $this->assertSame(CandidateScreening::PENDING, $screening->refresh()->status);
+
+        $handler->failed($request, 'ai_provider_'.str_repeat('x', 100));
+        $screening->refresh();
+        $this->assertSame(CandidateScreening::FAILED, $screening->status);
+        $this->assertSame(64, mb_strlen((string) $screening->error));
+        $this->assertStringStartsWith('ai_provider_x', (string) $screening->error);
+        $this->assertNotNull($screening->completed_at);
+
+        // Once: a later failure does not overwrite the finished row.
+        $handler->failed($request, 'ai_provider_connection_failed');
+        $this->assertStringStartsWith('ai_provider_x', (string) $screening->refresh()->error);
     }
 }

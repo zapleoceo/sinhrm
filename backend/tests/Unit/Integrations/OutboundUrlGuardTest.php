@@ -92,6 +92,8 @@ final class OutboundUrlGuardTest extends TestCase
         yield 'ipv4-mapped metadata' => ['::ffff:169.254.169.254'];
         yield 'teredo' => ['2001:0:c0a8:101::1'];
         yield 'ipv6 documentation' => ['2001:db8::1'];
+        yield 'ipv6 unspecified' => ['::'];
+        yield 'ipv6 discard-only 100::/64' => ['100::1'];
     }
 
     #[DataProvider('specialUseIps')]
@@ -146,6 +148,27 @@ final class OutboundUrlGuardTest extends TestCase
 
         $this->assertNull($target->error);
         $this->assertSame(['v6.test:8443:[2606:4700:4700::1111],93.184.216.34'], $target->curlResolve());
+    }
+
+    /** parse_url() gives up on these (returns false or no host): refused before any resolution. */
+    public function test_unparseable_url_is_invalid(): void
+    {
+        $this->assertSame('invalid_url', $this->guard()->check('https://:443/'));
+        $this->assertSame('invalid_url', $this->guard()->check('https:///path'));
+        $this->assertSame('invalid_url', $this->guard()->inspect('')->error);
+    }
+
+    /** A resolver answer that is not an IP address at all fails closed instead of being dialled. */
+    public function test_non_ip_resolver_answer_is_blocked(): void
+    {
+        $this->assertFalse(OutboundUrlGuard::isPublicIp('not-an-ip'));
+        $this->assertFalse(OutboundUrlGuard::isPublicIp(''));
+        $this->assertFalse(OutboundUrlGuard::isPublicIp('999.1.1.1'));
+
+        $guard = new OutboundUrlGuard(new FakeHostResolver(['garbage.test' => ['93.184.216.34', 'not-an-ip']]));
+        $target = $guard->inspect('https://garbage.test/hook');
+        $this->assertSame('blocked_host', $target->error);
+        $this->assertSame([], $target->ips);
     }
 
     /** An IP literal is not resolved, so it is not pinned: no "[2606:4700::1]:443:…" entry curl would reject. */

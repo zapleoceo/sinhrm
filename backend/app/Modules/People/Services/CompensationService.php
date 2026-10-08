@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\People\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Models\EmployeeCompensation;
 use App\Modules\People\Support\SelfDecisionAudit;
-use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 
 /** Compensation history. Access (HR staff / the employee read-only) is decided by the caller: route gate or own profile. */
@@ -48,7 +48,9 @@ final readonly class CompensationService
     public function payload(Employee $employee): array
     {
         $history = $this->employees->compensationHistory($employee->id);
-        $today = Carbon::now()->toDateString();
+        // The user's day (Europe/Kyiv), not the UTC day: right after midnight in Kyiv a raise effective "today" is
+        // already current, although the UTC date is still yesterday (UserTime::today, docs/modules/people.md).
+        $today = UserTime::today()->toDateString();
         $current = $history->first(static fn (EmployeeCompensation $c): bool => $c->effective_on->toDateString() <= $today);
         $row = static fn (EmployeeCompensation $c): array => [
             'id' => $c->id,

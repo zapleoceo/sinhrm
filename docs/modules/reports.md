@@ -116,7 +116,9 @@ API: `GET/POST /api/reports/saved`, `PUT/DELETE /saved/{id}`, `GET /saved/{id}/r
 
 ### CSV (`Support/Csv`, `Http/Resources/CsvResponse`)
 `StreamedResponse` (`fputcsv` в `php://output`), UTF-8 BOM (Excel и кириллица), `Content-Disposition: attachment`,
-`no-store`. **Защита от CSV/formula injection (OWASP):** текстовая ячейка, начинающаяся с `=`, `+`, `-`, `@` (а
+`no-store`. Имя файла — `<отчёт>-<дата>.csv`, дата — день пользователя (`UserTime::today()`, Europe/Kyiv): до 08.10.2026
+бралась дата UTC, и выгрузка с 00:00 до 02:00/03:00 по Киеву получала вчерашнюю дату (регрессия
+`ReportsApiTest::test_csv_file_name_carries_the_users_date_not_the_utc_date`). **Защита от CSV/formula injection (OWASP):** текстовая ячейка, начинающаяся с `=`, `+`, `-`, `@` (а
 также табуляции и `\r`), получает префикс `'`; числа не трогаются. Эндпоинты: `GET /api/reports/catalog/{key}/csv`,
 `POST /api/reports/builder/csv`, `GET /saved/{id}/run?format=csv`. Последняя строка CSV — итог, если он есть: первая
 ячейка всегда с меткой (`Total` или `Total: <сумма>`, если первая колонка суммируется), «—» у колонок без итога; защита

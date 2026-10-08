@@ -342,7 +342,9 @@ recruiter 1, остальные 0; у действующего берётся р
   → `{data: [{id, ok, error}]}` (`not_found`, `terminated`, `manager_cycle`); каждый элемент идёт через `EmployeeService::update`
   (те же правила, аудит-обсервер). `export` → `text/csv` (справочный и рабочий уровень, без PII и зарплаты).
 - **Компенсация** (`employee_compensations`): сумма, валюта UAH/USD/EUR, период month/hour, дата начала действия, причина.
-  Текущая — последняя запись с `effective_on ≤ сегодня`. `GET|POST /api/people/{id}/compensation` — только HR (gate `people-manage`);
+  Текущая — последняя запись с `effective_on ≤ сегодня`, где «сегодня» — день пользователя (`UserTime::today()`, Europe/Kyiv),
+  а не дата UTC: с 00:00 по Киеву повышение с сегодняшней датой уже действующее (до 08.10.2026 оно становилось текущим
+  только в 02:00/03:00 Киева; регрессия `CompensationServiceTest::test_current_follows_the_users_day_not_the_utc_day`). `GET|POST /api/people/{id}/compensation` — только HR (gate `people-manage`);
   `POST` **на собственную запись → 403 `forbidden`** (разделение обязанностей, см. выше): свою зарплату не вписывает
   никто, кроме break-glass единственного суперадмина (с записью `self_decision` в журнале); чтение своей истории через `GET` остаётся.
   сотрудник видит свою только для чтения: `GET /api/me/employee/compensation`, вкладка «Компенсація» в «Мій профіль».
