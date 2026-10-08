@@ -541,8 +541,13 @@ await group('kyiv-midnight', async () => {
   const leave = await api('fakeAdmin', 'POST', '/api/timeoff/requests', { employee_id: S.employee.employeeId, leave_type_id: sick?.id, starts_on: kyivDay, ends_on: kyivDay, override_balance: true });
   const appr = await api('fakeAdmin', 'POST', `/api/timeoff/requests/${data(leave)?.id}/approve`);
   const dash = data(await api('fakeAdmin', 'GET', '/api/dashboard'));
-  const out = JSON.stringify(dash ?? {}).includes(`"employee_id":${S.employee.employeeId}`) || JSON.stringify(dash?.timeoff?.out_today ?? dash?.time_off?.out_today ?? []).includes(String(S.employee.employeeId));
-  record('kyiv-midnight', 'dashboard «out today» at 00:30 Kyiv includes a leave starting today', leave.status === 201 && appr.status === 200 && out, { leave: brief(leave), approve: brief(appr), outToday: dash?.timeoff?.out_today ?? dash?.time_off?.out_today ?? Object.keys(dash ?? {}) });
+  const outList = dash?.timeoff?.out_today ?? [];
+  const out = outList.some((x) => x.employee?.id === S.employee.employeeId) && outList.every((x) => x.ends_on >= kyivDay && x.starts_on <= kyivDay);
+  record('kyiv-midnight', 'dashboard «out today» at 00:30 Kyiv includes a leave starting today', leave.status === 201 && appr.status === 200 && out, { leave: brief(leave), approve: brief(appr), kyivDay, outToday: outList.map((x) => `${x.employee?.id}:${x.starts_on}..${x.ends_on}`) });
+  const tpl = await api('fakeAdmin', 'POST', '/api/documents/templates', { name: 'Північ e2e [ТЕСТ]', body: 'Дата: {Сьогодні}', category: 'orders' });
+  const doc = await api('fakeAdmin', 'POST', '/api/documents', { employee_id: S.employee.employeeId, template_id: data(tpl)?.id });
+  const dmy = kyivDay.split('-').reverse().join('.');
+  record('kyiv-midnight', 'documents: {Сьогодні} at 00:30 Kyiv is the Kyiv date', doc.status === 201 && data(doc)?.content_md === `Дата: ${dmy}`, { template: brief(tpl), doc: brief(doc), content: data(doc)?.content_md, expected: `Дата: ${dmy}` });
   const term = await api('fakeAdmin', 'POST', `/api/people/${S.formulaEmployeeId}/terminate`, { fired_at: kyivDay });
   const st = data(await api('fakeAdmin', 'GET', `/api/people/${S.formulaEmployeeId}`));
   await api('fakeAdmin', 'POST', `/api/people/${S.formulaEmployeeId}/restore`, {});
