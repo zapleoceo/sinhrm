@@ -14,6 +14,7 @@ use App\Modules\Directory\Enums\DirectoryStatus;
 use App\Modules\Directory\Models\DictionaryItem;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentDictionaryRepository implements DictionaryRepository

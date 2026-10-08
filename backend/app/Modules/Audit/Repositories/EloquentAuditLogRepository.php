@@ -13,6 +13,7 @@ use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Core\Support\Database\Sql;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Carbon;
 
 final class EloquentAuditLogRepository implements AuditLogRepository
