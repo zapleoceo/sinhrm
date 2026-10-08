@@ -8,9 +8,9 @@ use App\Modules\Core\DTO\DataSubject;
 use App\Modules\Core\Enums\DataSubjectType;
 use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Core\Http\Responses\Download;
+use App\Modules\Privacy\Contracts\PrivacyRepository;
 use App\Modules\Privacy\Http\Requests\ErasePersonalDataRequest;
 use App\Modules\Privacy\Models\PrivacyRequest;
-use App\Modules\Privacy\Models\PrivacySettings;
 use App\Modules\Privacy\Services\ExportHtmlRenderer;
 use App\Modules\Privacy\Services\PersonalDataService;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +22,11 @@ final class PersonalDataController
 {
     use ResolvesActor;
 
-    public function __construct(private readonly PersonalDataService $service, private readonly ExportHtmlRenderer $html) {}
+    public function __construct(
+        private readonly PersonalDataService $service,
+        private readonly ExportHtmlRenderer $html,
+        private readonly PrivacyRepository $privacy,
+    ) {}
 
     /** GET /api/privacy/{type}/{id}/export?format=json|html — a downloadable file with everything we keep. */
     public function export(Request $request, string $type, int $id): Response
@@ -56,9 +60,7 @@ final class PersonalDataController
     /** GET /api/privacy/{type}/{id}/requests — the journal of export/erase requests about this person. */
     public function requests(string $type, int $id): JsonResponse
     {
-        $subject = $this->subject($type, $id);
-        $rows = PrivacyRequest::query()->where('subject_type', $subject->type->value)->where('subject_id', $subject->id)
-            ->orderByDesc('id')->limit(100)->get()
+        $rows = $this->privacy->requestsFor($this->subject($type, $id), 100)
             ->map(static fn (PrivacyRequest $r): array => [
                 'action' => $r->action,
                 'trigger' => $r->trigger,
@@ -73,17 +75,17 @@ final class PersonalDataController
 
     public function settings(): JsonResponse
     {
-        return new JsonResponse(['data' => ['retention_rejected_months' => PrivacySettings::current()->retention_rejected_months]]);
+        return new JsonResponse(['data' => ['retention_rejected_months' => $this->privacy->retentionRejectedMonths()]]);
     }
 
     /** PUT /api/privacy/settings {retention_rejected_months: 1..120 | null (off)}. */
     public function updateSettings(Request $request): JsonResponse
     {
         $data = $request->validate(['retention_rejected_months' => ['present', 'nullable', 'integer', 'min:1', 'max:120']]);
-        $settings = PrivacySettings::current();
-        $settings->update(['retention_rejected_months' => $data['retention_rejected_months']]);
+        $months = $data['retention_rejected_months'];
+        $stored = $this->privacy->setRetentionRejectedMonths($months === null ? null : (int) $months);
 
-        return new JsonResponse(['data' => ['retention_rejected_months' => $settings->retention_rejected_months]]);
+        return new JsonResponse(['data' => ['retention_rejected_months' => $stored]]);
     }
 
     private function subject(string $type, int $id): DataSubject

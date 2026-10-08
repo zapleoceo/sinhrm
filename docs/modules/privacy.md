@@ -59,6 +59,11 @@
 - Правило хранения: `Core\Contracts\RetentionSource` (Recruiting отдаёт кандидатов, у которых все отклики отклонены и
   закрыты раньше срока), задача `privacy.retention` (cron каждые ~30 мин, до 50 человек за запуск), настройка —
   одна строка `privacy_settings.retention_rejected_months` (null = выключено). В журнале такие удаления с `trigger = retention`.
+- Свои таблицы модуль читает и пишет только через `Contracts\PrivacyRepository` (`Repositories\EloquentPrivacyRepository`,
+  биндинг в `PrivacyServiceProvider`): журнал `privacy_requests` (запись и список по человеку) и правило хранения
+  `privacy_settings`. Контроллер, `PersonalDataService` и `RetentionJob` запросов к БД не строят. Транзакция стирания
+  (`DB::transaction`) осталась в `PersonalDataService`: это единица работы над провайдерами всех модулей плюс строка
+  журнала, ни один репозиторий этими таблицами не владеет. Тест — `tests/Unit/Privacy/PrivacyRepositoryTest.php`.
 
 ### Эндпоинты (`auth:sanctum` + активный пользователь + gate `privacy-manage`: superadmin, admin; иначе 403)
 | Метод | Путь | Что |

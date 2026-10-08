@@ -9,6 +9,8 @@ use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\RetentionSource;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
+use App\Modules\Privacy\Contracts\PrivacyRepository;
+use App\Modules\Privacy\Repositories\EloquentPrivacyRepository;
 use App\Modules\Privacy\Services\PersonalDataService;
 use App\Modules\Privacy\Services\RetentionJob;
 
@@ -33,8 +35,9 @@ final class PrivacyServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
-        $this->app->bind(PersonalDataService::class, fn ($app) => new PersonalDataService($app->tagged(PersonalDataProvider::class)));
-        $this->app->bind(RetentionJob::class, fn ($app) => new RetentionJob($app->tagged(RetentionSource::class), $app->make(PersonalDataService::class)));
+        $this->app->bind(PrivacyRepository::class, EloquentPrivacyRepository::class);
+        $this->app->bind(PersonalDataService::class, fn ($app) => new PersonalDataService($app->tagged(PersonalDataProvider::class), $app->make(PrivacyRepository::class)));
+        $this->app->bind(RetentionJob::class, fn ($app) => new RetentionJob($app->tagged(RetentionSource::class), $app->make(PersonalDataService::class), $app->make(PrivacyRepository::class)));
         $this->app->tag([RetentionJob::class], ScheduledJob::class);
     }
 
