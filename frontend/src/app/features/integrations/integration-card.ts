@@ -17,6 +17,7 @@ import { NotifyService } from '../../core/ui/notify.service';
 import { DATE_LOCALES } from '../../core/date/app-date-adapter';
 import { LanguageService } from '../../core/i18n/language.service';
 import { IntegrationDatePipe } from './integration-date.pipe';
+import { withMember } from '../../core/ui/with-member';
 
 const URL_PATTERN = /^https:\/\/\S+$/i;
 
@@ -100,16 +101,12 @@ export class IntegrationCard implements OnChanges {
   }
 
   protected clearSecret(field: IntegrationField): void {
-    this.cleared.update((set) => new Set(set).add(field.name));
+    this.cleared.update((set) => withMember(set, field.name, true));
     this.form().controls[field.name]?.setValue('');
   }
 
   protected undoClear(field: IntegrationField): void {
-    this.cleared.update((set) => {
-      const next = new Set(set);
-      next.delete(field.name);
-      return next;
-    });
+    this.cleared.update((set) => withMember(set, field.name, false));
   }
 
   protected save(): void {

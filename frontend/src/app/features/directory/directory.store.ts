@@ -5,6 +5,7 @@ import { sameQuery } from '../../core/ui/table/table-state';
 import { DictionaryItem, DictionaryQuery, DictionaryType, SaveDictionaryItem } from './directory.model';
 import { DIRECTORY_PAGE_SIZE, DirectoryView } from './directory.query';
 import { DirectoryService, directoryErrorKey } from './directory.service';
+import { withMember } from '../../core/ui/with-member';
 
 const DEFAULT_QUERY: DictionaryQuery = { page: 1, perPage: DIRECTORY_PAGE_SIZE };
 
@@ -85,14 +86,6 @@ export class DirectoryStore {
   }
 
   private setPending(id: number, on: boolean): void {
-    this.pending.update((set) => {
-      const next = new Set(set);
-      if (on) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.pending.update((set) => withMember(set, id, on));
   }
 }

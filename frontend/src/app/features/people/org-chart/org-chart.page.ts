@@ -53,6 +53,7 @@ import {
 } from './org-layout';
 import { OrgChartAction, OrgChartControls, OrgChartLegend } from './org-chart-controls';
 import { OrgPersonPanel } from './org-person-panel';
+import { withMember } from '../../../core/ui/with-member';
 
 type ArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
 const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
@@ -805,15 +806,7 @@ export class OrgChartPage {
   // ---- tree actions -------------------------------------------------------------------------------------------
 
   protected toggle(id: number): void {
-    this.open.update((s) => {
-      const next = new Set(s);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    this.open.update((s) => withMember(s, id, !s.has(id)));
   }
 
   protected expandAll(): void {

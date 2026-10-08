@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { INTEGRATION_GROUPS, Integration, IntegrationGroup, ManualStatus, UpdateIntegration } from './integrations.model';
 import { IntegrationsService, integrationErrorKey } from './integrations.service';
+import { withMember } from '../../core/ui/with-member';
 
 export interface IntegrationGroupView {
   group: IntegrationGroup;
@@ -97,14 +98,6 @@ export class IntegrationsStore {
   }
 
   private setPending(key: string, on: boolean): void {
-    this.pending.update((set) => {
-      const next = new Set(set);
-      if (on) {
-        next.add(key);
-      } else {
-        next.delete(key);
-      }
-      return next;
-    });
+    this.pending.update((set) => withMember(set, key, on));
   }
 }

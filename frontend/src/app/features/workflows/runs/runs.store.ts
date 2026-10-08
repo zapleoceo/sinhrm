@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { RunQuery, RunStep, StepCommand, WorkflowRun, applyOutcome } from '../workflows.model';
 import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
 import { PagedList } from '../../../core/ui/table/paged-list';
+import { withMember } from '../../../core/ui/with-member';
 
 /** Runs list of the board or of one employee, with step commands and cancel applied in place. */
 @Injectable()
@@ -69,14 +70,6 @@ export class RunsStore {
   }
 
   private mark(id: number, on: boolean): void {
-    this.pending.update((s) => {
-      const next = new Set(s);
-      if (on) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.pending.update((s) => withMember(s, id, on));
   }
 }

@@ -5,6 +5,7 @@ import { rankByScreening } from '../screening-ranking';
 import { groupByStage, statusForStage } from '../recruiting.format';
 import { RecruitingService, recruitingErrorKey } from '../recruiting.service';
 import { LatestRequest } from '../../../core/ui/table/latest-request';
+import { withMember } from '../../../core/ui/with-member';
 
 /** Where a card can go: a shared funnel stage (real move) or an own column (personal filing, stage untouched). */
 export type BoardTarget = { type: 'stage'; stage: Stage } | { type: 'personal'; column: PersonalColumn };
@@ -272,14 +273,6 @@ export class BoardStore {
   }
 
   private setPending(id: number, on: boolean): void {
-    this.pending.update((set) => {
-      const next = new Set(set);
-      if (on) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.pending.update((set) => withMember(set, id, on));
   }
 }

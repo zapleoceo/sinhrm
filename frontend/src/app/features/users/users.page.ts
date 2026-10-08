@@ -34,6 +34,7 @@ import { InviteUserDialog } from './invite-user.dialog';
 import { AdminUser, UpdateUser, UsersQuery, nextRoles } from './users.model';
 import { USERS_PAGE_SIZE, usersQueryFromParams } from './users.query';
 import { UsersService, userErrorKey } from './users.service';
+import { withMember } from '../../core/ui/with-member';
 
 /** API order without ?sort (by name, A→Z): the name column carries the arrow. */
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
@@ -227,15 +228,7 @@ export class UsersPage implements OnInit {
   }
 
   private setPending(id: number, on: boolean): void {
-    this.pending.update((set) => {
-      const next = new Set(set);
-      if (on) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.pending.update((set) => withMember(set, id, on));
   }
 
   /** New query from the URL: loads unless it is the one already shown. */
