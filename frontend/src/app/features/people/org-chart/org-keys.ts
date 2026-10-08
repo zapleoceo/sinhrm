@@ -1,10 +1,10 @@
 import { CARD_H, CARD_W, LaidNode, Transform } from './org-layout';
 
-export type ArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
+type ArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
 const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
 /** What a key does on a focused card (or the empty viewport). */
-export type OrgKeyCommand =
+type OrgKeyCommand =
   | { kind: 'move'; key: ArrowKey }
   | { kind: 'select' }
   | { kind: 'toggle' }
