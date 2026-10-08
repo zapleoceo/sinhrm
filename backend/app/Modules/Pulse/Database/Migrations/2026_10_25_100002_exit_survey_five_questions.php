@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Owner decision 2026-10-07: the exit survey has five short questions. Only saved surveys whose questions are EXACTLY
- * the old built-in template (frozen below; compared as decoded structures with sorted keys — jsonb does not keep key
- * order) change; any difference (a rewritten text, option or flag, even with the same ids) = HR's survey, left alone.
+ * the old built-in template (frozen below; compared as decoded structures with sorted keys — a JSON column does not keep
+ * key order) change; any difference (a rewritten text, option or flag, even with the same ids) = HR's survey, left alone.
  * - no answers yet: its questions are replaced in place;
  * - with answers and active: it is switched off and an active copy with the five questions is created — earlier
  *   waves keep the questions they were answered with, new exit waves use the copy. Running it again changes nothing.

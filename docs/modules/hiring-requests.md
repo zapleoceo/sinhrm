@@ -55,9 +55,9 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 ### Таблицы (`Database/Migrations/2026_10_06_100001_create_hiring_requests_tables.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|
-| `hiring_request_settings` | `form_fields jsonb, creator_user_ids jsonb, auto_vacancy` | одна строка |
+| `hiring_request_settings` | `form_fields json, creator_user_ids json, auto_vacancy` | одна строка |
 | `hiring_route_steps` | `position (unique), name, kind (manager\|role\|user), role?, user_id?, sla_days?` | шаблон маршрута; по умолчанию «Manager» (2 рабочих дня) → «HR», роль `admin` (2 рабочих дня) |
-| `hiring_requests` | `title, branch_id, department_id?, position_id?, headcount, reason (new_position\|replacement), replaced_employee_id?, desired_start_date?, salary_min?, salary_max?, currency?, requirements?, priority (low\|normal\|high\|urgent), extra jsonb, status, requester_id, recruiter_id?, vacancy_id? (unique), submitted_at, decided_at, closed_at` | `vacancy_id` unique — одна вакансия на заявку |
+| `hiring_requests` | `title, branch_id, department_id?, position_id?, headcount, reason (new_position\|replacement), replaced_employee_id?, desired_start_date?, salary_min?, salary_max?, currency?, requirements?, priority (low\|normal\|high\|urgent), extra json, status, requester_id, recruiter_id?, vacancy_id? (unique), submitted_at, decided_at, closed_at` | `vacancy_id` unique — одна вакансия на заявку |
 | `hiring_request_approvals` | `hiring_request_id, position, name, kind, role?, approver_id?, sla_days?, status (waiting\|pending\|approved\|rejected\|skipped), activated_at, due_at, decided_by, decided_at, comment, notified, escalated` | **снимок** маршрута при отправке: изменение настроек не трогает заявки в работе |
 
 ### Маршрут и SLA

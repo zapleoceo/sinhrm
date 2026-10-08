@@ -120,7 +120,7 @@ final class KnowledgeApiTest extends TestCase
         $this->assertEqualsCanonicalizing(['Bonus 50% rule', 'Bonus 500 rule'], $search('bonus'));
     }
 
-    /** Sql::whereContainsCi replaced ILIKE: Cyrillic case folding must match on PostgreSQL and MySQL alike. */
+    /** Sql::whereContainsCi on MySQL: Cyrillic case folding must match (utf8mb4_0900_ai_ci). */
     public function test_search_folds_cyrillic_case_on_every_driver(): void
     {
         $admin = $this->login(UserRole::Admin);

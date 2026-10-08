@@ -16,16 +16,16 @@ return new class extends Migration
             $table->string('spreadsheet_id', 128)->collation('utf8mb4_bin');
             // Sheet (tab) title; '' = the first sheet.
             $table->string('sheet', 100)->default('');
-            $table->jsonb('headers');
+            $table->json('headers');
             // {field: column index (0-based)}
-            $table->jsonb('mapping');
+            $table->json('mapping');
             // Last processed row number (1 = only the header so far).
             $table->unsignedInteger('last_row')->default(1);
             $table->boolean('auto_sync')->default(false);
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('last_synced_at')->nullable();
             // {created, matched, skipped, applied, vacancy_unmatched, errors[{row, code}]} — no cell values.
-            $table->jsonb('last_report')->nullable();
+            $table->json('last_report')->nullable();
             $table->timestamps();
             $table->unique(['spreadsheet_id', 'sheet']);
         });

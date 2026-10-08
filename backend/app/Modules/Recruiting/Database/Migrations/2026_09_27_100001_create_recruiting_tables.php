@@ -65,8 +65,8 @@ return new class extends Migration
             $table->string('telegram_username', 64)->nullable()->index();
             $table->foreignId('city_id')->nullable()->constrained('cities')->nullOnDelete();
             $table->string('source', 32)->default('manual');
-            $table->jsonb('utm')->nullable();
-            $table->jsonb('tags')->nullable();
+            $table->json('utm')->nullable();
+            $table->json('tags')->nullable();
             $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
@@ -120,7 +120,7 @@ return new class extends Migration
             $table->timestamp('occurred_at');
             $table->text('body')->nullable();
             // duration_sec, recording_url, contact, … (never secrets)
-            $table->jsonb('meta')->nullable();
+            $table->json('meta')->nullable();
             // Id of the message/call in the source system: dedupe key per channel (NULLs never collide).
             $table->string('external_id', 191)->nullable()->collation('utf8mb4_bin');
             $table->boolean('via_product')->default(false);

@@ -297,7 +297,7 @@ final class RecruitingDemoData
 
         if ($this->suffix !== '' && Candidate::query()->where('phone', $phone)->orWhere('email', $email)
             ->when($telegram !== null, fn ($q) => $q->orWhere('telegram_username', $telegram))->exists()) {
-            // Pre-check (no failing INSERT, which would abort the Postgres transaction): a taken contact skips the story.
+            // Pre-check (no failing INSERT inside the demo transaction): a taken contact skips the story.
             throw RecruitingException::duplicateCandidateRestricted();
         }
         $candidate = $this->candidates->create($recruiter, new CandidateData(

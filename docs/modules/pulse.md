@@ -85,10 +85,10 @@ Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::i
 ### Таблицы (миграция `Database/Migrations/2026_10_04_200001_create_pulse_tables.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|
-| `surveys` | `title, type (engagement\|lifecycle\|enps\|mood\|custom), description?, questions jsonb [{id, type (scale5\|scale10\|enps\|single\|multi\|text), text, options?, required}], lifecycle_trigger? (hire_30\|hire_90\|exit), active` | вопросы не меняются, если есть ответы (409 `has_responses`); удалить с ответами нельзя |
-| `survey_waves` | `survey_id, parent_wave_id? (unique), schedule (once\|weekly\|monthly\|quarterly), audience jsonb {branch_ids, department_ids}, anonymous, min_group_size, starts_at, ends_at, status (scheduled\|open\|closed), salt?, subject_employee_id?, trigger_key?` | `salt` скрыт от сериализации и **обнуляется при закрытии**; `unique(survey_id, subject_employee_id, trigger_key)` — идемпотентность lifecycle |
-| `survey_responses` | `wave_id, respondent_hash, employee_id? (только неанонимные), branch_id?, department_id?, answers jsonb {question id: int \| list<int> \| string}, submitted_on (date)` | **без timestamps**; `unique(wave_id, respondent_hash)` |
-| `mood_settings` | `weekdays jsonb (1..7), question, required, alert_drop, min_group` | одна строка, по умолчанию пн–пт, «Як ваш настрій сьогодні?», 0.5, 5 |
+| `surveys` | `title, type (engagement\|lifecycle\|enps\|mood\|custom), description?, questions json [{id, type (scale5\|scale10\|enps\|single\|multi\|text), text, options?, required}], lifecycle_trigger? (hire_30\|hire_90\|exit), active` | вопросы не меняются, если есть ответы (409 `has_responses`); удалить с ответами нельзя |
+| `survey_waves` | `survey_id, parent_wave_id? (unique), schedule (once\|weekly\|monthly\|quarterly), audience json {branch_ids, department_ids}, anonymous, min_group_size, starts_at, ends_at, status (scheduled\|open\|closed), salt?, subject_employee_id?, trigger_key?` | `salt` скрыт от сериализации и **обнуляется при закрытии**; `unique(survey_id, subject_employee_id, trigger_key)` — идемпотентность lifecycle |
+| `survey_responses` | `wave_id, respondent_hash, employee_id? (только неанонимные), branch_id?, department_id?, answers json {question id: int \| list<int> \| string}, submitted_on (date)` | **без timestamps**; `unique(wave_id, respondent_hash)` |
+| `mood_settings` | `weekdays json (1..7), question, required, alert_drop, min_group` | одна строка, по умолчанию пн–пт, «Як ваш настрій сьогодні?», 0.5, 5 |
 | `mood_checkins` | `employee_id, day, score 1..5, comment?` | `unique(employee_id, day)` — повторный ответ за день заменяет первый |
 
 ### Гарантии анонимности (техника)
@@ -167,7 +167,7 @@ Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::i
 
 **Решение принимается один раз — при закрытии.** Закрытая волна не меняется, поэтому при закрытии (`WaveMembership::
 snapshot` → `decide`) видимость каждой группы (`s:X`, `c:X` для отделов и филиалов) сохраняется в
-`survey_waves.segment_visibility` (jsonb, в API не отдаётся). Чтение `results`/`compare` берёт готовое решение (O(1),
+`survey_waves.segment_visibility` (json, в API не отдаётся). Чтение `results`/`compare` берёт готовое решение (O(1),
 без пересчёта истории). Новая волна сравнивается со всеми уже решёнными волнами опроса (в порядке закрытия, а не
 начала: волна, закрытая позже, всё равно проверяется против всех закрытых до неё) — O(число волн × размер аудитории)
 один раз на закрытие.
@@ -210,7 +210,7 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
   что нравилось (`liked`, текст), что не нравилось (`disliked`, текст), отношения с руководителем (`manager`, шкала 1–5),
   вернулись бы (`return`: Так / Можливо / Ні). Миграция `2026_10_25_100002_exit_survey_five_questions` переводит
   сохранённые опросы, вопросы которых **в точности** равны старому встроенному шаблону (замороженный JSON в миграции,
-  сравнение декодированных структур с отсортированными ключами — jsonb порядок ключей не хранит): без ответов — вопросы заменяются; с ответами и активный —
+  сравнение декодированных структур с отсортированными ключами — json порядок ключей не хранит): без ответов — вопросы заменяются; с ответами и активный —
   выключается, создаётся активная копия с пятью вопросами (прежние волны и ответы не трогаются); любое отличие (текст,
   варианты, флаг — даже при тех же id) = опрос HR, не меняется.
 - Тесты: `tests/Feature/Pulse/ExitSurveyScheduleTest.php` (волна сразу при планировании и конец дня по Киеву, кап 14 дней,

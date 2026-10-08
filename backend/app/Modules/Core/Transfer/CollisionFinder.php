@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Services\Transfer;
+namespace App\Modules\Core\Transfer;
 
 /**
  * Groups row ids by collation key; a group of two or more ids = values that are distinct on PostgreSQL but equal

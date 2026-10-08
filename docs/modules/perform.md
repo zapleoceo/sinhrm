@@ -57,18 +57,18 @@
 ### Таблицы (миграция `Database/Migrations/2026_10_04_100001_create_perform_tables.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|
-| `one_on_one_templates` | `name, agenda jsonb (list<string>)` | запись — админ |
-| `one_on_ones` | `manager_employee_id, employee_id, scheduled_at, template_id?, agenda jsonb [{id,text,done}], notes_private_manager?, notes_shared?, action_items jsonb [{id,text,done,due_on?}], status (scheduled\|completed\|cancelled)` | `notes_private_manager` отдаётся только руководителю встречи |
-| `objectives` | `scope (personal\|team\|branch\|company), owner_employee_id?, department_id?, branch_id?, period ("2026-Q4"), title, description?, key_results jsonb [{id,title,start,target,current,unit,weight}], progress (0..100), status (active\|achieved\|missed\|cancelled), parent_objective_id?, visibility (public\|team\|private)` | `progress` пересчитывается сервером при каждой записи |
-| `objective_checkins` | `objective_id, author_id, progress_before, progress_after, key_results jsonb [{id,current}], comment?` | история прогресса |
+| `one_on_one_templates` | `name, agenda json (list<string>)` | запись — админ |
+| `one_on_ones` | `manager_employee_id, employee_id, scheduled_at, template_id?, agenda json [{id,text,done}], notes_private_manager?, notes_shared?, action_items json [{id,text,done,due_on?}], status (scheduled\|completed\|cancelled)` | `notes_private_manager` отдаётся только руководителю встречи |
+| `objectives` | `scope (personal\|team\|branch\|company), owner_employee_id?, department_id?, branch_id?, period ("2026-Q4"), title, description?, key_results json [{id,title,start,target,current,unit,weight}], progress (0..100), status (active\|achieved\|missed\|cancelled), parent_objective_id?, visibility (public\|team\|private)` | `progress` пересчитывается сервером при каждой записи |
+| `objective_checkins` | `objective_id, author_id, progress_before, progress_after, key_results json [{id,current}], comment?` | история прогресса |
 | `kpis` | `employee_id, metric, unit?, period ("2026-10" \| "2026-Q4"), target, actual?` | `unique(employee_id, metric, period)` → 409 `duplicate` |
 | `feedback` | `from_employee_id, to_employee_id, type (praise\|constructive\|request), text, visibility (private_to_recipient\|manager\|public), request_id?, answered_at?` | запрос всегда `private_to_recipient`; ответ ссылается на запрос |
-| `rating_scales` | `name, levels jsonb [{value,label}]` (по возрастанию) | удалить шкалу компетенции — 409 `in_use` |
+| `rating_scales` | `name, levels json [{value,label}]` (по возрастанию) | удалить шкалу компетенции — 409 `in_use` |
 | `competencies` | `name, description?, scale_id, active` | |
-| `review_cycles` | `name, period_start, period_end, participants jsonb {branch_ids, department_ids}, types jsonb [self\|manager\|peer\|upward], competency_ids jsonb, anonymous, deadlines jsonb {type: date}, status (draft\|active\|closed), activated_at?, closed_at?` | правка/удаление — только черновик (409 `cycle_not_draft`) |
+| `review_cycles` | `name, period_start, period_end, participants json {branch_ids, department_ids}, types json [self\|manager\|peer\|upward], competency_ids json, anonymous, deadlines json {type: date}, status (draft\|active\|closed), activated_at?, closed_at?` | правка/удаление — только черновик (409 `cycle_not_draft`) |
 | `review_assignments` | `cycle_id, subject_employee_id, reviewer_employee_id, type, status (pending\|submitted), submitted_at?` | `unique(cycle, subject, reviewer, type)` |
 | `review_answers` | `assignment_id, competency_id, rating, comment?` | `unique(assignment_id, competency_id)` |
-| `development_plans` | `employee_id, title, goals jsonb [{id,text}], actions jsonb [{id,text,due_on?,done}], due_on?, status (active\|completed\|cancelled)` | |
+| `development_plans` | `employee_id, title, goals json [{id,text}], actions json [{id,text,due_on?,done}], due_on?, status (active\|completed\|cancelled)` | |
 
 Элементы JSON-списков получают стабильный `id` (`Support/ListItems`: id клиента, если это короткий токен, иначе
 сгенерированный) — по нему check-in и отметка шага находят нужный элемент.

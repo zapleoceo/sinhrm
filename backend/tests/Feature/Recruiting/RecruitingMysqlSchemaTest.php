@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 /**
  * Recruiting schema on MySQL 8.4 (ADR 0011): opaque ids in binary collation; candidate contacts unique, NULL repeatable
- * (the PostgreSQL partial index `WHERE col IS NOT NULL` is a plain MySQL unique index — MySQL never collides NULLs).
+ * (a plain MySQL unique index — MySQL never collides NULLs).
  */
 final class RecruitingMysqlSchemaTest extends TestCase
 {

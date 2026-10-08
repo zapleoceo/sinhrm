@@ -36,9 +36,9 @@
 ### Таблицы (миграция `Database/Migrations/2026_09_26_100001_create_integrations_tables.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|
-| `integrations` | `id, key (unique), status (off\|demo\|connected\|error), settings jsonb, last_checked_at, last_error, timestamps` | строка создаётся при первом изменении; нет строки = `off`. `settings` — только несекретные поля. `last_error` — код ошибки, секретов не содержит |
+| `integrations` | `id, key (unique), status (off\|demo\|connected\|error), settings json, last_checked_at, last_error, timestamps` | строка создаётся при первом изменении; нет строки = `off`. `settings` — только несекретные поля. `last_error` — код ошибки, секретов не содержит |
 | `integration_secrets` | `id, integration_id (fk, cascade), name, value text, updated_by (fk users, null on delete), timestamps`, `unique(integration_id, name)` | `value` — шифротекст |
-| `integration_logs` | `id, integration_id (fk, cascade), level (info\|warning\|error), message, context jsonb, created_at` | аудит: id пользователя, имена полей, статусы. Значений нет |
+| `integration_logs` | `id, integration_id (fk, cascade), level (info\|warning\|error), message, context json, created_at` | аудит: id пользователя, имена полей, статусы. Значений нет |
 
 Глобальный флаг AI — строка `integrations` с `key = 'ai_policy'` и `settings = {"enabled": false}`.
 
@@ -228,4 +228,4 @@ curl -i "https://sinhrm.vercel.app/api/integrations"   # без сессии →
 UI parity инвентарь desktop/mobile осознанно дополнен тремя disabled-ссылками подключения Google для синтетического сценария с ненастроенным OAuth. Реальные screenshots CI просмотрены: новые элементы ожидаемы, прежние контролы не удалены; окончательная проверка нового состояния выполняется повторным CI.
 
 Connected/error remain automatic observations: the mode control shows the current translated state as a disabled option, while only off/demo can be assigned manually. Mobile deep-link cards reserve space above their header for the sticky navigation bar; configured-state CI checks both geometry and displayed mode.
-MySQL 8.4 only (ADR 0011, 2026-10-08): `integrations.settings` is `json NOT NULL` without a database default (MySQL JSON has no literal default; the PostgreSQL-only `'{}'` default branch is gone); the Integration model supplies an empty object for lazily created rows. Test: `tests/Feature/Integrations/IntegrationSettingsMysqlSchemaTest` (column type/default from `information_schema`, a row created without settings reads back `[]`).
+MySQL 8.4 only (ADR 0011, 2026-10-08): `integrations.settings` is `json NOT NULL` without a database default (MySQL JSON has no literal default; the driver-specific `'{}'` default branch is gone); the Integration model supplies an empty object for lazily created rows. Test: `tests/Feature/Integrations/IntegrationSettingsMysqlSchemaTest` (column type/default from `information_schema`, a row created without settings reads back `[]`).

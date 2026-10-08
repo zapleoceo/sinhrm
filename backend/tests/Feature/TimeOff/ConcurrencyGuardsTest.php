@@ -17,7 +17,7 @@ use Tests\TestCase;
 
 /**
  * Overlap and balance checks are read-then-write: create/approve/cancel must hold the employee row lock
- * (SELECT … FOR UPDATE on Postgres) inside the transaction. SQLite has no FOR UPDATE, so the lock path is asserted
+ * (SELECT … FOR UPDATE) inside the transaction. SQLite has no FOR UPDATE, so the lock path is asserted
  * through the repository contract, and the checks themselves through sequential double requests.
  */
 final class ConcurrencyGuardsTest extends TestCase

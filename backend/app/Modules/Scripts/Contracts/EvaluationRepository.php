@@ -35,7 +35,7 @@ interface EvaluationRepository
 
     /**
      * Evaluations of touches that happened in the range, within the scope (author = user, or branch of the line or of
-     * the vacancy), newest first, at most $limit. The report aggregates them (jsonb stays portable: no JSON SQL).
+     * the vacancy), newest first, at most $limit. The report aggregates them in PHP (no JSON SQL).
      *
      * @return list<array{author_id: int|null, author_name: string|null, score: int, result: array<string, mixed>}>
      */

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('subject_type', 32)->nullable();
             $table->unsignedBigInteger('subject_id')->nullable();
             // Ids/flags only (e.g. script_version_id), never personal data.
-            $table->jsonb('meta')->nullable();
+            $table->json('meta')->nullable();
             // ai_broker | openrouter
             $table->string('provider', 16);
             // Broker lane used (chat:fast | chat:smart | chat:sales | structured), per purpose in the settings.

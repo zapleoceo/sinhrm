@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core\Transfer;
 
-use App\Modules\Core\Services\Transfer\ValueCanonicalizer;
+use App\Modules\Core\Transfer\ValueCanonicalizer;
 use PHPUnit\Framework\TestCase;
 
 final class ValueCanonicalizerTest extends TestCase

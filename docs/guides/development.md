@@ -77,12 +77,12 @@ PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` м
 
 ## База данных: только MySQL 8.4
 
-Единственная СУБД — MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md)); PostgreSQL не поддерживается (боевой Neon заморожен
-на ветке `legacy/vercel-postgres`, правки туда — только по решению владельца). Правила для нового кода: синтаксис других
-СУБД (`ILIKE`, `NULLS FIRST/LAST`, `->>`/`@>` в сыром SQL, `::type`, `ON CONFLICT`/`RETURNING`, `CAST AS VARCHAR/TEXT`)
+Единственная СУБД — MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md)); другие СУБД не поддерживаются (замороженный
+боевой релиз до переезда и правки в нём — только по решению владельца, [mysql-cutover.md](mysql-cutover.md)). Правила для нового кода: синтаксис других
+СУБД (регистронезависимый `LIKE`-оператор, `NULLS FIRST/LAST`, `->>`/`@>` в сыром SQL, `::type`, `ON CONFLICT`/`RETURNING`, `CAST AS VARCHAR/TEXT`)
 запрещён; вместо него `Core\Support\Database\Sql` (`orderByNullsLast/First`, `whereContainsCi`, `jsonText`, `castText`)
 и билдер Laravel (`upsert`, `insertOrIgnore`, `insertGetId`, `'col->key'`, `whereJsonContains`). Веток по
-`DB::getDriverName()` в модулях и миграциях нет; PostgreSQL-код допустим только в `db:transfer-to-mysql`. Миграции: без
+`DB::getDriverName()` в модулях и миграциях нет; код другой СУБД допустим только в разовом `db:transfer-to-mysql` (`backend/app/Modules/Core/Transfer/`), это проверяет CI-страж `scripts/mysql-only-guard.mjs` в job `lint`. Миграции: без
 `DEFAULT` у `json/text`, `unique` не на `TEXT`, непрозрачные идентификаторы — `->collation('utf8mb4_bin')`, одна
 таблица/индекс на миграцию (DDL в MySQL не транзакционный).
 
@@ -102,4 +102,4 @@ CI: обязательный job `tests` — MySQL 8.4 (`DB_CONNECTION=mysql`, �
 
 ## Ночное окно (UTC против Киева)
 
-Workflow `.github/workflows/night-window.yml` (необязательный, не в «Protect main») раз в неделю и по `workflow_dispatch` запускает весь backend phpunit под `faketime -f '@2026-10-15 22:30:00'` — 22:30 UTC = 01:30 Киев следующего дня, когда дата по UTC и по Киеву различается (инцидент 02–03.10.2026: `AssetsApiTest` краснел в окне 21:00–24:00 UTC). Postgres живёт на реальном времени — это нормально. Красный прогон — признак места, где код или тест считает дату в UTC вместо `UserTime::today()`/Киева; чиним их, а не перезапускаем.
+Workflow `.github/workflows/night-window.yml` (необязательный, не в «Protect main») раз в неделю и по `workflow_dispatch` запускает весь backend phpunit под `faketime -f '@2026-10-15 22:30:00'` — 22:30 UTC = 01:30 Киев следующего дня, когда дата по UTC и по Киеву различается (инцидент 02–03.10.2026: `AssetsApiTest` краснел в окне 21:00–24:00 UTC). Сервер БД живёт на реальном времени — это нормально. Красный прогон — признак места, где код или тест считает дату в UTC вместо `UserTime::today()`/Киева; чиним их, а не перезапускаем.

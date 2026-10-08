@@ -12,8 +12,8 @@
            sinhrm-api.vercel.app (Laravel 13, runtime vercel-php, PHP 8.5, serverless, регион fra1 — рядом с БД)
               │
               ▼
-           Neon Postgres (Frankfurt) — данные, сессии, очередь задач, зашифрованные секреты
-           (заморожено: ветка legacy/vercel-postgres; main — только MySQL 8.4, ADR 0011)
+           MySQL 8.4 (IT STEP) — данные, сессии, очередь задач, зашифрованные секреты
+           (ADR 0011; перенос боевых данных — guides/mysql-cutover.md)
 Chrome «SinHRM Clipper» ──► sinhrm.vercel.app/api/clipper/* (Bearer-токен, только эти маршруты)
 GitHub Actions ──► тесты на каждый PR ─► деплой на Vercel ─► cron (30 мин): POST /api/ops/jobs/run
 ```
@@ -22,7 +22,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 |---|---|
 | Один домен для фронта и API (rewrite) | `vercel.app` — публичный суффикс, cookie между двумя `*.vercel.app` не работают |
 | Сессии, кэш, очередь — в БД приложения | у serverless нет постоянного диска и процессов |
-| Единственная БД — MySQL 8.4 (`main`); PostgreSQL не поддерживается | DevOps IT STEP поддерживают только MySQL; боевой Vercel + Neon заморожен на ветке `legacy/vercel-postgres` до переезда; PostgreSQL читает только `db:transfer-to-mysql` ([ADR 0011](../adr/0011-mysql-only.md), заменил [ADR 0010](../adr/0010-mysql-dual-support.md)) |
+| Единственная БД — MySQL 8.4 | DevOps IT STEP поддерживают только MySQL ([ADR 0011](../adr/0011-mysql-only.md), заменил [ADR 0010](../adr/0010-mysql-dual-support.md)); разовый перенос боевых данных и замороженный релиз до переезда — [mysql-cutover.md](../guides/mysql-cutover.md); CI-страж `scripts/mysql-only-guard.mjs` |
 | Фоновые задачи через cron GitHub Actions | у vercel-php нет воркеров; Vercel Hobby cron — 1 раз в сутки |
 | Деплой из GitHub Actions (Vercel CLI) | деплой только после зелёных тестов; аккаунт Vercel не привязан к GitHub |
 

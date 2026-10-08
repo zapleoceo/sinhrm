@@ -72,7 +72,7 @@ return new class extends Migration
             ]);
         }
 
-        // Portable UPDATE … = (subquery): works on Postgres and SQLite.
+        // UPDATE … = (correlated subquery on another table): valid on MySQL 8.4.
         DB::statement('UPDATE candidates SET channel_id = (SELECT c.id FROM acquisition_channels c WHERE c.code = candidates.source) WHERE channel_id IS NULL');
         DB::table('candidates')->whereNull('added_via')->whereIn('source', ['manual', 'inbox'])->update(['added_via' => 'manual']);
         DB::table('candidates')->whereNull('added_via')->where('source', 'import')->update(['added_via' => 'import']);

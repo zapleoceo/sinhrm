@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Services\Transfer;
+namespace App\Modules\Core\Transfer;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Connection;
@@ -12,7 +12,7 @@ use Throwable;
 
 /**
  * The two connections of `db:transfer-to-mysql`: source = PostgreSQL (Neon), target = MySQL 8.4.
- * URLs come only from config/db_transfer.php (env TRANSFER_SOURCE_URL / TRANSFER_TARGET_URL); host/user/password of
+ * URLs come only from Transfer/config.php (env TRANSFER_SOURCE_URL / TRANSFER_TARGET_URL); host/user/password of
  * the app's own DB_* variables are never mixed in. Nothing here prints a URL or a password.
  */
 final class TransferDatabases
@@ -21,8 +21,8 @@ final class TransferDatabases
 
     public const string TARGET = 'transfer_target';
 
-    /** Verdicts of appServerVerdict(). */
-    public const string APP_NOT_MYSQL = 'skip';
+    /** Verdicts of appServerVerdict(); APP_SKIPPED — read-only modes, the command does not compare at all. */
+    public const string APP_SKIPPED = 'skip';
 
     public const string APP_SAME = 'same';
 
@@ -126,17 +126,15 @@ final class TransferDatabases
 
     /**
      * By the servers themselves (after the guard by configuration): is the app's MySQL connection the same server and
-     * database as the target? Catches DNS aliases, proxies and port forwards. Fail-closed: when the app uses MySQL and
-     * the comparison cannot be made (connection does not open, query fails), the verdict is APP_UNKNOWN and the caller
-     * must refuse to write. Only an app on another driver (pgsql before the cutover) skips the check.
+     * database as the target? Catches DNS aliases, proxies and port forwards. Fail-closed: when the comparison cannot
+     * be made (connection does not open, query fails), the verdict is APP_UNKNOWN and the caller
+     * must refuse to write. The app runs on MySQL only (ADR 0011), so there is no "other driver" exemption: a connection
+     * that does not answer these queries is APP_UNKNOWN as well.
      *
      * Identity: @@server_uuid + database(); servers without @@server_uuid (MariaDB) — @@hostname + @@port + database().
      */
     public function appServerVerdict(Connection $app): string
     {
-        if ($app->getDriverName() !== 'mysql') {
-            return self::APP_NOT_MYSQL;
-        }
         foreach (['select @@server_uuid as server, database() as db', "select concat(@@hostname, ':', @@port) as server, database() as db"] as $sql) {
             try {
                 $mine = $app->selectOne($sql);

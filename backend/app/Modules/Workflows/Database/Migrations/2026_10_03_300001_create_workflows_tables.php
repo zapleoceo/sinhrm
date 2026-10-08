@@ -39,7 +39,7 @@ return new class extends Migration
             $table->string('assignee_rule', 16);
             $table->foreignId('assignee_user_id')->nullable()->constrained('users')->nullOnDelete();
             // Per-action settings, validated by the action's executor (never secrets: the webhook key is in the vault).
-            $table->jsonb('config');
+            $table->json('config');
             $table->timestamps();
             $table->index(['template_id', 'position']);
         });
@@ -70,7 +70,7 @@ return new class extends Migration
             $table->foreignId('run_id')->constrained('workflow_runs')->cascadeOnDelete();
             $table->foreignId('step_id')->nullable()->constrained('workflow_steps')->nullOnDelete();
             $table->unsignedSmallInteger('position');
-            $table->jsonb('snapshot');
+            $table->json('snapshot');
             $table->foreignId('assignee_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('due_at');
             // pending | done | skipped | failed
@@ -81,7 +81,7 @@ return new class extends Migration
             $table->foreignId('completed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('completed_at')->nullable();
             // Codes and ids only (task_id, document_id, error code) — never payloads or secrets.
-            $table->jsonb('result')->nullable();
+            $table->json('result')->nullable();
             $table->timestamps();
             $table->index(['status', 'executed_at', 'due_at']);
             $table->index(['run_id', 'position']);

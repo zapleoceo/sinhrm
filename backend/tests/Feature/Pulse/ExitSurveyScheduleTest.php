@@ -199,7 +199,7 @@ final class ExitSurveyScheduleTest extends TestCase
 
     public function test_migration_moves_saved_old_template_surveys_to_five_questions_without_touching_answers(): void
     {
-        // the built-in template before 2026-10-07, keys in another order (jsonb does not keep it)
+        // the built-in template before 2026-10-07, keys in another order (a JSON column does not keep it)
         $old = [
             ['required' => true, 'id' => 'reason', 'type' => 'single', 'text' => 'Головна причина звільнення', 'options' => ['Зарплата', 'Керівник', 'Задачі', 'Кар\'єрне зростання', 'Особисті обставини', 'Інше']],
             ['id' => 'enps', 'type' => 'enps', 'text' => 'Чи порекомендуєте ви нас як роботодавця?', 'required' => true],

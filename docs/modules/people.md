@@ -58,8 +58,8 @@
 ### Таблицы (миграция `Database/Migrations/2026_10_02_100001_create_people_tables.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|
-| `employees` | `user_id?` (unique, fk users), `full_name`, `work_email?`, `phone?`, `avatar_url?`, `birth_date?`, `personal_email?`, `address?`, `emergency_contact?`, `custom_fields jsonb?`, `hired_at`, `fired_at?`, `termination_reason?`, `status` (`active\|on_leave\|terminated`), `employment_type` (`full_time\|part_time\|contractor`), `work_schedule jsonb?` (`{days:[1..7], hours_per_day}`), `branch_id?`, `department_id?`, `position_id?`, `manager_id?` (fk employees), `candidate_id?` (unique), `application_id?` (unique) | уникальные `candidate_id`/`application_id` — ключи идемпотентности найма |
-| `employee_change_requests` | `employee_id`, `requested_by?`, `changes jsonb`, `status` (`pending\|approved\|rejected`), `decided_by?`, `decided_at?`, `comment?`, `decision_comment?` | только поля из белого списка `Enums/ChangeableField`: `phone, personal_email, address, emergency_contact` |
+| `employees` | `user_id?` (unique, fk users), `full_name`, `work_email?`, `phone?`, `avatar_url?`, `birth_date?`, `personal_email?`, `address?`, `emergency_contact?`, `custom_fields json?`, `hired_at`, `fired_at?`, `termination_reason?`, `status` (`active\|on_leave\|terminated`), `employment_type` (`full_time\|part_time\|contractor`), `work_schedule json?` (`{days:[1..7], hours_per_day}`), `branch_id?`, `department_id?`, `position_id?`, `manager_id?` (fk employees), `candidate_id?` (unique), `application_id?` (unique) | уникальные `candidate_id`/`application_id` — ключи идемпотентности найма |
+| `employee_change_requests` | `employee_id`, `requested_by?`, `changes json`, `status` (`pending\|approved\|rejected`), `decided_by?`, `decided_at?`, `comment?`, `decision_comment?` | только поля из белого списка `Enums/ChangeableField`: `phone, personal_email, address, emergency_contact` |
 
 ### Доступ (`Services/PeopleScope` → `DTO/PeopleContext`)
 `PeopleScope::for(User)` один раз на запрос строит контекст: `admin` (активный superadmin/admin/hr_manager — `PeopleScope::isAdmin` → `UserRole::hrStaff()`), `selfId` (запись,
@@ -246,7 +246,7 @@
 `ListPeopleRequest` проверяет `sort` по `Enums/EmployeeSort` и `dir` по `asc|desc` (белый список; текст запроса в SQL не
 попадает). `EloquentEmployeeRepository::sort()` переводит колонку в свой `ORDER BY`: имя — `full_name`, должность /
 отдел / филиал / руководитель — коррелированный подзапрос имени (без `join`, поэтому выборка и `count` пагинации не
-меняются), `nulls last` — пустые значения в конце при обоих направлениях (Postgres по умолчанию ставит `NULL` первыми
+меняются), `nulls last` — пустые значения в конце при обоих направлениях (MySQL по умолчанию ставит `NULL` первыми при прямом порядке
 при `desc`), равные — по имени и `id` (страницы стабильны). Текстовые фильтры — `lower(...) like ?` с экранированием
 `% _ \` (значение только биндингом). Индексы `employees.department_id` и `employees.position_id` — миграция
 `2026_10_23_100001_add_directory_filter_indexes_to_employees.php` (филиал и руководитель были проиндексированы раньше).
@@ -346,6 +346,6 @@ admin / сам / руководитель прямой и через урове�
 
 ### Совместимость с MySQL
 
-Сортировки сотрудников по связанным должности, отделу, филиалу и руководителю помещают пустые значения в конец в обоих направлениях. Порядок строится через `Sql::orderByNullsLast` (PostgreSQL — родной `NULLS LAST`, MySQL — пара «`expr is null`, затем `expr dir`») с теми же привязками подзапроса; `PeopleSortFilterApiTest` проверяет выборку и границы видимости в PostgreSQL и MySQL CI.
+Сортировки сотрудников по связанным должности, отделу, филиалу и руководителю помещают пустые значения в конец в обоих направлениях. Порядок строится через `Sql::orderByNullsLast` (в MySQL нет `NULLS LAST`: пара «`expr is null`, затем `expr dir`») с теми же привязками подзапроса; `PeopleSortFilterApiTest` проверяет выборку и границы видимости в CI на MySQL 8.4.
 
-**Переносимый SQL (2026-10-08).** Сортировка списка сотрудников по должности/отделу/филиалу/руководителю строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце на PostgreSQL и MySQL одинаково, без драйверных веток в модуле ([ADR 0010](../adr/0010-mysql-dual-support.md)).
+**Переносимый SQL (2026-10-08).** Сортировка списка сотрудников по должности/отделу/филиалу/руководителю строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце в обоих направлениях, без драйверных веток в модуле ([ADR 0011](../adr/0011-mysql-only.md)).

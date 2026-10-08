@@ -31,15 +31,15 @@ return new class extends Migration
             $table->timestamp('published_at')->nullable();
             $table->foreignId('author_id')->nullable()->constrained('users')->nullOnDelete();
             // [{id, title, goal, sample, required, weight, keywords[]}]
-            $table->jsonb('steps');
+            $table->json('steps');
             // [{id, trigger, answer}]
-            $table->jsonb('objections');
+            $table->json('objections');
             // [{id, key, title, text}]: text with {Ім'я}, {Рекрутер}, {Вакансія}, … variables
-            $table->jsonb('templates');
+            $table->json('templates');
             // [{id, condition: no_reply|link_not_completed|gone_silent, delay_days, template_key}]
-            $table->jsonb('followups');
+            $table->json('followups');
             // {positive: [regex…], negative: [regex…]}: "next step fixed" heuristic of the rules evaluator
-            $table->jsonb('next_step_patterns');
+            $table->json('next_step_patterns');
             $table->timestamps();
             $table->unique(['script_id', 'version']);
         });
@@ -57,7 +57,7 @@ return new class extends Migration
             $table->string('engine', 8);
             $table->unsignedSmallInteger('score');
             // {steps[], next_step{}, objections[], recommendations[]}
-            $table->jsonb('result');
+            $table->json('result');
             $table->timestamp('created_at')->nullable();
             $table->index('created_at');
         });

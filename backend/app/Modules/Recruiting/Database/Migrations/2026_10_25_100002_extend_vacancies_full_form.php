@@ -28,19 +28,19 @@ return new class extends Migration
             $table->string('salary_currency', 3)->default('UAH');
             $table->boolean('salary_visible')->default(false);
             // [{lang: "en", level: "B2"}]
-            $table->jsonb('languages')->nullable();
+            $table->json('languages')->nullable();
             $table->text('requirements')->nullable();
             $table->text('responsibilities')->nullable();
             $table->text('additional_info')->nullable();
             // [{site: "work_ua", url: "https://…", date: "2026-10-25"}] — manual references, no integration.
-            $table->jsonb('external_postings')->nullable();
+            $table->json('external_postings')->nullable();
         });
 
         Schema::create('vacancy_templates', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 120);
             // Form values without the title-specific state (status, publication, slug).
-            $table->jsonb('data');
+            $table->json('data');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });

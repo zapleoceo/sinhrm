@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Services\Transfer;
+namespace App\Modules\Core\Transfer;
 
-use App\Modules\Core\Contracts\CollationKeys;
 use Illuminate\Database\Connection;
 use InvalidArgumentException;
 

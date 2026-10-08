@@ -54,7 +54,7 @@ merge-base) или падение самого шага — всё это даё
 (миграции, экспорт OpenAPI через Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
 Job `backend` — агрегатор: `needs` всех трёх, `if: always()`, зелёный только если все три `success`.
 
-Отдельного job `tests-mysql` больше нет: `tests` сам идёт на MySQL 8.4 — единственной БД проекта ([ADR 0011](../adr/0011-mysql-only.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)). Боевой Vercel + Neon (`pgsql`) заморожен на ветке `legacy/vercel-postgres`; `main` на Vercel не выкладывается (заморозка `VERCEL_DEPLOY_ENABLED`, PR #176, раздел ниже).
+Отдельного job `tests-mysql` больше нет: `tests` сам идёт на MySQL 8.4 — единственной БД проекта ([ADR 0011](../adr/0011-mysql-only.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)). Прежний боевой релиз на Vercel заморожен до переезда ([mysql-cutover.md](mysql-cutover.md#замороженный-боевой-релиз-до-cutover)); `main` на Vercel не выкладывается (заморозка `VERCEL_DEPLOY_ENABLED`, PR #176, раздел ниже).
 Job `frontend`: `ng lint`, `ng test --watch=false --coverage` (Vitest + `@vitest/coverage-v8`) с порогами покрытия
 в `frontend/angular.json` → `test.options.coverageThresholds`: statements 45,5 %, branches 57 %, functions 54,5 %,
 lines 54 % — замер 02.10.2026 (47,6 / 59,1 / 56,7 / 56,3 %) минус запас ≈ 2 п.п.; ниже порога job падает. Порог
@@ -101,18 +101,17 @@ preview-API. Вход Google на preview по-прежнему не работ�
 `deploy` выполняются только при репозиторной переменной `VERCEL_DEPLOY_ENABLED=true`. Переменной нет — jobs пропущены
 (skipped), CI (`ci.yml`) и обязательные проверки не затронуты. Логика `.github/scripts/deploy-gate.js` не менялась.
 
-**Почему:** владелец решил полностью перейти с PostgreSQL (Neon) на MySQL 8.4 (IT STEP, см. PROD-46 в
-[production-backlog.md](../product/production-backlog.md)). Код `main` становится только MySQL, и автовыкладка сломала бы
-боевой сайт на Vercel+Neon (PostgreSQL). Он остаётся как есть и больше не обновляется.
-
-**Где код боевого сайта:** ветка `legacy/vercel-postgres` (коммит `8875ac4e`).
+**Почему:** владелец перевёл проект на MySQL 8.4 (IT STEP, см. PROD-46 в
+[production-backlog.md](../product/production-backlog.md)). Код `main` — только MySQL, и автовыкладка сломала бы
+прежний боевой сайт на Vercel. Он остаётся как есть и больше не обновляется; где его код и как выложить хотфикс до
+переезда — [mysql-cutover.md](mysql-cutover.md#замороженный-боевой-релиз-до-cutover).
 
 **Как включить обратно:** Settings → Secrets and variables → Actions → Variables → New repository variable
 `VERCEL_DEPLOY_ENABLED` = `true` (удалить переменную или поставить другое значение — снова заморозка).
 
-**Хотфикс на замороженный Vercel вручную** (из `legacy/vercel-postgres`, нужен доступ к проектам Vercel):
+**Хотфикс на замороженный Vercel вручную** (из ветки замороженного релиза, нужен доступ к проектам Vercel):
 ```bash
-git switch legacy/vercel-postgres
+git switch <ветка замороженного релиза>   # имя — в mysql-cutover.md
 # API
 cd backend && vercel pull --yes --environment=production && composer install --no-dev --prefer-dist --optimize-autoloader   && vercel build --prod && vercel deploy --prebuilt --prod
 # Web

@@ -20,8 +20,8 @@ return new class extends Migration
         // One row: the configurable form (extra fields), who may create requests besides admins/managers, auto-vacancy.
         Schema::create('hiring_request_settings', function (Blueprint $table): void {
             $table->id();
-            $table->jsonb('form_fields')->nullable();
-            $table->jsonb('creator_user_ids')->nullable();
+            $table->json('form_fields')->nullable();
+            $table->json('creator_user_ids')->nullable();
             $table->boolean('auto_vacancy')->default(true);
             $table->timestamps();
         });
@@ -57,7 +57,7 @@ return new class extends Migration
             // low | normal | high | urgent
             $table->string('priority', 8)->default('normal');
             // Values of the configurable form fields (only declared keys).
-            $table->jsonb('extra')->nullable();
+            $table->json('extra')->nullable();
             // draft | pending | approved | rejected | cancelled | in_progress | closed
             $table->string('status', 16)->default('draft');
             $table->foreignId('requester_id')->nullable()->constrained('users')->nullOnDelete();

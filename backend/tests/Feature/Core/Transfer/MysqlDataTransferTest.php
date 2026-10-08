@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Core;
+namespace Tests\Feature\Core\Transfer;
 
 use App\Models\User;
-use App\Modules\Core\Services\Transfer\MysqlCollationKeys;
-use App\Modules\Core\Services\Transfer\TransferDatabases;
+use App\Modules\Core\Transfer\MysqlCollationKeys;
+use App\Modules\Core\Transfer\TransferDatabases;
 use App\Modules\Documents\Models\Document;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
 use App\Modules\Integrations\Contracts\SecretVault;
@@ -277,11 +277,15 @@ final class MysqlDataTransferTest extends TestCase
         $this->assertSame($before, $this->target()->table('users')->count(), 'nothing truncated');
     }
 
-    /** An app connection on another driver (here the PostgreSQL fixture connection) is not compared with the target. */
-    public function test_app_on_pgsql_skips_the_server_comparison(): void
+    /**
+     * The app runs on MySQL only (ADR 0011): its own database next to the target on the same server (app_test) is
+     * compared by @@server_uuid + database() and allowed; a non-MySQL app connection gets no exemption (fail-closed).
+     */
+    public function test_app_database_next_to_the_target_is_compared_and_allowed(): void
     {
-        $this->assertSame('pgsql', DB::connection()->getDriverName());
-        $this->assertSame(TransferDatabases::APP_NOT_MYSQL, TransferDatabases::connect(app('db'), config())->appServerVerdict(DB::connection()));
+        $dbs = TransferDatabases::connect(app('db'), config());
+        $this->assertSame(TransferDatabases::APP_DIFFERENT, $dbs->appServerVerdict(DB::connection('mysql')));
+        $this->assertSame(TransferDatabases::APP_UNKNOWN, $dbs->appServerVerdict(DB::connection(self::FIXTURES)));
 
         [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
 
@@ -340,9 +344,21 @@ final class MysqlDataTransferTest extends TestCase
      */
     private function transfer(array $options): array
     {
-        $code = Artisan::call('db:transfer-to-mysql', $options + ['--no-interaction' => true]);
+        // The command sees the app as it runs in production: on MySQL (DB_DATABASE=app_test in the workflow), never on
+        // the fixture connection. Tests that override the app's mysql connection have already switched the default.
+        $fixtures = DB::getDefaultConnection() === self::FIXTURES;
+        if ($fixtures) {
+            DB::setDefaultConnection('mysql');
+        }
+        try {
+            $code = Artisan::call('db:transfer-to-mysql', $options + ['--no-interaction' => true]);
 
-        return [$code, Artisan::output()];
+            return [$code, Artisan::output()];
+        } finally {
+            if ($fixtures) {
+                DB::setDefaultConnection(self::FIXTURES);
+            }
+        }
     }
 
     /** A fresh target connection (each command run rebuilds the transfer connections). */

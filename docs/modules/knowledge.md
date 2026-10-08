@@ -20,7 +20,7 @@
 | Таблица | Колонки |
 |---|---|
 | `kb_categories` | `name, emoji?, position` |
-| `kb_articles` | `category_id?, title, body_md, body_html, tags jsonb, audience jsonb, status (draft\|published), version, author_id?, updated_by?, published_at?` |
+| `kb_articles` | `category_id?, title, body_md, body_html, tags json, audience json, status (draft\|published), version, author_id?, updated_by?, published_at?` |
 | `kb_article_versions` | `article_id, version, title, body_md, edited_by?, created_at` — `unique(article_id, version)` |
 | `kb_votes` | `article_id, user_id, helpful` — `unique(article_id, user_id)` |
 
@@ -32,8 +32,8 @@
 ### Аудитория (`Support/Audience`, чистая)
 `{"type":"all"}` | `{"type":"branches","ids":[…]}` (филиал карточки сотрудника или рабочие филиалы пользователя из
 `AccessibleBranches`) | `{"type":"roles","roles":[…]}` (роли Spatie). Админ видит всё. Статья вне аудитории и
-черновик — 404 (голосовать тоже нельзя). Фильтр выполняется в PHP после выборки (≤ 1000 статей) — одинаково на
-Postgres и SQLite.
+черновик — 404 (голосовать тоже нельзя). Фильтр выполняется в PHP после выборки (≤ 1000 статей) — без JSON-SQL
+под конкретную СУБД.
 
 ### Поиск
 `?q=` — `title`/`body_md` через `Sql::whereContainsCi` (регистр не важен; на MySQL поиск шире — без учёта диакритики, см. ниже), `%` и `_` экранируются
@@ -58,7 +58,7 @@ Postgres и SQLite.
 **Вид (рестайл C «Маршрут», 2026-10-02).** Список статей — строки на «треке» с hover, «Чернетка» — нейтральная пилюля, теги — моно, на телефоне 44px (цель касания); пустой список — `.app-empty`. Статья — ширина чтения 52rem, нажатая кнопка голоса — линия и текст бренда. Тест вида — `features/knowledge/knowledge.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
 ### Общие хелперы Core (2026-10-02)
-- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (`ESCAPE '!'`, `Like::contains(…, Like::PORTABLE)`), `ilike` на Postgres;
+- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (`ESCAPE '!'`, `Like::contains(…, Like::PORTABLE)`), регистр не важен (`lower(..) like`, collation `utf8mb4_0900_ai_ci`);
 - gate `knowledge-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
@@ -83,4 +83,4 @@ Postgres и SQLite.
 Ключ модуля `knowledge`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
 MySQL compatibility: article Markdown, rendered HTML and version history use `LONGTEXT` so accepted Unicode bodies exceeding 64 KiB roundtrip.
 
-**Поиск статей (2026-10-08).** Вместо `ILIKE` на PostgreSQL и `LIKE` на других драйверах — `Sql::whereContainsCi`: `lower(title|body_md) like ? escape '!'`, регистр (включая кириллицу) не важен, `%`/`_`/`!` в запросе ищутся буквально; проверка — `KnowledgeApiTest::test_search_folds_cyrillic_case_on_every_driver` в jobs `tests` и `tests-mysql` ([ADR 0010](../adr/0010-mysql-dual-support.md)). **Известное расхождение:** на MySQL (`utf8mb4_0900_ai_ci`) поиск не различает диакритику латиницы (`é` = `e`), на PostgreSQL различает — на MySQL находится больше; фиксирует `PortableSqlTest::test_contains_diacritics_known_divergence_mysql_is_wider`.
+**Поиск статей (2026-10-08).** `Sql::whereContainsCi`: `lower(title|body_md) like ? escape '!'`, регистр (включая кириллицу) не важен, `%`/`_`/`!` в запросе ищутся буквально; проверка — `KnowledgeApiTest::test_search_folds_cyrillic_case_on_every_driver` в job `tests` на MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md)). Поиск не различает и диакритику латиницы (`é` = `e`, collation `utf8mb4_0900_ai_ci`); фиксирует `PortableSqlTest::test_contains_diacritics_known_divergence_mysql_is_wider`.

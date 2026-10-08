@@ -149,8 +149,8 @@ viewer — например, новый сотрудник) и, как рань�
 | Таблица | Главное |
 |---|---|
 | `scripts` | `name, channel (call\|chat), active_version_id?, archived` |
-| `script_versions` | `script_id, version, published_at? (null = черновик), author_id, steps, objections, templates, followups, next_step_patterns` (jsonb); `unique(script_id, version)`. Опубликованная версия неизменяема: сервис правит только черновик, а модель бросает `LogicException` при попытке изменить опубликованную |
-| `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (jsonb: steps[+comment у ШІ], next_step, objections[+handled], recommendations[+ai_tip]), prompt_version? (ШІ, напр. `script_eval.v4`), ai_request_id? (fk ai_requests), created_at` — миграция `2026_10_08_100003` |
+| `script_versions` | `script_id, version, published_at? (null = черновик), author_id, steps, objections, templates, followups, next_step_patterns` (json); `unique(script_id, version)`. Опубликованная версия неизменяема: сервис правит только черновик, а модель бросает `LogicException` при попытке изменить опубликованную |
+| `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (json: steps[+comment у ШІ], next_step, objections[+handled], recommendations[+ai_tip]), prompt_version? (ШІ, напр. `script_eval.v4`), ai_request_id? (fk ai_requests), created_at` — миграция `2026_10_08_100003` |
 | `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (followup\|manual\|new_applicant\|workflow\|document\|mood_alert), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
 
 Форма контента (валидация `Http/Requests/ValidatesScriptContent` + value-объекты `DTO/ScriptContent`, `DTO/ScriptStep`):
@@ -253,7 +253,7 @@ curl -i -X POST https://<api>/api/ops/jobs/run                               # �
 curl -s -X POST https://<api>/api/ops/jobs/run -H "X-Ops-Secret: $OPS_SECRET"  # {"ok":true,"jobs":{"followups":{…}}}
 ```
 **Не проверено в этой задаче:** запросы к preview/prod (вход только через Google на prod-домене); тесты гонялись на SQLite
-(в CI — Postgres); выполнение `dispatchAfterResponse` в рантайме vercel-php (в тестах работает через terminate ядра) —
+(в CI — MySQL 8.4); выполнение `dispatchAfterResponse` в рантайме vercel-php (в тестах работает через terminate ядра) —
 на этот случай есть ленивая оценка (тест `EvaluationApiTest::test_lazy_fallback_…`).
 
 ## Исходный дизайн (для AI-версии)

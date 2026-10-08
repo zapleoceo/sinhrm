@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
  * (json_unquote(json_extract(`meta`, '$."thread"')) — utf8mb4_bin as well), the JSON path is written exactly as Laravel
  * compiles it. Thread ids of all adapters are short (Gmail/Telegram/WhatsApp/telephony ids); a meta.thread longer than
  * 255 characters would be rejected by MySQL on insert. A functional index is a hidden column: information_schema.columns and the transfer schema check do not
- * see it. The migration name is unchanged on purpose: PostgreSQL (Neon) had an expression index under the same version.
+ * see it. The migration name is unchanged on purpose: the migration version is already recorded in applied databases.
  */
 return new class extends Migration
 {

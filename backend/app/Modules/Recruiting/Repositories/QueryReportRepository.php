@@ -16,7 +16,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
-/** Plain SQL aggregates (Postgres- and SQLite-compatible). */
+/** Plain SQL aggregates (MySQL 8.4). */
 final class QueryReportRepository implements ReportRepository
 {
     public function touches(Scope $scope, DateRange $range): array

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('name', 120);
             // builder | catalog
             $table->string('kind', 16);
-            $table->jsonb('definition');
+            $table->json('definition');
             $table->timestamps();
             $table->index(['user_id', 'name']);
         });

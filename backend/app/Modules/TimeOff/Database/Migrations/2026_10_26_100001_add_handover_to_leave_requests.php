@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         // Optional "who takes over the work" during the absence (PROD-13). Nullable: existing rows stay valid;
-        // deleting the colleague's card only clears the link. Postgres does not index FKs itself — explicit index.
+        // deleting the colleague's card only clears the link. Explicit index on the foreign key column.
         Schema::table('leave_requests', function (Blueprint $table): void {
             $table->foreignId('handover_to_employee_id')->nullable()->constrained('employees')->nullOnDelete();
             $table->index('handover_to_employee_id');

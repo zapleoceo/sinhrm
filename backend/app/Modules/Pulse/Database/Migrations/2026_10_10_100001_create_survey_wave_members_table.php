@@ -29,7 +29,7 @@ return new class extends Migration
         // Differencing decision per segment, made once when the wave closes (closed waves never change):
         // {"department_id": {"s:<id>": bool, "c:<id>": bool}, "branch_id": {...}}. Never serialized by the API.
         Schema::table('survey_waves', function (Blueprint $table): void {
-            $table->jsonb('segment_visibility')->nullable();
+            $table->json('segment_visibility')->nullable();
         });
     }
 

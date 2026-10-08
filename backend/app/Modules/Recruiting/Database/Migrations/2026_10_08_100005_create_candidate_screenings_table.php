@@ -24,9 +24,9 @@ return new class extends Migration
             // fit | maybe | no — derived from the score on the server
             $table->string('verdict', 8)->nullable();
             $table->string('summary', 400)->nullable();
-            $table->jsonb('strengths')->nullable();
-            $table->jsonb('gaps')->nullable();
-            $table->jsonb('questions')->nullable();
+            $table->json('strengths')->nullable();
+            $table->json('gaps')->nullable();
+            $table->json('questions')->nullable();
             // e.g. screening.v1 (docs/modules/ai.md)
             $table->string('prompt_version', 32);
             $table->foreignId('ai_request_id')->nullable()->constrained('ai_requests')->nullOnDelete();
