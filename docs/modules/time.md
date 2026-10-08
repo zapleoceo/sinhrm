@@ -45,7 +45,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 ### Таблицы (`Database/Migrations/2026_10_06_300001_create_time_tables.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|
-| `work_schedules` | `branch_id? (unique), days jsonb (ISO 1..7), hours_per_day` | `branch_id null` — компания; data-миграция: 8 ч Пн–Пт |
+| `work_schedules` | `branch_id? (unique), days json (ISO 1..7), hours_per_day` | `branch_id null` — компания; data-миграция: 8 ч Пн–Пт |
 | `timesheets` | `employee_id, week_start (понедельник), status (draft\|submitted\|approved\|rejected), expected_hours, worked_hours, overtime_hours, submitted_at, decided_by, decided_at, decision_comment` | `unique(employee_id, week_start)`; итоги пересчитываются при сохранении и отправке |
 | `time_entries` | `timesheet_id, date, hours (0 < h ≤ 24), project?, category?, note?` | неделя сохраняется целиком (замена строк) |
 

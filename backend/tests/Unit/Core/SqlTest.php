@@ -56,10 +56,10 @@ final class SqlTest extends TestCase
         }
     }
 
-    /** PostgreSQL and SQLite are not supported any more (ADR 0011): asking for their dialect is a programming error. */
+    /** Only MySQL is supported (ADR 0011): asking for another dialect is a programming error. */
     public function test_drivers_other_than_mysql_are_rejected(): void
     {
-        foreach (['pgsql', 'sqlite', 'sqlsrv'] as $driver) {
+        foreach (['sqlite', 'sqlsrv', 'unknown'] as $driver) {
             foreach ([
                 static fn () => Sql::jsonText($driver, 'meta', 'k'),
                 static fn () => Sql::castText($driver, 'x.cost'),

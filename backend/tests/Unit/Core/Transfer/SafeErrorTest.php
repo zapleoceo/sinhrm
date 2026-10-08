@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core\Transfer;
 
-use App\Modules\Core\Services\Transfer\SafeError;
+use App\Modules\Core\Transfer\SafeError;
 use Illuminate\Database\QueryException;
 use PDOException;
 use PHPUnit\Framework\TestCase;

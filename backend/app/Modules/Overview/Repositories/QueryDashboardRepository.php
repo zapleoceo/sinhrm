@@ -14,7 +14,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-/** Plain SQL aggregates (Postgres- and SQLite-compatible), same scoping rules as the Recruiting reports. */
+/** Plain SQL aggregates (MySQL 8.4), same scoping rules as the Recruiting reports. */
 final class QueryDashboardRepository implements DashboardRepository
 {
     public function counts(Scope $scope, Carbon $staleBefore, Carbon $todayStart): array
@@ -83,7 +83,7 @@ final class QueryDashboardRepository implements DashboardRepository
     public function meetingsInvolving(int $userId, array $interviewApplicationIds, Carbon $from, Carbon $to): array
     {
         // meta.start is an ISO-8601 string with an offset: a coarse text window (±1 day) in SQL keeps the query
-        // portable (Postgres jsonb ->> / SQLite json_extract via the query builder), the exact window is checked below.
+        // simple (JSON ->> via the query builder, json_unquote(json_extract()) on MySQL), the exact window is checked below.
         $rows = DB::table('touchpoints as t')
             ->join('candidates as c', 'c.id', '=', 't.candidate_id')
             ->where('t.channel', Channel::Meeting->value)

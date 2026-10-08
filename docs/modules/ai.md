@@ -98,7 +98,7 @@ Recruiting/Ai/  ScreeningPrompt · ScreeningInput · ScreeningPromptFactory · S
 `ai_provider_connection_failed`, `ai_provider_budget` (дневной лимит самого брокера) и т.п.
 
 ### Таблица `ai_requests`
-`id, purpose, subject_type, subject_id, meta (jsonb: только id, напр. script_version_id), provider, capability, job_id,
+`id, purpose, subject_type, subject_id, meta (json: только id, напр. script_version_id), provider, capability, job_id,
 status (pending|done|failed), attempts, prompt_version, tokens_in, tokens_out, tokens_cached, cost_usd, model, error,
 completed_at, created_at, updated_at`. Индексы `(status, created_at)`, `(subject_type, subject_id)`, `created_at`.
 

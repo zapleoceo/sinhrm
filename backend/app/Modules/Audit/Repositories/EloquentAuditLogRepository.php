@@ -95,7 +95,7 @@ final class EloquentAuditLogRepository implements AuditLogRepository
     /**
      * ORDER BY of a whitelisted column: column names and direction are literals, never request text. The actor's name
      * comes from a correlated subquery (no join: the selected columns and the count stay as they are); system entries
-     * (no user) stay last in both directions — Postgres would put NULLs first on DESC. Ties: newest first by id.
+     * (no user) stay last in both directions — MySQL would put NULLs first on ASC. Ties: newest first by id.
      *
      * @param  Builder<AuditEntry>  $q
      */

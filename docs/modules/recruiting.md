@@ -74,13 +74,13 @@
 | `pipeline_stages` | `pipeline_id, name, kind (attract\|select\|hire\|closed), position, is_terminal` | `unique(pipeline_id, position)` |
 | `reject_reasons` | `name, active` | справочник; не удаляется, выключается; 6 общих причин в data-миграции |
 | `vacancies` | `title, branch_id, department_id?, position_id?, recruiter_id, pipeline_id, status (open\|paused\|closed), description, opened_at, closed_at` | воронка вакансии после создания не меняется |
-| `candidates` | `full_name, phone (E.164), email (lowercase), telegram_username (lowercase, без @), city_id?, source, channel_id?, added_via?, utm (jsonb), tags (jsonb), owner_id, created_by` | индексы на трёх контактах — ключи дедупликации; `channel_id` / `added_via` — канал привлечения и способ добавления ([acquisition-channels.md](acquisition-channels.md), миграция `2026_10_06_200001`) |
+| `candidates` | `full_name, phone (E.164), email (lowercase), telegram_username (lowercase, без @), city_id?, source, channel_id?, added_via?, utm (json), tags (json), owner_id, created_by` | индексы на трёх контактах — ключи дедупликации; `channel_id` / `added_via` — канал привлечения и способ добавления ([acquisition-channels.md](acquisition-channels.md), миграция `2026_10_06_200001`) |
 | `acquisition_channels`, `channel_utm_rules`, `acquisition_channel_costs` | справочник каналов привлечения, правила UTM, расходы | [acquisition-channels.md](acquisition-channels.md); data-миграция `…200002_seed_channels_from_sources` |
 | `applications` | `candidate_id, vacancy_id, stage_id, status (active\|hired\|rejected), reject_reason_id?, rejected_note, stage_entered_at, last_touch_at, closed_at` | `unique(candidate_id, vacancy_id)` |
 | `stage_changes` | `application_id, from_stage_id? (null = создание), to_stage_id, by_user_id?, reason, at` | маршрут кандидата |
 | `candidate_profile_urls` | `candidate_id, site (linkedin\|work_ua\|djinni\|dou\|robota_ua), url (unique)` | ссылки на профили из браузерного расширения; нормализованный URL — ещё один ключ дедупликации (миграция `2026_10_01_100001`) |
-| `touchpoints` | `candidate_id?, application_id?, branch_id?, stage_change_id?, channel, direction (in\|out), author_id?, occurred_at, body, meta (jsonb: duration_sec, recording_url, contact), external_id, via_product, integration_key` | `unique(channel, external_id)` — дедуп повторной доставки (NULL не конфликтуют) |
-| `candidate_screenings` | `application_id, candidate_id, vacancy_id, status (pending\|done\|failed), trigger (manual\|auto), score?, verdict? (fit\|maybe\|no), summary?, strengths/gaps/questions (jsonb), prompt_version, ai_request_id?, error?, requested_by?, completed_at` | ШІ-скринінг (миграция `2026_10_08_100005`); вердикт считает сервер по баллу (≥ 70 / ≥ 40) |
+| `touchpoints` | `candidate_id?, application_id?, branch_id?, stage_change_id?, channel, direction (in\|out), author_id?, occurred_at, body, meta (json: duration_sec, recording_url, contact), external_id, via_product, integration_key` | `unique(channel, external_id)` — дедуп повторной доставки (NULL не конфликтуют) |
+| `candidate_screenings` | `application_id, candidate_id, vacancy_id, status (pending\|done\|failed), trigger (manual\|auto), score?, verdict? (fit\|maybe\|no), summary?, strengths/gaps/questions (json), prompt_version, ai_request_id?, error?, requested_by?, completed_at` | ШІ-скринінг (миграция `2026_10_08_100005`); вердикт считает сервер по баллу (≥ 70 / ≥ 40) |
 | view `unmatched_messages` | `SELECT * FROM touchpoints WHERE candidate_id IS NULL` | для SQL/BI; API читает саму таблицу. ⚠ `SELECT *` фиксирует колонки при создании: изменение `touchpoints` потребует пересоздать view в той же миграции |
 
 Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MANUAL` — каналы ручной записи, `isTouch()` = не `system`),
@@ -268,7 +268,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 длительность и счётчики пишутся в лог `recruiting.demo_generated`. На SQLite `generate()` занимает ~0.4 с (тест
 `DemoCommandTest` требует < 40 с: сид идёт внутри HTTP-запроса с лимитом функции 60 с).
 
-`populate(…, $from)` / `extraTouch()` — те же истории (порциями: `$from` — номер первой истории; external id касаний — `demo-fill-c<n>-…`/`demo-fill-t<n>-…`, чтобы не совпасть с превью-сидом и между запросами; кандидат с занятым контактом пропускается (контакты проверяются заранее, без падающего INSERT — он оборвал бы транзакцию Postgres); касание привязано к кандидату явно, `candidateId`) кандидатов с суффиксом имени (пометка « [ТЕСТ]» в конце: «Іваненко Олена [ТЕСТ]»), сроком до 180 дней, шагами воронки в днях и каналами привлечения (`$channelIds` — id канала по коду = значению источника; в этом режиме источники идут миксом `FILL_SOURCES` — сайт с `added_via=career_site`, воронка сужается: большинство остаётся на ранних этапах, каждый 12-й нанят, каждый 4-й отклонён на достигнутом этапе с причиной по весам `REASON_MIX` из всех активных причин; раньше `i ≡ 5 (mod 6)` при 6 причинах всегда давал «Інше»); их вызывает общий демо-заполнитель `Core/Services/Demo/DemoDataService` (`POST /api/ops/demo-fill`, работает и в production, данные помечены ` [ТЕСТ]` в конце имени).
+`populate(…, $from)` / `extraTouch()` — те же истории (порциями: `$from` — номер первой истории; external id касаний — `demo-fill-c<n>-…`/`demo-fill-t<n>-…`, чтобы не совпасть с превью-сидом и между запросами; кандидат с занятым контактом пропускается (контакты проверяются заранее, без падающего INSERT внутри транзакции демо); касание привязано к кандидату явно, `candidateId`) кандидатов с суффиксом имени (пометка « [ТЕСТ]» в конце: «Іваненко Олена [ТЕСТ]»), сроком до 180 дней, шагами воронки в днях и каналами привлечения (`$channelIds` — id канала по коду = значению источника; в этом режиме источники идут миксом `FILL_SOURCES` — сайт с `added_via=career_site`, воронка сужается: большинство остаётся на ранних этапах, каждый 12-й нанят, каждый 4-й отклонён на достигнутом этапе с причиной по весам `REASON_MIX` из всех активных причин; раньше `i ≡ 5 (mod 6)` при 6 причинах всегда давал «Інше»); их вызывает общий демо-заполнитель `Core/Services/Demo/DemoDataService` (`POST /api/ops/demo-fill`, работает и в production, данные помечены ` [ТЕСТ]` в конце имени).
 
 Вызывают его:
 - **seeder** `Database/Seeders/RecruitingDemoSeeder` — из `DatabaseSeeder`, если `APP_ENV != production`. Именно сидер, а не
@@ -499,8 +499,8 @@ ingestor (сопоставление, дедуп, «Вхідні»), `CandidateS
 ```bash
 curl -i "https://<preview>/api/recruiting/stale?days=3"      # без сессии → 401
 ```
-**Не проверено в этой задаче:** реальные запросы к preview/prod (вход только через Google на prod-домене), запросы на Postgres
-локально (тесты гонялись на SQLite; CI — Postgres).
+**Не проверено в этой задаче:** реальные запросы к preview/prod (вход только через Google на prod-домене), запросы на MySQL
+локально (тесты гонялись на SQLite; CI — MySQL 8.4).
 
 ## Доступ к модулю
 
@@ -571,7 +571,7 @@ curl -i "https://<preview>/api/recruiting/stale?days=3"      # без сесси
 с HTTP create candidate/apply/move до hired/rejected и итоговыми scoped reports.
 Чужой филиал служит контрольной группой; viewer/foreign не меняют этап. Повторная create/apply/move
 и отказ без причины возвращают существующие ошибки, не добавляя кандидатов, заявок или истории.
-Проверка работает на синтетическом PostgreSQL CI, без frontend/provider mocks и без live production данных.
+Проверка работает на синтетической БД MySQL 8.4 в CI, без frontend/provider mocks и без live production данных.
 ### Видимость заявок общей карточки (PROD09)
 Доступ к кандидату (включая owner/created_by) не открывает заявки других филиалов. List и detail
 возвращают только заявки видимых филиалов, управляемых вакансий либо назначенного интервью.
@@ -589,6 +589,6 @@ combined regression должна проверить общую карточку 
 
 ### Совместимость с MySQL
 
-Нормализованные телефон, e-mail и Telegram-контакт кандидата защищены уникальными индексами. Несколько кандидатов без контактов допустимы; повтор непустого ключа по-прежнему даёт `duplicate_candidate` (409). Сортировка по оценке скрининга ставит кандидатов без оценки в конец. Оба контракта проверяются feature-тестами в обязательном job `tests` (MySQL 8.4 — единственная БД, [ADR 0011](../adr/0011-mysql-only.md)). Уникальные индексы контактов — обычные MySQL unique (несколько NULL допустимы); PostgreSQL-ветка с частичным индексом `WHERE col IS NOT NULL` из миграции удалена, `external_id` касаний и `url` профилей — `utf8mb4_bin` без драйверных веток. Тест: `tests/Feature/Recruiting/RecruitingMysqlSchemaTest`.
+Нормализованные телефон, e-mail и Telegram-контакт кандидата защищены уникальными индексами. Несколько кандидатов без контактов допустимы; повтор непустого ключа по-прежнему даёт `duplicate_candidate` (409). Сортировка по оценке скрининга ставит кандидатов без оценки в конец. Оба контракта проверяются feature-тестами в обязательном job `tests` (MySQL 8.4 — единственная БД, [ADR 0011](../adr/0011-mysql-only.md)). Уникальные индексы контактов — обычные MySQL unique (несколько NULL допустимы), драйверных веток в миграции нет; `external_id` касаний и `url` профилей — `utf8mb4_bin` без драйверных веток. Тест: `tests/Feature/Recruiting/RecruitingMysqlSchemaTest`.
 
 **Переносимый SQL (2026-10-08).** Сортировка кандидатов по `screening_score` строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце в обоих направлениях, без драйверных веток в модуле ([ADR 0011](../adr/0011-mysql-only.md)).

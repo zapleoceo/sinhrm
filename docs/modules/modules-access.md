@@ -52,7 +52,7 @@ disabled tick не меняет run/step и не создаёт workflow task; �
 |---|---|
 | Описание модуля: ключ, иконка, группа, `core`, роли по умолчанию | свойства `ModuleServiceProvider` (`$moduleKey`, `$moduleIcon`, `$moduleGroup`, `$coreModule`, `$defaultRoles`), реестр `Core\Services\ModuleRegistry` |
 | Ключ | kebab-case папки модуля: `HiringRequests` → `hiring-requests`, `TimeOff` → `time-off` |
-| Хранение | таблица `module_settings` (`module` уникальный, `enabled`, `roles` jsonb); миграция Core заполняет значения по умолчанию для всех небазовых модулей; нет строки — берутся значения по умолчанию |
+| Хранение | таблица `module_settings` (`module` уникальный, `enabled`, `roles` json); миграция Core заполняет значения по умолчанию для всех небазовых модулей; нет строки — берутся значения по умолчанию |
 | Проверка на сервере | middleware `Core\Http\Middleware\EnsureModuleAccessible` ставится `ModuleServiceProvider` на все маршруты небазового модуля (и на публичные маршруты Safe Speak) |
 | Правила | `Core\Services\ModuleAccess` (`enabled`, `allows`, `allowedKeys`); настройки в кэше 60 секунд (`module_settings`), кэш сбрасывается при сохранении |
 | Фоновые задачи | `POST /api/ops/jobs/run` пропускает `ScheduledJob` выключенного модуля (модуль определяется по пространству имён класса): `{"ok": true, "skipped": "module_disabled"}` |

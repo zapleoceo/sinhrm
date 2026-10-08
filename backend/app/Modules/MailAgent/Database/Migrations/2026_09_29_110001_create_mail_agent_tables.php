@@ -63,7 +63,7 @@ return new class extends Migration
             $table->timestamp('started_at');
             $table->timestamp('finished_at')->nullable();
             $table->unsignedBigInteger('cursor_ms')->nullable();
-            $table->jsonb('counts')->nullable();
+            $table->json('counts')->nullable();
             $table->string('error', 64)->nullable();
             $table->timestamps();
         });

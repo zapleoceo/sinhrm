@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Directory column filters (table headers): department and position are filtered like branch and manager,
- * which already have indexes. Postgres does not index foreign keys by itself.
+ * which already have indexes. Explicit indexes keep the filter columns indexed whether or not a foreign key exists.
  */
 return new class extends Migration
 {

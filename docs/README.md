@@ -20,5 +20,5 @@
 
 ## Как устроено одним абзацем
 Интерфейс — Angular-приложение на `sinhrm.vercel.app`. Все запросы `/api/*` браузер отправляет на тот же адрес,
-а Vercel незаметно пересылает их в API на Laravel (`sinhrm-api.vercel.app`). API хранит данные в Postgres (Neon,
-Франкфурт). Фоновые задачи (почта, напоминания) запускаются по расписанию из GitHub Actions.
+а Vercel незаметно пересылает их в API на Laravel (`sinhrm-api.vercel.app`). API хранит данные в MySQL 8.4
+([ADR 0011](adr/0011-mysql-only.md)). Фоновые задачи (почта, напоминания) запускаются по расписанию из GitHub Actions.

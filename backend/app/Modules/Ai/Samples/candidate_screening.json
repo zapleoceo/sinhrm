@@ -7,7 +7,7 @@
       "title": "PHP-розробник (Laravel)",
       "position": "Розробник",
       "department": "IT",
-      "requirements": "Досвід PHP від 3 років, Laravel, PostgreSQL, REST API, англійська B1+, тести PHPUnit."
+      "requirements": "Досвід PHP від 3 років, Laravel, MySQL, REST API, англійська B1+, тести PHPUnit."
     },
     "candidate": {
       "city": "Київ",
@@ -19,7 +19,7 @@
     "materials": [
       {
         "channel": "note",
-        "body": "Imported from LinkedIn: PHP Developer. 4 роки досвіду: Laravel 10-11, PostgreSQL, REST API, черги, PHPUnit (покриття 80%). Англійська Upper-Intermediate. Контакт: test.testovych@example.test"
+        "body": "Imported from LinkedIn: PHP Developer. 4 роки досвіду: Laravel 10-11, MySQL, REST API, черги, PHPUnit (покриття 80%). Англійська Upper-Intermediate. Контакт: test.testovych@example.test"
       },
       {
         "channel": "email",

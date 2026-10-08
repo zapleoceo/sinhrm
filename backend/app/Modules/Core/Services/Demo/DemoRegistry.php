@@ -139,8 +139,8 @@ final class DemoRegistry
     }
 
     /**
-     * Deletes the rows in a savepoint (a failing statement would abort the whole Postgres transaction); when a foreign
-     * key refuses the chunk, row by row, skipping the rows still in use.
+     * Deletes the rows in a savepoint (a refused chunk is undone as one unit, the outer transaction goes on); when a
+     * foreign key refuses the chunk, row by row, skipping the rows still in use.
      *
      * @param  list<int>  $ids
      */

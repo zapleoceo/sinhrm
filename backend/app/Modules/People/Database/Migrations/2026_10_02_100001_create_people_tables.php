@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('personal_email')->nullable();
             $table->text('address')->nullable();
             $table->text('emergency_contact')->nullable();
-            $table->jsonb('custom_fields')->nullable();
+            $table->json('custom_fields')->nullable();
             // Job tier: admins, the employee and their managers.
             $table->date('hired_at');
             $table->date('fired_at')->nullable();
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('status', 16)->default('active');
             // full_time | part_time | contractor
             $table->string('employment_type', 16)->default('full_time');
-            $table->jsonb('work_schedule')->nullable();
+            $table->json('work_schedule')->nullable();
             $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
             $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
             $table->foreignId('position_id')->nullable()->constrained('positions')->nullOnDelete();
@@ -52,7 +52,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->cascadeOnDelete();
             $table->foreignId('requested_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->jsonb('changes');
+            $table->json('changes');
             // pending | approved | rejected
             $table->string('status', 16)->default('pending');
             $table->foreignId('decided_by')->nullable()->constrained('users')->nullOnDelete();

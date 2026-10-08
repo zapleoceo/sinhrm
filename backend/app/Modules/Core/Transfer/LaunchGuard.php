@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Services\Transfer;
+namespace App\Modules\Core\Transfer;
 
 /** Protection against a run against production by accident. Pure decisions; the command asks and prints. */
 final class LaunchGuard

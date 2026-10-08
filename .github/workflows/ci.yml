@@ -20,6 +20,10 @@ jobs:
     defaults: { run: { working-directory: backend } }
     steps:
       - uses: actions/checkout@v7
+      # MySQL 8.4 only (ADR 0011): no mention of the former database outside the one-off cutover tool (Core/Transfer).
+      - name: MySQL-only guard
+        working-directory: .
+        run: node --test scripts/mysql-only-guard.test.mjs && node scripts/mysql-only-guard.mjs
       - uses: shivammathur/setup-php@v2
         with: { php-version: "8.4", extensions: "pdo_mysql, intl, sodium", coverage: none }
       # The only job that saves the vendor cache (tests / api-docs only restore it: api-docs prunes dev deps).

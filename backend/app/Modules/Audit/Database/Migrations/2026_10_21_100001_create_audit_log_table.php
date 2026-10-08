@@ -20,9 +20,9 @@ return new class extends Migration
             // created | updated | deleted | status_changed | … (App\Modules\Audit\Enums\AuditAction)
             $table->string('action', 32);
             // {field: {from, to}}; sensitive fields are masked before they get here.
-            $table->jsonb('changes')->nullable();
+            $table->json('changes')->nullable();
             // Extra non-personal context (secret name, prompt version, related candidate id).
-            $table->jsonb('meta')->nullable();
+            $table->json('meta')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
             $table->index(['entity_type', 'entity_id', 'id']);

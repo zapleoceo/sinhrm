@@ -12,7 +12,7 @@
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (OAuth-клиент **входа**) | переменные окружения Vercel | нужны до первого входа, когда админки ещё нет; Google-интеграции (Gmail и т.п.) — в `integration_secrets` |
 | Токены интеграций (AI Broker, OpenRouter, Google, Telegram, телефония…) | таблица `integration_secrets`, шифрование `APP_KEY` (AES-256, `Crypt`) | меняются из админки без деплоя |
 | OAuth-токены Google (Gmail, Calendar, Sheets: `refresh_token`, `access_token`) | `integration_secrets` через `SecretVault` (ключи `google_*`) | появляются после согласия суперадмина («Підключити Google»), в API и логах не показываются никогда; код авторизации и токены не пишутся в URL и лог — [google-workspace.md](../modules/google-workspace.md) |
-| Справочники компании, сотрудники, кандидаты | Postgres (Neon) | в репозиторий не попадают никогда |
+| Справочники компании, сотрудники, кандидаты | MySQL 8.4 (БД приложения) | в репозиторий не попадают никогда |
 | Демо-данные для тестов и preview | фабрики (синтетика) | реальные данные вне prod запрещены |
 
 ## Хранилище секретов (vault)

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core\Transfer;
 
-use App\Modules\Core\Services\Transfer\LaunchGuard;
+use App\Modules\Core\Transfer\LaunchGuard;
 use PHPUnit\Framework\TestCase;
 
 final class LaunchGuardTest extends TestCase

@@ -68,8 +68,8 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 `acting_role` (например `"recruiter"`); при «Усі ролі» поля нет.
 
 ### Таблица `audit_log`
-`id, user_id (без FK — история переживает удаление пользователя), entity_type, entity_id, action, changes jsonb
-{поле: {from, to}}, meta jsonb, created_at`. Индексы: `(entity_type, entity_id, id)`, `(user_id, id)`, `(action, id)`,
+`id, user_id (без FK — история переживает удаление пользователя), entity_type, entity_id, action, changes json
+{поле: {from, to}}, meta json, created_at`. Индексы: `(entity_type, entity_id, id)`, `(user_id, id)`, `(action, id)`,
 `created_at`. Строки только добавляются; удаляет их только задача хранения.
 
 ### Хранение
@@ -151,6 +151,6 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 
 ### Совместимость с MySQL
 
-Сортировки журнала по пользователю, действию и сущности оставляют записи с пустым значением в конце как при прямом, так и при обратном порядке. SQL строится через `Core\Support\Database\Sql::orderByNullsLast`: на PostgreSQL родной `NULLS LAST`, на MySQL пара «`expr is null`, затем `expr dir`»; контракт покрывает `AuditSortFilterApiTest` в CI на PostgreSQL и MySQL.
+Сортировки журнала по пользователю, действию и сущности оставляют записи с пустым значением в конце как при прямом, так и при обратном порядке. SQL строится через `Core\Support\Database\Sql::orderByNullsLast`: в MySQL нет `NULLS LAST`, поэтому пара «`expr is null`, затем `expr dir`»; контракт покрывает `AuditSortFilterApiTest` в CI на MySQL 8.4.
 
-**Переносимый SQL (2026-10-08).** Сортировка журнала строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце на PostgreSQL и MySQL одинаково, без драйверных веток в модуле ([ADR 0010](../adr/0010-mysql-dual-support.md)).
+**Переносимый SQL (2026-10-08).** Сортировка журнала строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце в обоих направлениях, без драйверных веток в модуле ([ADR 0011](../adr/0011-mysql-only.md)). Колонки `changes`/`meta` — тип `json` MySQL (в миграции `json()`; прежний `jsonb()` на MySQL давал тот же DDL).

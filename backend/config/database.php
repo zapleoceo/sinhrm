@@ -19,7 +19,7 @@ return [
     |
     */
 
-    // MySQL 8.4 only (ADR 0011). PostgreSQL is read only by db:transfer-to-mysql (its own source connection).
+    // MySQL 8.4 only (ADR 0011).
     'default' => env('DB_CONNECTION', 'mysql'),
 
     /*

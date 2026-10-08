@@ -8,7 +8,7 @@ use App\Modules\Scripts\Enums\FollowupCondition;
 
 /**
  * Everything a script version contains. Built from validated input (FormRequest) or a stored version row;
- * the same shape is stored in script_versions (one jsonb column per part).
+ * the same shape is stored in script_versions (one JSON column per part).
  *
  * @phpstan-type Objection array{id: string, trigger: string, answer: string}
  * @phpstan-type Template array{id: string, key: string, title: string, text: string}

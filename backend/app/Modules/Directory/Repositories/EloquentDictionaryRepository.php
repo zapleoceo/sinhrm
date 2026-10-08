@@ -75,7 +75,7 @@ final class EloquentDictionaryRepository implements DictionaryRepository
     /**
      * ORDER BY of a whitelisted column: column names and direction are literals, never request text. Branch city
      * comes from a correlated subquery (no join: the selected columns and the count stay as they are); branches
-     * without a city stay last in both directions — Postgres would put NULLs first on DESC. Ties: by name, then id.
+     * without a city stay last in both directions — MySQL would put NULLs first on ASC. Ties: by name, then id.
      *
      * @param  Builder<DictionaryItem>  $query
      */

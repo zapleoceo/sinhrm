@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Contracts;
+namespace App\Modules\Core\Transfer;
 
 /**
  * Comparison keys of strings under a target collation: two strings get the same key exactly when the collation

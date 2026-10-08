@@ -20,8 +20,8 @@ interface KnowledgeRepository
     public function saveCategory(?KbCategory $category, array $attributes): KbCategory;
 
     /**
-     * Articles with vote counts, newest first. $q matches title or body case-insensitively (ILIKE on Postgres,
-     * LIKE elsewhere); wildcards in $q are literal.
+     * Articles with vote counts, newest first. $q matches title or body case-insensitively (MySQL collation
+     * utf8mb4_0900_ai_ci, ADR 0011); wildcards in $q are literal.
      *
      * @return Collection<int, KbArticle>
      */

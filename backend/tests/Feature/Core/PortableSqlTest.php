@@ -70,7 +70,7 @@ final class PortableSqlTest extends TestCase
 
     /**
      * utf8mb4_0900_ai_ci (ADR 0011): the search ignores case and Latin diacritics (é = e), Cyrillic й is not folded into и.
-     * Under PostgreSQL only case was ignored — accepted widening, pinned so a collation change does not slip by.
+     * Pinned so a collation change does not slip by.
      */
     public function test_contains_ignores_latin_diacritics_but_keeps_cyrillic_short_i(): void
     {

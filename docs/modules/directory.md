@@ -122,6 +122,6 @@ curl -i "https://sinhrm.vercel.app/api/directory/branches?perPage=20"   # без
 
 ### Совместимость с MySQL
 
-Сортировка филиалов по городу сохраняет филиалы без города в конце в обоих направлениях. Порядок строится через `Sql::orderByNullsLast` (PostgreSQL — родной `NULLS LAST`, MySQL — пара «`expr is null`, затем `expr dir`»); `DirectorySortFilterApiTest` проверяет выборку, фильтры и страницы в обоих CI окружениях.
+Сортировка филиалов по городу сохраняет филиалы без города в конце в обоих направлениях. Порядок строится через `Sql::orderByNullsLast` (в MySQL нет `NULLS LAST`: пара «`expr is null`, затем `expr dir`»); `DirectorySortFilterApiTest` проверяет выборку, фильтры и страницы в CI на MySQL 8.4.
 
-**Переносимый SQL (2026-10-08).** Сортировка справочников (город филиала) строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце на PostgreSQL и MySQL одинаково, без драйверных веток в модуле ([ADR 0010](../adr/0010-mysql-dual-support.md)).
+**Переносимый SQL (2026-10-08).** Сортировка справочников (город филиала) строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце в обоих направлениях, без драйверных веток в модуле ([ADR 0011](../adr/0011-mysql-only.md)).

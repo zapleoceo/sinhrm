@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             // list<string>: agenda points copied into a new 1:1
-            $table->jsonb('agenda');
+            $table->json('agenda');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
@@ -26,12 +26,12 @@ return new class extends Migration
             $table->timestamp('scheduled_at');
             $table->foreignId('template_id')->nullable()->constrained('one_on_one_templates')->nullOnDelete();
             // list<{id, text, done}>
-            $table->jsonb('agenda');
+            $table->json('agenda');
             // Seen by the manager of the meeting only (never the employee, never another admin through the API).
             $table->text('notes_private_manager')->nullable();
             $table->text('notes_shared')->nullable();
             // list<{id, text, done, due_on?}>
-            $table->jsonb('action_items');
+            $table->json('action_items');
             // scheduled | completed | cancelled
             $table->string('status', 16)->default('scheduled');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
@@ -52,7 +52,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             // list<{id, title, start, target, current, unit, weight}>
-            $table->jsonb('key_results');
+            $table->json('key_results');
             // 0..100, recomputed from key_results on every write (ObjectiveProgress)
             $table->unsignedTinyInteger('progress')->default(0);
             // active | achieved | missed | cancelled
@@ -73,7 +73,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('progress_before');
             $table->unsignedTinyInteger('progress_after');
             // snapshot: list<{id, current}>
-            $table->jsonb('key_results');
+            $table->json('key_results');
             $table->text('comment')->nullable();
             $table->timestamps();
             $table->index(['objective_id', 'created_at']);
@@ -115,7 +115,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             // list<{value: int, label: string}>, ascending
-            $table->jsonb('levels');
+            $table->json('levels');
             $table->timestamps();
         });
 
@@ -134,15 +134,15 @@ return new class extends Migration
             $table->date('period_start');
             $table->date('period_end');
             // {branch_ids: list<int>, department_ids: list<int>} — empty lists = everyone
-            $table->jsonb('participants');
+            $table->json('participants');
             // list of self | manager | peer | upward
-            $table->jsonb('types');
+            $table->json('types');
             // list<int>
-            $table->jsonb('competency_ids');
+            $table->json('competency_ids');
             // Peer / upward reviewers are never shown (and their results need ReviewResults::MIN_REVIEWERS).
             $table->boolean('anonymous')->default(true);
             // {self?: Y-m-d, manager?: Y-m-d, peer?: Y-m-d, upward?: Y-m-d}
-            $table->jsonb('deadlines');
+            $table->json('deadlines');
             // draft | active | closed
             $table->string('status', 16)->default('draft');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
@@ -180,9 +180,9 @@ return new class extends Migration
             $table->foreignId('employee_id')->constrained('employees')->cascadeOnDelete();
             $table->string('title');
             // list<{id, text}>
-            $table->jsonb('goals');
+            $table->json('goals');
             // list<{id, text, due_on?, done}>
-            $table->jsonb('actions');
+            $table->json('actions');
             $table->date('due_on')->nullable();
             // active | completed | cancelled
             $table->string('status', 16)->default('active');

@@ -73,7 +73,7 @@ final class EloquentLedgerRepository implements LedgerRepository
     {
         $attributes['created_at'] ??= Carbon::now();
         try {
-            // Savepoint: on Postgres a failed INSERT would otherwise abort the surrounding transaction.
+            // Savepoint: a duplicate INSERT is undone on its own, the surrounding transaction goes on.
             DB::transaction(static fn () => LedgerEntry::query()->create($attributes));
         } catch (UniqueConstraintViolationException) {
             return false;

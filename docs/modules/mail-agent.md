@@ -53,7 +53,7 @@
 | Таблица | Колонки | Заметки |
 |---|---|---|
 | `sender_rules` | `pattern (unique), kind, parser?, created_by?, source (manual\|ai), ai_confidence?, prompt_version?, ai_request_id?, hits, last_seen_at?` (ШІ-поля — миграция `2026_10_08_100006`) | `kind`: `job_board \| candidate \| colleague \| newsletter \| ignore`; `parser` (только `job_board`, по умолчанию `generic`): `work_ua \| robota_ua \| djinni \| generic` |
-| `unknown_senders` | `email (unique), sample_subject, first_seen_at, last_seen_at, count, suggested_kind?, suggested_parser?, ai_status?, ai_kind?, ai_parser?, ai_confidence?, ai_extracted? (jsonb), ai_request_id?` (ШІ-поля — `2026_10_08_100004`) | только адрес и первая тема, **без текста** |
+| `unknown_senders` | `email (unique), sample_subject, first_seen_at, last_seen_at, count, suggested_kind?, suggested_parser?, ai_status?, ai_kind?, ai_parser?, ai_confidence?, ai_extracted? (json), ai_request_id?` (ШІ-поля — `2026_10_08_100004`) | только адрес и первая тема, **без текста** |
 | `mail_messages` | `gmail_id (unique), received_at, sender, subject, kind, parser, outcome, error, candidate_id?, touchpoint_id?` | журнал и идемпотентность; **без текста** |
 | `mail_sync_runs` | `trigger (manual\|cron), user_id?, started_at, finished_at, cursor_ms, counts, error` | курсор — максимальный `internalDate` (мс) обработанных писем |
 
@@ -122,7 +122,7 @@ cvUrl}`; нет ни телефона, ни e-mail → `parse_failed`. Вака�
   (идемпотентно; касания и так уникальны по id Gmail). Gmail не подключён → письма остаются `unknown`. Если правило на
   адрес уже есть (решил человек) — ШІ его не трогает, остаётся подсказка.
 - ниже → `unknown_senders.ai_*`: `ai_status (pending|done|failed), ai_kind, ai_parser, ai_confidence, ai_extracted
-  (jsonb {full_name, phone, email, vacancy_title} — только для candidate/job_board при conf ≥ 0.7), ai_request_id`.
+  (json {full_name, phone, email, vacancy_title} — только для candidate/job_board при conf ≥ 0.7), ai_request_id`.
 Задача `mail.sync` после синхронизации классифицирует до 5 отправителей из очереди, которых ШІ ещё не видел (например,
 пришедших при выключенном AI): последнее их письмо берётся из Gmail по id из журнала (`AiMailClassifier::classifyQueued`).
 Всё в пределах дневных лимитов AI; при отказе (лимит, выключено) запросы просто не отправляются.

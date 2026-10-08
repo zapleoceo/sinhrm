@@ -43,7 +43,7 @@ final class EloquentKnowledgeRepository implements KnowledgeRepository, Publishe
             'votes as not_helpful_count' => static fn (Builder $v) => $v->where('helpful', false),
         ]);
         if ($q !== null && $q !== '') {
-            // lower(..) like — the portable ILIKE (PostgreSQL, MySQL, SQLite); wildcards in $q stay literal.
+            // lower(..) like — case-insensitive search on MySQL (Sql::whereContainsCi); wildcards in $q stay literal.
             $query->where(static function (Builder $w) use ($q): void {
                 Sql::whereContainsCi($w, 'title', $q);
                 Sql::whereContainsCi($w, 'body_md', $q, 'or');

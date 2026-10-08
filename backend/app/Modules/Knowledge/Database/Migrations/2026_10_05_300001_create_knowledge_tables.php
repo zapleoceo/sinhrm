@@ -25,9 +25,9 @@ return new class extends Migration
             $table->longText('body_md');
             // Rendered on save by the Documents MarkdownRenderer: raw HTML escaped, unsafe links dropped.
             $table->longText('body_html');
-            $table->jsonb('tags');
+            $table->json('tags');
             // {"type":"all"} | {"type":"branches","ids":[..]} | {"type":"roles","roles":[..]}
-            $table->jsonb('audience');
+            $table->json('audience');
             // draft | published
             $table->string('status', 16)->default('draft');
             $table->unsignedInteger('version')->default(1);

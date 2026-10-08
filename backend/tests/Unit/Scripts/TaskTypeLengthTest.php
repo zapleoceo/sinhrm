@@ -7,7 +7,7 @@ namespace Tests\Unit\Scripts;
 use App\Modules\Scripts\Enums\TaskType;
 use PHPUnit\Framework\TestCase;
 
-/** tasks.type is varchar(16): Postgres rejects longer values (SQLite would silently accept them). */
+/** tasks.type is varchar(16): MySQL in strict sql_mode rejects longer values. */
 final class TaskTypeLengthTest extends TestCase
 {
     public function test_every_task_type_fits_the_column(): void

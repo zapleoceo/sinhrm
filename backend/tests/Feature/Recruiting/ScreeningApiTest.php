@@ -45,7 +45,7 @@ final class ScreeningApiTest extends TestCase
         Sleep::fake(syncWithCarbon: true);
         $this->branch = Branch::factory()->create();
         $vacancy = $this->vacancyIn($this->branch);
-        $vacancy->update(['title' => 'PHP-розробник', 'description' => 'Laravel від 3 років, PostgreSQL']);
+        $vacancy->update(['title' => 'PHP-розробник', 'description' => 'Laravel від 3 років, MySQL']);
         $this->application = $this->applied($vacancy, [
             'full_name' => 'Синтетик Тестович', 'phone' => '+380670000001', 'email' => 'synthetic.candidate@example.test',
         ]);

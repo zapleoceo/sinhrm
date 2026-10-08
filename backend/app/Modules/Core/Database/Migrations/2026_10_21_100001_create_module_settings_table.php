@@ -18,7 +18,7 @@ return new class extends Migration
             $table->id();
             $table->string('module', 64)->unique();
             $table->boolean('enabled')->default(true);
-            $table->jsonb('roles');
+            $table->json('roles');
             $table->timestamps();
         });
 

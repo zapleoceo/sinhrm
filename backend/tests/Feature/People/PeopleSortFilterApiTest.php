@@ -52,7 +52,7 @@ final class PeopleSortFilterApiTest extends TestCase
         $this->employee(['full_name' => 'Abe Analyst', 'position_id' => $analyst->id]);
         $admin = $this->login(UserRole::Admin);
 
-        // Ties inside one position go by name; the row without a position stays last (Postgres would put NULL first on DESC).
+        // Ties inside one position go by name; the row without a position stays last (MySQL would put NULL first on ASC).
         $this->assertSame(
             ['Abe Analyst', 'Zed Analyst', 'Amy Zoologist', 'No Position'],
             $this->names($this->actingAs($admin)->getJson('/api/people?sort=position')),

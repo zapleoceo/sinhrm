@@ -18,7 +18,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-/** Plain query-builder reads; grouping by month/buckets happens in PHP (portable between Postgres and SQLite). */
+/** Plain query-builder reads; grouping by month/buckets happens in PHP (no SQL date functions). */
 final class QueryReportDataRepository implements ReportDataRepository
 {
     public function employees(?array $employeeIds, ?int $branchId): array

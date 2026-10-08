@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('type', 16);
             $table->text('description')->nullable();
             // list<{id, type: scale5|scale10|enps|single|multi|text, text, options?: list<string>, required}>
-            $table->jsonb('questions');
+            $table->json('questions');
             // lifecycle surveys only: hire_30 | hire_90 | exit
             $table->string('lifecycle_trigger', 16)->nullable();
             $table->boolean('active')->default(true);
@@ -34,7 +34,7 @@ return new class extends Migration
             // once | weekly | monthly | quarterly
             $table->string('schedule', 16)->default('once');
             // {branch_ids: list<int>, department_ids: list<int>} — empty = everyone
-            $table->jsonb('audience');
+            $table->json('audience');
             $table->boolean('anonymous')->default(true);
             // Aggregates of fewer respondents than this are never shown (anonymous waves: at least 5).
             $table->unsignedSmallInteger('min_group_size')->default(5);
@@ -65,7 +65,7 @@ return new class extends Migration
             $table->unsignedBigInteger('branch_id')->nullable();
             $table->unsignedBigInteger('department_id')->nullable();
             // {question id: int | list<int> | string}
-            $table->jsonb('answers');
+            $table->json('answers');
             $table->date('submitted_on');
             $table->unique(['wave_id', 'respondent_hash']);
         });
@@ -73,7 +73,7 @@ return new class extends Migration
         Schema::create('mood_settings', function (Blueprint $table): void {
             $table->id();
             // ISO weekdays (1 = Monday … 7 = Sunday) when the question is shown
-            $table->jsonb('weekdays');
+            $table->json('weekdays');
             $table->string('question');
             $table->boolean('required')->default(false);
             // Manager alert: team average dropped by at least this much week over week.

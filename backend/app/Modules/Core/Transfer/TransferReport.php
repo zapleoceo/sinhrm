@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Services\Transfer;
+namespace App\Modules\Core\Transfer;
 
 /**
  * Findings of preflight / reconciliation. By contract an entry carries only check names, table/column/index names,

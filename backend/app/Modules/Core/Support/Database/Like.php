@@ -9,9 +9,10 @@ namespace App\Modules\Core\Support\Database;
  * so a search for "50%" or "a_b" matches those characters literally.
  *
  * Two escape characters are in use, and the SQL must match the one the pattern was built with:
- *  - Like::BACKSLASH (default) — for `like ?` without an ESCAPE clause (Postgres escapes with a backslash by default);
- *  - Like::PORTABLE ("!") — for `like ? escape '!'` (SQLite has no default escape character).
- * Lower-casing stays with the caller (the SQL side decides between lower(col) like ? and ilike).
+ *  - Like::BACKSLASH (default) — for `like ?` without an ESCAPE clause (MySQL escapes with a backslash by default;
+ *    sql_mode in config/database.php has no NO_BACKSLASH_ESCAPES);
+ *  - Like::PORTABLE ("!") — for `like ? escape '!'` (explicit, independent of sql_mode).
+ * Lower-casing stays with the caller (lower(col) like ?; the collation is case-insensitive anyway, ADR 0011).
  */
 final class Like
 {

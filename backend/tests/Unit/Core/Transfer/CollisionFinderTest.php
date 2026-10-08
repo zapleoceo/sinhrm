@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core\Transfer;
 
-use App\Modules\Core\Contracts\CollationKeys;
-use App\Modules\Core\Services\Transfer\CollisionFinder;
+use App\Modules\Core\Transfer\CollationKeys;
+use App\Modules\Core\Transfer\CollisionFinder;
 use Normalizer;
 use PHPUnit\Framework\TestCase;
 

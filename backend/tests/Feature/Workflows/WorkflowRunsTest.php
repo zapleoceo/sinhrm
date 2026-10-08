@@ -401,7 +401,7 @@ final class WorkflowRunsTest extends TestCase
         $this->assertSame('sent', $document->status->value);
         $this->assertStringContainsString('Dear Olena, welcome.', (string) $document->content_md);
         $step = WorkflowRunStep::query()->sole();
-        // jsonb does not preserve key order on Postgres — compare as a map.
+        // MySQL JSON does not preserve key order — compare as a map.
         $this->assertEquals(['document_id' => $document->id, 'sent' => true], $step->result);
         $this->assertSame($user->id, Task::query()->where('type', 'document')->sole()->assignee_id);
     }

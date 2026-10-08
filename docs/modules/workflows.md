@@ -46,9 +46,9 @@
 | Таблица | Колонки | Заметки |
 |---|---|---|
 | `workflow_templates` | `name, kind (onboarding\|offboarding\|custom), trigger (manual\|employee_hired\|employee_terminated\|probation_end), active, probation_days (по умолч. 90), created_by?` | удаление — только без запусков (иначе 409 `has_runs`, деактивируйте) |
-| `workflow_steps` | `template_id, position, title, action, offset_days (-365..365), assignee_rule (employee\|manager\|hr_admin\|specific_user), assignee_user_id?, config jsonb` | `config` проверяет исполнитель действия; секретов в нём нет |
+| `workflow_steps` | `template_id, position, title, action, offset_days (-365..365), assignee_rule (employee\|manager\|hr_admin\|specific_user), assignee_user_id?, config json` | `config` проверяет исполнитель действия; секретов в нём нет |
 | `workflow_runs` | `template_id, employee_id, template_name, anchor_date, status (running\|completed\|cancelled), started_by?, trigger_key?, parent_run_id?, depth, completed_at?` | `trigger_key = "<триггер>:<дата-якорь>"` (например `employee_hired:2026-10-05`), `unique(template_id, employee_id, trigger_key)` — автозапуск идемпотентен **на один случай** (повторное событие того же найма игнорируется), а повторный найм с новой `hired_at` / новое увольнение запускает шаблон снова; ручной запуск (`trigger_key = null`) — всегда новый |
-| `workflow_run_steps` | `run_id, step_id? (null on delete), position, snapshot jsonb, assignee_id?, due_at, status (pending\|done\|skipped\|failed), executed_at?, attempts, completed_by?, completed_at?, result jsonb?` | `snapshot` — копия шага при запуске; `result` — только коды и id |
+| `workflow_run_steps` | `run_id, step_id? (null on delete), position, snapshot json, assignee_id?, due_at, status (pending\|done\|skipped\|failed), executed_at?, attempts, completed_by?, completed_at?, result json?` | `snapshot` — копия шага при запуске; `result` — только коды и id |
 
 ### Запуск (`Services/WorkflowStarter`)
 Снимок шагов шаблона → `workflow_run_steps`, `due_at = anchor_date 00:00 + offset_days`, исполнитель вычисляется
@@ -205,7 +205,7 @@ Google не подключён → `skipped`, уведомление руков�
 `jobs["workflows.tick"].waiting = 1` → задача в «Мої задачі».
 
 **Не проверено в этой задаче:** запросы к preview/prod (вход только через Google на prod-домене); тесты гонялись на
-SQLite (в CI — Postgres); реальные вебхук-получатели и Google Calendar (только `Http::fake` / подменённый клиент).
+SQLite (в CI — MySQL 8.4); реальные вебхук-получатели и Google Calendar (только `Http::fake` / подменённый клиент).
 
 ## Вопросы и следующие шаги
 - Письмо (`send_email_template`) работает, когда Google подключён с правом отправки (`gmail.send`); старое подключение

@@ -28,7 +28,7 @@ use Spatie\Permission\PermissionRegistrar;
  * cycle, two closed Pulse waves, mood, Desk, knowledge, assets, hiring requests, script scores — the last 6 months.
  *
  * The fill is split into ordered STEPS; each runs in its own transaction (one HTTP request, well under the 60 s
- * function limit on Neon), is done at most once (marker "step:<name>" in demo_records) and reads what earlier steps
+ * request limit of the hosting), is done at most once (marker "step:<name>" in demo_records) and reads what earlier steps
  * created from the registry. Plain data goes in bulk inserts (chunks of 500); Recruiting and Pulse go through their
  * own services (stage history, captured touches, anonymous responses, membership snapshot on close).
  *
@@ -1014,8 +1014,8 @@ final class DemoDataService
     /** @param  list<array<string, mixed>>  $rows */
     private function bulk(string $table, array $rows): void
     {
-        // insertOrIgnore (ON CONFLICT DO NOTHING): a row whose unique key is already taken is skipped, never updated,
-        // and does not abort the Postgres transaction; ids are registered afterwards by natural keys.
+        // insertOrIgnore (INSERT IGNORE): a row whose unique key is already taken is skipped, never updated, and the
+        // step's transaction goes on; ids are registered afterwards by natural keys.
         $inserted = 0;
         foreach (array_chunk($rows, self::CHUNK) as $chunk) {
             $inserted += DB::table($table)->insertOrIgnore($chunk);

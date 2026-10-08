@@ -86,7 +86,7 @@ final class EloquentLeaveSettingsRepository implements LeaveSettingsRepository
     public function holidaysBetween(Carbon $from, Carbon $to, ?int $branchId): Collection
     {
         return Holiday::query()
-            // whereDate: SQLite stores date casts as 'Y-m-d H:i:s' strings; Postgres compares real dates.
+            // whereDate: compares the date part only, whatever time the date cast stored.
             ->whereDate('date', '>=', $from->toDateString())
             ->whereDate('date', '<=', $to->toDateString())
             ->where(fn (Builder $q) => $q->whereNull('branch_id')->when($branchId, fn (Builder $w, int $id) => $w->orWhere('branch_id', $id)))

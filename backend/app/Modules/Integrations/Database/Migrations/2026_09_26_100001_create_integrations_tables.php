@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('status', 16)->default('off');
             // Non-secret config only; secrets live in integration_secrets.
             // MySQL JSON has no literal default; the Integration model supplies '{}' when creating rows.
-            $table->jsonb('settings');
+            $table->json('settings');
             $table->timestamp('last_checked_at')->nullable();
             // Scrubbed error text; never contains secret values.
             $table->string('last_error')->nullable();
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->foreignId('integration_id')->constrained('integrations')->cascadeOnDelete();
             $table->string('level', 16);
             $table->string('message');
-            $table->jsonb('context')->nullable();
+            $table->json('context')->nullable();
             $table->timestamp('created_at')->useCurrent();
             $table->index(['integration_id', 'id']);
         });

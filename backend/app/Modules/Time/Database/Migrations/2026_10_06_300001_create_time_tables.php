@@ -20,7 +20,7 @@ return new class extends Migration
         Schema::create('work_schedules', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('branch_id')->nullable()->unique()->constrained('branches')->cascadeOnDelete();
-            $table->jsonb('days');
+            $table->json('days');
             $table->decimal('hours_per_day', 4, 2);
             $table->timestamps();
         });

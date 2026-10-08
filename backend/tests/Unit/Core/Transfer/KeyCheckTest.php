@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core\Transfer;
 
-use App\Modules\Core\Services\Transfer\KeyCheck;
+use App\Modules\Core\Transfer\KeyCheck;
 use Illuminate\Encryption\Encrypter;
 use PHPUnit\Framework\TestCase;
 

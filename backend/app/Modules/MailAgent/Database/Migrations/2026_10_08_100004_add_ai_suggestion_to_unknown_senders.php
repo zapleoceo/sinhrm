@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('ai_parser', 16)->nullable();
             $table->decimal('ai_confidence', 4, 3)->nullable();
             // {full_name, phone, email, vacancy_title} from a candidate application; shown as prefill only.
-            $table->jsonb('ai_extracted')->nullable();
+            $table->json('ai_extracted')->nullable();
             $table->foreignId('ai_request_id')->nullable()->constrained('ai_requests')->nullOnDelete();
         });
     }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Services\Transfer;
+namespace App\Modules\Core\Transfer;
 
 /**
  * Schema identity source <-> target, shared by the preflight and the reconciliation: migration versions, tables and

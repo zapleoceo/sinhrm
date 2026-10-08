@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('trigger', 16)->default('manual');
             $table->string('reason', 500)->nullable();
             $table->foreignId('actor_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->jsonb('counts')->nullable();
+            $table->json('counts')->nullable();
             $table->timestamp('created_at')->nullable();
             $table->index(['subject_type', 'subject_id']);
         });

@@ -2,17 +2,8 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Console;
+namespace App\Modules\Core\Transfer;
 
-use App\Modules\Core\Services\Transfer\DataCopier;
-use App\Modules\Core\Services\Transfer\LaunchGuard;
-use App\Modules\Core\Services\Transfer\MysqlCollationKeys;
-use App\Modules\Core\Services\Transfer\Preflight;
-use App\Modules\Core\Services\Transfer\Reconciler;
-use App\Modules\Core\Services\Transfer\SafeError;
-use App\Modules\Core\Services\Transfer\SchemaInspector;
-use App\Modules\Core\Services\Transfer\TransferDatabases;
-use App\Modules\Core\Services\Transfer\TransferReport;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Encryption\StringEncrypter;
@@ -24,6 +15,7 @@ use Throwable;
  * docs/guides/mysql-cutover.md. Modes: --preflight (read-only checks), --verify (read-only reconciliation),
  * default = preflight -> confirmation -> copy -> reconciliation. Connections only from env TRANSFER_SOURCE_URL /
  * TRANSFER_TARGET_URL; output never contains URLs, passwords or cell values.
+ * REMOVE AFTER CUTOVER together with the whole Core/Transfer directory (see TransferServiceProvider).
  */
 final class TransferToMysqlCommand extends Command
 {
@@ -61,7 +53,7 @@ final class TransferToMysqlCommand extends Command
                 return self::FAILURE;
             }
             $dbs->open();
-            $verdict = $writes ? $dbs->appServerVerdict($db->connection()) : TransferDatabases::APP_NOT_MYSQL;
+            $verdict = $writes ? $dbs->appServerVerdict($db->connection()) : TransferDatabases::APP_SKIPPED;
             if ($verdict === TransferDatabases::APP_SAME) {
                 $this->error('Цель — тот же сервер MySQL и та же база, что у приложения (@@server_uuid): перенос в живую базу запрещён.');
 
@@ -69,7 +61,7 @@ final class TransferToMysqlCommand extends Command
             }
             if ($verdict === TransferDatabases::APP_UNKNOWN) {
                 $this->error('Не удалось сравнить цель с MySQL-подключением приложения (DB_CONNECTION=mysql, DB_URL/DB_*): перенос запрещён. '
-                    .'Проверьте доступность БД приложения или запускайте с DB_CONNECTION=pgsql (приложение ещё на Neon).');
+                    .'Проверьте доступность БД приложения (отдельная база MySQL рядом с целью, см. docs/guides/mysql-cutover.md).');
 
                 return self::FAILURE;
             }

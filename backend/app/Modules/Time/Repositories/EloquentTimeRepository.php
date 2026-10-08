@@ -33,8 +33,8 @@ final class EloquentTimeRepository implements TimeRepository
         if ($existing !== null) {
             return $existing;
         }
-        // ON CONFLICT DO NOTHING (Postgres) / INSERT OR IGNORE (SQLite): a concurrent create never raises, so an
-        // enclosing transaction is not aborted (catching a unique violation would poison it on Postgres).
+        // insertOrIgnore (INSERT IGNORE): a concurrent create of the same week never raises a unique violation, so the
+        // caller's transaction needs no catch; the row is read back below.
         $now = Carbon::now();
         Timesheet::query()->insertOrIgnore([[
             'employee_id' => $employeeId, 'week_start' => $weekStart->toDateString(), 'status' => 'draft',

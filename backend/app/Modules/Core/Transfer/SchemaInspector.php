@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Core\Services\Transfer;
+namespace App\Modules\Core\Transfer;
 
 /**
  * Catalog reads for the transfer. The TARGET schema (built by `php artisan migrate` on MySQL) is the reference:
