@@ -47,6 +47,7 @@ final class MysqlDataTransferTest extends TestCase
         $ids = array_map(fn (string $email): int => User::factory()->create(['email' => $email])->id, $emails);
         try {
             [$code, $out] = $this->transfer(['--preflight' => true]);
+            fwrite(STDERR, $out); // synthetic data only: the CI log shows the report format
             $this->assertSame(1, $code, $out);
             $this->assertStringContainsString('unique_collision', $out);
             $this->assertStringContainsString('users_email_unique', $out);
