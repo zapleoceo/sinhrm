@@ -155,7 +155,9 @@ skipped, failed}`.
 проверяет `config` правилами исполнителя) → `Services` (`WorkflowTemplateService`, `WorkflowRunService`,
 `WorkflowStarter`, `StepRunner`, `WorkflowTriggers`, `AssigneeResolver`, `WorkflowTickJob`) → `Contracts/*Repository`
 (`Repositories/Eloquent*`, `EloquentAssigneeDirectory`). `Executors/*` — действия; `Support/WebhookSecrets` — ключ в
-хранилище. Ошибки — `Exceptions/WorkflowException` (`{message, code}`). Связи: People — события, `PeopleScope`,
+хранилище. Задачные шаги наследуют `Executors/TaskStepExecutor` (задача в общем списке, фолбэк на HR); шаги
+«задача по профилю» с одним необязательным `title` — `create_task`, `assign_buddy` и `request_form` (+ `url`) — общий
+`Executors/ProfileTaskExecutor` (DRY, 2026-10-08; правила конфигурации прежние, `ProfileTaskExecutorTest`). Ошибки — `Exceptions/WorkflowException` (`{message, code}`). Связи: People — события, `PeopleScope`,
 `EmployeeRepository`; Scripts — задачи и `TaskCompleted`; Documents — `create_document`; Integrations —
 `OutboundUrlGuard`, `SecretVault`; GoogleWorkspace — состояние подключения и `CalendarClient`; Core — `ScheduledJob`.
 
