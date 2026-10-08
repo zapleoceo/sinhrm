@@ -376,6 +376,7 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 - `CareerSiteService` ставит задачу «перезвонить» через контракт Scripts `TaskScheduler::scheduleNewApplicantCall()`.
 - `ScreeningService` и `VacancyTextService` зовут ИИ через контракт Ai `AiGateway` (значение ожидания по умолчанию — `AiGateway::WAIT_SECONDS`). Тест — `tests/Unit/Recruiting/RecruitingAiGatewayTest.php`.
 - Для других модулей Recruiting отдаёт контракт `Contracts\RecruitingAccess` (`for` → `Scope`, `canWrite`, `canManage`, `canSeeCandidate`, `canSeeInboxItem`; реализация — `Services\RecruitingScope`, биндинг в `RecruitingServiceProvider`). Scripts, Reports и Overview зависят от него, а не от класса. Порог «застоя» — константа `ApplicationRepository::STALE_DAYS` (3 дня), `StalenessService::DEFAULT_DAYS` ссылается на неё. Тест — `tests/Unit/Recruiting/RecruitingAccessTest.php`.
+- `CandidateHistoryController` читает журнал через контракт Audit `AuditHistory`.
 
 ## Страница вакансий и офферы
 

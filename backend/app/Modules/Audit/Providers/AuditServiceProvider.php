@@ -6,6 +6,7 @@ namespace App\Modules\Audit\Providers;
 
 use App\Models\User;
 use App\Modules\Ai\Models\AiPromptVersion;
+use App\Modules\Audit\Contracts\AuditHistory;
 use App\Modules\Audit\Contracts\AuditLogger;
 use App\Modules\Audit\Contracts\AuditLogRepository;
 use App\Modules\Audit\Privacy\AuditPersonalData;
@@ -75,6 +76,7 @@ final class AuditServiceProvider extends ModuleServiceProvider
         $this->app->bind(AuditLogRepository::class, EloquentAuditLogRepository::class);
         $this->app->singleton(AuditPolicy::class);
         $this->app->bind(AuditLogger::class, AuditService::class);
+        $this->app->bind(AuditHistory::class, AuditService::class);
         $this->app->bind(AuditObserver::class, fn (App $app): AuditObserver => new AuditObserver(
             $app->make(AuditLogger::class),
             self::TRACKED,

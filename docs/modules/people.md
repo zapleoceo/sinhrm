@@ -322,6 +322,7 @@
 
 ### Зависимости через контракты (2026-10-08)
 - People отдаёт другим модулям два контракта: `Contracts\PeopleAccess` (`isAdmin`, `employeeOf`, `for` → `PeopleContext`; реализация — `Services\PeopleScope`) и `Contracts\EmployeeLookup` (`find` с 404, `list` — запрос пикера; реализация — `Services\EmployeeService`). Биндинги — `PeopleServiceProvider`. Модули Assets, Desk, Documents, HiringRequests, Knowledge, Perform, Pulse, Reports, SafeSpeak, Time, TimeOff, Workflows зависят от интерфейсов, а не от классов сервисов (граница модулей). Внутри People сервисы используются напрямую. Тест — `tests/Unit/People/PeopleContractsTest.php`, двойник для тестов других модулей — `tests/Support/FakePeopleAccess.php`.
+- Вкладка «Історія» (`EmployeeHistoryController`) читает журнал через контракт Audit `AuditHistory`, а не через класс `AuditService`. Тест — `tests/Unit/People/EmployeeHistoryControllerTest.php`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/People/PeopleApiTest` (401/403, справочник без PII и `perPage` строкой, фильтры, матрица видимости

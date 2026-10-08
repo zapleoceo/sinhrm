@@ -165,7 +165,6 @@ return [
     'People/Http/Controllers/EmployeeHistoryController.php' => [
         'App\Modules\Audit\Http\Requests\HistoryRequest',
         'App\Modules\Audit\Http\Resources\AuditEntryResource',
-        'App\Modules\Audit\Services\AuditService',
     ],
     'People/Http/Controllers/HireController.php' => [
         'App\Modules\Recruiting\Models\Application',
@@ -280,7 +279,6 @@ return [
     'Recruiting/Http/Controllers/CandidateHistoryController.php' => [
         'App\Modules\Audit\Http\Requests\HistoryRequest',
         'App\Modules\Audit\Http\Resources\AuditEntryResource',
-        'App\Modules\Audit\Services\AuditService',
     ],
     'Recruiting/Http/Requests/SaveCandidateRequest.php' => [
         'App\Modules\Directory\Models\City',
