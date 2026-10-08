@@ -24,7 +24,9 @@ concurrency:
 jobs:
   gate:
     # Public repo: never run PR code with secrets unless the branch lives in this repository (no forks).
+    # Vercel is frozen (docs/guides/deploy.md): runs only when the repository variable VERCEL_DEPLOY_ENABLED is 'true'.
     if: >-
+      vars.VERCEL_DEPLOY_ENABLED == 'true' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
@@ -72,7 +74,8 @@ jobs:
 
   deploy:
     needs: gate
-    if: needs.gate.outputs.go == 'true'
+    # Same switch as in gate (defence in depth: a skipped gate already skips this job).
+    if: vars.VERCEL_DEPLOY_ENABLED == 'true' && needs.gate.outputs.go == 'true'
     runs-on: ubuntu-latest
     env:
       TARGET: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && 'production' || 'preview' }}
