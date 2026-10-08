@@ -214,8 +214,16 @@ describe('DashboardPage (mock-up layout)', () => {
   });
 
   it('header date is read in the zone of the day route, so the crumb and the route show the same day', async () => {
-    const el = await render({ ...FULL, day_route: { date: '2026-10-02', timezone: 'Pacific/Kiritimati', interviews: 0, tasks: 0, items: [] } });
-    expect(el.querySelector('.crumb time')?.getAttribute('datetime')).toBe(wallClock(new Date(), 'Pacific/Kiritimati').date);
+    // Fixed clock (only Date is faked, timers stay real for whenStable): 12:00 UTC on 2 Oct is already 3 Oct in Kiritimati.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-02T12:00:00Z'));
+    try {
+      const el = await render({ ...FULL, day_route: { date: '2026-10-03', timezone: 'Pacific/Kiritimati', interviews: 0, tasks: 0, items: [] } });
+      expect(el.querySelector('.crumb time')?.getAttribute('datetime')).toBe('2026-10-03');
+      expect(wallClock(new Date(), 'Pacific/Kiritimati').date).toBe('2026-10-03');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('touches: a stacked bar (decorative) and a legend with channel and number', async () => {

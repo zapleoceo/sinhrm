@@ -58,9 +58,12 @@ Job `backend` — агрегатор: `needs` всех трёх, `if: always()`,
 
 Отдельного job `tests-mysql` больше нет: `tests` сам идёт на MySQL 8.4 — единственной БД проекта ([ADR 0011](../adr/0011-mysql-only.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)). Прежний боевой релиз на Vercel заморожен до переезда ([mysql-cutover.md](mysql-cutover.md#замороженный-боевой-релиз-до-cutover)); `main` на Vercel не выкладывается (заморозка `VERCEL_DEPLOY_ENABLED`, PR #176, раздел ниже).
 Job `frontend`: `ng lint`, `ng test --watch=false --coverage` (Vitest + `@vitest/coverage-v8`) с порогами покрытия
-в `frontend/angular.json` → `test.options.coverageThresholds`: statements 45,5 %, branches 57 %, functions 54,5 %,
-lines 54 % — замер 02.10.2026 (47,6 / 59,1 / 56,7 / 56,3 %) минус запас ≈ 2 п.п.; ниже порога job падает. Порог
+в `frontend/angular.json` → `test.options.coverageThresholds`: statements 57,5 %, branches 63,5 %, functions 55 %,
+lines 64,5 % — замер 08.10.2026 (59,9 / 65,8 / 57,6 / 67,0 %, PR #207) минус запас ≈ 2,5 п.п.; ниже порога job падает. Порог
 поднимаем вместе с новыми тестами, не опускаем. Локальный `ng test` без `--coverage` пороги не проверяет.
+Покрытие считается только по файлам, которые импортирует хоть один спек: новый спек на ранее не загружавшуюся
+страницу добавляет в знаменатель её непокрытые функции, поэтому процент функций может слегка просесть при росте
+числа покрытых строк — запас порога это учитывает.
 
 Ruleset «Protect main» требует проверки с именами **ровно** `backend`, `frontend`, `extension`, `security`, `docs`, `worklog`.
 Эти job **нельзя переименовывать и удалять**: PR будет вечно ждать отсутствующую проверку. Новые части бэкенда

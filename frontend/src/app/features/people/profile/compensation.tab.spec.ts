@@ -1,4 +1,5 @@
-import { of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { of, throwError } from 'rxjs';
 import { clickTitle, column, header, openTablePage, sortCount } from '../../../../testing/table-page';
 import { CompensationRecord } from '../people.model';
 import { PeopleService } from '../people.service';
@@ -51,5 +52,39 @@ describe('CompensationTab history table (header sort and filter)', () => {
     const { el, fixture } = await open('/?comp_currency=UAH&comp_effective_on_from=2026-01-01');
     expect(column(historyTable(el), 0)).toEqual(['01.07.2026']);
     expect(sortCount(fixture)).toBe(1); // what an open header filter announces
+  });
+});
+
+describe('CompensationTab — adding a record (money: a decision, never on one\'s own record)', () => {
+  function openHr(inputs: { canAdd: boolean }, add = vi.fn(() => of({ current: history[0], history }))) {
+    const api = { compensation: vi.fn(() => of({ current: history[0], history })), myCompensation: vi.fn(), addCompensation: add };
+    return openTablePage(CompensationTab, '/', [{ provide: PeopleService, useValue: api }], { employeeId: 7, canManage: true, ...inputs }).then(
+      (page) => ({ ...page, api }),
+    );
+  }
+
+  it('HR on someone else: reads that employee\'s history and offers the form', async () => {
+    const { el, api } = await openHr({ canAdd: true });
+    expect(api.compensation).toHaveBeenCalledWith(7);
+    expect(el.querySelector('form.add')).not.toBeNull();
+  });
+
+  it('HR on own record (manage without decide): history only, no form — the API would answer 403', async () => {
+    const { el, api } = await openHr({ canAdd: false });
+    expect(api.compensation).toHaveBeenCalledWith(7);
+    expect(el.querySelector('form.add')).toBeNull();
+  });
+
+  it('a refused save is shown as an alert and the button is free again (it was silently dropped before)', async () => {
+    const refuse = vi.fn(() => throwError(() => new HttpErrorResponse({ status: 403, error: { code: 'forbidden' } })));
+    const { el, fixture } = await openHr({ canAdd: true }, refuse);
+    const form = (fixture.componentInstance as unknown as { form: { patchValue(v: object): void } }).form;
+    form.patchValue({ amount: 50000, effective_on: '2026-11-01', reason: '  ' });
+    fixture.detectChanges();
+    (el.querySelector('form.add') as HTMLFormElement).dispatchEvent(new Event('submit'));
+    fixture.detectChanges();
+    expect(refuse).toHaveBeenCalledWith(7, { amount: 50000, currency: 'UAH', period: 'month', effective_on: '2026-11-01', reason: null });
+    expect(el.querySelector('p.error[role="alert"]')?.textContent?.trim()).toBe('people.errors.forbidden');
+    expect((el.querySelector('form.add button[type="submit"]') as HTMLButtonElement).disabled).toBe(false);
   });
 });
