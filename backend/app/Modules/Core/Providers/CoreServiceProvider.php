@@ -20,7 +20,6 @@ use App\Modules\Core\Services\ModuleAccess;
 use App\Modules\Core\Services\ModuleRegistry;
 use App\Modules\Core\Services\NavBadgeService;
 use App\Modules\Core\Support\ModuleServiceProvider;
-use App\Modules\Core\Support\NeonConnectionConfig;
 
 final class CoreServiceProvider extends ModuleServiceProvider
 {
@@ -31,12 +30,6 @@ final class CoreServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
-        $config = $this->app['config'];
-        // Neon/libpq quirks belong to PostgreSQL only; a MySQL deployment (ADR 0010) leaves its connection untouched.
-        if ($config->get('database.default') === 'pgsql') {
-            $config->set('database.connections.pgsql', NeonConnectionConfig::apply($config->get('database.connections.pgsql')));
-        }
-
         // Other modules add their own checks with $this->app->tag([...], HealthCheck::class).
         $this->app->tag([DatabaseHealthCheck::class], HealthCheck::class);
 

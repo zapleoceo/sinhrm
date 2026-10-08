@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Core\Services\Transfer;
 
-use App\Modules\Core\Support\NeonConnectionConfig;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Connection;
 use Illuminate\Database\DatabaseManager;
@@ -31,6 +30,22 @@ final class TransferDatabases
 
     public const string APP_UNKNOWN = 'unknown';
 
+    /**
+     * Base of the source connection. The app runs only on MySQL (ADR 0011): this is the one place that still configures
+     * PostgreSQL — the read-only source of the transfer. Neon requires SNI: run with libpq >= 14 (any current PHP image);
+     * the vercel-php libpq workaround (endpoint id inside the password) left together with the Vercel runtime.
+     *
+     * @var array<string, mixed>
+     */
+    public const array SOURCE_BASE = [
+        'driver' => 'pgsql',
+        'charset' => 'utf8',
+        'prefix' => '',
+        'prefix_indexes' => true,
+        'search_path' => 'public',
+        'sslmode' => 'prefer',
+    ];
+
     private function __construct(public readonly Connection $source, public readonly Connection $target) {}
 
     /**
@@ -50,9 +65,8 @@ final class TransferDatabases
         // Only the URL decides where we connect: blank out the app's DB_* values the base config was built from.
         // unix_socket too: with DB_SOCKET set PDO would ignore the URL host and talk to the app's local server.
         $blank = ['host' => null, 'port' => null, 'database' => null, 'username' => null, 'password' => null, 'unix_socket' => ''];
-        $pgsql = (array) $config->get('database.connections.pgsql');
         $mysql = (array) $config->get('database.connections.mysql');
-        $config->set('database.connections.'.self::SOURCE, NeonConnectionConfig::apply(array_merge($pgsql, $blank, ['url' => $urls[self::SOURCE]])));
+        $config->set('database.connections.'.self::SOURCE, array_merge(self::SOURCE_BASE, $blank, ['url' => $urls[self::SOURCE]]));
         $config->set('database.connections.'.self::TARGET, array_merge($mysql, $blank, ['url' => $urls[self::TARGET]]));
         $db->purge(self::SOURCE);
         $db->purge(self::TARGET);

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -41,11 +40,7 @@ return new class extends Migration
         // Processed-mail log (idempotency by Gmail id + "recent processed" list). No bodies.
         Schema::create('mail_messages', function (Blueprint $table): void {
             $table->id();
-            $gmailId = $table->string('gmail_id', 64);
-            if (DB::getDriverName() === 'mysql') {
-                $gmailId->collation('utf8mb4_bin');
-            }
-            $gmailId->unique();
+            $table->string('gmail_id', 64)->collation('utf8mb4_bin')->unique();
             $table->timestamp('received_at');
             $table->string('sender')->nullable();
             $table->string('subject')->nullable();

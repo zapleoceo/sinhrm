@@ -122,10 +122,7 @@ return new class extends Migration
             // duration_sec, recording_url, contact, … (never secrets)
             $table->jsonb('meta')->nullable();
             // Id of the message/call in the source system: dedupe key per channel (NULLs never collide).
-            $externalId = $table->string('external_id', 191)->nullable();
-            if (DB::getDriverName() === 'mysql') {
-                $externalId->collation('utf8mb4_bin');
-            }
+            $table->string('external_id', 191)->nullable()->collation('utf8mb4_bin');
             $table->boolean('via_product')->default(false);
             $table->string('integration_key', 64)->nullable();
             $table->timestamps();

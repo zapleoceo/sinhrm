@@ -129,7 +129,7 @@ TokenGrantRevocationTest, GoogleCallbackTest, UserCredentialRevocationTest.
 ### Сессия и cookie
 Sanctum в режиме SPA: `bootstrap/app.php` → `$middleware->statefulApi()`. Фронт и API на одном домене
 (`sinhrm.vercel.app`, rewrite `/api/*` и `/sanctum/*` в `frontend/vercel.json`), поэтому работают обычные cookie.
-Сессии в Postgres (`SESSION_DRIVER=database`), на Vercel `SESSION_SECURE_COOKIE=true`, `SESSION_SAME_SITE=lax`.
+Сессии в БД приложения (`SESSION_DRIVER=database`, MySQL 8.4), на Vercel `SESSION_SECURE_COOKIE=true`, `SESSION_SAME_SITE=lax`.
 Список доменов SPA — `SANCTUM_STATEFUL_DOMAINS` (по умолчанию `sinhrm.vercel.app` + localhost).
 Маршруты OAuth лежат в `routes.web.php` (группа `web`): callback приходит с сайта Google, и только так у него
 гарантированно есть сессия для проверки `state`. Редиректы на SPA — относительные (`/`, `/login?...`), потому что
@@ -212,4 +212,4 @@ CORS (`config/cors.php`) открыт только для `api/clipper/*`, то�
 `PATCH /api/auth/me/notifications {approval_emails: bool}` — вимикач листів про погодження («Мій профіль»); `GET /me` повертає `approval_emails`.
 
 Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.
-MySQL compatibility: `google_id` uses `utf8mb4_bin` so distinct Google account identifiers do not merge. The production database remains PostgreSQL until cutover proof passes.
+MySQL 8.4 only (ADR 0011, 2026-10-08): `google_id` uses `utf8mb4_bin` so distinct Google account identifiers do not merge; the migration no longer branches by driver. Test: `tests/Feature/Auth/GoogleIdMysqlSchemaTest` (binary collation, unique index, `Gid-A` ≠ `Gid-a`, duplicate rejected). The frozen Vercel + Neon production lives on branch `legacy/vercel-postgres`.

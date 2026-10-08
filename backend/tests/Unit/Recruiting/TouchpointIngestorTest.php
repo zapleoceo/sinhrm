@@ -102,7 +102,7 @@ final class TouchpointIngestorTest extends TestCase
         $repository = $this->createMock(TouchpointRepository::class);
         // The first lookup misses (the other request has not committed yet), the insert then hits the unique index.
         $repository->method('findByExternalId')->willReturnOnConsecutiveCalls(null, $stored);
-        $repository->method('create')->willThrowException(new UniqueConstraintViolationException('pgsql', 'insert', [], new RuntimeException('dup')));
+        $repository->method('create')->willThrowException(new UniqueConstraintViolationException('mysql', 'insert', [], new RuntimeException('dup')));
         $this->app->instance(TouchpointRepository::class, $repository);
 
         $again = $this->ingest(Channel::Call, '+380501112233', ['external_id' => 'race-1']);

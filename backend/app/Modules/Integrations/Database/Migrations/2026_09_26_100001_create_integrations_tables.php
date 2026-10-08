@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -17,11 +16,8 @@ return new class extends Migration
             // off | demo | connected | error (App\Modules\Integrations\Enums\IntegrationStatus)
             $table->string('status', 16)->default('off');
             // Non-secret config only; secrets live in integration_secrets.
-            // MySQL JSON defaults require an expression; Eloquent supplies '{}' when creating rows.
-            $settings = $table->jsonb('settings');
-            if (DB::getDriverName() !== 'mysql') {
-                $settings->default('{}');
-            }
+            // MySQL JSON has no literal default; the Integration model supplies '{}' when creating rows.
+            $table->jsonb('settings');
             $table->timestamp('last_checked_at')->nullable();
             // Scrubbed error text; never contains secret values.
             $table->string('last_error')->nullable();

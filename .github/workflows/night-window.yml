@@ -2,7 +2,7 @@ name: Night window guard
 
 # Optional weekly guard (NOT a required check, not part of ci.yml): runs the backend phpunit suite with the
 # clock faked to 22:30 UTC = 01:30 Kyiv, the window where UTC date != Kyiv date. Catches UTC-vs-Kyiv date bugs
-# (incident 2026-10-02/03, AssetsApiTest) before they turn main red at night. Postgres keeps real time — fine.
+# (incident 2026-10-02/03, AssetsApiTest) before they turn main red at night. MySQL (service container) keeps real time — fine.
 on:
   schedule:
     - cron: "17 5 * * 1"
@@ -20,23 +20,23 @@ jobs:
     timeout-minutes: 20
     defaults: { run: { working-directory: backend } }
     services:
-      postgres:
-        image: postgres:17
-        env: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app_test }
-        ports: ["5432:5432"]
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: app_test, MYSQL_USER: app, MYSQL_PASSWORD: app }
+        ports: ["3306:3306"]
         options: >-
-          --health-cmd "pg_isready -U app" --health-interval 5s --health-timeout 5s --health-retries 10
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DB_CONNECTION: pgsql
+      DB_CONNECTION: mysql
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
+      DB_PORT: 3306
       DB_DATABASE: app_test
       DB_USERNAME: app
       DB_PASSWORD: app
     steps:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
-        with: { php-version: "8.4", extensions: "pdo_pgsql, pgsql, intl, sodium", coverage: none }
+        with: { php-version: "8.4", extensions: "pdo_mysql, intl, sodium", coverage: none }
       - uses: actions/cache/restore@v6
         with:
           path: backend/vendor

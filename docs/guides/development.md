@@ -75,18 +75,19 @@ PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` м
 ## Локально
 Локальную среду не поднимаем: тесты и сборка выполняются в CI, проверка — на preview-деплое PR.
 
-## База данных: PostgreSQL и MySQL 8.4
+## База данных: только MySQL 8.4
 
-Переходный период — код работает на обеих СУБД ([ADR 0010](../adr/0010-mysql-dual-support.md)). Правила для нового кода:
-`ILIKE`, `NULLS FIRST/LAST`, `->>`/`@>` в сыром SQL, `::type`, `ON CONFLICT`/`RETURNING`, `CAST AS VARCHAR/TEXT` —
-запрещены; вместо них `Core\Support\Database\Sql` (`orderByNullsLast/First`, `whereContainsCi`, `jsonText`, `castText`)
-и билдер Laravel (`upsert`, `insertOrIgnore`, `insertGetId`, `'col->key'`, `whereJsonContains`). Ветки по
-`DB::getDriverName()` — только в `Sql` и миграциях. Миграции: без `DEFAULT` у `json/text`, `unique` не на `TEXT`,
-одна таблица/индекс на миграцию (DDL в MySQL не транзакционный).
+Единственная СУБД — MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md)); PostgreSQL не поддерживается (боевой Neon заморожен
+на ветке `legacy/vercel-postgres`, правки туда — только по решению владельца). Правила для нового кода: синтаксис других
+СУБД (`ILIKE`, `NULLS FIRST/LAST`, `->>`/`@>` в сыром SQL, `::type`, `ON CONFLICT`/`RETURNING`, `CAST AS VARCHAR/TEXT`)
+запрещён; вместо него `Core\Support\Database\Sql` (`orderByNullsLast/First`, `whereContainsCi`, `jsonText`, `castText`)
+и билдер Laravel (`upsert`, `insertOrIgnore`, `insertGetId`, `'col->key'`, `whereJsonContains`). Веток по
+`DB::getDriverName()` в модулях и миграциях нет; PostgreSQL-код допустим только в `db:transfer-to-mysql`. Миграции: без
+`DEFAULT` у `json/text`, `unique` не на `TEXT`, непрозрачные идентификаторы — `->collation('utf8mb4_bin')`, одна
+таблица/индекс на миграцию (DDL в MySQL не транзакционный).
 
-CI: job `tests` — PostgreSQL 17 (обязательный), job `tests-mysql` — MySQL 8.4 (`DB_CONNECTION=mysql`, полный PHPUnit;
-необязательный, не в агрегаторе `backend`). Красный `tests-mysql` в своём PR чиним так же, как `tests`. Локально БД не
-поднимаем; при необходимости ручной проверки на MySQL — `DB_CONNECTION=mysql DB_URL=mysql://user:pass@127.0.0.1:3306/app_test`.
+CI: обязательный job `tests` — MySQL 8.4 (`DB_CONNECTION=mysql`, полный PHPUnit + покрытие). Локально БД не поднимаем;
+при необходимости ручной проверки — `DB_CONNECTION=mysql DB_URL=mysql://user:pass@127.0.0.1:3306/app_test`.
 
 ## Тесты: что локально, что в CI
 

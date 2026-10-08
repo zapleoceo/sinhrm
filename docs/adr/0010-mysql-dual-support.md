@@ -1,6 +1,10 @@
 # ADR 0010 — Целевая БД MySQL 8.4, переходный период с двойной поддержкой PostgreSQL
 
-**Статус:** принято владельцем (2026-10-08). Этап 1 — PR «feat/mysql-portability». Задачи — PROD-45…PROD-50 в
+**Статус:** **заменён [ADR 0011](0011-mysql-only.md)** (2026-10-08): двойной поддержки больше нет, `main` — только MySQL 8.4,
+PostgreSQL-прод заморожен на ветке `legacy/vercel-postgres`. Ниже — исторический текст; особенности MySQL и таблица
+переносимых конструкций действуют через ADR 0011.
+
+**Исходный статус:** принято владельцем (2026-10-08). Этап 1 — PR «feat/mysql-portability». Задачи — PROD-45…PROD-50 в
 [production-backlog.md](../product/production-backlog.md).
 
 **Контекст.** SinHRM написан под PostgreSQL (прод — Vercel + Neon). DevOps IT STEP разворачивают приложения только на
