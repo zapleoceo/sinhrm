@@ -285,6 +285,12 @@ Generated файлы игнорируются git; новых обязатель
 - код — `app/Modules/Core/Transfer/` (команда, сервисы, контракт `CollationKeys`, конфиг `db_transfer.*` в `Transfer/config.php`, `TransferServiceProvider`); Core подключает его одной строкой в `CoreServiceProvider::register()`; код приложения инструмент не вызывает;
 - тесты — `tests/Unit/Core/Transfer/*` (job `tests`), `tests/Feature/Core/Transfer/MysqlDataTransferTest` (workflow `MySQL data transfer`, необязательный);
 - устройство, порядок переключения, откат, проверка и чек-лист удаления — [mysql-cutover.md](../guides/mysql-cutover.md).
+- `--without-secrets` (2026-10-08) — режим тестового дампа (передача DevOps/третьим лицам, нет прод-`APP_KEY`): таблицы
+  из `KeyCheck::ENCRYPTED` (сейчас `integration_secrets`) не копируются и остаются пустыми, `APP_KEY` не проверяется,
+  `--verify` ожидает в них 0 строк, итог печатает пропущенные таблицы с числом строк источника. Правила — `WithoutSecrets`
+  (unit `WithoutSecretsTest`), `KeyCheckTest` ловит новую модель с `encrypted`, не внесённую в список; feature —
+  `MysqlDataTransferTest::test_without_secrets_needs_no_app_key_and_leaves_encrypted_tables_empty`. Без флага — прежний
+  fail-closed. Для боевого cutover флаг запрещён — [mysql-cutover.md](../guides/mysql-cutover.md#тестовый-дамп-без-секретов---without-secrets).
 - Проверка «цель ≠ рабочая БД приложения» по `@@server_uuid` больше не делает исключения для приложения на другом драйвере: приложение только на MySQL, несравнимое соединение — отказ (fail-closed); feature-тест запускает команду с приложением на соседней БД MySQL.
 - Миграции данных после заморозки (2026-10-08, #183): `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS` — список миграций
   `main`, которых нет на замороженном источнике переноса и которые не меняют схему (сейчас одна:

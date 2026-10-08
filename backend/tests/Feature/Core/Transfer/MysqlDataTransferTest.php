@@ -345,6 +345,61 @@ final class MysqlDataTransferTest extends TestCase
         $this->assertStringNotContainsString(self::SECRET, $out);
     }
 
+    /**
+     * --without-secrets (test dumps for third parties): no APP_KEY at all, integration_secrets is not copied and stays
+     * empty, --verify expects 0 rows there, the report lists the skipped table with the source row count only.
+     * Without the option the same environment stays fail-closed.
+     */
+    public function test_without_secrets_needs_no_app_key_and_leaves_encrypted_tables_empty(): void
+    {
+        $key = config('app.key');
+        $sourceSecrets = DB::table('integration_secrets')->count();
+        $this->assertGreaterThan(0, $sourceSecrets);
+        $ciphertext = (string) DB::table('integration_secrets')->where('name', 'transfer-fixture')->value('value');
+        config(['app.key' => '']);
+        $this->app->forgetInstance('encrypter');
+        try {
+            [$code, $out] = $this->transfer(['--preflight' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertMatchesRegularExpression('/app_key\s*\|\s*-\s*\|\s*APP_KEY не задан/u', $out);
+
+            [$code, $out] = $this->transfer(['--without-secrets' => true, '--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+            $this->assertSame(0, $code, $out);
+            $this->assertStringContainsString('ИТОГ: OK', $out);
+            $this->assertStringNotContainsString('app_key', $out);
+            $this->assertStringContainsString("Пропущены таблицы (--without-secrets, на цели пусто): integration_secrets (в источнике {$sourceSecrets} строк)", $out);
+            $this->assertStringNotContainsString($ciphertext, $out);
+            $this->assertSame(0, $this->target()->table('integration_secrets')->count());
+            $this->assertSame(DB::table('integrations')->count(), $this->target()->table('integrations')->count());
+
+            [$code, $out] = $this->transfer(['--verify' => true, '--without-secrets' => true]);
+            $this->assertSame(0, $code, $out);
+            $this->assertMatchesRegularExpression('/without_secrets\s*\|\s*integration_secrets\s*\|\s*не перенесена/u', $out);
+
+            // Without the option the empty table is a plain row mismatch.
+            [$code, $out] = $this->transfer(['--verify' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertMatchesRegularExpression('/rows\s*\|\s*integration_secrets/', $out);
+
+            // A row on the target breaks the "left empty" contract: verify FAILs, a run without truncate is refused.
+            $row = (array) DB::table('integration_secrets')->where('name', 'transfer-fixture')->first();
+            $this->target()->table('integration_secrets')->insert($row);
+            [$code, $out] = $this->transfer(['--verify' => true, '--without-secrets' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertMatchesRegularExpression('/without_secrets\s*\|\s*integration_secrets\s*\|\s*--without-secrets: на цели 1 строк, ожидается 0/u', $out);
+            [$code, $out] = $this->transfer(['--without-secrets' => true, '--confirm-target' => self::TARGET_DB]);
+            $this->assertSame(1, $code, $out);
+            $this->assertStringContainsString('перенос не начат', $out);
+            $this->assertStringNotContainsString($ciphertext, $out);
+        } finally {
+            config(['app.key' => $key]);
+            $this->app->forgetInstance('encrypter');
+        }
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out); // full copy again for the next tests and the CLI steps
+    }
+
     public function test_write_needs_confirmation_and_production_needs_the_flag(): void
     {
         $before = $this->target()->table('users')->count();
