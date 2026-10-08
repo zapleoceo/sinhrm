@@ -19,10 +19,6 @@ return [
     'Ai/Support/AiSettingsReader.php' => [
         'App\Modules\Integrations\Services\IntegrationConfigLoader',
     ],
-    'Assets/Http/Controllers/AssetController.php' => [
-        'App\Modules\People\Services\EmployeeService',
-        'App\Modules\People\Services\PeopleScope',
-    ],
     'Assets/Http/Requests/AssetMoveRequest.php' => [
         'App\Modules\People\Models\Employee',
     ],
@@ -124,17 +120,9 @@ return [
     ],
     'Desk/Services/DeskService.php' => [
         'App\Modules\Documents\Repositories\DatabaseDocumentStorage',
-        'App\Modules\People\Services\PeopleScope',
     ],
     'Desk/Services/DeskSlaJob.php' => [
         'App\Modules\Scripts\Services\TaskService',
-    ],
-    'Documents/Http/Controllers/DocumentController.php' => [
-        'App\Modules\People\Services\EmployeeService',
-        'App\Modules\People\Services\PeopleScope',
-    ],
-    'Documents/Http/Controllers/DocumentTemplateController.php' => [
-        'App\Modules\People\Services\EmployeeService',
     ],
     'Documents/Http/Requests/CreateDocumentRequest.php' => [
         'App\Modules\People\Models\Employee',
@@ -144,9 +132,6 @@ return [
     ],
     'Documents/Models/Document.php' => [
         'App\Modules\People\Models\Employee',
-    ],
-    'Documents/Services/DocumentNavBadges.php' => [
-        'App\Modules\People\Services\PeopleScope',
     ],
     'Documents/Services/DocumentService.php' => [
         'App\Modules\People\Models\Employee',
@@ -186,14 +171,8 @@ return [
     'HiringRequests/Services/ApproverNotifier.php' => [
         'App\Modules\Scripts\Services\TaskService',
     ],
-    'HiringRequests/Services/HiringAccess.php' => [
-        'App\Modules\People\Services\PeopleScope',
-    ],
     'HiringRequests/Services/HiringRequestService.php' => [
         'App\Modules\Recruiting\Services\VacancyService',
-    ],
-    'Knowledge/Services/KnowledgeService.php' => [
-        'App\Modules\People\Services\PeopleScope',
     ],
     'MailAgent/Ai/MailClassificationAiHandler.php' => [
         'App\Modules\Ai\Models\AiRequest',
@@ -295,9 +274,6 @@ return [
     'Perform/Repositories/EloquentReviewRepository.php' => [
         'App\Modules\People\Models\Employee',
     ],
-    'Perform/Services/PerformAccess.php' => [
-        'App\Modules\People\Services\PeopleScope',
-    ],
     'Perform/Services/ReviewSetupService.php' => [
         'App\Modules\People\Models\Employee',
     ],
@@ -321,7 +297,6 @@ return [
     ],
     'Pulse/Services/MoodService.php' => [
         'App\Modules\People\Models\Employee',
-        'App\Modules\People\Services\PeopleScope',
     ],
     'Pulse/Services/ResponseService.php' => [
         'App\Modules\People\Models\Employee',
@@ -425,11 +400,7 @@ return [
         'App\Modules\Recruiting\Services\ReportService',
     ],
     'Reports/Services/ScopedContextFactory.php' => [
-        'App\Modules\People\Services\PeopleScope',
         'App\Modules\Recruiting\Services\RecruitingScope',
-    ],
-    'SafeSpeak/Services/SafeSpeakService.php' => [
-        'App\Modules\People\Services\PeopleScope',
     ],
     'Scripts/Ai/ScriptEvaluationAiHandler.php' => [
         'App\Modules\Ai\Models\AiRequest',
@@ -478,29 +449,20 @@ return [
     'Time/Models/WorkSchedule.php' => [
         'App\Modules\Directory\Models\Branch',
     ],
-    'Time/Services/TimeDashboardSection.php' => [
-        'App\Modules\People\Services\PeopleScope',
-    ],
     'Time/Services/TimeReminderJob.php' => [
         'App\Modules\People\Models\Employee',
         'App\Modules\Scripts\Services\TaskService',
     ],
     'Time/Services/TimesheetService.php' => [
         'App\Modules\People\Models\Employee',
-        'App\Modules\People\Services\PeopleScope',
         'App\Modules\Scripts\Services\TaskService',
     ],
     'Time/Services/WeekSummaryService.php' => [
         'App\Modules\People\Models\Employee',
         'App\Modules\TimeOff\Models\LeaveRequest',
     ],
-    'TimeOff/Http/Controllers/BalanceController.php' => [
-        'App\Modules\People\Services\EmployeeService',
-        'App\Modules\People\Services\PeopleScope',
-    ],
     'TimeOff/Http/Controllers/LeaveRequestController.php' => [
         'App\Modules\People\Http\Requests\DecisionRequest',
-        'App\Modules\People\Services\PeopleScope',
     ],
     'TimeOff/Http/Requests/AdjustBalanceRequest.php' => [
         'App\Modules\People\Models\Employee',
@@ -528,19 +490,12 @@ return [
     ],
     'TimeOff/Services/EmployeeResolver.php' => [
         'App\Modules\People\Models\Employee',
-        'App\Modules\People\Services\EmployeeService',
     ],
     'TimeOff/Services/LeaveCalendarSync.php' => [
         'App\Modules\GoogleWorkspace\Services\GoogleConnectionStore',
     ],
     'TimeOff/Services/LeaveRequestService.php' => [
         'App\Modules\People\Models\Employee',
-    ],
-    'TimeOff/Services/TimeOffDashboardSection.php' => [
-        'App\Modules\People\Services\PeopleScope',
-    ],
-    'TimeOff/Services/TimeOffNavBadges.php' => [
-        'App\Modules\People\Services\PeopleScope',
     ],
     'Users/Http/Requests/UpdateUserRequest.php' => [
         'App\Modules\Directory\Models\Branch',
@@ -562,10 +517,6 @@ return [
     'Workflows/Executors/TaskStepExecutor.php' => [
         'App\Modules\Scripts\Services\TaskService',
     ],
-    'Workflows/Http/Controllers/WorkflowRunController.php' => [
-        'App\Modules\People\Services\EmployeeService',
-        'App\Modules\People\Services\PeopleScope',
-    ],
     'Workflows/Http/Requests/StartRunRequest.php' => [
         'App\Modules\People\Models\Employee',
     ],
@@ -574,7 +525,6 @@ return [
     ],
     'Workflows/Services/AssigneeResolver.php' => [
         'App\Modules\People\Models\Employee',
-        'App\Modules\People\Services\PeopleScope',
     ],
     'Workflows/Services/WorkflowRunService.php' => [
         'App\Modules\People\Models\Employee',

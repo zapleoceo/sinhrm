@@ -9,13 +9,17 @@ use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\People\Contracts\ChangeRequestRepository;
+use App\Modules\People\Contracts\EmployeeLookup;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\Contracts\PickerUserRepository;
 use App\Modules\People\Privacy\CompensationPersonalData;
 use App\Modules\People\Privacy\EmployeePersonalData;
 use App\Modules\People\Repositories\EloquentChangeRequestRepository;
 use App\Modules\People\Repositories\EloquentEmployeeRepository;
 use App\Modules\People\Repositories\EloquentPickerUserRepository;
+use App\Modules\People\Services\EmployeeService;
+use App\Modules\People\Services\PeopleScope;
 use App\Modules\People\Services\ScheduledTerminationJob;
 
 /**
@@ -38,6 +42,9 @@ final class PeopleServiceProvider extends ModuleServiceProvider
         $this->app->bind(EmployeeRepository::class, EloquentEmployeeRepository::class);
         $this->app->bind(ChangeRequestRepository::class, EloquentChangeRequestRepository::class);
         $this->app->bind(PickerUserRepository::class, EloquentPickerUserRepository::class);
+        // Contracts for other modules (docs/architecture/overview.md, "Границы модулей").
+        $this->app->bind(PeopleAccess::class, PeopleScope::class);
+        $this->app->bind(EmployeeLookup::class, EmployeeService::class);
         // Scheduled terminations come into force on their date (cron, POST /api/ops/jobs/run).
         $this->app->tag([ScheduledTerminationJob::class], ScheduledJob::class);
     }

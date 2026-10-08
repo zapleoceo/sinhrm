@@ -11,7 +11,7 @@ use App\Modules\HiringRequests\Enums\HiringRequestStatus;
 use App\Modules\HiringRequests\Enums\RouteStepKind;
 use App\Modules\HiringRequests\Models\HiringApproval;
 use App\Modules\HiringRequests\Models\HiringRequest;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\PeopleAccess;
 
 /**
  * Who may do what with hiring requests (tz2: "a separate right to create, a separate right to approve,
@@ -25,7 +25,7 @@ use App\Modules\People\Services\PeopleScope;
  */
 final readonly class HiringAccess
 {
-    public function __construct(private PeopleScope $people, private HiringRequestRepository $requests) {}
+    public function __construct(private PeopleAccess $people, private HiringRequestRepository $requests) {}
 
     public function isAdmin(User $user): bool
     {

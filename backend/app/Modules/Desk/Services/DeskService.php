@@ -15,7 +15,7 @@ use App\Modules\Desk\Models\DeskComment;
 use App\Modules\Documents\Contracts\DocumentStorage;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
 use App\Modules\Knowledge\Contracts\PublishedArticles;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\PeopleAccess;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
@@ -32,7 +32,7 @@ final readonly class DeskService
 
     public function __construct(
         private DeskRepository $desk,
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private PublishedArticles $articles,
     ) {}
 

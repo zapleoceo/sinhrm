@@ -15,9 +15,9 @@ use App\Modules\Documents\Http\Resources\DocumentResource;
 use App\Modules\Documents\Models\Document;
 use App\Modules\Documents\Services\DocumentService;
 use App\Modules\Documents\Services\DocumentTemplateService;
+use App\Modules\People\Contracts\EmployeeLookup;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\DTO\PeopleContext;
-use App\Modules\People\Services\EmployeeService;
-use App\Modules\People\Services\PeopleScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,8 +34,8 @@ final class DocumentController
     public function __construct(
         private readonly DocumentService $documents,
         private readonly DocumentTemplateService $templates,
-        private readonly EmployeeService $employees,
-        private readonly PeopleScope $scope,
+        private readonly EmployeeLookup $employees,
+        private readonly PeopleAccess $scope,
     ) {}
 
     public function index(ListDocumentsRequest $request): JsonResponse

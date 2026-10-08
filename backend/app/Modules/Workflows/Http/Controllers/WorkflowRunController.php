@@ -6,9 +6,9 @@ namespace App\Modules\Workflows\Http\Controllers;
 
 use App\Models\User;
 use App\Modules\Core\Http\Concerns\ResolvesActor;
+use App\Modules\People\Contracts\EmployeeLookup;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\DTO\PeopleContext;
-use App\Modules\People\Services\EmployeeService;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\Workflows\Http\Requests\ListRunsRequest;
 use App\Modules\Workflows\Http\Requests\SkipStepRequest;
 use App\Modules\Workflows\Http\Requests\StartRunRequest;
@@ -32,8 +32,8 @@ final class WorkflowRunController
     public function __construct(
         private readonly WorkflowRunService $runs,
         private readonly WorkflowTemplateService $templates,
-        private readonly EmployeeService $employees,
-        private readonly PeopleScope $scope,
+        private readonly EmployeeLookup $employees,
+        private readonly PeopleAccess $scope,
     ) {}
 
     public function index(ListRunsRequest $request): JsonResponse

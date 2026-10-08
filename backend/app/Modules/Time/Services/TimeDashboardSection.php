@@ -6,7 +6,7 @@ namespace App\Modules\Time\Services;
 
 use App\Models\User;
 use App\Modules\Overview\Contracts\DashboardSection;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\Time\Models\Timesheet;
 use App\Modules\Time\Support\WeekCalculator;
 use Illuminate\Support\Carbon;
@@ -20,7 +20,7 @@ final readonly class TimeDashboardSection implements DashboardSection
     public const int LIST = 5;
 
     public function __construct(
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private WeekSummaryService $summaries,
         private TimesheetService $timesheets,
     ) {}

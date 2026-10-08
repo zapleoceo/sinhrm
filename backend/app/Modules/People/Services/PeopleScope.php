@@ -7,6 +7,7 @@ namespace App\Modules\People\Services;
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Support\ReportingTree;
@@ -15,7 +16,7 @@ use App\Modules\People\Support\ReportingTree;
  * Access to employee data (People and TimeOff). HR staff (superadmin, admin, hr_manager — UserRole::hrStaff()) manage everyone.
  * A manager is any user linked to an employee who has reports (direct or indirect) — the subtree follows manager_id.
  */
-final readonly class PeopleScope
+final readonly class PeopleScope implements PeopleAccess
 {
     public function __construct(private EmployeeRepository $employees) {}
 

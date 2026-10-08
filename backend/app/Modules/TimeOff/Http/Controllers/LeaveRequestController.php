@@ -6,8 +6,8 @@ namespace App\Modules\TimeOff\Http\Controllers;
 
 use App\Modules\Core\Http\Concerns\ResolvesActor;
 use App\Modules\Core\Support\UserTime;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\Http\Requests\DecisionRequest;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\TimeOff\Exceptions\TimeOffException;
 use App\Modules\TimeOff\Http\Requests\CalendarRequest;
 use App\Modules\TimeOff\Http\Requests\LeaveRequestFormRequest;
@@ -32,7 +32,7 @@ final class LeaveRequestController
 
     public function __construct(
         private readonly LeaveRequestService $service,
-        private readonly PeopleScope $scope,
+        private readonly PeopleAccess $scope,
         private readonly EmployeeResolver $resolver,
         private readonly LeaveSettingsService $settings,
     ) {}

@@ -137,6 +137,9 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `HiringAccess` узнаёт HR и руководителя через контракт People `PeopleAccess` (не через класс `PeopleScope`). Тест — `tests/Unit/HiringRequests/HiringPeopleAccessTest.php`.
+
 ## Как проверить
 - `php artisan test --filter=HiringRequest` — матрица доступа, маршрут и SLA (просрочка, эскалация один раз, пятница → вторник, праздник филиала),
   автосоздание вакансии и его идемпотентность, прогресс и автозакрытие, пропуск шага руководителя, отклонение/отмена,

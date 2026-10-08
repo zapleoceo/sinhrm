@@ -14,8 +14,8 @@ use App\Modules\Assets\Models\AssetAssignment;
 use App\Modules\Assets\Models\AssetType;
 use App\Modules\Assets\Services\AssetService;
 use App\Modules\Core\Http\Concerns\ResolvesActor;
-use App\Modules\People\Services\EmployeeService;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\EmployeeLookup;
+use App\Modules\People\Contracts\PeopleAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -29,8 +29,8 @@ final class AssetController
 
     public function __construct(
         private readonly AssetService $assets,
-        private readonly EmployeeService $employees,
-        private readonly PeopleScope $scope,
+        private readonly EmployeeLookup $employees,
+        private readonly PeopleAccess $scope,
     ) {}
 
     public function types(): JsonResponse

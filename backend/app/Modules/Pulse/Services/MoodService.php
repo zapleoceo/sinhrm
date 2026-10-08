@@ -6,8 +6,8 @@ namespace App\Modules\Pulse\Services;
 
 use App\Models\User;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\Models\Employee;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\Pulse\Contracts\MoodRepository;
 use App\Modules\Pulse\Exceptions\PulseException;
 use App\Modules\Pulse\Models\MoodCheckin;
@@ -31,7 +31,7 @@ final readonly class MoodService
 
     public function __construct(
         private MoodRepository $mood,
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private EmployeeRepository $employees,
     ) {}
 

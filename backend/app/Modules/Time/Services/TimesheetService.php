@@ -7,9 +7,9 @@ namespace App\Modules\Time\Services;
 use App\Models\User;
 use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\Scripts\Services\TaskService;
 use App\Modules\Time\Contracts\TimeRepository;
 use App\Modules\Time\Enums\TimesheetStatus;
@@ -33,7 +33,7 @@ final readonly class TimesheetService
     public function __construct(
         private TimeRepository $time,
         private WeekSummaryService $summaries,
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private EmployeeRepository $employees,
         private TaskService $tasks,
         private UserNotifier $notifier,

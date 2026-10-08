@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\TimeOff\Http\Controllers;
 
 use App\Modules\Core\Http\Concerns\ResolvesActor;
-use App\Modules\People\Services\EmployeeService;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\EmployeeLookup;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\TimeOff\Http\Requests\AdjustBalanceRequest;
 use App\Modules\TimeOff\Http\Requests\EmployeeScopedRequest;
 use App\Modules\TimeOff\Http\Resources\SettingsResources;
@@ -23,7 +23,7 @@ final class BalanceController
 
     public function __construct(
         private readonly BalanceService $balances,
-        private readonly PeopleScope $scope,
+        private readonly PeopleAccess $scope,
         private readonly EmployeeResolver $resolver,
     ) {}
 
@@ -47,7 +47,7 @@ final class BalanceController
         )]);
     }
 
-    public function adjust(AdjustBalanceRequest $request, EmployeeService $employees, LeaveSettingsService $settings): JsonResponse
+    public function adjust(AdjustBalanceRequest $request, EmployeeLookup $employees, LeaveSettingsService $settings): JsonResponse
     {
         $employee = $employees->find($request->integer('employee_id'));
         $type = $settings->findType($request->integer('leave_type_id'));

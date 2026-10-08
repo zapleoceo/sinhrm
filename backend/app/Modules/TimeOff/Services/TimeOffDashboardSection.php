@@ -6,7 +6,7 @@ namespace App\Modules\TimeOff\Services;
 
 use App\Models\User;
 use App\Modules\Overview\Contracts\DashboardSection;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\TimeOff\Models\LeaveRequest;
 use Illuminate\Support\Carbon;
 
@@ -16,7 +16,7 @@ final readonly class TimeOffDashboardSection implements DashboardSection
     public const int APPROVALS_LIST = 5;
 
     public function __construct(
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private CalendarService $calendar,
         private LeaveRequestService $requests,
     ) {}

@@ -127,6 +127,9 @@ Recruiting берёт шаблоны через контракт `Contracts\Docu
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `DocumentController`, `DocumentTemplateController` и `DocumentNavBadges` берут контекст и карточку сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`. Тест — `tests/Unit/Documents/DocumentsPeopleContractsTest.php` (предпросмотр шаблона с сотрудником из контракта).
+
 ## Как проверить
 Бэкенд: `tests/Feature/Documents/DocumentsApiTest` (401/403, неизвестные переменные и архив шаблонов, предпросмотр:
 `<script>` экранируется, `javascript:` и `<img>` не проходят, переменные сотрудника и «—», генерация из шаблона

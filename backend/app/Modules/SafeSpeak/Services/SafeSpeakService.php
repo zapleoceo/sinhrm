@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\SafeSpeak\Services;
 
 use App\Models\User;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\SafeSpeak\Contracts\SafeSpeakRepository;
 use App\Modules\SafeSpeak\Enums\ReportCategory;
 use App\Modules\SafeSpeak\Enums\ReportStatus;
@@ -36,7 +36,7 @@ final readonly class SafeSpeakService
 
     public function __construct(
         private SafeSpeakRepository $reports,
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private RateLimiter $limiter,
         private string $appKey,
     ) {}

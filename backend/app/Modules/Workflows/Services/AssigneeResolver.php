@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Workflows\Services;
 
 use App\Models\User;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\Models\Employee;
-use App\Modules\People\Services\PeopleScope;
 use App\Modules\Workflows\Contracts\AssigneeDirectory;
 use App\Modules\Workflows\DTO\StepSnapshot;
 use App\Modules\Workflows\Enums\AssigneeRule;
@@ -17,7 +17,7 @@ use App\Modules\Workflows\Enums\AssigneeRule;
  */
 final readonly class AssigneeResolver
 {
-    public function __construct(private AssigneeDirectory $users, private PeopleScope $scope) {}
+    public function __construct(private AssigneeDirectory $users, private PeopleAccess $scope) {}
 
     public function resolve(StepSnapshot $step, Employee $employee, ?User $startedBy): ?int
     {
