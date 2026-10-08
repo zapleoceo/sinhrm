@@ -217,4 +217,17 @@ final class MoodTest extends TestCase
         $this->assertSame(0, $this->pulseTick()['mood_alerts']);
         $this->assertSame(0, Task::query()->where('type', 'mood_alert')->count());
     }
+
+    /** At 00:30 Kyiv (21:30 UTC) the check-in belongs to the new Kyiv day, not to the UTC "yesterday" (MySQL e2e, round 2). */
+    public function test_check_in_after_kyiv_midnight_counts_for_the_kyiv_day(): void
+    {
+        $user = $this->userOf($this->org()['worker']);
+        Carbon::setTestNow('2026-10-11 20:00:00'); // Sunday 23:00 Kyiv
+        $this->actingAs($user)->postJson('/api/pulse/mood', ['score' => 2])->assertCreated()->assertJsonPath('data.day', '2026-10-11');
+        Carbon::setTestNow('2026-10-11 21:30:00'); // Monday 2026-10-12 00:30 Kyiv
+        $this->actingAs($user)->getJson('/api/pulse/mood/today')->assertOk()->assertJsonPath('data.today', null)->assertJsonPath('data.ask', true);
+        $this->actingAs($user)->postJson('/api/pulse/mood', ['score' => 5])->assertCreated()->assertJsonPath('data.day', '2026-10-12');
+        $this->actingAs($user)->getJson('/api/pulse/mood/me?days=2')->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.day', '2026-10-12')->assertJsonPath('data.0.score', 5)->assertJsonPath('data.1.score', 2);
+    }
 }

@@ -13,7 +13,7 @@ import { BalancesPanel } from '../../timeoff/widgets/balances-panel';
 import { LeaveRequestForm } from '../../timeoff/widgets/leave-request-form';
 import { RequestAction, RequestsList } from '../../timeoff/widgets/requests-list';
 import { initials } from '../org-tree';
-import { CHANGEABLE_FIELDS, ChangeRequest, Employee, fieldLabelKey } from '../people.model';
+import { CHANGEABLE_FIELDS, ChangeRequest, Employee, customFieldRows, fieldLabelKey } from '../people.model';
 import { HiddenChangesLine } from '../hidden-changes';
 import { EmployeeDocumentsTab } from '../../documents/profile/employee-documents.tab';
 import { EmployeeRunsTab } from '../../workflows/runs/employee-runs.tab';
@@ -339,9 +339,7 @@ export class ProfilePage {
   });
   /** Candidate's phone carried over at hire (HireService): PII tier, shown as its own row, not as a raw custom key. */
   protected readonly personalPhone = computed(() => this.store.employee()?.custom_fields?.['personal_phone'] ?? null);
-  protected readonly customFields = computed(() =>
-    Object.entries(this.store.employee()?.custom_fields ?? {}).filter(([key]) => key !== 'personal_phone'),
-  );
+  protected readonly customFields = computed(() => customFieldRows(this.store.employee()?.custom_fields));
 
   constructor() {
     effect(() => {

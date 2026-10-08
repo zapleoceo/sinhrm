@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Pulse\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\Models\Employee;
@@ -51,13 +52,14 @@ final readonly class MoodService
     /** @return array{ask: bool, question: string, required: bool, today: MoodCheckin|null, has_employee: bool} */
     public function today(User $user, ?Carbon $now = null): array
     {
-        $now ??= Carbon::now();
+        // The user's day (Kyiv), not the UTC one: between 00:00 Kyiv and 00:00 UTC the UTC date is still yesterday.
+        $local = UserTime::now($now);
         $settings = $this->mood->settings();
         $employee = $this->scope->employeeOf($user);
-        $today = $employee === null ? null : $this->mood->forDay($employee->id, $now);
+        $today = $employee === null ? null : $this->mood->forDay($employee->id, UserTime::today($now));
 
         return [
-            'ask' => $employee !== null && $today === null && in_array($now->isoWeekday(), $settings->weekdays, true),
+            'ask' => $employee !== null && $today === null && in_array($local->isoWeekday(), $settings->weekdays, true),
             'question' => $settings->question,
             'required' => $settings->required,
             'today' => $today,
@@ -71,16 +73,16 @@ final readonly class MoodService
         $employee = $this->scope->employeeOf($user) ?? throw PulseException::noEmployee();
         $comment = $comment === null ? null : (trim($comment) === '' ? null : mb_substr(trim($comment), 0, 1000));
 
-        return $this->mood->upsert($employee->id, ($now ?? Carbon::now())->copy()->startOfDay(), $score, $comment);
+        return $this->mood->upsert($employee->id, UserTime::today($now), $score, $comment);
     }
 
     /** @return Collection<int, MoodCheckin> */
     public function history(User $user, int $days, ?Carbon $now = null): Collection
     {
         $employee = $this->scope->employeeOf($user);
-        $now ??= Carbon::now();
+        $today = UserTime::today($now);
 
-        return $employee === null ? new Collection : $this->mood->history($employee->id, $now->copy()->subDays($days - 1), $now);
+        return $employee === null ? new Collection : $this->mood->history($employee->id, $today->copy()->subDays($days - 1), $today);
     }
 
     /**
@@ -90,12 +92,11 @@ final readonly class MoodService
      */
     public function team(User $user, int $weeks, ?int $branchId, ?int $departmentId, ?Carbon $now = null): array
     {
-        $now ??= Carbon::now();
         $weeks = max(1, min(self::MAX_WEEKS, $weeks));
         $minGroup = max(1, $this->mood->settings()->min_group);
         $ids = $this->teamIds($user, $branchId, $departmentId, $minGroup);
         // Completed weeks only: the running week would change with every new check-in (diffing reveals it).
-        $currentWeek = $now->copy()->startOfWeek();
+        $currentWeek = UserTime::today($now)->startOfWeek();
         $from = $currentWeek->copy()->subWeeks($weeks);
         $checkins = $this->mood->between($ids, $from, $currentWeek->copy()->subDay());
 

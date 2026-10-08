@@ -166,6 +166,7 @@
 
 ### Общие хелперы Core (2026-10-02)
 - «сегодня» по умолчанию (отмена заявки, календарь без `from`, признак «можно отменить свою» в ответе) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
+- (2026-10-08, MySQL e2e раунд 2) так же считаются «Сьогодні відсутні» на главной (`TimeOffDashboardSection`, тест `LeaveRequestApiTest::test_dashboard_out_today_after_kyiv_midnight`) и год «использовано в этом году» в балансах (`BalanceController` → `UserTime::now()`);
 - `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..200`, по умолчанию 50, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListLeaveRequestsRequest`);
 - gate `timeoff-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.

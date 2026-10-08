@@ -421,6 +421,10 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 **Офферы.** В карточке кандидата на заявке в этапе оффера (kind `hire`, не терминальный) — «Створити оффер»: шаблон
 Documents категории `offer` (переменные `{ПІБ}`, `{Посада}`, `{Зарплата}`, `{Дата виходу}`, `{Умови}`, `{Філія}`,
 `{Сьогодні}`), должность, зарплата, дата выхода, условия → текст в `offers` (один на заявку), статус `draft`.
+Отрисованный оффер больше `OfferService::MAX_CONTENT_BYTES` (64 000 байт) → 422 `offer_too_long {max_bytes}`, ничего не сохраняется:
+`offers.content_md` и тело отправленного касания — `TEXT` (64 КБ), а шаблон допускает 50 000 символов (~100 КБ кириллицей), и MySQL
+в strict-режиме отвечал 500 (SQLSTATE 22001; найдено MySQL e2e, раунд 2). Схему не расширяем до переноса боевых данных (заморозка схемы,
+[mysql-cutover.md](../guides/mysql-cutover.md)). Тест — `OfferApiTest::test_offer_over_the_text_column_is_refused_with_422_and_one_under_it_is_sent_whole`.
 «Надіслати» — письмо кандидату через Mailer (Gmail) тем же путём, что сообщения из карточки (исходящий touchpoint на заявке) → `sent`;
 «Прийняв/Відмовився» рекрутер отмечает вручную → `accepted`/`declined`. Зарплата чувствительна: все эндпоинты оффера —
 только `ApplicationPolicy::offer` (пишущие рекрутинг в своём скоупе + нанимающий менеджер вакансии), остальным 403.
@@ -531,6 +535,9 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 - Компоненты не ходят в HTTP сами: оффер — через `card/offers.service.ts` (`OffersService`), публичные страницы вакансий — через `careers/careers.service.ts` (`PublicCareersService`); запросы и ответы прежние.
+
+**Дата в оффере (2026-10-08, MySQL e2e раунд 2).** `{Сьогодні}` в тексте оффера — дата по Киеву (`Core\Support\UserTime`), а не UTC:
+в 00:30 по Киеву кандидат получал вчерашнюю дату. Тест — `OfferApiTest::test_offer_today_variable_is_the_kyiv_date_after_midnight`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,

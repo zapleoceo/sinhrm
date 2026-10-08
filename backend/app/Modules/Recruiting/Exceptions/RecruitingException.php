@@ -137,6 +137,12 @@ final class RecruitingException extends BusinessRuleException
         return new self('template_not_offer', 422);
     }
 
+    /** The rendered offer does not fit offers.content_md / touchpoints.body (TEXT, 64 KB): 422 instead of a MySQL 500. */
+    public static function offerTooLong(int $maxBytes): self
+    {
+        return new self('offer_too_long', 422, ['max_bytes' => $maxBytes]);
+    }
+
     /** Public apply: too many submissions from the same client. */
     public static function tooManySubmissions(): self
     {
