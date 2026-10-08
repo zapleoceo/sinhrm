@@ -7,9 +7,9 @@ namespace App\Modules\Time\Services;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Models\Employee;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\Enums\TaskType;
-use App\Modules\Scripts\Services\TaskService;
 use App\Modules\Time\Enums\TimesheetStatus;
 use App\Modules\Time\Support\WeekCalculator;
 use Illuminate\Support\Carbon;
@@ -27,7 +27,7 @@ final readonly class TimeReminderJob implements ScheduledJob
     public function __construct(
         private EmployeeRepository $employees,
         private WeekSummaryService $summaries,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
     ) {}
 
     public static function ruleKey(Carbon $weekStart): string

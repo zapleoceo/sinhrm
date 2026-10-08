@@ -129,6 +129,7 @@ Recruiting берёт шаблоны через контракт `Contracts\Docu
 
 ### Зависимости через контракты (2026-10-08)
 - `DocumentController`, `DocumentTemplateController` и `DocumentNavBadges` берут контекст и карточку сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`. Тест — `tests/Unit/Documents/DocumentsPeopleContractsTest.php` (предпросмотр шаблона с сотрудником из контракта).
+- `DocumentService` ставит, закрывает и отмечает задачи «ознакомиться» через контракт Scripts `TaskScheduler` (`schedule`, `closeByRule`, `setDone`).
 
 ## Как проверить
 Бэкенд: `tests/Feature/Documents/DocumentsApiTest` (401/403, неизвестные переменные и архив шаблонов, предпросмотр:

@@ -190,6 +190,7 @@ skipped, failed}`.
 
 ### Зависимости через контракты (2026-10-08)
 - `WorkflowRunController` и `AssigneeResolver` берут контекст, HR-проверку и сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`. Тест — `tests/Unit/Workflows/WorkflowsPeopleAccessTest.php`.
+- `TaskStepExecutor` (и наследники) и `WorkflowRunService` ставят и закрывают задачи шагов через контракт Scripts `TaskScheduler`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Workflows/WorkflowTemplatesApiTest` (401/403, CRUD с шагами, проверка `config` каждого действия,

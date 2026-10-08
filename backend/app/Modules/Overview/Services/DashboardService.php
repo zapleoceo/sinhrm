@@ -13,10 +13,10 @@ use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Recruiting\Services\StalenessService;
+use App\Modules\Scripts\Contracts\TaskReader;
 use App\Modules\Scripts\DTO\TaskFilter;
 use App\Modules\Scripts\Enums\TaskDue;
 use App\Modules\Scripts\Models\Task;
-use App\Modules\Scripts\Services\TaskService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -37,7 +37,7 @@ final readonly class DashboardService
         private DashboardRepository $dashboard,
         private ApplicationRepository $applications,
         private RecruitingScope $scope,
-        private TaskService $tasks,
+        private TaskReader $tasks,
         private DayRouteService $dayRoute,
         private FunnelInsightsService $funnelInsights,
         /** @var iterable<DashboardNotices> */

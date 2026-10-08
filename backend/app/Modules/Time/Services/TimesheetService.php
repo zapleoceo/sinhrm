@@ -10,7 +10,7 @@ use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
-use App\Modules\Scripts\Services\TaskService;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Time\Contracts\TimeRepository;
 use App\Modules\Time\Enums\TimesheetStatus;
 use App\Modules\Time\Exceptions\TimeException;
@@ -35,7 +35,7 @@ final readonly class TimesheetService
         private WeekSummaryService $summaries,
         private PeopleAccess $scope,
         private EmployeeRepository $employees,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
         private UserNotifier $notifier,
     ) {}
 

@@ -108,6 +108,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 
 ### Зависимости через контракты (2026-10-08)
 - `TimesheetService` и `TimeDashboardSection` получают контекст и карточку через контракт People `PeopleAccess`. Тест — `tests/Unit/Time/TimePeopleAccessTest.php`.
+- `TimeReminderJob` и `TimesheetService` ставят и закрывают задачи табеля через контракт Scripts `TaskScheduler`.
 
 ## Как проверить
 - `php artisan test --filter=Time` — матрица доступа, сверхурочные, валидация недели, отправка/возврат/согласование,

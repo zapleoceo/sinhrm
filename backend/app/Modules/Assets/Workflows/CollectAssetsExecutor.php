@@ -6,7 +6,7 @@ namespace App\Modules\Assets\Workflows;
 
 use App\Modules\Assets\Models\Asset;
 use App\Modules\Assets\Services\AssetService;
-use App\Modules\Scripts\Services\TaskService;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Workflows\DTO\StepContext;
 use App\Modules\Workflows\DTO\StepOutcome;
 use App\Modules\Workflows\Enums\StepAction;
@@ -24,7 +24,7 @@ final class CollectAssetsExecutor extends TaskStepExecutor
     /** Task titles are at most 255 characters; the list is cut with "…". */
     private const int TITLE_MAX = 255;
 
-    public function __construct(TaskService $tasks, AssigneeResolver $assignees, private readonly AssetService $assets)
+    public function __construct(TaskScheduler $tasks, AssigneeResolver $assignees, private readonly AssetService $assets)
     {
         parent::__construct($tasks, $assignees);
     }

@@ -372,6 +372,9 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
+### Зависимости через контракты (2026-10-08)
+- `CareerSiteService` ставит задачу «перезвонить» через контракт Scripts `TaskScheduler::scheduleNewApplicantCall()`.
+
 ## Страница вакансий и офферы
 
 **Страница вакансий (`/jobs`, `/jobs/:slug`)** — публичная, без входа и без сайдбара, логотип + переключатель uk/ru/en.

@@ -74,6 +74,7 @@
 
 ### Зависимости через контракты (2026-10-08)
 - `AssetController` получает контекст доступа и карточку сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`, а не через `PeopleScope`/`EmployeeService`. Тест — `tests/Unit/Assets/AssetPeopleAccessTest.php` (чужой сотрудник → 404 без запроса карточки).
+- `CollectAssetsExecutor` (шаг воркфлоу «сдать имущество») передаёт базовому `TaskStepExecutor` контракт Scripts `TaskScheduler`, а не класс `TaskService`.
 
 ## Как проверить
 `php artisan test --filter=Assets` — доступ, уникальность номера (в т.ч. регистр), выдача/возврат/повторная выдача и

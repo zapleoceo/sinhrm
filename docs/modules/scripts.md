@@ -233,6 +233,9 @@ viewer — например, новый сотрудник) и, как рань�
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- Задачи другие модули создают, закрывают и читают только через контракты: `Contracts\TaskScheduler` (`schedule`, `closeByRule`, плюс `scheduleNewApplicantCall` и `setDone`) и `Contracts\TaskReader` (`list` для главной страницы). Оба реализует `Services\TaskService`, биндинги — `ScriptsServiceProvider`. Импорт класса `TaskService` из чужого модуля остался у `HiringRequests\Services\ApproverNotifier` (`closeByRulePrefix`): файл меняет параллельная ветка DRY-правок. Тест — `tests/Unit/Scripts/TaskContractsTest.php`.
+
 ## Как проверить
 Бэкенд: `tests/Feature/Scripts/ScriptsApiTest` (права: recruiter/viewer только читают; версии: черновик → публикация →
 новый черновик v2 → откат на v1, неизменяемость, валидация контента, архив, «перевірка на тексті»), `EvaluationApiTest`

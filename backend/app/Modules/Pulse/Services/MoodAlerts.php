@@ -9,9 +9,9 @@ use App\Modules\People\Models\Employee;
 use App\Modules\People\Support\ReportingTree;
 use App\Modules\Pulse\Contracts\MoodRepository;
 use App\Modules\Pulse\Support\MoodStats;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\Enums\TaskType;
-use App\Modules\Scripts\Services\TaskService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -27,7 +27,7 @@ final readonly class MoodAlerts
     public function __construct(
         private MoodRepository $mood,
         private EmployeeRepository $employees,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
     ) {}
 
     /** @return int teams whose drop crossed the threshold (the task itself is created once per week) */

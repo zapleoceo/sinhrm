@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Workflows\Executors;
 
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\Enums\TaskType;
-use App\Modules\Scripts\Services\TaskService;
 use App\Modules\Workflows\Contracts\StepExecutor;
 use App\Modules\Workflows\DTO\StepContext;
 use App\Modules\Workflows\DTO\StepOutcome;
@@ -18,7 +18,7 @@ use App\Modules\Workflows\Services\AssigneeResolver;
  */
 abstract class TaskStepExecutor implements StepExecutor
 {
-    public function __construct(protected readonly TaskService $tasks, protected readonly AssigneeResolver $assignees) {}
+    public function __construct(protected readonly TaskScheduler $tasks, protected readonly AssigneeResolver $assignees) {}
 
     public static function profileLink(int $employeeId, ?string $tab = null): string
     {

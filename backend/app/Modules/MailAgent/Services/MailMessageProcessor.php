@@ -30,7 +30,7 @@ use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Touchpoint;
 use App\Modules\Recruiting\Services\CandidateService;
 use App\Modules\Recruiting\Support\ContactNormalizer;
-use App\Modules\Scripts\Services\TaskService;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 
 /**
  * One inbound message → one outcome (decided by rules only; AI never decides):
@@ -57,7 +57,7 @@ final readonly class MailMessageProcessor
         private VacancyRepository $vacancies,
         private TouchpointIngestor $ingestor,
         private ContactNormalizer $normalizer,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
     ) {}
 
     public function process(GmailMessage $message, ?User $actor): ProcessResult

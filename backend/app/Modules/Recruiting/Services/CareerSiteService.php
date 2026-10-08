@@ -13,7 +13,7 @@ use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\CareerSubmission;
 use App\Modules\Recruiting\Models\Vacancy;
-use App\Modules\Scripts\Services\TaskService;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use finfo;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Database\Eloquent\Collection;
@@ -36,7 +36,7 @@ final readonly class CareerSiteService
 
     public function __construct(
         private CandidateService $candidates,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
         private RateLimiter $limiter,
         private LoggerInterface $log,
         private VacancyRepository $vacancies,

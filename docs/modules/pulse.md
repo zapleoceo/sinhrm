@@ -286,6 +286,7 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
 
 ### Зависимости через контракты (2026-10-08)
 - `MoodService` находит сотрудника и контекст через контракт People `PeopleAccess`. `ResponseService` пока импортирует `PeopleScope` напрямую: файл параллельно меняет ветка DRY-правок, переключение — после её слияния. Тест — `tests/Unit/Pulse/MoodPeopleAccessTest.php`.
+- `MoodAlerts` ставит задачи о падении настроения через контракт Scripts `TaskScheduler`.
 
 ## Как проверить
 - `php artisan test --filter=Pulse` — Feature: `AnonymityTest` (**ответы по одному в открытой волне ничего не

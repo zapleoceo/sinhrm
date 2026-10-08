@@ -18,6 +18,7 @@ use App\Modules\Scripts\Ai\ScriptEvaluationPrompt;
 use App\Modules\Scripts\Contracts\EvaluationRepository;
 use App\Modules\Scripts\Contracts\ScriptEvaluator;
 use App\Modules\Scripts\Contracts\ScriptRepository;
+use App\Modules\Scripts\Contracts\TaskReader;
 use App\Modules\Scripts\Contracts\TaskRepository;
 use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\Listeners\EvaluateRecordedTouch;
@@ -58,6 +59,7 @@ final class ScriptsServiceProvider extends ModuleServiceProvider
         $this->app->bind(TaskRepository::class, EloquentTaskRepository::class);
         // Other modules schedule/close their tasks through the contract (TimeOff handover).
         $this->app->bind(TaskScheduler::class, TaskService::class);
+        $this->app->bind(TaskReader::class, TaskService::class);
         // The always-available engine; EvaluationService adds the AI one when AI is available (Ai module).
         $this->app->bind(ScriptEvaluator::class, RulesScriptEvaluator::class);
         // Evaluation summaries on Recruiting timeline items.

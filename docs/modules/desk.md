@@ -89,6 +89,7 @@
 
 ### Зависимости через контракты (2026-10-08)
 - `DeskService` спрашивает «это HR?» и «чья карточка?» через контракт People `PeopleAccess` (не через класс `PeopleScope`). Тест — `tests/Unit/Desk/DeskPeopleAccessTest.php`.
+- `DeskSlaJob` ставит задачи эскалации через контракт Scripts `TaskScheduler`.
 
 ## Как проверить
 - `php artisan test --filter=Desk` — матрица доступа (сотрудник/руководитель/коллега/HR), скрытие внутренних заметок,
