@@ -52,7 +52,7 @@ $rows = [];
 for ($i = 0; $i < 1100; $i++) {
     $row = $cbase;
     $row['full_name'] = sprintf('Кандидат-масовий %04d [ТЕСТ]', $i);
-    foreach (['email', 'phone', 'telegram', 'linkedin_url', 'source_url', 'profile_url'] as $col) {
+    foreach (['email', 'phone', 'telegram', 'telegram_username', 'linkedin_url', 'source_url', 'profile_url'] as $col) {
         if (array_key_exists($col, $row)) {
             $row[$col] = $col === 'email' && $i % 3 !== 0 ? sprintf('bulk-cand-%04d@sinhrm.test', $i) : null;
         }

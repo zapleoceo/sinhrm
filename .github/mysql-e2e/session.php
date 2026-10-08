@@ -80,6 +80,10 @@ $cookie = function (User $user): array {
     $store = app('session.store');
     $store->flush();
     $store->setId(null);
+    // DatabaseSessionHandler remembers that the PREVIOUS id existed and would UPDATE (0 rows) instead of INSERT.
+    if (method_exists($store->getHandler(), 'setExists')) {
+        $store->getHandler()->setExists(false);
+    }
     $store->start();
     $store->put(Auth::guard('web')->getName(), $user->getAuthIdentifier());
     $store->put(CredentialSession::VERSION_KEY, $user->credential_version);
