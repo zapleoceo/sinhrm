@@ -132,6 +132,10 @@ Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::i
 Сравнение: предыдущая волна того же опроса (не lifecycle, уже начатая) или `?with=`; для числовых вопросов
 «заголовочное» число (`WaveResults::headline`: среднее шкалы или eNPS), по всем и по каждому отделу/филиалу
 (`?segment=department|branch`), `delta = current − previous`.
+Арифметика сравнения вынесена из `ResponseService` в чистый `Support/WaveComparison` (SRP, 2026-10-08):
+`groupBy()` — ответы по сегменту (без сегмента — только в итоге), `row()` — строка сравнения (ниже минимума группы —
+`null`, небезопасная строка — без `previous`/`delta`, `hidden_reason = anonymity`). Что безопасно показывать, решает
+по-прежнему `ResponseService::compare` (`SafeSegments`, `SafeComparison`, `WaveMembership`); тест — `WaveComparisonTest`.
 **Защита от вычитания между волнами** (`Support/SafeComparison::allowed(now, then, min)`): число ответов группы
 в двух волнах должно совпадать или отличаться не меньше чем на `min = max(min_group_size обеих волн)`. Проверяется
 для строки «Все» (итоги волн), для каждого отдела/филиала (по сырым числам ответов, до `SafeSegments`) и для его
