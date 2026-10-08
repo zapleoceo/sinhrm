@@ -1,0 +1,73 @@
+# ADR 0010 — Целевая БД MySQL 8.4, переходный период с двойной поддержкой PostgreSQL
+
+**Статус:** принято владельцем (2026-10-08). Этап 1 — PR «feat/mysql-portability». Задачи — PROD-45…PROD-50 в
+[production-backlog.md](../product/production-backlog.md).
+
+**Контекст.** SinHRM написан под PostgreSQL (прод — Vercel + Neon). DevOps IT STEP разворачивают приложения только на
+MySQL; без этого перенос на инфраструктуру IT STEP ([itstep-app-handoff.md](../guides/itstep-app-handoff.md)) невозможен.
+Прод нельзя остановить на время переписывания: до переезда он остаётся на Neon.
+
+**Решение.**
+1. Целевая СУБД — **MySQL 8.4 LTS**, InnoDB, кодировка `utf8mb4`, collation `utf8mb4_0900_ai_ci`, строгий `sql_mode`
+   (Laravel `strict`: `ONLY_FULL_GROUP_BY, STRICT_TRANS_TABLES, NO_ZERO_IN_DATE, NO_ZERO_DATE, ERROR_FOR_DIVISION_BY_ZERO,
+   NO_ENGINE_SUBSTITUTION`), сессия в UTC (`timezone = +00:00`, как `config/app.php`). Всё зафиксировано в соединении
+   `mysql` в `backend/config/database.php`; переменные — `DB_CONNECTION=mysql` и `DB_URL=mysql://…` (или `DB_HOST/DB_PORT/…`).
+2. **Двойная поддержка на переходный период.** Один и тот же код работает на PostgreSQL и MySQL. CI: обязательный
+   job `tests` (PostgreSQL 17) не меняется; новый job `tests-mysql` (MySQL 8.4, полный phpunit) — **не обязательный и не
+   входит в агрегатор `backend`**, пока не будет стабильно зелёным. Neon-логика (`NeonConnectionConfig`) включается только
+   при `DB_CONNECTION=pgsql`.
+3. После переезда (данные перенесены, откат отрепетирован) поддержка PostgreSQL убирается **отдельной задачей** (PROD-49),
+   `tests-mysql` становится обязательным.
+
+## Правила переносимого SQL (для нового кода — обязательны)
+
+Запрещено в коде приложения (ревью — finding): `ILIKE`, `NULLS FIRST/LAST`, операторы `->>`, `->`, `@>`, `?` по JSON в
+сыром SQL, `::type`, `ON CONFLICT`, `RETURNING`, `DISTINCT ON`, `FILTER (WHERE …)`, `CAST(… AS VARCHAR|TEXT|INTEGER)`,
+`date_trunc`, `to_char`, `string_agg`, `generate_series`, частичные и выражные индексы, `CREATE INDEX IF NOT EXISTS`.
+
+Вместо них:
+
+| Нужно | Переносимый способ |
+|---|---|
+| NULL в конце/начале | `Core\Support\Database\Sql::orderByNullsLast/First($q, $expr, $dir)` |
+| регистронезависимое «содержит» | `Sql::whereContainsCi($q, $expr, $needle)` (`lower(..) like ? escape '!'`, `Like::PORTABLE`) |
+| текст по JSON-ключу в select/order | `Sql::jsonText($driver, $column, $key)`; в `where` — Laravel `'col->key'`, `whereJsonContains`, `whereJsonLength` |
+| приведение к строке | `Sql::castText($driver, $expr)` |
+| апсерт / вставка без дублей / id новой строки | `upsert()`, `insertOrIgnore()`, `insertGetId()` Laravel |
+| блокировка строки | `lockForUpdate()` внутри `DB::transaction` |
+
+Ветки `DB::getDriverName()` допускаются только в `Sql` и в миграциях; в модулях — нет.
+
+## Отличия MySQL, которые учитываем
+
+- **Collation `utf8mb4_0900_ai_ci` нечувствительна к регистру И к диакритике.** Последствия: уникальный индекс считает
+  `Anna@x.com` и `anna@x.com` одним значением (для email это желаемо — приложение и так сравнивает email в нижнем регистре);
+  но также `ї = і`, `ё = е`, `é = e`, и `WHERE code = 'ABC'` найдёт `abc`. Как обходим: непрозрачные идентификаторы
+  (Google ID, Gmail ID, spreadsheet ID, внешние ID касаний, URL профилей) хранятся с `utf8mb4_bin` (ветка в миграции);
+  коды/ключи справочников — латиница в нижнем регистре, нормализуются в сервисе до записи; новые уникальные ключи по
+  человеческим строкам (ФИО, названия) не вводим. Перед импортом данных Neon — preflight на коллизии новых уникальных
+  ключей (PROD-47).
+- **DDL не транзакционный.** Упавшая миграция оставляет таблицу частично созданной. Новые миграции — одна таблица/один
+  индекс на миграцию, `Schema::hasTable/hasColumn/hasIndex` перед созданием, корректный `down()`.
+- **JSON.** `$table->jsonb()` Laravel создаёт `json` на MySQL; MySQL нормализует JSON (порядок ключей, пробелы, дубли
+  ключей) — сравнивать как массивы, не как строки. У `JSON/TEXT/BLOB` нет литерального `DEFAULT` — значение по умолчанию
+  ставит модель (`$attributes`), миграция на MySQL default не задаёт.
+- **Длина индексов.** `utf8mb4` = 4 байта/символ, лимит ключа InnoDB 3072 байта: `unique` на `varchar(255)` допустим,
+  на `TEXT` — только с префиксом или через отдельный `varchar`/хеш-колонку.
+- **`ONLY_FULL_GROUP_BY`.** Каждый неагрегированный столбец `SELECT/ORDER BY` — в `GROUP BY`.
+- **Строки.** Сравнения и `LIKE` по умолчанию регистронезависимы; `LIKE` с пользовательским вводом — только через `Like`
+  (`escape '!'` или обратный слеш по умолчанию — одинаково на обоих драйверах).
+- **Типы.** `boolean` = `tinyint(1)` (каст `boolean` в модели обязателен); `foreignId` = `bigint unsigned` — внешние ключи
+  того же типа; `DECIMAL` округляет при записи, PostgreSQL `numeric` хранит как есть — суммы округлять в сервисе;
+  `timestamp` MySQL ограничен 2038 годом — даты за горизонтом хранить в `dateTime`/`date`.
+- **Бинарные данные.** `documents_files.content` — base64 в `longText` (до 2 МиБ), на обоих драйверах одинаково; `bytea`
+  не используем, для будущих бинарных колонок — `binary()`/`longBlob` через миграцию.
+- **Часовой пояс.** Приложение и сессия БД — UTC; пользовательский пояс (`APP_USER_TIMEZONE`) — только на выводе.
+
+**Последствия.** Нужна дисциплина ревью (запрет pg-only синтаксиса), второй CI-прогон (~+3 мин, не блокирует merge).
+Индекс по `touchpoints (channel, meta->>'thread')` есть только на PostgreSQL — на MySQL это задача производительности
+(PROD-50). Перенос данных Neon → MySQL и backup/restore (`mysqldump`) — отдельные этапы (PROD-47, PROD-48).
+
+**Альтернативы.** Остаться на PostgreSQL (DevOps IT STEP не поддерживает); разовый переход без двойной поддержки
+(остановка прода на время переписывания и отладки); ORM-only без сырого SQL (отчёты и сортировки по подзапросам требуют
+SQL — его закрывает `Sql`).

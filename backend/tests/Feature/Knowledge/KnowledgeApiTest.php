@@ -119,4 +119,16 @@ final class KnowledgeApiTest extends TestCase
         // A plain query still matches as a substring (case-insensitive).
         $this->assertEqualsCanonicalizing(['Bonus 50% rule', 'Bonus 500 rule'], $search('bonus'));
     }
+
+    /** Sql::whereContainsCi replaced ILIKE: Cyrillic case folding must match on PostgreSQL and MySQL alike. */
+    public function test_search_folds_cyrillic_case_on_every_driver(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $reader = $this->login(UserRole::Viewer);
+        $this->actingAs($admin)->postJson('/api/knowledge/articles', ['title' => 'Відпустка без збереження', 'body_md' => 'Заява ПІСЛЯ погодження', 'status' => 'published'])->assertCreated();
+
+        $search = fn (string $q): array => array_column((array) $this->actingAs($reader)->getJson('/api/knowledge/articles?q='.urlencode($q))->assertOk()->json('data'), 'title');
+        $this->assertSame(['Відпустка без збереження'], $search('ВІДПУСТКА'));
+        $this->assertSame(['Відпустка без збереження'], $search('після'));
+    }
 }

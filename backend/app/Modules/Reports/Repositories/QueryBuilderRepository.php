@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Reports\Repositories;
 
-use App\Modules\Core\Support\Database\Like;
+use App\Modules\Core\Support\Database\Sql;
 use App\Modules\Reports\Contracts\BuilderRepository;
 use App\Modules\Reports\Contracts\Dataset;
 use App\Modules\Reports\DTO\BuilderSpec;
@@ -110,9 +110,7 @@ final class QueryBuilderRepository implements BuilderRepository
             return;
         }
         if ($op === 'contains') {
-            $pattern = Like::contains(mb_strtolower((string) $value), Like::PORTABLE);
-            $castType = DB::getDriverName() === 'mysql' ? 'char(255)' : 'varchar(255)';
-            $query->whereRaw("lower(cast({$expr} as {$castType})) like ? escape '!'", [$pattern]);
+            Sql::whereContainsCi($query, Sql::castText($query->getConnection()->getDriverName(), $expr), (string) $value);
 
             return;
         }

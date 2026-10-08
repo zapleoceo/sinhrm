@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Directory\Repositories;
 
 use App\Modules\Core\Support\Database\Like;
+use App\Modules\Core\Support\Database\Sql;
 use App\Modules\Directory\Contracts\DictionaryRepository;
 use App\Modules\Directory\DTO\DictionaryFilter;
 use App\Modules\Directory\Enums\DictionarySort;
@@ -84,8 +85,8 @@ final class EloquentDictionaryRepository implements DictionaryRepository
             DictionarySort::Status => 'status',
             DictionarySort::City => '(select cities.name from cities where cities.id = branches.city_id)',
         };
-        $query->orderByRaw('case when '.$column.' is null then 1 else 0 end')
-            ->orderByRaw($column.' '.($descending ? 'desc' : 'asc'))->orderBy('name')->orderBy('id');
+        Sql::orderByNullsLast($query, $column, $descending ? 'desc' : 'asc');
+        $query->orderBy('name')->orderBy('id');
     }
 
     private static function withoutCity(DictionarySort $sort): DictionarySort

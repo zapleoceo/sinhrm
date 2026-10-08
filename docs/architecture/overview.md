@@ -21,6 +21,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 |---|---|
 | Один домен для фронта и API (rewrite) | `vercel.app` — публичный суффикс, cookie между двумя `*.vercel.app` не работают |
 | Сессии, кэш, очередь — в Postgres | у serverless нет постоянного диска и процессов |
+| Целевая БД — MySQL 8.4, переходный период: код работает на PostgreSQL и MySQL | DevOps IT STEP поддерживают только MySQL; прод остаётся на Neon до переезда; расхождения SQL — только в `Core\Support\Database\Sql` ([ADR 0010](../adr/0010-mysql-dual-support.md)) |
 | Фоновые задачи через cron GitHub Actions | у vercel-php нет воркеров; Vercel Hobby cron — 1 раз в сутки |
 | Деплой из GitHub Actions (Vercel CLI) | деплой только после зелёных тестов; аккаунт Vercel не привязан к GitHub |
 

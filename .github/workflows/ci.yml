@@ -74,8 +74,9 @@ jobs:
       - name: Tests + coverage (min 70%)
         run: php artisan test --coverage --min=70
 
-  # Test-only compatibility target. The production MySQL version must be verified before cutover.
-  mysql-tests:
+  # MySQL 8.4 (ADR 0010, dual support). NOT required and NOT in the `backend` aggregator until it is stable;
+  # the PostgreSQL `tests` job above stays the gate for production (Neon).
+  tests-mysql:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: backend } }
     services:
@@ -140,17 +141,16 @@ jobs:
   # always(): must report even when a part failed/was cancelled, so a PR never waits on a missing check.
   backend:
     if: always()
-    needs: [lint, tests, mysql-tests, api-docs]
+    needs: [lint, tests, api-docs]
     runs-on: ubuntu-latest
     steps:
       - env:
           LINT: ${{ needs.lint.result }}
           TESTS: ${{ needs.tests.result }}
-          MYSQL_TESTS: ${{ needs['mysql-tests'].result }}
           API_DOCS: ${{ needs['api-docs'].result }}
         run: |
-          echo "lint=$LINT tests=$TESTS mysql-tests=$MYSQL_TESTS api-docs=$API_DOCS"
-          [ "$LINT" = success ] && [ "$TESTS" = success ] && [ "$MYSQL_TESTS" = success ] && [ "$API_DOCS" = success ]
+          echo "lint=$LINT tests=$TESTS api-docs=$API_DOCS"
+          [ "$LINT" = success ] && [ "$TESTS" = success ] && [ "$API_DOCS" = success ]
 
   frontend:
     runs-on: ubuntu-latest

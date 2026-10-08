@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Knowledge\Repositories;
 
 use App\Modules\Core\Support\Database\Like;
+use App\Modules\Core\Support\Database\Sql;
 use App\Modules\Knowledge\Contracts\KnowledgeRepository;
 use App\Modules\Knowledge\Contracts\PublishedArticles;
 use App\Modules\Knowledge\Enums\ArticleStatus;
@@ -42,12 +43,11 @@ final class EloquentKnowledgeRepository implements KnowledgeRepository, Publishe
             'votes as not_helpful_count' => static fn (Builder $v) => $v->where('helpful', false),
         ]);
         if ($q !== null && $q !== '') {
-            $operator = (new KbArticle)->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-            // "!" escapes the wildcards: ESCAPE works the same on Postgres and SQLite (SQLite has no default escape).
-            $pattern = Like::contains($q, Like::PORTABLE);
-            $query->where(static fn (Builder $w) => $w
-                ->whereRaw("title {$operator} ? ESCAPE '!'", [$pattern])
-                ->orWhereRaw("body_md {$operator} ? ESCAPE '!'", [$pattern]));
+            // lower(..) like — the portable ILIKE (PostgreSQL, MySQL, SQLite); wildcards in $q stay literal.
+            $query->where(static function (Builder $w) use ($q): void {
+                Sql::whereContainsCi($w, 'title', $q);
+                Sql::whereContainsCi($w, 'body_md', $q, 'or');
+            });
         }
 
         return $query
