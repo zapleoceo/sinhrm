@@ -5,7 +5,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -34,6 +33,7 @@ import { ConfirmDialog, ConfirmDialogData } from '../../workflows/confirm.dialog
 import { PeopleService, peopleErrorKey } from '../people.service';
 import { PrivacyActions } from '../../privacy/privacy-actions';
 import { wideDialog } from '../../../core/ui/dialog';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Employee profile (/people/:id) and "My profile" (/me). Tabs follow the API's access flags: Overview for everyone,
@@ -294,7 +294,6 @@ import { wideDialog } from '../../../core/ui/dialog';
     .changes li[data-status='rejected'] .status { --pill-text: var(--app-bad-text); --pill-bg: var(--app-bad-bg); --pill-line: transparent; }
     .changes li[data-status='rejected'] .status::before { border-radius: 1px; background: currentColor; }
     .main { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
-    .small { font-size: 0.8rem; }
     @media (max-width: 600px) {
       .avatar { width: 3.25rem; height: 3.25rem; font-size: 1.1rem; }
       .facts { grid-template-columns: minmax(0, 1fr); }
@@ -313,7 +312,7 @@ export class ProfilePage {
   protected readonly requests = inject(LeaveRequestsStore);
   private readonly dialog = inject(MatDialog);
   private readonly people = inject(PeopleService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   protected readonly fields = CHANGEABLE_FIELDS;
   protected readonly label = fieldLabelKey;
@@ -443,6 +442,6 @@ export class ProfilePage {
   }
 
   private toast(key: string, params?: Record<string, string>): void {
-    this.snack.open(this.i18n.translate(key, params), undefined, { duration: 4000 });
+    this.notify.show(key, { params });
   }
 }

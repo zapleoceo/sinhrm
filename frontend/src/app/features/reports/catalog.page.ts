@@ -78,7 +78,6 @@ import { NotifyService } from '../../core/ui/notify.service';
     }
     li.muted::after { border-color: var(--app-muted); border-style: dashed; border-width: 2px; }
     li a { flex: 1; padding: 0.35rem 0; font-weight: 600; }
-    .small { font-size: 0.8rem; }
     .saved .small { font-family: var(--app-font-mono); }
     @media (max-width: 600px) {
       li { min-height: 2.75rem; } /* 44px touch targets for the report links */

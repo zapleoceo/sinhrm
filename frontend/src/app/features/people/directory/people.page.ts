@@ -3,7 +3,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,7 +11,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { saveBlob } from '../../../core/http/api-error';
 import { EmployeeBulkData, EmployeeBulkDialog } from './employee-bulk.dialog';
 import { EmployeeBulkResult } from '../people.model';
@@ -30,9 +29,11 @@ import { wideDialog } from '../../../core/ui/dialog';
 import { ActiveFilter, ActiveFilters } from '../../../core/ui/table/active-filters';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
-import { ColumnFilter, FilterValue, TableSort, filterToParam, sortToParams } from '../../../core/ui/table/table-state';
+import { ColumnFilter, FilterValue, TableSort, idToFilter } from '../../../core/ui/table/table-state';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { peopleQueryFromParams } from './people.query';
+import { withMember } from '../../../core/ui/with-member';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 
@@ -291,7 +292,6 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
     .card .avatar { margin-bottom: 0.35rem; }
     .card strong { font: var(--mat-sys-title-medium); }
     .card:hover, .card:focus-visible { border-color: var(--mat-sys-primary); transform: translateY(-1px); }
-    .small { font-size: 0.8rem; }
     .dict { display: contents; }
     @media (min-width: 901px) { .dict.in-table, .active.in-table { display: none; } }
     @media (max-width: 900px) { .wide { display: none; } }
@@ -311,6 +311,8 @@ export class PeoplePage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly url = inject(TableUrlState);
+  /** Select value of an optional id of the query (none → «all»). */
+  protected readonly idValue = idToFilter;
 
   protected readonly search$ = new Subject<string>();
   protected readonly statuses = EMPLOYEE_STATUSES;
@@ -318,8 +320,7 @@ export class PeoplePage implements OnInit {
   protected readonly departments = signal<DictionaryItem[]>([]);
   protected readonly positions = signal<DictionaryItem[]>([]);
   private readonly people = inject(PeopleService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly selected = signal(new Set<number>());
   protected readonly canManage = computed(() => canManagePeople(this.auth.user()?.roles ?? []));
 
@@ -357,11 +358,11 @@ export class PeoplePage implements OnInit {
   }
 
   protected onPage(e: PageEvent): void {
-    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+    this.url.setPage(e);
   }
 
   protected onSort(sort: TableSort | null): void {
-    this.url.update(sortToParams(sort));
+    this.url.setSort(sort);
   }
 
   /** Top selects: a value or «all» (undefined). */
@@ -371,7 +372,7 @@ export class PeoplePage implements OnInit {
 
   /** Header filters: text or the chosen id; cleared → removed from the URL. */
   protected setFilter(name: 'name' | 'contact' | 'manager' | 'branch_id' | 'department_id' | 'position_id', value: FilterValue): void {
-    this.url.update({ [name]: filterToParam(value) });
+    this.url.setFilter(name, value);
   }
 
   protected clearTextFilter(key: string): void {
@@ -383,14 +384,8 @@ export class PeoplePage implements OnInit {
     this.url.update({ name: null, contact: null, manager: null });
   }
 
-  protected idValue(id: number | undefined): string | null {
-    return id ? String(id) : null;
-  }
-
   protected toggle(id: number): void {
-    const next = new Set(this.selected());
-    if (!next.delete(id)) next.add(id);
-    this.selected.set(next);
+    this.selected.update((s) => withMember(s, id, !s.has(id)));
   }
 
   protected clear(): void {
@@ -410,7 +405,7 @@ export class PeoplePage implements OnInit {
       .subscribe((results: EmployeeBulkResult[] | undefined) => {
         if (!results) return;
         const ok = results.filter((r) => r.ok).length;
-        this.snack.open(this.i18n.translate('bulk.done', { ok, total: results.length }), undefined, { duration: 5000 });
+        this.notify.show('bulk.done', { params: { ok, total: results.length }, duration: 5000 });
         this.clear();
         this.store.load();
       });

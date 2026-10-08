@@ -29,6 +29,21 @@ async function render(waves: MyWave[]): Promise<HTMLElement> {
 const wave = (id: number, responded: boolean): MyWave => ({ id, title: `Опитування ${id}`, type: 'engagement', anonymous: true, ends_at: '2026-10-20', responded });
 
 describe('MySurveysPage', () => {
+  it('a failed load stops the progress bar and shows the empty state', async () => {
+    TestBed.configureTestingModule({
+      imports: [MySurveysPage, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    });
+    const fixture = TestBed.createComponent(MySurveysPage);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('mat-progress-bar')).not.toBeNull();
+    TestBed.inject(HttpTestingController).expectOne('/api/pulse/my/waves').flush({}, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect(el.querySelector('mat-progress-bar')).toBeNull();
+    expect(el.querySelector('ul.list > li.app-empty')?.textContent?.trim()).toBe('pulse.my.empty');
+  });
+
   it('shows the shared empty state (dashed branch) when nothing is open', async () => {
     const el = await render([]);
     const empty = el.querySelector('ul.list > li.app-empty');

@@ -13,6 +13,7 @@
   версий с «Підставити в редактор». Черновики видят только админы.
 
 ## Как устроено
+- Фронт (2026-10-08): поиск статей (`knowledge.page.ts`) держит `PagedList` (`core/ui/table/paged-list.ts`): новый запрос отменяет предыдущий, ошибка по-прежнему очищает список.
 Бэкенд — `backend/app/Modules/Knowledge`, маршруты `/api/knowledge/*`, `auth:sanctum` + `EnsureUserIsActive`;
 запись — gate `knowledge-manage` = `PeopleScope::isAdmin`.
 

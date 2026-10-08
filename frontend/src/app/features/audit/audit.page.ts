@@ -7,7 +7,7 @@ import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ColumnHeader } from '../../core/ui/table/column-header';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import {
   ColumnFilter,
@@ -16,9 +16,8 @@ import {
   RangeValue,
   TableSort,
   dateRangeToParams,
-  filterToParam,
+  idToFilter,
   sameQuery,
-  sortToParams,
 } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { AuditRow, auditActionKey, auditEntityKey, toAuditRow } from './audit.format';
@@ -59,15 +58,18 @@ function codeOption(value: string, key: string | null): FilterOption {
 export class AuditPage implements OnInit {
   private readonly api = inject(AuditService);
   private readonly url = inject(TableUrlState);
-  private readonly request = new LatestRequest();
+  /** Select value of an optional id of the query (none → «all»). */
+  protected readonly idValue = idToFilter;
+  /** A newer query cancels the request still in flight: an old answer never lands over the new filters. */
+  private readonly list = new PagedList<AuditRow>();
   private loaded = false;
 
   protected readonly columns = ['time', 'user', 'action', 'entity', 'changes'];
   protected readonly query = signal<AuditQuery>({ page: 1, perPage: AUDIT_PAGE_SIZE });
-  protected readonly rows = signal<AuditRow[]>([]);
-  protected readonly total = signal(0);
-  protected readonly loading = signal(false);
-  protected readonly failed = signal(false);
+  protected readonly rows = this.list.items;
+  protected readonly total = this.list.total;
+  protected readonly loading = this.list.loading;
+  protected readonly failed = this.list.failed;
   private readonly options = signal<AuditOptions | null>(null);
 
   protected readonly dateFilter: ColumnFilter = { type: 'range', input: 'date' };
@@ -103,41 +105,24 @@ export class AuditPage implements OnInit {
 
   protected load(): void {
     this.loaded = true;
-    this.loading.set(true);
-    this.failed.set(false);
-    // A newer query cancels the request still in flight: an old answer never lands over the new filters.
-    this.request.run(this.api.list(this.query()), {
-      next: (page) => {
-        this.rows.set(page.data.map(toAuditRow));
-        this.total.set(page.meta.total);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.list(this.query()), { map: toAuditRow });
   }
 
   protected onPage(e: PageEvent): void {
-    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+    this.url.setPage(e);
   }
 
   protected onSort(sort: TableSort | null): void {
-    this.url.update(sortToParams(sort));
+    this.url.setSort(sort);
   }
 
   /** Header filters: the chosen value; cleared → removed from the URL (and the page goes back to 1). */
   protected setFilter(name: 'user_id' | 'action' | 'entity_type', value: FilterValue): void {
-    this.url.update({ [name]: filterToParam(value) });
+    this.url.setFilter(name, value);
   }
 
   protected setRange(value: FilterValue): void {
     this.url.update(dateRangeToParams(value, 'from', 'to'));
-  }
-
-  protected idValue(id: number | undefined): string | null {
-    return id ? String(id) : null;
   }
 
   /** New query from the URL: loads unless it is the one already shown. */

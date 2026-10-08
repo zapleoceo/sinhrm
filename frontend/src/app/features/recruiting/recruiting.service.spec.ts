@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { RecruitingService, duplicateOf, recruitingErrorKey, toParams } from './recruiting.service';
-import { canWriteRecruiting } from './recruiting.access';
+import { RecruitingService, duplicateOf, recruitingErrorKey } from './recruiting.service';
+import { toParams } from '../../core/api/http-params';
+import { canWriteRecruiting, isRecruitingAdmin } from './recruiting.access';
 
 const EMPTY = { data: [], meta: { current_page: 1, per_page: 50, total: 0, last_page: 1 } };
 
@@ -152,5 +153,14 @@ describe('recruiting error helpers', () => {
     expect(canWriteRecruiting(['viewer'])).toBe(false);
     expect(canWriteRecruiting(['recruiter'])).toBe(true);
     expect(canWriteRecruiting([])).toBe(false);
+    expect(canWriteRecruiting(['admin'])).toBe(true);
+    expect(canWriteRecruiting(['superadmin'])).toBe(true);
+    expect(canWriteRecruiting(['hr_manager', 'employee'])).toBe(false);
+  });
+
+  it('only superadmin and admin manage recruiting directories', () => {
+    expect(isRecruitingAdmin(['superadmin'])).toBe(true);
+    expect(isRecruitingAdmin(['admin'])).toBe(true);
+    expect(isRecruitingAdmin(['recruiter', 'hr_manager'])).toBe(false);
   });
 });

@@ -6,8 +6,8 @@ import { EMPTY, Observable, Subscription, catchError, distinctUntilChanged, from
 import { NavGroupId } from './nav-groups';
 
 /** Sidebar counters from GET /api/nav/badges; a missing key means the user has no such item. */
-export type NavBadges = Partial<Record<NavBadgeKey, number>>;
-export type NavBadgeKey =
+type NavBadges = Partial<Record<NavBadgeKey, number>>;
+type NavBadgeKey =
   | 'tasks'
   | 'inbox'
   | 'hiring_inbox'
@@ -24,7 +24,7 @@ export type NavBadgeKey =
 export const NAV_BADGES_INTERVAL_MS = 60_000;
 
 /** Which counters a collapsed group header adds up. */
-export const NAV_GROUP_BADGES: Record<NavGroupId, readonly NavBadgeKey[]> = {
+const NAV_GROUP_BADGES: Record<NavGroupId, readonly NavBadgeKey[]> = {
   recruiting: ['inbox', 'hiring_inbox'],
   people: ['timeoff_approvals', 'time_approvals', 'my_documents'],
   perform: ['surveys'],

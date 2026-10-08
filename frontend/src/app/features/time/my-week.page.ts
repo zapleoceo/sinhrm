@@ -4,14 +4,15 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { GridRow, TIMESHEET_STATUS_TONE, TimeWeek, addDays, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
+import { GridRow, TIMESHEET_STATUS_TONE, TimeWeek, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
 import { toIsoDate } from '../../core/date/iso-date';
+import { addIsoDays } from '../../core/date/iso-day';
 import { WeekPicker } from './week-picker';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * The week grid (/time?week=&employee_id=): lines (project / category / note) × Monday…Sunday hours, leave and
@@ -158,7 +159,6 @@ import { WeekPicker } from './week-picker';
     .short { color: var(--app-bad-text); }
     .summary { display: flex; gap: 1.25rem; flex-wrap: wrap; margin: 0.75rem 0; }
     .actions { margin-top: 0.5rem; }
-    .spacer { flex: 1; }
     .note { padding: 0.5rem 0.75rem; border-left: 4px solid var(--app-border); border-radius: var(--app-radius-sm); background: var(--app-card); }
     .note[data-status='rejected'] { border-color: var(--app-danger); }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -175,14 +175,14 @@ export class MyWeekPage {
   });
   private readonly api = inject(TimeService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   protected readonly statusTone = TIMESHEET_STATUS_TONE;
   protected readonly data = signal<TimeWeek | null>(null);
   protected readonly rows = signal<GridRow[]>([]);
   protected readonly busy = signal(false);
   protected readonly weekStart = computed(() => mondayOf(this.week() ?? toIsoDate(new Date())));
-  protected readonly weekEnd = computed(() => addDays(this.weekStart(), 6));
+  protected readonly weekEnd = computed(() => addIsoDays(this.weekStart(), 6));
   protected readonly editable = computed(() => this.data()?.can.edit ?? false);
   protected readonly totalsByDay = computed(() => dayTotals(this.rows()));
   protected readonly totals = computed(() => gridTotals(this.rows(), this.data()?.days ?? []));
@@ -282,6 +282,6 @@ export class MyWeekPage {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

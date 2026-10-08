@@ -1,38 +1,25 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { RunQuery, RunStep, StepCommand, WorkflowRun, applyOutcome } from '../workflows.model';
 import { WorkflowsService, workflowsErrorKey } from '../workflows.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
+import { withMember } from '../../../core/ui/with-member';
 
 /** Runs list of the board or of one employee, with step commands and cancel applied in place. */
 @Injectable()
 export class RunsStore {
   private readonly api = inject(WorkflowsService);
-  private seq = 0;
+  /** A newer query cancels the request still in flight. */
+  private readonly list = new PagedList<WorkflowRun>();
 
-  readonly items = signal<WorkflowRun[]>([]);
-  readonly loading = signal(false);
-  readonly failed = signal(false);
+  readonly items = this.list.items;
+  readonly loading = this.list.loading;
+  readonly failed = this.list.failed;
   readonly pending = signal<ReadonlySet<number>>(new Set());
   readonly query = signal<RunQuery>({});
 
   load(query: RunQuery = this.query()): void {
-    const seq = ++this.seq;
     this.query.set(query);
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.runs(query).subscribe({
-      next: (list) => {
-        if (seq === this.seq) {
-          this.items.set(list);
-          this.loading.set(false);
-        }
-      },
-      error: () => {
-        if (seq === this.seq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
-      },
-    });
+    this.list.load(this.api.runs(query));
   }
 
   command(run: WorkflowRun, step: RunStep, command: StepCommand, onDone: (key: string) => void, reason?: string): void {
@@ -83,14 +70,6 @@ export class RunsStore {
   }
 
   private mark(id: number, on: boolean): void {
-    this.pending.update((s) => {
-      const next = new Set(s);
-      if (on) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.pending.update((s) => withMember(s, id, on));
   }
 }

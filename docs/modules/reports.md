@@ -18,6 +18,7 @@
 группы меньше 5 человек скрыты — см. ниже.
 
 ## Как устроено
+- Фронт (2026-10-08): запуск отчёта и CSV у страницы отчёта каталога (`report-view.page.ts`) и конструктора (`builder.page.ts`) — общий `ReportRun<R>` (`report-run.ts`): `result`, `loading`, `run(request$)` (новый запуск отменяет предыдущий, ошибка — уведомление `reportsErrorKey`), `download(blob$, имя)`. Раньше обе страницы держали копию. Тест — `report-run.spec.ts`.
 Бэкенд — `backend/app/Modules/Reports`, маршруты `/api/reports/{catalog,builder,saved}` (старые
 `/api/reports/{touches,funnel,sources,reject-reasons,scripts}` остаются в Recruiting/Scripts).
 

@@ -18,6 +18,7 @@ import { CASE_STATUSES, CaseStatus, DeskCase } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
 import { NotifyService } from '../../core/ui/notify.service';
+import { eventValue } from '../../core/ui/event-value';
 
 /** One case (/desk/cases/:id): the thread, replies, files; HR also sees internal notes, sets status, links articles. */
 @Component({
@@ -139,10 +140,11 @@ import { NotifyService } from '../../core/ui/notify.service';
     .reply { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 1.25rem; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .grow { flex: 1; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class CasePage {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   readonly id = input.required({ transform: numberAttribute });
 
   private readonly api = inject(DeskService);
@@ -165,10 +167,6 @@ export class CasePage {
 
   protected me(): number | null {
     return this.auth.user()?.id ?? null;
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLTextAreaElement).value;
   }
 
   protected size(bytes: number): string {

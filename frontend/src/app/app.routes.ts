@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/auth.guards';
-import { HR_STAFF_ROLES } from './core/auth/auth.model';
+import { ADMIN_ROLES, HR_STAFF_ROLES, SUPERADMIN_ROLE } from './core/auth/auth.model';
 
 // `title` is an i18n key (TranslatedTitleStrategy → "SinHRM · <page>").
 export const routes: Routes = [
@@ -92,19 +92,19 @@ export const routes: Routes = [
       {
         path: 'status',
         title: 'titles.status',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/core/status.page').then((m) => m.StatusPage),
       },
       {
         path: 'admin/scripts',
         title: 'titles.scripts',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/scripts/list/scripts.page').then((m) => m.ScriptsPage),
       },
       {
         path: 'admin/scripts/:id',
         title: 'titles.scriptEditor',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/scripts/editor/script-editor.page').then((m) => m.ScriptEditorPage),
       },
       {
@@ -146,13 +146,13 @@ export const routes: Routes = [
       {
         path: 'admin/acquisition-channels',
         title: 'titles.acquisitionChannels',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/recruiting/channels/acquisition-channels.page').then((m) => m.AcquisitionChannelsPage),
       },
       {
         path: 'admin/privacy',
         title: 'titles.privacy',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/privacy/privacy-settings.page').then((m) => m.PrivacySettingsPage),
       },
       {
@@ -189,13 +189,13 @@ export const routes: Routes = [
       {
         path: 'admin/users',
         title: 'titles.users',
-        canActivate: [roleGuard('superadmin')],
+        canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/users/users.page').then((m) => m.UsersPage),
       },
       {
         path: 'admin/audit',
         title: 'titles.audit',
-        canActivate: [roleGuard('superadmin')],
+        canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/audit/audit.page').then((m) => m.AuditPage),
       },
       {
@@ -207,38 +207,38 @@ export const routes: Routes = [
       {
         path: 'admin/directory',
         title: 'titles.directory',
-        canActivate: [roleGuard('superadmin', 'admin')],
+        canActivate: [roleGuard(...ADMIN_ROLES)],
         loadComponent: () => import('./features/directory/directory.page').then((m) => m.DirectoryPage),
       },
       {
         path: 'admin/mail',
         title: 'titles.mail',
-        canActivate: [roleGuard('superadmin')],
+        canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/mail-agent/mail.page').then((m) => m.MailPage),
       },
       {
         path: 'admin/sheets-import',
         title: 'titles.sheetsImport',
-        canActivate: [roleGuard('superadmin')],
+        canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/google-workspace/sheets-import.page').then((m) => m.SheetsImportPage),
       },
       { path: 'module-off', title: 'titles.moduleOff', loadComponent: () => import('./features/core/module-off.page').then((m) => m.ModuleOffPage) },
       {
         path: 'admin/modules',
         title: 'titles.modules',
-        canActivate: [roleGuard('superadmin')],
+        canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/core/modules.page').then((m) => m.ModulesPage),
       },
       {
         path: 'admin/errors',
         title: 'titles.errors',
-        canActivate: [roleGuard('superadmin')],
+        canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/observability/errors.page').then((m) => m.ErrorsPage),
       },
       {
         path: 'admin/integrations',
         title: 'titles.integrations',
-        canActivate: [roleGuard('superadmin')],
+        canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/integrations/integrations.page').then((m) => m.IntegrationsPage),
       },
     ],

@@ -16,6 +16,8 @@ describe('loginErrorKey', () => {
     expect(loginErrorKey('<script>')).toBe('login.errors.unknown');
     expect(loginErrorKey(undefined)).toBeNull();
     expect(loginErrorKey('')).toBeNull();
+    // Codes are matched exactly (the backend enum values), not case-insensitively.
+    expect(loginErrorKey('Blocked')).toBe('login.errors.unknown');
   });
 });
 

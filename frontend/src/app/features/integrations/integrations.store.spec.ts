@@ -66,6 +66,23 @@ describe('IntegrationsStore', () => {
     expect(store.items()[0].status).toBe('demo');
   });
 
+  it('keeps every row with a request in flight pending until its own answer arrives', () => {
+    api.list$ = of({ data: [item('viber', 'messengers'), item('telegram', 'messengers')], ai_policy: { enabled: false } });
+    store.load();
+    const answers = new Map<string, Subject<Integration>>();
+    api.setStatus = ((key: string) => {
+      const answer = new Subject<Integration>();
+      answers.set(key, answer);
+      return answer;
+    }) as unknown as () => Subject<Integration>;
+
+    store.setStatus(store.items()[0], 'demo', () => undefined);
+    store.setStatus(store.items()[1], 'demo', () => undefined);
+    expect([...store.pending()].sort()).toEqual(['telegram', 'viber']);
+    answers.get('viber')!.next(item('viber', 'messengers', 'demo'));
+    expect([...store.pending()]).toEqual(['telegram']);
+  });
+
   it('rolls a status change back and reports the error key', () => {
     api.list$ = of({ data: [item('viber', 'messengers')], ai_policy: { enabled: false } });
     store.load();

@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { TablePage, clickTitle, column, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { CaseStatus, DeskCase, DeskCategory, QueueQuery } from './desk.model';
 import { DeskService } from './desk.service';
@@ -131,5 +131,24 @@ describe('DeskQueuePage: the cases table and the categories table on one page', 
     expect(column(el.querySelector('table.queue')!, 0)).toEqual(['9', '8', '7']);
     expect(column(catsTable(el), 0)).toEqual(['Зарплата', 'Відпустки', 'Довідки']);
     expect(queries).toHaveLength(1);
+  });
+});
+
+describe('DeskQueuePage: only the latest queue request counts', () => {
+  it('a newer server filter cancels the request still in flight; its late answer never lands', async () => {
+    const answers: Subject<DeskCase[]>[] = [];
+    const queue = (): Subject<DeskCase[]> => {
+      const answer = new Subject<DeskCase[]>();
+      answers.push(answer);
+      return answer;
+    };
+    const page = await openTablePage(DeskQueuePage, '/', [{ provide: DeskService, useValue: { queue, categories: () => of([]) } }]);
+    await page.router.navigateByUrl('/?status=waiting');
+    await page.settle();
+    expect(answers.length).toBe(2);
+    expect(answers[0].observed).toBe(false);
+    answers[1].next([CASES[1]]);
+    await page.settle();
+    expect(column(page.el.querySelector('table.queue')!, 2)).toEqual(['Бойко']);
   });
 });

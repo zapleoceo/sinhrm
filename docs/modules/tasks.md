@@ -13,6 +13,7 @@
 Ссылка задачи открывает профиль, вкладку документов или внешнюю форму (в новой вкладке).
 
 ## Как устроено
+- Фронт (2026-10-08): типы фильтров «Мої задачі» (`SourceFilter`, `DueFilter` в `my-tasks.page.ts`) не экспортируются — ими пользуется только `myTasksQuery` этого файла (knip).
 Бэкенд — общая таблица `tasks` и `GET/PATCH /api/tasks` модуля Scripts ([scripts.md](scripts.md), раздел «Общий
 список задач»), параметр `source`. Фронт: `my-tasks.page.ts` использует `TasksStore`/`TasksWidget` из
 `features/scripts/tasks` (правило галочки — `canCompleteTask`: writer рекрутинга или исполнитель). Строки — `tasks.*`,

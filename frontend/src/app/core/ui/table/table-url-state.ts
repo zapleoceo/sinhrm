@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, Signal, computed, inject, signal } from '@angul
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationStart, ParamMap, Params, Router } from '@angular/router';
 import { filter } from 'rxjs';
+import { FilterValue, TableSort, filterToParam, sortToParams } from './table-state';
 
 /** Pause after the last keystroke of a live filter before the URL (and so a server request) follows it. */
 export const LIVE_FILTER_DEBOUNCE_MS = 250;
@@ -99,6 +100,21 @@ export class TableUrlState {
     } else {
       this.flush();
     }
+  }
+
+  /** Paginator event (`mat-paginator` `(page)`) → `page`/`perPage`; filters and sort stay. */
+  setPage(e: { pageIndex: number; pageSize: number }): void {
+    this.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+  }
+
+  /** Header sort → `sort`/`dir` (null = the API order); the page goes back to 1. */
+  setSort(sort: TableSort | null): void {
+    this.update(sortToParams(sort));
+  }
+
+  /** Header filter (text / chosen value) → one param; cleared → removed. The page goes back to 1. */
+  setFilter(name: string, value: FilterValue): void {
+    this.update({ [name]: filterToParam(value) });
   }
 
   /**

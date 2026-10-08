@@ -7,9 +7,10 @@ import { PEOPLE_PAGE_SIZE, peopleQueryFromParams, sameQuery } from './directory/
 import { PeopleStore } from './directory/people.store';
 import { countNodes, expandedToDepth, filterTree, initials } from './org-tree';
 import { canManagePeople } from './people.access';
-import { Employee, OrgNode, Paged, fieldLabelKey } from './people.model';
+import { Employee, OrgNode, fieldLabelKey } from './people.model';
+import { Paged } from '../../core/api/api.model';
 import { PeopleService, diffChanges, peopleErrorKey } from './people.service';
-import { profileTabs } from './profile/profile.store';
+import { ProfileStore, profileTabs } from './profile/profile.store';
 
 const EMPTY = { data: [], meta: { current_page: 1, per_page: 50, total: 0, last_page: 1 } };
 const node = (id: number, name: string, reports: OrgNode[] = [], position: string | null = null): OrgNode => ({
@@ -169,6 +170,22 @@ describe('PeopleStore', () => {
     store.setView('cards');
     expect(store.view()).toBe('cards');
     localStorage.removeItem('sinhrm.people.view'); // do not leak the choice into other specs
+  });
+});
+
+describe('ProfileStore', () => {
+  it('opening another profile cancels the request in flight: the previous person never shows up', () => {
+    const late = new Subject<Employee>();
+    const get = vi.fn((id: number) => (id === 1 ? late : of({ ...employee(), id })));
+    TestBed.configureTestingModule({ providers: [ProfileStore, { provide: PeopleService, useValue: { get, me: get } }] });
+    const store = TestBed.inject(ProfileStore);
+
+    store.load(1);
+    expect(store.loading()).toBe(true);
+    store.load(2);
+    expect(late.observed).toBe(false);
+    expect(store.employee()?.id).toBe(2);
+    expect(store.loading()).toBe(false);
   });
 });
 

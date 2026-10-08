@@ -34,7 +34,9 @@
      особый случай «Відкриті по умолчанию / Усі» — `features/desk/queue.page.ts` (статус только в API).
 2. **Состояние в адресе:** `providers: [TableUrlState]`, функция «адрес → запрос» (как `peopleQueryFromParams`: мусор из
    адреса отбрасывается, а не уходит в API), в `ngOnInit` — `url.watch(parse, q => store.apply(q))`; изменения — только
-   через `url.update({...})` (страница сама вернётся на 1; листание — `{ paging: true }`). Store не грузит повторно тот же
+   через `url.update({...})` (страница сама вернётся на 1; листание — `{ paging: true }`); для серверной таблицы
+   готовые `url.setPage($event)`, `url.setSort(sort)`, `url.setFilter(name, value)`, id из запроса в фильтр выбора —
+   `idToFilter` (`table-state.ts`). Store не грузит повторно тот же
    запрос (`sameQuery`).
 3. **Разметка:**
    ```html
@@ -65,8 +67,12 @@
    чипом `app-active-filters` «Колонка: значение ×», см. `.active` там же).
    **Пустой результат не прячет заголовки:** строка «ничего не найдено» внутри таблицы (`@empty` / `*matNoDataRow`),
    иначе фильтр, который всё отсёк, нечем снять.
-   **Устаревший запрос отменяется**, а не только игнорируется его ответ: `LatestRequest` (`core/ui/table/latest-request.ts`)
-   в сторе или странице. Значения из адреса чистит `table-state.ts`: `textParam` (≤ 100 символов), `oneOfParam`,
+   **Устаревший запрос отменяется**, а не только игнорируется его ответ: список держит `PagedList`
+   (`core/ui/table/paged-list.ts`: `items/total/loading/failed` + `load(request$, { map?, next?, error? })`, внутри —
+   `LatestRequest`), стор отдаёт его сигналы наружу (`readonly items = this.list.items`); образец —
+   `features/people/directory/people.store.ts`. Ручной счётчик `seq` не заводить. Не список (профиль, доска) —
+   `LatestRequest` (`core/ui/table/latest-request.ts`) напрямую. В спеке с `HttpTestingController` отменённый запрос не
+   отвечают (`flush` на нём падает), а проверяют `req.cancelled` — образец `RunsStore` в `workflows.spec.ts`. Значения из адреса чистит `table-state.ts`: `textParam` (≤ 100 символов), `oneOfParam`,
    `dateRangeFromParams` — ссылка с мусором не даёт 422.
    **Подписи вариантов выбора** — ключи перевода с `i18n: true` (для списка кодов — `translatedSelect(values, key)`),
    переводит заголовок; заранее через `TranslocoService` не переводить — способ один.

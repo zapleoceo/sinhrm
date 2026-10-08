@@ -40,6 +40,15 @@ describe('ModulesPage', () => {
     expect(rows[1].querySelector('button[role="switch"]')?.hasAttribute('disabled')).toBe(false);
   });
 
+  it('the superadmin column is always ticked and locked; other roles of a regular module are editable', async () => {
+    const { el } = await setup();
+    const boxes = el.querySelectorAll('tbody tr')[1].querySelectorAll<HTMLInputElement>('td.role input[type="checkbox"]');
+    expect(boxes.length).toBe(ALL.length);
+    expect(boxes[0].checked).toBe(true);
+    expect(boxes[0].disabled).toBe(true);
+    expect(boxes[1].disabled).toBe(false);
+  });
+
   it('asks for confirmation before switching a module off, then saves', async () => {
     const { el, http, detect, reload } = await setup();
     const row = el.querySelectorAll('tbody tr')[1];

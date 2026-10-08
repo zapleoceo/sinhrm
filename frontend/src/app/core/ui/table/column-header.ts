@@ -31,7 +31,7 @@ import { LIVE_FILTER_DEBOUNCE_MS, TableUrlState } from './table-url-state';
 let nextId = 0;
 
 /** A choice list longer than this gets a search field over its options. */
-export const SELECT_SEARCH_MIN = 8;
+const SELECT_SEARCH_MIN = 8;
 
 /**
  * Pause before the dialog's live region speaks a new row count: a screen reader says «Знайдено: N» once the user

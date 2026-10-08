@@ -7,9 +7,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { CYCLE_STATUSES, Competency, REVIEW_TYPES, RatingScale, ReviewCycle, ReviewType, parseIds } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { toIsoDate } from '../../../core/date/iso-date';
@@ -17,9 +16,10 @@ import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } 
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Columns of the cycles list (all on the page). Period filters by its start; progress sorts by the submitted share. */
-export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
+const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
   { key: 'name', value: (c) => c.name, filter: 'text' },
   { key: 'period', value: (c) => c.period_start, filter: 'date' },
   { key: 'status', value: (c) => CYCLE_STATUSES.indexOf(c.status), filter: 'select', filterValue: (c) => c.status },
@@ -197,6 +197,7 @@ export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
     </section>
   `,
   styles: `
+    @use '../../../core/ui/styles/trace';
     .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
     /* The hidden «actions» column title is position: absolute — keep it inside the scrolling panel, or it widens the page on phones. */
     .box:has(> .cycles) { position: relative; }
@@ -208,18 +209,12 @@ export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
     .cycles tbody tr:last-child th { border-bottom: 0; }
     .app-num { font-size: 0.8rem; white-space: nowrap; }
     .mini { display: inline-block; width: 5rem; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; vertical-align: middle; margin-right: 0.35rem; }
-    .mini span {
-      display: block; height: 100%; border-radius: inherit; background: var(--app-success);
-      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    }
-    @keyframes trace { from { transform: scaleX(0); } }
-    @media (prefers-reduced-motion: reduce) { .mini span { animation: none; } }
+    @include trace.fill('.mini span', var(--app-success));
   `,
 })
 export class ReviewAdminPage implements OnInit {
   private readonly api = inject(PerformService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly reviewTypes = REVIEW_TYPES;
   protected readonly scales = signal<RatingScale[]>([]);
   protected readonly competencies = signal<Competency[]>([]);
@@ -318,6 +313,6 @@ export class ReviewAdminPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

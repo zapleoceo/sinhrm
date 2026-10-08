@@ -55,7 +55,6 @@ h2.sub { margin-top: 1rem; }
 h2 { font: var(--mat-sys-title-medium); font-family: var(--app-font-display); margin: 0 0 0.75rem; }
 .warn { color: var(--app-warn-text); font: var(--mat-sys-body-medium); }
 
-.rows { list-style: none; margin: 0; padding: 0; }
 .rows li {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; padding: 0.55rem 0;
   border-bottom: var(--app-border-w) solid var(--app-track);

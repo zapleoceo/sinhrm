@@ -13,7 +13,7 @@ import { salaryRange } from '../../hiring-requests/hiring-requests.model';
 import { PublicCareersService, PublicVacancy } from './careers.service';
 
 /** Public sections of the vacancy page, in display order. */
-export const PUBLIC_SECTIONS = [
+const PUBLIC_SECTIONS = [
   { key: 'requirements_html', label: 'recruiting.form.sections.requirements' },
   { key: 'responsibilities_html', label: 'recruiting.form.sections.responsibilities' },
   { key: 'additional_info_html', label: 'recruiting.form.sections.additional_info' },
@@ -42,7 +42,7 @@ const LANGS: AppLang[] = ['uk', 'ru', 'en'];
     nav button.on { font-weight: 700; text-decoration: underline; }
   `,
 })
-export class CareersHeader {
+class CareersHeader {
   protected readonly lang = inject(LanguageService);
   protected readonly langs = LANGS;
 }

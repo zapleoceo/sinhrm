@@ -25,6 +25,7 @@
 вакансий) и **Касання за 7 днів** по каналам. Кнопка «Оновити» перечитывает данные.
 
 ## Как устроено
+- Фронт (2026-10-08): список строк дашборда (`.rows` в `dashboard.page.scss`) — глобальная утилита `styles.scss`; своё правило осталось только у `.rows li`.
 Бэкенд — `backend/app/Modules/Overview`: `GET /api/dashboard` (`auth:sanctum` + активный пользователь, все роли).
 `Http/Controllers/DashboardController` → `Services/DashboardService` → `Contracts/DashboardRepository`
 (`Repositories/QueryDashboardRepository`, SQL на MySQL 8.4). Модуль только читает данные Recruiting и

@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeRequest, Employee } from '../people.model';
-import { PeopleService, diffChanges, peopleErrorKey } from '../people.service';
+import { PeopleService, diffChanges } from '../people.service';
+import { DialogSave } from './dialog-save';
 
 /**
  * Self-service: propose new personal contacts. Only changed fields are sent; an admin or a manager above approves,
@@ -59,10 +60,10 @@ import { PeopleService, diffChanges, peopleErrorKey } from '../people.service';
 })
 export class ChangeRequestDialog {
   private readonly me = inject<Employee>(MAT_DIALOG_DATA);
-  private readonly ref = inject<MatDialogRef<ChangeRequestDialog, ChangeRequest>>(MatDialogRef);
   private readonly api = inject(PeopleService);
-  protected readonly saving = signal(false);
-  protected readonly error = signal<string | null>(null);
+  private readonly dialog = new DialogSave<ChangeRequest>();
+  protected readonly saving = this.dialog.saving;
+  protected readonly error = this.dialog.error;
   protected readonly form = inject(NonNullableFormBuilder).group({
     phone: [this.me.phone ?? ''],
     personal_email: [this.me.personal_email ?? '', Validators.email],
@@ -85,14 +86,6 @@ export class ChangeRequestDialog {
       this.error.set('people.changes.nothing');
       return;
     }
-    this.saving.set(true);
-    this.error.set(null);
-    this.api.submitChange(changes, comment.trim() || null).subscribe({
-      next: (saved) => this.ref.close(saved),
-      error: (err: unknown) => {
-        this.error.set(peopleErrorKey(err));
-        this.saving.set(false);
-      },
-    });
+    this.dialog.save(this.api.submitChange(changes, comment.trim() || null));
   }
 }

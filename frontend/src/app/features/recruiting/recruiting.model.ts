@@ -403,7 +403,7 @@ export interface MoveApplication {
   reject_reason_id?: number;
 }
 
-export type { PageMeta, Paged } from '../../core/api/api.model';
+export type { Paged } from '../../core/api/api.model';
 
 /** GET /api/vacancies meta: + active vacancies (open AND published) in the user's scope, for the list header. */
 export interface VacancyPageMeta extends PageMeta {

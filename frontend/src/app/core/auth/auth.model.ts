@@ -6,8 +6,20 @@ export const INVITABLE_ROLES: readonly UserRole[] = ['admin', 'hr_manager', 'rec
 /** Mirrors backend UserRole::hrStaff(): they act as HR (People, TimeOff, Desk, Pulse, Workflows, …) and see every branch. */
 export const HR_STAFF_ROLES: readonly UserRole[] = ['superadmin', 'admin', 'hr_manager'];
 
+/** Bootstrap role (SUPERADMIN_EMAIL): every module is open to it, it cannot be invited or restricted. */
+export const SUPERADMIN_ROLE: UserRole = 'superadmin';
+/**
+ * Administration level: superadmin + admin. Mirrors backend gates of that pair (directory-manage, privacy-manage,
+ * scripts-manage, RecruitingScope::canManage) and the admin pages of the SPA (`roleGuard(...ADMIN_ROLES)`).
+ */
+export const ADMIN_ROLES: readonly UserRole[] = [SUPERADMIN_ROLE, 'admin'];
+
 export function isHrStaff(roles: readonly UserRole[]): boolean {
   return roles.some((r) => HR_STAFF_ROLES.includes(r));
+}
+
+export function isAdmin(roles: readonly UserRole[]): boolean {
+  return roles.some((r) => ADMIN_ROLES.includes(r));
 }
 
 /** Mirrors backend App\Modules\Auth\Enums\UserStatus. */

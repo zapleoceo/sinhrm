@@ -21,5 +21,6 @@ describe('unified tasks', () => {
   it('builds the "my tasks" query from the filters', () => {
     expect(myTasksQuery('all', 'all', false)).toEqual({ mine: true });
     expect(myTasksQuery('workflows', 'overdue', true)).toEqual({ mine: true, source: 'workflows', due: 'overdue', done: true });
+    expect(myTasksQuery('all', 'today', false)).toEqual({ mine: true, due: 'today' });
   });
 });

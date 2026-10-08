@@ -66,7 +66,6 @@ import { ChannelIcon } from '../../../core/ui/channel-icon';
       border-radius: var(--app-radius-pill); border: 3px solid var(--app-stage-new);
       font: 600 1.25rem/1 var(--app-font-mono); font-variant-numeric: tabular-nums;
     }
-    .rows { list-style: none; margin: 0; padding: 0; }
     .row {
       display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem 1rem;
       border-bottom: var(--app-border-w) solid var(--app-track); transition: background-color var(--app-fast);

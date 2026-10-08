@@ -6,7 +6,7 @@ import { AcquisitionChannel, ChannelCost, ChannelType, UtmRule } from '../recrui
 import { DataEnvelope } from '../../../core/api/api.model';
 import { unwrapData } from '../../../core/api/unwrap-data';
 
-export const CHANNEL_ERROR_CODES = ['channel_code_taken', 'channel_inactive', 'empty_utm_rule'] as const;
+const CHANNEL_ERROR_CODES = ['channel_code_taken', 'channel_inactive', 'empty_utm_rule'] as const;
 
 export type UtmInput = Pick<UtmRule, 'utm_source' | 'utm_medium' | 'utm_campaign'> & { priority?: number };
 

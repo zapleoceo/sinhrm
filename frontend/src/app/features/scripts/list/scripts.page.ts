@@ -8,9 +8,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, TEXT_FILTER, translatedSelect } from '../../../core/ui/table/client-table';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
@@ -24,13 +23,15 @@ const presence = (v: unknown): 'yes' | 'no' => (v ? 'yes' : 'no');
  * Columns of the scripts list (all rows are on the page). Versions sort by their date (published / last saved),
  * a script without one goes last; their filter is «есть / нет».
  */
-export const SCRIPT_COLUMNS: readonly ClientColumn<Script>[] = [
+const SCRIPT_COLUMNS: readonly ClientColumn<Script>[] = [
   { key: 'name', value: (s) => s.name, filter: 'text' },
   { key: 'channel', value: (s) => SCRIPT_CHANNELS.indexOf(s.channel), filter: 'select', filterValue: (s) => s.channel },
   { key: 'active', value: (s) => s.active_version?.published_at, filter: 'select', filterValue: (s) => presence(s.active_version) },
   { key: 'draft', value: (s) => s.draft?.updated_at, filter: 'select', filterValue: (s) => presence(s.draft) },
 ];
 import { ScriptsService, scriptsErrorKey } from '../scripts.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Admin → Скрипти: all scripts with their active version / draft state (sortable / filterable headers), creation of a new one. */
 @Component({
@@ -140,13 +141,13 @@ import { ScriptsService, scriptsErrorKey } from '../scripts.service';
 export class ScriptsPage implements OnInit {
   private readonly api = inject(ScriptsService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly channels = SCRIPT_CHANNELS;
-  protected readonly scripts = signal<Script[]>([]);
-  protected readonly loading = signal(false);
-  protected readonly failed = signal(false);
+  private readonly list = new PagedList<Script>();
+  protected readonly scripts = this.list.items;
+  protected readonly loading = this.list.loading;
+  protected readonly failed = this.list.failed;
   protected readonly busy = signal(false);
   protected readonly withArchived = signal(false);
   protected readonly form = inject(NonNullableFormBuilder).group({
@@ -163,18 +164,7 @@ export class ScriptsPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.list(this.withArchived()).subscribe({
-      next: (list) => {
-        this.scripts.set(list);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.list(this.withArchived()));
   }
 
   protected toggleArchived(on: boolean): void {
@@ -195,7 +185,7 @@ export class ScriptsPage implements OnInit {
       },
       error: (e: unknown) => {
         this.busy.set(false);
-        this.snack.open(this.i18n.translate(scriptsErrorKey(e)), undefined, { duration: 3000 });
+        this.notify.show(scriptsErrorKey(e), { duration: 3000 });
       },
     });
   }

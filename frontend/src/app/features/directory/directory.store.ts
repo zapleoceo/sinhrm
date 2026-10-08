@@ -1,10 +1,11 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { sameQuery } from '../../core/ui/table/table-state';
 import { DictionaryItem, DictionaryQuery, DictionaryType, SaveDictionaryItem } from './directory.model';
 import { DIRECTORY_PAGE_SIZE, DirectoryView } from './directory.query';
 import { DirectoryService, directoryErrorKey } from './directory.service';
+import { withMember } from '../../core/ui/with-member';
 
 const DEFAULT_QUERY: DictionaryQuery = { page: 1, perPage: DIRECTORY_PAGE_SIZE };
 
@@ -16,15 +17,15 @@ const DEFAULT_QUERY: DictionaryQuery = { page: 1, perPage: DIRECTORY_PAGE_SIZE }
 @Injectable()
 export class DirectoryStore {
   private readonly api = inject(DirectoryService);
-  private readonly request = new LatestRequest();
+  private readonly list = new PagedList<DictionaryItem>();
   private loaded = false;
 
   readonly type = signal<DictionaryType>('branches');
   readonly query = signal<DictionaryQuery>(DEFAULT_QUERY);
-  readonly items = signal<DictionaryItem[]>([]);
-  readonly total = signal(0);
-  readonly loading = signal(false);
-  readonly failed = signal(false);
+  readonly items = this.list.items;
+  readonly total = this.list.total;
+  readonly loading = this.list.loading;
+  readonly failed = this.list.failed;
   readonly pending = signal<ReadonlySet<number>>(new Set());
 
   /** New tab / query from the URL: loads unless it is the one already shown; another tab starts with no rows. */
@@ -42,19 +43,7 @@ export class DirectoryStore {
 
   load(): void {
     this.loaded = true;
-    this.loading.set(true);
-    this.failed.set(false);
-    this.request.run(this.api.list(this.type(), this.query()), {
-      next: (page) => {
-        this.items.set(page.data);
-        this.total.set(page.meta.total);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.list(this.type(), this.query()));
   }
 
   rename(item: DictionaryItem, name: string, onError: (key: string) => void): void {
@@ -97,14 +86,6 @@ export class DirectoryStore {
   }
 
   private setPending(id: number, on: boolean): void {
-    this.pending.update((set) => {
-      const next = new Set(set);
-      if (on) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.pending.update((set) => withMember(set, id, on));
   }
 }

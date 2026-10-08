@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +9,7 @@ import { DocumentViewDialog } from '../document-view.dialog';
 import { DOCUMENT_STATUS_TONE, HrDocument } from '../documents.model';
 import { DocumentsService } from '../documents.service';
 import { wideDialog } from '../../../core/ui/dialog';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /** "Мої документи" (/me/documents): own documents; open one to acknowledge or reject it. */
 @Component({
@@ -59,34 +60,23 @@ import { wideDialog } from '../../../core/ui/dialog';
     .docs li:last-child { border-bottom: 0; }
     .main { flex: 1 1 14rem; display: flex; flex-direction: column; min-width: 0; }
     .docs li.app-empty { display: block; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class MyDocumentsPage implements OnInit {
   private readonly api = inject(DocumentsService);
   private readonly dialog = inject(MatDialog);
   protected readonly statusTone = DOCUMENT_STATUS_TONE;
-  protected readonly items = signal<HrDocument[]>([]);
-  protected readonly loading = signal(false);
-  protected readonly failed = signal(false);
+  private readonly list = new PagedList<HrDocument>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
+  protected readonly failed = this.list.failed;
 
   ngOnInit(): void {
     this.load();
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.mine().subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.mine());
   }
 
   protected view(d: HrDocument): void {

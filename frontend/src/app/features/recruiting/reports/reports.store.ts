@@ -65,7 +65,7 @@ export function pivotTouches(report: TouchesReport | null): RecruiterTouches[] {
   return [...map.values()].sort((a, b) => b.total - a.total);
 }
 
-export interface FunnelStage {
+interface FunnelStage {
   id: number;
   name: string;
   kind: StageKind;
@@ -74,7 +74,7 @@ export interface FunnelStage {
   share: number | null;
 }
 
-export interface FunnelCard {
+interface FunnelCard {
   id: number;
   title: string;
   status: VacancyStatus | null;

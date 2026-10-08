@@ -64,7 +64,6 @@ import { AuditLoader, AuditPaging } from './audit.model';
       border-radius: 50%; border: 3px solid var(--mat-sys-primary); background: var(--app-card);
     }
     .line { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; align-items: baseline; }
-    .spacer { flex: 1; }
     time { font-family: var(--app-font-mono); font-size: 0.75rem; font-weight: 500; }
     .change { font-size: 0.85rem; color: var(--app-muted); overflow-wrap: anywhere; }
     .state { padding: 1.5rem 1rem; text-align: center; }

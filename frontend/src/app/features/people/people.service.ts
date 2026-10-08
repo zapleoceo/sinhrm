@@ -1,7 +1,8 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { toParams } from '../recruiting/recruiting.service';
+import { toParams } from '../../core/api/http-params';
+import { Paged } from '../../core/api/api.model';
 import {
   BulkEmployeeAction,
   ChangeRequest,
@@ -14,7 +15,6 @@ import {
   HireResult,
   OrgNode,
   PEOPLE_ERROR_CODES,
-  Paged,
   PeopleQuery,
   PersonOption,
   PickerScope,

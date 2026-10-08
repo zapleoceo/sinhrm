@@ -1,16 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Employee } from '../people.model';
-import { PeopleService, peopleErrorKey } from '../people.service';
+import { PeopleService } from '../people.service';
 import { toIsoDate, today } from '../../../core/date/iso-date';
 import { PersonPicker } from '../picker/person-picker';
+import { DialogSave } from './dialog-save';
 
 /** True for a calendar day after today (local time, like the datepicker). */
 export function isAfterToday(date: Date | null): boolean {
@@ -62,10 +63,10 @@ export function isAfterToday(date: Date | null): boolean {
 })
 export class TerminateDialog {
   protected readonly employee = inject<Employee>(MAT_DIALOG_DATA);
-  private readonly ref = inject<MatDialogRef<TerminateDialog, Employee>>(MatDialogRef);
   private readonly api = inject(PeopleService);
-  protected readonly saving = signal(false);
-  protected readonly error = signal<string | null>(null);
+  private readonly dialog = new DialogSave<Employee>();
+  protected readonly saving = this.dialog.saving;
+  protected readonly error = this.dialog.error;
   protected readonly form = inject(NonNullableFormBuilder).group({
     fired_at: [today() as Date | null, Validators.required],
     reason: [''],
@@ -81,14 +82,6 @@ export class TerminateDialog {
       return;
     }
     const v = this.form.getRawValue();
-    this.saving.set(true);
-    this.error.set(null);
-    this.api.terminate(this.employee.id, toIsoDate(v.fired_at), v.reason.trim() || null, v.handover_to_employee_id).subscribe({
-      next: (saved) => this.ref.close(saved),
-      error: (err: unknown) => {
-        this.error.set(peopleErrorKey(err));
-        this.saving.set(false);
-      },
-    });
+    this.dialog.save(this.api.terminate(this.employee.id, toIsoDate(v.fired_at), v.reason.trim() || null, v.handover_to_employee_id));
   }
 }

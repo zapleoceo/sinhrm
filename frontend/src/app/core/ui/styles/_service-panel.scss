@@ -1,0 +1,8 @@
+// Connection panel of an external service on the integrations page (features/ai/ai-panel, features/google-workspace/
+// google-connect.panel): padded card, a wrapping head row (icon, text, action), notice line under it.
+// `@use '…/core/ui/styles/service-panel'; @include service-panel.base;` in the component styles.
+@mixin base {
+  .panel { padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .notice { margin: 0.5rem 0 0; }
+}

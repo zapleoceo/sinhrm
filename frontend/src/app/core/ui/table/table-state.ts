@@ -137,6 +137,11 @@ export function sameQuery<Q extends object>(a: Q, b: Q): boolean {
   return [...keys].every((k) => a[k] === b[k]);
 }
 
+/** Select filter value of an optional id from the query (`?branch_id=3` → '3'; none → null = «all»). */
+export function idToFilter(id: number | null | undefined): string | null {
+  return id ? String(id) : null;
+}
+
 /** Param value of a filter: text/select as is, empty → null (removed from the URL). */
 export function filterToParam(value: FilterValue): string | null {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : null;

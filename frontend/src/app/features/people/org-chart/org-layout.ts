@@ -27,13 +27,13 @@ export interface LaidNode {
   size: number;
 }
 
-export interface LaidLink {
+interface LaidLink {
   from: number;
   to: number;
   d: string;
 }
 
-export interface Bounds {
+interface Bounds {
   x: number;
   y: number;
   w: number;
@@ -144,7 +144,7 @@ export function layoutForest(
 }
 
 /** Smooth cubic connector from the parent's outgoing edge to the child's incoming edge. */
-export function connector(
+function connector(
   parent: { x: number; y: number },
   child: { x: number; y: number },
   orientation: Orientation,
@@ -179,10 +179,10 @@ export function centerOn(px: number, py: number, w: number, h: number, k: number
   return { x: w / 2 - px * k, y: h / 2 - py * k, k };
 }
 
-export const MIN_ZOOM = 0.15;
-export const MAX_ZOOM = 2.5;
+const MIN_ZOOM = 0.15;
+const MAX_ZOOM = 2.5;
 
-export function clampZoom(k: number): number {
+function clampZoom(k: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, k));
 }
 
@@ -236,7 +236,7 @@ export function findNode(forest: readonly OrgNode[], id: number): OrgNode | null
 }
 
 /** Flat list of every node (depth-first). */
-export function flatten(forest: readonly OrgNode[]): OrgNode[] {
+function flatten(forest: readonly OrgNode[]): OrgNode[] {
   return forest.flatMap((n) => [n, ...flatten(n.reports)]);
 }
 
@@ -262,7 +262,7 @@ export function searchPeople(forest: readonly OrgNode[], term: string, limit = 8
     .map((x) => x.n);
 }
 
-export interface OrgFilter {
+interface OrgFilter {
   branchId: number | null;
   departmentId: number | null;
 }

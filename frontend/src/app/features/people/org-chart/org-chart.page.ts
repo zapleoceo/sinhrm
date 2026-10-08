@@ -24,7 +24,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -47,15 +46,16 @@ import {
   neighbour,
   pathTo,
   searchPeople,
-  toSvg,
   visibleNodes,
   zoomAt,
 } from './org-layout';
 import { OrgChartAction, OrgChartControls, OrgChartLegend } from './org-chart-controls';
 import { OrgPersonPanel } from './org-person-panel';
+import { withMember } from '../../../core/ui/with-member';
+import { NotifyService } from '../../../core/ui/notify.service';
+import { exportOrgChart, readExportColors } from './org-export';
+import { orgKeyCommand, outsideViewport } from './org-keys';
 
-type ArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight';
-const ARROWS: readonly string[] = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
 
 /**
  * Interactive org chart: tidy tree (d3-hierarchy layout, own HTML/SVG rendering), pan & zoom (wheel, drag, pinch),
@@ -558,7 +558,7 @@ export class OrgChartPage {
   readonly root = input<string | undefined>(undefined);
 
   private readonly api = inject(PeopleService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   private readonly viewportRef = viewChild.required<ElementRef<HTMLElement>>('viewport');
 
@@ -805,15 +805,7 @@ export class OrgChartPage {
   // ---- tree actions -------------------------------------------------------------------------------------------
 
   protected toggle(id: number): void {
-    this.open.update((s) => {
-      const next = new Set(s);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    this.open.update((s) => withMember(s, id, !s.has(id)));
   }
 
   protected expandAll(): void {
@@ -856,9 +848,7 @@ export class OrgChartPage {
       ids = pathTo(this.nodes(), id);
     }
     if (ids.length === 0) {
-      this.snack.open(this.i18n.translate('people.orgChart.notInChart'), undefined, {
-        duration: 3000,
-      });
+      this.notify.show('people.orgChart.notInChart', { duration: 3000 });
       return;
     }
     this.open.update((s) => new Set([...s, ...ids.slice(0, -1)]));
@@ -889,9 +879,7 @@ export class OrgChartPage {
         this.locate(me.id);
       },
       error: () =>
-        this.snack.open(this.i18n.translate('people.orgChart.notInChart'), undefined, {
-          duration: 3000,
-        }),
+        this.notify.show('people.orgChart.notInChart', { duration: 3000 }),
     });
   }
 
@@ -911,24 +899,30 @@ export class OrgChartPage {
     if (current === null) {
       return;
     }
-    if (ARROWS.includes(e.key)) {
+    const action = orgKeyCommand(e.key);
+    if (!action) {
+      return;
+    }
+    if (action.prevent) {
       e.preventDefault();
-      const next = neighbour(this.layout(), current, e.key as ArrowKey, this.orientation());
-      if (next !== null) {
-        this.focusNode(next);
+    }
+    const { command } = action;
+    switch (command.kind) {
+      case 'move': {
+        const next = neighbour(this.layout(), current, command.key, this.orientation());
+        if (next !== null) {
+          this.focusNode(next);
+        }
+        return;
       }
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      this.selectedId.set(current);
-    } else if (e.key === ' ') {
-      e.preventDefault();
-      this.toggle(current);
-    } else if (e.key === '+' || e.key === '=') {
-      this.zoomBy(1.25);
-    } else if (e.key === '-') {
-      this.zoomBy(0.8);
-    } else if (e.key === '0') {
-      this.fit();
+      case 'select':
+        return this.selectedId.set(current);
+      case 'toggle':
+        return this.toggle(current);
+      case 'zoom':
+        return this.zoomBy(command.factor);
+      case 'fit':
+        return this.fit();
     }
   }
 
@@ -940,10 +934,7 @@ export class OrgChartPage {
       return;
     }
     const { w, h } = this.measure();
-    const t = this.transform();
-    const sx = n.x * t.k + t.x;
-    const sy = n.y * t.k + t.y;
-    if (sx < 0 || sy < 0 || sx + CARD_W * t.k > w || sy + CARD_H * t.k > h) {
+    if (outsideViewport(n, this.transform(), w, h)) {
       this.panTo(id);
     }
     setTimeout(() => document.getElementById(`org-node-${id}`)?.focus({ preventScroll: true }));
@@ -951,42 +942,9 @@ export class OrgChartPage {
 
   // ---- export -------------------------------------------------------------------------------------------------
 
+  /** PNG or SVG of the whole chart in the colours on screen (org-export.ts). */
   protected exportAs(kind: 'png' | 'svg'): void {
-    const el = this.viewportRef().nativeElement;
-    const card = el.querySelector<HTMLElement>('.card');
-    const cs = getComputedStyle(el.parentElement ?? el);
-    const cardCs = card ? getComputedStyle(card) : cs;
-    const pos = card?.querySelector<HTMLElement>('.pos');
-    const svg = toSvg(this.layout(), {
-      bg: getComputedStyle(document.body).backgroundColor || '#ffffff',
-      card: cardCs.backgroundColor,
-      border: cardCs.borderTopColor,
-      text: cardCs.color || cs.color,
-      muted: pos ? getComputedStyle(pos).color : cs.color,
-      link: el.querySelector('.links path')
-        ? getComputedStyle(el.querySelector('.links path')!).stroke
-        : cardCs.borderTopColor,
-    });
-    const name = `org-chart-${new Date().toISOString().slice(0, 10)}`;
-    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-    if (kind === 'svg') {
-      download(blob, `${name}.svg`);
-      return;
-    }
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      const scale = 2;
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext('2d');
-      ctx?.scale(scale, scale);
-      ctx?.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((png) => png && download(png, `${name}.png`), 'image/png');
-    };
-    img.src = url;
+    exportOrgChart(this.layout(), readExportColors(this.viewportRef().nativeElement), kind);
   }
 
   // ---- template helpers -----------------------------------------------------------------------------------
@@ -1008,12 +966,4 @@ export class OrgChartPage {
     }
     return parts.join(', ');
   }
-}
-
-function download(blob: Blob, filename: string): void {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

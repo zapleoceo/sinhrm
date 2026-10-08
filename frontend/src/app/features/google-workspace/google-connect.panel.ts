@@ -62,12 +62,11 @@ import { ChannelIcon } from '../../core/ui/channel-icon';
     </section>
   `,
   styles: `
-    .panel { padding: 1rem 1.25rem; margin-bottom: 1rem; }
-    .head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    @use '../../core/ui/styles/service-panel';
+    @include service-panel.base;
     .text { display: flex; flex-direction: column; flex: 1; min-width: 14rem; }
     .services { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; gap: 1.5rem; flex-wrap: wrap; }
     .services li { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; min-width: 0; }
-    .notice { margin: 0.5rem 0 0; }
     .notice.error { color: var(--app-warn-text); }
     .small { font-size: 0.8rem; margin-bottom: 0; }
     code { word-break: break-all; }

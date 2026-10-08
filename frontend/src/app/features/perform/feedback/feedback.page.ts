@@ -13,6 +13,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { FEEDBACK_BOXES, FEEDBACK_TONE, FEEDBACK_TYPES, FEEDBACK_VISIBILITIES, Feedback, FeedbackBox, FeedbackType, FeedbackVisibility } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /**
  * Continuous feedback (/perform/feedback): give or ask for feedback; boxes received / given / requests to me /
@@ -120,8 +121,9 @@ export class FeedbackPage implements OnInit {
   protected readonly typeTone = FEEDBACK_TONE;
   protected readonly visibilities = FEEDBACK_VISIBILITIES;
   protected readonly box = signal<FeedbackBox>('received');
-  protected readonly items = signal<Feedback[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<Feedback>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly answering = signal<Feedback | null>(null);
   protected to: number | null = null;
   protected type: FeedbackType = 'praise';
@@ -138,17 +140,7 @@ export class FeedbackPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.api.feedback(this.box()).subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(performErrorKey(e));
-      },
-    });
+    this.list.load(this.api.feedback(this.box()), { error: (e) => this.notify.show(performErrorKey(e)) });
   }
 
   protected answer(request: Feedback): void {

@@ -50,6 +50,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PrivacyException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): `canManagePrivacy` (`privacy.service.ts`) — обёртка над общим `isAdmin` из `core/auth/auth.model.ts` (superadmin + admin), своей копии списка ролей нет.
 - Контракт `Core\Contracts\PersonalDataProvider` (`section()`, `blocker()`, `export()`, `erase()`): каждый модуль
   описывает только свои таблицы и регистрируется через `$app->tag([...], PersonalDataProvider::class)` — так же, как
   `ScheduledJob` и `HealthCheck`. Privacy не лезет в чужие таблицы. Субъект — `Core\DTO\DataSubject` (`candidate` | `employee` + id).

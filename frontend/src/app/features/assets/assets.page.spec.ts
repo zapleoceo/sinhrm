@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { TablePage, clickTitle, column, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { Asset, AssetQuery } from './assets.model';
 import { AssetsPage } from './assets.page';
@@ -77,5 +77,27 @@ describe('AssetsPage: sortable / filterable headers bound to the URL', () => {
     await page.router.navigateByUrl('/?q=dell');
     await page.settle();
     expect(input.value).toBe('dell');
+  });
+});
+
+describe('AssetsPage: only the latest list request counts', () => {
+  it('a newer server filter cancels the request still in flight; its late answer never lands', async () => {
+    const answers: Subject<Asset[]>[] = [];
+    const list = (): Subject<Asset[]> => {
+      const answer = new Subject<Asset[]>();
+      answers.push(answer);
+      return answer;
+    };
+    const page = await openTablePage(AssetsPage, '/?status=assigned', [{ provide: AssetsService, useValue: { list, types: () => of([]) } }]);
+    await debounce();
+    await page.router.navigateByUrl('/?status=in_stock');
+    await page.settle();
+    await debounce();
+    await page.settle();
+    expect(answers.length).toBe(2);
+    expect(answers[0].observed).toBe(false);
+    answers[1].next([ASSETS[1]]);
+    await page.settle();
+    expect(column(page.el.querySelector('table')!, 1)).toEqual(['ThinkPad']);
   });
 });

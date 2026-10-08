@@ -48,6 +48,7 @@ describe('PrivacyService', () => {
     expect(canManagePrivacy(['admin'])).toBe(true);
     expect(canManagePrivacy(['superadmin'])).toBe(true);
     expect(canManagePrivacy(['hr_manager', 'recruiter', 'viewer', 'employee'])).toBe(false);
+    expect(canManagePrivacy([])).toBe(false);
     expect(privacyErrorKey(new HttpErrorResponse({ status: 409, error: { code: 'hired' } }))).toBe('privacy.errors.hired');
     expect(privacyErrorKey(new HttpErrorResponse({ status: 409, error: { code: 'not_terminated' } }))).toBe('privacy.errors.not_terminated');
     expect(privacyErrorKey(new HttpErrorResponse({ status: 500 }))).toBe('common.error');

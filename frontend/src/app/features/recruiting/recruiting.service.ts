@@ -45,9 +45,6 @@ import { DataEnvelope } from '../../core/api/api.model';
 import { unwrapData } from '../../core/api/unwrap-data';
 import { QueryValue, toParams } from '../../core/api/http-params';
 
-/** Moved to core/api/http-params.ts; re-exported for features that still import it from here (features/people). */
-export { toParams };
-
 /** HTTP client of the Recruiting API (/api/vacancies, /candidates, /applications, /inbox, /reports, …). */
 @Injectable({ providedIn: 'root' })
 export class RecruitingService {

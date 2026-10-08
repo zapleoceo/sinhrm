@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ChangeRequest, Employee } from '../people.model';
 import { PeopleService, peopleErrorKey } from '../people.service';
+import { LatestRequest } from '../../../core/ui/table/latest-request';
 
 export type ProfileTab = 'overview' | 'job' | 'timeoff' | 'changes' | 'documents' | 'workflows' | 'performance' | 'assets';
 
@@ -38,7 +39,8 @@ export function profileTabs(e: Employee | null): ProfileTab[] {
 @Injectable()
 export class ProfileStore {
   private readonly api = inject(PeopleService);
-  private seq = 0;
+  /** Another profile cancels the request still in flight: a late answer never shows the previous person. */
+  private readonly request = new LatestRequest();
 
   readonly employee = signal<Employee | null>(null);
   readonly loading = signal(false);
@@ -48,25 +50,19 @@ export class ProfileStore {
   readonly tabs = computed(() => profileTabs(this.employee()));
 
   load(id: number | 'me'): void {
-    const seq = ++this.seq;
     this.loading.set(true);
     this.error.set(null);
     const call: Observable<Employee> = id === 'me' ? this.api.me() : this.api.get(id);
-    call.subscribe({
+    this.request.run(call, {
       next: (e) => {
-        if (seq !== this.seq) {
-          return;
-        }
         this.employee.set(e);
         this.loading.set(false);
         this.loadChanges();
       },
       error: (err: unknown) => {
-        if (seq === this.seq) {
-          this.employee.set(null);
-          this.error.set(peopleErrorKey(err));
-          this.loading.set(false);
-        }
+        this.employee.set(null);
+        this.error.set(peopleErrorKey(err));
+        this.loading.set(false);
       },
     });
   }

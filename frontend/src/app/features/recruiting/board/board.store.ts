@@ -4,6 +4,8 @@ import { Application, Board, MoveApplication, PersonalBoard, PersonalColumn, Rej
 import { rankByScreening } from '../screening-ranking';
 import { groupByStage, statusForStage } from '../recruiting.format';
 import { RecruitingService, recruitingErrorKey } from '../recruiting.service';
+import { LatestRequest } from '../../../core/ui/table/latest-request';
+import { withMember } from '../../../core/ui/with-member';
 
 /** Where a card can go: a shared funnel stage (real move) or an own column (personal filing, stage untouched). */
 export type BoardTarget = { type: 'stage'; stage: Stage } | { type: 'personal'; column: PersonalColumn };
@@ -87,33 +89,30 @@ export class BoardStore {
   readonly hiddenColumns = computed(() => (this.personal()?.columns ?? []).filter((c) => c.hidden));
   readonly staleCount = computed(() => this.board()?.applications.filter((a) => a.is_stale).length ?? 0);
 
-  private seq = 0;
+  /** Another load() cancels both requests of the previous one: a late answer never shows another vacancy. */
+  private readonly boardRequest = new LatestRequest();
+  private readonly personalRequest = new LatestRequest();
   /** Vacancy of the last load(): late answers to calls made for another vacancy are ignored. */
   private vacancyId: number | null = null;
 
   load(vacancyId: number, withPersonal = false): void {
-    const seq = ++this.seq;
     this.vacancyId = vacancyId;
     this.loading.set(true);
     this.failed.set(false);
-    this.api.board(vacancyId).subscribe({
+    this.boardRequest.run(this.api.board(vacancyId), {
       next: (board) => {
-        if (seq !== this.seq) {
-          return;
-        }
         this.board.set(board);
         this.loading.set(false);
       },
       error: () => {
-        if (seq === this.seq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
+        this.failed.set(true);
+        this.loading.set(false);
       },
     });
     this.personal.set(null);
+    this.personalRequest.cancel();
     if (withPersonal) {
-      this.api.personalBoard(vacancyId).subscribe({ next: (p) => seq === this.seq && this.personal.set(p), error: () => undefined });
+      this.personalRequest.run(this.api.personalBoard(vacancyId), { next: (p) => this.personal.set(p), error: () => undefined });
     }
     if (this.rejectReasons().length === 0) {
       this.api.rejectReasons().subscribe({ next: (list) => this.rejectReasons.set(list), error: () => undefined });
@@ -123,6 +122,21 @@ export class BoardStore {
   /** A move to a reject stage needs a reason: the page asks for it first. */
   needsReason(stage: Stage): boolean {
     return stage.is_reject;
+  }
+
+  /**
+   * What a drop of `app` on `target` does: own column → personal filing (`file`, stage untouched); another stage
+   * without the right to write → `forbidden`; the same stage or a stage without a reason → `move`; a reject stage →
+   * `reason` (the page asks for it first, then moves).
+   */
+  planMove(app: Application, target: BoardTarget, canWrite: boolean): 'file' | 'forbidden' | 'move' | 'reason' {
+    if (target.type === 'personal') {
+      return 'file';
+    }
+    if (app.stage_id !== target.stage.id && !canWrite) {
+      return 'forbidden';
+    }
+    return app.stage_id === target.stage.id || !this.needsReason(target.stage) ? 'move' : 'reason';
   }
 
   move(
@@ -274,14 +288,6 @@ export class BoardStore {
   }
 
   private setPending(id: number, on: boolean): void {
-    this.pending.update((set) => {
-      const next = new Set(set);
-      if (on) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.pending.update((set) => withMember(set, id, on));
   }
 }

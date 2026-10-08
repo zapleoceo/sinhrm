@@ -23,5 +23,7 @@ describe('scripts model helpers', () => {
     expect([scoreBand(90), scoreBand(60), scoreBand(10)]).toEqual(['good', 'mid', 'low']);
     expect(canManageScripts(['admin'])).toBe(true);
     expect(canManageScripts(['recruiter', 'viewer'])).toBe(false);
+    expect(canManageScripts(['viewer', 'superadmin'])).toBe(true);
+    expect(canManageScripts(['hr_manager'])).toBe(false);
   });
 });

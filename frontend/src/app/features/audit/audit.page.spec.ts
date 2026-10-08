@@ -94,6 +94,13 @@ describe('AuditPage: sortable / filterable headers bound to the URL', () => {
     expect(th('audit.columns.time').getAttribute('aria-sort')).toBe('none');
   });
 
+  it('shows the rows of the API page (mapped for the table) with the user name', () => {
+    const rows = harness.routeNativeElement!.querySelectorAll('tbody tr.mat-mdc-row');
+    expect(rows.length).toBe(1);
+    expect(rows[0].textContent).toContain('Ann');
+    expect(harness.routeNativeElement!.querySelector('mat-progress-bar')).toBeNull();
+  });
+
   it('the date range of the time column goes to ?from=&to=', async () => {
     await click(th('audit.columns.time').querySelector('button.filter'));
     const [from, to] = Array.from(document.querySelectorAll<HTMLInputElement>('.popover input[type=date]'));

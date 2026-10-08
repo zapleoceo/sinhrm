@@ -2,44 +2,26 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { SaveVacancy, Vacancy, VacancyQuery } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 const DEFAULT_QUERY: VacancyQuery = { page: 1, perPage: 50, status: 'open' };
 
-/** Vacancies list page state (provided per page). Stale answers after a filter change are dropped. */
+/** Vacancies list page state (provided per page). A filter change cancels the request still in flight. */
 @Injectable()
 export class VacanciesStore {
   private readonly api = inject(RecruitingService);
-  private seq = 0;
+  private readonly list = new PagedList<Vacancy>();
 
   readonly query = signal<VacancyQuery>(DEFAULT_QUERY);
-  readonly items = signal<Vacancy[]>([]);
-  readonly total = signal(0);
+  readonly items = this.list.items;
+  readonly total = this.list.total;
   /** Active (open AND published) vacancies in scope, regardless of the filters. */
   readonly activeCount = signal(0);
-  readonly loading = signal(false);
-  readonly failed = signal(false);
+  readonly loading = this.list.loading;
+  readonly failed = this.list.failed;
 
   load(): void {
-    const seq = ++this.seq;
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.vacancies(this.query()).subscribe({
-      next: (page) => {
-        if (seq !== this.seq) {
-          return;
-        }
-        this.items.set(page.data);
-        this.total.set(page.meta.total);
-        this.activeCount.set(page.meta.active_count ?? 0);
-        this.loading.set(false);
-      },
-      error: () => {
-        if (seq === this.seq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
-      },
-    });
+    this.list.load(this.api.vacancies(this.query()), { next: (page) => this.activeCount.set(page.meta.active_count ?? 0) });
   }
 
   /** Filters reset the page to 1. */

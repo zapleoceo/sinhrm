@@ -57,7 +57,6 @@ export const AI_ERROR_CODES = [
   'ai_provider',
   'insufficient_data',
 ] as const;
-export type AiErrorCode = (typeof AI_ERROR_CODES)[number];
 
 /** Share of a daily limit used, 0..100 (for the usage bars). */
 export function usagePercent(used: number, limit: number): number {

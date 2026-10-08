@@ -36,6 +36,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/IntegrationException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): строки с запросом в пути (`IntegrationsStore.pending`) и очищенные поля секретов карточки обновляются общим `withMember` из `core/ui/with-member.ts` вместо своих копий «скопировать Set, добавить/удалить».
 ### Таблицы (миграция `Database/Migrations/2026_09_26_100001_create_integrations_tables.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|

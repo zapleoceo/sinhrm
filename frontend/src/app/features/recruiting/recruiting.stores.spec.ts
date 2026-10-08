@@ -235,6 +235,30 @@ describe('BoardStore', () => {
     expect(store.personalColumns().map((c) => c.column.title)).toEqual(['Нове']);
   });
 
+  it('a newer load cancels the board request of the previous vacancy', () => {
+    const { store, api } = setup(BoardStore);
+    const late = new Subject<Board>();
+    api.board$ = late;
+    store.load(1);
+    api.board$ = of({ vacancy: { id: 2, stages: [] }, applications: [] } as unknown as Board);
+    store.load(2);
+    expect(late.observed).toBe(false);
+    expect(store.board()?.vacancy.id).toBe(2);
+  });
+
+  it('plans a drop: own column files, a reject stage asks for a reason, readers cannot change the stage', () => {
+    const { store } = setup(BoardStore);
+    const app = application(10, 1);
+    const column: PersonalColumn = { id: 7, title: 'Топ', color: null, position: 0, hidden: false };
+    const reject = stage(3, { is_reject: true });
+    expect(store.planMove(app, { type: 'personal', column }, false)).toBe('file');
+    expect(store.planMove(app, { type: 'stage', stage: stage(2) }, true)).toBe('move');
+    expect(store.planMove(app, { type: 'stage', stage: reject }, true)).toBe('reason');
+    expect(store.planMove(app, { type: 'stage', stage: stage(2) }, false)).toBe('forbidden');
+    // Dropping back on its own stage is never a change: no rights or reason needed.
+    expect(store.planMove(app, { type: 'stage', stage: stage(1) }, false)).toBe('move');
+  });
+
   it('flags a failed load', () => {
     const { store, api } = setup(BoardStore);
     api.board$ = throwError(() => new Error('down'));
@@ -249,6 +273,20 @@ describe('CandidatesStore', () => {
     store.setPage(3, 50);
     store.patchQuery({ status: 'active' });
     expect(store.query()).toEqual({ page: 1, perPage: 50, status: 'active' });
+  });
+
+  it('a newer query cancels the request in flight: its late answer never lands', () => {
+    const { store, api } = setup(CandidatesStore);
+    const late = new Subject<Paged<Candidate>>();
+    api.candidates$ = late;
+    store.load();
+    expect(store.loading()).toBe(true);
+    api.candidates$ = of(page([candidate(9)]));
+    store.patchQuery({ status: 'active' });
+    expect(late.observed).toBe(false);
+    expect(store.items().map((c) => c.id)).toEqual([9]);
+    expect(store.total()).toBe(1);
+    expect(store.loading()).toBe(false);
   });
 });
 
@@ -270,6 +308,17 @@ describe('CandidateCardStore', () => {
     expect(store.filters()).toEqual(['stage']);
     store.clearFilters();
     expect(store.filters()).toEqual([]);
+  });
+
+  it('opening another candidate cancels the previous request', () => {
+    const { store, api } = setup(CandidateCardStore);
+    const late = new Subject<Candidate>();
+    api.candidate = () => late;
+    store.open(7);
+    api.candidate = (id: number) => of(candidate(id));
+    store.open(8);
+    expect(late.observed).toBe(false);
+    expect(store.candidate()?.id).toBe(8);
   });
 
   it('refreshes after logging a touch', () => {
@@ -300,6 +349,13 @@ describe('VacanciesStore', () => {
     store.load();
     expect(store.query().status).toBe('open');
     expect(store.loading()).toBe(false);
+  });
+
+  it('takes the active counter from the page meta', () => {
+    const { store, api } = setup(VacanciesStore);
+    api.vacancies = () => of({ data: [], meta: { current_page: 1, per_page: 50, total: 0, last_page: 1, active_count: 4 } });
+    store.load();
+    expect(store.activeCount()).toBe(4);
   });
 });
 

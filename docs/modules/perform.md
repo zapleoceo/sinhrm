@@ -50,6 +50,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PerformException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): списки страниц «Мої оцінювання», 1:1, OKR и «Відгуки» держит `PagedList` (`core/ui/table/paged-list.ts`) вместо четырёх одинаковых `load()`: ошибка — уведомление `performErrorKey`, смена периода или ящика отменяет запрос в пути.
 Бэкенд — `backend/app/Modules/Perform`, маршруты `/api/perform/*` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`. Доступ строится на People: `Services/PerformAccess::viewer()` → `DTO/PerformViewer`
 (обёртка над `PeopleContext`: `admin()`, `isSelf()`, `isAbove()` — руководитель выше по `manager_id`,

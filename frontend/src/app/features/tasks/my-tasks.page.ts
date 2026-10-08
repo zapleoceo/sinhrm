@@ -5,8 +5,8 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { TASK_SOURCES, TaskDue, TaskQuery, TaskSource } from '../scripts/scripts.model';
 import { TasksWidget } from '../scripts/tasks/tasks-widget';
 
-export type SourceFilter = TaskSource | 'all';
-export type DueFilter = TaskDue | 'all';
+type SourceFilter = TaskSource | 'all';
+type DueFilter = TaskDue | 'all';
 
 /** Query of the "Мої задачі" page from its filters. */
 export function myTasksQuery(source: SourceFilter, due: DueFilter, done: boolean): TaskQuery {
