@@ -56,8 +56,12 @@
   использовать расширение на LinkedIn — за владельцем процесса. Work.ua, Djinni, DOU и Robota.ua также ограничивают массовый сбор.
 - Расширение передаёт в SinHRM только то, что человек видит на странице и подтверждает кнопкой. Персональные данные
   кандидата обрабатываются по правилам [secrets.md](../architecture/secrets.md) (Закон Украины №2297-VI).
-- Токен хранится в `chrome.storage.local` этого браузера. Он даёт доступ **только** к `/api/clipper/*`
+- Токен хранится в `chrome.storage.local` этого браузера с уровнем доступа `TRUSTED_CONTEXTS` (страницы расширения;
+  скрипт извлечения, который работает внутри чужих сайтов, его не видит). Он даёт доступ **только** к `/api/clipper/*`
   (см. «Как устроено»), не к остальному API.
+- Постоянного доступа к сайтам вакансий нет: скрипт внедряется только во вкладку, где нажали значок (`activeTab`).
+- Ссылка «Відкрити кандидата» открывается, только если она https и ведёт на тот же адрес SinHRM, что в настройках
+  (`trustedLink`); иначе ссылки нет. Тест — `extension/tests/security.test.ts`.
 
 ## Ограничения
 - **Селекторы ломаются, когда сайты меняют вёрстку.** Порядок извлечения: JSON-LD (`Person`) → мета-теги `og:` →
@@ -73,7 +77,7 @@
 TypeScript без фреймворка, сборка esbuild, тесты Vitest + jsdom, линт ESLint (typescript-eslint).
 | Файл | Что |
 |---|---|
-| `static/manifest.json` | MV3: `permissions: activeTab, scripting, storage`; `host_permissions` — только пять сайтов (для Robota.ua — `robota.ua` и `www.robota.ua`) и `https://sinhrm.vercel.app/*`; без content scripts и service worker |
+| `static/manifest.json` | MV3: `permissions: activeTab, scripting, storage`; `host_permissions` — только `https://sinhrm.vercel.app/*` (сайты вакансий — через `activeTab` по клику; аудит 2026-10); без content scripts и service worker |
 | `src/popup.ts`, `static/popup.html` | окошко: определение сайта по адресу вкладки, извлечение, форма, отправка |
 | `src/detect.ts` | адрес вкладки → `linkedin \| work_ua \| djinni \| dou \| robota_ua` или «не поддерживается» |
 | `src/extract.ts` | точка входа внедряемого скрипта: собирается в один самодостаточный `extract.js`, последняя строка — вызов `run()`; popup вызывает `chrome.scripting.executeScript({files: ['extract.js']})` и получает результат последнего выражения (вариант с `func:` не подходит — функция сериализуется без импортов) |

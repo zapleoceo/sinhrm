@@ -5,7 +5,7 @@
 import { buildPayload, createClient, type ApiResult, type CandidateResult } from './api';
 import { detectSite } from './detect';
 import { applyI18n, detectLang, setLang, t, type MessageKey } from './i18n';
-import { loadSettings } from './settings';
+import { loadSettings, trustedLink } from './settings';
 import type { ExtractResult, Profile } from './types';
 
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -71,9 +71,9 @@ function readForm(base: Profile): Profile {
   };
 }
 
-function renderResult(res: ApiResult<CandidateResult>): void {
+function renderResult(res: ApiResult<CandidateResult>, baseUrl: string): void {
   if (res.ok) {
-    setStatus('ok', t(res.data.created ? 'created' : 'matched'), res.data.url);
+    setStatus('ok', t(res.data.created ? 'created' : 'matched'), trustedLink(res.data.url, baseUrl) ?? undefined);
     return;
   }
   const map: Record<typeof res.kind, MessageKey> = {
@@ -143,7 +143,7 @@ async function init(): Promise<void> {
         select.append(opt);
       }
     } else if (me.kind === 'unauthorized') {
-      renderResult(me as ApiResult<CandidateResult>);
+      renderResult(me as ApiResult<CandidateResult>, settings.baseUrl);
     }
   });
 
@@ -159,7 +159,7 @@ async function init(): Promise<void> {
     setStatus('info', t('sending'));
     const res = await client.createCandidate(buildPayload(edited, Number(select.value) || null));
     button.disabled = false;
-    renderResult(res);
+    renderResult(res, settings.baseUrl);
   });
 }
 
