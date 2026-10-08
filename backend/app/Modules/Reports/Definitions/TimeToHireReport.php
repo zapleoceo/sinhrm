@@ -32,7 +32,7 @@ final class TimeToHireReport extends AbstractRecruitingReport
     {
         $range = self::range($filters);
         $days = [];
-        foreach ($this->data->hiredApplications($ctx->recruiting, $range->from, $range->to) as $a) {
+        foreach ($this->data->hiredApplications($ctx->recruiting, ...$range->moments()) as $a) {
             $days[$a['vacancy']][] = Carbon::parse($a['created_at'])->startOfDay()->diffInDays(Carbon::parse($a['closed_at'])->startOfDay());
         }
         ksort($days);

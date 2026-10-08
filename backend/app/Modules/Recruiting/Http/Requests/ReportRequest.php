@@ -22,15 +22,10 @@ final class ReportRequest extends FormRequest
 
     public function range(): DateRange
     {
-        $range = DateRange::ofDays(
+        return DateRange::ofDays(
             $this->filled('from') ? $this->string('from')->toString() : null,
             $this->filled('to') ? $this->string('to')->toString() : null,
-        );
-        if ($range->from->diffInDays($range->to) > 366) {
-            return new DateRange($range->to->copy()->subDays(365)->startOfDay(), $range->to);
-        }
-
-        return $range;
+        )->lastDays(366);
     }
 
     public function vacancyId(): ?int
