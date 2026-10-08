@@ -56,6 +56,7 @@ DB/key/storage требования и незакрытые решения вл�
 | `http/api-error.ts` | `saveBlob(blob, name)` — скачать ответ-Blob (CSV). Маппер ошибок API переехал в `api/api-error.ts` — раздел «Общие примитивы API и UI» ниже |
 
 | `ui/table/*` | общий заголовок таблицы с сортировкой и фильтром — раздел ниже |
+| `ui/styles/_sortable-items.scss`, `ui/styles/_service-panel.scss` | Sass-миксины общих стилей (2026-10-08): `sortable-items.editor` — тулбар, список карточек с ручкой и номером, превью и место перетаскивания CDK (редакторы скриптов и воркфлоу); `service-panel.base` — карточка подключения сервиса на странице интеграций (`ai-panel`, `google-connect.panel`). Подключение: `@use '…/core/ui/styles/sortable-items'; @include sortable-items.editor;` (работает и во встроенных `styles` — `inlineStyleLanguage: scss`). Глобальные утилиты `.small`, `.spacer`, `.rows` — в `src/styles.scss`, описание — [design-direction.md](../architecture/design-direction.md) |
 
 Все строки интерфейса — через Transloco (`'ключ' | transloco`); новый текст добавляется во все три файла `public/i18n`.
 

@@ -60,14 +60,12 @@ export interface RequestAction {
     </ul>
   `,
   styles: `
-    .rows { list-style: none; margin: 0; padding: 0; }
     .row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; border-bottom: var(--app-border-w) solid var(--app-track); flex-wrap: wrap; }
     .row[data-status='rejected'] .main, .row[data-status='cancelled'] .main { color: var(--app-muted); }
     .dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; flex: none; }
     .main { flex: 1; display: flex; flex-direction: column; min-width: 12rem; }
     .row:hover { background: var(--app-row-hover); }
     .row:last-child { border-bottom: 0; }
-    .small { font-size: 0.8rem; }
     .empty { display: block; }
   `,
 })

@@ -292,7 +292,6 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
     .card .avatar { margin-bottom: 0.35rem; }
     .card strong { font: var(--mat-sys-title-medium); }
     .card:hover, .card:focus-visible { border-color: var(--mat-sys-primary); transform: translateY(-1px); }
-    .small { font-size: 0.8rem; }
     .dict { display: contents; }
     @media (min-width: 901px) { .dict.in-table, .active.in-table { display: none; } }
     @media (max-width: 900px) { .wide { display: none; } }

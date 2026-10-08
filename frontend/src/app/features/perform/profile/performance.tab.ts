@@ -184,7 +184,6 @@ import { NotifyService } from '../../../core/ui/notify.service';
     .plan { margin-bottom: 0.75rem; display: flex; flex-direction: column; }
     .plan ul { margin: 0.25rem 0; padding-left: 1.25rem; }
     .num { width: 7rem; }
-    .rows { list-style: none; padding: 0; margin: 0; }
   `,
 })
 export class PerformanceTab {

@@ -294,7 +294,6 @@ import { NotifyService } from '../../../core/ui/notify.service';
     .changes li[data-status='rejected'] .status { --pill-text: var(--app-bad-text); --pill-bg: var(--app-bad-bg); --pill-line: transparent; }
     .changes li[data-status='rejected'] .status::before { border-radius: 1px; background: currentColor; }
     .main { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
-    .small { font-size: 0.8rem; }
     @media (max-width: 600px) {
       .avatar { width: 3.25rem; height: 3.25rem; font-size: 1.1rem; }
       .facts { grid-template-columns: minmax(0, 1fr); }

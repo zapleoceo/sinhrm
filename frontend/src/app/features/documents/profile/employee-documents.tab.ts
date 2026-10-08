@@ -70,7 +70,6 @@ import { PagedList } from '../../../core/ui/table/paged-list';
     .link { border: 0; background: none; padding: 0; min-height: 2rem; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 0.15em; }
     @media (max-width: 600px) { .link { min-height: 2.75rem; } }
     .docs li[data-status='archived'] .link { color: var(--app-muted); }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class EmployeeDocumentsTab {

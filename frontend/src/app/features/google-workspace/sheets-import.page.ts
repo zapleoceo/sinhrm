@@ -184,10 +184,8 @@ import { NotifyService } from '../../core/ui/notify.service';
     .preview { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
     .preview th, .preview td { border-bottom: var(--app-border-w) solid var(--app-track); padding: 0.4rem 0.6rem; text-align: left; white-space: nowrap; }
     .preview thead th { font: var(--mat-sys-label-medium); font-weight: 700; color: var(--app-muted); border-bottom-color: var(--app-border); }
-    .spacer { flex: 1; }
     .saved { padding: 0.5rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
     .error { color: var(--app-danger); }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class SheetsImportPage implements OnInit {

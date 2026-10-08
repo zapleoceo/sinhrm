@@ -90,7 +90,6 @@ import { eventValue } from '../../../core/ui/event-value';
     @media (max-width: 600px) { .toc a { padding: 0.7rem 0.5rem; } } /* 44px touch targets */
     .group { font: var(--mat-sys-label-medium); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 1rem 0 0.25rem; color: var(--app-muted); }
     .hits li { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.4rem 0; }
-    .small { font-size: 0.8rem; }
     .doc { padding: 1.25rem 1.5rem; min-width: 0; }
     .doc-body { line-height: 1.6; overflow-wrap: anywhere; max-width: 52rem; }
     .doc-body h1 { font: var(--mat-sys-headline-small); letter-spacing: var(--mat-sys-headline-small-tracking); margin: 0 0 0.75rem; }

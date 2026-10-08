@@ -366,6 +366,12 @@ body {
   color: var(--app-muted);
 }
 
+// One-line utilities that pages used to copy into their own styles (2026-10-08). A page that needs another value keeps
+// its own rule (component styles win: they carry the extra attribute selector of view encapsulation).
+.small { font-size: 0.8rem; }        // secondary text: hints, dates, counters next to the main text
+.spacer { flex: 1; }                 // pushes the following items of a flex row to the end
+.rows { list-style: none; margin: 0; padding: 0; }  // <ul>/<ol> of rows without bullets and indents
+
 // Numbers that are scanned in columns: mono, tabular figures. (Pages already use `.num` for right-aligned
 // numeric cells and number inputs, so the mono look is opt-in via `.app-num` / `.mono`, not `.num`.)
 .app-num, .mono {

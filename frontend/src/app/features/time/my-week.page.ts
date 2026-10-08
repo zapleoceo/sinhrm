@@ -159,7 +159,6 @@ import { NotifyService } from '../../core/ui/notify.service';
     .short { color: var(--app-bad-text); }
     .summary { display: flex; gap: 1.25rem; flex-wrap: wrap; margin: 0.75rem 0; }
     .actions { margin-top: 0.5rem; }
-    .spacer { flex: 1; }
     .note { padding: 0.5rem 0.75rem; border-left: 4px solid var(--app-border); border-radius: var(--app-radius-sm); background: var(--app-card); }
     .note[data-status='rejected'] { border-color: var(--app-danger); }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

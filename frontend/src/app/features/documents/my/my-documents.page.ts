@@ -60,7 +60,6 @@ import { PagedList } from '../../../core/ui/table/paged-list';
     .docs li:last-child { border-bottom: 0; }
     .main { flex: 1 1 14rem; display: flex; flex-direction: column; min-width: 0; }
     .docs li.app-empty { display: block; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class MyDocumentsPage implements OnInit {

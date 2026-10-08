@@ -59,13 +59,11 @@ import { PagedList } from '../../../core/ui/table/paged-list';
   styles: `
     .card { padding: 1rem 1.25rem; margin-bottom: var(--app-gap); }
     h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.75rem; }
-    .rows { list-style: none; margin: 0; padding: 0; }
     .rows li { display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-bottom: var(--app-border-w) solid var(--app-track); flex-wrap: wrap; }
     .main { flex: 1; display: flex; flex-direction: column; }
     .rows li:last-child { border-bottom: 0; }
     .rows li.app-empty { display: block; }
     .main .small { font-family: var(--app-font-mono); }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class ApprovalsPage implements OnInit {

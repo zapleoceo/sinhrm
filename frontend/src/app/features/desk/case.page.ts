@@ -140,7 +140,6 @@ import { eventValue } from '../../core/ui/event-value';
     .reply { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 1.25rem; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .grow { flex: 1; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class CasePage {

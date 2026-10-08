@@ -126,7 +126,6 @@ export function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
     tr[data-overdue='true'] td:first-child { box-shadow: inset 4px 0 0 var(--app-danger); }
     .app-num { font-size: 0.8rem; white-space: nowrap; }
     .warn { color: var(--app-bad-text); }
-    .small { font-size: 0.8rem; }
     .panel { overflow-x: auto; }
   `,
 })

@@ -124,7 +124,6 @@ export interface StepAction {
     .steps li[data-status='skipped'] .main > span:first-child { color: var(--app-muted); }
     .result { color: var(--app-bad-text); }
     .main { flex: 1 1 14rem; display: flex; flex-direction: column; min-width: 0; padding-top: 0.2rem; }
-    .small { font-size: 0.8rem; }
     .danger { color: var(--app-danger); margin-top: 0.5rem; }
   `,
 })

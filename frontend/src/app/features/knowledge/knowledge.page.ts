@@ -88,7 +88,6 @@ import { eventValue } from '../../core/ui/event-value';
     }
     .tag:hover { text-decoration: underline; }
     @media (max-width: 600px) { .tags { gap: 0.5rem; } .tag { min-height: 2.75rem; padding: 0 0.35rem; } } /* 44px touch targets */
-    .small { font-size: 0.8rem; }
   `,
 })
 export class KnowledgePage implements OnInit {

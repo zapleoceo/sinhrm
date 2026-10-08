@@ -1,8 +1,17 @@
+import { ScriptEditorPage } from './editor/script-editor.page';
 import { EvaluationBadge } from './evaluation/evaluation-badge';
 import { TasksWidget } from './tasks/tasks-widget';
 import { css } from '../../../testing/css';
 
 describe('Scripts restyle', () => {
+  it('editor cards come from the shared sortable-items mixin; cards outside the list keep their gap', () => {
+    const style = css(ScriptEditorPage);
+    expect(style).toMatch(/\.handle[^{]*\{[^}]*cursor:\s*grab/);
+    expect(style).toMatch(/\.cdk-drag-placeholder[^{]*\{[^}]*dashed/);
+    expect(style).toMatch(/\.item[^{,]*\{[^}]*margin-bottom:\s*0\.75rem/);
+    expect(style).not.toMatch(/\.small[^{]*\{/); // the global .small utility (styles.scss) is used instead
+  });
+
   it('evaluation chip: band colour on the line and icon, 44px on phones', () => {
     const style = css(EvaluationBadge);
     expect(style).toContain('--band');

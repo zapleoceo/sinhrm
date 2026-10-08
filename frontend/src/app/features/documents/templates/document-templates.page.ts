@@ -146,7 +146,6 @@ const EMPTY_DRAFT: Draft = { id: null, name: '', category: '', body: '', archive
     .two mat-form-field { width: 100%; }
     .preview { padding: 0.75rem; border-radius: var(--app-radius); background: var(--mat-sys-surface-container-low); overflow-wrap: anywhere; }
     .error { color: var(--app-danger); font-size: 0.85rem; margin: 0; }
-    .small { font-size: 0.8rem; }
     mat-chip { cursor: pointer; }
     @media (max-width: 900px) {
       .layout, .two { grid-template-columns: 1fr; }

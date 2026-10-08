@@ -173,7 +173,6 @@ export function queueQueryFromParams(params: ParamMap): QueueQuery {
     .cats { margin-top: var(--app-gap); padding: 1rem 1.25rem; }
     .cats h2 { font: var(--mat-sys-title-medium); margin: 0; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class DeskQueuePage implements OnInit {

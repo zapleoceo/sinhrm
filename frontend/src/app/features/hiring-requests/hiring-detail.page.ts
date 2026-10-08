@@ -176,7 +176,6 @@ import { NotifyService } from '../../core/ui/notify.service';
     .timeline li[data-status='skipped'] mat-icon { border-style: dashed; }
     .timeline li[data-status='waiting'], .timeline li[data-status='skipped'] { color: var(--app-muted); }
     blockquote { margin: 0.25rem 0 0; padding-left: 0.6rem; border-left: var(--app-border-w) solid var(--app-border); }
-    .small { font-size: 0.8rem; }
     .warn { color: var(--app-bad-text); }
     .wide { width: 100%; }
     .decide { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }

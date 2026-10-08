@@ -1,3 +1,4 @@
+import { WorkflowEditorPage } from './editor/workflow-editor.page';
 import { RunCard } from './runs/run-card';
 import { RUN_STATUSES, RUN_STATUS_TONE } from './workflows.model';
 import { css } from '../../../testing/css';
@@ -5,6 +6,13 @@ import { css } from '../../../testing/css';
 const PILL_TONES: readonly string[] = ['good', 'warn', 'bad', 'info', 'neutral'];
 
 describe('Workflows restyle', () => {
+  it('editor step cards come from the shared sortable-items mixin (same as the script editor)', () => {
+    const style = css(WorkflowEditorPage);
+    expect(style).toMatch(/\.handle[^{]*\{[^}]*cursor:\s*grab/);
+    expect(style).toMatch(/\.item-head[^{]*\{[^}]*flex-wrap:\s*wrap/);
+    expect(style).toMatch(/prefers-reduced-motion:\s*reduce/);
+  });
+
   it('gives every run status a status-pill tone (colour + marker shape)', () => {
     for (const s of RUN_STATUSES) {
       expect(PILL_TONES).toContain(RUN_STATUS_TONE[s]);

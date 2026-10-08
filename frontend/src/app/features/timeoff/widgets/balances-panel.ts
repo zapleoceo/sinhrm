@@ -44,7 +44,6 @@ import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
     }
     .name { font: var(--mat-sys-title-small); }
     .value { font: var(--mat-sys-headline-medium); letter-spacing: var(--mat-sys-headline-medium-tracking); font-variant-numeric: tabular-nums; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class BalancesPanel {

@@ -14,7 +14,6 @@
 .ok { color: var(--app-good-text); }
 .warn { color: var(--app-warn-text); }
 .notice { margin: 0 0 0.5rem; }
-.small { font-size: 0.8rem; }
 .panel { padding: 0.5rem 1.25rem 1rem; }
 .row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.5rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
 .row.add { border-bottom: 0; margin-bottom: 0.5rem; }
@@ -22,7 +21,6 @@
 .narrow { width: 11rem; }
 .wide { flex: 1; min-width: min(18rem, 100%); }
 .pattern { min-width: 12rem; }
-.spacer { flex: 1; }
 /* Log = global .app-table (header sorts / filters); the panel keeps its own padding, so the table sits flush. */
 .panel:has(> .log) { padding: 0; }
 td[data-outcome='parse_failed'], td[data-outcome='unknown'] { color: var(--app-warn-text); }

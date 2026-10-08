@@ -82,7 +82,6 @@ import { eventValue } from '../../core/ui/event-value';
     .cases li:hover:not(.app-empty) { background: var(--app-row-hover); }
     .cases li.app-empty { display: block; }
     .main { flex: 1 1 16rem; display: flex; flex-direction: column; color: inherit; text-decoration: none; min-width: 0; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class MyCasesPage implements OnInit {
