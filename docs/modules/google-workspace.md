@@ -184,6 +184,10 @@ e-mail / Telegram (глобально) — **matched**, иначе **created** (
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- Другим модулям состояние подключений Google отдаётся контрактом `Contracts\GoogleConnections` (`state`, `connectedBy`; реализация — `Services\GoogleConnectionStore`, биндинг в `GoogleWorkspaceServiceProvider`). Токены и запись подключения остаются внутри модуля. Тест — `tests/Unit/GoogleWorkspace/GoogleConnectionsTest.php`.
+- `SheetsImportService` создаёт кандидатов через контракт Recruiting `CandidateIntake`, `MeetingService` пишет касание через `TouchpointLogger` — без импорта классов сервисов Recruiting.
+
 ## Как проверить
 Бэкенд (Google везде подменён `Http::fake`, `Http::preventStrayRequests()`; все значения синтетические):
 - `tests/Feature/GoogleWorkspace/GoogleConnectTest` — 401/403; redirect: scopes, `offline`, `consent`, state в сессии,
@@ -221,6 +225,8 @@ curl -i https://sinhrm.vercel.app/api/google/connect         # без сесси
 ## Листи про погодження (UserNotifier)
 
 `MailUserNotifier` реалізує `Core\Contracts\UserNotifier`: тема + 2 рядки + посилання (`app.frontend_url` + шлях) на e-mail користувача. Мовчки пропускає, якщо користувач вимкнув «Листи про погодження» у «Мій профіль» (`users.approval_emails`, за замовчуванням увімкнено), модуль закритий для нього, або Mailer не готовий (`not_connected` / `reconnect_to_send` → лог `notify.mail_skipped`; помилка Gmail → `notify.mail_failed`). `CalendarClient` має також `insertAllDayEvent` / `deleteEvent` (TimeOff).
+Отримувача `MailUserNotifier` шукає через контракт Auth `UserRepository::find()`, без власного запиту до `users`
+(тест `tests/Unit/GoogleWorkspace/MailUserNotifierTest.php`: немає користувача або він заблокований → листа немає).
 
 ### Контекст переподключения
 После обработки OAuth callback удаляются только параметры результата connected/missing/google_error; остальные query параметры, включая выбранную карточку integration, сохраняются. Тест google-connect.panel.spec.ts проверяет отказ в согласии и сохранение контекста. Подключение из карточки использует тот же общий URL для Gmail, Calendar и Sheets; scopes и серверный OAuth-контракт не изменены.

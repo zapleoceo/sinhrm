@@ -175,6 +175,9 @@ hidden_reason: "anonymity"}`, без баллов и комментариев. �
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `PerformAccess` строит `PerformViewer` из контракта People `PeopleAccess` (`for`, `employeeOf`, `isAdmin`). Тест — `tests/Unit/Perform/PerformPeopleAccessTest.php`.
+
 ## Как проверить
 - `php artisan test --filter=Perform` — Feature: `OneOnOnesTest` (личные заметки не уходят никому, кроме
   руководителя встречи; права по полям), `ObjectivesTest` (прогресс, check-in, циклы выравнивания, видимость),

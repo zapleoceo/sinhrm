@@ -92,6 +92,10 @@
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `DeskService` спрашивает «это HR?» и «чья карточка?» через контракт People `PeopleAccess` (не через класс `PeopleScope`). Тест — `tests/Unit/Desk/DeskPeopleAccessTest.php`.
+- `DeskSlaJob` ставит задачи эскалации через контракт Scripts `TaskScheduler`.
+
 ## Как проверить
 - `php artisan test --filter=Desk` — матрица доступа (сотрудник/руководитель/коллега/HR), скрытие внутренних заметок,
   первая реакция и статусы, флаги SLA, идемпотентность `desk.sla`, файлы.

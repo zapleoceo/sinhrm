@@ -172,6 +172,12 @@ Auth — `UserRepository::find` (фоновый actor).
 - Ошибки API → i18n-ключ: `mailErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `MailMessageProcessor` ставит задачу «перезвонить новому кандидату» через контракт Scripts `TaskScheduler::scheduleNewApplicantCall()`.
+- `AiMailClassifier` зовёт ИИ через контракт Ai `AiGateway`. Тест — `tests/Unit/MailAgent/MailAiGatewayTest.php` (ИИ выключен → ничего не отправляется).
+- `MailAgentService` и `MailSyncService` узнают состояние Gmail и того, кто его подключил, через контракт GoogleWorkspace `GoogleConnections`.
+- `MailMessageProcessor` создаёт или находит кандидата через контракт Recruiting `CandidateIntake::createOrMatch()`.
+
 ## Как проверить
 Бэкенд (Gmail подменён `Http::fake`, письма **выдуманы**, `tests/Support/MailFixtures`):
 - `tests/Feature/MailAgent/MailSyncTest` — все виды писем за один запуск (отклик → кандидат + заявка + касание + задача со

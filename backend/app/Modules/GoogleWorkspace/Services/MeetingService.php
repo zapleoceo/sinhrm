@@ -8,12 +8,12 @@ use App\Models\User;
 use App\Modules\GoogleWorkspace\Contracts\CalendarClient;
 use App\Modules\GoogleWorkspace\DTO\MeetingData;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
+use App\Modules\Recruiting\Contracts\TouchpointLogger;
 use App\Modules\Recruiting\DTO\TouchpointData;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Touchpoint;
-use App\Modules\Recruiting\Services\TouchpointService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
@@ -28,7 +28,7 @@ final readonly class MeetingService
     public function __construct(
         private CalendarClient $calendar,
         private GoogleConnectionStore $connections,
-        private TouchpointService $touchpoints,
+        private TouchpointLogger $touchpoints,
         private LoggerInterface $log,
     ) {}
 

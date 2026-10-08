@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\CandidateIntake;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\DTO\CandidateData;
@@ -27,7 +28,7 @@ use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 
 /** Candidates: listing in scope, creation with dedupe by contacts, editing. */
-final readonly class CandidateService
+final readonly class CandidateService implements CandidateIntake
 {
     public function __construct(
         private CandidateRepository $candidates,

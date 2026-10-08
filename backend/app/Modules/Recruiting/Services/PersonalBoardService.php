@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
+use App\Modules\Recruiting\Contracts\PersonalBoardRepository;
+use App\Modules\Recruiting\Contracts\PipelineRepository;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\BoardCard;
 use App\Modules\Recruiting\Models\BoardColumn;
-use App\Modules\Recruiting\Models\BoardLayout;
-use App\Modules\Recruiting\Models\PipelineStage;
 use App\Modules\Recruiting\Models\Vacancy;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -26,16 +26,13 @@ final readonly class PersonalBoardService
     /** Upper bound on keys in one saved layout (funnel stages + own columns), a request-size guard. */
     public const int MAX_LAYOUT_KEYS = 100;
 
+    public function __construct(private PersonalBoardRepository $boards, private PipelineRepository $pipelines) {}
+
     /** @return array{columns: Collection<int, BoardColumn>, cards: list<array{application_id: int, column_id: int}>, layout: list<string>} */
     public function board(User $user, Vacancy $vacancy): array
     {
         $columns = $this->columns($user, $vacancy);
-        $cards = BoardCard::query()
-            ->where('user_id', $user->id)
-            ->whereIn('column_id', $columns->modelKeys())
-            ->whereIn('application_id', Application::query()->select('id')->where('vacancy_id', $vacancy->id))
-            ->orderBy('id')
-            ->get()
+        $cards = $this->boards->cards($user->id, $columns->modelKeys(), $vacancy->id)
             ->map(static fn (BoardCard $c): array => ['application_id' => $c->application_id, 'column_id' => $c->column_id])
             ->all();
 
@@ -44,17 +41,16 @@ final readonly class PersonalBoardService
 
     public function create(User $user, Vacancy $vacancy, string $title, ?string $color): BoardColumn
     {
-        $query = BoardColumn::query()->where('user_id', $user->id)->where('scope_vacancy_id', $vacancy->id);
-        if ($query->count() >= self::MAX_COLUMNS) {
+        if ($this->boards->columnCount($user->id, $vacancy->id) >= self::MAX_COLUMNS) {
             throw RecruitingException::boardColumnLimit(self::MAX_COLUMNS);
         }
 
-        return BoardColumn::query()->create([
+        return $this->boards->createColumn([
             'user_id' => $user->id,
             'scope_vacancy_id' => $vacancy->id,
             'title' => $title,
             'color' => $color,
-            'position' => (int) $query->max('position') + 1,
+            'position' => $this->boards->maxColumnPosition($user->id, $vacancy->id) + 1,
         ]);
     }
 
@@ -62,7 +58,7 @@ final readonly class PersonalBoardService
     public function update(User $user, int $columnId, array $attributes): BoardColumn
     {
         $column = $this->own($user, $columnId);
-        $column->fill($attributes)->save();
+        $this->boards->updateColumn($column, $attributes);
 
         return $column;
     }
@@ -70,7 +66,7 @@ final readonly class PersonalBoardService
     /** Its cards simply go back to their real stage column (the card rows cascade). */
     public function delete(User $user, int $columnId): void
     {
-        $this->own($user, $columnId)->delete();
+        $this->boards->deleteColumn($this->own($user, $columnId));
     }
 
     /**
@@ -93,11 +89,7 @@ final readonly class PersonalBoardService
         }
         // One atomic INSERT .. ON CONFLICT on the (user_id, vacancy_id) unique key: two first saves at once
         // (two tabs, a double drop) no longer race a SELECT-then-INSERT into a unique violation. The last write wins.
-        BoardLayout::query()->upsert(
-            [['user_id' => $user->id, 'vacancy_id' => $vacancy->id, 'keys' => json_encode($keys, JSON_THROW_ON_ERROR)]],
-            ['user_id', 'vacancy_id'],
-            ['keys'],
-        );
+        $this->boards->storeLayout($user->id, $vacancy->id, $keys);
 
         return $this->layout($user, $vacancy, $columns);
     }
@@ -113,7 +105,7 @@ final readonly class PersonalBoardService
     {
         $stages = $this->stageKeys($vacancy);
         $cols = array_map(static fn (int $id): string => 'col:'.$id, $columns->modelKeys());
-        $saved = BoardLayout::query()->where('user_id', $user->id)->where('vacancy_id', $vacancy->id)->first()->keys ?? [];
+        $saved = $this->boards->savedLayout($user->id, $vacancy->id);
         $keys = array_values(array_filter($saved, static fn (mixed $k): bool => in_array($k, $stages, true) || in_array($k, $cols, true)));
         foreach ($stages as $i => $stage) {
             if (! in_array($stage, $keys, true)) {
@@ -133,22 +125,20 @@ final readonly class PersonalBoardService
     /** @return list<string> "stage:<id>" in funnel order */
     private function stageKeys(Vacancy $vacancy): array
     {
-        return array_values(PipelineStage::query()->where('pipeline_id', $vacancy->pipeline_id)->orderBy('position')->orderBy('id')
-            ->pluck('id')->map(static fn (int $id): string => 'stage:'.$id)->all());
+        return array_map(static fn (int $id): string => 'stage:'.$id, $this->pipelines->stageIds($vacancy->pipeline_id));
     }
 
     /** Back to the defaults: only the shared stages (all own columns of the vacancy and their cards go). */
     public function reset(User $user, Vacancy $vacancy): void
     {
-        BoardColumn::query()->where('user_id', $user->id)->where('scope_vacancy_id', $vacancy->id)->delete();
-        BoardLayout::query()->where('user_id', $user->id)->where('vacancy_id', $vacancy->id)->delete();
+        $this->boards->reset($user->id, $vacancy->id);
     }
 
     /** Files the card into an own column of the same vacancy, or (null) back to its stage column. Stage untouched. */
     public function file(User $user, Application $application, ?int $columnId): void
     {
         if ($columnId === null) {
-            BoardCard::query()->where('user_id', $user->id)->where('application_id', $application->id)->delete();
+            $this->boards->unfileCard($user->id, $application->id);
 
             return;
         }
@@ -156,21 +146,17 @@ final readonly class PersonalBoardService
         if ($column->scope_vacancy_id !== $application->vacancy_id) {
             throw RecruitingException::boardColumnMismatch();
         }
-        BoardCard::query()->updateOrCreate(
-            ['user_id' => $user->id, 'application_id' => $application->id],
-            ['column_id' => $column->id],
-        );
+        $this->boards->fileCard($user->id, $application->id, $column->id);
     }
 
     /** @return Collection<int, BoardColumn> */
     private function columns(User $user, Vacancy $vacancy): Collection
     {
-        return BoardColumn::query()->where('user_id', $user->id)->where('scope_vacancy_id', $vacancy->id)
-            ->orderBy('position')->orderBy('id')->get();
+        return $this->boards->columns($user->id, $vacancy->id);
     }
 
     private function own(User $user, int $columnId): BoardColumn
     {
-        return BoardColumn::query()->where('user_id', $user->id)->findOrFail($columnId);
+        return $this->boards->ownColumn($user->id, $columnId);
     }
 }

@@ -193,6 +193,12 @@ skipped, failed}`.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `WorkflowRunController` и `AssigneeResolver` берут контекст, HR-проверку и сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`. Тест — `tests/Unit/Workflows/WorkflowsPeopleAccessTest.php`.
+- `TaskStepExecutor` (и наследники) и `WorkflowRunService` ставят и закрывают задачи шагов через контракт Scripts `TaskScheduler`.
+- `AddCalendarEventExecutor` проверяет подключение Календаря через контракт GoogleWorkspace `GoogleConnections`.
+- `CreateDocumentExecutor` ищет шаблон через контракт Documents `DocumentTemplateRepository::find()` (нет шаблона → шаг `failed`, `document_template_missing`, как раньше), проверка конфига — `Rule::exists('document_templates', 'id')` без импорта модели Documents. Класс `DocumentService` остаётся прямым импортом: его контракт потребовал бы модели People/Documents в сигнатуре (новые нарушения границы). Тест — `tests/Unit/Workflows/CreateDocumentExecutorTest.php`.
+
 ## Как проверить
 Бэкенд: `tests/Feature/Workflows/WorkflowTemplatesApiTest` (401/403, CRUD с шагами, проверка `config` каждого действия,
 отбрасывание неизвестных ключей, reorder, ключ вебхука не возвращается и хранится зашифрованным, удаление только без

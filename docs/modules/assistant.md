@@ -334,6 +334,9 @@ pointer capture, уход фокуса с окна, скрытая вкладк�
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `AssistantChatService`, `AssistantQuipService` и `AssistantVoiceService` зовут ИИ через контракт Ai `AiGateway` (реализация — только `AiService`). Тест — `tests/Unit/Assistant/AssistantAiGatewayTest.php`.
+
 ## Как проверить
 - Mobile flow открытия/закрытия чата в `e2e/flows.pw.ts` отвечает только на один синтетический `GET /api/assistant/status` на локальном origin теста: `{ data: { available, reason, mcp_url } }`. Проверки незаписанных GET и отсутствия записей остаются строгими; ход AI и MCP не вызываются.
 - `tests/Feature/Assistant/AssistantChatTest.php` — статус, ход с серверным и клиентским инструментами (тело запроса к

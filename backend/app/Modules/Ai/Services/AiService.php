@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Ai\Services;
 
 use App\Modules\Ai\Contracts\AiConversationHandler;
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiProvider;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\Contracts\AiTranscriber;
@@ -41,7 +42,7 @@ use Illuminate\Support\Sleep;
  * 5. valid → pending→done (guarded) → handler apply() exactly once.
  * Logs carry ids, counters and codes only — never prompts, answers or keys.
  */
-final readonly class AiService
+final readonly class AiService implements AiGateway
 {
     /** Longest synchronous wait for an answer (serverless limit 60 s minus the rest of the request). */
     public const int WAIT_SECONDS = 40;

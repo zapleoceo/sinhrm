@@ -55,6 +55,11 @@ final class EloquentPipelineRepository implements PipelineRepository
         return PipelineStage::query()->where('pipeline_id', $pipelineId)->orderBy('position')->first();
     }
 
+    public function stageIds(int $pipelineId): array
+    {
+        return array_values(PipelineStage::query()->where('pipeline_id', $pipelineId)->orderBy('position')->orderBy('id')->pluck('id')->all());
+    }
+
     public function rejectReasons(bool $onlyActive): Collection
     {
         return RejectReason::query()

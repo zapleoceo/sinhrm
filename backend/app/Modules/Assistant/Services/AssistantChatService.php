@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Assistant\Services;
 
 use App\Models\User;
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\DTO\AiOutcome;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Enums\AiRequestStatus;
 use App\Modules\Ai\Exceptions\AiException;
-use App\Modules\Ai\Services\AiService;
 use App\Modules\Assistant\Ai\AssistantChatHandler;
 use App\Modules\Assistant\Ai\AssistantPrompt;
 use App\Modules\Assistant\Enums\ToolRunner;
@@ -39,7 +39,7 @@ final readonly class AssistantChatService
     public const int WAIT_SECONDS = 25;
 
     public function __construct(
-        private AiService $ai,
+        private AiGateway $ai,
         private AiRequestRepository $requests,
         private ToolRegistry $tools,
         private Cache $cache,

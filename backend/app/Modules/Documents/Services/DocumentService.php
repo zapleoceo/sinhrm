@@ -17,9 +17,9 @@ use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Documents\Support\TemplateFiller;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\Enums\TaskType;
-use App\Modules\Scripts\Services\TaskService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
@@ -41,7 +41,7 @@ final readonly class DocumentService
     public function __construct(
         private DocumentRepository $documents,
         private DocumentStorage $storage,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
         private LoggerInterface $log,
     ) {}
 

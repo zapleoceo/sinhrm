@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Workflows\Executors;
 
+use App\Modules\Documents\Contracts\DocumentTemplateRepository;
 use App\Modules\Documents\Exceptions\DocumentException;
-use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Documents\Services\DocumentService;
-use App\Modules\Documents\Services\DocumentTemplateService;
 use App\Modules\Workflows\Contracts\StepExecutor;
 use App\Modules\Workflows\DTO\StepContext;
 use App\Modules\Workflows\DTO\StepOutcome;
 use App\Modules\Workflows\Enums\StepAction;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\Rule;
 
 /**
@@ -21,7 +19,7 @@ use Illuminate\Validation\Rule;
  */
 final readonly class CreateDocumentExecutor implements StepExecutor
 {
-    public function __construct(private DocumentTemplateService $templates, private DocumentService $documents) {}
+    public function __construct(private DocumentTemplateRepository $templates, private DocumentService $documents) {}
 
     public function action(): StepAction
     {
@@ -31,7 +29,7 @@ final readonly class CreateDocumentExecutor implements StepExecutor
     public function configRules(): array
     {
         return [
-            'document_template_id' => ['required', 'integer', Rule::exists(DocumentTemplate::class, 'id')],
+            'document_template_id' => ['required', 'integer', Rule::exists('document_templates', 'id')],
             'send' => ['sometimes', 'boolean'],
         ];
     }
@@ -39,9 +37,8 @@ final readonly class CreateDocumentExecutor implements StepExecutor
     public function execute(StepContext $context): StepOutcome
     {
         $templateId = $context->step->int('document_template_id');
-        try {
-            $template = $this->templates->find($templateId ?? 0);
-        } catch (ModelNotFoundException) {
+        $template = $this->templates->find($templateId ?? 0);
+        if ($template === null) {
             return StepOutcome::failed('document_template_missing');
         }
         if ($template->archived) {

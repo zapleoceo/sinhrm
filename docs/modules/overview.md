@@ -111,6 +111,10 @@ Scripts; своих таблиц нет. Блоки других модулей 
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `DashboardService` читает задачи пользователя через контракт Scripts `TaskReader::list()` (не через класс `TaskService`).
+- `DashboardService` берёт область видимости через контракт Recruiting `RecruitingAccess`, порог «застоя» — из `ApplicationRepository::STALE_DAYS` (вместо `StalenessService::DEFAULT_DAYS`). Тест — `tests/Unit/Overview/DashboardContractsTest.php` (главная собирается из ответов контрактов, без БД).
+
 ## Как проверить
 `tests/Feature/TimeOff/LeaveRequestApiTest::test_dashboard_shows_who_is_out_and_my_approvals` — блок `timeoff`.
 `tests/Feature/Overview/DashboardApiTest` — гость 401; рекрутер видит только свой филиал (счётчики, зависшие, «Вхідні»,

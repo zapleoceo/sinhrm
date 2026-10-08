@@ -70,6 +70,9 @@
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `KnowledgeService` определяет редактора и филиал сотрудника через контракт People `PeopleAccess`. Тест — `tests/Unit/Knowledge/KnowledgePeopleAccessTest.php`.
+
 ## Как проверить
 `php artisan test --filter=Knowledge` — запись только админам, черновики скрыты (404), очистка XSS (`<script>`,
 `javascript:`, `<img onerror>`), аудитория по филиалу и роли, поиск без учёта регистра и с буквальными `%`/`_`,

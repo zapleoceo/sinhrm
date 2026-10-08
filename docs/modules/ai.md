@@ -124,6 +124,8 @@ is_active, activated_by, activated_at, created_at, updated_at`. Хранится
 пробный запрос не повторяется). Пример для проб — `backend/app/Modules/Ai/Samples/<purpose>.json` (первый кейс из
 тестовых фикстур, только синтетика). Аудит: автор и кто активировал — в строке, плюс строки лога `ai.prompt_saved`,
 `ai.prompt_activated`, `ai.prompt_builtin` (id пользователя, без текста); смена возможности — `integration_logs`.
+Имена авторов версий `AiPromptAdminService` берёт через контракт Auth `UserRepository::namesByIds()`, а не запросом
+к модели `User` (тест `AiPromptEditorTest::test_each_version_shows_its_own_author`).
 Кеш промпта: текст версии стабилен (без дат/id — проверяется при сохранении), так что префикс кешируется так же, как у
 встроенного.
 
@@ -417,6 +419,10 @@ AIB_PROJECT_KEY=<ключ, только в своей оболочке> php arti
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Ошибки: `aiErrorKey` (панели ИИ, скрининг) и `aiTextErrorKey` (подсказка под разделом вакансии; любой 429 → «throttled», коды провайдера не показываются) живут в `ai.service.ts` и читают код/статус ответа общими `apiErrorCode`/`apiErrorStatus` (`core/api/api-error.ts`). Две функции намеренно разные: на 429 с кодом `ai_budget_exceeded` панель ИИ пишет про бюджет, а форма вакансии — «слишком часто».
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- Другие модули зависят от контракта `Contracts\AiGateway` (`available`, `unavailableReason`, `assertAvailable`, `run`, `transcribe`, `refresh`, константа `WAIT_SECONDS`), а не от класса `AiService`. Реализует контракт только `Services\AiService` (правило 7 CLAUDE.md: шлюзы, лимиты, отсрочка и запрет логирования промптов живут там), биндинг — `AiServiceProvider`. Значение `WAIT_SECONDS` пока объявлено и в контракте, и в `AiService` (класс параллельно правит ветка DRY-правок); равенство проверяет `tests/Unit/Ai/AiGatewayTest.php`.
+- `AiSettingsReader` и `OpenRouterProvider` читают настройки брокера через контракт Integrations `IntegrationConfigs`, `AiPromptAdminService` меняет возможность функции через `IntegrationSettings::update()`. Тест — `tests/Unit/Ai/AiSettingsReaderContractTest.php`.
 
 ## Как проверить
 - `tests/Feature/Ai/AiServiceTest` — submit/poll, возможность и модель (пусто → без `model`), бэкофф в пределах 40 с →

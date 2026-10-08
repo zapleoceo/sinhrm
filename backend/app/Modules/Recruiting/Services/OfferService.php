@@ -6,10 +6,11 @@ namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
 use App\Modules\Channels\Services\MessageService;
+use App\Modules\Documents\Contracts\DocumentTemplateRepository;
 use App\Modules\Documents\Enums\DocumentVariable;
 use App\Modules\Documents\Exceptions\DocumentException;
-use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Documents\Support\TemplateFiller;
+use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\OfferStatus;
 use App\Modules\Recruiting\Enums\StageKind;
@@ -28,18 +29,24 @@ final readonly class OfferService
 {
     public const string TEMPLATE_CATEGORY = 'offer';
 
-    public function __construct(private MessageService $messages, private LoggerInterface $log) {}
+    public function __construct(
+        private MessageService $messages,
+        private LoggerInterface $log,
+        private DocumentTemplateRepository $documentTemplates,
+        private ApplicationRepository $applications,
+    ) {}
 
     /** @return list<array{id: int, name: string}> */
     public function templates(): array
     {
-        return DocumentTemplate::query()->where('category', self::TEMPLATE_CATEGORY)->where('archived', false)->orderBy('name')
-            ->get(['id', 'name'])->map(static fn (DocumentTemplate $t): array => ['id' => $t->id, 'name' => $t->name])->values()->all();
+        $templates = $this->documentTemplates->activeOfCategory(self::TEMPLATE_CATEGORY);
+
+        return array_values($templates->map(static fn ($t): array => ['id' => $t->id, 'name' => $t->name])->all());
     }
 
     public function forApplication(Application $application): ?Offer
     {
-        return Offer::query()->where('application_id', $application->id)->first();
+        return $this->applications->offerFor($application->id);
     }
 
     /**
@@ -58,7 +65,7 @@ final readonly class OfferService
         if ($existing !== null) {
             throw RecruitingException::offerExists($existing->id);
         }
-        $template = DocumentTemplate::query()->find($data['template_id']);
+        $template = $this->documentTemplates->find($data['template_id']);
         if ($template === null || $template->category !== self::TEMPLATE_CATEGORY) {
             throw RecruitingException::templateNotOffer();
         }
@@ -79,7 +86,7 @@ final readonly class OfferService
             DocumentVariable::Conditions->value => $data['conditions'],
         ])['text'];
 
-        $offer = Offer::query()->create([
+        $offer = $this->applications->createOffer([
             'application_id' => $application->id,
             'template_id' => $template->id,
             'position' => $data['position'],
@@ -107,7 +114,7 @@ final readonly class OfferService
         }
         $application = $offer->application;
         $this->messages->send($actor, $application->candidate, Channel::Email, $offer->content_md, $application->id, 'Оффер: '.$offer->position);
-        $offer->update(['status' => OfferStatus::Sent->value, 'sent_at' => Carbon::now()]);
+        $this->applications->updateOffer($offer, ['status' => OfferStatus::Sent->value, 'sent_at' => Carbon::now()]);
         $this->log->info('recruiting.offer_sent', ['id' => $offer->id, 'by' => $actor->id]);
 
         return $offer;
@@ -119,7 +126,7 @@ final readonly class OfferService
         if ($offer->status !== OfferStatus::Sent || ! in_array($status, [OfferStatus::Accepted, OfferStatus::Declined], true)) {
             throw RecruitingException::offerStatus();
         }
-        $offer->update(['status' => $status->value, 'decided_at' => Carbon::now()]);
+        $this->applications->updateOffer($offer, ['status' => $status->value, 'decided_at' => Carbon::now()]);
         $this->log->info('recruiting.offer_decided', ['id' => $offer->id, 'status' => $status->value, 'by' => $actor->id]);
 
         return $offer;

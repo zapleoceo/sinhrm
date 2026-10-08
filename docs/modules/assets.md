@@ -75,6 +75,10 @@
 - Ошибки API → i18n-ключ: `assetsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `AssetController` получает контекст доступа и карточку сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`, а не через `PeopleScope`/`EmployeeService`. Тест — `tests/Unit/Assets/AssetPeopleAccessTest.php` (чужой сотрудник → 404 без запроса карточки).
+- `CollectAssetsExecutor` (шаг воркфлоу «сдать имущество») передаёт базовому `TaskStepExecutor` контракт Scripts `TaskScheduler`, а не класс `TaskService`.
+
 ## Как проверить
 `php artisan test --filter=Assets` — доступ, уникальность номера (в т.ч. регистр), выдача/возврат/повторная выдача и
 история, запрет прямого `assigned`, доступ к вкладке по People, шаг `collect_assets` (одна задача со списком,

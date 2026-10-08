@@ -132,6 +132,9 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- Историю записи другим модулям отдаёт контракт `Contracts\AuditHistory` (`history(entities, page, perPage)`; реализация — `Services\AuditService`, биндинг рядом с `AuditLogger` в провайдере модуля). Тест — `tests/Unit/Audit/AuditHistoryTest.php`.
+
 ## Как проверить
 - `php artisan test tests/Feature/Audit tests/Unit/Audit`: запись и автор, маскирование, ключ без значения,
   смена роли, перевод по воронке, доступ к журналу и вкладкам, исключение анонимных модулей, хранение;

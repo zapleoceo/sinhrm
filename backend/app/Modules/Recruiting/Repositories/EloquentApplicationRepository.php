@@ -8,6 +8,7 @@ use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\Offer;
 use App\Modules\Recruiting\Models\StageChange;
 use App\Modules\Recruiting\Support\ApplicationVisibility;
 use Illuminate\Database\Eloquent\Builder;
@@ -91,6 +92,21 @@ final class EloquentApplicationRepository implements ApplicationRepository
             ->orderBy('id')
             ->limit($limit)
             ->get();
+    }
+
+    public function offerFor(int $applicationId): ?Offer
+    {
+        return Offer::query()->where('application_id', $applicationId)->first();
+    }
+
+    public function createOffer(array $attributes): Offer
+    {
+        return Offer::query()->create($attributes);
+    }
+
+    public function updateOffer(Offer $offer, array $attributes): void
+    {
+        $offer->update($attributes);
     }
 
     public function transaction(callable $callback): mixed

@@ -85,6 +85,9 @@ JSON (ошибка валидации не превращается в реди�
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `SafeSpeakService::isHandler()` проверяет HR через контракт People `PeopleAccess`. Тест — `tests/Unit/SafeSpeak/SafeSpeakPeopleAccessTest.php`.
+
 ## Как проверить
 - `php artisan test --filter=SafeSpeak` — схема и строки БД не содержат ни IP, ни user agent, ни id/имени/почты
   отправителя (в т.ч. вошедшего), нет записи в `sessions`; код хранится только HMAC; лимит неверных кодов и отправок

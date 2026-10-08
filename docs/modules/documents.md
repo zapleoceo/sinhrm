@@ -111,6 +111,9 @@ People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайо�
 
 Категория `offer` — шаблоны офферов для Recruiting (`docs/modules/recruiting.md`). Добавлены переменные `{Зарплата}`,
 `{Дата виходу}`, `{Умови}`: их заполняет только оффер; в документах сотрудника они остаются «—».
+Recruiting берёт шаблоны через контракт `Contracts\DocumentTemplateRepository` (`find()` и `activeOfCategory()` —
+неархивные шаблоны категории по имени, только id и имя), а не через модель `DocumentTemplate`. Тест —
+`DocumentsApiTest::test_active_of_category_gives_live_templates_of_one_category_by_name`.
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Статус документа — пилюля `.app-pill` (`DOCUMENT_STATUS_TONE`: черновик/архив — пунктирный ○, отправлен ◆ warn, подписан ● good, отклонён ■ bad); архивный документ — приглушённое название без потери контраста (не opacity); кнопка-название в профиле — 44px на телефоне; пустой список — `.app-empty` (пунктирная ветка). Тест вида — `features/documents/documents.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
@@ -126,6 +129,10 @@ People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайо�
 - Ошибки API → i18n-ключ: `documentsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `DocumentController`, `DocumentTemplateController` и `DocumentNavBadges` берут контекст и карточку сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`. Тест — `tests/Unit/Documents/DocumentsPeopleContractsTest.php` (предпросмотр шаблона с сотрудником из контракта).
+- `DocumentService` ставит, закрывает и отмечает задачи «ознакомиться» через контракт Scripts `TaskScheduler` (`schedule`, `closeByRule`, `setDone`).
 
 ## Как проверить
 Бэкенд: `tests/Feature/Documents/DocumentsApiTest` (401/403, неизвестные переменные и архив шаблонов, предпросмотр:

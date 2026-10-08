@@ -12,6 +12,14 @@ interface UserRepository
 {
     public function find(int $id): ?User;
 
+    /**
+     * Display names of the given users (missing ids are simply absent).
+     *
+     * @param  list<int>  $ids
+     * @return array<int, string> id => name
+     */
+    public function namesByIds(array $ids): array;
+
     public function findByGoogleId(string $googleId): ?User;
 
     /** Case-insensitive lookup. */

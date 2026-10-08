@@ -6,12 +6,12 @@ namespace App\Modules\TimeOff\Services;
 
 use App\Models\User;
 use App\Modules\Core\Contracts\NavBadgeProvider;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\PeopleAccess;
 
 /** "Погодження відсутностей" (/timeoff/approvals): pending leave requests I may decide (0 for non-managers). */
 final readonly class TimeOffNavBadges implements NavBadgeProvider
 {
-    public function __construct(private LeaveRequestService $requests, private PeopleScope $scope) {}
+    public function __construct(private LeaveRequestService $requests, private PeopleAccess $scope) {}
 
     public function badges(User $user): array
     {

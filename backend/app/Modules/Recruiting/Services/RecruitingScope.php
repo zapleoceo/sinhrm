@@ -9,6 +9,7 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Contracts\AccessibleBranches;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\HiringTeamRepository;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
 use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Models\Candidate;
@@ -26,7 +27,7 @@ use App\Modules\Recruiting\Models\Vacancy;
  *   interviewers); an interviewer sees only the candidate of the application they are assigned to;
  * - blocked — nothing.
  */
-final readonly class RecruitingScope
+final readonly class RecruitingScope implements RecruitingAccess
 {
     private const array MANAGERS = [UserRole::Superadmin, UserRole::Admin];
 

@@ -290,6 +290,13 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 ### Слои
 `Http/Controllers/*` (оркестрация) → `Http/Requests/*` (валидация + `authorize()`) → `Services/*` → `Contracts/*Repository`
 (`Repositories/Eloquent*`, `QueryReportRepository`). Привязки — `Providers/RecruitingServiceProvider`.
+- Шаблоны формы вакансии (`vacancy_templates`) хранит `Contracts\VacancyRepository` (`templates()`, `createTemplate()`,
+  `saveTemplate()`, `deleteTemplate()`): `VacancyTemplateController` только проверяет политику и отдаёт ответ.
+  Тест — `tests/Unit/Recruiting/VacancyTemplateControllerTest.php`.
+- Сервисы не строят запросы сами: офферы (`offers`, один на отклик) — `ApplicationRepository::offerFor()/createOffer()/updateOffer()`,
+  шаблоны офферов — контракт Documents `DocumentTemplateRepository` (`activeOfCategory('offer')`, `find()`), страница
+  карьеры — `VacancyRepository::published()/findPublishedBySlug()/createCareerSubmission()`, категория и филиал для
+  «Створити з ШІ» — `Directory\Contracts\DictionaryRepository::find()`. Тест — `tests/Unit/Recruiting/RecruitingRepositoriesTest.php`.
 
 ### Фронтенд (`frontend/src/app/features/recruiting`)
 | Файл | Что |
@@ -369,6 +376,13 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 - поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (обратный слеш, `Like::contains`) (кандидаты, вакансии, команда найма).
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
+### Зависимости через контракты (2026-10-08)
+- `CareerSiteService` ставит задачу «перезвонить» через контракт Scripts `TaskScheduler::scheduleNewApplicantCall()`.
+- `ScreeningService` и `VacancyTextService` зовут ИИ через контракт Ai `AiGateway` (значение ожидания по умолчанию — `AiGateway::WAIT_SECONDS`). Тест — `tests/Unit/Recruiting/RecruitingAiGatewayTest.php`.
+- Для других модулей Recruiting отдаёт контракт `Contracts\RecruitingAccess` (`for` → `Scope`, `canWrite`, `canManage`, `canSeeCandidate`, `canSeeInboxItem`; реализация — `Services\RecruitingScope`, биндинг в `RecruitingServiceProvider`). Scripts, Reports и Overview зависят от него, а не от класса. Порог «застоя» — константа `ApplicationRepository::STALE_DAYS` (3 дня), `StalenessService::DEFAULT_DAYS` ссылается на неё. Тест — `tests/Unit/Recruiting/RecruitingAccessTest.php`.
+- `CandidateHistoryController` читает журнал через контракт Audit `AuditHistory`.
+- Машинные источники других модулей идут через контракты: `Contracts\CandidateIntake::createOrMatch()` (импорт из Google Sheets, письма с job-сайтов; реализация — `CandidateService`) и `Contracts\TouchpointLogger::log()` (встреча из GoogleWorkspace; реализация — `TouchpointService`). Биндинги — `RecruitingServiceProvider`, тест — `tests/Unit/Recruiting/RecruitingAccessTest.php`.
 
 ## Страница вакансий и офферы
 
@@ -468,6 +482,10 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 В журнал действий не пишется (личное состояние вида). Персональных данных в этих строках нет: при обезличивании кандидата они
 остаются; при удалении пользователя, вакансии или отклика удаляются каскадом. Фронт: `board/board.page.ts` с входом
 `personal`, `board/board.store.ts` (оптимистичный перенос с откатом), `candidates/candidates-view.ts`.
+Запросы к трём таблицам доски — в `Contracts\PersonalBoardRepository` (`Repositories\EloquentPersonalBoardRepository`:
+колонки, карточки, атомарный upsert порядка, сброс); id этапов воронки по порядку — `PipelineRepository::stageIds()`.
+В `PersonalBoardService` остались только правила: лимит колонок, проверка и «починка» порядка. Тест —
+`tests/Unit/Recruiting/PersonalBoardServiceTest.php` (на моках репозиториев, без БД).
 
 ### Сортировка и фильтры таблиц отчётов и источников (2026-10-02)
 Клик по названию колонки сортирует (повторный — в обратную сторону), воронка рядом — фильтр колонки; общий компонент `core/ui/table` (клиентская таблица `ClientTable`: все строки уже пришли, сравнение строк по языку интерфейса, пустые — в конце). Состояние — в адресе страницы с префиксом таблицы, ссылкой можно поделиться. Подключение — [guides/tables.md](../guides/tables.md).

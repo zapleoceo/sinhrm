@@ -244,6 +244,9 @@
 `Http/Requests` → `Services` (`EmployeeService`, `ChangeRequestService`, `HireService`, `PeopleScope`) →
 `Contracts/EmployeeRepository`, `ChangeRequestRepository` (`Repositories/Eloquent*`). Ошибки — `Exceptions/PeopleException`
 (`{message, code}`). Фабрика `Database/Factories/EmployeeFactory` — синтетика на `example.test`.
+История оплаты (`employee_compensations`) тоже идёт через `EmployeeRepository` (`addCompensation()`,
+`compensationHistory()` — новые сверху по `effective_on`, затем id); `CompensationService` только выбирает действующую
+запись и собирает ответ. Тест — `tests/Unit/People/CompensationServiceTest.php`.
 
 ### Сортировка и фильтры списка (2026-10-02)
 `ListPeopleRequest` проверяет `sort` по `Enums/EmployeeSort` и `dir` по `asc|desc` (белый список; текст запроса в SQL не
@@ -319,6 +322,10 @@
 ### Сортировка и фильтры истории оплаты (2026-10-02)
 Клик по названию колонки сортирует (повторный — в обратную сторону), воронка рядом — фильтр колонки; общий компонент `core/ui/table` (клиентская таблица `ClientTable`: все строки уже пришли, сравнение строк по языку интерфейса, пустые — в конце). Состояние — в адресе страницы с префиксом таблицы, ссылкой можно поделиться. Подключение — [guides/tables.md](../guides/tables.md).
 - Вкладка «Компенсація» (`/people/:id`, `/me`): у истории появилась строка заголовков; сумма, валюта и период — отдельными колонками («Діє з» — диапазон дат, «Сума» — диапазон, «Валюта», «Період» — выбор, «Причина» — текст). Порядок API — новые сверху (стрелка на «Діє з»), текущая запись по-прежнему жирная. Адрес — `comp_*`. Тест — `profile/compensation.tab.spec.ts`. Открытый фильтр колонки объявляет число показанных строк — «Знайдено: N» (`appTableSortCount` = `rows().length`, с 2026-10-03).
+
+### Зависимости через контракты (2026-10-08)
+- People отдаёт другим модулям два контракта: `Contracts\PeopleAccess` (`isAdmin`, `employeeOf`, `for` → `PeopleContext`; реализация — `Services\PeopleScope`) и `Contracts\EmployeeLookup` (`find` с 404, `list` — запрос пикера; реализация — `Services\EmployeeService`). Биндинги — `PeopleServiceProvider`. Модули Assets, Desk, Documents, HiringRequests, Knowledge, Perform, Pulse, Reports, SafeSpeak, Time, TimeOff, Workflows зависят от интерфейсов, а не от классов сервисов (граница модулей). Внутри People сервисы используются напрямую. Тест — `tests/Unit/People/PeopleContractsTest.php`, двойник для тестов других модулей — `tests/Support/FakePeopleAccess.php`.
+- Вкладка «Історія» (`EmployeeHistoryController`) читает журнал через контракт Audit `AuditHistory`, а не через класс `AuditService`. Тест — `tests/Unit/People/EmployeeHistoryControllerTest.php`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/People/PeopleApiTest` (401/403, справочник без PII и `perPage` строкой, фильтры, матрица видимости

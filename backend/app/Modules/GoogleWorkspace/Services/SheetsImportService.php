@@ -13,18 +13,18 @@ use App\Modules\GoogleWorkspace\Exceptions\GoogleException;
 use App\Modules\GoogleWorkspace\Models\SheetImport;
 use App\Modules\GoogleWorkspace\Support\SheetRange;
 use App\Modules\Integrations\Enums\LogLevel;
+use App\Modules\Recruiting\Contracts\CandidateIntake;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\DTO\CandidateData;
 use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
-use App\Modules\Recruiting\Services\CandidateService;
 use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Google Sheets → candidates: read the header row, suggest a column mapping, preview, import with dedupe
- * (CandidateService::createOrMatch) and remember mapping + last imported row for incremental re-sync.
+ * (CandidateIntake::createOrMatch) and remember mapping + last imported row for incremental re-sync.
  * Reports never contain cell values — only counts and {row, code}.
  */
 final readonly class SheetsImportService
@@ -41,7 +41,7 @@ final readonly class SheetsImportService
     public function __construct(
         private SheetsClient $sheets,
         private SheetImportRepository $imports,
-        private CandidateService $candidates,
+        private CandidateIntake $candidates,
         private VacancyRepository $vacancies,
         private GoogleConnectionStore $connections,
         private LoggerInterface $log,

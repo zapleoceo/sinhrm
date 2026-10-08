@@ -149,6 +149,9 @@ Ringostat станет доступен только после появлени
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `ChannelContext` берёт режим канала и его конфиг через контракт Integrations `IntegrationConfigs` (не через класс `IntegrationConfigLoader`). Тест — `tests/Unit/Channels/ChannelContextTest.php`.
+
 ## Как проверить
 Бэкенд: `tests/Feature/Channels/WebhookApiTest.php` (404 неизвестного/выключенного, 403 на неверный/отсутствующий секрет
 для каждого провайдера, сопоставление по @username/телефону, «Вхідні», идемпотентность, исходящее от владельца в Telegram,

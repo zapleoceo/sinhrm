@@ -6,6 +6,7 @@ namespace App\Modules\People\Contracts;
 
 use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\Models\Employee;
+use App\Modules\People\Models\EmployeeCompensation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -69,6 +70,16 @@ interface EmployeeRepository
 
     /** @param  array<string, mixed>  $attributes */
     public function create(array $attributes): Employee;
+
+    /** @param  array<string, mixed>  $attributes  employee_id, created_by and the validated fields */
+    public function addCompensation(array $attributes): EmployeeCompensation;
+
+    /**
+     * Compensation records of the employee, newest effective_on (then id) first.
+     *
+     * @return Collection<int, EmployeeCompensation>
+     */
+    public function compensationHistory(int $employeeId): Collection;
 
     /** @param  array<string, mixed>  $attributes */
     public function update(Employee $employee, array $attributes): Employee;

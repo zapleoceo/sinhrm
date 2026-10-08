@@ -10,7 +10,7 @@ use App\Modules\Documents\Http\Requests\SaveDocumentTemplateRequest;
 use App\Modules\Documents\Http\Resources\DocumentTemplateResource;
 use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Documents\Services\DocumentTemplateService;
-use App\Modules\People\Services\EmployeeService;
+use App\Modules\People\Contracts\EmployeeLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -20,7 +20,7 @@ final class DocumentTemplateController
 {
     public function __construct(
         private readonly DocumentTemplateService $templates,
-        private readonly EmployeeService $employees,
+        private readonly EmployeeLookup $employees,
     ) {}
 
     /** ?archived=1 — with archived ones. */

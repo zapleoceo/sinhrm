@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Exceptions\AiException;
 use App\Modules\Ai\Models\AiRequest;
-use App\Modules\Ai\Services\AiService;
-use App\Modules\Directory\Models\Branch;
-use App\Modules\Directory\Models\VacancyCategory;
+use App\Modules\Directory\Contracts\DictionaryRepository;
+use App\Modules\Directory\Enums\DictionaryType;
 use App\Modules\Recruiting\Ai\VacancyTextHandler;
 use App\Modules\Recruiting\Ai\VacancyTextPrompt;
 use Illuminate\Contracts\Cache\Repository as Cache;
@@ -27,7 +27,12 @@ final readonly class VacancyTextService
     /** Synchronous wait for the draft; longer answers are polled by the form. */
     public const int WAIT_SECONDS = 20;
 
-    public function __construct(private AiService $ai, private AiRequestRepository $requests, private Cache $cache) {}
+    public function __construct(
+        private AiGateway $ai,
+        private AiRequestRepository $requests,
+        private Cache $cache,
+        private DictionaryRepository $dictionaries,
+    ) {}
 
     /**
      * @param  array{section: string, title: string, category_id: int|null, branch_id: int|null, employment_type: string|null, experience_level: string|null}  $facts
@@ -37,8 +42,8 @@ final readonly class VacancyTextService
      */
     public function generate(User $actor, array $facts): array
     {
-        $category = $facts['category_id'] === null ? null : VacancyCategory::query()->find($facts['category_id']);
-        $branch = $facts['branch_id'] === null ? null : Branch::query()->find($facts['branch_id']);
+        $category = $facts['category_id'] === null ? null : $this->dictionaries->find(DictionaryType::VacancyCategories, $facts['category_id']);
+        $branch = $facts['branch_id'] === null ? null : $this->dictionaries->find(DictionaryType::Branches, $facts['branch_id']);
         $outcome = $this->ai->run(VacancyTextPrompt::build([
             'section' => $facts['section'],
             'title' => $facts['title'],

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\GoogleWorkspace\Services;
 
+use App\Modules\GoogleWorkspace\Contracts\GoogleConnections;
 use App\Modules\GoogleWorkspace\DTO\ConnectionState;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
 use App\Modules\Integrations\Contracts\IntegrationRepository;
@@ -21,7 +22,7 @@ use SensitiveParameter;
  * Settings keys (not editable in the Integrations UI — the Google definitions have no fields):
  * account_email, scopes (list), connected_by (user id), connected_at, access_expires_at (ISO).
  */
-final readonly class GoogleConnectionStore
+final readonly class GoogleConnectionStore implements GoogleConnections
 {
     public const string REFRESH_TOKEN = 'refresh_token';
 

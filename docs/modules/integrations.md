@@ -200,6 +200,9 @@ placeholder маска или «не задано», кнопка «Очисти
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- Другим модулям Integrations отдаёт два узких контракта: `Contracts\IntegrationConfigs` (`load` — настройки с умолчаниями и расшифрованные секреты в памяти, `status`; реализация — `Services\IntegrationConfigLoader`) и `Contracts\IntegrationSettings` (`update` — та же проверка, журнал `integration_logs` и работа с секретами, что и на экране интеграций; реализация — `Services\IntegrationService`). Биндинги — `IntegrationsServiceProvider`. Тест — `tests/Unit/Integrations/IntegrationContractsTest.php`.
+
 ## Как проверить
 Даты последней проверки и событий журнала используют активный язык интерфейса: `uk-UA`, `ru-RU`, `en-GB` (существующая карта `DATE_LOCALES`). Переключение языка обновляет уже показанные даты; формат `short` берётся из locale data Angular, часовой пояс остаётся локальным браузерным. Значения ISO/API, часовой пояс пользователя и настройки профиля не изменяются. Null, пустые и некорректные даты показываются пустыми без ошибки карточки; дата последней проверки в таком случае скрыта. Проверки: `integration-date.spec.ts` и `integration-dates.pw.ts` (uk/ru/en × UTC/Kyiv/Los Angeles, зимний/летний offset и переход через полночь); тесты CI создают 12 viewport PNG.
 

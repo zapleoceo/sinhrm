@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Services;
 
+use App\Modules\People\Contracts\EmployeeLookup;
 use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
-use App\Modules\People\Services\EmployeeService;
 use App\Modules\TimeOff\Exceptions\TimeOffException;
 
 /**
@@ -19,7 +19,7 @@ use App\Modules\TimeOff\Exceptions\TimeOffException;
  */
 final readonly class EmployeeResolver
 {
-    public function __construct(private EmployeeService $employees) {}
+    public function __construct(private EmployeeLookup $employees) {}
 
     /** @throws TimeOffException|PeopleException */
     public function resolve(PeopleContext $ctx, ?int $employeeId): Employee
@@ -47,7 +47,7 @@ final readonly class EmployeeResolver
         if ($handoverId === $absent->id) {
             throw TimeOffException::invalidHandover();
         }
-        // The picker's directory query (EmployeeService::list): status null = active + on_leave, no terminated.
+        // The picker's directory query (EmployeeLookup::list): status null = active + on_leave, no terminated.
         $visible = $this->employees->list($ctx, new EmployeeFilter(perPage: 1, onlyIds: [$handoverId]))->total() === 1;
         if (! $visible) {
             throw TimeOffException::invalidHandover();

@@ -11,6 +11,7 @@ use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\Enums\EmployeeSort;
 use App\Modules\People\Enums\EmployeeStatus;
 use App\Modules\People\Models\Employee;
+use App\Modules\People\Models\EmployeeCompensation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -156,6 +157,17 @@ final class EloquentEmployeeRepository implements EmployeeRepository
     public function create(array $attributes): Employee
     {
         return Employee::query()->create($attributes);
+    }
+
+    public function addCompensation(array $attributes): EmployeeCompensation
+    {
+        return EmployeeCompensation::query()->create($attributes);
+    }
+
+    public function compensationHistory(int $employeeId): Collection
+    {
+        return EmployeeCompensation::query()->where('employee_id', $employeeId)
+            ->orderByDesc('effective_on')->orderByDesc('id')->get();
     }
 
     public function update(Employee $employee, array $attributes): Employee

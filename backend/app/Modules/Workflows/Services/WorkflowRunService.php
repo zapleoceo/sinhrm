@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Modules\Core\Support\UserTime;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
-use App\Modules\Scripts\Services\TaskService;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Workflows\Contracts\WorkflowRunRepository;
 use App\Modules\Workflows\DTO\RunFilter;
 use App\Modules\Workflows\DTO\StepOutcome;
@@ -38,7 +38,7 @@ final readonly class WorkflowRunService
         private WorkflowRunRepository $runs,
         private WorkflowStarter $starter,
         private StepRunner $runner,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
         private LoggerInterface $log,
     ) {}
 
