@@ -26,6 +26,9 @@ interface PipelineRepository
 
     public function firstStage(int $pipelineId): ?PipelineStage;
 
+    /** @return list<int> stage ids of the pipeline in funnel order (position, id) */
+    public function stageIds(int $pipelineId): array;
+
     /** @return Collection<int, RejectReason> */
     public function rejectReasons(bool $onlyActive): Collection;
 

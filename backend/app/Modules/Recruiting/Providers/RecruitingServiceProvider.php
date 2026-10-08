@@ -21,6 +21,7 @@ use App\Modules\Recruiting\Contracts\AcquisitionChannelRepository;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\HiringTeamRepository;
+use App\Modules\Recruiting\Contracts\PersonalBoardRepository;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
 use App\Modules\Recruiting\Contracts\ReportRepository;
 use App\Modules\Recruiting\Contracts\ScreeningRepository;
@@ -45,6 +46,7 @@ use App\Modules\Recruiting\Repositories\EloquentAcquisitionChannelRepository;
 use App\Modules\Recruiting\Repositories\EloquentApplicationRepository;
 use App\Modules\Recruiting\Repositories\EloquentCandidateRepository;
 use App\Modules\Recruiting\Repositories\EloquentHiringTeamRepository;
+use App\Modules\Recruiting\Repositories\EloquentPersonalBoardRepository;
 use App\Modules\Recruiting\Repositories\EloquentPipelineRepository;
 use App\Modules\Recruiting\Repositories\EloquentScreeningRepository;
 use App\Modules\Recruiting\Repositories\EloquentTouchpointRepository;
@@ -91,6 +93,7 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         $this->app->bind(ApplicationRepository::class, EloquentApplicationRepository::class);
         $this->app->bind(HiringTeamRepository::class, EloquentHiringTeamRepository::class);
         $this->app->bind(TouchpointRepository::class, EloquentTouchpointRepository::class);
+        $this->app->bind(PersonalBoardRepository::class, EloquentPersonalBoardRepository::class);
         $this->app->bind(ReportRepository::class, QueryReportRepository::class);
         $this->app->bind(TouchpointIngestor::class, MatchingTouchpointIngestor::class);
         // Replaced by the Scripts module (script evaluations on timeline items).
