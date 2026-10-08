@@ -53,6 +53,9 @@ final class AuditSortFilterApiTest extends TestCase
         $this->assertSame([101, 104, 103, 102], $this->fetch('sort=user&dir=desc'));
         $this->actingAs($this->superadmin)->getJson('/api/audit?sort=user&dir=desc&perPage=1&page=4')->assertOk()
             ->assertJsonPath('data.0.id', 102);
+        // The subquery sort key keeps the same order on the first page.
+        $this->actingAs($this->superadmin)->getJson('/api/audit?sort=user&dir=asc&perPage=1&page=1')->assertOk()
+            ->assertJsonPath('data.0.id', 104);
     }
 
     public function test_sorts_by_action_and_by_entity(): void

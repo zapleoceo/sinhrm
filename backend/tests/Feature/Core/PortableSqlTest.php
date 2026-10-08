@@ -6,6 +6,7 @@ namespace Tests\Feature\Core;
 
 use App\Models\User;
 use App\Modules\Core\Support\Database\Sql;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,40 @@ final class PortableSqlTest extends TestCase
         $this->assertSame([$ivan->id], $find('іВАН'));
         $this->assertSame([$percent->id], $find('50%'));
         $this->assertSame([], $find('_нижка 5_0'));
+    }
+
+    public function test_explicit_expression_orders_by_a_subquery_and_contains_casts_to_text(): void
+    {
+        $a = User::factory()->create(['name' => 'Anna', 'last_login_at' => null]);
+        $b = User::factory()->create(['name' => 'Boris', 'last_login_at' => Carbon::parse('2026-01-01 10:00:00')]);
+
+        $q = User::query()->select('id');
+        Sql::orderByNullsLast($q, new Expression('(select u2.last_login_at from users u2 where u2.id = users.id)'), 'desc');
+        $this->assertSame([$b->id, $a->id], $q->orderBy('id')->pluck('id')->all());
+
+        $byId = User::query()->select('id');
+        Sql::whereContainsCi($byId, 'users.id', (string) $b->id, asText: true);
+        $this->assertContains($b->id, $byId->pluck('id')->all());
+    }
+
+    /**
+     * Known divergence (ADR 0010): MySQL utf8mb4_0900_ai_ci ignores Latin diacritics (é = e), PostgreSQL ignores only case; Cyrillic й is not folded into и on either (verified in CI).
+     * The test pins it so a change of collation or of the helper does not slip by unnoticed.
+     */
+    public function test_contains_diacritics_known_divergence_mysql_is_wider(): void
+    {
+        $user = User::factory()->create(['name' => 'Йосип Résumé']);
+        $find = static function (string $needle): array {
+            $q = User::query()->select('id');
+            Sql::whereContainsCi($q, 'name', $needle);
+
+            return $q->pluck('id')->all();
+        };
+        $mysql = in_array(DB::getDriverName(), ['mysql', 'mariadb'], true);
+
+        $this->assertSame([$user->id], $find('йосип'), 'case-insensitivity is the same on every driver');
+        $this->assertSame([], $find('иосип'), 'й is not folded into и on any driver');
+        $this->assertSame($mysql ? [$user->id] : [], $find('resume'), 'é = e only on MySQL');
     }
 
     public function test_json_text_reads_a_key_on_the_current_driver(): void

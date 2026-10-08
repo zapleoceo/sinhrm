@@ -13,6 +13,7 @@ use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Core\Support\Database\Sql;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Carbon;
 
 final class EloquentAuditLogRepository implements AuditLogRepository
@@ -107,7 +108,7 @@ final class EloquentAuditLogRepository implements AuditLogRepository
             return;
         }
         $columns = match ($sort) {
-            AuditSort::User => ['(select users.name from users where users.id = audit_log.user_id)'],
+            AuditSort::User => [new Expression('(select users.name from users where users.id = audit_log.user_id)')],
             AuditSort::Action => ['audit_log.action'],
             AuditSort::Entity => ['audit_log.entity_type', 'audit_log.entity_id'],
         };

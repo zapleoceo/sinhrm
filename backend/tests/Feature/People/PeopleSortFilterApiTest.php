@@ -63,6 +63,9 @@ final class PeopleSortFilterApiTest extends TestCase
         );
         $this->actingAs($admin)->getJson('/api/people?sort=position&dir=desc&perPage=1&page=4')->assertOk()
             ->assertJsonPath('data.0.full_name', 'No Position');
+        // The subquery sort key keeps the same order on the first page.
+        $this->actingAs($admin)->getJson('/api/people?sort=position&perPage=1&page=1')->assertOk()
+            ->assertJsonPath('data.0.full_name', 'Abe Analyst');
     }
 
     public function test_sorts_by_manager_name(): void

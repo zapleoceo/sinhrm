@@ -162,6 +162,6 @@ Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 
 
 ### Совместимость с MySQL
 
-Сортировка пользователей оставляет пустой `last_login_at` в конце при прямом и обратном порядке. Она использует явную проверку `IS NULL`, без PostgreSQL `NULLS LAST`; контракт проверяется сортировочными feature-тестами в PostgreSQL и MySQL CI.
+Сортировка пользователей оставляет пустой `last_login_at` в конце при прямом и обратном порядке. Порядок строится через `Sql::orderByNullsLast` (PostgreSQL — родной `NULLS LAST`, MySQL — пара «`expr is null`, затем `expr dir`»); контракт проверяется сортировочными feature-тестами в PostgreSQL и MySQL CI.
 
 **Переносимый SQL (2026-10-08).** Сортировка пользователей по последнему входу строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце на PostgreSQL и MySQL одинаково, без драйверных веток в модуле ([ADR 0010](../adr/0010-mysql-dual-support.md)).

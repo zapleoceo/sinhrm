@@ -49,6 +49,9 @@ final class DirectorySortFilterApiTest extends TestCase
         $this->assertSame(['Bravo Branch', 'Alpha Branch', 'Delta Branch', 'Charlie Branch'], $this->fetch('branches?sort=city&dir=desc'));
         $this->actingAs($this->admin)->getJson('/api/directory/branches?sort=city&dir=desc&perPage=1&page=4')->assertOk()
             ->assertJsonPath('data.0.name', 'Charlie Branch');
+        // The subquery sort key keeps the same order on the first page.
+        $this->actingAs($this->admin)->getJson('/api/directory/branches?sort=city&dir=asc&perPage=1&page=1')->assertOk()
+            ->assertJsonPath('data.0.name', 'Alpha Branch');
     }
 
     public function test_column_filters_combine_with_sort_and_string_paging(): void

@@ -14,6 +14,7 @@ use App\Modules\Directory\Enums\DirectoryStatus;
 use App\Modules\Directory\Models\DictionaryItem;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentDictionaryRepository implements DictionaryRepository
@@ -83,7 +84,7 @@ final class EloquentDictionaryRepository implements DictionaryRepository
         $column = match ($sort) {
             DictionarySort::Name => 'name',
             DictionarySort::Status => 'status',
-            DictionarySort::City => '(select cities.name from cities where cities.id = branches.city_id)',
+            DictionarySort::City => new Expression('(select cities.name from cities where cities.id = branches.city_id)'),
         };
         Sql::orderByNullsLast($query, $column, $descending ? 'desc' : 'asc');
         $query->orderBy('name')->orderBy('id');

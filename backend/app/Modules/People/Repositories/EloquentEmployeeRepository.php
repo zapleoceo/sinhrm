@@ -14,6 +14,7 @@ use App\Modules\People\Models\Employee;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -198,7 +199,7 @@ final class EloquentEmployeeRepository implements EmployeeRepository
             return;
         }
         // $dir is one of two literals above, never request text.
-        Sql::orderByNullsLast($q, '('.$related->toSql().')', $dir, $related->getBindings());
+        Sql::orderByNullsLast($q, new Expression('('.$related->toSql().')'), $dir, $related->getBindings());
         $q->orderBy('employees.full_name')
             ->orderBy('employees.id');
     }

@@ -29,24 +29,25 @@ MySQL; без этого перенос на инфраструктуру IT STE
 
 | Нужно | Переносимый способ |
 |---|---|
-| NULL в конце/начале | `Core\Support\Database\Sql::orderByNullsLast/First($q, $expr, $dir)` (PostgreSQL/SQLite — родной `NULLS LAST`, он работает и с алиасом select; MySQL — `expr is null` первым ключом) |
-| регистронезависимое «содержит» | `Sql::whereContainsCi($q, $expr, $needle)` (`lower(..) like ? escape '!'`, `Like::PORTABLE`) |
-| текст по JSON-ключу в select/order | `Sql::jsonText($driver, $column, $key)`; в `where` — Laravel `'col->key'`, `whereJsonContains`, `whereJsonLength` |
+| NULL в конце/начале | `Core\Support\Database\Sql::orderByNullsLast/First($q, $expr, $dir)` (PostgreSQL/SQLite — родной `NULLS LAST`, он работает и с алиасом select; MySQL — пара «`expr is null`, затем `expr dir`»). `$expr` — идентификатор колонки; подзапрос — через `new Expression(...)` |
+| регистронезависимое «содержит» | `Sql::whereContainsCi($q, $expr, $needle, asText: false)` (`lower(..) like ? escape '!'`, `Like::PORTABLE`; `asText: true` приводит колонку к строке) |
+| текст по JSON-ключу в select/order | `Sql::jsonText($driver, $column, $key)` (JSON null: строка `'null'` на MySQL, SQL NULL на PostgreSQL); в `where` — Laravel `'col->key'`, `whereJsonContains`, `whereJsonLength` |
 | приведение к строке | `Sql::castText($driver, $expr)` |
 | апсерт / вставка без дублей / id новой строки | `upsert()`, `insertOrIgnore()`, `insertGetId()` Laravel |
 | блокировка строки | `lockForUpdate()` внутри `DB::transaction` |
 
-Ветки `DB::getDriverName()` допускаются только в `Sql` и в миграциях; в модулях — нет.
+Ветки `DB::getDriverName()` допускаются только в `Sql` и в миграциях; в модулях — нет (определение драйвера для приведения типа — внутри `Sql`, по грамматике запроса). Строковый `$expr` в `Sql` проверяется: допустимы только идентификаторы `col`/`table.col`; остальное отклоняется `InvalidArgumentException`.
 
 ## Отличия MySQL, которые учитываем
 
 - **Collation `utf8mb4_0900_ai_ci` нечувствительна к регистру И к диакритике.** Последствия: уникальный индекс считает
   `Anna@x.com` и `anna@x.com` одним значением (для email это желаемо — приложение и так сравнивает email в нижнем регистре);
-  но также `ї = і`, `ё = е`, `é = e`, и `WHERE code = 'ABC'` найдёт `abc`. Как обходим: непрозрачные идентификаторы
+  но также `é = e` (проверено тестом в CI; для кириллицы `й` ≠ `и` — тест CI показал, что `й` не сворачивается в `и`, остальные `ё`/`ї` не проверялись), и `WHERE code = 'ABC'` найдёт `abc`. Как обходим: непрозрачные идентификаторы
   (Google ID, Gmail ID, spreadsheet ID, внешние ID касаний, URL профилей) хранятся с `utf8mb4_bin` (ветка в миграции);
   коды/ключи справочников — латиница в нижнем регистре, нормализуются в сервисе до записи; новые уникальные ключи по
   человеческим строкам (ФИО, названия) не вводим. Перед импортом данных Neon — preflight на коллизии новых уникальных
   ключей (PROD-47).
+- **Известное расхождение: поиск «содержит».** На MySQL (`utf8mb4_0900_ai_ci`) `Sql::whereContainsCi` не различает диакритику латиницы (`é` = `e`), на PostgreSQL — только регистр; кириллическое `й` не сворачивается в `и` ни там, ни там (проверено в CI). На MySQL поиск шире (находит больше); принимаем, не выравниваем. Фиксирует тест `PortableSqlTest::test_contains_diacritics_known_divergence_mysql_is_wider`.
 - **DDL не транзакционный.** Упавшая миграция оставляет таблицу частично созданной. Новые миграции — одна таблица/один
   индекс на миграцию, `Schema::hasTable/hasColumn/hasIndex` перед созданием, корректный `down()`.
 - **JSON.** `$table->jsonb()` Laravel создаёт `json` на MySQL; MySQL нормализует JSON (порядок ключей, пробелы, дубли
@@ -63,6 +64,12 @@ MySQL; без этого перенос на инфраструктуру IT STE
 - **Бинарные данные.** `documents_files.content` — base64 в `longText` (до 2 МиБ), на обоих драйверах одинаково; `bytea`
   не используем, для будущих бинарных колонок — `binary()`/`longBlob` через миграцию.
 - **Часовой пояс.** Приложение и сессия БД — UTC; пользовательский пояс (`APP_USER_TIMEZONE`) — только на выводе.
+
+**Риски.**
+- Первый `migrate` на MySQL — только на пустой базе: DDL не транзакционный, упавшая миграция оставляет частично созданные таблицы, а существующие миграции не идемпотентны (повторный запуск падает).
+- `INSERT IGNORE` в `DemoDataService` (`insertOrIgnore`) мягче PostgreSQL `ON CONFLICT DO NOTHING`: на MySQL он глушит и другие ошибки (усечение, нарушение NOT NULL по умолчанию) предупреждениями.
+- Ключи `sessions.id` и `cache.key` без бинарной collation: `utf8mb4_0900_ai_ci` считает их регистро- и диакритико-независимыми, возможны редкие коллизии идентификаторов, различающихся только регистром.
+- `ORDER BY` по кириллице на MySQL идёт по UCA (`0900`), на Neon — по collation базы: порядок отдельных строк (`ё`, `й`, смешанный регистр) может отличаться.
 
 **Последствия.** Нужна дисциплина ревью (запрет pg-only синтаксиса), второй CI-прогон (~+3 мин, не блокирует merge).
 Индекс по `touchpoints (channel, meta->>'thread')` есть только на PostgreSQL — на MySQL это задача производительности

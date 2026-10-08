@@ -275,6 +275,6 @@ Generated файлы игнорируются git; новых обязатель
 
 Переходный период — двойная поддержка PostgreSQL (прод на Neon) и MySQL 8.4 (целевая инфраструктура IT STEP), [ADR 0010](../adr/0010-mysql-dual-support.md).
 
-- `Core\Support\Database\Sql` — единственное место для расхождений драйверов: `orderByNullsLast/First` (вместо `NULLS LAST/FIRST`), `whereContainsCi` (вместо `ILIKE`), `jsonText` (вместо `->>` в сыром SQL), `castText` (MySQL не знает `CAST AS VARCHAR/TEXT`). Апсерты — `upsert()/insertOrIgnore()/insertGetId()` Laravel, JSON в `where` — `'col->key'`/`whereJsonContains`.
+- `Core\Support\Database\Sql` — единственное место для расхождений драйверов: `orderByNullsLast/First` (вместо `NULLS LAST/FIRST`), `whereContainsCi` (вместо `ILIKE`), `jsonText` (вместо `->>` в сыром SQL), `castText` (MySQL не знает `CAST AS VARCHAR/TEXT`). Выражение — только идентификатор колонки (`col`/`table.col`); подзапрос или вычисляемое — явным `new Illuminate\Database\Query\Expression(...)`, иная строка (пробелы, кавычки, `;`, `--`) → `InvalidArgumentException`. `jsonText`: JSON null даёт строку `'null'` на MySQL и SQL NULL на PostgreSQL. Апсерты — `upsert()/insertOrIgnore()/insertGetId()` Laravel, JSON в `where` — `'col->key'`/`whereJsonContains`.
 - Соединение `mysql` (`config/database.php`): `utf8mb4`, collation `utf8mb4_0900_ai_ci` (`DB_COLLATION`), `strict` (включая `ONLY_FULL_GROUP_BY`), сессия `+00:00`, InnoDB. Проверка — `PortableSqlTest` (jobs `tests` и `tests-mysql`), `SqlTest`.
 - `NeonConnectionConfig` применяется только когда `DB_CONNECTION=pgsql`.

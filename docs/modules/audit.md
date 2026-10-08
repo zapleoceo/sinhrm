@@ -151,6 +151,6 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 
 ### Совместимость с MySQL
 
-Сортировки журнала по пользователю, действию и сущности оставляют записи с пустым значением в конце как при прямом, так и при обратном порядке. SQL использует явную проверку `IS NULL`, а не PostgreSQL `NULLS LAST`; контракт покрывает `AuditSortFilterApiTest` в CI на PostgreSQL и MySQL.
+Сортировки журнала по пользователю, действию и сущности оставляют записи с пустым значением в конце как при прямом, так и при обратном порядке. SQL строится через `Core\Support\Database\Sql::orderByNullsLast`: на PostgreSQL родной `NULLS LAST`, на MySQL пара «`expr is null`, затем `expr dir`»; контракт покрывает `AuditSortFilterApiTest` в CI на PostgreSQL и MySQL.
 
 **Переносимый SQL (2026-10-08).** Сортировка журнала строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце на PostgreSQL и MySQL одинаково, без драйверных веток в модуле ([ADR 0010](../adr/0010-mysql-dual-support.md)).
