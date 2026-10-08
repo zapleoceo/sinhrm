@@ -21,7 +21,7 @@ export interface OfferTemplateRef {
   name: string;
 }
 
-export interface CreateOffer {
+interface CreateOffer {
   template_id: number | null;
   position: string;
   salary: string;

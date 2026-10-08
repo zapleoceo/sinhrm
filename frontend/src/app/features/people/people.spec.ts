@@ -7,7 +7,8 @@ import { PEOPLE_PAGE_SIZE, peopleQueryFromParams, sameQuery } from './directory/
 import { PeopleStore } from './directory/people.store';
 import { countNodes, expandedToDepth, filterTree, initials } from './org-tree';
 import { canManagePeople } from './people.access';
-import { Employee, OrgNode, Paged, fieldLabelKey } from './people.model';
+import { Employee, OrgNode, fieldLabelKey } from './people.model';
+import { Paged } from '../../core/api/api.model';
 import { PeopleService, diffChanges, peopleErrorKey } from './people.service';
 import { ProfileStore, profileTabs } from './profile/profile.store';
 

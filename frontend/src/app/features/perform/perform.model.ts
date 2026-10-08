@@ -46,9 +46,7 @@ export interface NewOneOnOne {
 export type OneOnOnePatch = Partial<Pick<OneOnOne, 'status' | 'notes_shared' | 'notes_private_manager' | 'agenda' | 'action_items' | 'scheduled_at'>>;
 
 export type ObjectiveScope = 'personal' | 'team' | 'branch' | 'company';
-export const OBJECTIVE_SCOPES: readonly ObjectiveScope[] = ['personal', 'team', 'branch', 'company'];
 export type ObjectiveStatus = 'active' | 'achieved' | 'missed' | 'cancelled';
-export const OBJECTIVE_STATUSES: readonly ObjectiveStatus[] = ['active', 'achieved', 'missed', 'cancelled'];
 export type Visibility = 'public' | 'team' | 'private';
 export const VISIBILITIES: readonly Visibility[] = ['public', 'team', 'private'];
 

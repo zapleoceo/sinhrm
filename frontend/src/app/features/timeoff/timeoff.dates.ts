@@ -35,7 +35,7 @@ export function monthDays(iso: string): string[] {
   return days;
 }
 
-export interface CalendarRow {
+interface CalendarRow {
   employee: Absence['employee'];
   /** date → the absence covering it (first one wins) */
   cells: Record<string, Absence>;

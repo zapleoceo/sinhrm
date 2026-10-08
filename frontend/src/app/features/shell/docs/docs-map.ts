@@ -28,7 +28,7 @@ import {
 import { DocPage } from './docs.model';
 
 /** One block of the "how SinHRM works" map. `slugs`: doc pages it may open, the first visible one wins; none visible → block hidden. */
-export interface MapBlock {
+interface MapBlock {
   id: string;
   icon: IconDefinition;
   slugs: readonly string[];
@@ -39,9 +39,9 @@ export interface VisibleBlock extends MapBlock {
 }
 
 export type MapZone = 'sources' | 'recruiting' | 'people' | 'daily' | 'helpers';
-export const MAP_ZONES: readonly MapZone[] = ['sources', 'recruiting', 'people', 'daily', 'helpers'];
+const MAP_ZONES: readonly MapZone[] = ['sources', 'recruiting', 'people', 'daily', 'helpers'];
 
-export const DOCS_MAP: Readonly<Record<MapZone, readonly MapBlock[]>> = {
+const DOCS_MAP: Readonly<Record<MapZone, readonly MapBlock[]>> = {
   sources: [
     { id: 'jobSites', icon: faGlobe, slugs: ['extension', 'mail-agent'] },
     { id: 'mail', icon: faEnvelope, slugs: ['mail-agent', 'recruiting'] },

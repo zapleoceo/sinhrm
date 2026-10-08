@@ -23,7 +23,7 @@ const presence = (v: unknown): 'yes' | 'no' => (v ? 'yes' : 'no');
  * Columns of the scripts list (all rows are on the page). Versions sort by their date (published / last saved),
  * a script without one goes last; their filter is «есть / нет».
  */
-export const SCRIPT_COLUMNS: readonly ClientColumn<Script>[] = [
+const SCRIPT_COLUMNS: readonly ClientColumn<Script>[] = [
   { key: 'name', value: (s) => s.name, filter: 'text' },
   { key: 'channel', value: (s) => SCRIPT_CHANNELS.indexOf(s.channel), filter: 'select', filterValue: (s) => s.channel },
   { key: 'active', value: (s) => s.active_version?.published_at, filter: 'select', filterValue: (s) => presence(s.active_version) },

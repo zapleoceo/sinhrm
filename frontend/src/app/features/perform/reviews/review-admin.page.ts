@@ -19,7 +19,7 @@ import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Columns of the cycles list (all on the page). Period filters by its start; progress sorts by the submitted share. */
-export const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
+const CYCLE_COLUMNS: readonly ClientColumn<ReviewCycle>[] = [
   { key: 'name', value: (c) => c.name, filter: 'text' },
   { key: 'period', value: (c) => c.period_start, filter: 'date' },
   { key: 'status', value: (c) => CYCLE_STATUSES.indexOf(c.status), filter: 'select', filterValue: (c) => c.status },

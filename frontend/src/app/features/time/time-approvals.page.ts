@@ -15,7 +15,7 @@ import { PagedList } from '../../core/ui/table/paged-list';
 import { NotifyService } from '../../core/ui/notify.service';
 
 /** Columns of the approvals list (all submitted weeks are on the page). */
-export const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
+const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
   { key: 'employee', value: (t) => t.employee.full_name, filter: 'text' },
   { key: 'week', value: (t) => t.week_start, filter: 'date' },
   { key: 'expected', value: (t) => t.expected, filter: 'number' },

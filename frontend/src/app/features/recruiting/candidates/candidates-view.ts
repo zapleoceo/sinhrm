@@ -1,7 +1,7 @@
 /** "Список | Дошка" on /candidates and the last vacancy of the board, remembered per browser. */
 export type CandidatesView = 'list' | 'board';
 
-export interface CandidatesViewPref {
+interface CandidatesViewPref {
   view: CandidatesView;
   vacancyId: number | null;
 }

@@ -22,7 +22,7 @@ import { MailStore } from './mail.store';
 import { NotifyService } from '../../core/ui/notify.service';
 
 /** Columns of the processed-mail log (all rows are on the page: sorted and filtered here, state in the URL). */
-export const MAIL_LOG_COLUMNS: readonly ClientColumn<ProcessedMail>[] = [
+const MAIL_LOG_COLUMNS: readonly ClientColumn<ProcessedMail>[] = [
   { key: 'received', value: (m) => m.received_at, filter: 'date' },
   { key: 'sender', value: (m) => m.sender, filter: 'text' },
   { key: 'subject', value: (m) => m.subject, filter: 'text' },
@@ -30,14 +30,14 @@ export const MAIL_LOG_COLUMNS: readonly ClientColumn<ProcessedMail>[] = [
 ];
 
 /** Tabs of the page in their order; the URL keeps the open one (`?tab=rules`, none = the first). */
-export const MAIL_TABS = ['unknown', 'rules', 'log'] as const;
-export type MailTab = (typeof MAIL_TABS)[number];
+const MAIL_TABS = ['unknown', 'rules', 'log'] as const;
+type MailTab = (typeof MAIL_TABS)[number];
 
 /**
  * Open tab of the URL. Without `tab`, a link carrying the log table state (`?sort=sender`, `?outcome=…`) opens the log:
  * those params mean nothing on the other tabs.
  */
-export function mailTabFromParams(params: ParamMap): MailTab {
+function mailTabFromParams(params: ParamMap): MailTab {
   const tab = oneOfParam(params, 'tab', MAIL_TABS);
   if (tab) return tab;
   const logParam = (name: string): boolean =>

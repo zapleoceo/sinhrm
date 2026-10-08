@@ -8,7 +8,8 @@ import { Observable, of } from 'rxjs';
 import { LIVE_FILTER_DEBOUNCE_MS } from '../../../core/ui/table/table-url-state';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DirectoryService } from '../../directory/directory.service';
-import { Employee, Paged, PeopleQuery } from '../people.model';
+import { Employee, PeopleQuery } from '../people.model';
+import { Paged } from '../../../core/api/api.model';
 import { PeopleService } from '../people.service';
 import { PeoplePage } from './people.page';
 

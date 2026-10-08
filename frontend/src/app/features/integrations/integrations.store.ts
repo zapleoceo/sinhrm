@@ -4,7 +4,7 @@ import { INTEGRATION_GROUPS, Integration, IntegrationGroup, ManualStatus, Update
 import { IntegrationsService, integrationErrorKey } from './integrations.service';
 import { withMember } from '../../core/ui/with-member';
 
-export interface IntegrationGroupView {
+interface IntegrationGroupView {
   group: IntegrationGroup;
   items: Integration[];
 }

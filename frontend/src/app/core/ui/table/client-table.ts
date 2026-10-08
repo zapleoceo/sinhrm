@@ -54,7 +54,7 @@ function isEmpty(v: CellValue): v is null | undefined | '' {
 }
 
 /** Comparator of two non-empty cells: numbers as numbers, everything else by the interface language. */
-export function compareCells(a: CellValue, b: CellValue, collator: Intl.Collator): number {
+function compareCells(a: CellValue, b: CellValue, collator: Intl.Collator): number {
   if (typeof a === 'number' && typeof b === 'number') return a - b;
   if (typeof a === 'boolean' && typeof b === 'boolean') return Number(a) - Number(b);
   return collator.compare(String(a), String(b));

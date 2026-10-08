@@ -30,7 +30,7 @@ const ALL = 'all';
  * Status is a server filter only (`open` / `all` are not case statuses); category also goes to the API (the list is
  * capped at 300).
  */
-export const QUEUE_COLUMNS: readonly ClientColumn<DeskCase>[] = [
+const QUEUE_COLUMNS: readonly ClientColumn<DeskCase>[] = [
   { key: 'id', value: (c) => c.id },
   { key: 'subject', value: (c) => c.subject, filter: 'text' },
   { key: 'employee', value: (c) => c.employee.full_name, filter: 'text' },
@@ -41,7 +41,7 @@ export const QUEUE_COLUMNS: readonly ClientColumn<DeskCase>[] = [
 ];
 
 /** API query of the URL: no status = open cases, `all` = every case; junk statuses and category ids are dropped. */
-export function queueQueryFromParams(params: ParamMap): QueueQuery {
+function queueQueryFromParams(params: ParamMap): QueueQuery {
   const category_id = intParam(params, 'category');
   if (params.get('status') === ALL) return { category_id };
   const status = oneOfParam(params, 'status', CASE_STATUSES);

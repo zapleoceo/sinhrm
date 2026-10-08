@@ -16,7 +16,7 @@ import {
 } from '../workflows.model';
 import { WorkflowsService, fieldErrors, workflowsErrorKey } from '../workflows.service';
 
-export type TemplateHead = Omit<SaveTemplate, 'steps'>;
+type TemplateHead = Omit<SaveTemplate, 'steps'>;
 
 /**
  * Workflow template editor state. The whole template is saved with PUT; a drag reorder of an unchanged,

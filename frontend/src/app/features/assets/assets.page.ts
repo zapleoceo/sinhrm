@@ -28,7 +28,7 @@ import { NotifyService } from '../../core/ui/notify.service';
  * Columns of the inventory table (sorted and filtered on the page). Status and type also go to the API as server
  * filters (it returns at most 500 rows, so they must narrow the query, not only the page).
  */
-export const ASSET_COLUMNS: readonly ClientColumn<Asset>[] = [
+const ASSET_COLUMNS: readonly ClientColumn<Asset>[] = [
   { key: 'inventory', value: (a) => a.inventory_number, filter: 'text' },
   { key: 'name', value: (a) => a.name, filter: 'text' },
   { key: 'type', value: (a) => a.type?.name, filter: 'select', filterValue: (a) => (a.type ? String(a.type.id) : null) },
@@ -38,7 +38,7 @@ export const ASSET_COLUMNS: readonly ClientColumn<Asset>[] = [
 ];
 
 /** API query of the URL: search, status and type (junk values are dropped, never sent). */
-export function assetQueryFromParams(params: ParamMap): AssetQuery {
+function assetQueryFromParams(params: ParamMap): AssetQuery {
   return { q: textParam(params, 'q'), status: oneOfParam(params, 'status', ASSET_STATUSES), type_id: intParam(params, 'type') };
 }
 

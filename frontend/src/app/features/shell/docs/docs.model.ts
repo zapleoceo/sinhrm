@@ -13,9 +13,9 @@ export interface DocPage {
 }
 
 export type DocGroup = 'basics' | 'recruiting' | 'people' | 'perform' | 'services' | 'admin' | 'guides';
-export const DOC_GROUPS: readonly DocGroup[] = ['basics', 'recruiting', 'people', 'perform', 'services', 'admin', 'guides'];
+const DOC_GROUPS: readonly DocGroup[] = ['basics', 'recruiting', 'people', 'perform', 'services', 'admin', 'guides'];
 
-export interface DocHit {
+interface DocHit {
   doc: DocPage;
   snippet: string;
 }

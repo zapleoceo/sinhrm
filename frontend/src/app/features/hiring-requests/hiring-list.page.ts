@@ -24,7 +24,7 @@ type ListMode = 'all' | 'mine' | 'inbox';
  * list is capped at 300); the inbox API has no status filter, so the page match covers it. Status sorts in workflow
  * order, progress by the hired share.
  */
-export const HIRING_COLUMNS: readonly ClientColumn<HiringRequest>[] = [
+const HIRING_COLUMNS: readonly ClientColumn<HiringRequest>[] = [
   { key: 'title', value: (r) => r.title, filter: 'text' },
   { key: 'requester', value: (r) => r.requester?.name, filter: 'text' },
   { key: 'status', value: (r) => HIRING_STATUSES.indexOf(r.status), filter: 'select', filterValue: (r) => r.status },
@@ -34,7 +34,7 @@ export const HIRING_COLUMNS: readonly ClientColumn<HiringRequest>[] = [
 ];
 
 /** Status of the URL for the API (anything else is dropped). */
-export function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
+function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
   return oneOfParam(params, 'status', HIRING_STATUSES) ?? null;
 }
 

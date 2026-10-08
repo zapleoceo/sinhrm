@@ -19,7 +19,7 @@ import { NotifyService } from '../../core/ui/notify.service';
 const NUMBER_KEYS = ['expected', 'worked', 'overtime', 'missing', 'absence'] as const;
 
 /** Columns of the team week (all rows are on the page); hour columns sort and filter by range. */
-export const TEAM_COLUMNS: readonly ClientColumn<TeamRow>[] = [
+const TEAM_COLUMNS: readonly ClientColumn<TeamRow>[] = [
   { key: 'employee', value: (r) => r.employee.full_name, filter: 'text' },
   { key: 'status', value: (r) => TIMESHEET_STATUSES.indexOf(r.status), filter: 'select', filterValue: (r) => r.status },
   ...NUMBER_KEYS.map((k): ClientColumn<TeamRow> => ({ key: k, value: (r) => r[k], filter: 'number' })),

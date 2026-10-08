@@ -38,7 +38,7 @@ import { MarkdownField } from './markdown-field';
 import { aiTextErrorKey } from '../../ai/ai.service';
 
 /** Markdown sections of the form, in page order. */
-export const VACANCY_SECTIONS: readonly VacancyTextSection[] = ['description', 'requirements', 'responsibilities', 'additional_info'];
+const VACANCY_SECTIONS: readonly VacancyTextSection[] = ['description', 'requirements', 'responsibilities', 'additional_info'];
 
 const DRAFT_PREFIX = 'sinhrm.vacancy-draft.';
 const POLL_EVERY_MS = 3000;

@@ -81,10 +81,6 @@ export interface Employee {
   custom_fields?: Record<string, string | null>;
 }
 
-export interface Paged<T> {
-  data: T[];
-  meta: { current_page: number; per_page: number; total: number; last_page: number };
-}
 
 /** Sortable columns of the directory (backend EmployeeSort); the default order is by name. */
 export type PeopleSortKey = 'name' | 'position' | 'department' | 'branch' | 'manager';

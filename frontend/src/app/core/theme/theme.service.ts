@@ -3,7 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { safeStorage } from '../storage/safe-storage';
 
 export type Theme = 'light' | 'dark';
-export const THEME_STORAGE_KEY = 'sinhrm.theme';
+const THEME_STORAGE_KEY = 'sinhrm.theme';
 
 /**
  * Light/dark theme. Default follows the OS (prefers-color-scheme); an explicit choice is kept

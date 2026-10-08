@@ -1,4 +1,4 @@
-import { Application, Stage, TimelineItem } from './recruiting.model';
+import { Application, Stage } from './recruiting.model';
 
 const MINUTE = 60;
 const HOUR = 60 * MINUTE;
@@ -34,11 +34,6 @@ export function daysSince(iso: string | null, now: Date = new Date()): number {
 export function groupByStage(stages: readonly Stage[], applications: readonly Application[]): { stage: Stage; items: Application[] }[] {
   const sorted = [...stages].sort((a, b) => a.position - b.position);
   return sorted.map((stage) => ({ stage, items: applications.filter((a) => a.stage_id === stage.id) }));
-}
-
-/** Month label (YYYY-MM) of a timeline item, used to group the timeline visually. */
-export function monthKey(item: TimelineItem): string {
-  return item.at.slice(0, 7);
 }
 
 /** Applies the backend status rule locally for optimistic board moves. */

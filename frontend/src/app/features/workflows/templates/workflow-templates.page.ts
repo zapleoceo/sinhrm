@@ -21,7 +21,7 @@ import { PagedList } from '../../../core/ui/table/paged-list';
 import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Columns of the templates list (all rows are on the page). Kind and trigger sort in their list order. */
-export const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
+const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
   { key: 'name', value: (t) => t.name, filter: 'text' },
   { key: 'kind', value: (t) => WORKFLOW_KINDS.indexOf(t.kind), filter: 'select', filterValue: (t) => t.kind },
   { key: 'trigger', value: (t) => WORKFLOW_TRIGGERS.indexOf(t.trigger), filter: 'select', filterValue: (t) => t.trigger },

@@ -16,7 +16,7 @@ import { PersonOption, PickerScope } from '../people.model';
 import { PeopleService } from '../people.service';
 
 /** Minimum query length the server accepts (GET /api/people/search). */
-export const PICKER_MIN_CHARS = 2;
+const PICKER_MIN_CHARS = 2;
 /** Pause after the last keystroke before searching. */
 export const PICKER_DEBOUNCE_MS = 250;
 

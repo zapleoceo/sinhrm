@@ -10,7 +10,7 @@ import { unwrapData } from '../../core/api/unwrap-data';
 export type DataSubjectType = 'candidate' | 'employee';
 export type ExportFormat = 'json' | 'html';
 
-export interface PrivacySettings {
+interface PrivacySettings {
   /** Auto-anonymize rejected candidates after N months; null = off. */
   retention_rejected_months: number | null;
 }
