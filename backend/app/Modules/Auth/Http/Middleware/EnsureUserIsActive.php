@@ -29,13 +29,15 @@ final class EnsureUserIsActive
         }
 
         $web = Auth::guard('web');
-        if ($user instanceof User && $web instanceof SessionGuard && $web->viaRemember() && $request->hasSession()
+        // Larastan 3.12.3 types Auth::guard('web') as SessionGuard, so the narrowing is 'always true' for PHPStan; keep it:
+        // the guard is configurable and the runtime check protects against a non-session driver.
+        if ($user instanceof User && $web instanceof SessionGuard && $web->viaRemember() && $request->hasSession() // @phpstan-ignore instanceof.alwaysTrue
             && ! $request->session()->has(CredentialSession::VERSION_KEY)) {
             // A verified remember-cookie is a new credential grant. Capture the loaded actor, never a refreshed version.
             $request->session()->put(CredentialSession::VERSION_KEY, $user->credential_version);
         }
         // Only a durable web credential has the guard's login key. Bearer/actingAs identities have none.
-        if ($user instanceof User && $web instanceof SessionGuard && $request->hasSession()
+        if ($user instanceof User && $web instanceof SessionGuard && $request->hasSession() // @phpstan-ignore instanceof.alwaysTrue
             && $request->session()->has($web->getName())
             && $request->session()->get(CredentialSession::VERSION_KEY) !== $user->credential_version) {
             $web->logoutCurrentDevice();
