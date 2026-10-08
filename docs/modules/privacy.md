@@ -54,7 +54,7 @@
   `MailAgent\Privacy\MailPersonalData`, `People\Privacy\EmployeePersonalData`, `Documents\Privacy\DocumentsPersonalData`.
 - `blocker()` — причина отказа (`not_found` → 404, `hired`/`not_terminated` → 409). Отвечает модуль-владелец.
 - `Privacy\Services\PersonalDataService` запускает всех провайдеров, пишет журнал `privacy_requests` (кто, что, когда,
-  причина, счётчики — без самих данных) и лог `privacy.erased`.
+  причина, счётчики — без самих данных; `counts` — колонка типа `json` MySQL) и лог `privacy.erased`.
 - Колонки `candidates.anonymized_at`, `employees.anonymized_at` — когда стёрли (кандидату показывается в API).
 - Правило хранения: `Core\Contracts\RetentionSource` (Recruiting отдаёт кандидатов, у которых все отклики отклонены и
   закрыты раньше срока), задача `privacy.retention` (cron каждые ~30 мин, до 50 человек за запуск), настройка —

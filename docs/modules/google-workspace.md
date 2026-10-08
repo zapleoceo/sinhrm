@@ -136,7 +136,7 @@ start, end, meeting_type, title`). Ошибка Google → касание не �
 ### Импорт из Google Sheets (`Services/SheetsImportService`, `Http/Controllers/SheetsImportController`)
 Таблица `sheet_imports` (миграция `2026_09_29_100001`): `spreadsheet_id, sheet ('' = первый лист), headers, mapping
 {поле: номер колонки}, last_row (1 = только заголовок), auto_sync, created_by, last_synced_at, last_report`,
-`unique(spreadsheet_id, sheet)`.
+`unique(spreadsheet_id, sheet)`. `headers`, `mapping`, `last_report` — колонки типа `json` MySQL (в миграции `json()`).
 
 | Метод и путь (суперадмин) | Что |
 |---|---|
