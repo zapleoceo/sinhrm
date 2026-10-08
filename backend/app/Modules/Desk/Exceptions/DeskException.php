@@ -64,5 +64,4 @@ final class DeskException extends BusinessRuleException
     {
         return new self('attachment_quota_exceeded', 422);
     }
-
 }
