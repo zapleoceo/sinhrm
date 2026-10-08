@@ -1,0 +1,102 @@
+# One-off verification run (branch test/mysql-e2e2, never merged): the whole app on MySQL 8.4, second round —
+# real SCENARIOS under the demo admin and the recruiter / manager / employee roles: uploads and downloads, import /
+# export, integrations in test mode (no external calls: Sheets client is a fixture, AI Broker is a local stub),
+# full lifecycles (hire → terminate → restore, leave approvals, timesheets, ATS funnel, Pulse, SafeSpeak, offers) and
+# MySQL specifics (NULL sort, collation, JSON, >64 KB texts, Kyiv midnight via libfaketime, 1000+ rows, concurrency).
+name: MySQL 8.4 e2e
+
+on:
+  push:
+    branches: ["test/mysql-e2e2"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: app, MYSQL_USER: app, MYSQL_PASSWORD: app }
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://127.0.0.1:4317
+      APP_USER_TIMEZONE: Europe/Kyiv
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: app
+      DB_USERNAME: app
+      DB_PASSWORD: app
+      SESSION_DRIVER: database
+      SANCTUM_STATEFUL_DOMAINS: 127.0.0.1:4317,127.0.0.1:4318
+      LOG_CHANNEL: single
+      QUEUE_CONNECTION: sync
+      PHP_CLI_SERVER_WORKERS: 6
+      OUT: ${{ github.workspace }}/out
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.4", extensions: "pdo_mysql, intl, sodium", coverage: none }
+      - uses: actions/setup-node@v7
+        with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - name: libfaketime (Kyiv-midnight server)
+        run: sudo apt-get install -y -q faketime >/dev/null && ls /usr/lib/x86_64-linux-gnu/faketime/
+      - name: Backend install + fresh MySQL 8.4 schema with seed and full demo data
+        working-directory: backend
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          cp .env.example .env && php artisan key:generate
+          cp ../.github/mysql-e2e/E2eStubsProvider.php app/Providers/E2eStubsProvider.php
+          sed -i 's/^];$/    App\\Providers\\E2eStubsProvider::class,\n];/' bootstrap/providers.php && tail -3 bootstrap/providers.php
+          php artisan migrate:fresh --seed --force
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $s = app(App\Modules\Core\Services\Demo\DemoDataService::class); foreach ($s->steps() as $step) { $t = microtime(true); $s->run($step); printf("demo %-16s %.1fs\n", $step, microtime(true) - $t); }'
+          mkdir -p "$OUT"
+          php ../.github/mysql-e2e/session.php > "$RUNNER_TEMP/session.json"
+          php -r '$s=json_decode(file_get_contents(getenv("RUNNER_TEMP")."/session.json"),true); foreach(["admin","recruiter","manager","employee"] as $r) echo "$r user=", $s[$r]["userId"], " employee=", $s[$r]["employeeId"] ?? "-", "\n"; echo "superadmins=", $s["superadmins"], "\n";'
+          php ../.github/mysql-e2e/bulk.php
+          # Kyiv midnight: the last Monday 00:30 Europe/Kyiv, as UTC, for the faked-clock server.
+          echo "FAKE_AT=$(php -r '$k=new DateTimeImmutable("last monday 00:30", new DateTimeZone("Europe/Kyiv")); echo $k->setTimezone(new DateTimeZone("UTC"))->format("Y-m-d H:i:s");')" >> "$GITHUB_ENV"
+          nohup php artisan serve --host=127.0.0.1 --port=8017 > "$OUT/serve.log" 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8017/up && break; sleep 1; done
+      - name: Faked-clock backend (Kyiv 00:30) on :8018
+        working-directory: backend
+        run: |
+          echo "fake clock: $FAKE_AT UTC"
+          LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1 FAKETIME="@$FAKE_AT" FAKETIME_DONT_FAKE_MONOTONIC=1 \
+            nohup php artisan serve --host=127.0.0.1 --port=8018 > "$OUT/serve-fake.log" 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8018/up && break; sleep 1; done
+      - name: Frontend build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npx playwright install --with-deps --only-shell chromium
+      - name: Scenarios (roles, uploads, import/export, lifecycles, MySQL specifics)
+        working-directory: frontend
+        env:
+          SINHRM_SESSION: ${{ runner.temp }}/session.json
+        run: |
+          cp ../.github/mysql-e2e/scenarios.mjs e2e/mysql-scenarios.mjs
+          nohup node e2e/serve.mjs --port=4317 --proxy=http://127.0.0.1:8017 > "$OUT/spa.log" 2>&1 &
+          nohup node e2e/serve.mjs --port=4318 --proxy=http://127.0.0.1:8018 > "$OUT/spa-fake.log" 2>&1 &
+          sleep 2
+          node e2e/mysql-scenarios.mjs
+      - name: SQL errors in the Laravel log
+        if: always()
+        working-directory: backend
+        run: |
+          cp storage/logs/laravel.log "$OUT/laravel.log" 2>/dev/null || true
+          echo "SQLSTATE lines: $(grep -c SQLSTATE storage/logs/laravel.log 2>/dev/null || echo 0)"
+          grep -o 'SQLSTATE[^"]\{0,300\}' storage/logs/laravel.log 2>/dev/null | sort | uniq -c | sort -rn | head -40 || true
+          grep -E '\.(ERROR|CRITICAL)' storage/logs/laravel.log 2>/dev/null | cut -c1-400 | sort | uniq -c | sort -rn | head -40 || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: mysql-e2e2, path: out, retention-days: 7, if-no-files-found: ignore }
