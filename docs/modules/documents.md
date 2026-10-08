@@ -89,7 +89,7 @@ HTML с расширением `.pdf` отклоняется (422 `invalid_file`
 `Http/Controllers` (`DocumentTemplateController`, `DocumentController`) → `Http/Requests` → `Services`
 (`DocumentTemplateService`, `DocumentService`, `DocumentVariables`) → `Contracts/DocumentRepository`,
 `DocumentTemplateRepository`, `DocumentStorage` (`Repositories/*`). Ошибки — `Exceptions/DocumentException`. Связи:
-People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайомитися» через `TaskService`), Workflows вызывает
+People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайомитися» через контракт `TaskScheduler`), Workflows вызывает
 `DocumentService::generate/send`.
 
 ### Фронтенд (`frontend/src/app/features/documents`)

@@ -45,7 +45,7 @@
 
 ## Защита от случайного запуска
 
-- Подключения — только из окружения: `TRANSFER_SOURCE_URL` (`postgresql://…?sslmode=require`) и `TRANSFER_TARGET_URL`
+- Подключения — только из окружения: `TRANSFER_SOURCE_URL` (`postgresql://…?sslmode=require`; в CI-репетиции — `pgsql://…`) и `TRANSFER_TARGET_URL`
   (`mysql://…`). Аргументов со строкой подключения или паролем нет; URL и пароль не печатаются (маскируются и в ошибках).
 - `--production` обязателен, если `APP_ENV=production` или хоть одна база не на `127.0.0.1/localhost`.
 - Любая запись — только после ввода **имени целевой базы** (диалог) или `--confirm-target=<имя>`; иначе ничего не пишется.
@@ -139,5 +139,5 @@ CI: `MySQL data transfer` — PostgreSQL 17 + MySQL 8.4; источник миг
 2. В `CoreServiceProvider::register()` убрать строку `$this->app->register(TransferServiceProvider::class)` и её `use`;
    в `backend/phpstan.neon` убрать `ignoreErrors` для `app/Modules/Core/Transfer/config.php`.
 3. В `scripts/mysql-only-guard.mjs` убрать эти пути из `ALLOWED`; `node scripts/mysql-only-guard.mjs` должен остаться зелёным.
-4. Этот документ свести к истории (или удалить), строку PROD-49 в [production-backlog.md](../product/production-backlog.md) закрыть;
+4. Этот документ свести к истории (или удалить), строку PROD-51 в [production-backlog.md](../product/production-backlog.md) закрыть;
    ветку `legacy/vercel-postgres` и Neon удаляет владелец отдельно.

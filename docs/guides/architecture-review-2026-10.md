@@ -127,7 +127,7 @@
 
 ## Как проверить
 - CI каждого PR: `backend` (pint, phpstan, PHPUnit на MySQL 8.4 с покрытием), `frontend` (lint, Vitest, сборка),
-  `ui-parity` (инвентарь и снапшоты без изменений), `extension`, `docs`, `worklog`.
+  `ui-parity` (инвентарь и снапшоты без изменений; не входит в обязательные проверки «Protect main»), `extension`, `security`, `docs`, `worklog`.
 - Повторить замеры: jscpd и knip с параметрами из «Как мерили»; границы модулей —
   `php vendor/bin/phpunit --filter ModuleBoundariesTest`.
 - Новые нарушения не появятся незаметно: baseline границ может лишь сокращаться, а общие помощники описаны в

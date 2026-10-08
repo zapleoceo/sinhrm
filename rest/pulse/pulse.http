@@ -23,9 +23,10 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "answers": [
-        "Example answers"
-    ]
+    "answers": {
+        "enps": 9,
+        "why": "Example comment"
+    }
 }
 
 ### GET /api/pulse/waves/{id}/results — pulse.waves.results

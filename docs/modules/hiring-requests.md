@@ -87,7 +87,7 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 ### Уведомления и задача `hiring.sla` (`Services/ApproverNotifier`, `Services/HiringSlaJob`)
 - Активация шага → задача `hiring_approval` каждому согласующему (роль — до 20 держателей роли, без автора), ключ
   `hrq:<шаг>:<пользователь>`, срок = `due_at`. «Один раз» гарантирует флаг `notified` (compare-and-set), не таблица
-  задач. Решение шага или отмена заявки закрывает задачи шага (`TaskService::closeByRulePrefix`).
+  задач. Решение шага или отмена заявки закрывает задачи шага (`TaskScheduler::closeByRulePrefix`).
 - `hiring.sla` (cron `POST /api/ops/jobs/run`, идемпотентно): шаг без уведомления → уведомить; просроченный шаг → одна
   задача каждому админу «Прострочено погодження…» (флаг `escalated`, ключ `hrq-sla:…`); заявка `in_progress`, у которой
   вакансия закрыта или нанято ≥ `headcount`, → `closed`. Ответ: `{hiring_notified, hiring_escalated, hiring_closed}`.

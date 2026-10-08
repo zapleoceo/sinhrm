@@ -1,6 +1,6 @@
 # Reports — main endpoints. Generated skeleton, synthetic data only.
-# Path ids below are placeholders — replace with real ids from a list call.
-@key = 1
+# Path ids below are placeholders — replace with real ids from a list call; @key is a report key from GET /api/reports/catalog.
+@key = headcount
 @id = 1
 # Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
 # Full list of Reports operations: /api/docs (tag "Reports").
@@ -34,7 +34,8 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "dataset": "Example dataset"
+    "dataset": "assets",
+    "columns": ["name", "status"]
 }
 
 ### POST /api/reports/builder/csv — reports.builder.csv
@@ -46,7 +47,8 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "dataset": "Example dataset"
+    "dataset": "assets",
+    "columns": ["name", "status"]
 }
 
 ### GET /api/reports/saved — reports.saved.index
@@ -65,9 +67,10 @@ Content-Type: application/json
 {
     "name": "Example name",
     "kind": "builder",
-    "definition": [
-        "Example definition"
-    ]
+    "definition": {
+        "dataset": "assets",
+        "columns": ["name", "status"]
+    }
 }
 
 ### PUT /api/reports/saved/{id} — reports.saved.update
@@ -81,9 +84,10 @@ Content-Type: application/json
 {
     "name": "Example name",
     "kind": "builder",
-    "definition": [
-        "Example definition"
-    ]
+    "definition": {
+        "dataset": "assets",
+        "columns": ["name", "status"]
+    }
 }
 
 ### GET /api/reports/saved/{id}/run — Runs a saved report under the owner's current scope (as JSON or CSV with ?format=csv)

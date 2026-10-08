@@ -68,8 +68,8 @@ other` + `grc_ua, instagram, google_ads, job_fair, agency`; правила UTM �
 |---|---|---|
 | `GET /api/acquisition-channels` (`?all=1` — с выключенными) | все активные; правила и расходы — только админам | |
 | `POST /api/acquisition-channels`, `PATCH …/{id}` | админ (`recruiting-manage`) | код занят → 422 `channel_code_taken` |
-| `POST …/{id}/utm-rules`, `DELETE …/utm-rules/{rule}` | админ | |
-| `POST …/{id}/costs`, `DELETE …/costs/{cost}` | админ | `period_end ≥ period_start` |
+| `POST …/{id}/utm-rules`, `DELETE …/utm-rules/{rule}` (без `{id}` канала) | админ | |
+| `POST …/{id}/costs`, `DELETE …/costs/{cost}` (без `{id}` канала) | админ | `period_end ≥ period_start` |
 | `POST /api/acquisition-channels/resolve` `{utm_*}` | админ | `{channel_id, rule_id}` |
 | `GET /api/vacancies/{id}/sources` | кто видит вакансию | `[{channel_id, name, added_via, count, share_pct}]` |
 | `GET /api/candidates?channel_id=`, `POST/PATCH /api/candidates` `{channel_id?}` | как раньше | ответ: `channel`, `added_via` |

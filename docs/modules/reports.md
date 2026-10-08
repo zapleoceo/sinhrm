@@ -114,7 +114,7 @@ catalog — доступностью отчёта, лишние фильтры �
 сохранённый отчёт не сохраняет доступ, который у пользователя отобрали. Чужой — 404. Не больше 100 на пользователя.
 API: `GET/POST /api/reports/saved`, `PUT/DELETE /saved/{id}`, `GET /saved/{id}/run[?format=csv]`.
 
-### CSV (`Support/Csv`, `Http/Resources/CsvResponse`)
+### CSV (`Core\Support\Export\Csv`, `Http/Resources/CsvResponse`)
 `StreamedResponse` (`fputcsv` в `php://output`), UTF-8 BOM (Excel и кириллица), `Content-Disposition: attachment`,
 `no-store`. Имя файла — `<отчёт>-<дата>.csv`, дата — день пользователя (`UserTime::today()`, Europe/Kyiv): до 08.10.2026
 бралась дата UTC, и выгрузка с 00:00 до 02:00/03:00 по Киеву получала вчерашнюю дату (регрессия

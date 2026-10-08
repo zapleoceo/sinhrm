@@ -31,7 +31,7 @@
 **Чего нет никогда:** тела запроса и ответа, заголовков, cookies, IP, стека целиком, имён и e-mail.
 
 **Как пишется.** `bootstrap/app.php` регистрирует репортер первым: `ErrorRecorder::recordException()`. Запись — один
-`INSERT … ON CONFLICT (fingerprint) DO UPDATE count = count + 1`. Регистратор **никогда не бросает исключений**:
+`upsert` по `fingerprint` (на MySQL — `INSERT … ON DUPLICATE KEY UPDATE`, счётчик `count` растёт на 1). Регистратор **никогда не бросает исключений**:
 если запись не удалась (база недоступна), в stderr уходит одна JSON-строка `error_log.record_failed` с классом
 ошибки, и обычный лог Laravel работает как раньше. Ошибка внутри записи не записывается повторно (защита от петли).
 
@@ -95,5 +95,5 @@ JSON, ему ничего грузить не нужно), `X-Frame-Options: DEN
 Тесты: `tests/Feature/Observability/ErrorLogTest.php` (запись и очистка, группировка, повторное открытие, 4xx не
 пишутся, отказ базы не ломает ответ, хранение 30 дней, лимит клиентского эндпоинта, доступ только суперадмину),
 `tests/Feature/Core/SecurityHeadersTest.php`, `frontend/src/app/core/errors/error-reporter.spec.ts`.
-Вручную: `curl -sI https://sinhrm.vercel.app/ | grep -i -E 'content-security|x-frame|strict-transport'` и то же для
+Вручную (на замороженном Vercel-проде до переезда — релиз замороженной ветки, без правок `main`; после переезда — на адресе IT STEP): `curl -sI https://sinhrm.vercel.app/ | grep -i -E 'content-security|x-frame|strict-transport'` и то же для
 `/api/health`.

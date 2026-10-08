@@ -145,7 +145,7 @@
 `Events/TaskCompleted` — Workflows закрывает связанный шаг. Отметить задачу может **её исполнитель** (даже с ролью
 viewer — например, новый сотрудник) и, как раньше, superadmin/admin/recruiter, которые её видят. Задачу `document`
 интерфейс не закрывает галочкой — ознакомление подтверждается кнопкой «Ознайомлений» в «Мої документи».
-Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse|desk|hiring|time`), сроку и
+Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse|desk|hiring|time|timeoff`), сроку и
 закрытым. Миграция `Database/Migrations/2026_10_03_100001_generalize_tasks_table.php`.
 
 Запуск: `Services/FollowupJob` зарегистрирован как `Core\Contracts\ScheduledJob` → `POST /api/ops/jobs/run`
@@ -157,7 +157,7 @@ viewer — например, новый сотрудник) и, как рань�
 | `scripts` | `name, channel (call\|chat), active_version_id?, archived` |
 | `script_versions` | `script_id, version, published_at? (null = черновик), author_id, steps, objections, templates, followups, next_step_patterns` (json); `unique(script_id, version)`. Опубликованная версия неизменяема: сервис правит только черновик, а модель бросает `LogicException` при попытке изменить опубликованную |
 | `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (json: steps[+comment у ШІ], next_step, objections[+handled], recommendations[+ai_tip]), prompt_version? (ШІ, напр. `script_eval.v4`), ai_request_id? (fk ai_requests), created_at` — миграция `2026_10_08_100003` |
-| `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (followup\|manual\|new_applicant\|workflow\|document\|mood_alert), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
+| `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (`Enums/TaskType`: followup\|manual\|new_applicant\|workflow\|document\|mood_alert\|desk_sla\|hiring_approval\|time_reminder\|leave_handover\|exit_handover), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
 
 Форма контента (валидация `Http/Requests/ValidatesScriptContent` + value-объекты `DTO/ScriptContent`, `DTO/ScriptStep`):
 `steps[{id, title, goal, sample, required, weight 0..100, keywords[]}]` (до 30), `objections[{id, trigger, answer}]`,
@@ -185,7 +185,7 @@ viewer — например, новый сотрудник) и, как рань�
 | `GET /api/candidates/{id}/templates` | кто видит карточку | заполненные шаблоны `{script_id, script_name, channel, key, title, text, missing[]}` |
 | `GET /api/touchpoints/{id}/evaluation` | кто видит кандидата **и** заявку касания (или сообщение во «Вхідних») | полная оценка; не оценено → 404 `not_evaluated`; скрытое касание (оффер) → 403 |
 | `GET /api/reports/scripts` | все, в пределах филиалов | `from, to` (как у отчётов Recruiting) → `recruiters[{avg_score, next_step_fixed_pct, evaluations}]`, `steps[{title, total, missed, miss_rate_pct}]` (шаги группируются по названию), `totals` |
-| `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents\|pulse\|desk\|hiring\|time` (`Enums/TaskSource`; иное → 422), `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
+| `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents\|pulse\|desk\|hiring\|time\|timeoff` (`Enums/TaskSource`; иное → 422), `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
 | `PATCH /api/tasks/{id}` | исполнитель задачи (любая роль); superadmin, admin, recruiter (видящие задачу) | `{done: bool}`; чужая задача у viewer / чужой филиал → 403 |
 
 Доступ к задачам: без ограничений — superadmin/admin; остальные видят задачи, назначенные им, и задачи по заявкам вакансий
@@ -205,7 +205,7 @@ viewer — например, новый сотрудник) и, как рань�
 **«Тест на тексті» тратил общий бюджет ШІ без спроса.** `POST /api/scripts/{id}/test` стоял вне гейта
 («чтение доступно всем»), хотя это полноценный вызов оценщика: любой активный сотрудник мог гонять его в цикле и выбрать
 дневной лимит AI на всех. Единственный клиент эндпоинта — вкладка «Тест» редактора скрипта
-(`features/scripts/editor`, маршрут `admin/scripts/:id` под `roleGuard('superadmin','admin')`), не-менеджеры его не
+(`features/scripts/editor`, маршрут `admin/scripts/:id` под `roleGuard(...ADMIN_ROLES)` = superadmin + admin), не-менеджеры его не
 вызывают. Поэтому эндпоинт переехал в группу `can:scripts-manage` и сверху получил `throttle:10,1` — лимит на пользователя,
 чтобы и менеджер случайным автоповтором не выжег бюджет. Не-менеджеру — 403, 11-й вызов в минуту — 429.
 

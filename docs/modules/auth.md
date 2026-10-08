@@ -22,7 +22,7 @@
 ему открыты (права ролей складываются; см. «Працювати як» ниже). Роли выдаёт суперадмин в [users.md](users.md). Кроме неё
 бывают **контекстные роли** — это не роль в списке, а назначение на конкретную вещь: «нанимающий менеджер этой вакансии»,
 «интервьюер этого кандидата», «руководитель этих сотрудников». Набор повторяет практику PeopleForce, HiBob, BambooHR,
-Personio, Workable и Greenhouse (разбор — `D:/Projects/HRM/docs/roles-research.md`, раздел 8).
+Personio, Workable и Greenhouse.
 
 | Роль (`Enums\UserRole`) | Кто это | Что может |
 |---|---|---|
@@ -76,9 +76,10 @@ Enum `Enums\UserStatus`: `active` | `blocked`.
 |---|---|---|
 | `GET google/redirect` | все | 302 на Google (scopes `openid email profile`) |
 | `GET google/callback` | Google | 302 на `/` или `/login?error=not_invited\|blocked\|email_unverified\|oauth_failed` |
-| `GET me` | вход | `{id, name, email, avatar_url, locale, roles[], active_role, effective_roles[], status, modules[]}`; гость → 401 |
+| `GET me` | вход | `{id, name, email, avatar_url, locale, approval_emails, roles[] (назначенные), active_role, effective_roles[], status, modules[]}`; гость → 401 |
 | `PUT active-role` `{role}` | вход, в любой роли | «Працювати як»: профиль как у `GET me`; роль не из назначенных (или у аккаунта одна роль) → 422; `null` → все роли; 30 запросов/мин |
 | `PATCH me/locale` `{locale}` | вход | профиль; язык не из `uk,ru,en` → 422 |
+| `PATCH me/notifications` `{approval_emails: bool}` | вход | профиль; выключатель писем о согласованиях («Мій профіль»); не boolean → 422 |
 | `POST logout` | вход | 204, сессия уничтожена |
 
 Заблокированный пользователь с живой сессией на следующем запросе получает 403 `{"message":"blocked"}`
@@ -100,7 +101,7 @@ Cookie «запомнить меня» живёт **14 дней** (`config/auth.
 Миграция 2026_10_09_180000_add_user_credential_version нужна перед выпуском кода.
 Legacy durable sessions без stamp требуют нового Google login. Новый вход после unblock разрешён.
 Выполняющиеся запросы не отменяются. Feature regressions используют настоящие DI repositories:
-TokenGrantRevocationTest, GoogleCallbackTest, UserCredentialRevocationTest.
+`tests/Feature/Auth/TokenGrantRevocationTest`, `tests/Feature/Auth/GoogleCallbackTest`, `tests/Feature/Users/UserCredentialRevocationTest`.
 
 ### «Працювати як» (активная роль)
 Простыми словами: если у аккаунта **несколько** глобальных ролей, в меню пользователя (аватар внизу слева) можно

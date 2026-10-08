@@ -87,7 +87,7 @@ Content-Type: application/json
 
 {
     "scope": "personal",
-    "period": "Example period",
+    "period": "2026-Q4",
     "title": "Example title",
     "key_results": [
         {
@@ -114,7 +114,7 @@ Content-Type: application/json
 
 {
     "scope": "personal",
-    "period": "Example period",
+    "period": "2026-Q4",
     "title": "Example title",
     "key_results": [
         {
@@ -142,7 +142,7 @@ Content-Type: application/json
 {
     "employee_id": 1,
     "metric": "Example metric",
-    "period": "Example period",
+    "period": "2026-Q4",
     "target": 1.5
 }
 

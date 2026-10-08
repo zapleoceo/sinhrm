@@ -1,6 +1,7 @@
 # Integrations — main endpoints. Generated skeleton, synthetic data only.
 # Path ids below are placeholders — replace with real ids from a list call.
-@integration = 1
+@integration = ai_broker
+# {integration} is the registry key (ai_broker, telegram_business, viber, ...), not a numeric id; unknown key -> 404.
 # Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
 # Full list of Integrations operations: /api/docs (tag "Integrations").
 
@@ -21,6 +22,11 @@ Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 
 # Live preview currently returns 409 dependency_pending: the SDK and source contract are not installed/confirmed.
 
+### GET /api/integrations/itstep-directory/preview — read-only preview from the gateway (superadmin); 409 dependency_pending until the SDK is installed
+GET {{host}}/api/integrations/itstep-directory/preview
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
 ### PUT /api/integrations/ai-policy — integrations.ai-policy
 PUT {{host}}/api/integrations/ai-policy
 Accept: application/json
@@ -39,6 +45,16 @@ Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 X-XSRF-TOKEN: {{xsrf}}
 Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "settings": {
+        "base_url": "https://example.com"
+    },
+    "secrets": {
+        "project_key": "<PROJECT_KEY>"
+    }
+}
 
 ### GET /api/integrations/{integration}/logs — integrations.logs
 GET {{host}}/api/integrations/{{integration}}/logs
