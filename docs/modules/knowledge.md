@@ -36,7 +36,7 @@
 Postgres и SQLite.
 
 ### Поиск
-`?q=` — `title`/`body_md` через `ILIKE` на Postgres и `LIKE` на SQLite (регистр не важен), `%` и `_` экранируются
+`?q=` — `title`/`body_md` через `Sql::whereContainsCi` (регистр не важен; на MySQL поиск шире — без учёта диакритики, см. ниже), `%` и `_` экранируются
 (`ESCAPE '!'`) — ищутся буквально. `?category_id=`, `?tag=` (теги хранятся в нижнем регистре, без дублей).
 
 ### Версии
@@ -83,4 +83,4 @@ Postgres и SQLite.
 Ключ модуля `knowledge`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
 MySQL compatibility: article Markdown, rendered HTML and version history use `LONGTEXT` so accepted Unicode bodies exceeding 64 KiB roundtrip.
 
-**Поиск статей (2026-10-08).** Вместо `ILIKE` на PostgreSQL и `LIKE` на других драйверах — `Sql::whereContainsCi`: `lower(title|body_md) like ? escape '!'`, регистр (включая кириллицу) не важен, `%`/`_`/`!` в запросе ищутся буквально; проверка — `KnowledgeApiTest::test_search_folds_cyrillic_case_on_every_driver` в jobs `tests` и `tests-mysql` ([ADR 0010](../adr/0010-mysql-dual-support.md)).
+**Поиск статей (2026-10-08).** Вместо `ILIKE` на PostgreSQL и `LIKE` на других драйверах — `Sql::whereContainsCi`: `lower(title|body_md) like ? escape '!'`, регистр (включая кириллицу) не важен, `%`/`_`/`!` в запросе ищутся буквально; проверка — `KnowledgeApiTest::test_search_folds_cyrillic_case_on_every_driver` в jobs `tests` и `tests-mysql` ([ADR 0010](../adr/0010-mysql-dual-support.md)). **Известное расхождение:** на MySQL (`utf8mb4_0900_ai_ci`) поиск не различает диакритику (`й` = `и`, `é` = `e`), на PostgreSQL различает — на MySQL находится больше; фиксирует `PortableSqlTest::test_contains_diacritics_known_divergence_mysql_is_wider`.
