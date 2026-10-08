@@ -54,7 +54,7 @@ merge-base) или падение самого шага — всё это даё
 (миграции, экспорт OpenAPI через Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
 Job `backend` — агрегатор: `needs` всех трёх, `if: always()`, зелёный только если все три `success`.
 
-Отдельного job `tests-mysql` больше нет: `tests` сам идёт на MySQL 8.4 — единственной БД проекта ([ADR 0011](../adr/0011-mysql-only.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)). Боевой Vercel + Neon (`pgsql`) заморожен на ветке `legacy/vercel-postgres`; `main` на Vercel не выкладывается (отдельный PR `ci/freeze-vercel-deploy`).
+Отдельного job `tests-mysql` больше нет: `tests` сам идёт на MySQL 8.4 — единственной БД проекта ([ADR 0011](../adr/0011-mysql-only.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)). Боевой Vercel + Neon (`pgsql`) заморожен на ветке `legacy/vercel-postgres`; `main` на Vercel не выкладывается (заморозка `VERCEL_DEPLOY_ENABLED`, PR #176, раздел ниже).
 Job `frontend`: `ng lint`, `ng test --watch=false --coverage` (Vitest + `@vitest/coverage-v8`) с порогами покрытия
 в `frontend/angular.json` → `test.options.coverageThresholds`: statements 45,5 %, branches 57 %, functions 54,5 %,
 lines 54 % — замер 02.10.2026 (47,6 / 59,1 / 56,7 / 56,3 %) минус запас ≈ 2 п.п.; ниже порога job падает. Порог

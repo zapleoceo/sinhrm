@@ -7,7 +7,7 @@
 **Контекст.** ADR 0010 ввёл переходный период: один код на PostgreSQL (прод Vercel + Neon) и MySQL 8.4 (целевая
 инфраструктура IT STEP), удаление PostgreSQL — после переезда. Владелец решил не ждать переезда: `main` сразу
 становится MySQL-only, а боевой Vercel + Neon замораживается на ветке `legacy/vercel-postgres` (коммит `8875ac4e`).
-Автовыкладка `main` в Vercel отключается отдельным PR (`ci/freeze-vercel-deploy`) — до его мержа этот ADR не вливается.
+Автовыкладка `main` в Vercel отключена PR #176 (переменная репозитория `VERCEL_DEPLOY_ENABLED`, [deploy.md](../guides/deploy.md)); включать её для `main` после этого ADR нельзя.
 
 **Решение.**
 1. Единственная СУБД приложения — **MySQL 8.4 LTS** (InnoDB, `utf8mb4`, `utf8mb4_0900_ai_ci`, строгий `sql_mode`, сессия
