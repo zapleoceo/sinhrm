@@ -7,7 +7,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { USER_ROLES, UserRole } from '../../core/auth/auth.model';
+import { SUPERADMIN_ROLE, USER_ROLES, UserRole } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { ModuleSetting, ModulesService } from './modules.service';
 
@@ -76,8 +76,8 @@ interface Draft {
               @for (role of roles; track role) {
                 <td class="role">
                   <mat-checkbox
-                    [checked]="m.core || role === 'superadmin' || d.roles.includes(role)"
-                    [disabled]="m.core || role === 'superadmin'"
+                    [checked]="m.core || role === superadmin || d.roles.includes(role)"
+                    [disabled]="m.core || role === superadmin"
                     [attr.aria-label]="(m.name_key | transloco) + ': ' + ('roles.' + role | transloco)"
                     (change)="setRole(m.key, role, $event.checked)"
                   />
@@ -128,6 +128,8 @@ export class ModulesPage implements OnInit {
   private readonly i18n = inject(TranslocoService);
 
   protected readonly roles = USER_ROLES;
+  /** Every module is always open to the superadmin: its column is ticked and locked. */
+  protected readonly superadmin = SUPERADMIN_ROLE;
   protected readonly modules = signal<ModuleSetting[]>([]);
   protected readonly drafts = signal<Record<string, Draft>>({});
   protected readonly loading = signal(true);

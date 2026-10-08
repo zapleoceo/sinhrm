@@ -1,4 +1,4 @@
-import { UserRole } from '../../../core/auth/auth.model';
+import { UserRole, isAdmin } from '../../../core/auth/auth.model';
 
 /** One page of public/help/docs.json (built by scripts/build-docs.mjs from ../docs). */
 export interface DocPage {
@@ -22,7 +22,7 @@ export interface DocHit {
 
 /** Admin-only pages are hidden for everyone except admin/superadmin (the static index is not a secret: the repo is public). */
 export function visibleDocs(docs: readonly DocPage[], roles: readonly UserRole[]): DocPage[] {
-  const admin = roles.includes('admin') || roles.includes('superadmin');
+  const admin = isAdmin(roles);
   return docs.filter((d) => d.audience === 'all' || admin);
 }
 

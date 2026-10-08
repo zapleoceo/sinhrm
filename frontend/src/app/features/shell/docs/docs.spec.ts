@@ -32,6 +32,8 @@ describe('docs helpers', () => {
     expect(visibleDocs(DOCS, ['admin']).map((d) => d.slug)).toEqual(['pulse', 'integrations', 'desk']);
     expect(visibleDocs(DOCS, ['superadmin'])).toHaveLength(3);
     expect(visibleDocs(DOCS, [])).toHaveLength(2);
+    // HR staff below the administration level does not see admin pages either.
+    expect(visibleDocs(DOCS, ['hr_manager', 'employee']).map((d) => d.slug)).toEqual(['pulse', 'desk']);
   });
 
   it('groups by module group in a fixed order, skipping empty groups', () => {

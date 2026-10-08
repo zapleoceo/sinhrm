@@ -1,7 +1,7 @@
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { UserRole } from '../../core/auth/auth.model';
+import { UserRole, isAdmin } from '../../core/auth/auth.model';
 import { apiErrorKey } from '../../core/api/api-error';
 import { saveBlob } from '../../core/http/api-error';
 import { DataEnvelope } from '../../core/api/api.model';
@@ -17,7 +17,7 @@ export interface PrivacySettings {
 
 /** Mirrors backend gate privacy-manage: export, erase and the retention rule are for superadmin and admin. */
 export function canManagePrivacy(roles: readonly UserRole[]): boolean {
-  return roles.some((r) => r === 'superadmin' || r === 'admin');
+  return isAdmin(roles);
 }
 
 /** Error of a blocked request (hired, not_terminated) or by status (403/404/422) → i18n key. */
