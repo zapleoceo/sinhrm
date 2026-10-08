@@ -10,7 +10,8 @@
 |---|---|---|
 | #181 | бэкенд: репозитории и контракты модулей (SRP, DIP, границы модулей) | `refactor/solid-dry-be-dip` |
 | #182 | бэкенд: общие каркасы, разгрузка крупных сервисов, enum вместо строк (DRY, SRP) | `refactor/solid-dry-be-dry` |
-| фронтенд-PR | фронтенд, стили, расширение (DRY, SRP, мёртвый код) | `refactor/solid-dry-frontend` |
+| #195 | фронтенд, стили, расширение (DRY, SRP, мёртвый код) | `refactor/solid-dry-frontend` |
+| #196 | бэкенд: два последних импорта сервисов через контракты, `WAIT_SECONDS` в одном месте | `refactor/contracts-leftovers` |
 
 ## Как мерили
 - **Дубли** — jscpd 4, `--min-tokens 50`: бэкенд `backend/app` (php), фронтенд `frontend/src/app` (typescript без
@@ -36,7 +37,7 @@
 | Встроенные стили компонентов: клоны | 3 (23 строки) | 0 |
 | Однострочные копии `.small`/`.spacer` во встроенных стилях | 31 | 7 (другие значения) |
 | Расширение: клоны | 0 | 0 |
-| Нарушения границ модулей (baseline) | 255 (Models 159, Services 83, Http 11, Repositories 2) | 188 (Models 155, Services 20, Http 11, Repositories 2) |
+| Нарушения границ модулей (baseline) | 255 (Models 159, Services 83, Http 11, Repositories 2) | 186 (Models 155, Services 18, Http 11, Repositories 2) |
 | Двусторонние зависимости модулей (`KNOWN_CYCLES`) | 7 | 7 |
 | Контроллеры с запросами к БД | 3 | 0 |
 | Сервисы/Support с запросами к БД (кроме демо-данных) | 12 файлов | 1 (`Recruiting/Support/ApplicationVisibility`) |
@@ -71,7 +72,7 @@
   `CandidateIntake`, `TouchpointLogger`; `GoogleWorkspace\Contracts\GoogleConnections`;
   `Integrations\Contracts\IntegrationConfigs`, `IntegrationSettings`; `Audit\Contracts\AuditHistory`;
   `Documents\Contracts\DocumentTemplateRepository` для шага воркфлоу «создать документ».
-- Импорты чужих `Services` 83 → 20, baseline 255 → 188; [overview.md](../architecture/overview.md) обновлён.
+- Импорты чужих `Services` 83 → 20, baseline 255 → 188 (#181), затем → 186 (#196: `ApproverNotifier` через `TaskScheduler`, Pulse `ResponseService` через `PeopleAccess`, `WAIT_SECONDS` объявлен в `AiGateway` без копии в `AiService`); [overview.md](../architecture/overview.md) обновлён.
 
 ### Бэкенд, #182 — общие каркасы и SRP
 - Отчёты: `AbstractRecruitingReport`, `AbstractTeamReport`, `AbstractTimeReport`, `AbstractLeaveReport`,
@@ -110,7 +111,7 @@
 | Объявления Eloquent-моделей (`$fillable`, `$casts`, блоки `use`) | декларативный шаблон фреймворка; «общий родитель» ради одинаковых полей связал бы несвязанные сущности |
 | Импорты чужих `Models` в Eloquent-связях (155) | `belongsTo`/`hasMany` требуют класс модели; замена на контракты — отказ от связей Eloquent во всём проекте, это решение уровня ADR, а не рефакторинг |
 | 7 двусторонних зависимостей модулей | у каждой своя причина в `KNOWN_CYCLES` (демо-сид Core, история Audit, отправка оффера через Channels); разрыв требует переноса событий/данных между модулями и меняет поведение |
-| 20 оставшихся импортов чужих `Services` | 8 — определения Reports читают отчётные сервисы Recruiting, Scripts, Time, Pulse (контракт повторил бы их API целиком; это отчётный слой над модулями); 4 — демо-сид Core (см. ниже); 2 — `Auth\Services\PersonalTokens` в сервисах токенов MCP и расширения; `OfferService` → `Channels\MessageService` — часть цикла Channels ↔ Recruiting; `CollectAssetsExecutor` → `AssigneeResolver`, `CreateDocumentExecutor` → `DocumentService`, `HiringRequestService` → `VacancyService` — одиночные вызовы с записью, контракт для них — отдельный PR модуля. `ApproverNotifier` → `TaskService` и Pulse `ResponseService` → `PeopleScope` переводятся на `TaskScheduler`/`PeopleAccess` после слияния #181 и #182: эти файлы меняли обе ветки, перевод в одной из них дал бы конфликт |
+| 18 оставшихся импортов чужих `Services` | 8 — определения Reports читают отчётные сервисы Recruiting, Scripts, Time, Pulse (контракт повторил бы их API целиком; это отчётный слой над модулями); 4 — демо-сид Core (см. ниже); 2 — `Auth\Services\PersonalTokens` в сервисах токенов MCP и расширения; `OfferService` → `Channels\MessageService` — часть цикла Channels ↔ Recruiting; `CollectAssetsExecutor` → `AssigneeResolver`, `CreateDocumentExecutor` → `DocumentService`, `HiringRequestService` → `VacancyService` — одиночные вызовы с записью, контракт для них — отдельный PR модуля. |
 | `Core/Services/Demo/DemoDataService.php` (1038 строк), `Recruiting/Services/RecruitingDemoData.php` (439) | генераторы демо-данных пишут в таблицы напрямую ради скорости и независимости от бизнес-правил; разрез по модулям меняет порядок и состав сида, а ui-parity и демо-стенд опираются на него |
 | `Core/Transfer/Preflight.php` (303) | инструмент `db:transfer-to-mysql` (ADR 0011) — отдельная задача переезда данных; файл живёт до её завершения |
 | `Recruiting/Support/ApplicationVisibility` (подзапрос `DB::table('vacancies')`) | это построитель области видимости, который встраивается в чужие запросы как scope, а не самостоятельный запрос |
