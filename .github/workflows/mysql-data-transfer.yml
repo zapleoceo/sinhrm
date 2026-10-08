@@ -1,0 +1,93 @@
+name: MySQL data transfer
+
+# `php artisan db:transfer-to-mysql` (PROD-47, docs/guides/mysql-cutover.md) on real PostgreSQL 17 -> MySQL 8.4 with
+# synthetic demo data only. NOT a required check. No production URL, dump or secret is involved.
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/mysql-data-transfer.yml'
+      - 'docs/guides/mysql-cutover.md'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/mysql-data-transfer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mysql-data-transfer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults: { run: { working-directory: backend } }
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app_transfer_source }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app -d app_transfer_source" --health-interval 5s --health-timeout 5s --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: app_transfer_target, MYSQL_USER: app, MYSQL_PASSWORD: app }
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      # The app's own connection = the synthetic source (factories in the feature test write there).
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: app_transfer_source
+      DB_USERNAME: app
+      DB_PASSWORD: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.4', extensions: 'pdo_pgsql, pgsql, pdo_mysql, intl, sodium', coverage: none, ini-values: 'memory_limit=1G' }
+      - uses: actions/cache/restore@v6
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+      - name: Install locked dependencies and create one synthetic key
+        run: composer install --no-interaction --no-progress --prefer-dist && cp .env.example .env && php artisan key:generate
+      - name: Transfer connections from local synthetic services (env only, never arguments)
+        run: |
+          test -z "${DB_URL:-}" && test -z "${DATABASE_URL:-}"
+          echo "TRANSFER_SOURCE_URL=pgsql://${DB_USERNAME}:${DB_PASSWORD}@127.0.0.1:5432/app_transfer_source" >> "$GITHUB_ENV"
+          echo "TRANSFER_TARGET_URL=mysql://${DB_USERNAME}:${DB_PASSWORD}@127.0.0.1:3306/app_transfer_target" >> "$GITHUB_ENV"
+      - name: Migrate source (PostgreSQL) and target (MySQL)
+        run: |
+          php artisan migrate --force --no-interaction
+          DB_CONNECTION=mysql DB_PORT=3306 DB_DATABASE=app_transfer_target php artisan migrate --force --no-interaction
+      - name: Seed synthetic demo data into the source
+        run: |
+          php artisan db:seed --force --no-interaction
+          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            $demo = $app->make(App\Modules\Core\Services\Demo\DemoDataService::class);
+            foreach ($demo->steps() as $step) { $demo->run($step); }
+            echo "demo steps: ".count($demo->done())."\n";'
+      - name: Feature tests (collisions, idempotency/resume, corruption -> FAIL, APP_KEY, guards)
+        run: php artisan test --filter MysqlDataTransferTest
+      - name: CLI preflight (read-only)
+        run: php artisan db:transfer-to-mysql --preflight --no-interaction
+      - name: CLI refuses a write without confirmation
+        run: '! php artisan db:transfer-to-mysql --truncate-target --no-interaction'
+      - name: CLI transfer + reconciliation
+        run: php artisan db:transfer-to-mysql --truncate-target --confirm-target=app_transfer_target --no-interaction
+      - name: CLI second run copies nothing (idempotent)
+        run: php artisan db:transfer-to-mysql --confirm-target=app_transfer_target --no-interaction | tee "$RUNNER_TEMP/second-run.txt" && grep -q 'Скопировано строк: 0' "$RUNNER_TEMP/second-run.txt"
+      - name: CLI reconciliation only
+        run: php artisan db:transfer-to-mysql --verify --no-interaction
+      - name: Record scope of proof
+        run: |
+          echo 'Synthetic PostgreSQL 17 -> MySQL 8.4 transfer via db:transfer-to-mysql: preflight, copy, idempotent re-run, reconciliation OK.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No production data. The production cutover follows docs/guides/mysql-cutover.md.' >> "$GITHUB_STEP_SUMMARY"
