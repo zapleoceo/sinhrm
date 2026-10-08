@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Exceptions\AiException;
 use App\Modules\Ai\Models\AiRequest;
-use App\Modules\Ai\Services\AiService;
 use App\Modules\Directory\Contracts\DictionaryRepository;
 use App\Modules\Directory\Enums\DictionaryType;
 use App\Modules\Recruiting\Ai\VacancyTextHandler;
@@ -28,7 +28,7 @@ final readonly class VacancyTextService
     public const int WAIT_SECONDS = 20;
 
     public function __construct(
-        private AiService $ai,
+        private AiGateway $ai,
         private AiRequestRepository $requests,
         private Cache $cache,
         private DictionaryRepository $dictionaries,

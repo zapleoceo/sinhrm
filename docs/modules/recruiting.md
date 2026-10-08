@@ -374,6 +374,7 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 
 ### Зависимости через контракты (2026-10-08)
 - `CareerSiteService` ставит задачу «перезвонить» через контракт Scripts `TaskScheduler::scheduleNewApplicantCall()`.
+- `ScreeningService` и `VacancyTextService` зовут ИИ через контракт Ai `AiGateway` (значение ожидания по умолчанию — `AiGateway::WAIT_SECONDS`). Тест — `tests/Unit/Recruiting/RecruitingAiGatewayTest.php`.
 
 ## Страница вакансий и офферы
 

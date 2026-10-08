@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\MailAgent\Services;
 
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Exceptions\AiException;
-use App\Modules\Ai\Services\AiService;
 use App\Modules\GoogleWorkspace\Contracts\GmailClient;
 use App\Modules\GoogleWorkspace\DTO\GmailMessage;
 use App\Modules\MailAgent\Ai\MailClassificationAiHandler;
@@ -25,7 +25,7 @@ use Throwable;
 final readonly class AiMailClassifier
 {
     public function __construct(
-        private AiService $ai,
+        private AiGateway $ai,
         private UnknownSenderRepository $senders,
         private MailLogRepository $mailLog,
         private GmailClient $gmail,

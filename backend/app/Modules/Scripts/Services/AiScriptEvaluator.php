@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Scripts\Services;
 
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\DTO\AiOutcome;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Exceptions\AiException;
-use App\Modules\Ai\Services\AiService;
 use App\Modules\Recruiting\Models\Touchpoint;
 use App\Modules\Scripts\Ai\AiEvaluationMapper;
 use App\Modules\Scripts\Ai\ScriptEvaluationAiHandler;
@@ -26,7 +26,7 @@ use App\Modules\Scripts\Models\ScriptVersion;
  */
 final readonly class AiScriptEvaluator implements ScriptEvaluator
 {
-    public function __construct(private AiService $ai) {}
+    public function __construct(private AiGateway $ai) {}
 
     public function engine(): EvaluationEngine
     {

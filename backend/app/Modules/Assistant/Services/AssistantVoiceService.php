@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace App\Modules\Assistant\Services;
 
 use App\Models\User;
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\DTO\AiAudio;
 use App\Modules\Ai\DTO\AiOutcome;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Enums\AiRequestStatus;
 use App\Modules\Ai\Exceptions\AiException;
-use App\Modules\Ai\Services\AiService;
 use App\Modules\Assistant\Ai\AssistantVoiceHandler;
 use Illuminate\Contracts\Cache\Repository as Cache;
 
 /**
- * Voice dictation for the chat: audio → AiService::transcribe (Whisper via the broker, same switches and caps as the
+ * Voice dictation for the chat: audio → AiGateway::transcribe (Whisper via the broker, same switches and caps as the
  * chat) → text for the input box. Slow transcripts come back as "pending"; only their owner can collect them.
  * The audio is sent once and never stored by SinHRM (the broker drops it when the job ends).
  */
@@ -27,7 +27,7 @@ final readonly class AssistantVoiceService
     public const int WAIT_SECONDS = 25;
 
     public function __construct(
-        private AiService $ai,
+        private AiGateway $ai,
         private AiRequestRepository $requests,
         private Cache $cache,
     ) {}

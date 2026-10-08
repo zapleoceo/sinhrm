@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Assistant\Services;
 
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\DTO\AiOutcome;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Enums\AiRequestStatus;
 use App\Modules\Ai\Exceptions\AiException;
-use App\Modules\Ai\Services\AiService;
 use App\Modules\Assistant\Ai\QuipsPrompt;
 use Illuminate\Contracts\Cache\Repository as Cache;
 
@@ -29,7 +29,7 @@ final readonly class AssistantQuipService
     public const int WAIT_SECONDS = 20;
 
     public function __construct(
-        private AiService $ai,
+        private AiGateway $ai,
         private AiRequestRepository $requests,
         private Cache $cache,
     ) {}

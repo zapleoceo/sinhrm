@@ -43,15 +43,6 @@ return [
     'Assistant/Ai/QuipsHandler.php' => [
         'App\Modules\Ai\Models\AiRequest',
     ],
-    'Assistant/Services/AssistantChatService.php' => [
-        'App\Modules\Ai\Services\AiService',
-    ],
-    'Assistant/Services/AssistantQuipService.php' => [
-        'App\Modules\Ai\Services\AiService',
-    ],
-    'Assistant/Services/AssistantVoiceService.php' => [
-        'App\Modules\Ai\Services\AiService',
-    ],
     'Assistant/Services/McpTokenService.php' => [
         'App\Modules\Auth\Services\PersonalTokens',
     ],
@@ -171,9 +162,6 @@ return [
     ],
     'MailAgent/Ai/MailClassificationAiHandler.php' => [
         'App\Modules\Ai\Models\AiRequest',
-    ],
-    'MailAgent/Services/AiMailClassifier.php' => [
-        'App\Modules\Ai\Services\AiService',
     ],
     'MailAgent/Services/MailAgentService.php' => [
         'App\Modules\GoogleWorkspace\Services\GoogleConnectionStore',
@@ -359,12 +347,8 @@ return [
         'App\Modules\Directory\Models\City',
         'App\Modules\Directory\Models\Position',
     ],
-    'Recruiting/Services/ScreeningService.php' => [
-        'App\Modules\Ai\Services\AiService',
-    ],
     'Recruiting/Services/VacancyTextService.php' => [
         'App\Modules\Ai\Models\AiRequest',
-        'App\Modules\Ai\Services\AiService',
     ],
     'Reports/Definitions/AbstractTimeReport.php' => [
         'App\Modules\Time\Services\TimeReportService',
@@ -416,7 +400,6 @@ return [
         'App\Modules\Recruiting\Services\RecruitingScope',
     ],
     'Scripts/Services/AiScriptEvaluator.php' => [
-        'App\Modules\Ai\Services\AiService',
         'App\Modules\Recruiting\Models\Touchpoint',
     ],
     'Scripts/Services/EvaluationService.php' => [
