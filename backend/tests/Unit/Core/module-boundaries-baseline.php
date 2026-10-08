@@ -436,9 +436,7 @@ return [
         'App\Modules\People\Models\Employee',
     ],
     'Workflows/Executors/CreateDocumentExecutor.php' => [
-        'App\Modules\Documents\Models\DocumentTemplate',
         'App\Modules\Documents\Services\DocumentService',
-        'App\Modules\Documents\Services\DocumentTemplateService',
     ],
     'Workflows/Http/Requests/StartRunRequest.php' => [
         'App\Modules\People\Models\Employee',
