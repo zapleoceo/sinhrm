@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\HiringRequests\Services;
 
+use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\HiringRequests\Contracts\HiringRequestRepository;
 use App\Modules\HiringRequests\Models\HiringApproval;
@@ -99,8 +100,8 @@ final readonly class ApproverNotifier
             return 0;
         }
         $admins = array_values(array_unique([
-            ...$this->requests->usersWithRole('admin', self::ROLE_LIMIT),
-            ...$this->requests->usersWithRole('superadmin', self::ROLE_LIMIT),
+            ...$this->requests->usersWithRole(UserRole::Admin->value, self::ROLE_LIMIT),
+            ...$this->requests->usersWithRole(UserRole::Superadmin->value, self::ROLE_LIMIT),
         ]));
         foreach ($admins as $userId) {
             $this->tasks->schedule(new NewTask(
