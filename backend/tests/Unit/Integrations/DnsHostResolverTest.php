@@ -25,7 +25,6 @@ final class DnsHostResolverTest extends TestCase
         $ips = (new DnsHostResolver)->resolve('127.0.0.1');
 
         $this->assertContains('127.0.0.1', $ips);
-        $this->assertTrue(array_is_list($ips));
         $this->assertSame($ips, array_values(array_unique($ips)), 'no duplicates');
         foreach ($ips as $ip) {
             $this->assertNotFalse(filter_var($ip, FILTER_VALIDATE_IP), $ip.' must be an IP address');
