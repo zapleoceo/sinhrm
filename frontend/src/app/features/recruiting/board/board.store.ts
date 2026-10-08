@@ -124,6 +124,21 @@ export class BoardStore {
     return stage.is_reject;
   }
 
+  /**
+   * What a drop of `app` on `target` does: own column → personal filing (`file`, stage untouched); another stage
+   * without the right to write → `forbidden`; the same stage or a stage without a reason → `move`; a reject stage →
+   * `reason` (the page asks for it first, then moves).
+   */
+  planMove(app: Application, target: BoardTarget, canWrite: boolean): 'file' | 'forbidden' | 'move' | 'reason' {
+    if (target.type === 'personal') {
+      return 'file';
+    }
+    if (app.stage_id !== target.stage.id && !canWrite) {
+      return 'forbidden';
+    }
+    return app.stage_id === target.stage.id || !this.needsReason(target.stage) ? 'move' : 'reason';
+  }
+
   move(
     application: Application,
     stage: Stage,

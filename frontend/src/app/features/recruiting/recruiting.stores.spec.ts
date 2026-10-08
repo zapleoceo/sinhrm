@@ -246,6 +246,19 @@ describe('BoardStore', () => {
     expect(store.board()?.vacancy.id).toBe(2);
   });
 
+  it('plans a drop: own column files, a reject stage asks for a reason, readers cannot change the stage', () => {
+    const { store } = setup(BoardStore);
+    const app = application(10, 1);
+    const column: PersonalColumn = { id: 7, title: 'Топ', color: null, position: 0, hidden: false };
+    const reject = stage(3, { is_reject: true });
+    expect(store.planMove(app, { type: 'personal', column }, false)).toBe('file');
+    expect(store.planMove(app, { type: 'stage', stage: stage(2) }, true)).toBe('move');
+    expect(store.planMove(app, { type: 'stage', stage: reject }, true)).toBe('reason');
+    expect(store.planMove(app, { type: 'stage', stage: stage(2) }, false)).toBe('forbidden');
+    // Dropping back on its own stage is never a change: no rights or reason needed.
+    expect(store.planMove(app, { type: 'stage', stage: stage(1) }, false)).toBe('move');
+  });
+
   it('flags a failed load', () => {
     const { store, api } = setup(BoardStore);
     api.board$ = throwError(() => new Error('down'));

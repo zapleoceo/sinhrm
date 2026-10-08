@@ -40,7 +40,7 @@ interface Bounds {
   h: number;
 }
 
-interface OrgLayout {
+export interface OrgLayout {
   nodes: LaidNode[];
   links: LaidLink[];
   bounds: Bounds;
@@ -345,7 +345,7 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-interface ExportColors {
+export interface ExportColors {
   bg: string;
   card: string;
   border: string;

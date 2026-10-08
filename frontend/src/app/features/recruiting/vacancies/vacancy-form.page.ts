@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormArray, FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -36,6 +35,7 @@ import {
 import { RecruitingService, recruitingErrorKey } from '../recruiting.service';
 import { MarkdownField } from './markdown-field';
 import { aiTextErrorKey } from '../../ai/ai.service';
+import { displayName, serverFieldErrors, templateData, vacancyBody } from './vacancy-form.body';
 
 /** Markdown sections of the form, in page order. */
 const VACANCY_SECTIONS: readonly VacancyTextSection[] = ['description', 'requirements', 'responsibilities', 'additional_info'];
@@ -295,14 +295,7 @@ export class VacancyFormPage implements OnInit {
       this.templateName.set('');
       return;
     }
-    // A template keeps the content only: no branch, people, status or publication.
-    const data: SaveVacancy = this.body();
-    delete data.status;
-    delete data.branch_id;
-    delete data.recruiter_id;
-    delete data.hiring_manager_id;
-    delete data.published;
-    delete data.pipeline_id;
+    const data = templateData(this.body());
     this.templateSaved.set(false);
     this.api.saveVacancyTemplate(name, data).subscribe({
       next: (t) => {
@@ -340,39 +333,9 @@ export class VacancyFormPage implements OnInit {
     });
   }
 
-  /** Request body from the form (empty strings → null; the API validates everything again). */
+  /** Request body from the form (vacancy-form.body.ts). */
   body(): SaveVacancy {
-    const v = this.form.getRawValue();
-    const text = (s: string): string | null => s.trim() || null;
-    return {
-      title: v.title.trim(),
-      branch_id: v.branch_id ?? undefined,
-      ...(v.recruiter_id !== null ? { recruiter_id: v.recruiter_id } : {}),
-      // Mirrors the API: only recruiting writers assign the hiring manager.
-      ...(this.canWrite() ? { hiring_manager_id: v.hiring_manager_id } : {}),
-      ...(this.vacancyId() === null && v.pipeline_id !== null ? { pipeline_id: v.pipeline_id } : {}),
-      status: v.status,
-      category_id: v.category_id,
-      department_id: v.department_id,
-      description: text(v.description),
-      requirements: text(v.requirements),
-      responsibilities: text(v.responsibilities),
-      additional_info: text(v.additional_info),
-      employment_type: v.employment_type,
-      work_format: v.work_format,
-      country: v.country,
-      city_id: v.city_id,
-      experience_level: v.experience_level,
-      education_level: v.education_level,
-      salary_min: v.salary_min,
-      salary_max: v.salary_max,
-      salary_currency: v.salary_currency,
-      salary_visible: v.salary_visible,
-      languages: v.languages.filter((l) => l.lang !== ''),
-      published: v.published,
-      public_description: text(v.public_description),
-      external_postings: v.external_postings.map((p) => ({ site: p.site, url: text(p.url), date: text(p.date) })),
-    };
+    return vacancyBody(this.form.getRawValue(), { canWrite: this.canWrite(), isNew: this.vacancyId() === null });
   }
 
   private onDraft(section: VacancyTextSection, draft: VacancyTextDraft, polls: number): void {
@@ -413,13 +376,11 @@ export class VacancyFormPage implements OnInit {
   }
 
   private applyServerErrors(e: unknown): void {
-    if (!(e instanceof HttpErrorResponse) || e.status !== 422) {
+    const mapped = serverFieldErrors(e);
+    if (mapped === null) {
       return;
     }
-    const errors = (e.error as { errors?: Record<string, string[]> } | null)?.errors ?? {};
-    const mapped: Record<string, string> = {};
-    for (const [path, messages] of Object.entries(errors)) {
-      mapped[path] = messages.includes('salary_range') ? 'recruiting.form.errors.salaryRange' : 'recruiting.form.errors.invalid';
+    for (const path of Object.keys(mapped)) {
       const control = this.controlAt(path);
       control?.setErrors({ server: true });
       control?.markAsTouched();
@@ -497,14 +458,5 @@ export class VacancyFormPage implements OnInit {
 
   private draftKey(): string {
     return DRAFT_PREFIX + (this.vacancyId() ?? 'new');
-  }
-}
-
-/** Language / country name in the UI language (Intl), the code itself when the browser cannot name it. */
-function displayName(type: 'language' | 'region', code: string, locale: string): string {
-  try {
-    return new Intl.DisplayNames([locale], { type }).of(code) ?? code;
-  } catch {
-    return code;
   }
 }
