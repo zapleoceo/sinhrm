@@ -539,6 +539,10 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 **Дата в оффере (2026-10-08, MySQL e2e раунд 2).** `{Сьогодні}` в тексте оффера — дата по Киеву (`Core\Support\UserTime`), а не UTC:
 в 00:30 по Киеву кандидат получал вчерашнюю дату. Тест — `OfferApiTest::test_offer_today_variable_is_the_kyiv_date_after_midnight`.
 
+**Отчёты по дням Киева (2026-10-08).** `DTO\DateRange` — дни пользователя: без `to` конец диапазона — сегодня по Киеву (`UserTime::today()`), а сравнение с моментами (`occurred_at`, `created_at`, `closed_at`) идёт через `DateRange::moments()` — границы дня 00:00–23:59:59 по Киеву в UTC (касание в 21:30 UTC 11.10 входит в день 12.10). Даты-колонки и подписи `range` — как прежде. Ограничение 366 днями — `DateRange::lastDays()`. Тест — `tests/Unit/Recruiting/DateRangeTest.php`.
+
+**Ошибки оффера на фронте.** `offer_too_long` (422, `max_bytes`) и `template_not_offer` (422) входят в `RECRUITING_ERROR_CODES` (`recruiting.model.ts`): панель оффера показывает «Текст оферу задовгий: максимум ~64 КБ…» / «Обраний шаблон не є шаблоном оферу…» (uk/ru/en), а не общий текст. Спек `recruiting.service.spec.ts` проверяет маппинг и наличие перевода каждого кода на трёх языках.
+
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,
 дубль 409 по трём ключам, скрытие id для чужого филиала, уникальные индексы в БД, поиск, карточка с маршрутом и длительностями, права), перемещения (stage_change + системное

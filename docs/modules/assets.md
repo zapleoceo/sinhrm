@@ -68,6 +68,7 @@
 - «сегодня» по умолчанию (дата выдачи и возврата без `date`) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
 - поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (`ESCAPE '!'`, `Like::contains(…, Like::PORTABLE)`) (номер, название, серийный);
 - gate `assets-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Комментарий `AssetsServiceProvider::MANAGE` исправлен на фактический набор: HR staff (`UserRole::hrStaff()`: superadmin, admin, hr_manager), 2026-10-08.
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось, кроме ночной границы «сегодня» (пункт выше); подробности — [core.md](core.md), раздел «Общие хелперы модулей».

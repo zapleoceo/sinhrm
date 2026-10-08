@@ -103,6 +103,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 
 ### Общие хелперы Core (2026-10-02)
 - gate `time-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- По Киеву, не по UTC (2026-10-08, ночное окно 21:00/22:00–24:00 UTC): напоминание «Заповніть табель» (`TimeReminderJob`) проверяет пятницу–воскресенье и неделю по Киеву — в понедельник 00:30 по Киеву (вс 21:30 UTC) напоминания о закончившейся неделе нет, в пятницу 00:30 по Киеву оно уже есть; срок — воскресенье 23:59:59 по Киеву (`UserTime::endOfDay`). Тест `TimeApiTest::test_reminders_follow_the_kyiv_week_and_day`.
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (`TimeController`).
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».

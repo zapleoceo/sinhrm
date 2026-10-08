@@ -76,6 +76,8 @@
 | Файлов на обращение | `DeskService::MAX_FILES` = 10 | 422 `too_many_files` |
 | Суммарный размер вложений обращения | `DeskService::MAX_CASE_BYTES` = 25 МБ (`DeskRepository::attachmentBytes` — сумма `size`) | 422 `attachment_quota_exceeded` |
 
+Лимитер объявляется общим `ModuleServiceProvider::definePerUserLimiter` (ключ корзины теперь `desk-write|<id>`), как у Documents, Reports и TimeOff ([core.md](core.md)).
+
 Тесты — `tests/Feature/Desk/DeskLimitsTest.php` (429 на 21-м запросе к каждому пишущему маршруту, 422 на обоих
 лимитах, освобождение слота после закрытия обращения).
 

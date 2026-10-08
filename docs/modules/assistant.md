@@ -201,6 +201,8 @@ PNG пустого чата/ошибки/MCP privacy warning с provenance, ге
 Middleware: `auth:sanctum`, `EnsureUserIsActive`, доступ к модулю `assistant`, `throttle` 60/мин на токен.
 В OpenAPI (`/api/docs`) маршрут не попадает — это не REST.
 
+Дата в контексте хода («today YYYY-MM-DD (день)») — дата пользователя по Киеву (`UserTime::now()`), а не UTC; она в последнем user-сообщении, системный промпт байт-в-байт неизменен (кэш). Тест `AssistantChatTest::test_turn_context_date_is_the_kyiv_date`.
+
 ### Токены
 `Services/McpTokenService`: имя `mcp`, ability `mcp`, 90 дней, один на пользователя — поверх общих
 `Auth/Services/PersonalTokens` (те же, что у токена расширения, [auth.md](auth.md)). Где токен принимается, решает

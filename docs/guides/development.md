@@ -106,3 +106,10 @@ CI: обязательный job `tests` — MySQL 8.4 (`DB_CONNECTION=mysql`, �
 ## Ночное окно (UTC против Киева)
 
 Workflow `.github/workflows/night-window.yml` (необязательный, не в «Protect main») раз в неделю и по `workflow_dispatch` запускает весь backend phpunit под `faketime -f '@2026-10-15 22:30:00'` — 22:30 UTC = 01:30 Киев следующего дня, когда дата по UTC и по Киеву различается (инцидент 02–03.10.2026: `AssetsApiTest` краснел в окне 21:00–24:00 UTC). Сервер БД живёт на реальном времени — это нормально. Красный прогон — признак места, где код или тест считает дату в UTC вместо `UserTime::today()`/Киева; чиним их, а не перезапускаем.
+
+Страж в обязательном job `backend`: `tests/Unit/Core/UserDayGuardTest.php` падает на новой календарной операции от часов UTC в
+`backend/app` (`Carbon::today()`, `now()->startOfDay()`, `$now->toDateString()`, `$now->year` и т. п.). Правило: календарный день,
+неделя, месяц, год пользователя — `UserTime::today($now)` / `UserTime::now($now)`, срок «в этот день в 18:00» или «до конца дня» —
+`UserTime::wallTime()` / `UserTime::endOfDay()`; момент (created_at, сроки хранения, SLA в часах) остаётся UTC. Осознанный UTC —
+строка в `ALLOWED` теста с причиной ([core.md](../modules/core.md)). Тесты ночного окна пишем на три момента:
+`Carbon::setTestNow('2026-10-11 21:30:00')` (лето), `'2026-01-11 22:30:00'` (зима), `'2026-12-31 22:30:00'` (смена года).

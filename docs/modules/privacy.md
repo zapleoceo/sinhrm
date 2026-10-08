@@ -72,6 +72,9 @@
   журнала, ни один репозиторий этими таблицами не владеет. Тест — `tests/Unit/Privacy/PrivacyRepositoryTest.php`.
 
 ### Эндпоинты (`auth:sanctum` + активный пользователь + gate `privacy-manage`: superadmin, admin; иначе 403)
+
+Валидация — FormRequest (2026-10-08): `ExportPersonalDataRequest` (`format` ∈ json|html, иначе 422 до экспорта — запрос не журналируется), `UpdatePrivacySettingsRequest` (`retention_rejected_months` обязателен, `null` или целое 1..120; строка `"12"` принимается как 12). Тест `PersonalDataApiTest::test_export_and_settings_validation`.
+
 | Метод | Путь | Что |
 |---|---|---|
 | GET | `/api/privacy/{candidate\|employee}/{id}/export?format=json\|html` | файл-выгрузка (`Content-Disposition: attachment`, `Cache-Control: private, no-store` — персональные данные не оседают в кеше браузера и прокси) |

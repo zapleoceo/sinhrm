@@ -527,6 +527,8 @@ export const RECRUITING_ERROR_CODES = [
   'vacancy_out_of_scope',
   'already_linked',
   'channel_inactive',
+  'offer_too_long',
+  'template_not_offer',
 ] as const;
 
 /** Body of 409 duplicate_candidate: the existing candidate to open instead. */

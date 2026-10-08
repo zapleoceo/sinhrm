@@ -191,6 +191,7 @@ skipped, failed}`.
 ### Общие хелперы Core (2026-10-02)
 - «сегодня» по умолчанию (якорь ручного запуска и офбординга без даты увольнения) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
 - gate `workflows-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Комментарии `routes.php`, `WorkflowTemplateController` и `WorkflowsServiceProvider::MANAGE` исправлены на фактический набор HR staff (superadmin, admin, hr_manager); тест `WorkflowTemplatesApiTest::test_hr_manager_manages_templates` (2026-10-08).
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось, кроме ночной границы «сегодня» (пункт выше); подробности — [core.md](core.md), раздел «Общие хелперы модулей».
