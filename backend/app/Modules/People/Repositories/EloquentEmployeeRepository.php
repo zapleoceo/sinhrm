@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\People\Repositories;
 
 use App\Modules\Core\Support\Database\Like;
+use App\Modules\Core\Support\Database\Sql;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\Enums\EmployeeSort;
@@ -176,7 +177,7 @@ final class EloquentEmployeeRepository implements EmployeeRepository
 
     /**
      * ORDER BY of a whitelisted column. Related names come from a correlated subquery (no join, so the selected
-     * columns and the pagination count stay as they are). Postgres puts NULLs first on DESC: «nulls last» keeps
+     * columns and the pagination count stay as they are). NULLs go last (Sql::orderByNullsLast) — keeps
      * rows without a value at the end in both directions. Ties: by name, then id — stable pages.
      *
      * @param  Builder<Employee>  $q
@@ -197,8 +198,8 @@ final class EloquentEmployeeRepository implements EmployeeRepository
             return;
         }
         // $dir is one of two literals above, never request text.
-        $q->orderByRaw('('.$related->toSql().') '.$dir.' nulls last', $related->getBindings())
-            ->orderBy('employees.full_name')
+        Sql::orderByNullsLast($q, '('.$related->toSql().')', $dir, $related->getBindings());
+        $q->orderBy('employees.full_name')
             ->orderBy('employees.id');
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Repositories;
 
 use App\Modules\Core\Support\Database\Like;
+use App\Modules\Core\Support\Database\Sql;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\DTO\CandidateFilter;
 use App\Modules\Recruiting\DTO\ContactKeys;
@@ -51,7 +52,7 @@ final class EloquentCandidateRepository implements CandidateRepository
             ->when($filter->source, fn (Builder $q, CandidateSource $s) => $q->where('source', $s->value))
             ->when($filter->ownerId, fn (Builder $q, int $id) => $q->where('owner_id', $id))
             ->when($filter->channelId, fn (Builder $q, int $id) => $q->where('channel_id', $id))
-            ->when($filter->sort === 'screening_score', fn (Builder $q) => $q->orderByRaw('screening_score desc nulls last'))
+            ->when($filter->sort === 'screening_score', static fn (Builder $q) => Sql::orderByNullsLast($q, 'screening_score', 'desc'))
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->paginate($filter->perPage);

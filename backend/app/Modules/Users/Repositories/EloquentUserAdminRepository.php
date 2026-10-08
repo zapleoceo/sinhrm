@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Core\Support\Database\Like;
+use App\Modules\Core\Support\Database\Sql;
 use App\Modules\Users\Contracts\UserAdminRepository;
 use App\Modules\Users\DTO\UserFilter;
 use App\Modules\Users\Enums\UserSort;
@@ -126,8 +127,8 @@ final class EloquentUserAdminRepository implements UserAdminRepository
     }
 
     /**
-     * ORDER BY of a whitelisted column: column and direction are literals from this match, never request text. Postgres puts NULLs first on
-     * DESC: «nulls last» keeps «never logged in» at the end in both directions. Ties: by name, then id — stable pages.
+     * ORDER BY of a whitelisted column: column and direction are literals from this match, never request text. NULLs go last on both
+     * drivers (Sql::orderByNullsLast): keeps «never logged in» at the end in both directions. Ties: by name, then id — stable pages.
      *
      * @param  Builder<User>  $query
      */
@@ -138,8 +139,8 @@ final class EloquentUserAdminRepository implements UserAdminRepository
             UserSort::Status => 'users.status',
             UserSort::LastLogin => 'users.last_login_at',
         };
-        $query->orderByRaw($column.' '.($descending ? 'desc' : 'asc').' nulls last')
-            ->orderBy('users.name')
+        Sql::orderByNullsLast($query, $column, $descending ? 'desc' : 'asc');
+        $query->orderBy('users.name')
             ->orderBy('users.id');
     }
 }

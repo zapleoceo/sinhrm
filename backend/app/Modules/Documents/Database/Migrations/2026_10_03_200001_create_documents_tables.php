@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('category', 64)->nullable();
-            $table->text('body');
+            $table->longText('body');
             $table->boolean('archived')->default(false);
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
@@ -29,7 +29,7 @@ return new class extends Migration
             $table->string('category', 64)->nullable();
             // draft | sent | signed | rejected | archived
             $table->string('status', 16)->default('draft');
-            $table->text('content_md')->nullable();
+            $table->longText('content_md')->nullable();
             // Storage reference of an attached file ("db:<documents_files.id>" for the database storage).
             $table->string('file_path', 255)->nullable();
             $table->string('reject_reason', 500)->nullable();

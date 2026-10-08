@@ -159,3 +159,9 @@ curl -i "https://sinhrm.vercel.app/api/users?perPage=20"   # без сессии
 - На узком экране (< 768px) страница не прокручивается вбок: широкие элементы (таблицы, переключатели, длинные строки) прокручиваются или переносятся внутри своего блока. В таблице пользователей все колонки и действия доступны во внутренней горизонтальной прокрутке; scroller изолирует содержимое карточки и не расширяет страницу.
 
 Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.
+
+### Совместимость с MySQL
+
+Сортировка пользователей оставляет пустой `last_login_at` в конце при прямом и обратном порядке. Она использует явную проверку `IS NULL`, без PostgreSQL `NULLS LAST`; контракт проверяется сортировочными feature-тестами в PostgreSQL и MySQL CI.
+
+**Переносимый SQL (2026-10-08).** Сортировка пользователей по последнему входу строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце на PostgreSQL и MySQL одинаково, без драйверных веток в модуле ([ADR 0010](../adr/0010-mysql-dual-support.md)).

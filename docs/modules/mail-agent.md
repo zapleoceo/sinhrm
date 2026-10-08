@@ -194,3 +194,4 @@ Auth — `UserRepository::find` (фоновый actor).
 ## Доступ к модулю
 
 Ключ модуля `mail-agent`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — только суперадмин. Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
+MySQL compatibility: `gmail_id` uses `utf8mb4_bin` to preserve source message identity.

@@ -148,3 +148,9 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 ## Вакансия: новые поля в журнале (2026-10-25)
 В белый список `vacancy` добавлены `published`, `category_id`, `city_id`, `country`, `employment_type`, `work_format`,
 `experience_level`, `education_level`. Поля зарплаты (`salary_*`) не пишутся — как суммы компенсаций.
+
+### Совместимость с MySQL
+
+Сортировки журнала по пользователю, действию и сущности оставляют записи с пустым значением в конце как при прямом, так и при обратном порядке. SQL использует явную проверку `IS NULL`, а не PostgreSQL `NULLS LAST`; контракт покрывает `AuditSortFilterApiTest` в CI на PostgreSQL и MySQL.
+
+**Переносимый SQL (2026-10-08).** Сортировка журнала строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце на PostgreSQL и MySQL одинаково, без драйверных веток в модуле ([ADR 0010](../adr/0010-mysql-dual-support.md)).

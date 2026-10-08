@@ -89,3 +89,9 @@ production backup, его свежесть, полный охват данных
 
 После drill удалить изолированную БД, приложение, временный dump и временный доступ; retained backups/ключи
 удалять только по утверждённой retention policy. Проверку production восстановления и внешних файлов согласовать отдельно.
+
+## Synthetic MySQL transfer rehearsal
+
+`synthetic-mysql-transfer` in `.github/workflows/backup-restore.yml` uses disposable PostgreSQL 17 and MySQL 8.4 service databases and one generated application key. It migrates both schemas, copies a synthetic linked fixture without clearing either database, and checks row counts, foreign keys, IDs, Unicode/JSON, long text, the full 2 MiB database attachment and its SHA-256, and encrypted-vault ciphertext. It also replays one new candidate from the target to the retained source and advances the source sequence. The script accepts only fixed local CI databases and does not accept production connection strings.
+
+This is a compatibility rehearsal. A live cutover still needs verified source backup/restore, target version and TLS checks, a complete data comparison, write quiescence or change capture, and a rollback plan covering updates and deletes as well as new rows. Do not run a reset or point Vercel at the target based on this CI job alone.

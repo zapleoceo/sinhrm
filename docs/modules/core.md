@@ -270,3 +270,11 @@ Generated файлы игнорируются git; новых обязатель
 Проверка: `node --test scripts/stamp-build.test.mjs`, backend `HealthTest`, `BuildVersionTest`.
 После разрешённого deploy сравнить `/build.json` и `/api/health` с HEAD конкретного успешного Deploy checkout.
 До этого runtime provenance не считается подтверждённым.
+
+## Переносимый SQL и MySQL 8.4 (2026-10-08)
+
+Переходный период — двойная поддержка PostgreSQL (прод на Neon) и MySQL 8.4 (целевая инфраструктура IT STEP), [ADR 0010](../adr/0010-mysql-dual-support.md).
+
+- `Core\Support\Database\Sql` — единственное место для расхождений драйверов: `orderByNullsLast/First` (вместо `NULLS LAST/FIRST`), `whereContainsCi` (вместо `ILIKE`), `jsonText` (вместо `->>` в сыром SQL), `castText` (MySQL не знает `CAST AS VARCHAR/TEXT`). Апсерты — `upsert()/insertOrIgnore()/insertGetId()` Laravel, JSON в `where` — `'col->key'`/`whereJsonContains`.
+- Соединение `mysql` (`config/database.php`): `utf8mb4`, collation `utf8mb4_0900_ai_ci` (`DB_COLLATION`), `strict` (включая `ONLY_FULL_GROUP_BY`), сессия `+00:00`, InnoDB. Проверка — `PortableSqlTest` (jobs `tests` и `tests-mysql`), `SqlTest`.
+- `NeonConnectionConfig` применяется только когда `DB_CONNECTION=pgsql`.

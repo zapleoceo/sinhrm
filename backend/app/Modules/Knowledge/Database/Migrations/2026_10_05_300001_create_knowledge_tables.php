@@ -22,9 +22,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('category_id')->nullable()->constrained('kb_categories')->nullOnDelete();
             $table->string('title', 200);
-            $table->text('body_md');
+            $table->longText('body_md');
             // Rendered on save by the Documents MarkdownRenderer: raw HTML escaped, unsafe links dropped.
-            $table->text('body_html');
+            $table->longText('body_html');
             $table->jsonb('tags');
             // {"type":"all"} | {"type":"branches","ids":[..]} | {"type":"roles","roles":[..]}
             $table->jsonb('audience');
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->foreignId('article_id')->constrained('kb_articles')->cascadeOnDelete();
             $table->unsignedInteger('version');
             $table->string('title', 200);
-            $table->text('body_md');
+            $table->longText('body_md');
             $table->foreignId('edited_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('created_at')->useCurrent();
             $table->unique(['article_id', 'version']);

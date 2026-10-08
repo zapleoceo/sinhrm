@@ -61,6 +61,8 @@ final class PeopleSortFilterApiTest extends TestCase
             ['Amy Zoologist', 'Abe Analyst', 'Zed Analyst', 'No Position'],
             $this->names($this->actingAs($admin)->getJson('/api/people?sort=position&dir=desc')),
         );
+        $this->actingAs($admin)->getJson('/api/people?sort=position&dir=desc&perPage=1&page=4')->assertOk()
+            ->assertJsonPath('data.0.full_name', 'No Position');
     }
 
     public function test_sorts_by_manager_name(): void

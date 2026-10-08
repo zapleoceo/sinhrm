@@ -50,6 +50,8 @@ merge-base) или падение самого шага — всё это даё
 результатов Pint и PHPStan в `actions/cache`), `tests` (Postgres, PHPUnit + покрытие не ниже 70 %) и `api-docs`
 (миграции, экспорт OpenAPI через Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
 Job `backend` — агрегатор: `needs` всех трёх, `if: always()`, зелёный только если все три `success`.
+
+Job `tests-mysql` (MySQL 8.4, тот же полный PHPUnit с покрытием) — **необязательный и не входит в агрегатор `backend`** на переходный период двойной поддержки ([ADR 0010](../adr/0010-mysql-dual-support.md)); в «Protect main» не добавлять, пока не станет стабильно зелёным. Целевая БД на инфраструктуре IT STEP — MySQL 8.4: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)); Vercel-прод до переезда остаётся на Neon (`pgsql`).
 Job `frontend`: `ng lint`, `ng test --watch=false --coverage` (Vitest + `@vitest/coverage-v8`) с порогами покрытия
 в `frontend/angular.json` → `test.options.coverageThresholds`: statements 45,5 %, branches 57 %, functions 54,5 %,
 lines 54 % — замер 02.10.2026 (47,6 / 59,1 / 56,7 / 56,3 %) минус запас ≈ 2 п.п.; ниже порога job падает. Порог

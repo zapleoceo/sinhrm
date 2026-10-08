@@ -55,12 +55,15 @@ return [
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),
-            'charset' => env('DB_CHARSET', 'utf8mb4'),
-            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            // ADR 0010: MySQL 8.4, utf8mb4 + case-insensitive utf8mb4_0900_ai_ci, strict sql_mode
+            // (incl. ONLY_FULL_GROUP_BY), session in UTC like the app (config/app.php timezone = UTC).
+            'charset' => 'utf8mb4',
+            'collation' => env('DB_COLLATION', 'utf8mb4_0900_ai_ci'),
+            'timezone' => '+00:00',
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],

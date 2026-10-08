@@ -6,9 +6,12 @@ namespace Tests\Feature\Documents;
 
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Position;
+use App\Modules\Documents\Contracts\DocumentStorage;
 use App\Modules\Documents\Models\Document;
+use App\Modules\Documents\Models\DocumentFile;
 use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Documents\Models\Signature;
+use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -246,6 +249,22 @@ final class DocumentsApiTest extends TestCase
         // The worker does not see the draft (nor its file).
         $this->actingAs($this->userOf($org['worker']))->get("/api/documents/{$doc->id}/file")->assertNotFound();
         $this->assertStringNotContainsString(base64_encode(self::PDF), (string) $this->actingAs($admin)->getJson("/api/documents/{$doc->id}")->getContent());
+    }
+
+    public function test_database_storage_roundtrips_exact_two_megabyte_attachment(): void
+    {
+        $document = $this->document($this->employee()->id);
+        $content = self::PDF.str_repeat(' ', DocumentStorage::MAX_BYTES - strlen(self::PDF));
+        $storage = $this->app->make(DatabaseDocumentStorage::class);
+
+        $reference = $storage->put($document, $content, 'boundary.pdf');
+        $restored = $storage->get($document);
+
+        $this->assertStringStartsWith('db:', $reference);
+        $this->assertNotNull($restored);
+        $this->assertSame(DocumentStorage::MAX_BYTES, $restored->size);
+        $this->assertSame(hash('sha256', $content), DocumentFile::query()->where('document_id', $document->id)->sole()->sha256);
+        $this->assertSame($content, $restored->content);
     }
 
     /** Regression guard for Core Download::file: the full header set and an RFC 6266 name for a non-ASCII filename. */

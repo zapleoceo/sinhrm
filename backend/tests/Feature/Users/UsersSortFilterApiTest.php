@@ -37,6 +37,8 @@ final class UsersSortFilterApiTest extends TestCase
     {
         $this->assertSame(['Aaron Root', 'Bella Viewer', 'Dina Viewer', 'Carl Recruiter'], $this->fetch('sort=last_login&dir=asc'));
         $this->assertSame(['Dina Viewer', 'Bella Viewer', 'Aaron Root', 'Carl Recruiter'], $this->fetch('sort=last_login&dir=desc'));
+        $this->actingAs($this->superadmin)->getJson('/api/users?sort=last_login&dir=desc&perPage=1&page=4')->assertOk()
+            ->assertJsonPath('data.0.name', 'Carl Recruiter');
     }
 
     public function test_sorts_by_status_with_name_as_tie_breaker(): void

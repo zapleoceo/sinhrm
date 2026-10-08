@@ -205,7 +205,7 @@ final class HiringRequestApiTest extends TestCase
     private function failWhenSkippingOpenApprovals(): void
     {
         DB::listen(static function (QueryExecuted $query): void {
-            if (str_starts_with($query->sql, 'update "hiring_request_approvals"') && ($query->bindings[0] ?? null) === 'skipped') {
+            if (str_starts_with($query->sql, 'update ') && str_contains($query->sql, 'hiring_request_approvals') && ($query->bindings[0] ?? null) === 'skipped') {
                 throw new RuntimeException('simulated failure while skipping the open approvals');
             }
         });

@@ -5,6 +5,7 @@ on:
     paths:
       - 'backend/**'
       - 'scripts/backup-restore-proof*'
+      - 'scripts/mysql-transfer-proof.php'
       - '.github/workflows/backup-restore.yml'
       - 'docs/guides/backup-restore.md'
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - 'backend/**'
       - 'scripts/backup-restore-proof*'
+      - 'scripts/mysql-transfer-proof.php'
       - '.github/workflows/backup-restore.yml'
       - 'docs/guides/backup-restore.md'
   workflow_dispatch:
@@ -64,3 +66,62 @@ jobs:
         env:
           POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: bash scripts/backup-restore-proof.sh
+
+  synthetic-mysql-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_USER: app, POSTGRES_PASSWORD: app, POSTGRES_DB: app_transfer_source }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app -d app_transfer_source" --health-interval 5s --health-timeout 5s --health-retries 10
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: app_transfer_target, MYSQL_USER: app, MYSQL_PASSWORD: app }
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      DB_HOST: 127.0.0.1
+      DB_USERNAME: app
+      DB_PASSWORD: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.4', extensions: 'pdo_pgsql, pgsql, pdo_mysql, intl, sodium', coverage: none }
+      - uses: actions/cache/restore@v6
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+      - name: Install locked dependencies and create one synthetic key
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist && cp .env.example .env && php artisan key:generate
+      - name: Migrate isolated source and target
+        working-directory: backend
+        run: |
+          test -z "${DB_URL:-}" && test -z "${DATABASE_URL:-}"
+          DB_CONNECTION=pgsql DB_PORT=5432 DB_DATABASE=app_transfer_source php artisan migrate --force --no-interaction
+          DB_CONNECTION=mysql DB_PORT=3306 DB_DATABASE=app_transfer_target php artisan migrate --force --no-interaction
+      - name: Seed synthetic PostgreSQL graph
+        working-directory: backend
+        run: MYSQL_TRANSFER_PHASE=seed DB_CONNECTION=pgsql DB_PORT=5432 DB_DATABASE=app_transfer_source php artisan test --filter MySqlTransferProofTest
+      - name: Transfer synthetic rows and verify foreign keys
+        run: php scripts/mysql-transfer-proof.php forward
+      - name: Verify MySQL graph, Unicode, attachment and ciphertext
+        working-directory: backend
+        run: MYSQL_TRANSFER_PHASE=verify DB_CONNECTION=mysql DB_PORT=3306 DB_DATABASE=app_transfer_target php artisan test --filter MySqlTransferProofTest
+      - name: Rehearse one post-cutover write and replay to retained source
+        run: |
+          cd backend
+          MYSQL_TRANSFER_PHASE=write DB_CONNECTION=mysql DB_PORT=3306 DB_DATABASE=app_transfer_target php artisan test --filter MySqlTransferProofTest
+          cd ..
+          php scripts/mysql-transfer-proof.php replay-candidate
+          cd backend
+          MYSQL_TRANSFER_PHASE=rollback DB_CONNECTION=pgsql DB_PORT=5432 DB_DATABASE=app_transfer_source php artisan test --filter MySqlTransferProofTest
+      - name: Record scope of proof
+        run: |
+          echo 'Synthetic PostgreSQL-to-MySQL transfer and one append-only rollback replay: PASS.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No production data or dump artifacts. Updates/deletes and live cutover still require a separate rehearsal.' >> "$GITHUB_STEP_SUMMARY"

@@ -10,6 +10,7 @@ use App\Modules\Audit\DTO\AuditFilter;
 use App\Modules\Audit\DTO\AuditRecord;
 use App\Modules\Audit\Enums\AuditSort;
 use App\Modules\Audit\Models\AuditEntry;
+use App\Modules\Core\Support\Database\Sql;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -111,7 +112,7 @@ final class EloquentAuditLogRepository implements AuditLogRepository
             AuditSort::Entity => ['audit_log.entity_type', 'audit_log.entity_id'],
         };
         foreach ($columns as $column) {
-            $q->orderByRaw($column.' '.$dir.' nulls last');
+            Sql::orderByNullsLast($q, $column, $dir);
         }
         $q->orderByDesc('audit_log.id');
     }
