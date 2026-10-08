@@ -15,6 +15,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { ArticleQuery, KbArticle, KbCategory, helpfulPercent } from './knowledge.model';
 import { KnowledgeService } from './knowledge.service';
 import { PagedList } from '../../core/ui/table/paged-list';
+import { eventValue } from '../../core/ui/event-value';
 
 /** Knowledge base (/knowledge): categories, search, tags; editors also see drafts and create articles. */
 @Component({
@@ -91,6 +92,8 @@ import { PagedList } from '../../core/ui/table/paged-list';
   `,
 })
 export class KnowledgePage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly api = inject(KnowledgeService);
   private readonly auth = inject(AuthService);
   protected readonly typed = new Subject<string>();
@@ -112,10 +115,6 @@ export class KnowledgePage implements OnInit {
   ngOnInit(): void {
     this.api.categories().subscribe({ next: (list) => this.categories.set(list), error: () => this.categories.set([]) });
     this.load();
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement).value;
   }
 
   protected helpful(a: KbArticle): number | null {

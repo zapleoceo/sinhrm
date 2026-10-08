@@ -16,6 +16,7 @@ import { ReportsService, reportsErrorKey } from './reports.service';
 import { fromIsoDate, toIsoDate } from '../../core/date/iso-date';
 import { NotifyService } from '../../core/ui/notify.service';
 import { ReportRun } from './report-run';
+import { eventValue } from '../../core/ui/event-value';
 
 type Filters = Partial<Record<ReportFilter, string>>;
 
@@ -89,6 +90,8 @@ type Filters = Partial<Record<ReportFilter, string>>;
   `,
 })
 export class ReportViewPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   readonly key = input.required<string>();
   readonly from = input<string | undefined>(undefined);
   readonly to = input<string | undefined>(undefined);
@@ -123,10 +126,6 @@ export class ReportViewPage implements OnInit {
 
   protected dateOf(key: ReportFilter): Date | null {
     return fromIsoDate(this.filters()[key]);
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement).value;
   }
 
   protected set(key: ReportFilter, value: string | undefined): void {

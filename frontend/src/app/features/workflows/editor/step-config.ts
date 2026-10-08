@@ -6,6 +6,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DocumentTemplate } from '../../documents/documents.model';
 import { StepConfig, StepConfigValue, WorkflowAction, WorkflowTemplate } from '../workflows.model';
+import { eventValue } from '../../../core/ui/event-value';
 
 export interface ConfigChange {
   key: string;
@@ -131,6 +132,8 @@ export interface ConfigChange {
   `,
 })
 export class StepConfigForm {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   readonly action = input.required<WorkflowAction>();
   readonly config = input.required<StepConfig>();
   readonly readonly = input(false);
@@ -146,10 +149,6 @@ export class StepConfigForm {
 
   protected text(value: StepConfigValue | undefined): string {
     return typeof value === 'string' ? value : '';
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
 
   protected num(event: Event): number | null {

@@ -10,6 +10,7 @@ import { AnonymousReport, REPORT_CATEGORIES, ReportCategory, reportStatusTone } 
 import { SafeSpeakService, safeSpeakErrorKey } from './safe-speak.service';
 import { SafeSpeakThread } from './thread';
 import { NotifyService } from '../../core/ui/notify.service';
+import { eventValue } from '../../core/ui/event-value';
 
 /**
  * Safe Speak (/safe-speak): send an anonymous report and get an access code shown ONCE; follow up with the code.
@@ -131,6 +132,8 @@ import { NotifyService } from '../../core/ui/notify.service';
   `,
 })
 export class SafeSpeakPage {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly api = inject(SafeSpeakService);
   private readonly notify = inject(NotifyService);
   protected readonly categories = REPORT_CATEGORIES;
@@ -145,10 +148,6 @@ export class SafeSpeakPage {
   protected readonly replyText = signal('');
   protected readonly busy = signal(false);
   protected readonly tone = reportStatusTone;
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
-  }
 
   protected submit(): void {
     const category = this.category();

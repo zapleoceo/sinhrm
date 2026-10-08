@@ -25,6 +25,7 @@ import { ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER } from '../../../cor
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
+import { eventValue } from '../../../core/ui/event-value';
 
 /**
  * Script editor (Admin → Скрипти → script): tabs for steps (drag to reorder), objections, message templates
@@ -61,6 +62,8 @@ import { TableUrlState } from '../../../core/ui/table/table-url-state';
   styleUrl: './script-editor.page.scss',
 })
 export class ScriptEditorPage {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   readonly id = input.required({ transform: numberAttribute });
 
   protected readonly store = inject(ScriptEditorStore);
@@ -91,10 +94,6 @@ export class ScriptEditorPage {
 
   constructor() {
     effect(() => this.store.load(this.id()));
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
 
   protected num(event: Event): number {

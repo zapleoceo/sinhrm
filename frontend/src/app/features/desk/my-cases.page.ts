@@ -13,6 +13,7 @@ import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
 import { NotifyService } from '../../core/ui/notify.service';
 import { PagedList } from '../../core/ui/table/paged-list';
+import { eventValue } from '../../core/ui/event-value';
 
 /** "Мої звернення" (/desk): own helpdesk cases and a form to open a new one. */
 @Component({
@@ -85,6 +86,8 @@ import { PagedList } from '../../core/ui/table/paged-list';
   `,
 })
 export class MyCasesPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly api = inject(DeskService);
   private readonly router = inject(Router);
   private readonly notify = inject(NotifyService);
@@ -102,10 +105,6 @@ export class MyCasesPage implements OnInit {
   ngOnInit(): void {
     this.list.load(this.api.mine(), { error: (e) => this.notify.show(deskErrorKey(e)) });
     this.api.categories().subscribe({ next: (list) => this.categories.set(list), error: () => this.categories.set([]) });
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
 
   protected valid(): boolean {

@@ -22,6 +22,7 @@ import { ReportTable } from './report-table';
 import { ReportsService, reportsErrorKey } from './reports.service';
 import { NotifyService } from '../../core/ui/notify.service';
 import { ReportRun } from './report-run';
+import { eventValue } from '../../core/ui/event-value';
 
 /**
  * Custom report builder (/reports/builder[?saved=id]): dataset → columns → filters → group by + aggregate.
@@ -148,6 +149,8 @@ import { ReportRun } from './report-run';
   `,
 })
 export class ReportBuilderPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   /** ?saved=<id> opens a saved builder report. */
   readonly saved = input(undefined, { transform: (v: unknown) => (v === undefined || v === null || v === '' ? undefined : numberAttribute(v)) });
 
@@ -204,10 +207,6 @@ export class ReportBuilderPage implements OnInit {
       },
       error: (e: unknown) => this.notify.show(reportsErrorKey(e)),
     });
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement).value;
   }
 
   protected pickDataset(key: string): void {

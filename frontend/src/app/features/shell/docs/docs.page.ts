@@ -10,6 +10,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { DocPage, groupDocs, searchDocs, visibleDocs } from './docs.model';
 import { DocsService } from './docs.service';
 import { DocsOverview } from './docs-overview';
+import { eventValue } from '../../../core/ui/event-value';
 
 /** In-app documentation (/docs, /docs/:slug): plain-language parts of docs/, grouped by module, with search and role filter. */
 @Component({
@@ -96,6 +97,8 @@ import { DocsOverview } from './docs-overview';
   `,
 })
 export class DocsPage {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly auth = inject(AuthService);
   /** Route param (withComponentInputBinding). */
   readonly slug = input<string>();
@@ -117,7 +120,4 @@ export class DocsPage {
   protected readonly hits = computed(() => searchDocs(this.docs(), this.query()));
   protected readonly current = computed(() => this.docs().find((d) => d.slug === this.slug()) ?? null);
 
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement).value;
-  }
 }

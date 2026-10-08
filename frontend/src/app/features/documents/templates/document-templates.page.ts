@@ -14,6 +14,7 @@ import { DOCUMENT_VARIABLES, DocumentTemplate, TemplatePreview, insertVariable }
 import { DocumentsService, documentsErrorKey, unknownVariables } from '../documents.service';
 import { NotifyService } from '../../../core/ui/notify.service';
 import { PagedList } from '../../../core/ui/table/paged-list';
+import { eventValue } from '../../../core/ui/event-value';
 
 interface Draft {
   id: number | null;
@@ -153,6 +154,8 @@ const EMPTY_DRAFT: Draft = { id: null, name: '', category: '', body: '', archive
   `,
 })
 export class DocumentTemplatesPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly api = inject(DocumentsService);
   private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
@@ -199,10 +202,6 @@ export class DocumentTemplatesPage implements OnInit {
     this.preview.set(null);
     this.editing.set(true);
     this.bodyChanges.next(this.draft().body);
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
 
   protected patch(p: Partial<Draft>): void {
