@@ -18,6 +18,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/AssetException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): вкладка активов сотрудника (`employee-assets.tab.ts`) держит историю в `PagedList`; ошибка, как раньше, очищает список.
 - Фронт (2026-10-08): список активов страницы `/admin/assets` держит `PagedList` из `core/ui/table/paged-list.ts` (строки, загрузка, отмена устаревшего запроса; ошибка — уведомление, строки остаются) вместо своих сигналов и `LatestRequest`.
 Бэкенд — `backend/app/Modules/Assets`, маршруты `/api/assets/*`; реестр — gate `assets-manage` = `PeopleScope::isAdmin`.
 

@@ -54,6 +54,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/ScriptException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): список скриптов (`scripts.page.ts`) держит `PagedList` вместо своего `load()` (тот же `failed`).
 - Фронт (2026-10-08): `canManageScripts` (`scripts.access.ts`) проверяет роли через общий `isAdmin` из `core/auth/auth.model.ts`, а не своим перечислением superadmin/admin.
 - Фронт (2026-10-08): `TasksStore` держит задачи в `PagedList` (`core/ui/table/paged-list.ts`) вместо ручного счётчика `seq`: новый запрос отменяет предыдущий.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TaskNavBadges` — ключ `tasks`: мои незакрытые задачи, тот же фильтр, что у «Мої задачі» по умолчанию (`mine`, без выполненных); считается `TaskService::count()` одним `count(*)` по тому же запросу, что и список.

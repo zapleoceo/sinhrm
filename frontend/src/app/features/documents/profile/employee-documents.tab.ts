@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,6 +13,7 @@ import { DocumentsService, documentsErrorKey } from '../documents.service';
 import { DocumentCreateDialog } from './document-create.dialog';
 import { wideDialog } from '../../../core/ui/dialog';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /** Profile tab "Документи": the employee's documents; admins create, attach files, send and archive. */
 @Component({
@@ -82,8 +83,9 @@ export class EmployeeDocumentsTab {
   private readonly notify = inject(NotifyService);
   protected readonly accept = DOCUMENT_FILE_ACCEPT;
   protected readonly statusTone = DOCUMENT_STATUS_TONE;
-  protected readonly items = signal<HrDocument[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<HrDocument>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   private uploadTarget: HrDocument | null = null;
 
   constructor() {
@@ -136,17 +138,7 @@ export class EmployeeDocumentsTab {
   }
 
   private load(employeeId: number): void {
-    this.loading.set(true);
-    this.api.list({ employee_id: employeeId }).subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(documentsErrorKey(e));
-      },
-    });
+    this.list.load(this.api.list({ employee_id: employeeId }), { error: (e) => this.notify.show(documentsErrorKey(e)) });
   }
 
   private apply(call: Observable<HrDocument>, okKey: string): void {

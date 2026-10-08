@@ -10,6 +10,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { Objective, VISIBILITIES, Visibility, keyResultRatio, objectiveTree, progressTone, quarterOf, quarterOptions } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 interface KrDraft {
   title: string;
@@ -190,8 +191,9 @@ export class ObjectivesPage implements OnInit {
   protected readonly periods = quarterOptions(new Date());
   protected readonly visibilities = VISIBILITIES;
   protected readonly period = signal(quarterOf(new Date()));
-  protected readonly items = signal<Objective[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<Objective>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly tree = computed(() => objectiveTree(this.items()));
   protected readonly checkinId = signal<number | null>(null);
   protected readonly values = signal<Record<string, number>>({});
@@ -213,17 +215,7 @@ export class ObjectivesPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.api.objectives({ period: this.period() }).subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(performErrorKey(e));
-      },
-    });
+    this.list.load(this.api.objectives({ period: this.period() }), { error: (e) => this.notify.show(performErrorKey(e)) });
   }
 
   protected addDraft(): void {

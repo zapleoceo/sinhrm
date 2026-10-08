@@ -12,6 +12,7 @@ import { HandledReport, REPORT_STATUSES, ReportStatus, reportStatusTone } from '
 import { SafeSpeakService, safeSpeakErrorKey } from './safe-speak.service';
 import { SafeSpeakThread } from './thread';
 import { NotifyService } from '../../core/ui/notify.service';
+import { PagedList } from '../../core/ui/table/paged-list';
 
 /** Handler inbox (/safe-speak/inbox): anonymous reports, the thread, answers, status. Admins with the handler flag. */
 @Component({
@@ -104,9 +105,10 @@ export class SafeSpeakInboxPage implements OnInit {
   private readonly notify = inject(NotifyService);
   protected readonly statuses = REPORT_STATUSES;
   protected readonly status = signal<ReportStatus | undefined>(undefined);
-  protected readonly items = signal<HandledReport[]>([]);
+  private readonly list = new PagedList<HandledReport>();
+  protected readonly items = this.list.items;
   protected readonly selected = signal<HandledReport | null>(null);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
   protected readonly text = signal('');
   protected readonly tone = reportStatusTone;
 
@@ -153,16 +155,6 @@ export class SafeSpeakInboxPage implements OnInit {
   }
 
   private load(): void {
-    this.loading.set(true);
-    this.api.inbox(this.status()).subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(safeSpeakErrorKey(e));
-      },
-    });
+    this.list.load(this.api.inbox(this.status()), { error: (e) => this.notify.show(safeSpeakErrorKey(e)) });
   }
 }

@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -12,6 +12,7 @@ import { ClientColumn, ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER } from
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
+import { PagedList } from '../../core/ui/table/paged-list';
 
 /** Columns of the approvals list (all submitted weeks are on the page). */
 export const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
@@ -88,8 +89,9 @@ export class TimeApprovalsPage implements OnInit {
   private readonly api = inject(TimeService);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
-  protected readonly items = signal<TimesheetApproval[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<TimesheetApproval>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly table = new ClientTable({ rows: this.items, columns: APPROVAL_COLUMNS });
   protected readonly textFilter = TEXT_FILTER;
   protected readonly numberFilter = NUMBER_RANGE;
@@ -111,16 +113,6 @@ export class TimeApprovalsPage implements OnInit {
   }
 
   private load(): void {
-    this.loading.set(true);
-    this.api.approvals().subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 });
-      },
-    });
+    this.list.load(this.api.approvals(), { error: (e) => this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 }) });
   }
 }

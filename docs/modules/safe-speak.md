@@ -19,6 +19,7 @@
 
 ## Как устроено
 - Тема и текст обращения (`Http/Requests/SubmitReportRequest`): правила `subject`/`body` и чтение — общий трейт `Core\Http\Requests\Concerns\HasSubjectAndBody` (тот же, что у Desk); лимиты 200/10000 и trim темы прежние, об отправителе по-прежнему ничего не читается.
+- Фронт (2026-10-08): список обращений HR (`inbox.page.ts`) держит `PagedList` (`core/ui/table/paged-list.ts`): смена статуса отменяет запрос в пути, ошибка — уведомление.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/SafeSpeakNavBadges` — ключ `safe_speak` («Вхідні Safe Speak», только обработчики — тот же gate `safe-speak-handle`): новые обращения (статус `new`), которые ещё никто не взял. Ничего об отправителе не раскрывается — это просто число.
 Бэкенд — `backend/app/Modules/SafeSpeak`.
 

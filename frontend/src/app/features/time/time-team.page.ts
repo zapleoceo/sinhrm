@@ -1,5 +1,5 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -14,6 +14,7 @@ import { ClientColumn, ClientTable, NUMBER_RANGE, TEXT_FILTER, translatedSelect 
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
+import { PagedList } from '../../core/ui/table/paged-list';
 
 const NUMBER_KEYS = ['expected', 'worked', 'overtime', 'missing', 'absence'] as const;
 
@@ -95,8 +96,9 @@ export class TimeTeamPage {
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(TranslocoService);
-  protected readonly rows = signal<TeamRow[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<TeamRow>();
+  protected readonly rows = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly weekStart = computed(() => mondayOf(this.week() ?? toIsoDate(new Date())));
   protected readonly table = new ClientTable({ rows: this.rows, columns: TEAM_COLUMNS });
   protected readonly numberKeys = NUMBER_KEYS;
@@ -119,16 +121,6 @@ export class TimeTeamPage {
   }
 
   private load(week: string): void {
-    this.loading.set(true);
-    this.api.team(week).subscribe({
-      next: (rows) => {
-        this.rows.set(rows);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 });
-      },
-    });
+    this.list.load(this.api.team(week), { error: (e) => this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 }) });
   }
 }

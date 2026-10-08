@@ -34,6 +34,7 @@ HR готовит документы сотрудникам — приказ о 
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/DocumentException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): списки «Мої документи», вкладки документов сотрудника и шаблонов держит `PagedList` (`core/ui/table/paged-list.ts`) вместо своих `load()`; смена сотрудника отменяет запрос в пути.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/DocumentNavBadges` — ключ `my_documents`: мои документы, которые можно подписать/ознакомиться (статус `sent`, в списке у них `can_acknowledge = true`); `DocumentService::countAwaitingMe()` — `count(*)` с тем же фильтром, что `mine()`.
 Бэкенд — `backend/app/Modules/Documents`, маршруты под `/api` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`. Gate `documents-manage` (`Providers/DocumentsServiceProvider::MANAGE`) = `PeopleScope::isAdmin`.

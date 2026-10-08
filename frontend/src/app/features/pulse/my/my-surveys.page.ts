@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -7,6 +7,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { MyWave } from '../pulse.model';
 import { PulseService } from '../pulse.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /** "My surveys" (/pulse): open surveys the user is asked in; answered ones are marked. */
 @Component({
@@ -64,17 +65,11 @@ import { PulseService } from '../pulse.service';
 })
 export class MySurveysPage implements OnInit {
   private readonly api = inject(PulseService);
-  protected readonly items = signal<MyWave[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<MyWave>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
 
   ngOnInit(): void {
-    this.loading.set(true);
-    this.api.myWaves().subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
+    this.list.load(this.api.myWaves());
   }
 }

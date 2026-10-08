@@ -18,6 +18,7 @@ import { ClientColumn, ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER, trans
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /** Columns of the templates list (all rows are on the page). Kind and trigger sort in their list order. */
 export const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
@@ -158,9 +159,10 @@ export class WorkflowTemplatesPage implements OnInit {
 
   protected readonly kinds = WORKFLOW_KINDS;
   protected readonly triggers = WORKFLOW_TRIGGERS;
-  protected readonly templates = signal<WorkflowTemplate[]>([]);
-  protected readonly loading = signal(false);
-  protected readonly failed = signal(false);
+  private readonly list = new PagedList<WorkflowTemplate>();
+  protected readonly templates = this.list.items;
+  protected readonly loading = this.list.loading;
+  protected readonly failed = this.list.failed;
   protected readonly busy = signal(false);
   protected readonly form = inject(NonNullableFormBuilder).group({
     name: ['', [Validators.required, Validators.maxLength(200)]],
@@ -179,18 +181,7 @@ export class WorkflowTemplatesPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.templates().subscribe({
-      next: (list) => {
-        this.templates.set(list);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.templates());
   }
 
   protected create(): void {

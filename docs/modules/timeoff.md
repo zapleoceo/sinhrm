@@ -37,6 +37,7 @@
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/TimeOffException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): «Погодження» (`approvals.page.ts`) держит заявки на отпуск в `PagedList` вместо своего `load()`.
 - Фронт (2026-10-08): `timeoff.dates.ts` больше не держит свои `toIso/parseIso/addDays` — месяц, выходные и оценка дней считаются через `core/date/iso-day.ts` (UTC-полночь, без сдвига на переходе времени).
 - Фронт (2026-10-08): `LeaveRequestsStore` держит заявки в `PagedList` (`core/ui/table/paged-list.ts`), `CalendarStore` отменяет загрузку прошлого месяца через `LatestRequest` — вместо ручных счётчиков `seq`.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeOffNavBadges` — ключ `timeoff_approvals`: заявки, которые я могу решить (как «Погодження»; своя не считается). `LeaveRequestService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`. Не руководителю — 0 (значка нет).

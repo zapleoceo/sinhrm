@@ -13,6 +13,7 @@ import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap 
 import { DOCUMENT_VARIABLES, DocumentTemplate, TemplatePreview, insertVariable } from '../documents.model';
 import { DocumentsService, documentsErrorKey, unknownVariables } from '../documents.service';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 interface Draft {
   id: number | null;
@@ -158,8 +159,9 @@ export class DocumentTemplatesPage implements OnInit {
   private readonly bodyChanges = new Subject<string>();
 
   protected readonly variables = DOCUMENT_VARIABLES;
-  protected readonly templates = signal<DocumentTemplate[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<DocumentTemplate>();
+  protected readonly templates = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly saving = signal(false);
   protected readonly withArchived = signal(false);
   protected readonly editing = signal(false);
@@ -183,17 +185,7 @@ export class DocumentTemplatesPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.api.templates(this.withArchived()).subscribe({
-      next: (list) => {
-        this.templates.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(documentsErrorKey(e));
-      },
-    });
+    this.list.load(this.api.templates(this.withArchived()), { error: (e) => this.notify.show(documentsErrorKey(e)) });
   }
 
   protected toggleArchived(on: boolean): void {

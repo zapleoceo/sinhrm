@@ -31,6 +31,7 @@ export const SCRIPT_COLUMNS: readonly ClientColumn<Script>[] = [
   { key: 'draft', value: (s) => s.draft?.updated_at, filter: 'select', filterValue: (s) => presence(s.draft) },
 ];
 import { ScriptsService, scriptsErrorKey } from '../scripts.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /** Admin → Скрипти: all scripts with their active version / draft state (sortable / filterable headers), creation of a new one. */
 @Component({
@@ -144,9 +145,10 @@ export class ScriptsPage implements OnInit {
   private readonly i18n = inject(TranslocoService);
 
   protected readonly channels = SCRIPT_CHANNELS;
-  protected readonly scripts = signal<Script[]>([]);
-  protected readonly loading = signal(false);
-  protected readonly failed = signal(false);
+  private readonly list = new PagedList<Script>();
+  protected readonly scripts = this.list.items;
+  protected readonly loading = this.list.loading;
+  protected readonly failed = this.list.failed;
   protected readonly busy = signal(false);
   protected readonly withArchived = signal(false);
   protected readonly form = inject(NonNullableFormBuilder).group({
@@ -163,18 +165,7 @@ export class ScriptsPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.list(this.withArchived()).subscribe({
-      next: (list) => {
-        this.scripts.set(list);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.list(this.withArchived()));
   }
 
   protected toggleArchived(on: boolean): void {

@@ -16,6 +16,7 @@ import { ListItem, ONE_ON_ONE_STATUSES, OneOnOne, OneOnOnePatch, OneOnOneTemplat
 import { PerformService, performErrorKey } from '../perform.service';
 import { combineDateAndTime, toIsoDateOrNull, toIsoLocalDateTime } from '../../../core/date/iso-date';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /**
  * 1:1 meetings (/perform/one-on-ones): upcoming and past; the selected meeting with its agenda, shared notes,
@@ -196,9 +197,10 @@ export class OneOnOnesPage implements OnInit {
   private readonly api = inject(PerformService);
   private readonly notify = inject(NotifyService);
   protected readonly statuses = ONE_ON_ONE_STATUSES;
-  protected readonly items = signal<OneOnOne[]>([]);
+  private readonly list = new PagedList<OneOnOne>();
+  protected readonly items = this.list.items;
   protected readonly templates = signal<OneOnOneTemplate[]>([]);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
   protected readonly selectedId = signal<number | null>(null);
   protected readonly selected = computed(() => this.items().find((m) => m.id === this.selectedId()) ?? null);
   protected readonly groups = computed(() => splitMeetings(this.items(), new Date()));
@@ -218,17 +220,7 @@ export class OneOnOnesPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.api.oneOnOnes().subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(performErrorKey(e));
-      },
-    });
+    this.list.load(this.api.oneOnOnes(), { error: (e) => this.notify.show(performErrorKey(e)) });
   }
 
   protected select(m: OneOnOne): void {

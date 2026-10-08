@@ -1,5 +1,5 @@
 import { provideNativeDateAdapter } from '@angular/material/core';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { TeamRow, TimesheetApproval } from './time.model';
 import { TimeApprovalsPage } from './time-approvals.page';
@@ -96,5 +96,23 @@ describe('TimeTeamPage: sortable / filterable headers, kept when the week change
     expect(params().get('week')).toBe('2026-10-05');
     expect(params().get('sort')).toBe('missing');
     expect(params().get('status')).toBe('draft');
+  });
+});
+
+describe('TimeTeamPage: only the latest week counts', () => {
+  it('another week cancels the request still in flight: its late answer never lands', async () => {
+    const answers = new Map<string, Subject<TeamRow[]>>();
+    const teamOf = (w: string): Subject<TeamRow[]> => {
+      const answer = new Subject<TeamRow[]>();
+      answers.set(w, answer);
+      return answer;
+    };
+    const page = await openTablePage(TimeTeamPage, '/', [{ provide: TimeService, useValue: { team: teamOf } }, provideNativeDateAdapter()], { week: '2026-09-28' });
+    page.fixture.componentRef.setInput('week', '2026-10-05');
+    await page.settle();
+    expect(answers.get('2026-09-28')!.observed).toBe(false);
+    answers.get('2026-10-05')!.next([TEAM[0]]);
+    await page.settle();
+    expect([...page.el.querySelectorAll('tbody tr')].map((tr) => tr.children[0]?.textContent?.trim())).toEqual([TEAM[0].employee.full_name]);
   });
 });
