@@ -241,6 +241,9 @@
 `Http/Requests` → `Services` (`EmployeeService`, `ChangeRequestService`, `HireService`, `PeopleScope`) →
 `Contracts/EmployeeRepository`, `ChangeRequestRepository` (`Repositories/Eloquent*`). Ошибки — `Exceptions/PeopleException`
 (`{message, code}`). Фабрика `Database/Factories/EmployeeFactory` — синтетика на `example.test`.
+История оплаты (`employee_compensations`) тоже идёт через `EmployeeRepository` (`addCompensation()`,
+`compensationHistory()` — новые сверху по `effective_on`, затем id); `CompensationService` только выбирает действующую
+запись и собирает ответ. Тест — `tests/Unit/People/CompensationServiceTest.php`.
 
 ### Сортировка и фильтры списка (2026-10-02)
 `ListPeopleRequest` проверяет `sort` по `Enums/EmployeeSort` и `dir` по `asc|desc` (белый список; текст запроса в SQL не
