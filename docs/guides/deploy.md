@@ -1,5 +1,8 @@
 # Деплой
 
+> **Vercel заморожен с 2026-10-08.** Автовыкладка `main` и preview для PR отключены. Подробности — в разделе
+> [Заморозка Vercel](#заморозка-vercel) ниже.
+
 Для app-side runtime/build requirements при переносе с Vercel см. [хенд-офф приложения для Itstep](itstep-app-handoff.md). Этот файл ниже описывает действующий Vercel workflow.
 
 ## Простыми словами
@@ -92,3 +95,28 @@ preview-API. Вход Google на preview по-прежнему не работ�
 Проверяйте Web `/build.json` и API `/api/health` (поле `version`) отдельно по соответствующему Deploy run.
 Файлы содержат только публичный SHA, без путей, времени, окружения или персональных данных.
 При частичном production deploy разные SHA проектов допустимы; прежний API нельзя объявлять новым по SHA Web.
+
+## Заморозка Vercel
+**Что:** с 2026-10-08 workflow `Deploy` не выкладывает ничего ни из `main`, ни из PR с меткой `preview`: jobs `gate` и
+`deploy` выполняются только при репозиторной переменной `VERCEL_DEPLOY_ENABLED=true`. Переменной нет — jobs пропущены
+(skipped), CI (`ci.yml`) и обязательные проверки не затронуты. Логика `.github/scripts/deploy-gate.js` не менялась.
+
+**Почему:** владелец решил полностью перейти с PostgreSQL (Neon) на MySQL 8.4 (IT STEP, см. PROD-46 в
+[production-backlog.md](../product/production-backlog.md)). Код `main` становится только MySQL, и автовыкладка сломала бы
+боевой сайт на Vercel+Neon (PostgreSQL). Он остаётся как есть и больше не обновляется.
+
+**Где код боевого сайта:** ветка `legacy/vercel-postgres` (коммит `8875ac4e`).
+
+**Как включить обратно:** Settings → Secrets and variables → Actions → Variables → New repository variable
+`VERCEL_DEPLOY_ENABLED` = `true` (удалить переменную или поставить другое значение — снова заморозка).
+
+**Хотфикс на замороженный Vercel вручную** (из `legacy/vercel-postgres`, нужен доступ к проектам Vercel):
+```bash
+git switch legacy/vercel-postgres
+# API
+cd backend && vercel pull --yes --environment=production && composer install --no-dev --prefer-dist --optimize-autoloader   && vercel build --prod && vercel deploy --prebuilt --prod
+# Web
+cd ../frontend && vercel pull --yes --environment=production && vercel build --prod && vercel deploy --prebuilt --prod
+```
+`VERCEL_PROJECT_ID` берётся из проекта (`vercel link` или переменная окружения для каждого проекта: API и Web), CLI — `vercel@~61.0.0`.
+Миграции после выкладки API — `POST /api/ops/migrate` с заголовком `X-Ops-Secret` (как в шаге `Deploy` workflow).
