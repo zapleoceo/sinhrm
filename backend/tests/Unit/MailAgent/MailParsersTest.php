@@ -75,7 +75,7 @@ final class MailParsersTest extends TestCase
     {
         $html = '<html><head><style>p{color:red}</style></head><body><p>Кандидат: <b>Ірина Зразкова</b></p>'
             .'<p>Телефон: 097 123 45 67</p><script>alert("x")</script>'
-            .'<a href="https://jobs.example.test/cv/42">Резюме</a></body></html>';
+            .'<a href="https://www.work.ua/resumes/42/">Резюме</a></body></html>';
         $text = MimeText::extract(['mimeType' => 'text/html', 'body' => ['data' => rtrim(strtr(base64_encode($html), '+/', '-_'), '=')]]);
 
         $result = (new GenericParser)->parse($this->message('robot@jobs.example.test', 'Новий відгук', $text));
@@ -83,8 +83,46 @@ final class MailParsersTest extends TestCase
         $this->assertNotNull($result);
         $this->assertSame('Ірина Зразкова', $result->fullName);
         $this->assertSame('097 123 45 67', $result->phone);
-        $this->assertSame('https://jobs.example.test/cv/42', $result->cvUrl);
+        $this->assertSame('https://www.work.ua/resumes/42/', $result->cvUrl);
         $this->assertStringNotContainsString('alert', $text);
+    }
+
+    /**
+     * cv_url becomes a "CV" button in the candidate card, so a recruiter clicks it. Only links on a job board we
+     * actually parse may end up there — any other https link in the mail (an attacker's "download" link, a
+     * tracker, a look-alike domain) is dropped.
+     *
+     * @return iterable<string, array{string, ?string}>
+     */
+    public static function cvLinks(): iterable
+    {
+        yield 'work.ua' => ['https://www.work.ua/resumes/1234567/', 'https://www.work.ua/resumes/1234567/'];
+        yield 'robota.ua' => ['https://robota.ua/candidates/555000', 'https://robota.ua/candidates/555000'];
+        yield 'rabota.ua' => ['https://rabota.ua/candidates/555000', 'https://rabota.ua/candidates/555000'];
+        yield 'djinni' => ['https://djinni.co/q/1a2b3c/resume/', 'https://djinni.co/q/1a2b3c/resume/'];
+        yield 'dou' => ['https://dou.ua/cv/download/9/', 'https://dou.ua/cv/download/9/'];
+        yield 'linkedin' => ['https://www.linkedin.com/in/example-candidate/download', 'https://www.linkedin.com/in/example-candidate/download'];
+        yield 'subdomain of a board' => ['https://cdn.files.work.ua/resume/1.pdf', 'https://cdn.files.work.ua/resume/1.pdf'];
+        yield 'unknown host' => ['https://jobs.example.test/cv/42', null];
+        yield 'attacker download link' => ['https://evil.example.test/download/resume.exe', null];
+        yield 'look-alike suffix' => ['https://work.ua.evil.test/resume/1', null];
+        yield 'board name only in the path' => ['https://evil.test/work.ua/cv/1', null];
+        yield 'board name as a query parameter' => ['https://evil.test/download?from=djinni.co', null];
+        yield 'userinfo trick' => ['https://djinni.co@evil.test/cv/1', null];
+        yield 'plain http on a board' => ['http://www.work.ua/resumes/1234567/', null];
+    }
+
+    #[DataProvider('cvLinks')]
+    public function test_cv_url_is_kept_only_for_known_job_boards(string $link, ?string $expected): void
+    {
+        $result = (new GenericParser)->parse($this->message(
+            'robot@jobs.example.test',
+            'Новий відгук',
+            "Кандидат: Ірина Зразкова\nТелефон: 097 123 45 67\nРезюме: $link\n",
+        ));
+
+        $this->assertNotNull($result);
+        $this->assertSame($expected, $result->cvUrl, $link);
     }
 
     public function test_board_and_robot_addresses_are_not_taken_as_the_candidate_email(): void

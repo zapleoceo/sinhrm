@@ -99,6 +99,11 @@ final class EloquentDeskRepository implements DeskRepository
         return DeskAttachment::query()->where('case_id', $caseId)->count();
     }
 
+    public function attachmentBytes(int $caseId): int
+    {
+        return (int) DeskAttachment::query()->where('case_id', $caseId)->sum('size');
+    }
+
     public function findAttachment(int $caseId, int $id): ?DeskAttachment
     {
         return DeskAttachment::query()->where('case_id', $caseId)->find($id);

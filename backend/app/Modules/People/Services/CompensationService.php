@@ -6,6 +6,8 @@ namespace App\Modules\People\Services;
 
 use App\Models\User;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\DTO\PeopleContext;
+use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Models\EmployeeCompensation;
 use Illuminate\Support\Carbon;
@@ -16,9 +18,19 @@ final readonly class CompensationService
 {
     public function __construct(private LoggerInterface $log, private EmployeeRepository $employees) {}
 
-    /** @param  array<string, mixed>  $data  validated SaveCompensationRequest */
-    public function add(User $actor, Employee $employee, array $data): EmployeeCompensation
+    /**
+     * Separation of duties: HR never writes their own compensation row, superadmin included — a raise is always
+     * signed off by somebody else.
+     *
+     * @param  array<string, mixed>  $data  validated SaveCompensationRequest
+     *
+     * @throws PeopleException forbidden
+     */
+    public function add(User $actor, PeopleContext $ctx, Employee $employee, array $data): EmployeeCompensation
     {
+        if (! $ctx->canDecideFor($employee->id)) {
+            throw PeopleException::forbidden();
+        }
         $record = $this->employees->addCompensation($data + ['employee_id' => $employee->id, 'created_by' => $actor->id]);
         // No amount in the log: salary is personal data.
         $this->log->info('people.compensation_added', ['employee' => $employee->id, 'id' => $record->id, 'by' => $actor->id]);

@@ -54,10 +54,15 @@ final class ErrorRecorder
         $this->guard(fn () => $this->store(self::SOURCE_WEB, $kind, $message, $location, null, $route, $userId));
     }
 
-    /** Secrets (SecretScrubber), then emails and long digit runs (phones, document numbers) are masked. */
+    /**
+     * Secrets (SecretScrubber), the DB connection details of a QueryException (host, port, database name), then emails
+     * and long digit runs (phones, document numbers) are masked. Bound values never get here: the mysql connection
+     * masks them (mask_bindings_in_exception_messages).
+     */
     public function clean(string $message): string
     {
         $text = $this->scrubber->scrub($message);
+        $text = (string) preg_replace('/\(Connection: [^,()]+, (?:Host: [^,()]+, )?(?:Port: [^,()]+, )?(?:Database: [^,()]+, )?SQL: /', '(SQL: ', $text);
         $text = (string) preg_replace('/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/', '[email]', $text);
         $text = (string) preg_replace('/\+?\d[\d\s()-]{7,}\d/', '[number]', $text);
 

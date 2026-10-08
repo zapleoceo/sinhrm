@@ -23,6 +23,9 @@ abstract class AbstractMailParser implements MailParser
     /** Addresses of these domains are never the candidate's. */
     protected const array SERVICE_DOMAINS = ['work.ua', 'robota.ua', 'rabota.ua', 'djinni.co'];
 
+    /** Only links on these hosts (or their subdomains) may become the candidate card's "CV" button. */
+    protected const array CV_HOSTS = [...self::SERVICE_DOMAINS, 'dou.ua', 'linkedin.com'];
+
     private const string NAME_WORD = "[\\p{L}'ʼ’\\-]+";
 
     private const array LABELS = [
@@ -171,17 +174,43 @@ abstract class AbstractMailParser implements MailParser
         return preg_match('#/(?:vacancy|vacancies|jobs?)/(\d{3,12})\b#i', $text, $m) === 1 ? $m[1] : null;
     }
 
+    /**
+     * The link shown as the "CV" button in the candidate card. Inbound mail is attacker-controlled, so a
+     * CV-looking link is kept only when its HOST is a board we parse (CV_HOSTS or a subdomain); anything else —
+     * a "download" link to someone's payload, a tracker, work.ua.evil.test, https://djinni.co@evil.test — is
+     * dropped. Host comparison, never a substring of the URL: the board name may appear in a path or query.
+     */
     private static function cvUrl(string $text): ?string
     {
         preg_match_all('#https://[^\s<>"\')\]]+#i', $text, $m);
         foreach ($m[0] as $url) {
-            if (preg_match('#(cv|resume|rezume|resumes|candidate|applicant|attachment|download|file)#i', $url) === 1
-                && preg_match('#unsubscribe|settings|preferences#i', $url) !== 1) {
-                return mb_substr(rtrim($url, '.,;'), 0, 500);
+            $url = rtrim($url, '.,;');
+            if (preg_match('#(cv|resume|rezume|resumes|candidate|applicant|attachment|download|file)#i', $url) !== 1
+                || preg_match('#unsubscribe|settings|preferences#i', $url) === 1) {
+                continue;
+            }
+            $parts = parse_url($url);
+            if ($parts === false || ($parts['scheme'] ?? '') !== 'https' || isset($parts['user']) || isset($parts['pass'])) {
+                continue;
+            }
+            if (self::isCvHost(mb_strtolower((string) ($parts['host'] ?? '')))) {
+                return mb_substr($url, 0, 500);
             }
         }
 
         return null;
+    }
+
+    /** True for a job board we parse mail from, or one of its subdomains (file/CDN hosts live there). */
+    private static function isCvHost(string $host): bool
+    {
+        foreach (self::CV_HOSTS as $board) {
+            if ($host === $board || str_ends_with($host, '.'.$board)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function isServiceDomain(string $domain): bool

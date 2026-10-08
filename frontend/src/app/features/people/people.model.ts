@@ -147,6 +147,11 @@ export interface ChangeRequest {
   id: number;
   employee: { id: number; full_name: string };
   changes: Partial<Record<ChangeableField, string | null>>;
+  /**
+   * Fields whose proposed values the caller may not read (PII of a subordinate): they are missing from `changes`
+   * and only their names come back, so a manager decides the request without seeing the personal data.
+   */
+  hidden_changes: ChangeableField[];
   status: ChangeRequestStatus;
   comment: string | null;
   requested_by: Ref | null;
@@ -162,7 +167,10 @@ export interface HireResult {
   created: boolean;
 }
 
-/** Error codes the People API returns in {code}; translated as people.errors.<code>. */
+/**
+ * Error codes the People API returns in {code} — or, for a 422 of SaveEmployeeRequest, as the validation message of
+ * a field (errors.user_id = ['user_outranks_actor']). Translated as people.errors.<code>.
+ */
 export const PEOPLE_ERROR_CODES = [
   'no_employee',
   'manager_cycle',
@@ -175,7 +183,10 @@ export const PEOPLE_ERROR_CODES = [
   'already_decided',
   'not_hired',
   'forbidden',
+  'user_outranks_actor',
 ] as const;
+
+export type PeopleErrorCode = (typeof PEOPLE_ERROR_CODES)[number];
 
 /** POST /api/people/bulk (HR staff). export → CSV. */
 export type BulkEmployeeAction = 'department' | 'position' | 'manager' | 'export';

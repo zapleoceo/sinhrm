@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Gate;
 /**
  * Bulk actions on the candidates list. Every item goes through the same policy and service method as the single
  * action (ApplicationService::move, CandidateService::update); one failure does not stop the rest.
+ * Per-id errors never say more than the actor may already know: a candidate out of their scope is "not_found"
+ * whether they exist or not, and a vacancy out of their scope stops the whole request (vacancy_out_of_scope).
  */
 final readonly class CandidateBulkService
 {
@@ -27,6 +29,7 @@ final readonly class CandidateBulkService
         private VacancyRepository $vacancies,
         private ApplicationService $applicationService,
         private CandidateService $candidateService,
+        private RecruitingScope $scope,
     ) {}
 
     /**
@@ -37,9 +40,14 @@ final readonly class CandidateBulkService
     public function run(User $actor, string $action, array $ids, array $input): array
     {
         $rejectStage = null;
-        if ($action === 'reject') {
-            $rejectStage = $this->vacancies->find((int) $input['vacancy_id'])?->pipeline?->stages
-                ->first(static fn (PipelineStage $s): bool => $s->isReject());
+        if ($action === 'move' || $action === 'reject') {
+            // The vacancy is checked once for the whole request (as the clipper does): otherwise the per-id errors
+            // answer "does this candidate exist / did they apply here" for vacancies the actor may not see at all.
+            $vacancy = $this->vacancies->find((int) $input['vacancy_id']);
+            if ($vacancy === null || ! $this->scope->canSeeVacancy($actor, $vacancy)) {
+                throw RecruitingException::vacancyOutOfScope();
+            }
+            $rejectStage = $vacancy->pipeline->stages->first(static fn (PipelineStage $s): bool => $s->isReject());
         }
         $results = [];
         foreach ($ids as $id) {
@@ -59,7 +67,8 @@ final readonly class CandidateBulkService
     private function one(User $actor, string $action, int $id, array $input, ?PipelineStage $rejectStage): ?string
     {
         $candidate = $this->candidates->find($id);
-        if ($candidate === null) {
+        // One generic answer for "no such candidate" and "not yours": the caller must not be able to tell them apart.
+        if ($candidate === null || ! $this->scope->canSeeCandidate($actor, $candidate)) {
             return 'not_found';
         }
         if ($action === 'move' || $action === 'reject') {

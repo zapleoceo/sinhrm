@@ -13,11 +13,13 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('categories', [DeskCategoryController::class, 'index'])->name('desk.categories.index');
     Route::get('cases/mine', [DeskCaseController::class, 'mine'])->name('desk.cases.mine');
-    Route::post('cases', [DeskCaseController::class, 'store'])->name('desk.cases.store');
+    Route::post('cases', [DeskCaseController::class, 'store'])->middleware(DeskServiceProvider::WRITE_THROTTLE)->name('desk.cases.store');
     Route::get('cases/{case}', [DeskCaseController::class, 'show'])->whereNumber('case')->name('desk.cases.show');
     Route::patch('cases/{case}', [DeskCaseController::class, 'update'])->whereNumber('case')->name('desk.cases.update');
-    Route::post('cases/{case}/comments', [DeskCaseController::class, 'comment'])->whereNumber('case')->name('desk.cases.comment');
-    Route::post('cases/{case}/attachments', [DeskCaseController::class, 'attach'])->whereNumber('case')->name('desk.cases.attach');
+    Route::post('cases/{case}/comments', [DeskCaseController::class, 'comment'])->whereNumber('case')
+        ->middleware(DeskServiceProvider::WRITE_THROTTLE)->name('desk.cases.comment');
+    Route::post('cases/{case}/attachments', [DeskCaseController::class, 'attach'])->whereNumber('case')
+        ->middleware(DeskServiceProvider::WRITE_THROTTLE)->name('desk.cases.attach');
     Route::get('cases/{case}/attachments/{attachment}', [DeskCaseController::class, 'download'])
         ->whereNumber(['case', 'attachment'])->name('desk.cases.download');
 

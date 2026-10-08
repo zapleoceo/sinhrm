@@ -18,7 +18,10 @@ final class CompensationController
 {
     use ResolvesActor;
 
-    public function __construct(private readonly CompensationService $service) {}
+    public function __construct(
+        private readonly CompensationService $service,
+        private readonly PeopleScope $scope,
+    ) {}
 
     public function index(Employee $employee): JsonResponse
     {
@@ -29,14 +32,15 @@ final class CompensationController
     {
         /** @var array<string, mixed> $data */
         $data = $request->validated();
-        $this->service->add($this->actor($request), $employee, $data);
+        $actor = $this->actor($request);
+        $this->service->add($actor, $this->scope->for($actor), $employee, $data);
 
         return new JsonResponse(['data' => $this->service->payload($employee)], 201);
     }
 
-    public function mine(Request $request, PeopleScope $scope): JsonResponse
+    public function mine(Request $request): JsonResponse
     {
-        $employee = $scope->employeeOf($this->actor($request)) ?? throw PeopleException::noEmployee();
+        $employee = $this->scope->employeeOf($this->actor($request)) ?? throw PeopleException::noEmployee();
 
         return new JsonResponse(['data' => $this->service->payload($employee)]);
     }

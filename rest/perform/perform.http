@@ -145,3 +145,13 @@ Content-Type: application/json
     "period": "Example period",
     "target": 1.5
 }
+
+### GET /api/perform/feedback?box — perform.feedback.index (box из received|given|requests|team|public, иначе 422)
+GET {{host}}/api/perform/feedback?box=received
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/perform/feedback — некорректный box: 422 (не 500)
+GET {{host}}/api/perform/feedback?box[]=x
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

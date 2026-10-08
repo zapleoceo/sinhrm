@@ -334,6 +334,11 @@ export interface Touchpoint {
   meta: TouchpointMeta;
   via_product: boolean;
   integration_key: string | null;
+  /**
+   * The text is hidden from this viewer (an offer touch carries the salary: only who may see the offer reads it).
+   * `body`, the sensitive meta and the evaluation come back empty — the touch itself still shows in the timeline.
+   */
+  redacted?: boolean;
   /** Script evaluation (timeline only; filled by the Scripts module), null = not evaluated. */
   evaluation?: EvaluationSummary | null;
 }

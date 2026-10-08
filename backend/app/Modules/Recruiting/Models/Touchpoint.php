@@ -36,6 +36,9 @@ use Illuminate\Support\Carbon;
  */
 final class Touchpoint extends Model
 {
+    /** meta.kind of a sensitive touch: the offer text carries the salary (hidden outside ApplicationPolicy::offer). */
+    public const string KIND_OFFER = 'offer';
+
     protected $fillable = [
         'candidate_id', 'application_id', 'branch_id', 'stage_change_id', 'channel', 'direction', 'author_id',
         'occurred_at', 'body', 'meta', 'external_id', 'via_product', 'integration_key',

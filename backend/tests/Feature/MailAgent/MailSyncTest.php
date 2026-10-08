@@ -93,7 +93,8 @@ final class MailSyncTest extends TestCase
         $this->assertSame('in', $touch->direction->value);
         $this->assertSame('google_gmail', $touch->integration_key);
         $this->assertFalse($touch->via_product);
-        $this->assertSame('https://jobs.example.test/resumes/000111', $touch->meta['cv_url']);
+        // The fixture's CV link is on an unknown host, so it is not offered as a "CV" button (only job boards we parse are).
+        $this->assertArrayNotHasKey('cv_url', $touch->meta);
         $task = Task::query()->where('candidate_id', $candidate->id)->firstOrFail();
         $this->assertSame('new_applicant', $task->type->value);
         $this->assertSame($this->recruiter->id, $task->assignee_id);

@@ -26,6 +26,9 @@ final class DeskServiceProvider extends ModuleServiceProvider
     /** Queue, categories, assignment, internal notes: superadmin, admin (HR). */
     public const string MANAGE = 'desk-manage';
 
+    /** Write endpoints (open a case, comment, attach): 20 requests per minute per user. */
+    public const string WRITE_THROTTLE = 'throttle:20,1';
+
     protected string $prefix = 'desk';
 
     public function register(): void

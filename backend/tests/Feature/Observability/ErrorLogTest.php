@@ -12,6 +12,7 @@ use App\Modules\Observability\Services\ErrorLogPruneJob;
 use App\Modules\Observability\Services\ErrorRecorder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -50,6 +51,25 @@ final class ErrorLogTest extends TestCase
         $this->assertStringNotContainsString('123 45 67', $event->message);
         $this->assertStringContainsString(SecretScrubber::REDACTED, $event->message);
         $this->assertStringContainsString('[email]', $event->message);
+    }
+
+    public function test_query_exception_keeps_neither_bound_values_nor_connection_details(): void
+    {
+        $this->assertTrue(config('database.connections.mysql.mask_bindings_in_exception_messages'));
+        Route::middleware('api')->get('api/_test/dbboom', static function (): never {
+            // Strict mode: a too long value fails; the bound person name must not reach the log.
+            DB::table('users')->insert(['name' => 'Іван Петренко', 'email' => 'x@example.test', 'locale' => str_repeat('x', 5000)]);
+            throw new RuntimeException('unreachable');
+        })->name('test.dbboom');
+
+        $this->getJson('/api/_test/dbboom')->assertStatus(500);
+
+        $message = ErrorEvent::query()->sole()->message;
+        $this->assertStringContainsString('(SQL: insert into', $message);
+        $this->assertStringNotContainsString('Іван', $message);
+        $this->assertStringNotContainsString('xxxxx', $message);
+        $this->assertStringNotContainsString('Host:', $message);
+        $this->assertStringNotContainsString('Database:', $message);
     }
 
     public function test_known_secret_from_the_vault_is_scrubbed(): void

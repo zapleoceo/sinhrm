@@ -54,9 +54,9 @@ final readonly class OpenRouterProvider implements AiProvider
         if ($key === null) {
             throw AiException::notConfigured();
         }
-        $blocked = $this->guard->check(self::URL);
-        if ($blocked !== null) {
-            throw AiException::provider($blocked);
+        $target = $this->guard->inspect(self::URL);
+        if ($target->error !== null) {
+            throw AiException::provider($target->error);
         }
         $this->scrubber->remember($key);
 
@@ -78,7 +78,7 @@ final readonly class OpenRouterProvider implements AiProvider
         }
 
         try {
-            $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)
+            $response = $this->http->withOptions($target->httpOptions())->timeout(self::TIMEOUT_SECONDS)
                 ->acceptJson()->withToken($key)->post(self::URL, $body);
         } catch (Throwable) {
             throw AiException::provider('connection_failed');

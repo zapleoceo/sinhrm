@@ -48,10 +48,24 @@ final readonly class PeopleContext
         return $this->admin || $this->isSelf($employeeId);
     }
 
-    /** Approve / reject requests (change requests, leave). Nobody but an admin decides their own. */
-    public function canDecideFor(int $employeeId): bool
+    /**
+     * Authority over someone's record: HR staff over everyone, a manager over their subtree. Own record included —
+     * use it only where acting on oneself is legitimate (cancelling own leave), never for a decision.
+     */
+    public function hasAuthorityOver(int $employeeId): bool
     {
         return $this->admin || $this->isAbove($employeeId);
+    }
+
+    /**
+     * Approve / reject requests (change requests, leave) and write someone's salary or leave balance.
+     * Separation of duties: NOBODY decides their own, superadmin included — a second pair of eyes always signs off.
+     * A sole superadmin who is also an employee therefore files requests like everyone else and has them approved by
+     * another admin; bootstrapping the system does not need this path (HR data is written directly, not requested).
+     */
+    public function canDecideFor(int $employeeId): bool
+    {
+        return ! $this->isSelf($employeeId) && $this->hasAuthorityOver($employeeId);
     }
 
     /**
@@ -60,7 +74,7 @@ final readonly class PeopleContext
      */
     public function canTerminate(int $employeeId): bool
     {
-        return ! $this->isSelf($employeeId) && $this->canDecideFor($employeeId);
+        return ! $this->isSelf($employeeId) && $this->hasAuthorityOver($employeeId);
     }
 
     /** @return array{job: bool, pii: bool, decide: bool, manage: bool, self: bool, terminate: bool} */

@@ -13,6 +13,7 @@ use App\Modules\Pulse\Exceptions\PulseException;
 use App\Modules\Pulse\Models\MoodCheckin;
 use App\Modules\Pulse\Models\MoodSetting;
 use App\Modules\Pulse\Support\MoodStats;
+use App\Modules\Pulse\Support\SafeSegments;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -20,7 +21,8 @@ use Illuminate\Support\Carbon;
 /**
  * Mood monitoring. An employee answers "how is your mood today" (1–5 + optional comment) once a day on the
  * configured weekdays (a second answer the same day replaces the first). Personal history — to the employee only.
- * Team trend — managers (their subtree) and admins (everyone, or a branch / department): aggregates of completed
+ * Team trend — managers (their whole subtree, no branch/department filters: a slice of a team is a differencing
+ * attack) and admins (everyone, or a branch / department whose remainder is still safe): aggregates of completed
  * weeks only (never the running week), suppressed below the minimum group; coverage is of the last completed week; comments without names or dates, only from shown weeks.
  */
 final readonly class MoodService
@@ -90,8 +92,8 @@ final readonly class MoodService
     {
         $now ??= Carbon::now();
         $weeks = max(1, min(self::MAX_WEEKS, $weeks));
-        $ids = $this->teamIds($user, $branchId, $departmentId);
         $minGroup = max(1, $this->mood->settings()->min_group);
+        $ids = $this->teamIds($user, $branchId, $departmentId, $minGroup);
         // Completed weeks only: the running week would change with every new check-in (diffing reveals it).
         $currentWeek = $now->copy()->startOfWeek();
         $from = $currentWeek->copy()->subWeeks($weeks);
@@ -129,21 +131,45 @@ final readonly class MoodService
     }
 
     /**
-     * Admin: every working employee (optionally one branch / department); manager: their working subtree.
+     * Admin: every working employee (optionally one branch / department); manager: their whole working subtree, never
+     * a slice of it — "the team" minus "one department" is the aggregate of the few people left over, and with a
+     * comment it is a name. Filters are therefore refused for managers (403).
+     *
+     * For an admin a slice is allowed only while the rest of the scope stays safe (SafeSegments): the slice itself at
+     * least the minimum group and the remainder (everybody else) 0 or at least the minimum. Otherwise nobody is
+     * returned and the whole report is suppressed.
      *
      * @return list<int>
      *
      * @throws AuthorizationException
      */
-    private function teamIds(User $user, ?int $branchId, ?int $departmentId): array
+    private function teamIds(User $user, ?int $branchId, ?int $departmentId, int $minGroup): array
     {
         $ctx = $this->scope->for($user);
         if (! $ctx->admin && ! $ctx->isManager()) {
             throw new AuthorizationException;
         }
-        $people = $this->employees->working($ctx->admin ? null : $ctx->subtreeIds, $branchId);
+        $filtered = $branchId !== null || $departmentId !== null;
+        if ($filtered && ! $ctx->admin) {
+            throw new AuthorizationException;
+        }
+        $scopeIds = $ctx->admin ? null : $ctx->subtreeIds;
+        $all = self::idsOf($this->employees->working($scopeIds));
+        if (! $filtered) {
+            return $all;
+        }
+        $slice = self::idsOf($this->employees->working($scopeIds, $branchId)
+            ->filter(static fn (Employee $e): bool => $departmentId === null || $e->department_id === $departmentId));
 
-        return $people->filter(static fn (Employee $e): bool => $departmentId === null || $e->department_id === $departmentId)
-            ->pluck('id')->map(static fn (mixed $id): int => (int) $id)->values()->all();
+        return SafeSegments::allowed([$slice], $minGroup, count($all))[0] ?? [];
+    }
+
+    /**
+     * @param  Collection<int, Employee>  $people
+     * @return list<int>
+     */
+    private static function idsOf(Collection $people): array
+    {
+        return $people->pluck('id')->map(static fn (mixed $id): int => (int) $id)->values()->all();
     }
 }

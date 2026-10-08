@@ -52,4 +52,17 @@ final class DeskException extends BusinessRuleException
     {
         return new self('too_many_files', 422);
     }
+
+    /** The requester already holds DeskService::MAX_OPEN_CASES unclosed cases. */
+    public static function tooManyOpenCases(): self
+    {
+        return new self('too_many_open_cases', 422);
+    }
+
+    /** The attachments of this case already fill DeskService::MAX_CASE_BYTES. */
+    public static function attachmentQuotaExceeded(): self
+    {
+        return new self('attachment_quota_exceeded', 422);
+    }
+
 }

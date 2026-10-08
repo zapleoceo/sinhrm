@@ -121,9 +121,15 @@ skipped, failed}`.
 в этом запросе (`attempts` растёт). Воркфлоу с упавшим шагом остаётся `running`, пока шаг не повторят или не пропустят.
 
 ### Вебхук (`Executors/WebhookExecutor`)
-1. `OutboundUrlGuard` (модуль Integrations): только https, порт 443, все IP хоста публичные (без localhost, частных
-   сетей, `169.254.169.254` и т.п.) — иначе `failed` с кодом `invalid_url` / `blocked_port` / `blocked_host` /
+1. `OutboundUrlGuard::inspect()` (модуль Integrations): только https, порт 443, все IP хоста публичные (без localhost,
+   частных сетей, CGNAT, multicast, `169.254.169.254`, 6to4/NAT64-обёрток и т.п. — полная таблица в
+   [integrations.md](integrations.md)) — иначе `failed` с кодом `invalid_url` / `blocked_port` / `blocked_host` /
    `unresolved_host`, **запрос не отправляется**. Редиректы не выполняются, таймаут 10 с.
+   Проверенные IP возвращаются в `PinnedTarget`, и соединение прибивается именно к ним: `requestOptions()` кладёт
+   `CURLOPT_RESOLVE` (+ `CURLOPT_FOLLOWLOCATION = false`) в опции запроса, поэтому имя не резолвится второй раз и
+   **DNS-rebinding между проверкой и отправкой невозможен**. В URL остаётся имя хоста — `Host`, SNI и проверка
+   сертификата не меняются. Тест: `tests/Unit/Workflows/ExecutorsTest::test_webhook_pins_the_connection_to_the_ips_the_guard_approved`
+   (резолвер отдаёт публичный адрес на проверку и метаданные облака на любой следующий запрос).
 2. Ключ подписи — **свой у каждого шаблона**, хранится в `SecretVault` (`integration_secrets`, ключ интеграции
    `workflows`, имя `webhook_secret:<id шаблона>`), задаётся `PUT …/webhook-secret`; API показывает только `is_set` и
    маску. Нет ключа → `failed: missing_secret`.

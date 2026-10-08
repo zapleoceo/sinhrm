@@ -22,7 +22,9 @@ final class AuditPolicy
      * A field that is not here is masked. Adding a field here = a deliberate "this is not personal" decision.
      */
     public const array SAFE_FIELDS = [
-        'user' => ['name', 'status', 'locale', 'invited_by', 'role'],
+        // safe_speak_handler: who may read anonymous reports — grants/revokes must be visible (audit 2026-10).
+        'user' => ['name', 'status', 'locale', 'invited_by', 'role', 'safe_speak_handler'],
+        'module_setting' => ['module', 'enabled', 'roles'],
         'integration' => ['key', 'status'],
         'ai_prompt_version' => ['purpose', 'version', 'base_version', 'author_id', 'is_active', 'activated_by', 'activated_at'],
         'employee' => [

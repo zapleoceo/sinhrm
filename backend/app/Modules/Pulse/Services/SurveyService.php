@@ -36,12 +36,16 @@ final readonly class SurveyService
     /**
      * @param  array<string, mixed>  $data  validated: title, type, description?, questions, lifecycle_trigger?, active
      *
-     * @throws PulseException has_responses
+     * @throws PulseException has_responses | has_waves
      */
     public function save(User $actor, ?Survey $survey, array $data): Survey
     {
         if ($survey !== null && $data['questions'] != $survey->questions && $this->surveys->hasResponses($survey)) {
             throw PulseException::hasResponses();
+        }
+        // Switching a survey with team waves into lifecycle mode would reclassify those waves as personal ones.
+        if ($survey !== null && ! $survey->isLifecycle() && self::isLifecycleData($data) && $this->surveys->waves($survey)->isNotEmpty()) {
+            throw PulseException::hasWaves();
         }
 
         return $this->surveys->saveSurvey($survey, $data + ($survey === null ? ['created_by' => $actor->id] : []));
@@ -69,12 +73,23 @@ final readonly class SurveyService
 
     /**
      * @param  array{schedule: string, audience: array<string, list<int>>, anonymous: bool, min_group_size: int, starts_at: string, ends_at: string}  $data
+     *
+     * @throws PulseException lifecycle_survey (its waves are personal and are opened by the triggers, not by hand)
      */
     public function createWave(User $actor, Survey $survey, array $data, ?Carbon $now = null): SurveyWave
     {
+        if ($survey->isLifecycle()) {
+            throw PulseException::lifecycleSurvey();
+        }
         $wave = $this->lifecycle->create($data + ['survey_id' => $survey->id, 'created_by' => $actor->id], $now ?? Carbon::now());
 
         return $this->findWave($wave->id);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private static function isLifecycleData(array $data): bool
+    {
+        return ($data['type'] ?? null) === 'lifecycle' || ($data['lifecycle_trigger'] ?? null) !== null;
     }
 
     /**

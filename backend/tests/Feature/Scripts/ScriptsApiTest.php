@@ -32,7 +32,8 @@ final class ScriptsApiTest extends TestCase
                 ->assertJsonPath('data.active_version.version', 1)
                 ->assertJsonPath('data.active_version.content.steps.0.id', 's1');
             $this->actingAs($user)->getJson("/api/scripts/{$script->id}/versions")->assertOk()->assertJsonCount(1, 'data');
-            $this->actingAs($user)->postJson("/api/scripts/{$script->id}/test", ['text' => 'hello'])->assertOk();
+            // The AI preview is not reading: it spends the shared budget, so it needs scripts-manage too.
+            $this->actingAs($user)->postJson("/api/scripts/{$script->id}/test", ['text' => 'hello'])->assertForbidden();
 
             $this->actingAs($user)->postJson('/api/scripts', ['name' => 'X', 'channel' => 'call'])->assertForbidden();
             $this->actingAs($user)->patchJson("/api/scripts/{$script->id}", ['name' => 'Y'])->assertForbidden();
@@ -168,5 +169,23 @@ final class ScriptsApiTest extends TestCase
             ->assertJsonPath('data.recommendations.0.type', 'missed_step');
         $this->actingAs($admin)->postJson($url, ['text' => $this->goodTranscript(), 'version' => 'active'])->assertOk()->assertJsonPath('data.score', 80);
         $this->actingAs($admin)->postJson($url, ['text' => ''])->assertUnprocessable();
+    }
+
+    /** The preview burns the shared AI budget: managers only, and rate-limited even for them. */
+    public function test_test_endpoint_is_manager_only_and_throttled(): void
+    {
+        $script = $this->publishedScript();
+        $url = "/api/scripts/{$script->id}/test";
+        $body = ['text' => $this->goodTranscript()];
+
+        foreach ([UserRole::Employee, UserRole::Recruiter, UserRole::Viewer] as $role) {
+            $this->actingAs($this->userWith($role))->postJson($url, $body)->assertForbidden();
+        }
+
+        $admin = $this->userWith(UserRole::Admin);
+        foreach (range(1, 10) as $i) {
+            $this->actingAs($admin)->postJson($url, $body)->assertOk();
+        }
+        $this->actingAs($admin)->postJson($url, $body)->assertStatus(429);
     }
 }

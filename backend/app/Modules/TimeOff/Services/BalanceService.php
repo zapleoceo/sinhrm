@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\TimeOff\Services;
 
 use App\Models\User;
+use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
 use App\Modules\TimeOff\Contracts\LeaveRequestRepository;
 use App\Modules\TimeOff\Contracts\LeaveSettingsRepository;
 use App\Modules\TimeOff\Contracts\LedgerRepository;
 use App\Modules\TimeOff\Enums\LedgerReason;
+use App\Modules\TimeOff\Exceptions\TimeOffException;
 use App\Modules\TimeOff\Models\LeaveType;
 use App\Modules\TimeOff\Models\LedgerEntry;
 use Illuminate\Support\Carbon;
@@ -63,8 +65,17 @@ final readonly class BalanceService
         return round($this->ledger->balance($employee->id, $type->id) - $this->requests->pendingDays($employee->id, $type->id, $exceptRequestId), 2);
     }
 
-    public function adjust(User $actor, Employee $employee, LeaveType $type, float $delta, ?string $comment): void
+    /**
+     * Manual correction of someone's balance (HR, route gate). Separation of duties: never one's own balance —
+     * that would be HR granting themselves leave days with nobody signing off.
+     *
+     * @throws TimeOffException forbidden
+     */
+    public function adjust(User $actor, PeopleContext $ctx, Employee $employee, LeaveType $type, float $delta, ?string $comment): void
     {
+        if (! $ctx->canDecideFor($employee->id)) {
+            throw TimeOffException::forbidden();
+        }
         $this->ledger->append([
             'employee_id' => $employee->id,
             'leave_type_id' => $type->id,

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Perform\Http\Controllers;
 
 use App\Modules\Perform\Http\Requests\GiveFeedbackRequest;
+use App\Modules\Perform\Http\Requests\ListFeedbackRequest;
 use App\Modules\Perform\Http\Resources\FeedbackResource;
 use App\Modules\Perform\Models\Feedback;
 use App\Modules\Perform\Services\FeedbackService;
 use App\Modules\Perform\Services\PerformAccess;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 /** GET ?box=received|given|requests|team|public; POST gives feedback, asks for it or answers a request. */
 final class FeedbackController extends PerformController
@@ -20,10 +20,9 @@ final class FeedbackController extends PerformController
         parent::__construct($access);
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(ListFeedbackRequest $request): JsonResponse
     {
-        $box = (string) $request->query('box', 'received');
-        abort_unless(in_array($box, FeedbackService::BOXES, true), 422);
+        $box = $request->box();
         $viewer = $this->viewer($request);
 
         return new JsonResponse(['data' => $this->feedback->list($viewer, $box)

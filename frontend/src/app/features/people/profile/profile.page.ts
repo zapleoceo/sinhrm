@@ -14,6 +14,7 @@ import { LeaveRequestForm } from '../../timeoff/widgets/leave-request-form';
 import { RequestAction, RequestsList } from '../../timeoff/widgets/requests-list';
 import { initials } from '../org-tree';
 import { CHANGEABLE_FIELDS, ChangeRequest, Employee, fieldLabelKey } from '../people.model';
+import { HiddenChangesLine } from '../hidden-changes';
 import { EmployeeDocumentsTab } from '../../documents/profile/employee-documents.tab';
 import { EmployeeRunsTab } from '../../workflows/runs/employee-runs.tab';
 import { PerformanceTab } from '../../perform/profile/performance.tab';
@@ -62,6 +63,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
     EmployeeAssetsTab,
     AuditHistory,
     PrivacyActions,
+    HiddenChangesLine,
   ],
   providers: [ProfileStore, LeaveRequestsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -194,6 +196,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
                         <span><span class="muted">{{ label(f) | transloco }}:</span> {{ c.changes[f] ?? '—' }}</span>
                       }
                     }
+                    <app-hidden-changes [fields]="c.hidden_changes" />
                     @if (c.comment) {
                       <span class="muted">«{{ c.comment }}»</span>
                     }

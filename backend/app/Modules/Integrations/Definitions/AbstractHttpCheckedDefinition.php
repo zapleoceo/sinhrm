@@ -15,8 +15,9 @@ use Throwable;
 
 /**
  * A definition whose "Check connection" is one outgoing HTTP request. probe() keeps the outbound rules in one place:
- * the URL passes OutboundUrlGuard first (blocked → its code, nothing is sent), redirects are never followed, 10 s
- * timeout, JSON accepted, and a transport error becomes connection_failed — never the exception text (it may carry
+ * the URL passes OutboundUrlGuard::inspect() first (blocked → its code, nothing is sent) and the request is pinned to
+ * the IPs the guard approved (CURLOPT_RESOLVE, no DNS rebinding between check and send), redirects are never
+ * followed, 10 s timeout, JSON accepted, and a transport error becomes connection_failed — never the exception text (it may carry
  * the URL with a token). The subclass builds the URL, adds its auth and reads the answer.
  */
 abstract class AbstractHttpCheckedDefinition extends AbstractDefinition implements ConnectionChecker
@@ -31,13 +32,13 @@ abstract class AbstractHttpCheckedDefinition extends AbstractDefinition implemen
      */
     protected function probe(string $url, Closure $send): Response|CheckResult
     {
-        $blocked = $this->guard->check($url);
-        if ($blocked !== null) {
-            return CheckResult::error($blocked);
+        $target = $this->guard->inspect($url);
+        if ($target->error !== null) {
+            return CheckResult::error($target->error);
         }
 
         try {
-            return $send($this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)->acceptJson());
+            return $send($this->http->withOptions($target->httpOptions())->timeout(self::TIMEOUT_SECONDS)->acceptJson());
         } catch (Throwable) {
             // Never the exception text: it may contain the request URL.
             return CheckResult::error('connection_failed');

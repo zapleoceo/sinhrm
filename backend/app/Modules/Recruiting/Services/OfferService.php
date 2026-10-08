@@ -11,12 +11,14 @@ use App\Modules\Documents\Enums\DocumentVariable;
 use App\Modules\Documents\Exceptions\DocumentException;
 use App\Modules\Documents\Support\TemplateFiller;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\OfferStatus;
 use App\Modules\Recruiting\Enums\StageKind;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Offer;
+use App\Modules\Recruiting\Models\Touchpoint;
 use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 
@@ -34,6 +36,7 @@ final readonly class OfferService
         private LoggerInterface $log,
         private DocumentTemplateRepository $documentTemplates,
         private ApplicationRepository $applications,
+        private TouchpointRepository $touchpoints,
     ) {}
 
     /** @return list<array{id: int, name: string}> */
@@ -113,7 +116,9 @@ final readonly class OfferService
             throw RecruitingException::offerStatus();
         }
         $application = $offer->application;
-        $this->messages->send($actor, $application->candidate, Channel::Email, $offer->content_md, $application->id, 'Оффер: '.$offer->position);
+        $touchpoint = $this->messages->send($actor, $application->candidate, Channel::Email, $offer->content_md, $application->id, 'Оффер: '.$offer->position);
+        // The touch carries the salary: mark it so the timeline hides its text from everyone but ApplicationPolicy::offer.
+        $this->touchpoints->update($touchpoint, ['meta' => [...$touchpoint->meta ?? [], 'kind' => Touchpoint::KIND_OFFER]]);
         $this->applications->updateOffer($offer, ['status' => OfferStatus::Sent->value, 'sent_at' => Carbon::now()]);
         $this->log->info('recruiting.offer_sent', ['id' => $offer->id, 'by' => $actor->id]);
 

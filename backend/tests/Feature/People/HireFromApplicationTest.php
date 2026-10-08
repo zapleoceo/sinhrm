@@ -82,6 +82,23 @@ final class HireFromApplicationTest extends TestCase
         $this->assertSame(6.0, (float) $grant->delta);
     }
 
+    /** The candidate's phone is personal: it must not land in the directory tier everybody reads. */
+    public function test_the_candidate_phone_stays_out_of_the_directory(): void
+    {
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $this->actingAs($recruiter)->postJson('/api/applications/'.$this->application->id.'/move', ['stage_id' => $this->hireStage()->id])->assertOk();
+        $id = $this->actingAs($recruiter)->postJson('/api/applications/'.$this->application->id.'/hire')->assertCreated()->json('data.id');
+
+        $employee = Employee::query()->findOrFail($id);
+        $this->assertNull($employee->phone);
+        $this->assertSame('+380501234567', $employee->custom_fields['personal_phone'] ?? null);
+
+        // A colleague reading the directory sees no phone at all.
+        $this->actingAs($this->userWith(UserRole::Viewer))->getJson('/api/people/'.$id)->assertOk()
+            ->assertJsonPath('data.phone', null)
+            ->assertJsonMissingPath('data.custom_fields');
+    }
+
     public function test_access(): void
     {
         $admin = $this->userWith(UserRole::Admin);

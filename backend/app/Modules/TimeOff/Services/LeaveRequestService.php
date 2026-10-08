@@ -194,7 +194,9 @@ final readonly class LeaveRequestService
         if (! in_array($status, [LeaveRequestStatus::Pending, LeaveRequestStatus::Approved], true)) {
             throw TimeOffException::invalidStatus();
         }
-        $decider = $ctx->canDecideFor($request->employee_id);
+        // Cancelling is not a decision in favour of oneself (the days go back to the ledger), so HR may cancel their
+        // own leave at any time — hasAuthorityOver, not canDecideFor.
+        $decider = $ctx->hasAuthorityOver($request->employee_id);
         $ownFuture = $ctx->isSelf($request->employee_id)
             && ($status === LeaveRequestStatus::Pending || $request->starts_on->gt($today));
         if (! $decider && ! $ownFuture) {
@@ -226,7 +228,8 @@ final readonly class LeaveRequestService
     }
 
     /**
-     * Pending requests the user may decide (admin: all; manager: everyone below), own excluded.
+     * Pending requests the user may decide (admin: all; manager: everyone below). Own requests are excluded for
+     * everyone, admins included: nobody approves their own leave (PeopleContext::canDecideFor).
      *
      * @return Collection<int, LeaveRequest>
      */
@@ -236,7 +239,7 @@ final readonly class LeaveRequestService
             return new Collection;
         }
 
-        return $this->requests->pendingFor($ctx->admin ? null : $ctx->subtreeIds, $ctx->admin ? null : $ctx->selfId, $limit);
+        return $this->requests->pendingFor($ctx->admin ? null : $ctx->subtreeIds, $ctx->selfId, $limit);
     }
 
     /** How many approvals() would list without the limit (sidebar counter). */
@@ -246,7 +249,7 @@ final readonly class LeaveRequestService
             return 0;
         }
 
-        return $this->requests->countPendingFor($ctx->admin ? null : $ctx->subtreeIds, $ctx->admin ? null : $ctx->selfId);
+        return $this->requests->countPendingFor($ctx->admin ? null : $ctx->subtreeIds, $ctx->selfId);
     }
 
     public function days(Employee $employee, Carbon $from, Carbon $to, HalfDay $halfDay): float

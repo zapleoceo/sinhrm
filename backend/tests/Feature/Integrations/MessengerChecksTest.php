@@ -44,6 +44,28 @@ final class MessengerChecksTest extends TestCase
             ->assertOk()->assertJsonPath('data.status', 'error')->assertJsonPath('data.last_error', 'unauthorized');
     }
 
+    /**
+     * The checker must dial the IPs the guard approved (CURLOPT_RESOLVE), not resolve the name a second time:
+     * otherwise a second DNS answer between check and request could point it at an internal address.
+     */
+    public function test_check_pins_the_connection_to_the_approved_ips(): void
+    {
+        $this->whatsapp(IntegrationStatus::Demo);
+        $options = [];
+        Http::fake(function (Request $request, array $sent) use (&$options) {
+            $options = $sent;
+
+            return Http::response(['id' => '1098765432']);
+        });
+
+        $this->actingAs($this->superadmin)->postJson('/api/integrations/whatsapp_cloud/check')->assertOk()
+            ->assertJsonPath('data.status', 'connected');
+
+        $this->assertSame(['graph.facebook.com:443:93.184.216.34'], $options['curl'][CURLOPT_RESOLVE] ?? null);
+        $this->assertFalse($options['curl'][CURLOPT_FOLLOWLOCATION] ?? null);
+        $this->assertFalse($options['allow_redirects'] ?? null);
+    }
+
     public function test_whatsapp_check_rejects_bad_phone_number_id_without_a_request(): void
     {
         $this->channel('whatsapp_cloud', IntegrationStatus::Demo, ['access_token' => self::WA_TOKEN], ['phone_number_id' => '../me', 'waba_id' => '1']);

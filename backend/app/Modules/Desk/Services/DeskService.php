@@ -30,6 +30,12 @@ final readonly class DeskService
 
     public const int MAX_FILES = 10;
 
+    /** An employee may hold this many unclosed cases; more is flooding, not a helpdesk need. */
+    public const int MAX_OPEN_CASES = 20;
+
+    /** Attachments live base64 in the DB, so one case may not grow past this many bytes of originals. */
+    public const int MAX_CASE_BYTES = 25 * 1024 * 1024;
+
     public function __construct(
         private DeskRepository $desk,
         private PeopleAccess $scope,
@@ -120,6 +126,9 @@ final readonly class DeskService
         $category = $this->desk->findCategory($categoryId);
         if ($category === null || ! $category->active) {
             throw DeskException::categoryInactive();
+        }
+        if ($this->desk->countCases(['employee_id' => $self->id, 'open' => true]) >= self::MAX_OPEN_CASES) {
+            throw DeskException::tooManyOpenCases();
         }
         $case = $this->desk->createCase([
             'employee_id' => $self->id,
@@ -223,6 +232,9 @@ final readonly class DeskService
         $mime = DatabaseDocumentStorage::detect($content, $filename) ?? throw DeskException::invalidFile();
         if ($this->desk->attachmentCount($case->id) >= self::MAX_FILES) {
             throw DeskException::tooManyFiles();
+        }
+        if ($this->desk->attachmentBytes($case->id) + strlen($content) > self::MAX_CASE_BYTES) {
+            throw DeskException::attachmentQuotaExceeded();
         }
 
         return $this->desk->addAttachment([

@@ -79,6 +79,13 @@ describe('PeopleService', () => {
     expect(peopleErrorKey(err(422, 'manager_cycle'))).toBe('people.errors.manager_cycle');
     expect(peopleErrorKey(err(403))).toBe('people.errors.forbidden');
     expect(peopleErrorKey(err(422))).toBe('people.errors.validation');
+    // 422 of SaveEmployeeRequest: the rule fails with a code as the field's message, not with a body {code}.
+    expect(
+      peopleErrorKey(new HttpErrorResponse({ status: 422, error: { message: 'user_outranks_actor', errors: { user_id: ['user_outranks_actor'] } } })),
+    ).toBe('people.errors.user_outranks_actor');
+    expect(peopleErrorKey(new HttpErrorResponse({ status: 422, error: { errors: { work_email: ['The work email must be a valid e-mail.'] } } }))).toBe(
+      'people.errors.validation',
+    );
     expect(peopleErrorKey(err(500))).toBe('common.error');
     expect(peopleErrorKey(new Error('x'))).toBe('common.error');
   });

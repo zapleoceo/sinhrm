@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { HiddenChangesLine } from '../../people/hidden-changes';
 import { CHANGEABLE_FIELDS, ChangeRequest, fieldLabelKey } from '../../people/people.model';
 import { PeopleService, peopleErrorKey } from '../../people/people.service';
 import { LeaveRequest } from '../timeoff.model';
@@ -16,7 +17,7 @@ import { PagedList } from '../../../core/ui/table/paged-list';
 /** Approvals inbox of a manager/admin: pending leave requests and personal-data change requests of their people. */
 @Component({
   selector: 'app-approvals-page',
-  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, RequestsList],
+  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, RequestsList, HiddenChangesLine],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -45,6 +46,7 @@ import { PagedList } from '../../../core/ui/table/paged-list';
                   <span class="muted">{{ label(f) | transloco }}: {{ c.changes[f] ?? '—' }}</span>
                 }
               }
+              <app-hidden-changes [fields]="c.hidden_changes" />
               <span class="muted small">{{ c.created_at | date: 'dd.MM.yyyy HH:mm' }}</span>
             </div>
             <button mat-stroked-button type="button" (click)="decide(c, true)"><mat-icon>check</mat-icon>{{ 'timeoff.actions.approve' | transloco }}</button>

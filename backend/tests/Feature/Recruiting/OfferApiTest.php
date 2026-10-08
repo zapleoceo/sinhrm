@@ -111,6 +111,38 @@ final class OfferApiTest extends TestCase
         $this->actingAs($manager)->getJson($url)->assertOk()->assertJsonPath('data.salary', '30000 UAH');
     }
 
+    /** The sent offer becomes a touchpoint on the application: its text must not leak the salary through the timeline. */
+    public function test_sent_offer_text_is_redacted_in_the_timeline_for_non_writers(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $this->actingAs($recruiter)->postJson($url, [
+            'template_id' => $this->template->id, 'position' => 'Manager', 'salary' => '30000 UAH',
+        ])->assertCreated();
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
+        $timeline = '/api/candidates/'.$this->application->candidate_id.'/timeline?channel=email';
+
+        $interviewer = User::factory()->withRole(UserRole::Employee)->create();
+        $this->application->interviewers()->sync([$interviewer->id => ['created_at' => now()]]);
+        foreach ([$this->userWith(UserRole::Viewer, [$this->branch]), $interviewer] as $reader) {
+            $touchpoint = $this->actingAs($reader)->getJson($timeline)->assertOk()
+                ->assertJsonPath('data.0.touchpoint.channel', 'email')
+                ->json('data.0.touchpoint');
+            $this->assertStringNotContainsString('30000 UAH', json_encode($touchpoint, JSON_THROW_ON_ERROR));
+            $this->assertNull($touchpoint['body']);
+            $this->assertSame('offer', $touchpoint['meta']['kind'] ?? null);
+            $this->assertTrue($touchpoint['redacted'] ?? false);
+        }
+
+        $this->actingAs($recruiter)->getJson($timeline)->assertOk()
+            ->assertJsonPath('data.0.touchpoint.redacted', false);
+        $this->assertStringContainsString(
+            '30000 UAH',
+            (string) $this->actingAs($recruiter)->getJson($timeline)->json('data.0.touchpoint.body'),
+        );
+    }
+
     public function test_template_must_be_an_offer_template(): void
     {
         $this->application->update(['stage_id' => $this->stageAt(6)->id]);

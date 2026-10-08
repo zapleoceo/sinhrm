@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Workflows\Executors;
 
 use App\Modules\Integrations\Support\OutboundUrlGuard;
+use App\Modules\Integrations\Support\PinnedTarget;
 use App\Modules\Workflows\Contracts\StepExecutor;
 use App\Modules\Workflows\DTO\StepContext;
 use App\Modules\Workflows\DTO\StepOutcome;
@@ -46,9 +47,9 @@ final readonly class WebhookExecutor implements StepExecutor
         if ($url === null) {
             return StepOutcome::failed('invalid_url');
         }
-        $blocked = $this->guard->check($url);
-        if ($blocked !== null) {
-            return StepOutcome::failed($blocked);
+        $target = $this->guard->inspect($url);
+        if ($target->error !== null) {
+            return StepOutcome::failed($target->error);
         }
         $secret = $this->secrets->get($context->run->template_id);
         if ($secret === null) {
@@ -60,6 +61,7 @@ final readonly class WebhookExecutor implements StepExecutor
             $response = Http::timeout(self::TIMEOUT_SECONDS)
                 ->connectTimeout(self::TIMEOUT_SECONDS)
                 ->withoutRedirecting()
+                ->withOptions($this->requestOptions($target))
                 ->withHeaders([
                     self::SIGNATURE_HEADER => WebhookSecrets::sign($body, $secret),
                     self::EVENT_HEADER => self::EVENT,
@@ -73,6 +75,18 @@ final readonly class WebhookExecutor implements StepExecutor
         return $response->successful()
             ? StepOutcome::done(['http_status' => $response->status()])
             : StepOutcome::failed('http_'.$response->status());
+    }
+
+    /**
+     * curl options that bind the request to the IPs the guard approved, so the name is not looked up again
+     * between the check and the connection (DNS rebinding). The URL keeps the hostname, so the Host header,
+     * SNI and certificate validation are unaffected; redirects stay off (a 302 would be a fresh, unpinned name).
+     *
+     * @return array{allow_redirects: false, curl: array<int, mixed>}
+     */
+    public function requestOptions(PinnedTarget $target): array
+    {
+        return $target->httpOptions();
     }
 
     /** @return array<string, mixed> ids, the step and the employee's work data (no PII tier fields) */

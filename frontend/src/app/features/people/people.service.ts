@@ -15,6 +15,7 @@ import {
   HireResult,
   OrgNode,
   PEOPLE_ERROR_CODES,
+  PeopleErrorCode,
   PeopleQuery,
   PersonOption,
   PickerScope,
@@ -131,12 +132,21 @@ export class PeopleService {
   }
 }
 
-/** i18n key for an error of the People API: known business codes, 403/404/422, otherwise generic. */
+/**
+ * i18n key for an error of the People API: known business codes (body {code}) or a field rule that failed with a
+ * code instead of a sentence (422 {errors: {user_id: ['user_outranks_actor']}}), then 403/404/422, otherwise generic.
+ */
 export function peopleErrorKey(error: unknown): string {
   if (error instanceof HttpErrorResponse) {
-    const code: unknown = (error.error as { code?: unknown } | null)?.code;
-    if (typeof code === 'string' && (PEOPLE_ERROR_CODES as readonly string[]).includes(code)) {
-      return `people.errors.${code}`;
+    const body = error.error as { code?: unknown; errors?: Record<string, unknown> } | null;
+    if (isPeopleErrorCode(body?.code)) {
+      return `people.errors.${body.code}`;
+    }
+    for (const messages of Object.values(body?.errors ?? {})) {
+      const first: unknown = Array.isArray(messages) ? messages[0] : messages;
+      if (isPeopleErrorCode(first)) {
+        return `people.errors.${first}`;
+      }
     }
     if (error.status === 403) {
       return 'people.errors.forbidden';
@@ -149,6 +159,10 @@ export function peopleErrorKey(error: unknown): string {
     }
   }
   return 'common.error';
+}
+
+function isPeopleErrorCode(value: unknown): value is PeopleErrorCode {
+  return typeof value === 'string' && (PEOPLE_ERROR_CODES as readonly string[]).includes(value);
 }
 
 /** Changed fields only (trimmed, empty → null); an empty object means nothing to send. */

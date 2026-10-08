@@ -40,7 +40,7 @@
 - Фронт (2026-10-08): «Погодження» (`approvals.page.ts`) держит заявки на отпуск в `PagedList` вместо своего `load()`.
 - Фронт (2026-10-08): `timeoff.dates.ts` больше не держит свои `toIso/parseIso/addDays` — месяц, выходные и оценка дней считаются через `core/date/iso-day.ts` (UTC-полночь, без сдвига на переходе времени).
 - Фронт (2026-10-08): `LeaveRequestsStore` держит заявки в `PagedList` (`core/ui/table/paged-list.ts`), `CalendarStore` отменяет загрузку прошлого месяца через `LatestRequest` — вместо ручных счётчиков `seq`.
-- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeOffNavBadges` — ключ `timeoff_approvals`: заявки, которые я могу решить (как «Погодження»; своя не считается). `LeaveRequestService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`. Не руководителю — 0 (значка нет).
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeOffNavBadges` — ключ `timeoff_approvals`: заявки, которые я могу решить (как «Погодження»; своя не считается ни у кого, включая админа). `LeaveRequestService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`. Не руководителю — 0 (значка нет).
 Бэкенд — `backend/app/Modules/TimeOff`, маршруты `/api/timeoff/*` (`auth:sanctum` + `EnsureUserIsActive`). Права берутся из
 модуля People (`PeopleScope`, [people.md](people.md)); запись настроек — gate `timeoff-manage` (superadmin, admin, hr_manager — `PeopleScope::isAdmin`, т. е. `UserRole::hrStaff()`).
 
@@ -87,6 +87,13 @@
 Отклонение — только из `pending`. Отмена: сотрудник — ожидающий или ещё не начавшийся согласованный; руководитель/админ —
 любой ожидающий/согласованный; отмена согласованного возвращает `+days` в журнал.
 
+**Своё не решаем (2026-10-08).** Разделение обязанностей из People (`PeopleContext::canDecideFor`, см.
+[people.md](people.md)) действует и здесь, **включая суперадмина**: согласовать или отклонить собственную заявку
+нельзя (403 `forbidden`), своя заявка не попадает ни в `GET approvals`, ни в счётчик бейджа `timeoff_approvals`
+(раньше её там видел админ), свой баланс не корректируется (`POST balances/adjust` → 403). Отмена собственной заявки
+правилами не ограничена: она ничего себе не присуждает, а возвращает дни в журнал — проверка идёт через
+`PeopleContext::hasAuthorityOver`.
+
 **Передача дел (PROD-13, 2026-10-06).** Необязательное `handover_to_employee_id` у заявки любого типа (форма показывает
 его для всех типов — отпуск, больничный и прочие одинаково). Проверка (`EmployeeResolver::handover`, вызывает контроллер
 до создания): правила person-picker — справочник вызывающего (`EmployeeService::list`, scope `employees`, только
@@ -119,13 +126,13 @@
 | `POST holidays`, `PATCH holidays/{id}`, `DELETE holidays/{id}` | admin | `{date Y-m-d, name, branch_id?}` | 201 / 200 / 204 |
 | `GET balances` | сам; `employee_id` — admin или руководитель выше (иначе 403) | `employee_id?` | `[{leave_type, tracked, balance, pending, available, used_this_year, policy}]`, `meta.employee`; нет записи сотрудника → 404 `no_employee` |
 | `GET balances/history` | как выше | `employee_id?, leave_type_id?` | последние 100 строк журнала |
-| `POST balances/adjust` | admin | `{employee_id, leave_type_id (с балансом), delta ≠ 0, comment?}` | 201, новые балансы |
+| `POST balances/adjust` | admin, **кроме своей записи** | `{employee_id, leave_type_id (с балансом), delta ≠ 0, comment?}` | 201, новые балансы; свой `employee_id` → 403 `forbidden` |
 | `GET requests` | любой активный | `employee_id?, status?, leave_type_id?, perPage` | admin — все; остальные — свои и людей ниже; `can_decide`, `can_cancel` в строке |
 | `GET requests/preview` | как создание | те же поля, что у создания | `{days, holidays[], tracked, available, sufficient, overlap}` |
 | `POST requests` | сам; за другого — admin или руководитель выше | `{leave_type_id, starts_on, ends_on, half_day?, comment?, employee_id?, override_balance?, handover_to_employee_id?}` | 201; ошибки — см. «Правила», 422 `invalid_handover` |
 | `GET requests/{id}` | кто видит «работу» сотрудника | — | запрос |
 | `POST requests/{id}/approve\|reject\|cancel` | см. «Правила» | `{comment?}` | 200 / 403 `forbidden` / 409 `invalid_status` / 422 `insufficient_balance` |
-| `GET approvals` | руководитель, admin | — | ожидающие, которые вы можете решить (свои исключены), старые сверху |
+| `GET approvals` | руководитель, admin | — | ожидающие, которые вы можете решить (свои исключены у всех, в том числе у админа), старые сверху |
 | `GET calendar` | любой активный | `from, to` (по умолч. текущий месяц, ≤ 62 дня), `branch_id?` | `{absences[{employee, leave_type, starts_on, ends_on, half_day, status, handover_to}], holidays[]}` — только `approved` и `pending` |
 
 Главная страница: `TimeOffDashboardSection` (контракт `Overview\Contracts\DashboardSection`, [overview.md](overview.md)) →

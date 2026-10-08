@@ -91,6 +91,8 @@ block не получает PAT (403 blocked), после block/unblock — 403 
 Google grant со старой версией отклоняется как oauth_failed.
 
 Google login создаёт remember-token и сохраняет захваченную версию в web session под user lock.
+Cookie «запомнить меня» живёт **14 дней** (`config/auth.php` → `guards.web.remember`, env `AUTH_REMEMBER_MINUTES`),
+а не ~400 дней по умолчанию фреймворка (аудит безопасности 2026-10). Тест — `GoogleCallbackTest::test_remember_cookie_lives_fourteen_days_not_the_framework_default`.
 Поздняя DB-запись старой сессии после block/unblock не восстанавливает доступ: middleware
 отклоняет durable web credential со старым/отсутствующим stamp (401 credentials_revoked).
 Обычный запрос не обновляет stamp. Валидный remember-cookie является новым grant с версией
