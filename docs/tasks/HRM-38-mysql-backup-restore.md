@@ -1,9 +1,9 @@
-# HRM-38 — MySQL 8.4 backup/restore proof
+# HRM-38 - MySQL 8.4 backup/restore proof
 
-## Стан
+## State
 
-- 2026-10-08 UTC. Task HRM-38 is In progress, assigned to the authenticated Jira owner account and executed by Codex. Branch `feat/mysql-backup-restore`, isolated worktree `D:/Projects/sinhrm-wt/mysql-backup`, based on Claude's `feat/mysql-portability` commit `a6db45e3bf9c1d63cca79653826b8bfde020f2c3` (Draft PR #170). Separate Draft PR for this task is pending.
-- Scope: CI-only synthetic MySQL 8.4 logical dump and isolated restore, exact table/count comparison, linked fixture/2 MiB attachment/encrypted-vault checks and DevOps procedure. The workflow contains only the MySQL backup/restore proof.
-- Evidence: local Node orchestration checks passed; PHP, MySQL and Bash integration checks require the repository CI runner. No source or production DB, Vercel configuration, credentials or Claude worktree changed.
-- Pending: CI job and full PR checks on the final SHA, independent review, target IT STEP backup/restore drill and owner RPO/RTO/retention decisions.
-- Next: run CI on a Draft PR, resolve any concrete failures, and record exact run links here or in PR/Jira without changing live infrastructure.
+- 2026-10-08 UTC. In progress on Codex-owned branch `feat/mysql-backup-restore`, isolated worktree `D:/Projects/sinhrm-wt/mysql-backup`. Draft PR [#174](https://github.com/zapleoceo/sinhrm/pull/174) is rebased on MySQL-only main (ADR 0011).
+- Scope: CI-only synthetic MySQL 8.4 logical dump and isolated restore, exact table/count comparison, linked fixture, 2 MiB attachment, encrypted-vault check, and operator runbook. The backup workflow has only one MySQL job.
+- Earlier pre-rebase CI [full](https://github.com/zapleoceo/sinhrm/actions/runs/37736231145) and [backup proof](https://github.com/zapleoceo/sinhrm/actions/runs/37736231034) passed. These runs do not validate the rebased SHA.
+- Current local Node orchestration and MySQL-only guard checks pass. PHP/MySQL/Bash integration checks require repository CI. No production database, Vercel configuration, or other worktree was changed.
+- Pending: final PR CI and independent review, an authorized isolated production-data restore drill, and owner RPO/RTO/retention decisions. The synthetic fixture does not establish complete production recovery.
