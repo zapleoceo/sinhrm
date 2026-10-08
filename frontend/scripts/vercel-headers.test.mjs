@@ -28,3 +28,12 @@ test('CSP keeps scripts strictly on the own origin', () => {
   assert.match(header('Content-Security-Policy'), /script-src 'self';/);
   assert.match(header('Content-Security-Policy'), /frame-ancestors 'none'/);
 });
+
+test('isolation headers: no framing, no cross-origin opener, HSTS (security audit 2026-10)', () => {
+  assert.equal(header('X-Frame-Options'), 'DENY');
+  assert.equal(header('X-Content-Type-Options'), 'nosniff');
+  assert.equal(header('Cross-Origin-Opener-Policy'), 'same-origin');
+  assert.match(header('Strict-Transport-Security'), /max-age=31536000/);
+  assert.match(header('Content-Security-Policy'), /object-src 'none'/);
+  assert.match(header('Content-Security-Policy'), /base-uri 'self'/);
+});
