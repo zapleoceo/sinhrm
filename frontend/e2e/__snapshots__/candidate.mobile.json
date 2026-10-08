@@ -33,6 +33,7 @@
   "link \"Telegram @demo_cand_501\" -> https://t.me/demo_cand_501",
   "link \"user20035@sinhrm.test\" -> mailto:user20035@sinhrm.test",
   "link \"Огляд\" -> /",
+  "link \"Резюме: cv-demo-kovalenko.pdf\" -> /api/applications/1/cv",
   "listbox \"Фільтр каналів\"",
   "option \"E-mail\"",
   "option \"Telegram\"",

@@ -13,6 +13,7 @@ use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\CandidateScreening;
+use App\Modules\Recruiting\Models\CareerSubmission;
 use App\Modules\Recruiting\Models\StageChange;
 use App\Modules\Recruiting\Models\Touchpoint;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,12 +22,13 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Recruiting's share of a candidate's data: profile, profile links, applications with stage history, every
- * touchpoint (messages, calls, notes, meetings) and AI screenings.
+ * touchpoint (messages, calls, notes, meetings), AI screenings and career-site applications (message, consent, CV).
  *
  * Erase keeps what reports count — the candidate row (city, channel, UTM, dates), applications (vacancy, stage,
  * status, reject reason, dates), stage changes and touchpoint rows (channel, direction, author, date) — and wipes
  * the rest: name → "Видалений кандидат #id", contacts, tags, profile links, reject notes, stage-change comments,
- * message bodies and meta (recording links, meeting links, attendees), external ids; AI screenings are deleted.
+ * message bodies and meta (recording links, meeting links, attendees), external ids, career-site messages and CV files;
+ * AI screenings are deleted.
  */
 final readonly class CandidatePersonalData implements PersonalDataProvider, RetentionSource
 {
@@ -104,6 +106,16 @@ final readonly class CandidatePersonalData implements PersonalDataProvider, Rete
                     'questions' => $s->questions ?? [],
                     'created_at' => $s->created_at?->toIso8601String(),
                 ])->all(),
+            // Career-site applications: message, consent time and the CV description (the file is given by the recruiter download).
+            'career_submissions' => CareerSubmission::query()->where('candidate_id', $candidate->id)->orderBy('id')
+                ->get(['id', 'vacancy_id', 'message', 'consent_at', 'cv_filename', 'cv_mime', 'cv_size', 'created_at'])
+                ->map(static fn (CareerSubmission $s): array => [
+                    'vacancy_id' => $s->vacancy_id,
+                    'message' => $s->message,
+                    'consent_at' => $s->consent_at->toIso8601String(),
+                    'cv' => $s->cv_size === null ? null : ['filename' => $s->cv_filename, 'mime' => $s->cv_mime, 'size' => $s->cv_size],
+                    'created_at' => $s->created_at?->toIso8601String(),
+                ])->all(),
         ];
     }
 
@@ -131,6 +143,10 @@ final readonly class CandidatePersonalData implements PersonalDataProvider, Rete
             'touchpoints' => Touchpoint::query()->where('candidate_id', $candidate->id)
                 ->update(['body' => null, 'meta' => null, 'external_id' => null]),
             'screenings' => CandidateScreening::query()->where('candidate_id', $candidate->id)->delete(),
+            // Career-site applications: the message and the CV file (recruiters can download it) go; consent time stays.
+            'career_submissions' => CareerSubmission::query()->where('candidate_id', $candidate->id)
+                ->where(fn (Builder $q): Builder => $q->whereNotNull('message')->orWhereNotNull('cv_size'))
+                ->update(['message' => null, 'cv_filename' => null, 'cv_mime' => null, 'cv_size' => null, 'cv_sha256' => null, 'cv_content' => null]),
         ];
     }
 

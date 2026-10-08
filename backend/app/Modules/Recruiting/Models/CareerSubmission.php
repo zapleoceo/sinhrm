@@ -23,9 +23,13 @@ use Illuminate\Support\Carbon;
  * @property int|null $cv_size
  * @property string|null $cv_sha256
  * @property string|null $cv_content
+ * @property Carbon|null $created_at
  */
 final class CareerSubmission extends Model
 {
+    /** Columns that describe the CV without its body (candidate card); the body is read only by the download. */
+    public const array CV_META = ['id', 'application_id', 'cv_filename', 'cv_mime', 'cv_size', 'created_at'];
+
     protected $fillable = [
         'vacancy_id', 'candidate_id', 'application_id', 'message', 'consent_at', 'ip_hash',
         'cv_filename', 'cv_mime', 'cv_size', 'cv_sha256', 'cv_content',

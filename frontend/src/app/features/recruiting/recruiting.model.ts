@@ -247,6 +247,21 @@ export interface Application {
   route?: RouteStep[];
   /** Contextual role: who interviews this candidate for this vacancy (card only). */
   interviewers?: Ref[];
+  /** Newest CV sent from the career site with this application (card only); null — none. */
+  cv?: ApplicationCv | null;
+}
+
+/** CV metadata of an application; the file itself — {@link applicationCvUrl}. */
+export interface ApplicationCv {
+  filename: string;
+  size: number;
+  mime: string;
+  uploaded_at: string | null;
+}
+
+/** Same-origin download link (cookie session); the API answers with Content-Disposition: attachment. */
+export function applicationCvUrl(applicationId: number): string {
+  return `/api/applications/${applicationId}/cv`;
 }
 
 /** Acquisition channel (tz3; backend Recruiting AcquisitionChannel). utm_rules/costs — managers only. */

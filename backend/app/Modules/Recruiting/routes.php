@@ -110,6 +110,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         ->whereNumber('application')->name('recruiting.applications.offer.send');
     Route::post('applications/{application}/offer/decision', [OfferController::class, 'decision'])
         ->whereNumber('application')->name('recruiting.applications.offer.decision');
+    // CV from the career site (ApplicationVisibility; not visible / no CV → 404). Download::file headers.
+    Route::get('applications/{application}/cv', [ApplicationController::class, 'cv'])
+        ->whereNumber('application')->name('recruiting.applications.cv');
     Route::put('applications/{application}/interviewers', [ApplicationController::class, 'interviewers'])
         ->whereNumber('application')->name('recruiting.applications.interviewers');
     Route::get('recruiting/assignable-users', [ApplicationController::class, 'assignableUsers'])->name('recruiting.assignable-users');
