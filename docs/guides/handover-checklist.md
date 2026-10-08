@@ -69,7 +69,7 @@ Reports, SafeSpeak, Scripts, Time, TimeOff, Users, Workflows. Назначени
 | Резервирование и проверка восстановления (MySQL-доказательство — draft PR #174, PROD-48) | [backup-restore.md](backup-restore.md) |
 | Приёмка пилота | [pilot-acceptance.md](pilot-acceptance.md) |
 
-Замороженный боевой релиз — ветка `legacy/vercel-postgres` (коммит `8875ac4e`). Миграции на целевой площадке
+Замороженный боевой релиз — ветка и коммит указаны в [mysql-cutover.md](mysql-cutover.md#замороженный-боевой-релиз-до-cutover) (коммит `8875ac4e`). Миграции на целевой площадке
 запускает API: `POST /api/ops/migrate` с заголовком `X-Ops-Secret` (или `php artisan migrate --force` на сервере).
 Фоновые задачи — `POST /api/ops/jobs/run` каждые 30 минут (`cron.yml`; на площадке Itstep — их планировщик,
 [ADR 0006](../adr/0006-cron-via-github-actions.md)). Проверка после выкладки — `GET /api/health` (поле `version` = SHA
