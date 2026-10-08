@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Integrations\Definitions;
 
-use App\Modules\Integrations\Contracts\ConnectionChecker;
 use App\Modules\Integrations\DTO\CheckResult;
 use App\Modules\Integrations\DTO\FieldSpec;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Integrations\Enums\IntegrationGroup;
-use App\Modules\Integrations\Support\OutboundUrlGuard;
-use Illuminate\Http\Client\Factory as Http;
-use Throwable;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 
 /**
  * AI Broker (own gateway to LLM providers) and the AI settings of SinHRM: capability, model, daily caps and
@@ -19,7 +17,7 @@ use Throwable;
  * The check calls ONLY the public GET /v1/health without the project key; real jobs are sent by the Ai module
  * (AiBrokerProvider) and only while the global AI switch is on.
  */
-final class AiBrokerDefinition extends AbstractDefinition implements ConnectionChecker
+final class AiBrokerDefinition extends AbstractHttpCheckedDefinition
 {
     public const string DEFAULT_BASE_URL = 'https://aib.zapleo.com';
 
@@ -37,10 +35,6 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
 
     /** Options of the on/off selects (per-purpose switches). */
     public const array SWITCH = ['on', 'off'];
-
-    private const int TIMEOUT_SECONDS = 10;
-
-    public function __construct(private readonly Http $http, private readonly OutboundUrlGuard $guard) {}
 
     public function key(): string
     {
@@ -86,16 +80,9 @@ final class AiBrokerDefinition extends AbstractDefinition implements ConnectionC
     public function check(IntegrationConfig $config): CheckResult
     {
         $url = rtrim($config->setting('base_url') ?? self::DEFAULT_BASE_URL, '/').'/v1/health';
-        $blocked = $this->guard->check($url);
-        if ($blocked !== null) {
-            return CheckResult::error($blocked);
-        }
-
-        try {
-            $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)->acceptJson()->get($url);
-        } catch (Throwable) {
-            // Never the exception text: it may contain the request URL.
-            return CheckResult::error('connection_failed');
+        $response = $this->probe($url, static fn (PendingRequest $r): Response => $r->get($url));
+        if ($response instanceof CheckResult) {
+            return $response;
         }
 
         return $response->successful()

@@ -93,6 +93,11 @@
 (`missing_secret:<имя>`).
 
 ### Защита от SSRF (`Support/OutboundUrlGuard`)
+Проверки «одним HTTP-запросом» (AI Broker, Telegram Business, Viber, WhatsApp Cloud) наследуют
+`Definitions/AbstractHttpCheckedDefinition` (DRY, 2026-10-08): его `probe($url, $send)` — единое место исходящих правил:
+сначала `OutboundUrlGuard` (заблокировано → код, запрос не уходит), без редиректов, таймаут 10 с, `Accept: application/json`,
+любой Throwable → `connection_failed` без текста исключения. Определение само строит URL, добавляет авторизацию и разбирает
+ответ; логика проверок перенесена дословно (`tests/Unit/Integrations/HttpCheckedDefinitionTest`, `MessengerChecksTest`).
 Каждый checker перед любым исходящим запросом прогоняет URL через `OutboundUrlGuard::check()`:
 - только `https`, без логина/пароля в URL и без пробелов (иначе `invalid_url`); поля типа `url` и в API принимают только https;
 - порт только 443, другие — лишь если checker явно их разрешил (иначе `blocked_port`);
