@@ -160,6 +160,7 @@
 
 ### Зависимости через контракты (2026-10-08)
 - `BalanceController`, `LeaveRequestController`, `TimeOffDashboardSection`, `TimeOffNavBadges` и `EmployeeResolver` зависят от контрактов People `PeopleAccess` и `EmployeeLookup`, а не от `PeopleScope`/`EmployeeService`. Тест — `tests/Unit/TimeOff/EmployeeResolverTest.php`.
+- `LeaveCalendarSync` проверяет подключение Календаря через контракт GoogleWorkspace `GoogleConnections`. Тест — `tests/Unit/TimeOff/LeaveCalendarSyncTest.php`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/TimeOff/LeaveRequestApiTest` (401, выходные/праздники/полдня в превью и при создании, праздник

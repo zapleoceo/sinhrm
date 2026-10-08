@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\MailAgent\Services;
 
 use App\Models\User;
+use App\Modules\GoogleWorkspace\Contracts\GoogleConnections;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
-use App\Modules\GoogleWorkspace\Services\GoogleConnectionStore;
 use App\Modules\MailAgent\Contracts\MailLogRepository;
 use App\Modules\MailAgent\Contracts\SenderRuleRepository;
 use App\Modules\MailAgent\Contracts\UnknownSenderRepository;
@@ -24,7 +24,7 @@ use Psr\Log\LoggerInterface;
 final readonly class MailAgentService
 {
     public function __construct(
-        private GoogleConnectionStore $connections,
+        private GoogleConnections $connections,
         private MailLogRepository $log,
         private SenderRuleRepository $rules,
         private UnknownSenderRepository $unknown,

@@ -181,6 +181,9 @@ e-mail / Telegram (глобально) — **matched**, иначе **created** (
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- Другим модулям состояние подключений Google отдаётся контрактом `Contracts\GoogleConnections` (`state`, `connectedBy`; реализация — `Services\GoogleConnectionStore`, биндинг в `GoogleWorkspaceServiceProvider`). Токены и запись подключения остаются внутри модуля. Тест — `tests/Unit/GoogleWorkspace/GoogleConnectionsTest.php`.
+
 ## Как проверить
 Бэкенд (Google везде подменён `Http::fake`, `Http::preventStrayRequests()`; все значения синтетические):
 - `tests/Feature/GoogleWorkspace/GoogleConnectTest` — 401/403; redirect: scopes, `offline`, `consent`, state в сессии,

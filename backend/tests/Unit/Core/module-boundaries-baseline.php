@@ -163,15 +163,9 @@ return [
     'MailAgent/Ai/MailClassificationAiHandler.php' => [
         'App\Modules\Ai\Models\AiRequest',
     ],
-    'MailAgent/Services/MailAgentService.php' => [
-        'App\Modules\GoogleWorkspace\Services\GoogleConnectionStore',
-    ],
     'MailAgent/Services/MailMessageProcessor.php' => [
         'App\Modules\Recruiting\Models\Touchpoint',
         'App\Modules\Recruiting\Services\CandidateService',
-    ],
-    'MailAgent/Services/MailSyncService.php' => [
-        'App\Modules\GoogleWorkspace\Services\GoogleConnectionStore',
     ],
     'Overview/Services/DashboardService.php' => [
         'App\Modules\Recruiting\Models\Application',
@@ -448,9 +442,6 @@ return [
     'TimeOff/Services/EmployeeResolver.php' => [
         'App\Modules\People\Models\Employee',
     ],
-    'TimeOff/Services/LeaveCalendarSync.php' => [
-        'App\Modules\GoogleWorkspace\Services\GoogleConnectionStore',
-    ],
     'TimeOff/Services/LeaveRequestService.php' => [
         'App\Modules\People\Models\Employee',
     ],
@@ -462,9 +453,6 @@ return [
     ],
     'Workflows/DTO/StepContext.php' => [
         'App\Modules\People\Models\Employee',
-    ],
-    'Workflows/Executors/AddCalendarEventExecutor.php' => [
-        'App\Modules\GoogleWorkspace\Services\GoogleConnectionStore',
     ],
     'Workflows/Executors/CreateDocumentExecutor.php' => [
         'App\Modules\Documents\Models\DocumentTemplate',
