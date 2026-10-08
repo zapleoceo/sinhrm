@@ -113,6 +113,7 @@ Scripts; своих таблиц нет. Блоки других модулей 
 
 ### Зависимости через контракты (2026-10-08)
 - `DashboardService` читает задачи пользователя через контракт Scripts `TaskReader::list()` (не через класс `TaskService`).
+- `DashboardService` берёт область видимости через контракт Recruiting `RecruitingAccess`, порог «застоя» — из `ApplicationRepository::STALE_DAYS` (вместо `StalenessService::DEFAULT_DAYS`). Тест — `tests/Unit/Overview/DashboardContractsTest.php` (главная собирается из ответов контрактов, без БД).
 
 ## Как проверить
 `tests/Feature/TimeOff/LeaveRequestApiTest::test_dashboard_shows_who_is_out_and_my_approvals` — блок `timeoff`.

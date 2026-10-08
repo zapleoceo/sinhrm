@@ -236,6 +236,7 @@ viewer — например, новый сотрудник) и, как рань�
 ### Зависимости через контракты (2026-10-08)
 - Задачи другие модули создают, закрывают и читают только через контракты: `Contracts\TaskScheduler` (`schedule`, `closeByRule`, плюс `scheduleNewApplicantCall` и `setDone`) и `Contracts\TaskReader` (`list` для главной страницы). Оба реализует `Services\TaskService`, биндинги — `ScriptsServiceProvider`. Импорт класса `TaskService` из чужого модуля остался у `HiringRequests\Services\ApproverNotifier` (`closeByRulePrefix`): файл меняет параллельная ветка DRY-правок. Тест — `tests/Unit/Scripts/TaskContractsTest.php`.
 - `AiScriptEvaluator` зовёт ИИ через контракт Ai `AiGateway`. Тест — `tests/Unit/Scripts/ScriptsAiGatewayTest.php`.
+- `TaskService`, `ScriptReportService`, `CandidateScriptController` и gate `scripts-manage` в `ScriptsServiceProvider` берут права и область Recruiting через контракт `RecruitingAccess`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Scripts/ScriptsApiTest` (права: recruiter/viewer только читают; версии: черновик → публикация →

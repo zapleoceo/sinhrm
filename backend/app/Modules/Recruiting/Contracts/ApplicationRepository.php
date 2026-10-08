@@ -13,6 +13,9 @@ use Illuminate\Support\Carbon;
 
 interface ApplicationRepository
 {
+    /** Days without contact after which an active application is stale (board highlight, /stale, home page). */
+    public const int STALE_DAYS = 3;
+
     public function find(int $id): ?Application;
 
     public function findFor(int $candidateId, int $vacancyId): ?Application;

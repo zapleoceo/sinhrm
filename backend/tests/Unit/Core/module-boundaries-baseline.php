@@ -175,8 +175,6 @@ return [
     ],
     'Overview/Services/DashboardService.php' => [
         'App\Modules\Recruiting\Models\Application',
-        'App\Modules\Recruiting\Services\RecruitingScope',
-        'App\Modules\Recruiting\Services\StalenessService',
         'App\Modules\Scripts\Models\Task',
     ],
     'Overview/Services/DayRouteService.php' => [
@@ -374,16 +372,12 @@ return [
     'Reports/Definitions/SourceEffectivenessReport.php' => [
         'App\Modules\Recruiting\Services\ReportService',
     ],
-    'Reports/Services/ScopedContextFactory.php' => [
-        'App\Modules\Recruiting\Services\RecruitingScope',
-    ],
     'Scripts/Ai/ScriptEvaluationAiHandler.php' => [
         'App\Modules\Ai\Models\AiRequest',
     ],
     'Scripts/Http/Controllers/CandidateScriptController.php' => [
         'App\Modules\Recruiting\Models\Candidate',
         'App\Modules\Recruiting\Models\Touchpoint',
-        'App\Modules\Recruiting\Services\RecruitingScope',
     ],
     'Scripts/Http/Controllers/ScriptReportController.php' => [
         'App\Modules\Recruiting\Http\Requests\ReportRequest',
@@ -396,20 +390,11 @@ return [
         'App\Modules\Recruiting\Models\Application',
         'App\Modules\Recruiting\Models\Candidate',
     ],
-    'Scripts/Providers/ScriptsServiceProvider.php' => [
-        'App\Modules\Recruiting\Services\RecruitingScope',
-    ],
     'Scripts/Services/AiScriptEvaluator.php' => [
         'App\Modules\Recruiting\Models\Touchpoint',
     ],
     'Scripts/Services/EvaluationService.php' => [
         'App\Modules\Recruiting\Models\Touchpoint',
-    ],
-    'Scripts/Services/ScriptReportService.php' => [
-        'App\Modules\Recruiting\Services\RecruitingScope',
-    ],
-    'Scripts/Services/TaskService.php' => [
-        'App\Modules\Recruiting\Services\RecruitingScope',
     ],
     'Scripts/Services/TemplateService.php' => [
         'App\Modules\Recruiting\Models\Candidate',

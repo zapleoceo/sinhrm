@@ -151,6 +151,9 @@ count/sum, `none` для avg; сырые строки — только коло�
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `ScopedContextFactory` строит область отчёта из контрактов People `PeopleAccess` и Recruiting `RecruitingAccess`, а не из классов `PeopleScope`/`RecruitingScope`. Определения отчётов (`Definitions/*`) по-прежнему импортируют сервисы чужих модулей: их параллельно меняет ветка DRY-правок. Тест — `tests/Unit/Reports/ScopedContextFactoryTest.php`.
+
 ## Как проверить
 `php artisan test --filter=Reports` — состав каталога по ролям (26 отчётов у админа, включая `gender_pay_gap`), область People и
 филиалов, PII (`age`, колонки конструктора), белый список (422 на неизвестные колонки/наборы/операторы/агрегаты),

@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
 final readonly class StalenessService
 {
     /** Default threshold used by the board highlighting and GET /api/recruiting/stale. */
-    public const int DEFAULT_DAYS = 3;
+    public const int DEFAULT_DAYS = ApplicationRepository::STALE_DAYS;
 
     public const int LIMIT = 200;
 

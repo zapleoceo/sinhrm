@@ -23,6 +23,7 @@ use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\HiringTeamRepository;
 use App\Modules\Recruiting\Contracts\PersonalBoardRepository;
 use App\Modules\Recruiting\Contracts\PipelineRepository;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
 use App\Modules\Recruiting\Contracts\ReportRepository;
 use App\Modules\Recruiting\Contracts\ScreeningRepository;
 use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
@@ -94,6 +95,8 @@ final class RecruitingServiceProvider extends ModuleServiceProvider
         $this->app->bind(HiringTeamRepository::class, EloquentHiringTeamRepository::class);
         $this->app->bind(TouchpointRepository::class, EloquentTouchpointRepository::class);
         $this->app->bind(PersonalBoardRepository::class, EloquentPersonalBoardRepository::class);
+        // Visibility and rights for other modules (Scripts, Reports, Overview) — docs/architecture/overview.md.
+        $this->app->bind(RecruitingAccess::class, RecruitingScope::class);
         $this->app->bind(ReportRepository::class, QueryReportRepository::class);
         $this->app->bind(TouchpointIngestor::class, MatchingTouchpointIngestor::class);
         // Replaced by the Scripts module (script evaluations on timeline items).

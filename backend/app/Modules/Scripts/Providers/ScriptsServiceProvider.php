@@ -10,9 +10,9 @@ use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
 use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
 use App\Modules\Recruiting\Events\TouchpointRecorded;
-use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Scripts\Ai\ScriptEvaluationAiHandler;
 use App\Modules\Scripts\Ai\ScriptEvaluationPrompt;
 use App\Modules\Scripts\Contracts\EvaluationRepository;
@@ -75,7 +75,7 @@ final class ScriptsServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         Gate::policy(Task::class, TaskPolicy::class);
-        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(RecruitingScope::class)->canManage($user));
+        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(RecruitingAccess::class)->canManage($user));
 
         Event::listen(TouchpointRecorded::class, EvaluateRecordedTouch::class);
     }

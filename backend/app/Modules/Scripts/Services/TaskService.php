@@ -6,7 +6,7 @@ namespace App\Modules\Scripts\Services;
 
 use App\Models\User;
 use App\Modules\Core\Support\UserTime;
-use App\Modules\Recruiting\Services\RecruitingScope;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
 use App\Modules\Scripts\Contracts\TaskReader;
 use App\Modules\Scripts\Contracts\TaskRepository;
 use App\Modules\Scripts\Contracts\TaskScheduler;
@@ -36,7 +36,7 @@ final readonly class TaskService implements TaskReader, TaskScheduler
 
     public function __construct(
         private TaskRepository $tasks,
-        private RecruitingScope $scope,
+        private RecruitingAccess $scope,
         private Dispatcher $events,
     ) {}
 

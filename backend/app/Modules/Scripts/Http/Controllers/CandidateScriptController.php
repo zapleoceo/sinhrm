@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Scripts\Http\Controllers;
 
 use App\Modules\Core\Http\Concerns\ResolvesActor;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
 use App\Modules\Recruiting\Models\Candidate;
 use App\Modules\Recruiting\Models\Touchpoint;
-use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Scripts\Http\Resources\EvaluationResource;
 use App\Modules\Scripts\Services\EvaluationService;
 use App\Modules\Scripts\Services\TemplateService;
@@ -23,7 +23,7 @@ final class CandidateScriptController
     public function __construct(
         private readonly TemplateService $templates,
         private readonly EvaluationService $evaluations,
-        private readonly RecruitingScope $scope,
+        private readonly RecruitingAccess $scope,
     ) {}
 
     /** GET /api/candidates/{candidate}/templates — same visibility as the card. */
