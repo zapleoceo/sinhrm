@@ -95,3 +95,25 @@ production backup, его свежесть, полный охват данных
 `synthetic-mysql-transfer` in `.github/workflows/backup-restore.yml` uses disposable PostgreSQL 17 and MySQL 8.4 service databases and one generated application key. It migrates both schemas, copies a synthetic linked fixture without clearing either database, and checks row counts, foreign keys, IDs, Unicode/JSON, long text, the full 2 MiB database attachment and its SHA-256, and encrypted-vault ciphertext. It also replays one new candidate from the target to the retained source and advances the source sequence. The script accepts only fixed local CI databases and does not accept production connection strings.
 
 This is a compatibility rehearsal. A live cutover still needs verified source backup/restore, target version and TLS checks, a complete data comparison, write quiescence or change capture, and a rollback plan covering updates and deletes as well as new rows. Do not run a reset or point Vercel at the target based on this CI job alone.
+
+## MySQL 8.4 synthetic backup and isolated restore (HRM-38)
+
+The `synthetic-mysql-restore` job in `backup-restore.yml` runs only against the fixed disposable MySQL 8.4 service. It migrates an empty source, generates one CI `APP_KEY`, seeds linked recruiting and employee rows, a 2 MiB database attachment, and an encrypted `integration_secrets` value. `mysqldump` uses the matching service client with `--single-transaction --routines --triggers --events --hex-blob --no-tablespaces --set-gtid-purged=OFF`. The job records exact per-table row counts, creates a separate target database, removes the synthetic source, restores the dump, compares the table/count inventory, and checks relationships, foreign-key cascade, next `AUTO_INCREMENT`, attachment bytes/SHA-256 and decryption under the unchanged key. The dump and inventory files are removed by a shell trap and are never uploaded as artifacts. The fixed host/database/CI guards reject production URLs and local execution.
+
+This job proves a synthetic logical dump and restore, not a production backup, PITR, RPO/RTO, or a Neon-to-MySQL transfer. Keep the PostgreSQL proof during the dual-support period. Before using the procedure on IT STEP, DevOps must confirm MySQL 8.4, InnoDB-only tables or a write/DDL freeze for a consistent snapshot, backup privileges (including routines/triggers), TLS certificate validation, encrypted storage and retention, the separate restore destination, operator roles, and the owner-approved RPO/RTO. Never run this CI script against a live database.
+
+For a real drill, use a protected client option file supplied by IT STEP's secret manager (mode `0600`), with separate source and restore accounts. Confirm the source and target host/database names independently before running commands. Run the matching MySQL 8.4 client on a trusted host, with server certificate validation required by IT STEP. A representative logical backup and isolated restore are:
+
+```bash
+# Paths, endpoints and database names come from the approved runbook; no passwords on the command line.
+umask 077
+mysqldump --defaults-extra-file="$SOURCE_CLIENT_CNF" --single-transaction --routines --triggers --events \
+  --hex-blob --no-tablespaces --set-gtid-purged=OFF --default-character-set=utf8mb4 \
+  --result-file="$BACKUP_FILE" "$SOURCE_DATABASE"
+sha256sum "$BACKUP_FILE" > "$BACKUP_SHA_FILE"
+sha256sum --check "$BACKUP_SHA_FILE"
+# Provision a NEW isolated restore database through the approved operator workflow first.
+mysql --defaults-extra-file="$RESTORE_CLIENT_CNF" --database="$RESTORE_DATABASE" < "$BACKUP_FILE"
+```
+
+Do not use `--add-drop-database`, `--all-databases`, `--force`, or a restore target that is in use. `--defaults-extra-file` must be the first client option. Verify exact table/row counts, primary/foreign keys, next auto-increments, attachment bytes and SHA-256, and encrypted-vault decryption with the retained `APP_KEY` in the isolated restore. Compare the measured elapsed time and restore point with the approved RTO/RPO; preserve the source and record operator, backup hash, MySQL version, test results and exceptions without logging personal data or secrets. The live cutover still requires the separate HRM-37 transfer and rollback rehearsal.

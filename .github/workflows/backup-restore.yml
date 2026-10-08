@@ -67,6 +67,47 @@ jobs:
           POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: bash scripts/backup-restore-proof.sh
 
+  synthetic-mysql-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.4
+        env: { MYSQL_ROOT_PASSWORD: root, MYSQL_DATABASE: app_mysql_dump_source, MYSQL_USER: app, MYSQL_PASSWORD: app }
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: app_mysql_dump_source
+      DB_USERNAME: app
+      DB_PASSWORD: app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 24 }
+      - name: Safety and orchestration checks
+        run: node --test scripts/backup-restore-proof.test.mjs
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: '8.4', extensions: 'pdo_mysql, intl, sodium', coverage: none }
+      - uses: actions/cache/restore@v6
+        with:
+          path: backend/vendor
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+      - name: Install locked dependencies
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Create a fresh synthetic encryption key
+        working-directory: backend
+        run: cp .env.example .env && php artisan key:generate
+      - name: Dump and restore isolated MySQL 8.4 database
+        env:
+          MYSQL_CONTAINER: ${{ job.services.mysql.id }}
+        run: bash scripts/backup-restore-proof-mysql.sh
+
   synthetic-mysql-transfer:
     runs-on: ubuntu-latest
     timeout-minutes: 20
