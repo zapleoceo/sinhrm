@@ -99,7 +99,7 @@ final class ErrorLogTest extends TestCase
         Carbon::setTestNow('2026-10-15 00:00:00');
         $recorder->recordClient('TypeError', 'fresh', 'main.js:2:1', '/b', null);
 
-        $this->assertSame(['errors_pruned' => 1], (new ErrorLogPruneJob)->run(Carbon::parse('2026-10-20 12:00:00')));
+        $this->assertSame(['errors_pruned' => 1], app(ErrorLogPruneJob::class)->run(Carbon::parse('2026-10-20 12:00:00')));
         $this->assertSame(['fresh'], ErrorEvent::query()->pluck('message')->all());
     }
 

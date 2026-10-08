@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Observability\Services;
 
 use App\Modules\Integrations\Support\SecretScrubber;
+use App\Modules\Observability\Contracts\ErrorEventRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -26,7 +26,11 @@ final class ErrorRecorder
 
     private bool $recording = false;
 
-    public function __construct(private readonly Application $app, private readonly SecretScrubber $scrubber) {}
+    public function __construct(
+        private readonly Application $app,
+        private readonly SecretScrubber $scrubber,
+        private readonly ErrorEventRepository $events,
+    ) {}
 
     /** Unhandled server exception (the exception reporter in bootstrap/app.php). */
     public function recordException(Throwable $e): void
@@ -82,15 +86,7 @@ final class ErrorRecorder
             'updated_at' => $now,
         ];
         // One statement: a new group, or bump the existing one (and reopen it if it was resolved).
-        DB::table('error_events')->upsert([$row], ['fingerprint'], [
-            'count' => DB::raw('error_events.count + 1'),
-            'message' => $clean,
-            'route' => $route,
-            'last_user_id' => $userId,
-            'last_seen_at' => $now,
-            'resolved_at' => null,
-            'updated_at' => $now,
-        ]);
+        $this->events->upsertGroup($row);
     }
 
     private function relativeFile(string $file): string

@@ -17,6 +17,11 @@
 (`errors.prune`, 30 дней), `Http\Controllers\ErrorLogController` (`/api/errors/*`), фронт —
 `features/observability/errors.page.ts`, `core/errors/*`.
 
+Доступ к таблице `error_events` — только через `Contracts\ErrorEventRepository` (реализация
+`Repositories\EloquentErrorEventRepository`, биндинг в `ObservabilityServiceProvider`): контроллер (список, карточка,
+«решено»), `ErrorRecorder` (один upsert группы по отпечатку) и `ErrorLogPruneJob` (удаление групп старше 30 дней)
+сами SQL не пишут. Тест делегирования и биндинга — `tests/Unit/Observability/ErrorEventRepositoryTest.php`.
+
 Модуль базовый (`$coreModule = true`, [modules-access.md](modules-access.md)): на странице «Модулі» его нельзя
 выключить. Причина — `POST /api/errors/client` принимает отчёты от каждого вошедшего пользователя при любой роли;
 сам журнал и так закрыт для всех, кроме суперадмина, а `errors.prune` работает всегда.
