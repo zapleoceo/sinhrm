@@ -376,6 +376,8 @@
       "move": "Move",
       "stale": "No contact for 3+ days",
       "rejectedFor": "Rejection reason",
+      "cv": "CV",
+      "cvHint": "CV from the career site application — download",
       "noApplications": "Not added to any vacancy yet",
       "timeline": "Touches",
       "filter": "Channel filter",

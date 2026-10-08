@@ -2,6 +2,7 @@
 # Path ids below are placeholders — replace with real ids from a list call.
 @rejectReason = 1
 @channel = 1
+@application = 1
 # Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
 # Full list of Recruiting operations: /api/docs (tag "Recruiting").
 
@@ -140,3 +141,10 @@ Content-Type: application/json
     "title": "Example title",
     "branch_id": 1
 }
+
+### GET /api/applications/{application}/cv — the CV sent from the career site (newest), as an attachment
+# 200: Content-Disposition: attachment; X-Content-Type-Options: nosniff; Cache-Control: private, no-store;
+# Content-Type detected from the bytes (PDF/DOC/DOCX). Application outside your scope or no CV → 404, no session → 401.
+# The candidate card (GET /api/candidates/{id}) lists the metadata in applications[].cv {filename, size, mime, uploaded_at}.
+GET {{host}}/api/applications/{{application}}/cv
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

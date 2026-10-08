@@ -119,7 +119,7 @@ Recruiting берёт шаблоны через контракт `Contracts\Docu
 **Вид (рестайл C «Маршрут», 2026-10-02).** Статус документа — пилюля `.app-pill` (`DOCUMENT_STATUS_TONE`: черновик/архив — пунктирный ○, отправлен ◆ warn, подписан ● good, отклонён ■ bad); архивный документ — приглушённое название без потери контраста (не opacity); кнопка-название в профиле — 44px на телефоне; пустой список — `.app-empty` (пунктирная ветка). Тест вида — `features/documents/documents.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
 ### Общие хелперы Core (2026-10-02)
-- скачивание файла документа — `Core\Http\Responses\Download::file()`: те же заголовки, что раньше (attachment с ASCII-именем и `filename*`, `nosniff`, `private, no-store`, `Content-Length`); тот же хелпер у вложений Desk;
+- скачивание файла документа — `Core\Http\Responses\Download::file()`: те же заголовки, что раньше (attachment с ASCII-именем и `filename*`, `nosniff`, `private, no-store`, `Content-Length`); тот же хелпер у вложений Desk и у CV отклика со страницы вакансий (`GET /api/applications/{id}/cv`, [recruiting.md](recruiting.md));
 - gate `documents-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 

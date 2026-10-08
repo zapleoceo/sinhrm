@@ -83,6 +83,14 @@
             </mat-menu>
           }
         </div>
+        @if (app.cv; as cv) {
+          <p class="cv">
+            <a [href]="cvUrl(app.id)" download [matTooltip]="'recruiting.card.cvHint' | transloco"
+              ><mat-icon inline>description</mat-icon>{{ 'recruiting.card.cv' | transloco }}: {{ cv.filename }}</a
+            >
+            <span class="muted mono">{{ size(cv.size) }}</span>
+          </p>
+        }
         <app-interviewers-panel [application]="app" [canEdit]="canWrite()" (changed)="store.refresh()" />
         @if (canWrite()) {
           <app-offer-panel [application]="app" />

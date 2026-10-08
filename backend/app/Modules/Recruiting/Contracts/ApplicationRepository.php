@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Contracts;
 
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\CareerSubmission;
 use App\Modules\Recruiting\Models\Offer;
 use App\Modules\Recruiting\Models\StageChange;
 use Illuminate\Database\Eloquent\Collection;
@@ -34,6 +35,12 @@ interface ApplicationRepository
 
     /** @param  array<string, mixed>  $attributes */
     public function recordStageChange(array $attributes): StageChange;
+
+    /** The application is in the user's recruiting scope (ApplicationVisibility: branch, hiring manager, interviewer). */
+    public function isVisible(int $applicationId, Scope $scope): bool;
+
+    /** Newest career-site submission of the application that carries a CV (with the body), or null. */
+    public function latestCv(int $applicationId): ?CareerSubmission;
 
     /** The offer of the application (at most one). */
     public function offerFor(int $applicationId): ?Offer;

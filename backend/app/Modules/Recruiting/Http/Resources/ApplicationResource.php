@@ -13,8 +13,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Carbon;
 
 /**
- * An application; with candidate (board, stale list), with vacancy/stage (candidate card), and — when stage changes are
- * loaded — the ROUTE: every stage passed with time spent on it.
+ * An application; with candidate (board, stale list), with vacancy/stage (candidate card), the career-site CV
+ * metadata (candidate card) and — when stage changes are loaded — the ROUTE: every stage passed with time spent on it.
  *
  * @mixin Application
  */
@@ -58,6 +58,16 @@ final class ApplicationResource extends JsonResource
         }
         if ($this->relationLoaded('interviewers')) {
             $data['interviewers'] = $this->interviewers->map(static fn (User $u): array => ['id' => $u->id, 'name' => $u->name])->values()->all();
+        }
+        if ($this->relationLoaded('cvSubmissions')) {
+            // Candidate card: the newest career-site CV (download: GET /applications/{id}/cv); no body here.
+            $cv = $this->cvSubmissions->first();
+            $data['cv'] = $cv === null ? null : [
+                'filename' => $cv->cv_filename,
+                'size' => $cv->cv_size,
+                'mime' => $cv->cv_mime,
+                'uploaded_at' => $cv->created_at?->toIso8601String(),
+            ];
         }
         if ($this->relationLoaded('stage')) {
             $data['stage'] = new StageResource($this->stage);
