@@ -8,9 +8,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { GridRow, TIMESHEET_STATUS_TONE, TimeWeek, addDays, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
+import { GridRow, TIMESHEET_STATUS_TONE, TimeWeek, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
 import { toIsoDate } from '../../core/date/iso-date';
+import { addIsoDays } from '../../core/date/iso-day';
 import { WeekPicker } from './week-picker';
 
 /**
@@ -182,7 +183,7 @@ export class MyWeekPage {
   protected readonly rows = signal<GridRow[]>([]);
   protected readonly busy = signal(false);
   protected readonly weekStart = computed(() => mondayOf(this.week() ?? toIsoDate(new Date())));
-  protected readonly weekEnd = computed(() => addDays(this.weekStart(), 6));
+  protected readonly weekEnd = computed(() => addIsoDays(this.weekStart(), 6));
   protected readonly editable = computed(() => this.data()?.can.edit ?? false);
   protected readonly totalsByDay = computed(() => dayTotals(this.rows()));
   protected readonly totals = computed(() => gridTotals(this.rows(), this.data()?.days ?? []));

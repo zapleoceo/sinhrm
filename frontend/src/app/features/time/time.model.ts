@@ -1,3 +1,5 @@
+import { addIsoDays, isoWeekday } from '../../core/date/iso-day';
+
 /** Types and pure helpers of the Time API (backend app/Modules/Time). */
 
 export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
@@ -90,20 +92,14 @@ export interface GridRow {
 
 export const TIME_ERROR_CODES = ['no_employee', 'not_editable', 'invalid_status', 'outside_week', 'day_overflow'] as const;
 
-/** Y-m-d of the Monday of the week containing the date (local calendar, no timezone shift). */
+/** Y-m-d of the Monday of the week containing the date (calendar day arithmetic, no timezone shift). */
 export function mondayOf(date: string): string {
-  const [y, m, d] = date.split('-').map(Number);
-  const day = new Date(Date.UTC(y, m - 1, d));
-  const iso = (day.getUTCDay() + 6) % 7;
-  day.setUTCDate(day.getUTCDate() - iso);
-  return day.toISOString().slice(0, 10);
+  return addIsoDays(date, -((isoWeekday(date) + 6) % 7));
 }
 
 /** Y-m-d shifted by n weeks. */
 export function addWeeks(date: string, n: number): string {
-  const [y, m, d] = date.split('-').map(Number);
-  const day = new Date(Date.UTC(y, m - 1, d + n * 7));
-  return day.toISOString().slice(0, 10);
+  return addIsoDays(date, n * 7);
 }
 
 /** Entries → grid rows grouped by project/category/note (a new row per distinct line). */
@@ -128,7 +124,7 @@ export function entriesFromRows(rows: readonly GridRow[], weekStart: string): Ti
   for (const row of rows) {
     row.hours.forEach((h, i) => {
       if (h > 0) {
-        out.push({ date: addDays(weekStart, i), hours: round2(h), project: row.project.trim() || null, category: row.category.trim() || null, note: row.note.trim() || null });
+        out.push({ date: addIsoDays(weekStart, i), hours: round2(h), project: row.project.trim() || null, category: row.category.trim() || null, note: row.note.trim() || null });
       }
     });
   }
@@ -151,12 +147,6 @@ export function gridTotals(rows: readonly GridRow[], days: readonly TimeDay[]): 
   const expected = round2(days.reduce((a, d) => a + d.expected, 0));
   const absence = round2(days.reduce((a, d) => a + d.absence, 0));
   return { expected, worked, overtime: round2(Math.max(0, worked - expected)), missing: round2(Math.max(0, expected - worked)), absence };
-}
-
-/** Y-m-d shifted by n days. */
-export function addDays(date: string, n: number): string {
-  const [y, m, d] = date.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
 function round2(n: number): number {

@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { Subject, of, throwError } from 'rxjs';
 import { CalendarStore } from './calendar/calendar.store';
 import { LeaveRequestsStore } from './leave-requests.store';
-import { addDays, calendarRows, estimateDays, isWeekend, monthDays, monthRange, shiftMonth } from './timeoff.dates';
+import { calendarRows, estimateDays, isWeekend, monthDays, monthRange, shiftMonth } from './timeoff.dates';
 import { Absence, LeaveRequest } from './timeoff.model';
 import { TimeOffService, timeoffErrorKey } from './timeoff.service';
 
@@ -27,7 +27,9 @@ describe('timeoff dates', () => {
     expect(monthDays('2026-10-05').length).toBe(31);
     expect(shiftMonth('2026-12-15', 1)).toBe('2027-01-01');
     expect(shiftMonth('2026-01-31', -1)).toBe('2025-12-01');
-    expect(addDays('2026-03-28', 2)).toBe('2026-03-30');
+    // The month of the spring DST switch (29.03) still has 31 days and ends on the 31st.
+    expect(monthRange('2026-03-29')).toEqual({ from: '2026-03-01', to: '2026-03-31' });
+    expect(monthDays('2026-03-01').at(-1)).toBe('2026-03-31');
     expect(isWeekend('2026-10-17')).toBe(true);
     expect(isWeekend('2026-10-16')).toBe(false);
   });

@@ -30,6 +30,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 
 **Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/TimeException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
+- Фронт (2026-10-08): `mondayOf`/`addWeeks` (`time.model.ts`) и конец недели (`my-week.page.ts`, `week-picker.ts`) считаются общими `addIsoDays`/`isoWeekday` из `core/date/iso-day.ts`; своя копия `addDays` удалена.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeNavBadges` — ключ `time_approvals`: отправленные табели, которые я могу решить (как «Погодження табелів»). `TimesheetService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`.
 Бэкенд — `backend/app/Modules/Time`, маршруты `/api/time/*`; доступ — `People\Services\PeopleScope` (`PeopleContext`:
 `canSeeJob`, `canDecideFor`, `isSelf`), gate `time-manage` (админ) для изменения графиков.

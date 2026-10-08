@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { TimeDay, addDays, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
+import { TimeDay, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
 
 const day = (date: string, expected: number, extra: Partial<TimeDay> = {}): TimeDay => ({
@@ -64,7 +64,8 @@ describe('time grid helpers', () => {
     expect(mondayOf('2026-10-11')).toBe('2026-10-05');
     expect(mondayOf('2026-10-05')).toBe('2026-10-05');
     expect(addWeeks('2026-10-05', -1)).toBe('2026-09-28');
-    expect(addDays('2026-10-05', 6)).toBe('2026-10-11');
+    expect(addWeeks('2026-03-23', 1)).toBe('2026-03-30'); // across the spring DST switch
+    expect(mondayOf('2026-01-01')).toBe('2025-12-29'); // the week starts in the previous year
   });
 
   it('round-trips entries through grid rows and totals overtime', () => {
