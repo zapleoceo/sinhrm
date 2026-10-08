@@ -37,6 +37,8 @@ final class DocumentVariables
     /** @return array<string, string> fictional values for the editor preview (public repository: synthetic only) */
     public static function sample(Carbon $today): array
     {
+        $today = UserTime::now($today); // preview dates are the user's (Kyiv) calendar, like {Сьогодні}
+
         return [
             DocumentVariable::FullName->value => 'Олена Приклад',
             DocumentVariable::FirstName->value => 'Олена',

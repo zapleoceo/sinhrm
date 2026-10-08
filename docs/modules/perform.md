@@ -162,6 +162,7 @@ hidden_reason: "anonymity"}`, без баллов и комментариев. �
 
 ### Общие хелперы Core (2026-10-02)
 - gate `perform-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Комментарий `PerformServiceProvider::MANAGE` исправлен на фактический набор: HR staff (superadmin, admin, hr_manager), 2026-10-08. Аудит дат: в Perform только моменты (`activated_at`, `closed_at`, `submitted_at`) и даты `due_on`, введённые человеком — UTC-«сегодня» не используется.
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (в базовом `PerformController` он `protected` — через алиас трейта).
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».

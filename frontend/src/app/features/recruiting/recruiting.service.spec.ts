@@ -4,6 +4,10 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { RecruitingService, duplicateOf, recruitingErrorKey } from './recruiting.service';
 import { toParams } from '../../core/api/http-params';
 import { canWriteRecruiting, isRecruitingAdmin } from './recruiting.access';
+import { RECRUITING_ERROR_CODES } from './recruiting.model';
+import uk from '../../../../public/i18n/uk.json';
+import ru from '../../../../public/i18n/ru.json';
+import en from '../../../../public/i18n/en.json';
 
 const EMPTY = { data: [], meta: { current_page: 1, per_page: 50, total: 0, last_page: 1 } };
 
@@ -141,6 +145,21 @@ describe('recruiting error helpers', () => {
     expect(recruitingErrorKey(err(409, { code: 'duplicate_candidate' }))).toBe('recruiting.errors.duplicate_candidate');
     expect(recruitingErrorKey(err(403, null))).toBe('recruiting.errors.forbidden');
     expect(recruitingErrorKey(err(404, null))).toBe('recruiting.errors.generic');
+  });
+
+  it('maps the offer errors (422 offer_too_long with max_bytes, template_not_offer) to their own texts', () => {
+    expect(recruitingErrorKey(err(422, { code: 'offer_too_long', max_bytes: 65535 }))).toBe('recruiting.errors.offer_too_long');
+    expect(recruitingErrorKey(err(422, { code: 'template_not_offer' }))).toBe('recruiting.errors.template_not_offer');
+  });
+
+  it('has a text for every error code in uk, ru and en', () => {
+    for (const [lang, dict] of Object.entries({ uk, ru, en })) {
+      const errors = (dict as { recruiting: { errors: Record<string, string> } }).recruiting.errors;
+      for (const code of RECRUITING_ERROR_CODES) {
+        expect(errors[code], `${lang}: recruiting.errors.${code}`).toBeTruthy();
+      }
+    }
+    expect(uk.recruiting.errors.offer_too_long).toContain('64');
   });
 
   it('extracts the existing candidate of a duplicate', () => {

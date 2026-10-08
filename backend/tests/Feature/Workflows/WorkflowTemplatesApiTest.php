@@ -11,7 +11,7 @@ use Tests\Support\PeopleFixtures;
 use Tests\Support\WorkflowFixtures;
 use Tests\TestCase;
 
-/** Templates API: admin-only CRUD with inline steps, per-action config validation, reorder, webhook key. */
+/** Templates API: HR staff CRUD with inline steps, per-action config validation, reorder, webhook key. */
 final class WorkflowTemplatesApiTest extends TestCase
 {
     use PeopleFixtures, RefreshDatabase, WorkflowFixtures;
@@ -28,6 +28,15 @@ final class WorkflowTemplatesApiTest extends TestCase
             $this->actingAs($user)->postJson('/api/workflows/templates', $this->payload())->assertForbidden();
             $this->actingAs($user)->postJson('/api/workflows/runs', [])->assertForbidden();
         }
+    }
+
+    /** The gate is HR staff (UserRole::hrStaff()): hr_manager manages templates as admin does. */
+    public function test_hr_manager_manages_templates(): void
+    {
+        $hr = $this->login(UserRole::HrManager);
+        $this->actingAs($hr)->postJson('/api/workflows/templates', $this->payload())->assertCreated();
+        $this->actingAs($hr)->getJson('/api/workflows/templates')->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($this->login(UserRole::Employee))->getJson('/api/workflows/templates')->assertForbidden();
     }
 
     public function test_admin_creates_updates_and_lists_a_template_with_steps(): void

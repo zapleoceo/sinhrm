@@ -479,7 +479,9 @@
       "forbidden": "Not allowed",
       "validation": "Check the fields",
       "generic": "Action failed",
-      "channel_inactive": "The channel is inactive or missing"
+      "channel_inactive": "The channel is inactive or missing",
+      "offer_too_long": "The offer text is too long: ~64 KB at most. Shorten the template or the conditions",
+      "template_not_offer": "The chosen template is not an offer template. Choose an offer template"
     },
     "addedVia": { "manual": "Manually", "import": "Import", "mail": "Mail (application)", "extension": "Browser extension", "webhook": "Webhook / form", "sheets": "Google Sheets" },
     "channels": {

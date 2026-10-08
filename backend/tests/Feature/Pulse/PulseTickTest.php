@@ -76,6 +76,19 @@ final class PulseTickTest extends TestCase
         $this->actingAs($this->userOf($colleague))->getJson('/api/pulse/my/waves')->assertOk()->assertJsonCount(0, 'data');
     }
 
+    /** Day 30 after hire is a Kyiv calendar day: at 00:30 Kyiv (21:30 UTC of the day before) it has already come. */
+    public function test_hire_anniversary_is_due_on_the_kyiv_day(): void
+    {
+        $this->survey(['type' => 'lifecycle', 'lifecycle_trigger' => 'hire_30']);
+        $this->employee(['hired_at' => '2026-09-12'], $this->login()); // day 30 = 2026-10-12
+
+        Carbon::setTestNow('2026-10-11 20:30:00'); // 23:30 Kyiv on Oct 11: not yet
+        $this->assertSame(0, $this->pulseTick()['lifecycle_started']);
+        Carbon::setTestNow('2026-10-11 21:30:00'); // 00:30 Kyiv on Oct 12, still Oct 11 in UTC
+        $this->assertSame(1, $this->pulseTick()['lifecycle_started']);
+        $this->assertSame('hire_30:2026-09-12', SurveyWave::query()->sole()->trigger_key);
+    }
+
     public function test_exit_survey_on_termination_once(): void
     {
         $survey = $this->survey(['type' => 'lifecycle', 'lifecycle_trigger' => 'exit']);

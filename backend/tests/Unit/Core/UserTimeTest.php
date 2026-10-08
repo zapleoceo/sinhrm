@@ -75,4 +75,18 @@ final class UserTimeTest extends TestCase
         $this->assertSame('2026-03-29 20:59:59', UserTime::toStorage($day->copy()->endOfDay())->format('Y-m-d H:i:s'));
         $this->assertSame('2026-03-29T05:00:00+03:00', UserTime::now(Carbon::parse('2026-03-29 02:00:00', 'UTC'))->toIso8601String());
     }
+
+    public function test_wall_time_and_end_of_day_of_a_users_date_are_utc_moments(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+
+        // Summer (+03:00) and winter (+02:00): 18:00 Kyiv on that date, the last second of that Kyiv date.
+        $this->assertSame('2026-10-14 15:00:00 UTC', UserTime::wallTime(Carbon::parse('2026-10-14'), 18)->format('Y-m-d H:i:s e'));
+        $this->assertSame('2026-01-14 16:30:00 UTC', UserTime::wallTime(Carbon::parse('2026-01-14'), 18, 30)->format('Y-m-d H:i:s e'));
+        $this->assertSame('2026-10-18 20:59:59 UTC', UserTime::endOfDay(Carbon::parse('2026-10-18'))->format('Y-m-d H:i:s e'));
+        $this->assertSame('2026-12-31 21:59:59 UTC', UserTime::endOfDay(Carbon::parse('2026-12-31'))->format('Y-m-d H:i:s e'));
+        // The date part counts, whatever the zone or time of the input (UserTime::today() of a night moment).
+        $nightToday = UserTime::today(Carbon::parse('2026-12-31 22:30:00', 'UTC'));
+        $this->assertSame('2027-01-01 21:59:59', UserTime::endOfDay($nightToday)->format('Y-m-d H:i:s'));
+    }
 }

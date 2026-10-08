@@ -12,6 +12,7 @@ use App\Modules\Pulse\Models\MoodCheckin;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\PeopleFixtures;
 use Tests\Support\PulseFixtures;
 use Tests\TestCase;
@@ -229,5 +230,30 @@ final class MoodTest extends TestCase
         $this->actingAs($user)->postJson('/api/pulse/mood', ['score' => 5])->assertCreated()->assertJsonPath('data.day', '2026-10-12');
         $this->actingAs($user)->getJson('/api/pulse/mood/me?days=2')->assertOk()->assertJsonCount(2, 'data')
             ->assertJsonPath('data.0.day', '2026-10-12')->assertJsonPath('data.0.score', 5)->assertJsonPath('data.1.score', 2);
+    }
+
+    /** @return array<string, array{string, string, string, string, string}> now (UTC), previous week, compared week, ISO week, due (UTC) */
+    public static function kyivMondayNights(): array
+    {
+        return [
+            'summer, Mon 00:30 Kyiv = Sun 21:30 UTC' => ['2026-10-11 21:30:00', '2026-09-28', '2026-10-06', 'mood:2026-W41', '2026-10-14 15:00:00'],
+            'winter, Mon 00:30 Kyiv = Sun 22:30 UTC' => ['2026-01-11 22:30:00', '2025-12-29', '2026-01-06', 'mood:2026-W02', '2026-01-14 16:00:00'],
+        ];
+    }
+
+    /** The "last completed week" of the alerts is the Kyiv week: on Monday 00:30 Kyiv the week that just ended. Due 18:00 Kyiv. */
+    #[DataProvider('kyivMondayNights')]
+    public function test_mood_alert_week_turns_at_kyiv_midnight(string $now, string $previous, string $compared, string $rule, string $due): void
+    {
+        ['lead' => $lead, 'worker' => $worker, 'peer' => $peer] = $this->org();
+        $team = [$worker, $peer, ...$this->people(3, ['manager_id' => $lead->id])];
+        $this->moods($team, $previous, 5);
+        $this->moods($team, $compared, 3);
+
+        Carbon::setTestNow($now);
+        $this->assertGreaterThan(0, $this->pulseTick()['mood_alerts']);
+        $task = Task::query()->where('type', 'mood_alert')->where('assignee_id', $this->userOf($lead)->id)->sole();
+        $this->assertSame($rule, $task->rule_key);
+        $this->assertSame($due, $task->due_at->utc()->format('Y-m-d H:i:s'));
     }
 }

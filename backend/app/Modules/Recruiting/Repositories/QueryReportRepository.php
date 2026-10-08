@@ -26,7 +26,7 @@ final class QueryReportRepository implements ReportRepository
             ->leftJoin('applications as a', 'a.id', '=', 't.application_id')
             ->leftJoin('vacancies as v', 'v.id', '=', 'a.vacancy_id')
             ->where('t.channel', '!=', Channel::System->value)
-            ->whereBetween('t.occurred_at', [$range->from, $range->to])
+            ->whereBetween('t.occurred_at', $range->moments())
             ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->where(function (Builder $w) use ($scope): void {
                 $ids = $scope->branchIds ?? [];
                 $w->where('t.author_id', $scope->userId)->orWhereIn('t.branch_id', $ids)->orWhereIn('v.branch_id', $ids);
@@ -53,7 +53,7 @@ final class QueryReportRepository implements ReportRepository
             ->join('pipeline_stages as s', 's.id', '=', 'a.stage_id')
             ->leftJoin('branches as b', 'b.id', '=', 'v.branch_id')
             ->leftJoin('users as u', 'u.id', '=', 'v.recruiter_id')
-            ->whereBetween('a.created_at', [$range->from, $range->to])
+            ->whereBetween('a.created_at', $range->moments())
             ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->whereIn('v.branch_id', $scope->branchIds ?? []))
             ->when($vacancyId, fn (Builder $q, int $id) => $q->where('v.id', $id))
             ->groupBy('v.id', 'v.title', 'v.status', 'v.opened_at', 'b.name', 'u.name', 's.id', 's.name', 's.kind', 's.position')
@@ -89,7 +89,7 @@ final class QueryReportRepository implements ReportRepository
 
         $rows = DB::table('candidates as c')
             ->leftJoinSub($hired, 'h', 'h.candidate_id', '=', 'c.id')
-            ->whereBetween('c.created_at', [$range->from, $range->to])
+            ->whereBetween('c.created_at', $range->moments())
             ->when(! $scope->isUnrestricted(), fn (Builder $q) => $this->candidatesInScope($q, $scope))
             ->groupBy('c.source')
             ->orderBy('c.source')
@@ -174,7 +174,7 @@ final class QueryReportRepository implements ReportRepository
             ->leftJoin('acquisition_channels as ch', 'ch.id', '=', 'c.channel_id')
             ->leftJoinSub($hired, 'h', 'h.candidate_id', '=', 'c.id')
             ->leftJoinSub($apps, 'ap', 'ap.candidate_id', '=', 'c.id')
-            ->whereBetween('c.created_at', [$range->from, $range->to])
+            ->whereBetween('c.created_at', $range->moments())
             ->when(! $scope->isUnrestricted(), fn (Builder $q) => $this->candidatesInScope($q, $scope))
             ->groupBy('c.channel_id', 'ch.code', 'ch.name', 'ch.type')
             ->orderBy('ch.name')
@@ -233,7 +233,7 @@ final class QueryReportRepository implements ReportRepository
     {
         $q = DB::table('applications as a')
             ->where('a.status', ApplicationStatus::Rejected->value)
-            ->whereBetween('a.closed_at', [$range->from, $range->to]);
+            ->whereBetween('a.closed_at', $range->moments());
         ApplicationVisibility::constrain($q, $scope, 'a');
 
         return $q;

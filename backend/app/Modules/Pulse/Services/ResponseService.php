@@ -6,6 +6,7 @@ namespace App\Modules\Pulse\Services;
 
 use App\Models\User;
 use App\Modules\Core\Support\MembershipDifferencing;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\People\Models\Employee;
@@ -188,7 +189,7 @@ final readonly class ResponseService
             'branch_id' => $employee->branch_id,
             'department_id' => $employee->department_id,
             'answers' => $clean,
-            'submitted_on' => ($now ?? Carbon::now())->toDateString(),
+            'submitted_on' => UserTime::today($now)->toDateString(), // the respondent's (Kyiv) day, not the UTC one
             'entered_by_user_id' => $enteredBy,
         ]);
         if (! $created) {

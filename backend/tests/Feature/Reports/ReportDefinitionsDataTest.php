@@ -201,6 +201,32 @@ final class ReportDefinitionsDataTest extends TestCase
         $this->assertEquals(['call' => 4, 'email' => 1, 'system' => 1, 'telegram' => 1], array_column((array) $grouped, 'value', 'channel'));
     }
 
+    /**
+     * Report days are Kyiv days: "today" of headcount at 00:30 Kyiv (21:30 UTC) is the new day, and a range day covers
+     * 00:00–24:00 Kyiv (21:00 UTC of the day before – 21:00 UTC), not the UTC day.
+     */
+    public function test_report_days_are_kyiv_days(): void
+    {
+        Carbon::setTestNow('2026-10-11 21:30:00'); // 2026-10-12 00:30 Kyiv
+        $admin = $this->login(UserRole::Admin);
+        $this->employee(['full_name' => 'Starts Today', 'hired_at' => '2026-10-12']);
+        $headcount = (int) array_sum(array_column((array) $this->actingAs($admin)->getJson('/api/reports/catalog/headcount')->assertOk()->json('data.rows'), 'headcount'));
+        Carbon::setTestNow('2026-10-11 20:30:00'); // 23:30 Kyiv on Oct 11: not hired yet
+        $before = (int) array_sum(array_column((array) $this->actingAs($admin)->getJson('/api/reports/catalog/headcount')->assertOk()->json('data.rows'), 'headcount'));
+        $this->assertSame($before + 1, $headcount);
+
+        Carbon::setTestNow('2026-10-13 10:00:00');
+        $rita = User::factory()->create(['name' => 'Rita Recruiter']);
+        foreach (['2026-10-11 20:59:59', '2026-10-11 21:00:00', '2026-10-12 20:59:59', '2026-10-12 21:00:00'] as $at) {
+            DB::table('touchpoints')->insert(['channel' => 'call', 'direction' => 'out', 'author_id' => $rita->id, 'occurred_at' => $at, 'body' => 'Synthetic', 'via_product' => false]);
+        }
+        $response = $this->actingAs($admin)->getJson('/api/reports/catalog/recruiter_touches?from=2026-10-12&to=2026-10-12')->assertOk();
+        // One row (Rita | call), so no totals row (Totals::MIN_ROWS): the count is in the row itself.
+        $this->assertSame([['recruiter' => 'Rita Recruiter', 'channel' => 'call', 'touches' => 2, 'via_product' => 0]], $response->json('data.rows'), 'Oct 12 Kyiv = 2026-10-11 21:00 .. 2026-10-12 20:59:59 UTC');
+        $before = $this->actingAs($admin)->getJson('/api/reports/catalog/recruiter_touches?from=2026-10-11&to=2026-10-11')->assertOk();
+        $this->assertSame(1, $before->json('data.rows.0.touches'), 'Oct 11 Kyiv ends at 2026-10-11 20:59:59 UTC');
+    }
+
     public function test_script_scores_per_recruiter(): void
     {
         Carbon::setTestNow(self::NOW);

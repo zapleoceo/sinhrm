@@ -59,6 +59,13 @@ final class ReportsServiceProvider extends ModuleServiceProvider
 
     public const string DATASETS_TAG = 'reports.datasets';
 
+    /** POST builder/run and builder/csv (ad-hoc queries over the datasets): 30 per minute per user, own bucket. */
+    public const string BUILDER_LIMITER = 'reports-builder';
+
+    public const string BUILDER_THROTTLE = 'throttle:'.self::BUILDER_LIMITER;
+
+    public const int BUILDS_PER_MINUTE = 30;
+
     protected string $prefix = 'reports';
 
     public function register(): void
@@ -107,5 +114,12 @@ final class ReportsServiceProvider extends ModuleServiceProvider
             $app->tagged(self::REPORTS_TAG),
             $app->tagged(self::DATASETS_TAG),
         ));
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        $this->definePerUserLimiter(self::BUILDER_LIMITER, self::BUILDS_PER_MINUTE);
     }
 }

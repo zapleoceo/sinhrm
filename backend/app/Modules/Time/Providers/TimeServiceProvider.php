@@ -25,7 +25,7 @@ final class TimeServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'people';
 
-    /** Work schedules: superadmin, admin. */
+    /** Work schedules: HR staff (UserRole::hrStaff(): superadmin, admin, hr_manager). */
     public const string MANAGE = 'time-manage';
 
     protected string $prefix = 'time';

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\TimeOff\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\DTO\PeopleContext;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Support\SelfDecisionAudit;
@@ -36,6 +37,7 @@ final readonly class BalanceService
     public function balances(Employee $employee, Carbon $now): array
     {
         $balances = $this->ledger->balances($employee->id);
+        $year = UserTime::now($now)->year; // the user's (Kyiv) year: Dec 31 22:30 UTC is already the next year
         $rows = [];
         foreach ($this->settings->types(false) as $type) {
             $pending = $this->requests->pendingDays($employee->id, $type->id);
@@ -47,7 +49,7 @@ final readonly class BalanceService
                 'balance' => $balance,
                 'pending' => $pending,
                 'available' => $balance === null ? null : round($balance - $pending, 2),
-                'used_this_year' => $this->requests->usedDays($employee->id, $type->id, $now->year),
+                'used_this_year' => $this->requests->usedDays($employee->id, $type->id, $year),
                 'policy' => $policy === null ? null : [
                     'id' => $policy->id,
                     'accrual_mode' => $policy->accrual_mode->value,

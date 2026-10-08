@@ -138,6 +138,7 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 
 ### Общие хелперы Core (2026-10-02)
 - gate `hiring-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Срок шага согласования (`addWorkingDays` в TimeOff `HolidayWorkingCalendar`) считается по календарю Киева: шаг, активированный в пятницу после 21:00/22:00 UTC (уже суббота по Киеву), получает срок «+N рабочих дней» от понедельника, время суток — киевское (2026-10-08).
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».

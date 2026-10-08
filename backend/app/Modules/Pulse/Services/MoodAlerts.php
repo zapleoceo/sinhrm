@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Pulse\Services;
 
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Support\ReportingTree;
@@ -38,7 +39,9 @@ final readonly class MoodAlerts
         $threshold = (float) $settings->alert_drop;
         $managerOf = $this->employees->managerMap();
         $working = $this->employees->working()->keyBy('id');
-        $today = $now->copy()->startOfDay();
+        // The user's (Kyiv) day: on Monday 00:00-03:00 Kyiv the UTC date is still Sunday and the "last completed
+        // week" would be one week too early.
+        $today = UserTime::today($now);
         // The last completed ISO week against the one before (never the running week).
         $currentFrom = $today->copy()->startOfWeek()->subWeek();
         $previousFrom = $currentFrom->copy()->subWeek();
@@ -74,7 +77,7 @@ final readonly class MoodAlerts
                 assigneeId: $manager->user_id,
                 type: TaskType::MoodAlert,
                 title: sprintf('Настрій команди знизився: %.1f → %.1f', $before['average'], $now7['average']),
-                dueAt: $today->copy()->addDays(2)->setTime(18, 0),
+                dueAt: UserTime::wallTime($today->copy()->addDays(2), 18),
                 ruleKey: $ruleKey,
                 employeeId: $manager->id,
                 link: '/pulse/mood',

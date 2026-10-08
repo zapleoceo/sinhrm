@@ -30,6 +30,13 @@ final class DocumentsServiceProvider extends ModuleServiceProvider
     /** Templates and writing documents: HR staff (superadmin, admin, hr_manager). */
     public const string MANAGE = 'documents-manage';
 
+    /** POST documents/{id}/file (base64 upload into the database): 30 per minute per user, own bucket. */
+    public const string UPLOAD_LIMITER = 'documents-upload';
+
+    public const string UPLOAD_THROTTLE = 'throttle:'.self::UPLOAD_LIMITER;
+
+    public const int UPLOADS_PER_MINUTE = 30;
+
     public function register(): void
     {
         $this->app->tag([DocumentNavBadges::class], NavBadgeProvider::class);
@@ -46,5 +53,6 @@ final class DocumentsServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
+        $this->definePerUserLimiter(self::UPLOAD_LIMITER, self::UPLOADS_PER_MINUTE);
     }
 }

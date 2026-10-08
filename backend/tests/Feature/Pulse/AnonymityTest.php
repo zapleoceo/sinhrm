@@ -37,6 +37,17 @@ final class AnonymityTest extends TestCase
         parent::tearDown();
     }
 
+    /** The only time trace of an answer is its day — the respondent's Kyiv day (00:30 Kyiv is not yesterday of UTC). */
+    public function test_submitted_on_is_the_kyiv_day(): void
+    {
+        foreach (['2026-10-11 21:30:00' => '2026-10-12', '2026-01-11 22:30:00' => '2026-01-12', '2026-12-31 22:30:00' => '2027-01-01'] as $utc => $kyiv) {
+            Carbon::setTestNow($utc);
+            $wave = $this->wave($this->survey());
+            $this->answer($wave, $this->people(1)[0], ['enps' => 9, 'q1' => 4]);
+            $this->assertSame($kyiv, substr((string) DB::table('survey_responses')->where('wave_id', $wave->id)->value('submitted_on'), 0, 10), $utc);
+        }
+    }
+
     public function test_anonymous_responses_store_no_identity(): void
     {
         $survey = $this->survey();

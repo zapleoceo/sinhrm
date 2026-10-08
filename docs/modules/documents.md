@@ -122,6 +122,7 @@ Recruiting берёт шаблоны через контракт `Contracts\Docu
 ### Общие хелперы Core (2026-10-02)
 - скачивание файла документа — `Core\Http\Responses\Download::file()`: те же заголовки, что раньше (attachment с ASCII-именем и `filename*`, `nosniff`, `private, no-store`, `Content-Length`); тот же хелпер у вложений Desk и у CV отклика со страницы вакансий (`GET /api/applications/{id}/cv`, [recruiting.md](recruiting.md));
 - gate `documents-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Загрузка файла `POST /api/documents/{id}/file` — именованный лимитер `documents-upload` (`DocumentsServiceProvider::UPLOAD_THROTTLE`), 30 в минуту на пользователя, своя корзина; 31-я — 429 (`DocumentsApiTest::test_file_upload_is_throttled_per_user`). Даты предпросмотра шаблона (`DocumentVariables::sample`) — по Киеву, как `{Сьогодні}`. Комментарии маршрутов: gate — HR staff (`UserRole::hrStaff()`: superadmin, admin, hr_manager).
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».

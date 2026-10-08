@@ -12,6 +12,7 @@ use App\Modules\Documents\Models\Document;
 use App\Modules\Documents\Models\DocumentFile;
 use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Documents\Models\Signature;
+use App\Modules\Documents\Providers\DocumentsServiceProvider;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -251,6 +252,23 @@ final class DocumentsApiTest extends TestCase
         $doc = $this->document($this->employee()->id, ['content_md' => 'Text']);
 
         $this->actingAs($admin)->postJson("/api/documents/{$doc->id}/send")->assertUnprocessable()->assertJsonPath('code', 'employee_has_no_login');
+    }
+
+    /** Uploads are throttled per user in their own bucket (documents-upload): the 31st in a minute is 429. */
+    public function test_file_upload_is_throttled_per_user(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $hr = $this->login(UserRole::HrManager);
+        $doc = $this->document($this->org()['worker']->id);
+        $upload = fn ($user) => $this->actingAs($user)->post("/api/documents/{$doc->id}/file", [], ['Accept' => 'application/json']);
+
+        for ($i = 0; $i < DocumentsServiceProvider::UPLOADS_PER_MINUTE; $i++) {
+            $upload($admin)->assertUnprocessable(); // no file: validation, but the attempt counts
+        }
+        $upload($admin)->assertStatus(429);
+        $upload($hr)->assertUnprocessable(); // another user's bucket; hr_manager is HR staff (documents-manage)
+        $this->actingAs($admin)->getJson("/api/documents/{$doc->id}")->assertOk(); // other endpoints are not in this bucket
+        $this->actingAs($this->login(UserRole::Employee))->post("/api/documents/{$doc->id}/file", [], ['Accept' => 'application/json'])->assertForbidden();
     }
 
     public function test_file_upload_validates_type_and_size_and_downloads_as_attachment(): void

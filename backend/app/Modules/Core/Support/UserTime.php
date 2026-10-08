@@ -49,6 +49,21 @@ final class UserTime
         return Carbon::parse(self::now($now)->toDateString(), self::storageTimezone());
     }
 
+    /**
+     * The user's wall-clock time $hour:$minute on the calendar date of $date (its Y-m-d read as the user's date), as
+     * a storage-zone moment: "due on that day at 18:00" means 18:00 in Kyiv (15:00/16:00 UTC), not 18:00 UTC.
+     */
+    public static function wallTime(Carbon $date, int $hour, int $minute = 0): Carbon
+    {
+        return self::toStorage(Carbon::parse($date->toDateString(), self::timezone())->setTime($hour, $minute));
+    }
+
+    /** The last moment of the user's calendar day $date (its Y-m-d), as a storage-zone moment (deadline "by the end of the day"). */
+    public static function endOfDay(Carbon $date): Carbon
+    {
+        return self::toStorage(Carbon::parse($date->toDateString(), self::timezone())->endOfDay());
+    }
+
     private static function storageTimezone(): string
     {
         $tz = config('app.timezone');

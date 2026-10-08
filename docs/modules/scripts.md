@@ -123,6 +123,8 @@
 Киеву вчера — просрочена, на 18:00 по Киеву сегодня — «на сегодня», хотя по UTC она завтра.
 Тест: `TasksAndFollowupsTest::test_today_and_overdue_follow_the_users_day`.
 
+Отчёт по скриптам (`GET /api/reports/scripts?from&to`) считает дни по Киеву: оценки отбираются по `occurred_at` в границах `DateRange::moments()` (2026-10-08, `ScriptReportTest::test_range_days_are_kyiv_days`).
+
 ### Общий список задач («Мої задачі»)
 Таблица `tasks` — **единая** для всех модулей: кроме задач рекрутинга в ней задачи воркфлоу (тип `workflow`,
 [workflows.md](workflows.md)), «ознайомитися з документом» (тип `document`, [documents.md](documents.md)) и «настрій

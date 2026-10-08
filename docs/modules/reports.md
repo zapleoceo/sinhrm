@@ -124,6 +124,10 @@ API: `GET/POST /api/reports/saved`, `PUT/DELETE /saved/{id}`, `GET /saved/{id}/r
 ячейка всегда с меткой (`Total` или `Total: <сумма>`, если первая колонка суммируется), «—» у колонок без итога; защита
 та же. В UI метка «Разом» тоже всегда в первой ячейке.
 
+**День пользователя в отчётах (2026-10-08).** `ScopedContextFactory` отдаёт `$ctx->now` в поясе пользователя (`UserTime::now()`): «сегодня» численности, стажа, возраста и текущей зарплаты — дата по Киеву (в 21:30 UTC 11.10 принятый 12.10 уже в численности). Диапазоны каталога — дни Киева (`Recruiting\DTO\DateRange`, моменты через `moments()`: SLA обращений, время до найма, касания). Тест `ReportDefinitionsDataTest::test_report_days_are_kyiv_days`.
+
+**Лимит конструктора.** `POST /api/reports/builder/run` и `/builder/csv` — одна именованная корзина `reports-builder` (`ReportsServiceProvider::BUILDER_THROTTLE`), 30 запросов в минуту на пользователя; 31-й — 429, каталог отчётов не затронут (`ReportsApiTest::test_builder_run_and_csv_are_throttled_per_user`).
+
 ### Строка «Разом» (`Support/Totals`)
 Итог считает бэкенд и отдаёт в `totals` (`run`, `builder/run`, `saved/{id}/run`; `null` при < 2 строк), UI рисует его
 `<tfoot>` в `report-table` (жирный, верхняя граница, токены светлой/тёмной темы). Каждая числовая колонка отчёта
