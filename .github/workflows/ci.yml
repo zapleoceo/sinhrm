@@ -186,7 +186,7 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: sinhrm-clipper, path: extension/dist/sinhrm-clipper.zip, retention-days: 30 }
 
-  # Secrets + vulnerable dependencies (docs/security/audit-2026-10.md). gitleaks-action scanned only the last commit
+  # Secrets + vulnerable dependencies (docs/architecture/secrets.md). gitleaks-action scanned only the last commit
   # on push (--log-opts=-1), so the binary is used directly: the WHOLE history on every run, pinned by sha256.
   security:
     runs-on: ubuntu-latest

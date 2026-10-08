@@ -6,7 +6,7 @@ on:
     workflows: [CI]
     types: [completed]
 
-# Least privilege per job (docs/security/audit-2026-10.md): only `deploy` may write (the preview comment).
+# Least privilege per job (docs/architecture/secrets.md): only `deploy` may write (the preview comment).
 permissions:
   contents: read
 
