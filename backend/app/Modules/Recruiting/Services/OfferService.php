@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
-use App\Modules\Core\Support\UserTime;
 use App\Modules\Channels\Services\MessageService;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Documents\Contracts\DocumentTemplateRepository;
 use App\Modules\Documents\Enums\DocumentVariable;
 use App\Modules\Documents\Exceptions\DocumentException;
