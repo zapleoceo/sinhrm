@@ -216,6 +216,7 @@ jobs:
 
   # Required check `docs` (name is fixed by the ruleset). Code of a module changed → its docs/modules page changed for real
   # (not a whitespace edit) and a test in the same module/feature changed. Rules: scripts/pr-checks-lib.mjs.
+  # Every relative Markdown link and anchor resolves: scripts/docs-links-check.mjs.
   # Exempt from tests: label no-tests-needed (read live, Re-run after labelling) and dependabot.
   docs:
     if: github.event_name == 'pull_request'
@@ -228,6 +229,9 @@ jobs:
         run: node --test scripts/pr-checks.test.mjs
       - name: Build provenance tests
         run: node --test scripts/stamp-build.test.mjs
+      # Relative links and heading anchors in README/CLAUDE/AGENTS and docs/**/*.md point to existing files.
+      - name: Dead internal links in docs
+        run: node --test scripts/docs-links-check.test.mjs && node scripts/docs-links-check.mjs
       - name: Docs updated with code
         env:
           BASE_REF: ${{ github.base_ref }}
