@@ -32,6 +32,9 @@ final readonly class OfferService
 {
     public const string TEMPLATE_CATEGORY = 'offer';
 
+    /** TEXT holds 65 535 bytes; the touchpoint body also carries the subject line «Оффер: <position>» (≤ 255 chars). */
+    public const int MAX_CONTENT_BYTES = 64_000;
+
     public function __construct(
         private MessageService $messages,
         private LoggerInterface $log,
@@ -56,7 +59,7 @@ final readonly class OfferService
     /**
      * @param  array{template_id: int, position: string, salary: string, start_date: ?string, conditions: ?string}  $data
      *
-     * @throws RecruitingException not_in_offer_stage | offer_exists | template_not_offer
+     * @throws RecruitingException not_in_offer_stage | offer_exists | template_not_offer | offer_too_long
      * @throws DocumentException template_archived
      */
     public function create(User $actor, Application $application, array $data, ?Carbon $today = null): Offer
@@ -89,6 +92,12 @@ final readonly class OfferService
             DocumentVariable::StartDate->value => $start?->format('d.m.Y'),
             DocumentVariable::Conditions->value => $data['conditions'],
         ])['text'];
+        // offers.content_md and the sent touchpoint's body are TEXT (65 535 bytes); a template may hold 50 000 characters
+        // (~100 KB in Cyrillic). MySQL strict mode refused such an insert with a 500 (MySQL e2e, round 2). The schema is
+        // frozen until the Neon → MySQL cutover (docs/guides/mysql-cutover.md), so the limit is checked here.
+        if (strlen($content) > self::MAX_CONTENT_BYTES) {
+            throw RecruitingException::offerTooLong(self::MAX_CONTENT_BYTES);
+        }
 
         $offer = $this->applications->createOffer([
             'application_id' => $application->id,

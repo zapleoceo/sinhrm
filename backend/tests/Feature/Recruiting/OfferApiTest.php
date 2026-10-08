@@ -13,7 +13,9 @@ use App\Modules\GoogleWorkspace\DTO\OutgoingMail;
 use App\Modules\GoogleWorkspace\DTO\SentMail;
 use App\Modules\GoogleWorkspace\Enums\MailerState;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\Offer;
 use App\Modules\Recruiting\Models\Touchpoint;
+use App\Modules\Recruiting\Services\OfferService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\Support\RecruitingFixtures;
@@ -93,26 +95,29 @@ final class OfferApiTest extends TestCase
     }
 
     /**
-     * A long template (the Documents limit is 50 000 characters; Cyrillic is 2 bytes in utf8mb4) renders an offer far over
-     * the 64 KB of a TEXT column: it is stored and sent whole (MySQL 8.4 e2e, round 2: was 500, SQLSTATE 22001).
+     * A long template (the Documents limit is 50 000 characters; Cyrillic is 2 bytes in utf8mb4) renders an offer over the
+     * 64 KB of the TEXT columns: a clear 422 offer_too_long, nothing stored (MySQL 8.4 e2e, round 2: was a 500, SQLSTATE
+     * 22001). An offer just under the limit is stored and sent whole.
      */
-    public function test_long_offer_text_is_stored_and_sent_whole(): void
+    public function test_offer_over_the_text_column_is_refused_with_422_and_one_under_it_is_sent_whole(): void
     {
         $this->application->update(['stage_id' => $this->stageAt(6)->id]);
         $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
-        $body = '{ПІБ}: '.str_repeat('Ґанок, їжа, ЄВРО — умови оферу. ', 1500); // ≈ 48 000 characters ≈ 90 KB
-        $template = DocumentTemplate::query()->create(['name' => 'Long offer', 'category' => 'offer', 'body' => $body]);
         $url = '/api/applications/'.$this->application->id.'/offer';
+        $long = DocumentTemplate::query()->create(['name' => 'Long offer', 'category' => 'offer', 'body' => '{ПІБ}: '.str_repeat('Ґанок, їжа, ЄВРО — умови. ', 1700)]);
 
-        $content = $this->actingAs($recruiter)->postJson($url, ['template_id' => $template->id, 'position' => 'Manager', 'salary' => '30000 UAH'])
+        $this->actingAs($recruiter)->postJson($url, ['template_id' => $long->id, 'position' => 'Manager', 'salary' => '30000 UAH'])
+            ->assertUnprocessable()->assertJsonPath('code', 'offer_too_long')->assertJsonPath('max_bytes', OfferService::MAX_CONTENT_BYTES);
+        $this->assertSame(0, Offer::query()->count());
+
+        $fits = DocumentTemplate::query()->create(['name' => 'Fits', 'category' => 'offer', 'body' => '{ПІБ}: '.str_repeat('Ґ', 31_900)]);
+        $content = $this->actingAs($recruiter)->postJson($url, ['template_id' => $fits->id, 'position' => 'Manager', 'salary' => '30000 UAH'])
             ->assertCreated()->json('data.content_md');
         $this->assertIsString($content);
-        $this->assertGreaterThan(65535, strlen($content));
-        $this->assertStringStartsWith('Olena Sample: ', $content);
-
+        $this->assertGreaterThan(63_000, strlen($content));
         $this->actingAs($recruiter)->postJson($url.'/send')->assertOk()->assertJsonPath('data.status', 'sent');
         $touch = Touchpoint::query()->where('application_id', $this->application->id)->where('channel', 'email')->firstOrFail();
-        $this->assertSame($content, $touch->body);
+        $this->assertStringContainsString($content, (string) $touch->body);
     }
 
     public function test_salary_is_visible_only_to_writers_and_hiring_manager(): void

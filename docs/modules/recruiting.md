@@ -419,9 +419,10 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 **Офферы.** В карточке кандидата на заявке в этапе оффера (kind `hire`, не терминальный) — «Створити оффер»: шаблон
 Documents категории `offer` (переменные `{ПІБ}`, `{Посада}`, `{Зарплата}`, `{Дата виходу}`, `{Умови}`, `{Філія}`,
 `{Сьогодні}`), должность, зарплата, дата выхода, условия → текст в `offers` (один на заявку), статус `draft`.
-`offers.content_md` и `touchpoints.body` — LONGTEXT (миграция `2026_10_29_100001_widen_offer_and_touchpoint_texts`, вместе с
-пересозданием view `unmatched_messages`): шаблон до 50 000 символов кириллицей — до ~100 КБ, в TEXT (64 КБ) MySQL отказывал (500,
-SQLSTATE 22001; найдено MySQL e2e, раунд 2). Тест — `OfferApiTest::test_long_offer_text_is_stored_and_sent_whole`.
+Отрисованный оффер больше `OfferService::MAX_CONTENT_BYTES` (64 000 байт) → 422 `offer_too_long {max_bytes}`, ничего не сохраняется:
+`offers.content_md` и тело отправленного касания — `TEXT` (64 КБ), а шаблон допускает 50 000 символов (~100 КБ кириллицей), и MySQL
+в strict-режиме отвечал 500 (SQLSTATE 22001; найдено MySQL e2e, раунд 2). Схему не расширяем до переноса Neon → MySQL (заморозка,
+[mysql-cutover.md](../guides/mysql-cutover.md)). Тест — `OfferApiTest::test_offer_over_the_text_column_is_refused_with_422_and_one_under_it_is_sent_whole`.
 «Надіслати» — письмо кандидату через Mailer (Gmail) тем же путём, что сообщения из карточки (исходящий touchpoint на заявке) → `sent`;
 «Прийняв/Відмовився» рекрутер отмечает вручную → `accepted`/`declined`. Зарплата чувствительна: все эндпоинты оффера —
 только `ApplicationPolicy::offer` (пишущие рекрутинг в своём скоупе + нанимающий менеджер вакансии), остальным 403.
