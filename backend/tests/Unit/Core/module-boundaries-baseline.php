@@ -138,9 +138,6 @@ return [
         'App\Modules\People\Models\Employee',
         'App\Modules\Recruiting\Models\Vacancy',
     ],
-    'HiringRequests/Services/ApproverNotifier.php' => [
-        'App\Modules\Scripts\Services\TaskService',
-    ],
     'HiringRequests/Services/HiringRequestService.php' => [
         'App\Modules\Recruiting\Services\VacancyService',
     ],
@@ -254,7 +251,6 @@ return [
     ],
     'Pulse/Services/ResponseService.php' => [
         'App\Modules\People\Models\Employee',
-        'App\Modules\People\Services\PeopleScope',
     ],
     'Pulse/Services/WaveMembership.php' => [
         'App\Modules\People\Models\Employee',

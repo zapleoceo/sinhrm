@@ -72,7 +72,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 `Models`, `Services`, `Repositories` или `Http`. Core — общее ядро (`Core\Support`, `Core\Http`, `Core\Contracts`), его импортируют
 все. Правило проверяет тест `backend/tests/Unit/Core/ModuleBoundariesTest.php` (сканирует `use` в `app/Modules`):
 - исключение для всех — `Auth\Http\Middleware\EnsureUserIsActive` (под ним маршруты каждого модуля);
-- текущие нарушения (на 2026-10-08 — 188 импортов в 129 файлах: чужие `Models` 155, `Services` 20, `Http` 11, `Repositories` 2)
+- текущие нарушения (на 2026-10-08 — 186 импортов в 128 файлах: чужие `Models` 155, `Services` 18, `Http` 11, `Repositories` 2)
   записаны в `backend/tests/Unit/Core/module-boundaries-baseline.php`; новое нарушение валит тест, а исправленное надо
   удалить из списка (тест подскажет) — список только сокращается;
 - двусторонние зависимости модулей (7 пар: Audit ↔ People, Audit ↔ Recruiting, Auth ↔ Core, Channels ↔ Recruiting,

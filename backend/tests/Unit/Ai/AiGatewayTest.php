@@ -16,8 +16,11 @@ final class AiGatewayTest extends TestCase
         $this->assertInstanceOf(AiService::class, $this->app->make(AiGateway::class));
     }
 
-    public function test_the_synchronous_wait_is_the_same_on_both(): void
+    public function test_the_synchronous_wait_is_declared_once_in_the_gateway(): void
     {
-        $this->assertSame(AiService::WAIT_SECONDS, AiGateway::WAIT_SECONDS);
+        $wait = new \ReflectionClassConstant(AiService::class, 'WAIT_SECONDS');
+
+        $this->assertSame(AiGateway::class, $wait->getDeclaringClass()->getName());
+        $this->assertSame(40, AiService::WAIT_SECONDS);
     }
 }

@@ -10,9 +10,9 @@ use App\Modules\HiringRequests\Contracts\HiringRequestRepository;
 use App\Modules\HiringRequests\Models\HiringApproval;
 use App\Modules\HiringRequests\Models\HiringRequest;
 use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\Enums\TaskType;
-use App\Modules\Scripts\Services\TaskService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -36,7 +36,7 @@ final readonly class ApproverNotifier
 
     public function __construct(
         private HiringRequestRepository $requests,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
         private EmployeeRepository $employees,
         private UserNotifier $mail,
     ) {}

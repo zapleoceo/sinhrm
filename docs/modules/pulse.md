@@ -292,7 +292,7 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
 ### Зависимости через контракты (2026-10-08)
-- `MoodService` находит сотрудника и контекст через контракт People `PeopleAccess`. `ResponseService` пока импортирует `PeopleScope` напрямую: файл параллельно меняет ветка DRY-правок, переключение — после её слияния. Тест — `tests/Unit/Pulse/MoodPeopleAccessTest.php`.
+- `MoodService` находит сотрудника и контекст через контракт People `PeopleAccess`. `ResponseService` (форма и ответы опроса, «мои опросы», сводка) — через тот же контракт `PeopleAccess` (с 2026-10-08); импортов `PeopleScope` в модуле нет. Тесты — `tests/Unit/Pulse/MoodPeopleAccessTest.php`, `tests/Unit/Pulse/ResponsePeopleAccessTest.php`.
 - `MoodAlerts` ставит задачи о падении настроения через контракт Scripts `TaskScheduler`.
 
 ## Как проверить

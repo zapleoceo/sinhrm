@@ -44,9 +44,6 @@ use Illuminate\Support\Sleep;
  */
 final readonly class AiService implements AiGateway
 {
-    /** Longest synchronous wait for an answer (serverless limit 60 s minus the rest of the request). */
-    public const int WAIT_SECONDS = 40;
-
     /** First answer + one retry after invalid JSON. */
     public const int MAX_ATTEMPTS = 2;
 
@@ -165,7 +162,7 @@ final readonly class AiService implements AiGateway
 
     /**
      * First submit of a fresh request: provider refusal → failed; otherwise the job id is stored (attempt 1) and the
-     * answer is awaited for at most WAIT_SECONDS.
+     * answer is awaited for at most AiGateway::WAIT_SECONDS.
      *
      * @param  Closure(): AiJobRef  $submit
      */
