@@ -72,12 +72,18 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 `Models`, `Services`, `Repositories` или `Http`. Core — общее ядро (`Core\Support`, `Core\Http`, `Core\Contracts`), его импортируют
 все. Правило проверяет тест `backend/tests/Unit/Core/ModuleBoundariesTest.php` (сканирует `use` в `app/Modules`):
 - исключение для всех — `Auth\Http\Middleware\EnsureUserIsActive` (под ним маршруты каждого модуля);
-- текущие нарушения (на 2026-10-02 — 255 импортов в 162 файлах: чужие `Models` 159, `Services` 83, `Http` 11, `Repositories` 2)
+- текущие нарушения (на 2026-10-08 — 188 импортов в 129 файлах: чужие `Models` 155, `Services` 20, `Http` 11, `Repositories` 2)
   записаны в `backend/tests/Unit/Core/module-boundaries-baseline.php`; новое нарушение валит тест, а исправленное надо
   удалить из списка (тест подскажет) — список только сокращается;
 - двусторонние зависимости модулей (7 пар: Audit ↔ People, Audit ↔ Recruiting, Auth ↔ Core, Channels ↔ Recruiting,
   Core ↔ Pulse, Core ↔ Recruiting, Recruiting ↔ Scripts) записаны в `KNOWN_CYCLES` теста по тому же принципу.
 Разрывать циклы и выносить зависимости в контракты — отдельными PR по модулю.
+Сервисы, которые чаще всего нужны другим модулям, уже закрыты узкими контрактами модуля-владельца (реализация —
+сам сервис, биндинг — его провайдер): `People\Contracts\PeopleAccess`, `EmployeeLookup`; `Scripts\Contracts\TaskScheduler`,
+`TaskReader`; `Ai\Contracts\AiGateway` (реализует только `AiService`); `Recruiting\Contracts\RecruitingAccess`,
+`CandidateIntake`, `TouchpointLogger`; `GoogleWorkspace\Contracts\GoogleConnections`; `Integrations\Contracts\IntegrationConfigs`,
+`IntegrationSettings`; `Audit\Contracts\AuditHistory`. Импорты чужих `Models` в связях Eloquent (`belongsTo`/`hasMany`
+требуют класс модели) оставлены: их вынос — отказ от связей Eloquent, отдельное архитектурное решение (ADR).
 
 ## Фронтенд
 `frontend/src/app/core` — общие сервисы (API, auth, i18n), `features/<имя>` — экраны, загружаются лениво.
