@@ -234,6 +234,44 @@ final class MysqlDataTransferTest extends TestCase
         $this->assertFalse($this->target()->table('migrations')->where('migration', $name)->exists());
     }
 
+    /**
+     * A dead source-only table (SchemaCheck::LEGACY_SOURCE_ONLY_TABLES) is an info line with its row count, is not
+     * copied and is not compared; the same table appearing on the target is drift and fails like any other.
+     */
+    public function test_legacy_source_only_table_is_reported_not_copied_and_fails_when_on_the_target(): void
+    {
+        $table = SchemaCheck::LEGACY_SOURCE_ONLY_TABLES[0];
+        $rows = DB::table($table)->count();
+        $this->assertGreaterThan(0, $rows);
+        $line = "устаревшая таблица только в источнике, не переносится: {$table} ({$rows} строк)";
+
+        [$code, $out] = $this->transfer(['--preflight' => true]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString($line, $out);
+        $this->assertStringNotContainsString('таблица есть только в источнике', $out);
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString('ИТОГ: OK', $out);
+        $this->assertSame(2, substr_count($out, $line), 'listed by the preflight and by the final reconciliation report');
+        $this->assertFalse($this->target()->getSchemaBuilder()->hasTable($table), 'not copied');
+
+        $target = $this->target();
+        try {
+            $target->statement("CREATE TABLE `{$table}` (`id` varchar(255) PRIMARY KEY, `data` json NOT NULL, `updated_at` timestamp NULL)");
+            [$code, $out] = $this->transfer(['--verify' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertMatchesRegularExpression('/schema\s*\|\s*'.$table.'\s*\|\s*таблица из LEGACY_SOURCE_ONLY_TABLES есть на цели/u', $out);
+            [$code, $out] = $this->transfer(['--preflight' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertStringContainsString('перенос не начат', $out);
+        } finally {
+            $this->target()->statement("DROP TABLE IF EXISTS `{$table}`");
+        }
+        [$code, $out] = $this->transfer(['--verify' => true]);
+        $this->assertSame(0, $code, $out);
+    }
+
     public function test_verify_fails_on_schema_drift(): void
     {
         [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
@@ -446,9 +484,15 @@ final class MysqlDataTransferTest extends TestCase
         return TransferDatabases::connect(app('db'), config())->target;
     }
 
-    /** One synthetic attachment, one encrypted secret and Unicode/JSON on the source, created once. */
+    /**
+     * One synthetic attachment, one encrypted secret and Unicode/JSON on the source, created once; plus the dead
+     * prototype table app_state that production Neon still holds (SchemaCheck::LEGACY_SOURCE_ONLY_TABLES) — same
+     * columns, one synthetic row — so the preflight / CLI steps of the workflow reproduce the production schema.
+     */
     private function ensureFixtures(): void
     {
+        DB::statement('create table if not exists app_state (id text primary key, data jsonb not null, updated_at timestamptz not null default now())');
+        DB::statement("insert into app_state (id, data) values ('main', '{\"stages\": []}') on conflict (id) do nothing");
         if (DB::table('documents_files')->where('filename', 'transfer-fixture.pdf')->exists()) {
             return;
         }

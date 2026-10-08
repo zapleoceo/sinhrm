@@ -93,7 +93,12 @@ jobs:
       - name: Feature tests (collisions, idempotency/resume, corruption -> FAIL, APP_KEY, --without-secrets, guards)
         run: php artisan test --filter MysqlDataTransferTest
       - name: CLI preflight (read-only)
-        run: php artisan db:transfer-to-mysql --preflight --no-interaction
+        # The source also holds the dead prototype table app_state (created by MysqlDataTransferTest fixtures, as on
+        # production Neon): SchemaCheck::LEGACY_SOURCE_ONLY_TABLES turns it into an info line instead of a FAIL.
+        run: |
+          php artisan db:transfer-to-mysql --preflight --no-interaction | tee "$RUNNER_TEMP/preflight.txt"
+          grep -q 'устаревшая таблица только в источнике, не переносится: app_state (1 строк)' "$RUNNER_TEMP/preflight.txt"
+          grep -qx 'Preflight: OK' "$RUNNER_TEMP/preflight.txt"
       - name: CLI --without-secrets test dump with no APP_KEY (the next step copies everything again)
         run: |
           if APP_KEY= php artisan db:transfer-to-mysql --preflight --no-interaction; then

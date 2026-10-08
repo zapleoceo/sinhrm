@@ -9,7 +9,8 @@ use Illuminate\Database\Connection;
 /**
  * Read-only reconciliation source <-> target, result OK/FAIL. The report holds table/column names and counters only.
  *
- * - schema identity (SchemaCheck: migrations, tables and columns on one side only);
+ * - schema identity (SchemaCheck: migrations, tables and columns on one side only; SchemaCheck::LEGACY_SOURCE_ONLY_TABLES
+ *   are an info line and never compared — tables() holds only tables present on both sides);
  * - row count per table;
  * - per-column checksum: XOR of sha256(primary key + canonical value) over all rows — order-independent (MySQL and
  *   PostgreSQL sort strings differently) and sensitive to any changed cell; tables without a primary key get one

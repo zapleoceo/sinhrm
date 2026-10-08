@@ -46,6 +46,12 @@ final class SchemaInspector
         return array_values(array_map(fn (object $r): string => (string) $r->name, $rows));
     }
 
+    /** Row count of a source table (SchemaCheck reports LEGACY_SOURCE_ONLY_TABLES with it; never reads values). */
+    public function sourceRowCount(string $table): int
+    {
+        return $this->dbs->source->table($table)->count();
+    }
+
     /** @return list<string> applied migration names on the given side ([] when the table is missing) */
     public function migrations(bool $source): array
     {
