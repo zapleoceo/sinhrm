@@ -246,7 +246,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
         @if (e.access?.manage || e.access?.self) {
           <mat-tab [label]="'people.tabs.compensation' | transloco">
             <ng-template matTabContent>
-              <app-compensation-tab [employeeId]="e.id" [canManage]="!!e.access?.manage" [self]="!!e.access?.self" />
+              <app-compensation-tab [employeeId]="e.id" [canManage]="!!e.access?.manage" [canAdd]="!!e.access?.manage && !!e.access?.decide" [self]="!!e.access?.self" />
             </ng-template>
           </mat-tab>
         }

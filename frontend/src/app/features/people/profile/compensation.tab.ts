@@ -13,11 +13,13 @@ import { TableSortDirective } from '../../../core/ui/table/table-sort.directive'
 import { ColumnFilter } from '../../../core/ui/table/table-state';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { CURRENCIES, Compensation, CompensationRecord, PAY_PERIODS } from '../people.model';
-import { PeopleService } from '../people.service';
+import { PeopleService, peopleErrorKey } from '../people.service';
 
 /**
- * Compensation history. HR staff (canManage) see and add records for anyone; the employee sees own read-only
- * (self → /api/me/employee/compensation). Current = latest effective date not in the future.
+ * Compensation history. HR staff (canManage) see records of anyone; adding one (canAdd) is a decision — never on one's
+ * own record (API: canDecideOrBreakGlass, 403 otherwise), so the form follows access.decide. The employee sees own
+ * read-only (self → /api/me/employee/compensation). Current = latest effective date not in the future.
+ * A refused or invalid save is shown above the form (role=alert), never swallowed.
  * The history table sorts and filters in its headers (core/ui/table; URL `comp_sort`, `comp_<column>`).
  */
 @Component({
@@ -67,7 +69,10 @@ import { PeopleService } from '../people.service';
         </table>
       </div>
     }
-    @if (canManage()) {
+    @if (canAdd()) {
+      @if (error(); as key) {
+        <p class="error" role="alert">{{ key | transloco }}</p>
+      }
       <form class="add" [formGroup]="form" (ngSubmit)="add()">
         <mat-form-field>
           <mat-label>{{ 'people.compensation.amount' | transloco }}</mat-label>
@@ -105,17 +110,21 @@ import { PeopleService } from '../people.service';
     .scroll { overflow-x: auto; margin-bottom: 1rem; }
     .num { text-align: right; }
     .history tr.current { font-weight: 700; }
+    .error { color: var(--app-bad-text); margin: 0 0 0.5rem; }
     .add { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; }
   `,
 })
 export class CompensationTab implements OnInit {
   readonly employeeId = input.required<number>();
   readonly canManage = input(false);
+  /** May add a record: HR staff deciding about someone else (access.manage && access.decide). */
+  readonly canAdd = input(false);
   readonly self = input(false);
 
   private readonly api = inject(PeopleService);
   protected readonly data = signal<Compensation | null>(null);
   protected readonly saving = signal(false);
+  protected readonly error = signal<string | null>(null);
   protected readonly currencies = CURRENCIES;
   protected readonly periods = PAY_PERIODS;
   protected readonly history = computed(() => this.data()?.history ?? []);
@@ -153,13 +162,17 @@ export class CompensationTab implements OnInit {
   protected add(): void {
     const v = this.form.getRawValue();
     this.saving.set(true);
+    this.error.set(null);
     this.api.addCompensation(this.employeeId(), { ...v, reason: v.reason.trim() || null }).subscribe({
       next: (d) => {
         this.data.set(d);
         this.saving.set(false);
         this.form.reset();
       },
-      error: () => this.saving.set(false),
+      error: (e: unknown) => {
+        this.saving.set(false);
+        this.error.set(peopleErrorKey(e));
+      },
     });
   }
 }
