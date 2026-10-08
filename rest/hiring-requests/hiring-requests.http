@@ -101,7 +101,7 @@ Content-Type: application/json
 {
     "form_fields": [
         {
-            "key": "Example key",
+            "key": "example_key",
             "label": "Example label",
             "type": "text"
         }

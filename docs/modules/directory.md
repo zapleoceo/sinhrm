@@ -16,7 +16,7 @@
 
 ## Как пользоваться
 Меню слева → «Адміністрування → Довідники» (видно суперадмину и админу).
-- Вкладки: Філії, Міста, Відділи, Посади. Поиск по названию, фильтр по статусу, постраничный вывод.
+- Вкладки: Філії, Міста, Відділи, Посади, Категорії вакансій. Поиск по названию, фильтр по статусу, постраничный вывод.
 - **Додати** — новая запись по названию. **✎** — переименовать прямо в строке (Enter — сохранить, Esc — отмена).
   **Вимкнути / Увімкнути** — кнопка в строке. Изменения видны сразу; если сервер отказал — строка возвращается как была.
 - Филиалы пользователя — в «Адміністрування → Користувачі», колонка «Філії» (см. [users.md](users.md)).
@@ -32,7 +32,7 @@
 
 Колонка `external_id` (ключ внешнего импорта) удалена миграцией `2026_10_07_100001_drop_directory_external_ids`.
 Модели: `Models/DictionaryItem` (общая база) → `Branch` (+ `city()`), `City`, `Department`, `Position`.
-Enum `Enums/DirectoryStatus` (`active`, `disabled`), `Enums/DictionaryType` (`branches|cities|departments|positions` →
+Enum `Enums/DirectoryStatus` (`active`, `disabled`), `Enums/DictionaryType` (`branches|cities|departments|positions|vacancy_categories` →
 модель). У `App\Models\User` связь `branches()` (через `branch_user`).
 
 ### Доступ

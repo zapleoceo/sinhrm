@@ -32,6 +32,8 @@
 | Scripts | задачи рекрутера о человеке, оценки звонков по скрипту (в них цитаты разговора) | оценки удаляются; заголовок задачи → «Видалений кандидат #id» (строка остаётся для статистики нагрузки) |
 | MailAgent | журнал обработанных писем: отправитель, тема | отправитель и тема стёрты |
 | People (сотрудник) | профиль: контакты, дата рождения, адрес, контакт на экстренный случай, аватар, доп. поля, запросы на изменение | имя → «Видалений співробітник #id», всё перечисленное стёрто; даты приёма/увольнения, филиал, отдел, должность остаются |
+| People: компенсации (сотрудник) | история выплат: сумма, валюта, период, дата, причина | не стирается: оплата труда — кадровая запись, хранится по закону |
+| Audit | строки журнала действий о человеке (маскированные изменения) | остаётся; значения вне текущего allow-list повторно маскируются |
 | Documents (сотрудник) | список документов: название, статус, даты, имя/тип/размер файла (сам файл — нет) | неподписанные (чернетка, отправлен, отклонён): текст и файл удаляются. Подписанные и архивные — кадровые документы, хранятся столько, сколько требует закон |
 
 Удаление идёт одной транзакцией во всех модулях (всё или ничего) и повторяемо: второй запуск ничего не ломает.
@@ -55,7 +57,7 @@
   описывает только свои таблицы и регистрируется через `$app->tag([...], PersonalDataProvider::class)` — так же, как
   `ScheduledJob` и `HealthCheck`. Privacy не лезет в чужие таблицы. Субъект — `Core\DTO\DataSubject` (`candidate` | `employee` + id).
 - Провайдеры: `Recruiting\Privacy\CandidatePersonalData`, `Scripts\Privacy\ScriptsPersonalData`,
-  `MailAgent\Privacy\MailPersonalData`, `People\Privacy\EmployeePersonalData`, `Documents\Privacy\DocumentsPersonalData`.
+  `MailAgent\Privacy\MailPersonalData`, `People\Privacy\EmployeePersonalData`, `People\Privacy\CompensationPersonalData`, `Documents\Privacy\DocumentsPersonalData`, `Audit\Privacy\AuditPersonalData`.
 - `blocker()` — причина отказа (`not_found` → 404, `hired`/`not_terminated` → 409). Отвечает модуль-владелец.
 - `Privacy\Services\PersonalDataService` запускает всех провайдеров, пишет журнал `privacy_requests` (кто, что, когда,
   причина, счётчики — без самих данных; `counts` — колонка типа `json` MySQL) и лог `privacy.erased`.

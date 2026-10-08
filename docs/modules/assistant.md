@@ -224,7 +224,7 @@ Middleware: `auth:sanctum`, `EnsureUserIsActive`, доступ к модулю `
 
 ### Фронтенд
 `features/assistant/`: маскот «Стік» (`mascot/`: skeleton, ik, springs, physics, effects, face, ink, animations, brain,
-engine, renderer, loop — чистые модули с тестами; 12 появлений, 12 idle, 6 уходов, 17 движений, 17 занятий, перетаскивание и бросок с физикой),
+mascot-engine, mascot-renderer, mascot-loop — чистые модули с тестами; 12 появлений, 12 idle, 6 уходов, 17 движений, 17 занятий, перетаскивание и бросок с физикой),
 чат `chat/` (карточка подтверждения записи, панель MCP с предупреждением о правах токена), диктовка `voice/`
 (MediaRecorder webm/opus → mp4 → ogg, 24 кбит/с, ≤ 120 с, ≤ 4 МБ; `POST /transcribe`, опрос каждые 2 с до 90 с;
 текст только вставляется в поле ввода). Монтируется в `ShellLayout` лениво (когда браузер простаивает) и только если у

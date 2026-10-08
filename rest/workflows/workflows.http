@@ -115,3 +115,36 @@ Content-Type: application/json
         1
     ]
 }
+
+### DELETE /api/workflows/templates/{workflowTemplate} — workflows.templates.destroy (409 has_runs if the template was ever started)
+DELETE {{host}}/api/workflows/templates/{{workflowTemplate}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### PUT /api/workflows/templates/{workflowTemplate}/webhook-secret — workflows.templates.webhook-secret (16..200 chars; null removes)
+PUT {{host}}/api/workflows/templates/{{workflowTemplate}}/webhook-secret
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "secret": "<WEBHOOK_SIGNING_SECRET_16+_CHARS>"
+}
+
+### POST /api/workflows/runs/{workflowRun}/cancel — workflows.runs.cancel
+POST {{host}}/api/workflows/runs/{{workflowRun}}/cancel
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### POST /api/workflows/runs/{workflowRun}/steps/{runStep}/retry — workflows.steps.retry (only failed steps)
+POST {{host}}/api/workflows/runs/{{workflowRun}}/steps/{{runStep}}/retry
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/

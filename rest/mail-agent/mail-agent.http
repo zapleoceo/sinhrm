@@ -36,7 +36,7 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "pattern": "Example pattern",
+    "pattern": "@jobboard.example.test",
     "kind": "job_board"
 }
 
@@ -49,7 +49,7 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "pattern": "Example pattern",
+    "pattern": "@jobboard.example.test",
     "kind": "job_board"
 }
 
@@ -69,3 +69,17 @@ Content-Type: application/json
 {
     "kind": "job_board"
 }
+
+### DELETE /api/mail/rules/{rule} — mail.rules.delete
+DELETE {{host}}/api/mail/rules/{{rule}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+
+### DELETE /api/mail/unknown-senders/{sender} — mail.unknown.dismiss (remove from the queue without a rule)
+DELETE {{host}}/api/mail/unknown-senders/{{sender}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/

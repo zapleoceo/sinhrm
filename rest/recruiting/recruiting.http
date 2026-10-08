@@ -24,6 +24,11 @@ Content-Type: application/json
         {
             "name": "Example name",
             "kind": "attract"
+        },
+        {
+            "name": "Example rejected",
+            "kind": "closed",
+            "is_terminal": true
         }
     ]
 }

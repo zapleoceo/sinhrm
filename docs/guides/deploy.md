@@ -47,6 +47,8 @@ merge-base) или падение самого шага — всё это даё
 | `deploy.yml` | после зелёного CI (push в `main` / PR) | `vercel pull` → `vercel build` → `vercel deploy --prebuilt` для `sinhrm-api` и `sinhrm`; миграции через `POST /api/ops/migrate` (prod) / `?fresh=1` (preview, синтетика) |
 | `demo-fill.yml` | вручную (Run workflow, флаг `reset`) | заполняет прод синтетическими данными (один филиал «Тестовий філіал», пометка « [ТЕСТ]» в конце имён) по шагам (`confirm=demo&step=…`) или удаляет только строки из `demo_records` и старые тестовые строки (`reset`; с `dry` — только показывает, что удалит); секрет `X-Ops-Secret` не покидает GitHub Actions |
 | `cron.yml` | каждые 30 мин (и вручную: Run workflow) | обычный `curl -X POST https://sinhrm-api.vercel.app/api/ops/jobs/run` с `X-Ops-Secret` (секрет только через `env`, не в тексте скрипта) — все `ScheduledJob` (напоминания Scripts, начисление отпусков, шаги воркфлоу `workflows.tick` и др.); в лог — только счётчики и вердикт `jobs: ok/FAILED` |
+| `night-window.yml` | раз в неделю (понедельник 05:17 UTC) и вручную | весь backend PHPUnit под `faketime` 22:30 UTC (окно, где дата UTC и Киева различается); не входит в «Protect main» — [development.md](development.md#ночное-окно-utc-против-киева) |
+| `mysql-data-transfer.yml` | PR и push в `main` с изменениями `backend/**` (и самого workflow), вручную | необязательная проверка: репетиция `db:transfer-to-mysql` на синтетике в CI; удаляется после cutover — [mysql-cutover.md](mysql-cutover.md) |
 
 ### Раскладка CI: параллельные job и обязательные проверки
 Бэкенд в `ci.yml` разбит на три параллельных job: `lint` (Pint `--parallel` + PHPStan, без БД; кеши
@@ -68,7 +70,8 @@ Ruleset «Protect main» требует проверки с именами **р�
 
 Секреты GitHub Actions: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_API`, `VERCEL_PROJECT_ID_WEB`, `OPS_SECRET`.
 В GitHub нет доступа к БД: миграции выполняет API по защищённому эндпоинту.
-Переменные окружения приложений (`DATABASE_URL`, `APP_KEY`, `APP_ENV`, `SUPERADMIN_EMAIL`, `OPS_SECRET`) — в настройках проектов Vercel.
+Переменная репозитория (не секрет): `VERCEL_DEPLOY_ENABLED` — выключатель автовыкладки ([Заморозка Vercel](#заморозка-vercel)).
+Переменные окружения API (`DB_URL` — `config/database.php` читает её, запасное имя `DATABASE_URL`; `APP_KEY`, `APP_ENV`, `SUPERADMIN_EMAIL`, `OPS_SECRET` — то же значение, что в секрете GitHub Actions; `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — OAuth-клиент входа) — в настройках проектов Vercel; полный перечень — [secrets.md](../architecture/secrets.md).
 
 Защита preview-деплоев Vercel (Vercel Authentication) отключена: на preview только синтетические данные,
 а эндпоинты закрыты авторизацией или `X-Ops-Secret`. Поэтому CI обращается к ним обычным `curl`

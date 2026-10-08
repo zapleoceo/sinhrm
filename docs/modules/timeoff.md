@@ -119,6 +119,8 @@
 `Listeners/GrantAccrualOnHire` сразу начисляет текущий период (пропорционально).
 
 ### Эндпоинты `/api/timeoff`
+«admin» в колонке «Кто» — gate `timeoff-manage`: superadmin, admin и hr_manager (`UserRole::hrStaff()`).
+
 | Метод и путь | Кто | Параметры / тело | Ответ |
 |---|---|---|---|
 | `GET types` | любой активный | `all=1` (с выключенными — только админ) | список |
@@ -153,7 +155,7 @@
 | `timeoff.model.ts`, `timeoff.service.ts` | типы, HTTP, `timeoffErrorKey` |
 | `timeoff.dates.ts` | даты `YYYY-MM-DD` на UTC-полночах: месяц, сдвиг, выходные, раскладка отсутствий по дням, оценка дней до ответа сервера |
 | `leave-requests.store.ts` | список запросов + действия, `version` для перезагрузки балансов |
-| `widgets/` | `BalancesPanel`, `RequestsList` (строка «На кого передати справи: <имя>»), `LeaveRequestForm` (нативные `type="date"`, превью с сервера с задержкой 300 мс; необязательный `app-person-picker` «На кого передати справи», scope `employees`) |
+| `widgets/` | `BalancesPanel`, `RequestsList` (строка «На кого передати справи: <имя>»), `LeaveRequestForm` (период — `mat-date-range-picker`, превью с сервера с задержкой 300 мс; необязательный `app-person-picker` «На кого передати справи», scope `employees`) |
 | `my/`, `calendar/`, `approvals/`, `settings/` | страницы `/timeoff`, `/timeoff/calendar` (CSS grid, без библиотек; в подсказке ячейки — кто заміщує), `/timeoff/approvals`, `/admin/timeoff` |
 
 Строки — `timeoff.*` в `public/i18n/{uk,ru,en}.json`.

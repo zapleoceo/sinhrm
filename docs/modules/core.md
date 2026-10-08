@@ -94,9 +94,9 @@ DB/key/storage требования и незакрытые решения вл�
 | `api/api-error.ts` | `apiErrorKey(error, prefix, codes, { statuses?, fallback? })` — i18n-ключ ошибки API: известный `{code}` → `<prefix>.errors.<code>`, иначе статус из списка `statuses` (по умолчанию все: `forbidden` 403, `not_found` 404, `validation` 422, `rate_limited` 429) → `<prefix>.errors.<имя>`, иначе `fallback` (по умолчанию `common.error`). `apiErrorCode(e)` / `apiErrorStatus(e)` — код и статус ответа или `null`. Ключи каждой фичи (`performErrorKey`, `scriptsErrorKey`, …) — однострочные обёртки с её списком статусов и запасным ключом, тексты не менялись |
 | `ui/paginator-intl.ts` | Общий `MatPaginatorIntl`, подключённый в `app.config.ts`: пять Material-подписей и связка диапазона из `common.paginator.*`; `selectTranslateObject` следует `LanguageService` через активный язык Transloco и ждёт загрузки словаря, `changes` обновляет существующие пагинаторы, `takeUntilDestroyed` завершает подписку. Локализация заменяет только связку «of» штатного `MatPaginatorIntl`: числовой диапазон, пробелы и поведение пустых, отрицательных и выходящих за пределы страниц сохраняются. Провайдер не меняет индекс страницы, URL или API-запрос и не подменяет диапазон запрошенной страницы диапазоном другой |
 | `ui/notify.service.ts` | `NotifyService.show(key, { params?, duration? })` — короткое уведомление (Material snack bar) с переведённым текстом; длительность по умолчанию `NOTIFY_DURATION_MS` = 4000 мс, другие (2000/3000/5000) передаются явно там, где они были. Доступность — штатная snack bar: вежливая live-область (`aria-live="polite"`), фокус не уводится. Заменил 30+ локальных `toast()`; 2026-10-08 переведены и оставшиеся 21 вызов `MatSnackBar.open(i18n.translate(…))` (страницы с таблицами, `features/people`, Perform, Pulse, Scripts, Time, Mail, Google Sheets) — длительности 3000/5000 переданы явно. Свой `MatSnackBar` остался только у `people/hire.action.ts`: уведомление с кнопкой «Відкрити», `NotifyService` кнопок не умеет |
-| `api/api.model.ts` | общие типы ответа API: `PageMeta` (`current_page`, `per_page`, `total`, `last_page`), `Paged<T, M = PageMeta>` (`{ data: T[], meta }`; фича может расширить meta, как `VacancyPageMeta`), `DataEnvelope<T>` (`{ data: T }`). Заменили 5 своих определений страницы в фичах (`features/people` пока со своим `Paged`) |
+| `api/api.model.ts` | общие типы ответа API: `PageMeta` (`current_page`, `per_page`, `total`, `last_page`), `Paged<T, M = PageMeta>` (`{ data: T[], meta }`; фича может расширить meta, как `VacancyPageMeta`), `DataEnvelope<T>` (`{ data: T }`). Заменили 5 своих определений страницы в фичах (в `features/recruiting` и `features/timeoff` остался только реэкспорт типа `Paged`) |
 | `api/unwrap-data.ts` | `unwrapData()` — RxJS-оператор: `http.get<DataEnvelope<T>>(url).pipe(unwrapData())` → `Observable<T>`. Заменил ~215 повторов `map((r) => r.data)` в сервисах фич |
-| `api/http-params.ts` | `toParams(query)` — `HttpParams` без пустых значений (`undefined`, `null`, `''`), числа и булевы — строками (API принимает `"20"`); принимает типизированный интерфейс запроса без `{ ...query }`. Раньше жила в `recruiting.service.ts` (оттуда её импортировали 13 фич) + 3 копии; `recruiting.service.ts` пока реэкспортирует её для `features/people` |
+| `api/http-params.ts` | `toParams(query)` — `HttpParams` без пустых значений (`undefined`, `null`, `''`), числа и булевы — строками (API принимает `"20"`); принимает типизированный интерфейс запроса без `{ ...query }`. Раньше жила в `recruiting.service.ts` (оттуда её импортировали 13 фич) + 3 копии; теперь все фичи, включая `features/people` и `features/recruiting`, импортируют её отсюда напрямую |
 
 ## Как проверить
 Тесты: `iso-date.spec.ts`, `iso-day.spec.ts`, `app-date-adapter.spec.ts`, `datepicker-intl.spec.ts`, `channel-icon.spec.ts`, `tests/Feature/Core/HealthTest.php`, `tests/Feature/Core/OpsJobsTest.php`, `tests/Feature/Core/SecurityHeadersTest.php`, `error-reporter.spec.ts`, `tests/Unit/Core/HealthServiceTest.php`, `health.service.spec.ts`,
@@ -110,7 +110,7 @@ DB/key/storage требования и незакрытые решения вл�
 
 ## Точка входа Vercel
 `backend/api/index.php` подменяет `SCRIPT_NAME` на `/index.php`: иначе Laravel считает `/api` базовым путём и
-`/api/health` превращается в `/health` (404). API-only: страниц нет; единственные маршруты группы `web` — `/api/auth/google/*` (модуль Auth); на `sinhrm-api.vercel.app/` — 404. Публичный `sinhrm.vercel.app/` — это фронтенд.
+`/api/health` превращается в `/health` (404). API-only: страниц нет; единственные маршруты группы `web` — `/api/auth/google/*` (модуль Auth) и `/api/google/connect*` (OAuth-подключение GoogleWorkspace); на `sinhrm-api.vercel.app/` — 404. Публичный `sinhrm.vercel.app/` — это фронтенд.
 Контракт проверки здоровья — `/api/health` (зависимости); `/up` — встроенная проверка Laravel «процесс жив», без БД.
 
 ## IP клиента за Vercel (доверенные прокси, 2026-10-03)
@@ -253,8 +253,6 @@ Vercel обрезает длинные сообщения, и текст оши�
 Ключ модуля `core`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).
 
 `Contracts\UserNotifier` — короткий лист користувачу про погодження/рішення (реалізація GoogleWorkspace, див. google-workspace.md). Колонка `users.approval_emails` (default true).
-
-`Contracts/UserNotifier` — короткий лист користувачу про погодження/рішення (реалізація GoogleWorkspace, див. google-workspace.md). Колонка `users.approval_emails` (default true).
 
 ## safeStorage.remove (2026-10-25)
 `core/storage/safe-storage.ts` умеет удалять ключ (`remove`), тоже без исключений. Нужно форме вакансии: черновик

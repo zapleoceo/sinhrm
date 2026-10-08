@@ -1,6 +1,6 @@
 # Ai — main endpoints. Generated skeleton, synthetic data only.
 # Path ids below are placeholders — replace with real ids from a list call.
-@purpose = 1
+@purpose = candidate_screening
 @version = 1
 # Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
 # Full list of Ai operations: /api/docs (tag "Ai").
@@ -18,7 +18,7 @@ X-XSRF-TOKEN: {{xsrf}}
 Referer: {{host}}/
 
 ### GET /api/ai/stats — ?period=today|7d|30d
-GET {{host}}/api/ai/stats
+GET {{host}}/api/ai/stats?period=7d
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 
@@ -36,7 +36,7 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "body": "Example body"
+    "body": "ROLE: Example role.\nTASK: Example task for the model.\nRULES:\n- Example rule one.\n- Example rule two."
 }
 
 ### POST /api/ai/prompts/{purpose}/versions/{version}/activate — ai.prompts.activate
@@ -74,5 +74,5 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "body": "Example body"
+    "body": "ROLE: Example role.\nTASK: Example task for the model.\nRULES:\n- Example rule one.\n- Example rule two."
 }

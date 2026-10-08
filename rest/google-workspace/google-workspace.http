@@ -39,7 +39,8 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "url": "https://example.com/profile"
+    "url": "https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID_20_TO_128_CHARS>/edit",
+    "sheet": "Sheet1"
 }
 
 ### GET /api/google/sheets/imports — google.sheets.imports.index
@@ -55,7 +56,16 @@ X-XSRF-TOKEN: {{xsrf}}
 Referer: {{host}}/
 Content-Type: application/json
 
-"Example text"
+{
+    "url": "https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID_20_TO_128_CHARS>/edit",
+    "sheet": "Sheet1",
+    "mapping": {
+        "full_name": 0,
+        "phone": 1,
+        "email": 2
+    },
+    "auto_sync": false
+}
 
 ### PATCH /api/google/sheets/imports/{sheetImport} — google.sheets.imports.update
 PATCH {{host}}/api/google/sheets/imports/{{sheetImport}}
@@ -91,11 +101,11 @@ X-XSRF-TOKEN: {{xsrf}}
 Referer: {{host}}/
 
 ### GET /api/google/connect — GET /api/google/connect?services=gmail,calendar,sheets (default: all three)
-GET {{host}}/api/google/connect
+GET {{host}}/api/google/connect?services=gmail,calendar,sheets
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 
 ### GET /api/google/connect/callback — GET /api/google/connect/callback?code=…&state=…
-GET {{host}}/api/google/connect/callback
+GET {{host}}/api/google/connect/callback?code=<AUTH_CODE>&state=<STATE>
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}

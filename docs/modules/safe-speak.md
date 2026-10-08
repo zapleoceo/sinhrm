@@ -58,8 +58,8 @@ JSON (ошибка валидации не превращается в реди�
 - При 80 битах энтропии и 40 попытках в час на адрес подбор бессмыслен даже с тысячами адресов.
 
 ### Обработчики
-Колонка `users.safe_speak_handler` (миграция модуля Users). Gate `safe-speak-handle` = активный суперадмин/админ **и**
-флаг. Маршруты `routes.php` (`auth:sanctum`): `GET /api/safe-speak/me` (`{handler}` для меню), `GET /reports?status=`,
+Колонка `users.safe_speak_handler` (миграция модуля Users). Gate `safe-speak-handle` = активный HR-сотрудник
+(`UserRole::hrStaff()`: superadmin, admin, hr_manager) **и** флаг. Маршруты `routes.php` (`auth:sanctum`): `GET /api/safe-speak/me` (`{handler}` для меню), `GET /reports?status=`,
 `GET /reports/{id}`, `POST /reports/{id}/messages` (первый ответ: `new` → `in_review`), `PATCH /reports/{id}` `{status}`.
 
 ### Оговорки (что анонимность НЕ покрывает)

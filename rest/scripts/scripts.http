@@ -86,7 +86,7 @@ Content-Type: application/json
     "templates": [
         {
             "id": "Example id",
-            "key": "Example key",
+            "key": "example_key",
             "title": "Example title",
             "text": "Example text"
         }
@@ -136,3 +136,20 @@ Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 GET {{host}}/api/reports/scripts
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/tasks — tasks.index (filters: mine, due=today|overdue, candidate_id, done, source, employee_id)
+GET {{host}}/api/tasks?mine=1&due=today
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/tasks/{id} — tasks.update (mark done / reopen)
+PATCH {{host}}/api/tasks/1
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "done": true
+}

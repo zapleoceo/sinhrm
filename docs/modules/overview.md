@@ -34,7 +34,7 @@ Scripts; своих таблиц нет. Блоки других модулей 
 | Поле ответа `data` | Что | Откуда |
 |---|---|---|
 | `counts.active` | активные заявки | `applications.status = active` |
-| `counts.stale` | из них без реального касания ≥ 3 дней | `coalesce(last_touch_at, created_at)`, порог `StalenessService::DEFAULT_DAYS` |
+| `counts.stale` | из них без реального касания ≥ 3 дней | `coalesce(last_touch_at, created_at)`, порог `ApplicationRepository::STALE_DAYS` (3; отдаётся как `stale_days`) |
 | `counts.unmatched_inbox` | касания без кандидата | как видимость «Вхідних»: автор — пользователь или линия его филиала |
 | `counts.new_today` | заявки, созданные с начала сегодняшнего дня пользователя (см. «Сегодня» ниже) | `applications.created_at` |
 | `my_tasks` | `{total, overdue, items[≤20]}` мои открытые задачи до конца дня пользователя; `overdue` — со сроком раньше его начала | `Scripts\Services\TaskService` (`mine`, `due=today`) |

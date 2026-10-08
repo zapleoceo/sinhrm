@@ -6,25 +6,29 @@
 
 ## Техническая схема
 ```
-Браузер ──► sinhrm.vercel.app (Angular SPA, Vercel)
-              │  /api/*  (Vercel rewrite, тот же домен → cookie-сессия работает)
+Браузер ──► SPA (Angular, статика; frontend/dist/frontend/browser)
+              │  /api/* и /sanctum/* — на том же внешнем origin (rewrite/reverse proxy → cookie-сессия работает)
               ▼
-           sinhrm-api.vercel.app (Laravel 13, runtime vercel-php, PHP 8.5, serverless, регион fra1 — рядом с БД)
+           Laravel 13 API (PHP 8.4, backend/public/index.php)
               │
               ▼
            MySQL 8.4 (IT STEP) — данные, сессии, очередь задач, зашифрованные секреты
            (ADR 0011; перенос боевых данных — guides/mysql-cutover.md)
-Chrome «SinHRM Clipper» ──► sinhrm.vercel.app/api/clipper/* (Bearer-токен, только эти маршруты)
-GitHub Actions ──► тесты на каждый PR ─► деплой на Vercel ─► cron (30 мин): POST /api/ops/jobs/run
+Chrome «SinHRM Clipper» ──► <origin>/api/clipper/* (Bearer-токен, только эти маршруты)
+GitHub Actions ──► CI на каждый PR (обязательные: backend, frontend, extension, security, docs, worklog) ─► cron (30 мин): POST /api/ops/jobs/run
+
+Прежний боевой контур (заморожен с 2026-10-08, автовыкладка выключена): sinhrm.vercel.app → sinhrm-api.vercel.app
+(vercel-php@0.9.0, fra1) + прежняя БД, релиз ветки замороженного релиза (имя — в guides/mysql-cutover.md) — до переезда на MySQL IT STEP
+(guides/deploy.md, «Заморозка Vercel»). `main` туда не выкладывается.
 ```
 
 | Решение | Почему |
 |---|---|
-| Один домен для фронта и API (rewrite) | `vercel.app` — публичный суффикс, cookie между двумя `*.vercel.app` не работают |
+| Один домен для фронта и API (rewrite / reverse proxy) | Sanctum SPA-режим держится на cookie одного origin; на Vercel — ещё и потому, что `vercel.app` — публичный суффикс и cookie между двумя `*.vercel.app` не работают ([itstep-app-handoff.md](../guides/itstep-app-handoff.md)) |
 | Сессии, кэш, очередь — в БД приложения | у serverless нет постоянного диска и процессов |
 | Единственная БД — MySQL 8.4 | DevOps IT STEP поддерживают только MySQL ([ADR 0011](../adr/0011-mysql-only.md), заменил [ADR 0010](../adr/0010-mysql-dual-support.md)); разовый перенос боевых данных и замороженный релиз до переезда — [mysql-cutover.md](../guides/mysql-cutover.md); CI-страж `scripts/mysql-only-guard.mjs` |
-| Фоновые задачи через cron GitHub Actions | у vercel-php нет воркеров; Vercel Hobby cron — 1 раз в сутки |
-| Деплой из GitHub Actions (Vercel CLI) | деплой только после зелёных тестов; аккаунт Vercel не привязан к GitHub |
+| Фоновые задачи через cron GitHub Actions (`cron.yml`, каждые 30 мин) | прикладных `ShouldQueue`-обработчиков нет, задачи — `Core\Contracts\ScheduledJob`; у vercel-php нет воркеров, Vercel Hobby cron — 1 раз в сутки |
+| Деплой Vercel из GitHub Actions (`deploy.yml`) — **заморожен** | с 2026-10-08 jobs идут только при `VERCEL_DEPLOY_ENABLED=true`; `main` — только MySQL, автовыкладка сломала бы замороженный боевой сайт ([deploy.md](../guides/deploy.md#заморозка-vercel)). Размещение на IT STEP — [itstep-app-handoff.md](../guides/itstep-app-handoff.md) |
 
 ## Бэкенд: модули
 Код разбит по доменам в `backend/app/Modules/<Имя>`. Модуль содержит всё своё:
@@ -90,7 +94,7 @@ GitHub Actions ──► тесты на каждый PR ─► деплой н�
 Standalone-компоненты, signals, `OnPush`, без `any`. Дизайн — [design-direction.md](design-direction.md).
 
 ## Ограничения (осознанные)
-- Холодный старт API ~0.3–1 с после простоя.
+- Холодный старт API ~0.3–1 с после простоя (serverless на Vercel).
 - Фоновые задачи выполняются с задержкой до ~30 мин (частота cron): модули регистрируют `Core\Contracts\ScheduledJob`,
   cron вызывает `POST /api/ops/jobs/run` ([core.md](../modules/core.md)).
 - Шаги воркфлоу выполняются тем же cron (`workflows.tick`, до 50 шагов за вызов); вебхуки воркфлоу — синхронно в нём,

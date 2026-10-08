@@ -34,6 +34,8 @@ production backup, его свежесть, полный охват данных
 
 ## Что сохранять
 
+> Боевая БД до переезда — Neon (PostgreSQL, замороженный релиз `legacy/vercel-postgres`); после переезда — MySQL 8.4 IT STEP, бэкап через `mysqldump` (PROD-48, draft [PR174](https://github.com/zapleoceo/sinhrm/pull/174), не влит). Пункты и команды ниже (`pg_dump`/`pg_restore`) относятся к Neon; для MySQL логика та же (точка восстановления, `APP_KEY`, внешние файлы), инструмент — `mysqldump`/`mysql` соответствующей major-версии.
+
 1. Согласованный snapshot/PITR или логический dump PostgreSQL с миграциями, данными и sequences.
    Зафиксировать время точки восстановления, версию PostgreSQL, SHA приложения и checksum файла в закрытом журнале.
    Хранить зашифрованно, с ограниченным доступом, вне публичного репозитория/CI artifacts; retention задаёт владелец.

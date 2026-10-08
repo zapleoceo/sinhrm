@@ -1,30 +1,28 @@
 # Core — main endpoints. Generated skeleton, synthetic data only.
 # Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
 # Full list of Core operations: /api/docs (tag "Core").
+# /api/ops/* are machine-only: no session, only the X-Ops-Secret header (OPS_SECRET of the environment; placeholder below).
+@ops_secret = <OPS_SECRET>
 
 ### GET /api/health — core.health
 GET {{host}}/api/health
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 
-### POST /api/ops/migrate — core.ops.migrate
+### POST /api/ops/migrate — core.ops.migrate (?fresh=1 rebuilds the DB with synthetic data; 403 in production)
 POST {{host}}/api/ops/migrate
 Accept: application/json
-Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
-X-XSRF-TOKEN: {{xsrf}}
-Referer: {{host}}/
-Content-Type: application/json
-
-{
-    "fresh": true
-}
+X-Ops-Secret: {{ops_secret}}
 
 ### POST /api/ops/jobs/run — core.ops.jobs
 POST {{host}}/api/ops/jobs/run
 Accept: application/json
+X-Ops-Secret: {{ops_secret}}
+
+### GET /api/nav/badges — core.nav.badges (counters of the current user)
+GET {{host}}/api/nav/badges
+Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
-X-XSRF-TOKEN: {{xsrf}}
-Referer: {{host}}/
 
 ### GET /api/modules — core.modules.index (superadmin)
 GET {{host}}/api/modules
