@@ -22,6 +22,8 @@
 **Браузерное расширение (`extension/`):** TypeScript без фреймворка, esbuild, Vitest + jsdom на вымышленных HTML-фикстурах
 (реальные страницы сайтов в репозиторий не копируем), ESLint; `npm run lint|typecheck|test|package` — job `extension` в CI.
 
+**Версия TypeScript в `extension/` — 6.x (решение 2026-10-08).** Мажор TypeScript 7 не ставится: `typescript-eslint` (включая последнюю 8.71.1) объявляет peer `typescript >=4.8.4 <6.1.0`, поэтому `npm ci` падает с ERESOLVE (dependabot-PR #191, job `extension`). Обновление на TS 7 возможно в том PR, где `typescript-eslint` выпустит peer с поддержкой 7.x; проверка — `npm view typescript-eslint peerDependencies`. Dependabot для `/extension` игнорирует мажорные версии `typescript` (как и для `/frontend`).
+
 **Фронтенд (Angular):** standalone, signals, `inject()`, `OnPush`, typed forms, без `any`, строки интерфейса — через i18n (ru/uk/en).
 Тесты — Vitest. **HTTP только через сервисы:** компонент не держит `HttpClient`; HTTP-сервис живёт в самой фиче
 (`features/<name>/<name>.service.ts` или рядом с подфичей, например `recruiting/card/offers.service.ts`), а в `core/api` —
