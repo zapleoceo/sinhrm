@@ -30,7 +30,7 @@ import { wideDialog } from '../../../core/ui/dialog';
 import { ActiveFilter, ActiveFilters } from '../../../core/ui/table/active-filters';
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
-import { ColumnFilter, FilterValue, TableSort, filterToParam, sortToParams } from '../../../core/ui/table/table-state';
+import { ColumnFilter, FilterValue, TableSort, idToFilter } from '../../../core/ui/table/table-state';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { peopleQueryFromParams } from './people.query';
 
@@ -311,6 +311,8 @@ export class PeoplePage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly url = inject(TableUrlState);
+  /** Select value of an optional id of the query (none → «all»). */
+  protected readonly idValue = idToFilter;
 
   protected readonly search$ = new Subject<string>();
   protected readonly statuses = EMPLOYEE_STATUSES;
@@ -357,11 +359,11 @@ export class PeoplePage implements OnInit {
   }
 
   protected onPage(e: PageEvent): void {
-    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+    this.url.setPage(e);
   }
 
   protected onSort(sort: TableSort | null): void {
-    this.url.update(sortToParams(sort));
+    this.url.setSort(sort);
   }
 
   /** Top selects: a value or «all» (undefined). */
@@ -371,7 +373,7 @@ export class PeoplePage implements OnInit {
 
   /** Header filters: text or the chosen id; cleared → removed from the URL. */
   protected setFilter(name: 'name' | 'contact' | 'manager' | 'branch_id' | 'department_id' | 'position_id', value: FilterValue): void {
-    this.url.update({ [name]: filterToParam(value) });
+    this.url.setFilter(name, value);
   }
 
   protected clearTextFilter(key: string): void {
@@ -381,10 +383,6 @@ export class PeoplePage implements OnInit {
 
   protected clearTextFilters(): void {
     this.url.update({ name: null, contact: null, manager: null });
-  }
-
-  protected idValue(id: number | undefined): string | null {
-    return id ? String(id) : null;
   }
 
   protected toggle(id: number): void {

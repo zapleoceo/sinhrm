@@ -34,7 +34,9 @@
      особый случай «Відкриті по умолчанию / Усі» — `features/desk/queue.page.ts` (статус только в API).
 2. **Состояние в адресе:** `providers: [TableUrlState]`, функция «адрес → запрос» (как `peopleQueryFromParams`: мусор из
    адреса отбрасывается, а не уходит в API), в `ngOnInit` — `url.watch(parse, q => store.apply(q))`; изменения — только
-   через `url.update({...})` (страница сама вернётся на 1; листание — `{ paging: true }`). Store не грузит повторно тот же
+   через `url.update({...})` (страница сама вернётся на 1; листание — `{ paging: true }`); для серверной таблицы
+   готовые `url.setPage($event)`, `url.setSort(sort)`, `url.setFilter(name, value)`, id из запроса в фильтр выбора —
+   `idToFilter` (`table-state.ts`). Store не грузит повторно тот же
    запрос (`sameQuery`).
 3. **Разметка:**
    ```html

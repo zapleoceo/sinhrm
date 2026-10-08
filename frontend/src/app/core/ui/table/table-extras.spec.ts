@@ -13,6 +13,7 @@ import {
   TEXT_PARAM_MAX,
   dateRangeFromParams,
   dateRangeToParams,
+  idToFilter,
   isIsoDay,
   oneOfParam,
   sameQuery,
@@ -29,7 +30,14 @@ describe('table state helpers (URL junk never reaches the API)', () => {
     expect(textParam(convertToParamMap({ q: '0' }), 'q')).toBe('0');
   });
 
-  it('oneOfParam keeps allowed values only', () => {
+  it('idToFilter: an id of the query is the select value; no id is «all» (null)', () => {
+    expect(idToFilter(3)).toBe('3');
+    expect(idToFilter(undefined)).toBeNull();
+    expect(idToFilter(null)).toBeNull();
+    expect(idToFilter(0)).toBeNull();
+  });
+
+    it('oneOfParam keeps allowed values only', () => {
     const allowed = ['active', 'blocked'] as const;
     expect(oneOfParam(convertToParamMap({ s: 'blocked' }), 's', allowed)).toBe('blocked');
     expect(oneOfParam(convertToParamMap({ s: 'Blocked' }), 's', allowed)).toBeUndefined();

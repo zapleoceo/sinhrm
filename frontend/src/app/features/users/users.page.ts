@@ -23,9 +23,7 @@ import {
   RangeValue,
   TableSort,
   dateRangeToParams,
-  filterToParam,
   sameQuery,
-  sortToParams,
 } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { DictionaryItem } from '../directory/directory.model';
@@ -133,16 +131,16 @@ export class UsersPage implements OnInit {
   }
 
   protected onPage(e: PageEvent): void {
-    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+    this.url.setPage(e);
   }
 
   protected onSort(sort: TableSort | null): void {
-    this.url.update(sortToParams(sort));
+    this.url.setSort(sort);
   }
 
   /** Header filters: text / chosen value; cleared → removed from the URL (and the page goes back to 1). */
   protected setFilter(name: 'q' | 'role' | 'status', value: FilterValue): void {
-    this.url.update({ [name]: filterToParam(value) });
+    this.url.setFilter(name, value);
   }
 
   protected setLastLogin(value: FilterValue): void {
