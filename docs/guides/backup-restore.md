@@ -2,7 +2,12 @@
 
 ## Что уже доказуемо
 
-Workflow **Backup restore proof** поднимает отдельный PostgreSQL 17 без production credentials.
+> **2026-10-08 (HRM-40, [ADR 0011](../adr/0011-mysql-only.md)): PostgreSQL-проверка снята.** Workflow
+> `.github/workflows/backup-restore.yml` (jobs `synthetic-restore` и `synthetic-mysql-transfer`) удалён: `main` больше не
+> строит схему PostgreSQL. MySQL-вариант (`mysqldump` + изолированное восстановление) — HRM-38, PR #174; репетиция
+> переноса PostgreSQL → MySQL — workflow `mysql-data-transfer.yml`. Текст ниже описывает снятую PostgreSQL-проверку.
+
+Workflow **Backup restore proof** поднимал отдельный PostgreSQL 17 без production credentials.
 Применяет реальные миграции, создаёт синтетические recruiter/branch/vacancy/candidate/application,
 историю этапа и touchpoint, а также секрет через SecretVault. `pg_dump` и `pg_restore` запускаются внутри
 того же контейнера PostgreSQL 17. Dump восстанавливается в другую пустую базу; исходная база удалена до проверки.
@@ -90,8 +95,8 @@ production backup, его свежесть, полный охват данных
 После drill удалить изолированную БД, приложение, временный dump и временный доступ; retained backups/ключи
 удалять только по утверждённой retention policy. Проверку production восстановления и внешних файлов согласовать отдельно.
 
-## Synthetic MySQL transfer rehearsal
+## Synthetic MySQL transfer rehearsal (removed 2026-10-08)
 
-`synthetic-mysql-transfer` in `.github/workflows/backup-restore.yml` uses disposable PostgreSQL 17 and MySQL 8.4 service databases and one generated application key. It migrates both schemas, copies a synthetic linked fixture without clearing either database, and checks row counts, foreign keys, IDs, Unicode/JSON, long text, the full 2 MiB database attachment and its SHA-256, and encrypted-vault ciphertext. It also replays one new candidate from the target to the retained source and advances the source sequence. The script accepts only fixed local CI databases and does not accept production connection strings.
+Removed with PostgreSQL support (ADR 0011); the transfer is rehearsed by `.github/workflows/mysql-data-transfer.yml`. Historical description: `synthetic-mysql-transfer` in `.github/workflows/backup-restore.yml` used disposable PostgreSQL 17 and MySQL 8.4 service databases and one generated application key. It migrates both schemas, copies a synthetic linked fixture without clearing either database, and checks row counts, foreign keys, IDs, Unicode/JSON, long text, the full 2 MiB database attachment and its SHA-256, and encrypted-vault ciphertext. It also replays one new candidate from the target to the retained source and advances the source sequence. The script accepts only fixed local CI databases and does not accept production connection strings.
 
 This is a compatibility rehearsal. A live cutover still needs verified source backup/restore, target version and TLS checks, a complete data comparison, write quiescence or change capture, and a rollback plan covering updates and deletes as well as new rows. Do not run a reset or point Vercel at the target based on this CI job alone.

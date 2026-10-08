@@ -60,8 +60,10 @@
 - Переезд данных Neon → MySQL — прежний runbook [mysql-cutover.md](../guides/mysql-cutover.md): preflight требует
   совпадения списка миграций, поэтому новые миграции после заморозки накатываются на MySQL **после** переноса.
 - Откат на Neon — переключением на релиз `legacy/vercel-postgres`, не `main`.
-- `backup-restore.yml` (доказательство `pg_dump`) переделывается под MySQL отдельно (HRM-38, PR #174); до этого он
-  падает на PR, меняющих `backend/**` (не обязательная проверка).
+- Workflow `backup-restore.yml` (PostgreSQL: `pg_dump`/`pg_restore` и репетиция переноса) удалён — он строил источник
+  штатными миграциями, которых для PostgreSQL больше нет; перенос репетирует `mysql-data-transfer.yml`, MySQL-бэкап —
+  HRM-38 (PR #174). Осиротевшие `scripts/backup-restore-proof*`, `scripts/mysql-transfer-proof.php`,
+  `BackupRestoreProofTest`, `MySqlTransferProofTest` (пропускаются вне того workflow) оставлены до #174.
 
 **Альтернативы.** Двойная поддержка до переезда (ADR 0010) — каждый PR платит вторым CI-прогоном и дисциплиной pg/MySQL,
 а прод на Neon заморожен и новых фич не получает; оставить `pgsql` в конфиге «на всякий случай» — PostgreSQL-путь без

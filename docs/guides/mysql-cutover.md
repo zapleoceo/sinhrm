@@ -96,7 +96,7 @@
   поддерживает) с `DB_CONNECTION=pgsql`, `DB_URL=<neon>`, вернуть
   роли приложения в Neon права записи (`GRANT INSERT, UPDATE, DELETE, TRUNCATE …`), включить `cron.yml`, снять заморозку. Данные Neon не менялись — откат без потерь.
 - **После снятия заморозки** в MySQL появились новые записи: снова заморозка, перенос новых строк обратно в Neon
-  (репетиция одного append-only случая — `backup-restore.yml`, `scripts/mysql-transfer-proof.php replay-candidate`;
+  (репетиция одного append-only случая была в снятом `backup-restore.yml` — `scripts/mysql-transfer-proof.php replay-candidate`, запускать из релиза `legacy/vercel-postgres`;
   правки и удаления после переключения переносятся вручную по журналу аудита), затем `setval` последовательностей и
   переключение `DB_URL`. Поэтому решение об откате принимается в окне, до снятия заморозки.
 - MySQL после отката не удалять до разбора причины.
