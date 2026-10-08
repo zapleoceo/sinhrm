@@ -92,6 +92,29 @@ final class OfferApiTest extends TestCase
         $this->actingAs($recruiter)->getJson($url)->assertOk()->assertJsonPath('data.salary', '30000 UAH');
     }
 
+    /**
+     * A long template (the Documents limit is 50 000 characters; Cyrillic is 2 bytes in utf8mb4) renders an offer far over
+     * the 64 KB of a TEXT column: it is stored and sent whole (MySQL 8.4 e2e, round 2: was 500, SQLSTATE 22001).
+     */
+    public function test_long_offer_text_is_stored_and_sent_whole(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $body = '{ПІБ}: '.str_repeat('Ґанок, їжа, ЄВРО — умови оферу. ', 1500); // ≈ 48 000 characters ≈ 90 KB
+        $template = DocumentTemplate::query()->create(['name' => 'Long offer', 'category' => 'offer', 'body' => $body]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+
+        $content = $this->actingAs($recruiter)->postJson($url, ['template_id' => $template->id, 'position' => 'Manager', 'salary' => '30000 UAH'])
+            ->assertCreated()->json('data.content_md');
+        $this->assertIsString($content);
+        $this->assertGreaterThan(65535, strlen($content));
+        $this->assertStringStartsWith('Olena Sample: ', $content);
+
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk()->assertJsonPath('data.status', 'sent');
+        $touch = Touchpoint::query()->where('application_id', $this->application->id)->where('channel', 'email')->firstOrFail();
+        $this->assertSame($content, $touch->body);
+    }
+
     public function test_salary_is_visible_only_to_writers_and_hiring_manager(): void
     {
         $this->application->update(['stage_id' => $this->stageAt(6)->id]);
