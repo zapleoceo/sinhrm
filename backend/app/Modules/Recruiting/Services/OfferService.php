@@ -94,7 +94,7 @@ final readonly class OfferService
         ])['text'];
         // offers.content_md and the sent touchpoint's body are TEXT (65 535 bytes); a template may hold 50 000 characters
         // (~100 KB in Cyrillic). MySQL strict mode refused such an insert with a 500 (MySQL e2e, round 2). The schema is
-        // frozen until the Neon → MySQL cutover (docs/guides/mysql-cutover.md), so the limit is checked here.
+        // frozen until the production data transfer (docs/guides/mysql-cutover.md), so the limit is checked here.
         if (strlen($content) > self::MAX_CONTENT_BYTES) {
             throw RecruitingException::offerTooLong(self::MAX_CONTENT_BYTES);
         }
