@@ -131,5 +131,4 @@ secret scanning для `sinhrm_`, break-glass единственного суп�
 **Открытые PR на 2026-10-08** (`gh pr list`): draft #174 (PROD-48), #197 и #198 (Angular 22.2.1, larastan 3.12.3),
 dependabot #184–#194.
 
-**Известный хвост:** `scripts/backup-restore-proof.test.mjs` ссылается на удалённый `backup-restore.yml` и в CI не
-запускается; его судьбу решает PR #174 (список `ALLOWED` в `scripts/mysql-only-guard.mjs`).
+**Проверка на 2026-10-09:** `scripts/backup-restore-proof.test.mjs` подключён к `.github/workflows/backup-restore.yml`; MySQL-only guard работает без allowlist. Оба изменения входят в объединённую локальную ветку.

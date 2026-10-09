@@ -14,6 +14,8 @@ final class LocalTestLoginGuardTest extends TestCase
         $valid = static fn (string $env, string $sapi, ?string $ip, string $host, bool $enabled, string $given): bool => LocalTestLoginGuard::allows($env, $sapi, $ip, $host, $enabled, 'local-test-secret', $given);
 
         self::assertTrue($valid('local', 'cli-server', '127.0.0.1', '127.0.0.1', true, 'local-test-secret'));
+        self::assertTrue($valid('local', 'cli-server', '::1', '[::1]', true, 'local-test-secret'));
+        self::assertFalse($valid('local', 'cli-server', '::1', '[::1].example.test', true, 'local-test-secret'));
         self::assertFalse($valid('production', 'cli-server', '127.0.0.1', '127.0.0.1', true, 'local-test-secret'));
         self::assertFalse($valid('staging', 'cli-server', '127.0.0.1', '127.0.0.1', true, 'local-test-secret'));
         self::assertFalse($valid('local', 'fpm-fcgi', '127.0.0.1', '127.0.0.1', true, 'local-test-secret'));

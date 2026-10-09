@@ -19,7 +19,7 @@ final class LocalTestLoginGuard
         return $environment === 'local'
             && $sapi === 'cli-server'
             && in_array($ip, ['127.0.0.1', '::1'], true)
-            && in_array($host, ['127.0.0.1', '::1'], true)
+            && in_array($host, ['127.0.0.1', '::1', '[::1]'], true)
             && $enabled
             && $expectedSecret !== ''
             && hash_equals($expectedSecret, $givenSecret);
