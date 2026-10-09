@@ -12,6 +12,7 @@ use App\Modules\Audit\DTO\AuditFilter;
 use App\Modules\Audit\DTO\AuditRecord;
 use App\Modules\Audit\Enums\AuditAction;
 use App\Modules\Audit\Models\AuditEntry;
+use App\Modules\Audit\Support\AuditContextStack;
 use App\Modules\Audit\Support\AuditPolicy;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -27,6 +28,7 @@ final readonly class AuditService implements AuditHistory, AuditLogger
         private AuthFactory $auth,
         private DatabaseManager $db,
         private LoggerInterface $log,
+        private AuditContextStack $context,
     ) {}
 
     public function record(string $entityType, int $entityId, AuditAction $action, ?array $changes = null, ?array $meta = null, ?int $actorId = null): void
@@ -37,6 +39,11 @@ final readonly class AuditService implements AuditHistory, AuditLogger
             if ($changes === [] && $action === AuditAction::Updated) {
                 return; // only technical fields changed
             }
+        }
+        // Context of an enclosing AuditContext::within() (e.g. meta.bulk of a bulk action) — explicit meta wins.
+        $context = $this->context->current();
+        if ($context !== []) {
+            $meta = [...$context, ...($meta ?? [])];
         }
         $actor = $actorId ?? $this->auth->guard()->id();
         // "Працювати як": the signed-in actor narrowed to one role → the entry says in which role it acted.
@@ -57,6 +64,38 @@ final readonly class AuditService implements AuditHistory, AuditLogger
                 $this->log->error('audit.write_failed', ['entity_type' => $record->entityType, 'entity_id' => $record->entityId, 'action' => $record->action->value, 'error' => $e::class]);
             }
         });
+    }
+
+    public function recordDiff(string $entityType, int $entityId, AuditAction $action, array $before, array $after, ?array $meta = null): void
+    {
+        $changes = [];
+        foreach (array_unique([...array_keys($before), ...array_keys($after)]) as $field) {
+            if ($this->policy->isIgnored($field)) {
+                continue; // a write that only bumped updated_at is no change
+            }
+            $from = $before[$field] ?? null;
+            $to = $after[$field] ?? null;
+            if (self::comparable($from) !== self::comparable($to)) {
+                $changes[$field] = ['from' => $from, 'to' => $to];
+            }
+        }
+        if ($changes === []) {
+            return;
+        }
+        $this->record($entityType, $entityId, $action, $changes, $meta);
+    }
+
+    /** Raw DB values and freshly set ones differ in type (1 vs "1", Carbon vs string): compare them as text. */
+    private static function comparable(mixed $value): ?string
+    {
+        return match (true) {
+            $value === null => null,
+            $value instanceof \BackedEnum => (string) $value->value,
+            $value instanceof \DateTimeInterface => $value->format('Y-m-d H:i:s'),
+            is_bool($value) => $value ? '1' : '0',
+            is_scalar($value) => (string) $value,
+            default => (string) json_encode($value),
+        };
     }
 
     /** @return LengthAwarePaginator<int, AuditEntry> */

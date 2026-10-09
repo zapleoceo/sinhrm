@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\People\Services;
 
 use App\Models\User;
+use App\Modules\Audit\Contracts\AuditContext;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
@@ -12,12 +13,14 @@ use App\Modules\People\Models\Employee;
 /**
  * Bulk actions on the employees list (HR staff, route gate people-manage). Each item goes through
  * EmployeeService::update — the same rules (manager cycle, audit observer) as a single edit.
+ * Audit: one row per changed employee, marked meta.bulk = "people.update".
  */
 final readonly class EmployeeBulkService
 {
     public function __construct(
         private EmployeeRepository $employees,
         private EmployeeService $service,
+        private AuditContext $audit,
     ) {}
 
     /**
@@ -37,7 +40,7 @@ final readonly class EmployeeBulkService
                 $error = 'terminated';
             } else {
                 try {
-                    $this->service->update($actor, $employee, $change);
+                    $this->audit->within(['bulk' => 'people.update'], fn (): mixed => $this->service->update($actor, $employee, $change));
                 } catch (PeopleException $e) {
                     $error = $e->errorCode;
                 }

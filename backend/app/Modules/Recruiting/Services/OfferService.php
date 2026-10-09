@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
+use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Audit\Enums\AuditAction;
 use App\Modules\Channels\Services\MessageService;
 use App\Modules\Core\Support\UserTime;
 use App\Modules\Documents\Contracts\DocumentTemplateRepository;
@@ -27,6 +29,9 @@ use Psr\Log\LoggerInterface;
  * Offers: generated from a Documents template of category "offer" (variables {ПІБ}, {Посада}, {Зарплата},
  * {Дата виходу}, {Умови}, …), sent to the candidate's e-mail through the Channels e-mail path (Mailer → outbound
  * touchpoint), accepted/declined manually by the recruiter.
+ *
+ * Every write (created, sent, accepted/declined) leaves an "offer" row in the audit log through the Audit contract;
+ * salary, position, conditions and the text are masked there (Audit's allow-list for "offer").
  */
 final readonly class OfferService
 {
@@ -41,6 +46,7 @@ final readonly class OfferService
         private DocumentTemplateRepository $documentTemplates,
         private ApplicationRepository $applications,
         private TouchpointRepository $touchpoints,
+        private AuditLogger $audit,
     ) {}
 
     /** @return list<array{id: int, name: string}> */
@@ -110,6 +116,7 @@ final readonly class OfferService
             'status' => OfferStatus::Draft->value,
             'created_by' => $actor->id,
         ]);
+        $this->audit->recordDiff('offer', $offer->id, AuditAction::Created, [], $offer->getAttributes(), $this->auditMeta($application));
         $this->log->info('recruiting.offer_created', ['id' => $offer->id, 'application' => $application->id, 'by' => $actor->id]);
 
         return $offer;
@@ -129,7 +136,9 @@ final readonly class OfferService
         $touchpoint = $this->messages->send($actor, $application->candidate, Channel::Email, $offer->content_md, $application->id, 'Оффер: '.$offer->position);
         // The touch carries the salary: mark it so the timeline hides its text from everyone but ApplicationPolicy::offer.
         $this->touchpoints->update($touchpoint, ['meta' => [...$touchpoint->meta ?? [], 'kind' => Touchpoint::KIND_OFFER]]);
+        $before = $offer->getAttributes();
         $this->applications->updateOffer($offer, ['status' => OfferStatus::Sent->value, 'sent_at' => Carbon::now()]);
+        $this->audit->recordDiff('offer', $offer->id, AuditAction::StatusChanged, $before, $offer->getAttributes(), $this->auditMeta($application));
         $this->log->info('recruiting.offer_sent', ['id' => $offer->id, 'by' => $actor->id]);
 
         return $offer;
@@ -141,9 +150,21 @@ final readonly class OfferService
         if ($offer->status !== OfferStatus::Sent || ! in_array($status, [OfferStatus::Accepted, OfferStatus::Declined], true)) {
             throw RecruitingException::offerStatus();
         }
+        $before = $offer->getAttributes();
         $this->applications->updateOffer($offer, ['status' => $status->value, 'decided_at' => Carbon::now()]);
+        $this->audit->recordDiff('offer', $offer->id, AuditAction::StatusChanged, $before, $offer->getAttributes(), $this->auditMeta($offer->application));
         $this->log->info('recruiting.offer_decided', ['id' => $offer->id, 'status' => $status->value, 'by' => $actor->id]);
 
         return $offer;
+    }
+
+    /**
+     * Ids only: the journal links the row to the candidate card.
+     *
+     * @return array<string, int>
+     */
+    private function auditMeta(Application $application): array
+    {
+        return ['application_id' => $application->id, 'candidate_id' => $application->candidate_id];
     }
 }

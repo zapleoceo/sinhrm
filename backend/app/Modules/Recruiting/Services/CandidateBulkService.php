@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
+use App\Modules\Audit\Contracts\AuditContext;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Contracts\CandidateRepository;
 use App\Modules\Recruiting\Contracts\VacancyRepository;
@@ -30,6 +31,7 @@ final readonly class CandidateBulkService
         private ApplicationService $applicationService,
         private CandidateService $candidateService,
         private RecruitingScope $scope,
+        private AuditContext $audit,
     ) {}
 
     /**
@@ -53,7 +55,7 @@ final readonly class CandidateBulkService
         foreach ($ids as $id) {
             $error = null;
             try {
-                $error = $this->one($actor, $action, $id, $input, $rejectStage);
+                $error = $this->audit->within(['bulk' => 'candidates.'.$action], fn (): ?string => $this->one($actor, $action, $id, $input, $rejectStage));
             } catch (RecruitingException $e) {
                 $error = $e->errorCode;
             }

@@ -2,7 +2,7 @@ import { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES, AuditEntry } from './audit.model';
 
 /**
  * Router link of the audited entity, or null when it has no page.
- * Applications link to their candidate card when the backend put `candidate_id` in meta.
+ * Applications and offers link to their candidate card when the backend put `candidate_id` in meta.
  */
 export function auditEntityLink(entry: Pick<AuditEntry, 'entity_type' | 'entity_id' | 'meta'>): string | null {
   switch (entry.entity_type) {
@@ -12,7 +12,8 @@ export function auditEntityLink(entry: Pick<AuditEntry, 'entity_type' | 'entity_
       return `/candidates/${entry.entity_id}`;
     case 'vacancy':
       return `/vacancies/${entry.entity_id}`;
-    case 'application': {
+    case 'application':
+    case 'offer': {
       const id = entry.meta?.['candidate_id'];
       const valid = (typeof id === 'number' && Number.isInteger(id)) || (typeof id === 'string' && /^\d+$/.test(id));
       return valid ? `/candidates/${String(id)}` : null;

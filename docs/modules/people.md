@@ -343,6 +343,9 @@ recruiter 1, остальные 0; у действующего берётся р
   сменить отдел / должность / руководителя, экспорт CSV. `POST /api/people/bulk {action: department|position|manager|export, ids[≤200], <field>_id}`
   → `{data: [{id, ok, error}]}` (`not_found`, `terminated`, `manager_cycle`); каждый элемент идёт через `EmployeeService::update`
   (те же правила, аудит-обсервер). `export` → `text/csv` (справочный и рабочий уровень, без PII и зарплаты).
+  Журнал (HRM-28): каждый сотрудник обновляется внутри `AuditContext::within(["bulk" => "people.update"])` (контракт Audit) —
+  по строке журнала на изменённого сотрудника с `meta.bulk`; `not_found`/`terminated`/`manager_cycle` строки не дают.
+  Тест — `CompensationAndBulkTest::test_bulk_update_writes_one_audit_row_per_employee`.
 - **Компенсация** (`employee_compensations`): сумма, валюта UAH/USD/EUR, период month/hour, дата начала действия, причина.
   Текущая — последняя запись с `effective_on ≤ сегодня`, где «сегодня» — день пользователя (`UserTime::today()`, Europe/Kyiv),
   а не дата UTC: с 00:00 по Киеву повышение с сегодняшней датой уже действующее (до 08.10.2026 оно становилось текущим

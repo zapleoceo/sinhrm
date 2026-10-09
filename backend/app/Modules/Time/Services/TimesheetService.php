@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Time\Services;
 
 use App\Models\User;
+use App\Modules\Audit\Contracts\AuditLogger;
+use App\Modules\Audit\Enums\AuditAction;
 use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Contracts\PeopleAccess;
@@ -14,6 +16,7 @@ use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Time\Contracts\TimeRepository;
 use App\Modules\Time\Enums\TimesheetStatus;
 use App\Modules\Time\Exceptions\TimeException;
+use App\Modules\Time\Models\TimeEntry;
 use App\Modules\Time\Models\Timesheet;
 use App\Modules\Time\Support\WeekCalculator;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,12 +26,21 @@ use Illuminate\Support\Carbon;
  * Weekly timesheets. Access follows People (PeopleScope): the employee fills and submits their own week, a manager
  * sees and decides the weeks of their subtree (not their own), an admin sees and decides everything and may fill in
  * for anyone. Invisible → 404; visible but not allowed → 403.
+ *
+ * Audit (through the Audit contract, entity "timesheet"): submit, approve, reject, a save that changes the status
+ * (rejected → draft) and every save of someone else's week (admin fill-in, meta.on_behalf). Hours, entries and the
+ * decision comment are masked — the log keeps the fact and the field names. The employee's own drafting is not logged.
  */
 final readonly class TimesheetService
 {
     public const int LIMIT = 300;
 
     public const float MAX_DAY_HOURS = 24.0;
+
+    public const string AUDIT_ENTITY = 'timesheet';
+
+    /** Entry fields compared on save; a changed one is logged as `entries.<field>` (masked). */
+    private const array ENTRY_FIELDS = ['date', 'hours', 'project', 'category', 'note'];
 
     public function __construct(
         private TimeRepository $time,
@@ -37,6 +49,7 @@ final readonly class TimesheetService
         private EmployeeRepository $employees,
         private TaskScheduler $tasks,
         private UserNotifier $notifier,
+        private AuditLogger $audit,
     ) {}
 
     /**
@@ -73,6 +86,8 @@ final readonly class TimesheetService
         if (! $sheet->status->isEditable()) {
             throw TimeException::notEditable($sheet->status->value);
         }
+        $before = $this->entryColumns($sheet);
+        $statusBefore = $sheet->status;
         $this->time->transaction(function () use ($sheet, $entries): void {
             $this->time->replaceEntries($sheet, $entries);
             if ($sheet->status === TimesheetStatus::Rejected) {
@@ -81,8 +96,12 @@ final readonly class TimesheetService
         });
         $sheet->setRelation('employee', $employee);
         $this->summaries->refreshTotals($sheet);
+        $fresh = $this->time->findWeek($employee->id, $start);
+        if ($fresh !== null) {
+            $this->auditSave($ctx, $fresh, $before, $statusBefore);
+        }
 
-        return $this->view($ctx, $employee, $start, $this->time->findWeek($employee->id, $start));
+        return $this->view($ctx, $employee, $start, $fresh);
     }
 
     /**
@@ -99,12 +118,14 @@ final readonly class TimesheetService
         $sheet = $this->time->firstOrCreateWeek($employee->id, $start);
         $sheet->setRelation('employee', $employee);
         $this->summaries->refreshTotals($sheet);
+        $before = $sheet->getAttributes();
         if (! $this->time->transition($sheet, [TimesheetStatus::Draft, TimesheetStatus::Rejected], [
             'status' => TimesheetStatus::Submitted->value, 'submitted_at' => $now ?? Carbon::now(),
             'decided_by' => null, 'decided_at' => null, 'decision_comment' => null,
         ])) {
             throw TimeException::invalidStatus($sheet->status->value);
         }
+        $this->auditTransition($ctx, $sheet, $before);
         // The Friday reminder for this week is no longer needed.
         $this->tasks->closeByRule($employee->id, TimeReminderJob::ruleKey($start));
         $managerUser = $employee->manager?->user_id;
@@ -132,6 +153,7 @@ final readonly class TimesheetService
             abort(404);
         }
         abort_unless($ctx->canDecideFor($sheet->employee_id), 403);
+        $before = $sheet->getAttributes();
         if (! $this->time->transition($sheet, [TimesheetStatus::Submitted], [
             'status' => ($approve ? TimesheetStatus::Approved : TimesheetStatus::Rejected)->value,
             'decided_by' => $user->id,
@@ -140,6 +162,7 @@ final readonly class TimesheetService
         ])) {
             throw TimeException::invalidStatus($sheet->status->value);
         }
+        $this->auditTransition($ctx, $sheet, $before);
         $employeeUser = $sheet->employee->user_id;
         if ($employeeUser !== null && $employeeUser !== $user->id) {
             $this->notifier->notify($employeeUser, 'time', $approve ? 'Табель погоджено' : 'Табель відхилено',
@@ -231,6 +254,76 @@ final readonly class TimesheetService
                 'edit' => $this->canEdit($ctx, $employee->id) && ($sheet === null || $sheet->status->isEditable()),
                 'decide' => $sheet !== null && $sheet->status === TimesheetStatus::Submitted && $ctx->canDecideFor($employee->id),
             ],
+        ];
+    }
+
+    /** @param  array<string, mixed>  $before  raw attributes before the transition */
+    private function auditTransition(PeopleContext $ctx, Timesheet $sheet, array $before): void
+    {
+        $this->audit->recordDiff(self::AUDIT_ENTITY, $sheet->id, AuditAction::StatusChanged, $before, $sheet->getAttributes(), $this->auditMeta($ctx, $sheet));
+    }
+
+    /**
+     * A save is logged when it changes the status (rejected → draft) or edits someone else's week (admin fill-in).
+     *
+     * @param  array<string, list<mixed>>  $before  entryColumns() before the save
+     */
+    private function auditSave(PeopleContext $ctx, Timesheet $sheet, array $before, TimesheetStatus $statusBefore): void
+    {
+        $onBehalf = ! $ctx->isSelf($sheet->employee_id);
+        if (! $onBehalf && $sheet->status === $statusBefore) {
+            return;
+        }
+        $changes = [];
+        if ($sheet->status !== $statusBefore) {
+            $changes['status'] = ['from' => $statusBefore->value, 'to' => $sheet->status->value];
+        }
+        $after = $this->entryColumns($sheet);
+        foreach (self::ENTRY_FIELDS as $field) {
+            if ($before[$field] !== $after[$field]) {
+                // Masked by Audit (not allow-listed): the row says which entry field changed, never the hours or the note.
+                $changes['entries.'.$field] = ['from' => $before[$field] === [] ? null : $before[$field], 'to' => $after[$field] === [] ? null : $after[$field]];
+            }
+        }
+        if ($changes === []) {
+            return;
+        }
+        $action = isset($changes['status']) ? AuditAction::StatusChanged : AuditAction::Updated;
+        $this->audit->record(self::AUDIT_ENTITY, $sheet->id, $action, $changes, $this->auditMeta($ctx, $sheet));
+    }
+
+    /**
+     * The week's entries column by column, values as text (decimal "8.00" and float 8.0 compare equal).
+     *
+     * @return array<string, list<string|null>>
+     */
+    private function entryColumns(Timesheet $sheet): array
+    {
+        $rows = $sheet->entries->values(); // the relation is ordered by date, id
+        $columns = [];
+        foreach (self::ENTRY_FIELDS as $field) {
+            $columns[$field] = $rows->map(static function (TimeEntry $e) use ($field): ?string {
+                $value = $e->getAttribute($field);
+
+                return match (true) {
+                    $value === null => null,
+                    $value instanceof \DateTimeInterface => $value->format('Y-m-d'),
+                    $field === 'hours' => number_format((float) $value, 2, '.', ''),
+                    default => (string) $value,
+                };
+            })->all();
+        }
+
+        return $columns;
+    }
+
+    /** @return array<string, scalar> ids and the week only */
+    private function auditMeta(PeopleContext $ctx, Timesheet $sheet): array
+    {
+        return [
+            'employee_id' => $sheet->employee_id,
+            'week_start' => $sheet->week_start->toDateString(),
+            'on_behalf' => ! $ctx->isSelf($sheet->employee_id),
         ];
     }
 

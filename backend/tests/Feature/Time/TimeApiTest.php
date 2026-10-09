@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Time;
 
+use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Scripts\Models\Task;
@@ -115,6 +116,77 @@ final class TimeApiTest extends TestCase
             ->assertJsonPath('data.status', 'approved')->assertJsonPath('data.totals.overtime', 0);
         $this->actingAs($lead)->postJson("/api/time/timesheets/$id/decision", ['decision' => 'approve'])->assertStatus(409);
         $this->actingAs($lead)->getJson('/api/dashboard')->assertOk()->assertJsonPath('data.time.my_approvals.count', 0);
+    }
+
+    /**
+     * HRM-28: submit, reject (return), the save that reopens a rejected week and approve are audit rows with the actor;
+     * the employee's own drafting is not; hours, notes and the comment are masked; only the superadmin's journal shows them.
+     */
+    public function test_timesheet_workflow_is_audited_with_hours_and_comment_masked(): void
+    {
+        $org = $this->org();
+        $worker = $this->userOf($org['worker']);
+        $lead = $this->userOf($org['lead']);
+        $entries = [['date' => self::WEEK, 'hours' => 7.25, 'project' => 'Synthetic project', 'category' => 'support', 'note' => 'Private note']];
+
+        $this->actingAs($worker)->putJson('/api/time/week', ['week' => self::WEEK, 'entries' => $entries])->assertOk();
+        $this->assertSame(0, AuditEntry::query()->where('entity_type', 'timesheet')->count(), 'own drafting is not logged');
+
+        $id = $this->actingAs($worker)->postJson('/api/time/week/submit', ['week' => self::WEEK])->assertOk()->json('data.timesheet_id');
+        $this->actingAs($lead)->postJson("/api/time/timesheets/$id/decision", ['decision' => 'reject', 'comment' => 'Split the Saturday'])->assertOk();
+        $this->actingAs($worker)->putJson('/api/time/week', ['week' => self::WEEK, 'entries' => $this->fullWeek()])->assertOk()->assertJsonPath('data.status', 'draft');
+        $this->actingAs($worker)->postJson('/api/time/week/submit', ['week' => self::WEEK])->assertOk();
+        $this->actingAs($this->userOf($org['head']))->postJson("/api/time/timesheets/$id/decision", ['decision' => 'approve'])->assertOk();
+
+        $rows = AuditEntry::query()->where('entity_type', 'timesheet')->where('entity_id', $id)->orderBy('id')->get();
+        $this->assertSame(
+            [['submitted', $worker->id], ['rejected', $lead->id], ['draft', $worker->id], ['submitted', $worker->id], ['approved', $this->userOf($org['head'])->id]],
+            $rows->map(static fn (AuditEntry $r): array => [$r->changes['status']['to'] ?? null, $r->user_id])->all(),
+        );
+        $this->assertSame(['status_changed'], $rows->pluck('action')->unique()->values()->all());
+        $this->assertEquals(['from' => null, 'to' => '***'], $rows[1]->changes['decision_comment'] ?? null);
+        $this->assertEquals(['from' => '***', 'to' => '***'], $rows[2]->changes['entries.hours'] ?? null);
+        $this->assertSame($org['worker']->id, $rows[0]->meta['employee_id'] ?? null);
+        $this->assertSame(self::WEEK, $rows[0]->meta['week_start'] ?? null);
+        $this->assertFalse($rows[0]->meta['on_behalf'] ?? null);
+        $this->assertTrue($rows[1]->meta['on_behalf'] ?? null);
+
+        $raw = (string) json_encode(AuditEntry::query()->get()->toArray());
+        foreach (['Split the Saturday', 'Private note', 'Synthetic project', '7.25'] as $secret) {
+            $this->assertStringNotContainsString($secret, $raw);
+        }
+
+        foreach ([$lead, $this->login(UserRole::Admin), $this->login(UserRole::HrManager)] as $other) {
+            $this->actingAs($other)->getJson('/api/audit?entity_type=timesheet')->assertForbidden();
+        }
+        $this->actingAs($this->login(UserRole::Superadmin))->getJson('/api/audit?entity_type=timesheet&perPage=50')->assertOk()->assertJsonCount(5, 'data');
+    }
+
+    /** HRM-28: an admin filling in someone's week is logged (meta.on_behalf) with the changed entry fields; a no-op save is not. */
+    public function test_admin_edit_of_someone_elses_week_is_audited_once_per_real_change(): void
+    {
+        $org = $this->org();
+        $admin = $this->login(UserRole::Admin);
+        $wid = $org['worker']->id;
+        $save = fn (array $entries) => $this->actingAs($admin)->putJson('/api/time/week', ['week' => self::WEEK, 'employee_id' => $wid, 'entries' => $entries])->assertOk();
+
+        $save($this->fullWeek());
+        $save($this->fullWeek()); // the same entries again: nothing changed
+        $save([...$this->fullWeek(), ['date' => '2026-10-10', 'hours' => 3, 'note' => 'Weekend duty']]);
+
+        $rows = AuditEntry::query()->where('entity_type', 'timesheet')->orderBy('id')->get();
+        $this->assertCount(2, $rows);
+        foreach ($rows as $row) {
+            $this->assertSame('updated', $row->action);
+            $this->assertSame($admin->id, $row->user_id);
+            $this->assertTrue($row->meta['on_behalf'] ?? null);
+            $this->assertSame($wid, $row->meta['employee_id'] ?? null);
+        }
+        // MySQL JSON keeps object keys in its own order: compare as a set.
+        $this->assertEqualsCanonicalizing(['entries.date', 'entries.hours', 'entries.project', 'entries.category', 'entries.note'], array_keys($rows[0]->changes ?? []));
+        $this->assertEquals(['from' => null, 'to' => '***'], $rows[0]->changes['entries.hours'] ?? null);
+        $this->assertEquals(['from' => '***', 'to' => '***'], $rows[1]->changes['entries.note'] ?? null);
+        $this->assertStringNotContainsString('Weekend duty', (string) json_encode($rows->toArray()));
     }
 
     public function test_leave_holidays_and_schedules(): void

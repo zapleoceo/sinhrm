@@ -105,6 +105,33 @@ final class CompensationAndBulkTest extends TestCase
         $this->actingAs($this->userOf($org['lead']))->getJson("/api/people/{$org['peer']->id}")->assertOk()->assertJsonPath('data.gender', null);
     }
 
+    /** HRM-28: one audit row per changed employee, marked meta.bulk; a missing id or a refused item leaves none. */
+    public function test_bulk_update_writes_one_audit_row_per_employee(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $org = $this->org();
+        $dept = Department::factory()->create();
+        $ids = [$org['worker']->id, $org['peer']->id, $org['other']->id];
+        AuditEntry::query()->delete(); // fixtures' own rows
+
+        $this->actingAs($admin)->postJson('/api/people/bulk', ['action' => 'department', 'ids' => [...$ids, 999999], 'department_id' => (string) $dept->id])
+            ->assertOk()->assertJsonPath('data.3.error', 'not_found');
+        $rows = AuditEntry::query()->where('entity_type', 'employee')->orderBy('entity_id')->get();
+        $this->assertSame($ids, $rows->pluck('entity_id')->all());
+        foreach ($rows as $row) {
+            $this->assertSame($admin->id, $row->user_id);
+            $this->assertSame('people.update', $row->meta['bulk'] ?? null);
+            $this->assertSame($dept->id, $row->changes['department_id']['to'] ?? null);
+        }
+
+        // Manager cycle refused for the head: only the other employee gets a row.
+        $this->actingAs($admin)->postJson('/api/people/bulk', ['action' => 'manager', 'ids' => [$org['head']->id, $org['other']->id], 'manager_id' => $org['worker']->id])
+            ->assertOk()->assertJsonPath('data.0.error', 'manager_cycle');
+        $this->assertSame([$org['other']->id], AuditEntry::query()->where('entity_type', 'employee')->whereNotNull('changes->manager_id')->pluck('entity_id')->all());
+
+        $this->actingAs($admin)->getJson('/api/audit')->assertForbidden();
+    }
+
     public function test_bulk_update_goes_through_the_single_edit_rules(): void
     {
         $admin = $this->login(UserRole::Admin);

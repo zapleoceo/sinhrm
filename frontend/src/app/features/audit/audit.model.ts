@@ -29,6 +29,8 @@ export const AUDIT_ENTITY_TYPES = [
   'hiring_approval',
   'workflow_template',
   'module_setting',
+  'offer',
+  'timesheet',
 ] as const;
 
 /** Old/new value of one field; secrets and PII arrive masked as "***". */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Recruiting;
 
+use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Recruiting\Models\RejectReason;
@@ -51,6 +52,37 @@ final class CandidateBulkTest extends TestCase
         $this->assertSame($recruiter->id, $b->candidate()->firstOrFail()->owner_id);
 
         $this->actingAs($recruiter)->postJson('/api/candidates/bulk', ['action' => 'tag', 'ids' => range(1, 201), 'tag' => 'x'])->assertUnprocessable();
+    }
+
+    /** HRM-28: a bulk action leaves one audit row per changed object (meta.bulk), none for refused ids; journal is superadmin only. */
+    public function test_bulk_actions_write_one_audit_row_per_object(): void
+    {
+        $branch = Branch::factory()->create();
+        $vacancy = $this->vacancyIn($branch);
+        $apps = [$this->applied($vacancy), $this->applied($vacancy), $this->applied($vacancy)];
+        $foreign = $this->applied($this->vacancyIn(Branch::factory()->create()));
+        $recruiter = $this->userWith(UserRole::Recruiter, [$branch]);
+        $ids = [...array_map(static fn ($a): int => $a->candidate_id, $apps), $foreign->candidate_id];
+        AuditEntry::query()->delete(); // fixtures' own rows
+
+        $this->actingAs($recruiter)->postJson('/api/candidates/bulk', ['action' => 'move', 'ids' => $ids, 'vacancy_id' => (string) $vacancy->id, 'stage_id' => (string) $this->stageAt(2)->id])
+            ->assertOk()->assertJsonPath('data.3.error', 'not_found');
+        $moved = AuditEntry::query()->where('action', 'stage_changed')->orderBy('id')->get();
+        $this->assertSame(array_map(static fn ($a): int => $a->id, $apps), $moved->pluck('entity_id')->all());
+        foreach ($moved as $i => $row) {
+            $this->assertSame('application', $row->entity_type);
+            $this->assertSame($recruiter->id, $row->user_id);
+            $this->assertSame('candidates.move', $row->meta['bulk'] ?? null);
+            $this->assertSame($apps[$i]->candidate_id, $row->meta['candidate_id'] ?? null);
+        }
+        $this->assertSame(0, AuditEntry::query()->where('entity_id', $foreign->id)->where('entity_type', 'application')->count());
+
+        $this->actingAs($recruiter)->postJson('/api/candidates/bulk', ['action' => 'assign', 'ids' => $ids, 'owner_id' => $recruiter->id])->assertOk();
+        $owned = AuditEntry::query()->where('entity_type', 'candidate')->where('meta->bulk', 'candidates.assign')->orderBy('entity_id')->get();
+        $this->assertSame(array_slice($ids, 0, 3), $owned->pluck('entity_id')->all());
+        $this->assertSame($recruiter->id, $owned[0]->changes['owner_id']['to'] ?? null);
+
+        $this->actingAs($recruiter)->getJson('/api/audit')->assertForbidden();
     }
 
     /** Per-id errors must not tell whether a candidate out of scope exists, nor where they applied. */

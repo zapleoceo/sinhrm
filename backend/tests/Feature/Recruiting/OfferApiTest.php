@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Recruiting;
 
 use App\Models\User;
+use App\Modules\Audit\Models\AuditEntry;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Documents\Models\DocumentTemplate;
@@ -207,6 +208,65 @@ final class OfferApiTest extends TestCase
         $this->assertEquals(['subject' => 'Interview'], $plain->fresh()?->meta);
         $this->assertEquals(['subject' => 'Оффер: Manager'], $reply->fresh()?->meta);
         $this->assertEquals(['subject' => 'Оффер: Draft'], $unsent->fresh()?->meta);
+    }
+
+    /** HRM-28: created → sent → accepted are three audit rows with the actor; salary, position, text never stored. */
+    public function test_offer_lifecycle_is_audited_with_the_salary_masked(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $this->actingAs($recruiter)->postJson($url, ['template_id' => (string) $this->template->id, 'position' => 'Manager', 'salary' => '30000 UAH', 'conditions' => 'Full time'])->assertCreated();
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
+        $this->actingAs($recruiter)->postJson($url.'/decision', ['status' => 'accepted'])->assertOk()->assertJsonPath('data.salary', '30000 UAH');
+
+        $rows = AuditEntry::query()->where('entity_type', 'offer')->orderBy('id')->get();
+        $this->assertSame(['created', 'status_changed', 'status_changed'], $rows->pluck('action')->all());
+        $offerId = Offer::query()->sole()->id;
+        foreach ($rows as $row) {
+            $this->assertSame($offerId, $row->entity_id);
+            $this->assertSame($recruiter->id, $row->user_id);
+            $this->assertSame($this->application->candidate_id, $row->meta['candidate_id'] ?? null);
+        }
+        $created = $rows[0]->changes ?? [];
+        foreach (['salary', 'position', 'conditions', 'content_md'] as $field) {
+            $this->assertEquals(['from' => null, 'to' => '***'], $created[$field] ?? null, $field);
+        }
+        $this->assertSame('draft', $created['status']['to'] ?? null);
+        $this->assertEquals(['from' => 'draft', 'to' => 'sent'], $rows[1]->changes['status'] ?? null);
+        $this->assertArrayHasKey('sent_at', $rows[1]->changes ?? []);
+        $this->assertEquals(['from' => 'sent', 'to' => 'accepted'], $rows[2]->changes['status'] ?? null);
+
+        $raw = (string) json_encode(AuditEntry::query()->get()->toArray());
+        $this->assertStringNotContainsString('30000', $raw);
+        $this->assertStringNotContainsString('Olena', $raw);
+        $this->assertStringNotContainsString('Full time', $raw);
+    }
+
+    /** HRM-28: a declined offer is a row; a refused write leaves none; only the superadmin's journal shows offer rows. */
+    public function test_declined_offer_is_audited_and_only_the_superadmin_sees_offer_rows(): void
+    {
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $body = ['template_id' => $this->template->id, 'position' => 'Manager', 'salary' => '30000 UAH'];
+        $this->actingAs($recruiter)->postJson($url, $body)->assertUnprocessable(); // not in the offer stage yet
+        $this->assertSame(0, AuditEntry::query()->where('entity_type', 'offer')->count());
+
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $this->actingAs($recruiter)->postJson($url, $body)->assertCreated();
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
+        $this->actingAs($recruiter)->postJson($url.'/decision', ['status' => 'declined'])->assertOk();
+        $this->assertEquals(['from' => 'sent', 'to' => 'declined'], AuditEntry::query()->where('entity_type', 'offer')->latest('id')->firstOrFail()->changes['status'] ?? null);
+
+        foreach ([$recruiter, User::factory()->withRole(UserRole::Admin)->create(), User::factory()->withRole(UserRole::HrManager)->create()] as $other) {
+            $this->actingAs($other)->getJson('/api/audit?entity_type=offer')->assertForbidden();
+        }
+        // The candidate's "History" tab (anyone who may open the card) does not show offer rows.
+        $history = $this->actingAs($recruiter)->getJson('/api/candidates/'.$this->application->candidate_id.'/history?perPage=100')->assertOk()->json('data');
+        $this->assertNotContains('offer', array_column($history, 'entity_type'));
+
+        $this->actingAs(User::factory()->withRole(UserRole::Superadmin)->create())->getJson('/api/audit?entity_type=offer&perPage=20')
+            ->assertOk()->assertJsonCount(3, 'data')->assertJsonPath('data.0.changes.status.to', 'declined');
     }
 
     /** @param  array<string, mixed>  $attributes */

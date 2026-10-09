@@ -14,4 +14,15 @@ interface AuditLogger
      * @param  array<string, scalar|null>|null  $meta  non-personal context only
      */
     public function record(string $entityType, int $entityId, AuditAction $action, ?array $changes = null, ?array $meta = null, ?int $actorId = null): void;
+
+    /**
+     * Records the difference between two raw attribute snapshots of a record (`Model::getAttributes()` before and
+     * after the write; `[]` before = created). Only fields whose value changed are kept, then masked like record().
+     * Nothing changed → no row.
+     *
+     * @param  array<string, mixed>  $before
+     * @param  array<string, mixed>  $after
+     * @param  array<string, scalar|null>|null  $meta  non-personal context only
+     */
+    public function recordDiff(string $entityType, int $entityId, AuditAction $action, array $before, array $after, ?array $meta = null): void;
 }

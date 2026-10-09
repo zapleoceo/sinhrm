@@ -56,6 +56,12 @@ final class AuditPolicy
             'due_at', 'decided_by', 'decided_at',
         ],
         'workflow_template' => ['name', 'kind', 'trigger', 'active', 'probation_days', 'created_by'],
+        // Recorded by hand (Recruiting\Services\OfferService, HRM-28). Salary, position, conditions and the offer text
+        // are masked on purpose: the log keeps only the fact and the field names.
+        'offer' => ['application_id', 'template_id', 'status', 'start_date', 'sent_at', 'decided_at', 'created_by'],
+        // Recorded by hand (Time\Services\TimesheetService, HRM-28). Hours, entries (`entries.<field>`) and the decision
+        // comment are masked: only the fact and the field names.
+        'timesheet' => ['employee_id', 'week_start', 'status', 'submitted_at', 'decided_by', 'decided_at'],
     ];
 
     /** Namespaces whose models must never reach the log (anonymous by design). */

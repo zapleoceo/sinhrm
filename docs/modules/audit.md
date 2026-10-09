@@ -38,12 +38,16 @@
 | `hiring_request`, `hiring_approval` | `HiringRequests\Models\*` | `status_changed` = решение согласующего |
 | `workflow_template` | `Workflows\Models\WorkflowTemplate` | — |
 | `module_setting` | `Core\Models\ModuleSetting` (вкл/выкл модуля и роли, аудит безопасности 2026-10) | — |
+| `offer` | вручную из `Recruiting\Services\OfferService` (HRM-28) | `created`, `status_changed` (отправка, принят/отказ); `meta.application_id`, `meta.candidate_id` |
+| `timesheet` | вручную из `Time\Services\TimesheetService` (HRM-28) | `status_changed` (отправка, согласование, возврат, повторное открытие), `updated` (правка чужой недели админом); `meta.employee_id`, `meta.week_start`, `meta.on_behalf` |
 
 Список — `Providers\AuditServiceProvider::TRACKED`: новая модель = одна строка. Запись делает общий наблюдатель
 Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Действие уточняется по изменённым полям:
 `stage_id` → `stage_changed`, `is_active=true` → `prompt_activated`, `status` → `status_changed`, иначе `updated`.
 Массовые `query()->update()` наблюдатель не видит (это системная работа: пометки «уведомлён», пропуск шагов).
 Поэтому удаление ключа интеграции переведено на удаление по модели (`EloquentSecretVault::forget`).
+Массовые действия пользователя (`POST /api/candidates/bulk`, `POST /api/people/bulk`) идут по одному объекту через обычный
+сервис, поэтому у каждого изменённого объекта — своя строка; она помечена `meta.bulk` (см. «Офферы, табели и массовые действия»).
 
 Кто сделал — текущий пользователь запроса; у cron и очередей — пусто («система»).
 
@@ -69,6 +73,35 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 Значения маскируются там же, `meta` — только неличные данные.
 Если автор записи сейчас работает в одной выбранной роли («Працювати як», [auth.md](auth.md)), в `meta` добавляется
 `acting_role` (например `"recruiter"`); при «Усі ролі» поля нет.
+
+### Офферы, табели и массовые действия (HRM-28, 2026-10-09)
+Офферы и табели пишутся не наблюдателем, а **вручную через контракт** `Contracts\AuditLogger` — модули Recruiting и Time знают только
+контракты и перечисления Audit, а Audit не импортирует их модели (граница модулей, `ModuleBoundariesTest`; табели меняются
+условным `UPDATE … WHERE status IN (…)`, его наблюдатель и не увидел бы).
+- `AuditLogger::recordDiff($type, $id, $action, $before, $after, $meta)` — сравнивает «сырые» атрибуты записи до и после
+  (`[]` до = создание), оставляет только изменившиеся поля (`1` и `"1"`, дата-объект и строка — одно и то же; технические поля
+  вроде `updated_at` не считаются), маскирует как `record()`. Ничего не изменилось → строки нет.
+- **Оффер** (`offer`): белый список — `application_id`, `template_id`, `status`, `start_date`, `sent_at`, `decided_at`, `created_by`.
+  **Зарплата, должность, условия и текст оффера — всегда `***`**: в журнале видно только, что поле задано/изменилось. Создание,
+  отправка и решение кандидата (`accepted`/`declined`) — по строке. Редактирования оффера в API нет; новый путь записи обязан
+  вызвать `recordDiff`.
+- **Табель** (`timesheet`): белый список — `employee_id`, `week_start`, `status`, `submitted_at`, `decided_by`, `decided_at`.
+  Часы (`worked_hours` и др.), комментарий решения и сами записи — `***`. Записи недели пишутся как поля `entries.<поле>`
+  (`entries.hours`, `entries.note`, …) — видно, какие поля строк менялись, но не значения. Пишутся: отправка, согласование,
+  возврат с комментарием, сохранение, которое переоткрывает возвращённую неделю, и **любое сохранение чужой недели** (админ
+  заполняет за сотрудника, `meta.on_behalf = true`). Черновик своей недели сотрудником не пишется (это не событие безопасности).
+- **Массовые действия**: контракт `Contracts\AuditContext::within($meta, $callback)` добавляет `meta` ко всем строкам,
+  записанным внутри (и наблюдателем, и вручную; явный `meta` записи важнее). `CandidateBulkService` оборачивает каждый элемент
+  (`meta.bulk = candidates.move|reject|tag|assign`), `EmployeeBulkService` — каждого сотрудника (`meta.bulk = people.update`).
+  Итог: N изменённых объектов = N строк с id объекта и действием; элемент с ошибкой (`not_found`, `forbidden`, цикл
+  руководителей…) строки не оставляет. Реализация — `Support\AuditContextStack` (одна на запрос, снимается и при исключении).
+- **Кто видит.** Строки `offer` и `timesheet` — только в общем журнале (суперадмин). Во вкладку «Історія» кандидата (её видят все,
+  кто открывает карточку, — шире, чем доступ к офферу) и сотрудника они не попадают.
+- Фронт: типы `offer` и `timesheet` подписаны в фильтре «Обʼєкт» (ru/uk/en); строка оффера ведёт в карточку кандидата по
+  `meta.candidate_id`, у табеля ссылки нет.
+- Тесты: `tests/Unit/Audit/AuditDiffAndContextTest.php` (дифф, маска, контекст), `AuditPolicyTest` (белые списки `offer` и
+  `timesheet` без чувствительных имён), Feature — `OfferApiTest` (жизненный цикл, отказ, 403 чужим ролям), `TimeApiTest`
+  (цикл табеля, правка админом), `CandidateBulkTest` и `CompensationAndBulkTest` (N строк на N объектов).
 
 ### Таблица `audit_log`
 `id, user_id (без FK — история переживает удаление пользователя), entity_type, entity_id, action, changes json
