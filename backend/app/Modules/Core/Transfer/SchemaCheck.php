@@ -24,6 +24,8 @@ final class SchemaCheck
      */
     public const array POST_FREEZE_DATA_MIGRATIONS = [
         '2026_10_28_100001_mark_sent_offer_touchpoints',
+        // HRM-26: settings only — webhook_query_token = on for telephony that already has a webhook token.
+        '2026_10_09_100001_keep_query_token_for_existing_telephony',
     ];
 
     /**

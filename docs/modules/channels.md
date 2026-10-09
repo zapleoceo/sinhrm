@@ -139,7 +139,8 @@ Phonet, Ringostat, Binotel (`Adapters/AbstractTelephonyAdapter`, `auth = header_
   молча в журналы; в журнале интеграции — `webhook_rejected` с `reason: query_token_disabled`;
 - **существующее подключение — `on`**: миграция `2026_10_09_100001_keep_query_token_for_existing_telephony` включила флаг
   всем интеграциям телефонии, у которых уже сохранён `webhook_token` (явно заданное значение не трогает), чтобы звонки не
-  потерялись в день выката. Пока флаг `on`, `?token=` принимается, но помечается устаревшим: в ответе заголовок
+  потерялись в день выката (миграция только данных — в `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS`, после переноса на
+  MySQL повторяется `migrate`, [mysql-cutover.md](../guides/mysql-cutover.md)). Пока флаг `on`, `?token=` принимается, но помечается устаревшим: в ответе заголовок
   `Deprecation: @1791504000` (RFC 9745), в журнале — `webhook_received` уровня warning с `auth: query_token_deprecated`,
   на странице «Інтеграції» — предупреждение в блоке «Вебхук». Заголовок работает и при включённом флаге.
 
