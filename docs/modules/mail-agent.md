@@ -214,4 +214,4 @@ Auth — `UserRepository::find` (фоновый actor).
 ## Доступ к модулю
 
 Ключ модуля `mail-agent`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — только суперадмин. Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
-MySQL 8.4 only (ADR 0011, 2026-10-08): `gmail_id` uses `utf8mb4_bin` unconditionally to preserve source message identity. Test: `tests/Feature/MailAgent/GmailIdMysqlSchemaTest` (binary collation, unique index, `18aB` and `18ab` are two messages).
+MySQL 8.4 only (ADR 0010, 2026-10-08): `gmail_id` uses `utf8mb4_bin` unconditionally to preserve source message identity. Test: `tests/Feature/MailAgent/GmailIdMysqlSchemaTest` (binary collation, unique index, `18aB` and `18ab` are two messages).

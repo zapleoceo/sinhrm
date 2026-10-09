@@ -80,12 +80,11 @@ PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` м
 
 ## База данных: только MySQL 8.4
 
-Единственная СУБД — MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md)); другие СУБД не поддерживаются (замороженный
-боевой релиз до переезда и правки в нём — только по решению владельца, [mysql-cutover.md](mysql-cutover.md)). Правила для нового кода: синтаксис других
+Единственная СУБД — MySQL 8.4 ([ADR 0010](../adr/0010-mysql.md)); другие СУБД не поддерживаются. Правила для нового кода: синтаксис других
 СУБД (регистронезависимый `LIKE`-оператор, `NULLS FIRST/LAST`, `->>`/`@>` в сыром SQL, `::type`, `ON CONFLICT`/`RETURNING`, `CAST AS VARCHAR/TEXT`)
 запрещён; вместо него `Core\Support\Database\Sql` (`orderByNullsLast/First`, `whereContainsCi`, `jsonText`, `castText`)
 и билдер Laravel (`upsert`, `insertOrIgnore`, `insertGetId`, `'col->key'`, `whereJsonContains`). Веток по
-`DB::getDriverName()` в модулях и миграциях нет; код другой СУБД допустим только в разовом `db:transfer-to-mysql` (`backend/app/Modules/Core/Transfer/`), это проверяет CI-страж `scripts/mysql-only-guard.mjs` в job `lint`. Миграции: без
+`DB::getDriverName()` в модулях и миграциях нет. CI-страж `scripts/mysql-only-guard.mjs` (job `lint`) падает на любое упоминание другой СУБД, её драйвера и хостинга и на её SQL — во всём репозитории, включая документацию и журнал; исключений нет (пропускаются только lock-файлы зависимостей). Миграции: без
 `DEFAULT` у `json/text`, `unique` не на `TEXT`, непрозрачные идентификаторы — `->collation('utf8mb4_bin')`, одна
 таблица/индекс на миграцию (DDL в MySQL не транзакционный).
 

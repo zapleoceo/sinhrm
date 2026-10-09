@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-/** integrations.settings: MySQL JSON has no literal default (ADR 0011) — the model supplies the empty object. */
+/** integrations.settings: MySQL JSON has no literal default (ADR 0010) — the model supplies the empty object. */
 final class IntegrationSettingsMysqlSchemaTest extends TestCase
 {
     use RefreshDatabase;

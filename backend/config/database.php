@@ -19,7 +19,7 @@ return [
     |
     */
 
-    // MySQL 8.4 only (ADR 0011).
+    // MySQL 8.4 only (ADR 0010).
     'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
