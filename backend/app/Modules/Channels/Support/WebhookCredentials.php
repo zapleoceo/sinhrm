@@ -10,7 +10,7 @@ use SensitiveParameter;
 /**
  * Shared, constant-time checks of webhook credentials (one place for every adapter):
  * - a shared token in a header: X-Webhook-Token: <token> or Authorization: Bearer <token>;
- * - an HMAC-SHA256 of the raw body (hex, optional "sha256=" prefix) in a provider header (Viber, WhatsApp) or in
+ * - an HMAC-SHA256 of the raw body in one fixed format per provider (WhatsApp "sha256=" + hex, Viber hex) or in
  *   X-Signature (telephony);
  * - the legacy ?token= of telephony (only behind the integration flag, see AbstractTelephonyAdapter).
  * Nothing here logs or returns the values it compares.
@@ -41,19 +41,26 @@ final class WebhookCredentials
         return $secret !== '' && is_string($given) && $given !== '' && hash_equals($secret, $given);
     }
 
-    /** Hex HMAC-SHA256 of the raw body in $header ("sha256=" prefix and upper case accepted). */
-    public static function signatureMatches(Request $request, #[SensitiveParameter] string $secret, string $header = self::SIGNATURE_HEADER): bool
-    {
+    /**
+     * HMAC-SHA256 of the raw body in $header, in exactly one format per provider (no guessing):
+     * $prefix is required when set and forbidden when empty; $ignoreCase lets upper-case hex through.
+     * - WhatsApp: "sha256=" + lower-case hex, exact (as Meta sends it);
+     * - Viber: hex without prefix, any case;
+     * - telephony X-Signature (default): hex without prefix, any case.
+     */
+    public static function signatureMatches(
+        Request $request,
+        #[SensitiveParameter] string $secret,
+        string $header = self::SIGNATURE_HEADER,
+        string $prefix = '',
+        bool $ignoreCase = true,
+    ): bool {
         $given = $request->header($header);
         if ($secret === '' || ! is_string($given) || $given === '') {
             return false;
         }
-        $given = strtolower($given);
-        if (str_starts_with($given, 'sha256=')) {
-            $given = substr($given, 7);
-        }
 
-        return hash_equals(hash_hmac('sha256', $request->getContent(), $secret), $given);
+        return hash_equals($prefix.hash_hmac('sha256', $request->getContent(), $secret), $ignoreCase ? strtolower($given) : $given);
     }
 
     /** The request carries a token in its URL (?token=…), whatever its value. */

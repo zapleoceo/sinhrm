@@ -60,7 +60,7 @@ final readonly class ViberAdapter implements ChannelAdapter, MessageSender, Webh
     {
         $token = $config->secret('token');
 
-        return $token !== null && WebhookCredentials::signatureMatches($request, $token, self::SIGNATURE_HEADER);
+        return $token !== null && WebhookCredentials::signatureMatches($request, $token, self::SIGNATURE_HEADER, prefix: '', ignoreCase: true);
     }
 
     public function parse(array $payload, IntegrationConfig $config): array

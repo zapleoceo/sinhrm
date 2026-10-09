@@ -166,6 +166,7 @@
         "reconnect_required": "Google access expired or was revoked.",
         "google_connected": "Google connected and access to the service granted.",
         "webhook_received": "Webhook: new events received",
+        "webhook_deprecated_auth": "Webhook accepted with the deprecated token in the URL (?token=) — switch to the X-Webhook-Token header",
         "webhook_rejected": "Webhook rejected: bad signature or token",
         "webhook_registered": "Webhook registered",
         "webhook_register_failed": "Webhook registration failed",

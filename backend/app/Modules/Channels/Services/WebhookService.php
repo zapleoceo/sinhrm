@@ -26,9 +26,10 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
  * idempotent by (channel, external id), so provider retries and replays never duplicate a touchpoint).
  * A switched-off integration answers 404; a bad signature / token 401 (HRM-26; the GET handshake keeps 403).
  * Payloads, secrets and request URLs are never logged: a rejection stores only a reason code.
- * Telephony may still accept the deprecated ?token= behind its integration flag: such a delivery is marked
- * (WebhookResult::$deprecatedAuth → Deprecation header; "webhook_received" logged as a warning with
- * auth=query_token_deprecated). With the flag off a ?token= request is rejected (reason query_token_disabled).
+ * Telephony may still accept the deprecated ?token= behind its integration flag: EVERY such accepted delivery (also
+ * call progress events and retries that create nothing) writes the warning "webhook_deprecated_auth"
+ * (auth=query_token, never the value) to the integration log and gets a Deprecation header
+ * (WebhookResult::$deprecatedAuth). With the flag off a ?token= request is rejected (reason query_token_disabled).
  */
 final readonly class WebhookService
 {
@@ -37,7 +38,9 @@ final readonly class WebhookService
 
     public const string QUERY_TOKEN_DISABLED = 'query_token_disabled';
 
-    public const string QUERY_TOKEN_DEPRECATED = 'query_token_deprecated';
+    public const string DEPRECATED_AUTH = 'webhook_deprecated_auth';
+
+    public const string QUERY_TOKEN = 'query_token';
 
     public function __construct(
         private ChannelContext $context,
@@ -67,12 +70,12 @@ final readonly class WebhookService
 
             throw new UnauthorizedHttpException(self::CHALLENGE);
         }
+        if ($legacy) {
+            $this->context->log($adapter, LogLevel::Warning, self::DEPRECATED_AUTH, ['auth' => self::QUERY_TOKEN]);
+        }
         $payload = $request->isJson() ? $request->json()->all() : $request->request->all();
-        $events = $adapter->parse($payload, $config);
 
-        return $legacy
-            ? $this->ingest($adapter, $events, 'webhook_received', ['auth' => self::QUERY_TOKEN_DEPRECATED], LogLevel::Warning, deprecatedAuth: true)
-            : $this->ingest($adapter, $events, 'webhook_received');
+        return $this->ingest($adapter, $adapter->parse($payload, $config), 'webhook_received', deprecatedAuth: $legacy);
     }
 
     /**
@@ -95,14 +98,13 @@ final readonly class WebhookService
 
     /**
      * @param  list<IncomingEvent>  $events
-     * @param  array<string, int|string>  $logContext
+     * @param  array<string, int>  $logContext
      */
     private function ingest(
         ChannelAdapter $adapter,
         array $events,
         string $logMessage,
         array $logContext = [],
-        LogLevel $logLevel = LogLevel::Info,
         bool $deprecatedAuth = false,
     ): WebhookResult {
         $touchpoints = [];
@@ -130,7 +132,7 @@ final readonly class WebhookService
         }
         // Only deliveries that stored something new: retries and receipts do not flood the "last events" list.
         if ($created > 0) {
-            $this->context->log($adapter, $logLevel, $logMessage, $logContext + ['events' => count($events), 'created' => $created]);
+            $this->context->log($adapter, LogLevel::Info, $logMessage, $logContext + ['events' => count($events), 'created' => $created]);
         }
 
         return new WebhookResult(count($events), $touchpoints, $created, $deprecatedAuth);

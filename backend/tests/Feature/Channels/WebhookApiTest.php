@@ -199,17 +199,39 @@ final class WebhookApiTest extends TestCase
         $body = $call('h3');
         $this->rawPost('/api/webhooks/ringostat', $body, ['X-Signature' => hash_hmac('sha256', $body, self::PHONE_TOKEN)])->assertOk();
         $body = $call('h4');
-        $this->rawPost('/api/webhooks/ringostat', $body, ['X-Signature' => 'sha256='.hash_hmac('sha256', $body, self::PHONE_TOKEN)])->assertOk();
+        $this->rawPost('/api/webhooks/ringostat', $body, ['X-Signature' => strtoupper(hash_hmac('sha256', $body, self::PHONE_TOKEN))])->assertOk();
 
         $this->rawPost('/api/webhooks/ringostat', $call('x1'), ['X-Webhook-Token' => 'fake-wrong-token'])->assertUnauthorized();
         $this->rawPost('/api/webhooks/ringostat', $call('x2'), ['Authorization' => 'Bearer fake-wrong-token'])->assertUnauthorized();
         // A signature of another body (replayed header) does not match.
         $this->rawPost('/api/webhooks/ringostat', $call('x3'), ['X-Signature' => hash_hmac('sha256', $call('h3'), self::PHONE_TOKEN)])->assertUnauthorized();
         $this->rawPost('/api/webhooks/ringostat', $call('x4'))->assertUnauthorized();
+        // One format only: the WhatsApp-style "sha256=" prefix is not accepted on X-Signature.
+        $body = $call('x5');
+        $this->rawPost('/api/webhooks/ringostat', $body, ['X-Signature' => 'sha256='.hash_hmac('sha256', $body, self::PHONE_TOKEN)])->assertUnauthorized();
 
         $this->assertEqualsCanonicalizing(['ringostat:h1', 'ringostat:h2', 'ringostat:h3', 'ringostat:h4'],
             Touchpoint::query()->where('channel', 'call')->pluck('external_id')->all());
-        $this->assertSame(4, IntegrationLog::query()->where('message', 'webhook_rejected')->count());
+        $this->assertSame(5, IntegrationLog::query()->where('message', 'webhook_rejected')->count());
+    }
+
+    /** Signature formats are as strict as before the shared helper: WhatsApp "sha256=" + lower-case hex, Viber bare hex. */
+    public function test_messenger_signatures_accept_only_their_own_format(): void
+    {
+        $this->whatsapp();
+        $this->viber();
+        $wa = (string) json_encode($this->waMessage('380671234567', 'wamid.F1', 'x'));
+        $waHex = hash_hmac('sha256', $wa, self::WA_APP_SECRET);
+        $this->rawPost('/api/webhooks/whatsapp_cloud', $wa, ['X-Hub-Signature-256' => $waHex])->assertUnauthorized();
+        $this->rawPost('/api/webhooks/whatsapp_cloud', $wa, ['X-Hub-Signature-256' => 'sha256='.strtoupper($waHex)])->assertUnauthorized();
+        $this->rawPost('/api/webhooks/whatsapp_cloud', $wa, ['X-Hub-Signature-256' => 'SHA256='.$waHex])->assertUnauthorized();
+        $this->rawPost('/api/webhooks/whatsapp_cloud', $wa, ['X-Hub-Signature-256' => 'sha256='.$waHex])->assertOk();
+
+        $vb = (string) json_encode(['event' => 'delivered', 'message_token' => 3, 'user_id' => 'viberUser01==']);
+        $vbHex = hash_hmac('sha256', $vb, self::VIBER_TOKEN);
+        $this->rawPost('/api/webhooks/viber', $vb, ['X-Viber-Content-Signature' => 'sha256='.$vbHex])->assertUnauthorized();
+        $this->rawPost('/api/webhooks/viber', $vb, ['X-Viber-Content-Signature' => strtoupper($vbHex)])->assertOk();
+        $this->rawPost('/api/webhooks/viber', $vb, ['X-Viber-Content-Signature' => $vbHex])->assertOk();
     }
 
     public function test_telephony_without_configured_token_rejects_everything(): void
@@ -242,17 +264,25 @@ final class WebhookApiTest extends TestCase
         $end = ['event' => 'call.hangup', 'uuid' => 'q-2', 'lgDirection' => 4, 'otherLegs' => [['num' => '0501112233']], 'billSecs' => 3];
 
         $this->postJson('/api/webhooks/phonet?token=wrong', $end)->assertUnauthorized();
+        // Every accepted ?token= delivery is marked — also a progress event and a retry that store nothing.
+        $this->postJson('/api/webhooks/phonet?token='.self::PHONE_TOKEN, ['event' => 'call.dial', 'uuid' => 'q-2'])->assertOk()
+            ->assertHeader('Deprecation', WebhookController::DEPRECATED_SINCE);
+        $this->postJson('/api/webhooks/phonet?token='.self::PHONE_TOKEN, $end)->assertOk()
+            ->assertHeader('Deprecation', WebhookController::DEPRECATED_SINCE);
         $this->postJson('/api/webhooks/phonet?token='.self::PHONE_TOKEN, $end)->assertOk()
             ->assertHeader('Deprecation', WebhookController::DEPRECATED_SINCE);
         // The header way keeps working next to the flag and is not marked.
         $this->postJson('/api/webhooks/phonet', [...$end, 'uuid' => 'q-3'], $this->phoneAuth())->assertOk()->assertHeaderMissing('Deprecation');
 
         $this->assertSame(2, Touchpoint::query()->where('channel', 'call')->count());
-        $received = IntegrationLog::query()->where('message', 'webhook_received')->orderBy('id')->get();
-        $this->assertSame('warning', $received[0]->level->value);
-        $this->assertSame('query_token_deprecated', $received[0]->context['auth'] ?? null);
-        $this->assertSame('info', $received[1]->level->value);
-        $this->assertArrayNotHasKey('auth', $received[1]->context ?? []);
+        $deprecated = IntegrationLog::query()->where('message', 'webhook_deprecated_auth')->get();
+        $this->assertCount(3, $deprecated);
+        foreach ($deprecated as $log) {
+            $this->assertSame('warning', $log->level->value);
+            $this->assertSame(['auth' => 'query_token'], $log->context);
+        }
+        $this->assertSame(['info'], IntegrationLog::query()->where('message', 'webhook_received')->get()->map(fn (IntegrationLog $l): string => $l->level->value)->unique()->values()->all());
+        $this->assertStringNotContainsString(self::PHONE_TOKEN, (string) json_encode(IntegrationLog::query()->get()->toArray()));
     }
 
     /** Neither the integration log, the error log nor the application log gets the token, wherever it was sent. */

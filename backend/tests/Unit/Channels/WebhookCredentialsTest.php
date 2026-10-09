@@ -28,7 +28,8 @@ final class WebhookCredentialsTest extends TestCase
         yield 'X-Webhook-Token' => [['HTTP_X_WEBHOOK_TOKEN' => self::TOKEN], '', true];
         yield 'Authorization Bearer' => [['HTTP_AUTHORIZATION' => 'Bearer '.self::TOKEN], '', true];
         yield 'X-Signature hex' => [['HTTP_X_SIGNATURE' => $sig], '', true];
-        yield 'X-Signature sha256= upper' => [['HTTP_X_SIGNATURE' => 'sha256='.strtoupper($sig)], '', true];
+        yield 'X-Signature upper-case hex' => [['HTTP_X_SIGNATURE' => strtoupper($sig)], '', true];
+        yield 'X-Signature with sha256= prefix (not our format)' => [['HTTP_X_SIGNATURE' => 'sha256='.$sig], '', false];
         yield 'wrong header token' => [['HTTP_X_WEBHOOK_TOKEN' => 'fake-wrong'], '', false];
         yield 'empty header token' => [['HTTP_X_WEBHOOK_TOKEN' => ''], '', false];
         yield 'wrong bearer' => [['HTTP_AUTHORIZATION' => 'Bearer fake-wrong'], '', false];

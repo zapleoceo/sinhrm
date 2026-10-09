@@ -79,8 +79,8 @@ Laravel; `meta.thread` длиннее 255 символов MySQL отклоня�
 | Адаптер | Подпись | Что становится касанием | Отправка |
 |---|---|---|---|
 | `TelegramBusinessAdapter` | `X-Telegram-Bot-Api-Secret-Token` = `webhook_secret` | `business_message`, `edited_business_message` (id `bc:msg:edit:<date>`). Направление: в личном чате `chat.id` = собеседник, поэтому `from.id == chat.id` → входящее, иначе написал владелец аккаунта или бот → исходящее (`via_product=false`). `business_connection` → только запись в журнал | `sendMessage` c `business_connection_id` в чат ветки; нет ветки → `no_conversation` |
-| `WhatsappCloudAdapter` | `X-Hub-Signature-256` = `sha256=` HMAC тела ключом `app_secret`; GET `hub.mode/hub.verify_token/hub.challenge` | `messages` (текст, кнопки, подписи медиа; иначе `[тип]`), только своего `phone_number_id`; `statuses` — не касания, `failed` пишется в журнал `delivery_failed` с кодом | `POST /{phone_number_id}/messages`; последнее входящее старше 24 ч (или его нет) → `template_required` без запроса; ответ Graph API 131047/470 → тоже `template_required` |
-| `ViberAdapter` | `X-Viber-Content-Signature` = HMAC тела ключом `token` | событие `message`; `webhook`, `delivered`, `seen`… — нет | `/pa/send_message` на `sender.id` ветки; статус 5/6 → `no_conversation` |
+| `WhatsappCloudAdapter` | `X-Hub-Signature-256` = `sha256=` + hex HMAC тела ключом `app_secret` (префикс обязателен, hex строчными — сравнение точное); GET `hub.mode/hub.verify_token/hub.challenge` | `messages` (текст, кнопки, подписи медиа; иначе `[тип]`), только своего `phone_number_id`; `statuses` — не касания, `failed` пишется в журнал `delivery_failed` с кодом | `POST /{phone_number_id}/messages`; последнее входящее старше 24 ч (или его нет) → `template_required` без запроса; ответ Graph API 131047/470 → тоже `template_required` |
+| `ViberAdapter` | `X-Viber-Content-Signature` = hex HMAC тела ключом `token` (без префикса, регистр hex любой) | событие `message`; `webhook`, `delivered`, `seen`… — нет | `/pa/send_message` на `sender.id` ветки; статус 5/6 → `no_conversation` |
 | `PhonetAdapter` ⚠️ | `X-Webhook-Token` / `Authorization: Bearer` = `webhook_token`, или `X-Signature` = HMAC тела ключом `webhook_token`; `?token=` — только за флагом `webhook_query_token` (см. ниже) | только `call.hangup` (`uuid`, `lgDirection` 2 = исходящий, `otherLegs[0].num`, `billSecs`/`duration`, `callUrl`) | click-to-call нет → `click_to_call_unsupported` |
 | `RingostatAdapter` ⚠️ | то же | хук «после звонка» (`uniqueid`, `call_type` in/out/callback, `caller`/`dst`, `duration`, `recording`, `calldate`); принимаются и распространённые альтернативные имена | `CallInitiator`: `POST https://api.ringostat.net/callback/outward_call` (заголовок `Auth-key`, `extension` + `destination`) через SSRF-guard |
 | `BinotelAdapter` ⚠️ | то же | `requestType=apiCallCompleted`, `callDetails[...]` (`generalCallID`, `callType` 0/1, `externalNumber`, `billsec`, `startTime`, ссылка на запись); ответ `{"status":"success"}` | нет |
@@ -99,7 +99,7 @@ Ringostat станет доступен только после появлени
 
 ### Безопасность
 - Подписи и токены сравниваются `hash_equals` в одном месте — `Support/WebhookCredentials` (токен в заголовке, HMAC-SHA256
-  тела; им пользуются все адаптеры); секрет не задан → любой запрос 401. Неверная подпись/токен → **401** с
+  тела в одном фиксированном формате на провайдера, без «угадывания»; им пользуются все адаптеры); секрет не задан → любой запрос 401. Неверная подпись/токен → **401** с
   `WWW-Authenticate: Bearer realm="webhooks"` (до HRM-26 было 403; GET-handshake WhatsApp по-прежнему 403). Отклонённый
   запрос пишется в журнал интеграции (`webhook_rejected`) без тела, заголовков и адреса; для `?token=` при выключенном
   флаге — с кодом `reason: query_token_disabled`.
@@ -129,7 +129,7 @@ Phonet, Ringostat, Binotel (`Adapters/AbstractTelephonyAdapter`, `auth = header_
 |---|---|
 | Заголовок | `X-Webhook-Token: <webhook_token>` |
 | Bearer | `Authorization: Bearer <webhook_token>` |
-| Подпись тела | `X-Signature: <hex HMAC-SHA256(сырое тело, webhook_token)>` (допускается префикс `sha256=`) |
+| Подпись тела | `X-Signature: <hex HMAC-SHA256(сырое тело, webhook_token)>` — ровно один формат: 64 hex-символа, **без** префикса `sha256=`, регистр любой |
 
 Сравнение — constant-time (`hash_equals`). Иначе 401.
 
@@ -141,7 +141,7 @@ Phonet, Ringostat, Binotel (`Adapters/AbstractTelephonyAdapter`, `auth = header_
   всем интеграциям телефонии, у которых уже сохранён `webhook_token` (явно заданное значение не трогает), чтобы звонки не
   потерялись в день выката (миграция только данных — в `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS`, после переноса на
   MySQL повторяется `migrate`, [mysql-cutover.md](../guides/mysql-cutover.md)). Пока флаг `on`, `?token=` принимается, но помечается устаревшим: в ответе заголовок
-  `Deprecation: @1791504000` (RFC 9745), в журнале — `webhook_received` уровня warning с `auth: query_token_deprecated`,
+  `Deprecation: @1791504000` (RFC 9745), в журнале — запись `webhook_deprecated_auth` уровня warning с `auth: query_token` (без значения токена) на **каждый** принятый так запрос, включая промежуточные события звонка и повторы,
   на странице «Інтеграції» — предупреждение в блоке «Вебхук». Заголовок работает и при включённом флаге.
 
 **Как отключить `?token=`:** в кабинете провайдера оставьте адрес без `?token=` и добавьте заголовок
@@ -196,7 +196,8 @@ Phonet, Ringostat, Binotel (`Adapters/AbstractTelephonyAdapter`, `auth = header_
 Бэкенд: `tests/Feature/Channels/WebhookApiTest.php` (404 неизвестного/выключенного, 401 на неверный/отсутствующий секрет
 для каждого провайдера; телефония HRM-26: `test_telephony_token_in_header_bearer_or_body_signature`,
 `test_query_token_is_401_while_the_transitional_flag_is_off`, `test_query_token_is_accepted_and_marked_deprecated_while_the_flag_is_on`,
-`test_telephony_token_never_reaches_any_log`, `test_telephony_without_configured_token_rejects_everything`; сопоставление по @username/телефону, «Вхідні», идемпотентность, исходящее от владельца в Telegram,
+`test_telephony_token_never_reaches_any_log`, `test_telephony_without_configured_token_rejects_everything`,
+`test_messenger_signatures_accept_only_their_own_format` (WhatsApp без `sha256=` → 401, Viber с префиксом → 401); сопоставление по @username/телефону, «Вхідні», идемпотентность, исходящее от владельца в Telegram,
 handshake WhatsApp, статусы и `delivery_failed`, чужой `phone_number_id`, Viber, звонки Phonet/Binotel (form)/Ringostat,
 небезопасная ссылка на запись, 413, журнал без секретов и текста), `MessagesApiTest.php` (права, валидация, off, демо без
 HTTP, Telegram в известный чат и без чата, окно 24 ч WhatsApp и код 131047, Viber + 502, чужая заявка, доступность каналов,

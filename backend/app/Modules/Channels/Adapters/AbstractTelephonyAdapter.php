@@ -21,10 +21,11 @@ use Illuminate\Support\Carbon;
 /**
  * Telephony webhooks (PROVISIONAL: payload formats are not confirmed on real accounts). Auth (HRM-26), constant time
  * against vault "webhook_token": header X-Webhook-Token or Authorization: Bearer, or X-Signature = hex HMAC-SHA256 of
- * the raw body. The legacy ?token= is accepted ONLY while the integration flag "webhook_query_token" is on (off by
+ * the raw body (exactly 64 hex characters, no "sha256=" prefix, any case). The legacy ?token= is accepted ONLY while the integration flag "webhook_query_token" is on (off by
  * default); with the flag off any request with ?token= is rejected, even if it also has a valid header, so a
  * misconfigured provider is noticed instead of silently leaking the token into access logs.
- * Only the call-end event creates a touchpoint (channel call, duration, recording link in meta — never downloaded). Mapping is tolerant: each provider lists the keys it may send.
+ * Only the call-end event creates a touchpoint (channel call, duration, recording link in meta — never downloaded).
+ * Mapping is tolerant: each provider lists the keys it may send.
  * No transcript yet, so script evaluation skips these calls until speech-to-text (Deepgram) is connected.
  */
 abstract class AbstractTelephonyAdapter implements ChannelAdapter, LegacyQueryTokenAuth
@@ -51,7 +52,8 @@ abstract class AbstractTelephonyAdapter implements ChannelAdapter, LegacyQueryTo
         }
 
         return WebhookCredentials::tokenMatches($secret, WebhookCredentials::headerToken($request))
-            || WebhookCredentials::signatureMatches($request, $secret);
+            // X-Signature: one format — hex HMAC-SHA256 of the raw body, no prefix, any case.
+            || WebhookCredentials::signatureMatches($request, $secret, WebhookCredentials::SIGNATURE_HEADER, prefix: '', ignoreCase: true);
     }
 
     public function queryTokenAllowed(IntegrationConfig $config): bool

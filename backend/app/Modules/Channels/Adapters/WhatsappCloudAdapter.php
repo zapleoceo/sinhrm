@@ -34,6 +34,9 @@ final readonly class WhatsappCloudAdapter implements ChannelAdapter, HandshakeRe
 {
     public const string SIGNATURE_HEADER = 'X-Hub-Signature-256';
 
+    /** Required prefix of the signature; the hex after it is lower case, compared exactly. */
+    public const string SIGNATURE_PREFIX = 'sha256=';
+
     public const int WINDOW_HOURS = 24;
 
     /** Graph API error codes meaning "outside the customer service window / re-engagement required". */
@@ -60,7 +63,7 @@ final readonly class WhatsappCloudAdapter implements ChannelAdapter, HandshakeRe
     {
         $secret = $config->secret('app_secret');
 
-        return $secret !== null && WebhookCredentials::signatureMatches($request, $secret, self::SIGNATURE_HEADER);
+        return $secret !== null && WebhookCredentials::signatureMatches($request, $secret, self::SIGNATURE_HEADER, prefix: self::SIGNATURE_PREFIX, ignoreCase: false);
     }
 
     public function handshake(Request $request, IntegrationConfig $config): ?string

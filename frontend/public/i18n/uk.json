@@ -166,6 +166,7 @@
         "reconnect_required": "Доступ Google сплив або відкликаний.",
         "google_connected": "Google підключено, доступ до сервісу надано.",
         "webhook_received": "Вебхук: отримано нові події",
+        "webhook_deprecated_auth": "Вебхук прийнято за застарілим токеном в адресі (?token=) — перейдіть на заголовок X-Webhook-Token",
         "webhook_rejected": "Вебхук відхилено: невірний підпис або токен",
         "webhook_registered": "Вебхук зареєстровано",
         "webhook_register_failed": "Не вдалося зареєструвати вебхук",
