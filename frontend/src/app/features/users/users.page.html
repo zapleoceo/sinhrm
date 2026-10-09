@@ -49,7 +49,7 @@
                 <mat-select
                   #roleSelect
                   multiple
-                  [value]="pickable(u)"
+                  [value]="u.roles"
                   [disabled]="pending().has(u.id)"
                   [placeholder]="'users.changeRoles' | transloco"
                   [attr.aria-label]="'users.changeRoles' | transloco"

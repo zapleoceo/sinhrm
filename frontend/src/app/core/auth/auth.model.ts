@@ -1,12 +1,13 @@
 /** Mirrors backend App\Modules\Auth\Enums\UserRole. */
 export type UserRole = 'superadmin' | 'admin' | 'hr_manager' | 'recruiter' | 'employee' | 'viewer';
 export const USER_ROLES: readonly UserRole[] = ['superadmin', 'admin', 'hr_manager', 'recruiter', 'employee', 'viewer'];
-/** Roles a superadmin can give through an invitation. */
-export const INVITABLE_ROLES: readonly UserRole[] = ['admin', 'hr_manager', 'recruiter', 'employee', 'viewer'];
 /** Mirrors backend UserRole::hrStaff(): they act as HR (People, TimeOff, Desk, Pulse, Workflows, …) and see every branch. */
 export const HR_STAFF_ROLES: readonly UserRole[] = ['superadmin', 'admin', 'hr_manager'];
 
-/** Bootstrap role (SUPERADMIN_EMAIL): every module is open to it, it cannot be invited or restricted. */
+/**
+ * Owner role: every module is open to it, it cannot be restricted. The first one comes from SUPERADMIN_EMAIL; a superadmin
+ * gives or takes it on «Адміністрування → Користувачі» after a warning (HRM-84).
+ */
 export const SUPERADMIN_ROLE: UserRole = 'superadmin';
 /**
  * Administration level: superadmin + admin. Mirrors backend gates of that pair (directory-manage, privacy-manage,

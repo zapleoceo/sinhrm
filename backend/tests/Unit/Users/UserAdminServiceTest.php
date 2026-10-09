@@ -12,8 +12,10 @@ use App\Modules\Users\Contracts\UserAdminRepository;
 use App\Modules\Users\DTO\UserFilter;
 use App\Modules\Users\Exceptions\UserAdminException;
 use App\Modules\Users\Services\UserAdminService;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Pagination\LengthAwarePaginator;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -23,11 +25,19 @@ final class UserAdminServiceTest extends TestCase
 
     private UserAdminService $service;
 
+    private Gate&Stub $gate;
+
+    private bool $actorIsSuperadmin = true;
+
     protected function setUp(): void
     {
         $this->repo = $this->createMock(UserAdminRepository::class);
         $this->repo->method('transaction')->willReturnCallback(fn (callable $cb): mixed => $cb());
-        $this->service = new UserAdminService($this->repo, new NullLogger, $this->createStub(AuditLogger::class));
+        // Gate manage-superadmins: allowed unless a test says otherwise.
+        $this->gate = $this->createStub(Gate::class);
+        $this->gate->method('forUser')->willReturnSelf();
+        $this->gate->method('allows')->willReturnCallback(fn (): bool => $this->actorIsSuperadmin);
+        $this->service = new UserAdminService($this->repo, new NullLogger, $this->createStub(AuditLogger::class), $this->gate);
     }
 
     public function test_list_delegates_filter(): void
@@ -139,7 +149,7 @@ final class UserAdminServiceTest extends TestCase
     {
         $target = $this->user(2);
         $audit = $this->createMock(AuditLogger::class);
-        $service = new UserAdminService($this->repo, new NullLogger, $audit);
+        $service = new UserAdminService($this->repo, new NullLogger, $audit, $this->gate);
         $this->repo->method('rolesOf')->willReturn([UserRole::Recruiter]);
         $this->repo->expects($this->once())->method('setRoles')->with($target, [UserRole::HrManager, UserRole::Recruiter]);
         $audit->expects($this->once())->method('record')
@@ -148,13 +158,34 @@ final class UserAdminServiceTest extends TestCase
         $service->update($this->user(1), $target, [UserRole::Recruiter, UserRole::HrManager], null);
     }
 
-    public function test_superadmin_can_be_kept_but_not_given(): void
+    public function test_superadmin_gives_and_takes_superadmin_with_audit(): void
     {
-        $this->repo->method('rolesOf')->willReturn([UserRole::Admin]);
-        $this->repo->expects($this->never())->method('setRoles');
+        $target = $this->user(2);
+        $audit = $this->createMock(AuditLogger::class);
+        $service = new UserAdminService($this->repo, new NullLogger, $audit, $this->gate);
+        $this->repo->method('rolesOf')->willReturnOnConsecutiveCalls([UserRole::Admin], [UserRole::Superadmin, UserRole::Admin]);
+        $this->repo->method('countActiveSuperadmins')->willReturn(2);
+        $this->repo->expects($this->exactly(2))->method('setRoles');
+        $audit->expects($this->exactly(2))->method('record');
 
-        $e = $this->catch(fn () => $this->service->update($this->user(1), $this->user(2), [UserRole::Superadmin, UserRole::Admin], null));
-        $this->assertSame('superadmin_not_assignable', $e->errorCode);
+        $service->update($this->user(1), $target, [UserRole::Admin, UserRole::Superadmin], null);
+        $service->update($this->user(1), $target, [UserRole::Admin], null);
+    }
+
+    public function test_only_an_actor_acting_as_superadmin_touches_the_superadmin_role(): void
+    {
+        $admin = $this->user(1);
+        $this->actorIsSuperadmin = false;
+        $this->repo->expects($this->never())->method('setRoles');
+        $this->repo->expects($this->never())->method('invite');
+        $this->repo->method('rolesOf')->willReturnOnConsecutiveCalls([UserRole::Admin], [UserRole::Superadmin]);
+
+        foreach ([[UserRole::Superadmin, UserRole::Admin], [UserRole::Admin]] as $roles) {
+            $e = $this->catch(fn () => $this->service->update($admin, $this->user(2), $roles, null));
+            $this->assertSame('superadmin_forbidden', $e->errorCode);
+            $this->assertSame(403, $e->status);
+        }
+        $this->assertSame('superadmin_forbidden', $this->catch(fn () => $this->service->invite($admin, 'a@example.com', 'A', UserRole::Superadmin))->errorCode);
     }
 
     public function test_last_superadmin_keeps_superadmin_when_roles_are_added(): void

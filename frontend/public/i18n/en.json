@@ -51,10 +51,11 @@
       "email_taken": "A user with this email already exists",
       "self_change_forbidden": "You cannot change your own role or status",
       "last_superadmin": "The last active superadmin cannot lose access",
-      "superadmin_not_assignable": "The superadmin role cannot be given here",
+      "superadmin_forbidden": "Only a superadmin can give or take the superadmin role",
       "handler_requires_admin": "Only superadmins and admins can handle Safe Speak",
       "generic": "Could not save changes"
     },
+    "superadmin": {"grant": {"title": "Make superadmin", "confirm": "Make superadmin", "body": "{{name}} will become a superadmin: full access to every module, user, role and integration, including making and removing other superadmins. Give it only to someone you trust. The change is recorded in the audit log."}, "revoke": {"title": "Remove superadmin role", "confirm": "Remove superadmin role", "body": "{{name}} will lose the superadmin role and access to managing users and integrations. The last active superadmin cannot lose it. The change is recorded in the audit log."}},
     "inviteDialog": {
       "title": "Invite user",
       "hint": "They will sign in with Google using this email.",

@@ -11,7 +11,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus, isHrStaff } from '../../core/auth/auth.model';
+import { USER_ROLES, USER_STATUSES, UserRole, UserStatus, isHrStaff } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { PagedList } from '../../core/ui/table/paged-list';
@@ -33,6 +33,7 @@ import { USERS_PAGE_SIZE, usersQueryFromParams } from './users.query';
 import { UsersService, userErrorKey } from './users.service';
 import { withMember } from '../../core/ui/with-member';
 import { NotifyService } from '../../core/ui/notify.service';
+import { SuperadminConfirm, superadminChange } from './superadmin-confirm';
 
 /** API order without ?sort (by name, A→Z): the name column carries the arrow. */
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
@@ -67,13 +68,14 @@ export class UsersPage implements OnInit {
   private readonly api = inject(UsersService);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);
+  private readonly superadmin = inject(SuperadminConfirm);
   private readonly url = inject(TableUrlState);
   /** A newer query cancels the request still in flight: an old answer never lands over the new filters. */
   private readonly list = new PagedList<AdminUser>();
   private loaded = false;
 
-  /** Superadmin is bootstrap-only (SUPERADMIN_EMAIL) and cannot be assigned from the UI. */
-  protected readonly assignableRoles = INVITABLE_ROLES;
+  /** Every global role, superadmin included: giving or taking it asks for confirmation first (HRM-84). */
+  protected readonly assignableRoles = USER_ROLES;
   protected readonly columns = ['user', 'role', 'branches', 'status', 'lastLogin', 'actions'];
   private readonly auth = inject(AuthService);
   private readonly directory = inject(DirectoryService);
@@ -147,19 +149,24 @@ export class UsersPage implements OnInit {
   }
 
   /**
-   * Saves the ticked roles when the picker closes. Superadmin is not in the picker: it stays on a user who has it.
-   * Nothing ticked (and no superadmin) = no change: a user always keeps at least one role.
+   * Saves the ticked roles when the picker closes. Nothing ticked = no change: a user always keeps at least one role.
+   * Giving or taking superadmin waits for the warning to be confirmed; on cancel the row (and its picker) is reset.
    */
   protected commitRoles(user: AdminUser, selected: UserRole[]): void {
     const roles = nextRoles(user.roles, selected);
-    if (roles !== null) {
+    if (roles === null) return;
+    const change = superadminChange(user.roles, roles);
+    if (change === null) {
       this.optimistic(user, { roles }, { roles });
+      return;
     }
-  }
-
-  /** Roles shown in the picker (everything but superadmin). */
-  protected pickable(user: AdminUser): UserRole[] {
-    return user.roles.filter((r) => r !== 'superadmin');
+    this.superadmin.ask(change, user.name).subscribe((ok) => {
+      if (ok) {
+        this.optimistic(user, { roles }, { roles });
+      } else {
+        this.replace({ ...user });
+      }
+    });
   }
 
   /** Saves the selection when the picker closes; only active branches are sent (disabled ones are dropped). */

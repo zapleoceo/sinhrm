@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { Router, convertToParamMap, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -11,6 +11,8 @@ import { AdminUser, UsersPage as UsersPageData, UsersQuery } from './users.model
 import { UsersPage } from './users.page';
 import { USERS_PAGE_SIZE, usersQueryFromParams } from './users.query';
 import { UsersService } from './users.service';
+import { SuperadminConfirm } from './superadmin-confirm';
+import { NotifyService } from '../../core/ui/notify.service';
 import { sortCount } from '../../../testing/table-page';
 
 const USER: AdminUser = {
@@ -162,5 +164,76 @@ describe('UsersPage: sortable / filterable headers bound to the URL', () => {
     harness.detectChanges();
     expect(th('users.columns.user')).toBeTruthy();
     expect(harness.routeNativeElement!.textContent).toContain('users.empty');
+  });
+});
+
+describe('UsersPage: superadmin role (HRM-84)', () => {
+  const ROOT: AdminUser = { ...USER, id: 3, name: 'Rob Root', roles: ['superadmin', 'admin'] };
+  let updates: { id: number; body: unknown }[];
+  let answer: boolean;
+  let asked: [string, string][];
+  let page: UsersPage;
+  let fixture: ComponentFixture<UsersPage>;
+
+  const rows = () => (page as unknown as { users: () => AdminUser[] }).users();
+
+  beforeEach(async () => {
+    updates = [];
+    asked = [];
+    answer = true;
+    TestBed.configureTestingModule({
+      imports: [TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [
+        provideRouter([]),
+        {
+          provide: UsersService,
+          useValue: {
+            list: () => of({ ...PAGE, data: [USER, ROOT] }),
+            update: (id: number, body: { roles?: AdminUser['roles'] }) => {
+              updates.push({ id, body });
+              return of({ ...(id === ROOT.id ? ROOT : USER), ...body });
+            },
+          },
+        },
+        { provide: DirectoryService, useValue: { active: () => of([]) } },
+        { provide: AuthService, useValue: { user: signal({ id: 1, roles: ['superadmin'] }) } },
+        { provide: MatDialog, useValue: {} },
+        { provide: SuperadminConfirm, useValue: { ask: (change: string, name: string) => (asked.push([change, name]), of(answer)) } },
+        { provide: NotifyService, useValue: { show: () => undefined } },
+      ],
+    });
+    fixture = TestBed.createComponent(UsersPage);
+    page = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+  });
+
+  it('offers superadmin in the role picker', () => {
+    expect((page as unknown as { assignableRoles: readonly string[] }).assignableRoles).toContain('superadmin');
+  });
+
+  it('giving superadmin asks first and saves only after confirmation', () => {
+    page['commitRoles'](USER, ['viewer', 'superadmin']);
+
+    expect(asked).toEqual([['grant', 'Ann Viewer']]);
+    expect(updates).toEqual([{ id: USER.id, body: { roles: ['superadmin', 'viewer'] } }]);
+  });
+
+  it('taking superadmin asks with the revoke warning; cancel saves nothing and resets the row', () => {
+    answer = false;
+    page['commitRoles'](ROOT, ['admin']);
+
+    expect(asked).toEqual([['revoke', 'Rob Root']]);
+    expect(updates).toEqual([]);
+    const row = rows().find((u) => u.id === ROOT.id);
+    expect(row).toEqual(ROOT);
+    expect(row).not.toBe(ROOT); // a fresh object re-renders the row, so the picker shows the saved roles again
+  });
+
+  it('other role changes save at once without a warning', () => {
+    page['commitRoles'](ROOT, ['superadmin', 'admin', 'recruiter']);
+
+    expect(asked).toEqual([]);
+    expect(updates).toEqual([{ id: ROOT.id, body: { roles: ['superadmin', 'admin', 'recruiter'] } }]);
   });
 });

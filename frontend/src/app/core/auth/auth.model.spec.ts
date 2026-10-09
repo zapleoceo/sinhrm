@@ -1,9 +1,8 @@
-import { ADMIN_ROLES, HR_STAFF_ROLES, INVITABLE_ROLES, SUPERADMIN_ROLE, USER_ROLES, isAdmin, isHrStaff } from './auth.model';
+import { ADMIN_ROLES, HR_STAFF_ROLES, SUPERADMIN_ROLE, USER_ROLES, isAdmin, isHrStaff } from './auth.model';
 
 describe('auth.model roles', () => {
   it('lists the standard global roles (mirrors backend UserRole)', () => {
     expect(USER_ROLES).toEqual(['superadmin', 'admin', 'hr_manager', 'recruiter', 'employee', 'viewer']);
-    expect(INVITABLE_ROLES).not.toContain('superadmin');
     expect(HR_STAFF_ROLES).toEqual(['superadmin', 'admin', 'hr_manager']);
   });
 

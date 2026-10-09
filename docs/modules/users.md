@@ -2,16 +2,17 @@
 
 ## Что это и зачем
 Админка пользователей: кто может войти в SinHRM и с какими правами. Здесь суперадмин приглашает людей,
-меняет им роль и блокирует доступ. Удаления нет — человека блокируют, история остаётся.
+меняет им роль (включая назначение и снятие других суперадминов) и блокирует доступ. Удаления нет — человека блокируют, история остаётся.
 
 ## Как пользоваться
 - Приглашение, смена роли и блокировка/разблокировка пишутся в журнал действий ([audit.md](audit.md)): «Зміна ролі» с «было → стало».
 Меню слева → «Адміністрування → Користувачі» (видно только суперадмину).
-- **Запросити** — e-mail, имя, роль (`admin`, `hr_manager`, `recruiter`, `employee`, `viewer`). Человек сразу активен, пароля нет:
+- **Запросити** — e-mail, имя, роль (`superadmin`, `admin`, `hr_manager`, `recruiter`, `employee`, `viewer`; для `superadmin` — сначала предупреждение). Человек сразу активен, пароля нет:
   он входит через Google с этим же e-mail (и должен быть в тестовых пользователях Google, см. [auth.md](auth.md)).
 - **Ролі** — у пользователя может быть **несколько** глобальных ролей. В строке они показаны плашками, а список
   «Змінити ролі» позволяет отметить несколько (сохраняется при закрытии списка). Хотя бы одна роль остаётся всегда.
-  Суперадмина в списке нет: у того, у кого он есть, он сохраняется, новому человеку его не выдать. С несколькими
+  Суперадмин в списке есть: отметить или снять его можно только после предупреждения («Призначити суперадміна» /
+  «Зняти роль суперадміна»), отмена возвращает строку как была. С несколькими
   ролями человек выбирает, в какой из них работать («Працювати як», [auth.md](auth.md)). **Заблокувати / Розблокувати** — кнопка в строке.
   Изменения применяются сразу; если сервер отказал — строка возвращается как была и показывается причина.
 - Поиск по имени/e-mail, фильтры по роли и статусу, постраничный вывод.
@@ -29,7 +30,9 @@
 - Фронт (2026-10-08): список `/admin/users` держит строки, итог, загрузку и ошибку в `PagedList` (`core/ui/table/paged-list.ts`); новый запрос отменяет предыдущий.
 ### Доступ
 Gate `manage-users` (`Providers\UsersServiceProvider::MANAGE_USERS`): активный пользователь с ролью `superadmin`.
-Назначаемые роли (приглашение и смена): `admin`, `hr_manager`, `recruiter`, `employee`, `viewer` — что каждая значит, см.
+Gate `manage-superadmins` (`MANAGE_SUPERADMINS`, тоже только активный `superadmin`, «Працювати як» учитывается) — выдать или
+снять роль `superadmin`; проверяет `UserAdminService`, чтобы правило не открылось вместе с `manage-users`, если тот дадут `admin`.
+Назначаемые роли (приглашение и смена): все — `superadmin`, `admin`, `hr_manager`, `recruiter`, `employee`, `viewer` — что каждая значит, см.
 [auth.md](auth.md) «Роли и статусы». В списке пользователей есть фильтр по роли, подписи ролей переведены (uk/ru/en,
 ключи `roles.*`). Филиалы выбираются только для ролей вне HR (у `superadmin`/`admin`/`hr_manager` — все филиалы).
 Роль `admin` пока доступа не имеет. Все маршруты: `auth:sanctum` + `EnsureUserIsActive` + `can:manage-users`.
@@ -39,8 +42,8 @@ Gate `manage-users` (`Providers\UsersServiceProvider::MANAGE_USERS`): актив
 | Метод и путь | Тело / параметры | Ответ |
 |---|---|---|
 | `GET /` | `q` (имя или e-mail содержит), `status` (`active\|blocked`), `role`, `last_login_from` / `last_login_to` (`YYYY-MM-DD`, включительно), `sort` = `name\|status\|last_login` (по умолчанию `name`), `dir` = `asc\|desc`, `perPage` 1..100 и `page` (строки `"20"` принимаются); другая колонка, направление, дата или `page=abc` → 422 | `{data: [...], links, meta}` |
-| `POST /` | `{email, name, role: admin\|hr_manager\|recruiter\|employee\|viewer}` | 201 `{data: user}`; e-mail занят → 409 `{code: "email_taken"}`; ошибки полей → 422 |
-| `PATCH /{id}` | `{roles?: [..] \| role?, status?, branch_ids?, safe_speak_handler?}` — `roles` = полный новый набор (минимум одна, без повторов); старое поле `role` работает как `roles: [role]`; оба сразу → 422 | 200 `{data: user}`; выдать `superadmin` тому, у кого его нет → 422 `superadmin_not_assignable`; себя (роль/статус/филиалы) → 422 `self_change_forbidden`; последний активный суперадмин → 422 `last_superadmin`; флаг обработчика не админу → 422 `handler_requires_admin`; нет id → 404 |
+| `POST /` | `{email, name, role: superadmin\|admin\|hr_manager\|recruiter\|employee\|viewer}` | 201 `{data: user}`; `superadmin` не суперадмином → 403 `superadmin_forbidden`; e-mail занят → 409 `{code: "email_taken"}`; ошибки полей → 422 |
+| `PATCH /{id}` | `{roles?: [..] \| role?, status?, branch_ids?, safe_speak_handler?}` — `roles` = полный новый набор (минимум одна, без повторов); старое поле `role` работает как `roles: [role]`; оба сразу → 422 | 200 `{data: user}`; выдать или снять `superadmin` не суперадмином → 403 `superadmin_forbidden`; себя (роль/статус/филиалы) → 422 `self_change_forbidden`; последний активный суперадмин → 422 `last_superadmin`; флаг обработчика не админу → 422 `handler_requires_admin`; нет id → 404 |
 
 Пользователь в ответе (`Http/Resources/UserResource`): `id, name, email, avatar_url, roles[], status, branches[{id, name, status}], locale,
 safe_speak_handler, invited_by, last_login_at, created_at`. `DELETE` не реализован намеренно.
@@ -151,9 +154,32 @@ last-superadmin guard отказывает до изменения credentials.
 curl -i "https://sinhrm.vercel.app/api/users?perPage=20"   # без сессии → 401
 ```
 
-## Роль суперадмина
-Суперадмин **не назначается** ни через API, ни из интерфейса: `PATCH /api/users/{id}`: `role` принимает только назначаемые роли (`admin`, `hr_manager`, `recruiter`, `employee`, `viewer`, иначе 422), а `superadmin` в `roles` допустим лишь чтобы сохранить его у того, у кого он уже есть (иначе 422 `superadmin_not_assignable`). Суперадмином становится только владелец адреса из `SUPERADMIN_EMAIL` при первом входе.
-В таблице у суперадмина вместо выбора роли — неизменяемая метка.
+## Роль суперадмина (HRM-84, 2026-10-09)
+Первый суперадмин по-прежнему появляется только из `SUPERADMIN_EMAIL` при первом входе ([auth.md](auth.md)). Дальше
+суперадмин назначает и снимает роль `superadmin` у **другого** пользователя на «Адміністрування → Користувачі»:
+в списке «Змінити ролі» или в приглашении.
+
+- **Кто:** только суперадмин — маршрут закрыт `manage-users`, а сервис дополнительно проверяет gate
+  `manage-superadmins`; суперадмин в режиме «Працювати як» другой ролью → 403 `superadmin_forbidden`.
+  `admin`, `hr_manager` и остальные получают 403 на весь `/api/users`.
+- **Подтверждение:** перед назначением и снятием — диалог с предупреждением (`features/users/superadmin-confirm.ts`,
+  общий `ConfirmDialog`): полный доступ ко всему, включая пользователей и интеграции; отмена ничего не отправляет.
+  Тексты — `users.superadmin.grant|revoke.{title,body,confirm}` (uk/ru/en).
+- **Защиты прежние:** свою роль и статус менять нельзя (`self_change_forbidden`); нельзя снять или заблокировать
+  последнего **активного** суперадмина (`last_superadmin`; заблокированный не считается) — проверка и изменение в одной
+  транзакции с блокировкой строк суперадминов.
+- **Журнал:** «Зміна ролі» (`role_changed`) с ролями «было → стало», например `admin` → `superadmin, admin`; приглашение
+  суперадмина — `null` → `superadmin`. Автор — тот, кто менял.
+- **Break-glass:** решать свои заявки может только суперадмин, у которого нет другого **активного** суперадмина или админа
+  (`People\Services\PeopleScope::isSoleAdministrator`, журнал `self_decision` — [people.md](people.md)). С назначением второго
+  суперадмина режим выключается сам, после его блокировки или снятия роли — включается снова (тест
+  `tests/Feature/Users/SuperadminRoleTest.php`).
+
+Тесты: `tests/Feature/Users/SuperadminRoleTest.php` (назначение и снятие → 200 и аудит, приглашение суперадмина,
+admin/hr_manager/recruiter/employee/viewer → 403, себя → 422, последний активный → `last_superadmin`, заблокированный не
+считается, break-glass при двух суперадминах), `tests/Unit/Users/UserAdminServiceTest.php` (gate `manage-superadmins`),
+`frontend/.../superadmin-confirm.spec.ts` (grant/revoke, диалог, подписи ru/uk/en), `users.page.spec.ts` (роль в списке,
+подтверждение, отмена).
 
 ## Доступ к модулю
 

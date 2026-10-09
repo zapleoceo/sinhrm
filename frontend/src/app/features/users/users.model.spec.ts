@@ -5,9 +5,10 @@ describe('nextRoles (users admin, several roles per user)', () => {
     expect(nextRoles(['recruiter'], ['recruiter', 'hr_manager'])).toEqual(['hr_manager', 'recruiter']);
   });
 
-  it('keeps superadmin on a user who has it and never gives it', () => {
-    expect(nextRoles(['superadmin'], ['recruiter'])).toEqual(['superadmin', 'recruiter']);
-    expect(nextRoles(['admin'], ['admin', 'superadmin'])).toBeNull();
+  it('gives and takes superadmin like any other role (HRM-84)', () => {
+    expect(nextRoles(['admin'], ['admin', 'superadmin'])).toEqual(['superadmin', 'admin']);
+    expect(nextRoles(['superadmin', 'recruiter'], ['recruiter'])).toEqual(['recruiter']);
+    expect(nextRoles(['superadmin'], ['superadmin'])).toBeNull();
   });
 
   it('returns null when nothing changed or nothing is left', () => {

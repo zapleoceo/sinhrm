@@ -18,6 +18,12 @@ final class UsersServiceProvider extends ModuleServiceProvider
     /** Ability guarding the users admin. Only superadmin for now (admin role will get it later). */
     public const string MANAGE_USERS = 'manage-users';
 
+    /**
+     * Giving or taking the superadmin role (HRM-84). Superadmin only, even if manage-users is later opened to admin;
+     * checked by UserAdminService, "Працювати як" respected.
+     */
+    public const string MANAGE_SUPERADMINS = 'manage-superadmins';
+
     protected string $prefix = 'users';
 
     public function register(): void
@@ -31,5 +37,6 @@ final class UsersServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         $this->defineRoleGate(self::MANAGE_USERS, [UserRole::Superadmin]);
+        $this->defineRoleGate(self::MANAGE_SUPERADMINS, [UserRole::Superadmin]);
     }
 }
