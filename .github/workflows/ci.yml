@@ -20,7 +20,7 @@ jobs:
     defaults: { run: { working-directory: backend } }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # MySQL 8.4 only (ADR 0011): no mention of the former database outside the one-off cutover tool (Core/Transfer).
+      # MySQL 8.4 only (ADR 0010): no mention of another database or its SQL anywhere in the repository (no allowlist).
       - name: MySQL-only guard
         working-directory: .
         run: node --test scripts/mysql-only-guard.test.mjs && node scripts/mysql-only-guard.mjs
@@ -48,7 +48,7 @@ jobs:
       - name: PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
-  # MySQL 8.4 — the only supported database (ADR 0011). Required through the `backend` aggregator.
+  # MySQL 8.4 — the only supported database (ADR 0010). Required through the `backend` aggregator.
   tests:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: backend } }
@@ -98,6 +98,33 @@ jobs:
           key: composer-${{ hashFiles('backend/composer.lock') }}
       - run: composer install --no-interaction --no-progress --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
+      # MySQL 8.4 (ADR 0010): every migration up from an empty database, every down() back, up again.
+      - name: MySQL 8.4 — migrations from scratch, full rollback, again
+        run: |
+          php artisan migrate:fresh --force
+          php artisan migrate:reset --force
+          test "$(php artisan tinker --execute='echo Illuminate\Support\Facades\DB::table("migrations")->count();')" = "0"
+          php artisan migrate --force
+          php artisan migrate:status | grep -c Ran
+      # The app on a seeded MySQL 8.4 database over real HTTP: every GET /api route without parameters answers < 500.
+      - name: MySQL 8.4 — seed and smoke GET endpoints
+        run: |
+          php artisan migrate:fresh --seed --force
+          php artisan serve --host=127.0.0.1 --port=8000 > /tmp/serve.log 2>&1 &
+          token=$(php artisan tinker --execute='$u = app(App\Modules\Auth\Contracts\UserRepository::class)->createSuperadmin(new App\Modules\Auth\DTO\GoogleProfile("ci-smoke", "smoke@example.test", "CI smoke", null, true)); echo $u->createToken("ci-smoke")->plainTextToken;' | tail -n1)
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/up > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:8000/api/health | tee /dev/stderr | grep -q '"ok":true'
+          php artisan route:list --method=GET --path=api --json \
+            | php -r '$r = json_decode(stream_get_contents(STDIN), true); foreach ($r as $x) { if (!str_contains($x["uri"], "{") && !str_starts_with($x["uri"], "api/ops")) echo $x["uri"], "\n"; }' \
+            > /tmp/get-routes.txt
+          fails=0; total=0
+          while read -r uri; do
+            total=$((total+1))
+            code=$(curl -s -o /tmp/body.txt -w '%{http_code}' -H "Authorization: Bearer $token" -H 'Accept: application/json' "http://127.0.0.1:8000/$uri")
+            if [ "$code" -ge 500 ]; then fails=$((fails+1)); echo "::error::GET /$uri -> $code: $(head -c 300 /tmp/body.txt)"; fi
+          done < /tmp/get-routes.txt
+          echo "GET smoke on MySQL 8.4: $total routes, $fails with 5xx"
+          test "$total" -gt 50 && test "$fails" -eq 0
       - name: OpenAPI spec (Scramble) — must build without errors
         run: |
           php artisan migrate --force --quiet

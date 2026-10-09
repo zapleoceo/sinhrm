@@ -93,8 +93,8 @@ final readonly class OfferService
             DocumentVariable::Conditions->value => $data['conditions'],
         ])['text'];
         // offers.content_md and the sent touchpoint's body are TEXT (65 535 bytes); a template may hold 50 000 characters
-        // (~100 KB in Cyrillic). MySQL strict mode refused such an insert with a 500 (MySQL e2e, round 2). The schema is
-        // frozen until the production data transfer (docs/guides/mysql-cutover.md), so the limit is checked here.
+        // (~100 KB in Cyrillic). MySQL strict mode refuses such an insert with a 500 (MySQL e2e, round 2), so the limit is
+        // checked here and answered with a validation error.
         if (strlen($content) > self::MAX_CONTENT_BYTES) {
             throw RecruitingException::offerTooLong(self::MAX_CONTENT_BYTES);
         }

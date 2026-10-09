@@ -12,7 +12,7 @@ namespace App\Modules\Core\Support\Database;
  *  - Like::BACKSLASH (default) — for `like ?` without an ESCAPE clause (MySQL escapes with a backslash by default;
  *    sql_mode in config/database.php has no NO_BACKSLASH_ESCAPES);
  *  - Like::PORTABLE ("!") — for `like ? escape '!'` (explicit, independent of sql_mode).
- * Lower-casing stays with the caller (lower(col) like ?; the collation is case-insensitive anyway, ADR 0011).
+ * Lower-casing stays with the caller (lower(col) like ?; the collation is case-insensitive anyway, ADR 0010).
  */
 final class Like
 {

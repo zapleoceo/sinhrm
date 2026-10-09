@@ -219,6 +219,10 @@ CORS (`config/cors.php`) открыт только для `api/clipper/*`, то�
 `PATCH /api/auth/me/notifications {approval_emails: bool}` — вимикач листів про погодження («Мій профіль»); `GET /me` повертає `approval_emails`.
 
 Upgrade safeguard: restoring a legacy Blocked account with credential_version=0 atomically revokes its old sessions/PAT/remember-token and advances version before Active. Normal unblock after a new explicit block changes status only. Upgrade-like feature regression preserves healthy users and rejects all old credentials without a new block first. CI pending.
-MySQL 8.4 only (ADR 0011, 2026-10-08): `google_id` uses `utf8mb4_bin` so distinct Google account identifiers do not merge; the migration no longer branches by driver. Test: `tests/Feature/Auth/GoogleIdMysqlSchemaTest` (binary collation, unique index, `Gid-A` ≠ `Gid-a`, duplicate rejected). The pre-cutover production release is frozen on a separate legacy branch (docs/guides/deploy.md).
+MySQL 8.4 only (ADR 0010, 2026-10-08): `google_id` uses `utf8mb4_bin` so distinct Google account identifiers do not merge; the migration no longer branches by driver. Test: `tests/Feature/Auth/GoogleIdMysqlSchemaTest` (binary collation, unique index, `Gid-A` ≠ `Gid-a`, duplicate rejected). The pre-cutover production release is frozen on a separate legacy branch (docs/guides/deploy.md).
 
 Статанализ: Larastan 3.12.3 выводит тип `Auth::guard('web')` как `SessionGuard`, из-за чего проверки `instanceof SessionGuard` в `EnsureUserIsActive` помечаются как `instanceof.alwaysTrue`. Проверки оставлены (guard настраивается конфигом, а `viaRemember()`/`logoutCurrentDevice()` есть только у сессионного guard) и снабжены `@phpstan-ignore instanceof.alwaysTrue`. Поведение не менялось.
+
+## Локальный тестовый вход
+
+Только на ноутбуке: `POST /api/auth/local-test-login` регистрируется лишь при `APP_ENV=local` внутри PHP development server (`cli-server`). Контроллер дополнительно требует loopback IP/Host, явный флаг и отдельный случайный секрет; иначе отвечает 404. Страница `local-test-login.html` генерируется локально, содержит тестовый секрет и исключена из Git. Обычный вход Google остаётся основным для развёрнутых окружений. `LocalTestLoginGuardTest` проверяет отказ для stage/prod, PHP-FPM, внешнего IP/Host, выключенного флага и неверного секрета.

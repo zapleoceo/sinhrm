@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\MysqlSchemaAssertions;
 use Tests\TestCase;
 
-/** sheet_imports.spreadsheet_id is an opaque Google id: binary collation on MySQL 8.4 (ADR 0011). */
+/** sheet_imports.spreadsheet_id is an opaque Google id: binary collation on MySQL 8.4 (ADR 0010). */
 final class SheetImportMysqlSchemaTest extends TestCase
 {
     use MysqlSchemaAssertions, RefreshDatabase;

@@ -95,5 +95,5 @@ JSON, ему ничего грузить не нужно), `X-Frame-Options: DEN
 Тесты: `tests/Feature/Observability/ErrorLogTest.php` (запись и очистка, группировка, повторное открытие, 4xx не
 пишутся, отказ базы не ломает ответ, хранение 30 дней, лимит клиентского эндпоинта, доступ только суперадмину),
 `tests/Feature/Core/SecurityHeadersTest.php`, `frontend/src/app/core/errors/error-reporter.spec.ts`.
-Вручную (на замороженном Vercel-проде до переезда — релиз замороженной ветки, без правок `main`; после переезда — на адресе IT STEP): `curl -sI https://sinhrm.vercel.app/ | grep -i -E 'content-security|x-frame|strict-transport'` и то же для
+Вручную (на сайте Vercel — ветка релиза Vercel, без правок `main`; на IT STEP — на его адресе): `curl -sI https://sinhrm.vercel.app/ | grep -i -E 'content-security|x-frame|strict-transport'` и то же для
 `/api/health`.

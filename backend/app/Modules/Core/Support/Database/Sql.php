@@ -11,7 +11,7 @@ use Illuminate\Database\Query\Grammars\Grammar;
 use InvalidArgumentException;
 
 /**
- * SQL fragments the Laravel builder does not express on MySQL 8.4 — the only supported database (ADR 0011).
+ * SQL fragments the Laravel builder does not express on MySQL 8.4 — the only supported database (ADR 0010).
  * New code uses these (or the Laravel builder) instead of hand-written variants: NULLS FIRST/LAST does not exist
  * in MySQL, a case-insensitive "contains" needs literal wildcards, a JSON key read in select/order needs json_unquote.
  *
@@ -120,7 +120,7 @@ final class Sql
     private static function assertDriver(string $driver): void
     {
         if (! in_array($driver, self::DRIVERS, true)) {
-            throw new InvalidArgumentException("Unsupported driver {$driver}: SinHRM runs on MySQL 8.4 only (ADR 0011).");
+            throw new InvalidArgumentException("Unsupported driver {$driver}: SinHRM runs on MySQL 8.4 only (ADR 0010).");
         }
     }
 

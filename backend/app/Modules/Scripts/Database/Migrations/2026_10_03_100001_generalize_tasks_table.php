@@ -26,10 +26,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tasks', function (Blueprint $table): void {
+            $table->dropForeign(['employee_id']);
             $table->dropUnique(['employee_id', 'rule_key']);
             $table->dropIndex(['employee_id', 'done_at']);
-            $table->dropConstrainedForeignId('employee_id');
-            $table->dropColumn('link');
+            $table->dropColumn(['employee_id', 'link']);
         });
     }
 };

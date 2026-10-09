@@ -113,7 +113,8 @@
 | 7 двусторонних зависимостей модулей | у каждой своя причина в `KNOWN_CYCLES` (демо-сид Core, история Audit, отправка оффера через Channels); разрыв требует переноса событий/данных между модулями и меняет поведение |
 | 18 оставшихся импортов чужих `Services` | 8 — определения Reports читают отчётные сервисы Recruiting, Scripts, Time, Pulse (контракт повторил бы их API целиком; это отчётный слой над модулями); 4 — демо-сид Core (см. ниже); 2 — `Auth\Services\PersonalTokens` в сервисах токенов MCP и расширения; `OfferService` → `Channels\MessageService` — часть цикла Channels ↔ Recruiting; `CollectAssetsExecutor` → `AssigneeResolver`, `CreateDocumentExecutor` → `DocumentService`, `HiringRequestService` → `VacancyService` — одиночные вызовы с записью, контракт для них — отдельный PR модуля. |
 | `Core/Services/Demo/DemoDataService.php` (1038 строк), `Recruiting/Services/RecruitingDemoData.php` (439) | генераторы демо-данных пишут в таблицы напрямую ради скорости и независимости от бизнес-правил; разрез по модулям меняет порядок и состав сида, а ui-parity и демо-стенд опираются на него |
-| `Core/Transfer/Preflight.php` (303) | инструмент `db:transfer-to-mysql` (ADR 0011) — отдельная задача переезда данных; файл живёт до её завершения |
+>>>
+
 | `Recruiting/Support/ApplicationVisibility` (подзапрос `DB::table('vacancies')`) | это построитель области видимости, который встраивается в чужие запросы как scope, а не самостоятельный запрос |
 | Транзакции `DB::transaction` и `Log` в сервисах | единица работы и журнал — обязанность сервиса; перенос транзакции в репозиторий разорвал бы её на части |
 | `SafeSpeakException` вне `BusinessRuleException` | отдаёт `Retry-After` в заголовке и строится иначе; общий конструктор потерял бы заголовок |

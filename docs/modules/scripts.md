@@ -149,6 +149,7 @@ viewer — например, новый сотрудник) и, как рань�
 интерфейс не закрывает галочкой — ознакомление подтверждается кнопкой «Ознайомлений» в «Мої документи».
 Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse|desk|hiring|time|timeoff`), сроку и
 закрытым. Миграция `Database/Migrations/2026_10_03_100001_generalize_tasks_table.php`.
+При откате миграции MySQL 8.4 сначала снимается внешний ключ `tasks.employee_id`, затем его индексы и столбцы; обратный ход проверяется `GeneralizeTasksMigrationTest`.
 
 Запуск: `Services/FollowupJob` зарегистрирован как `Core\Contracts\ScheduledJob` → `POST /api/ops/jobs/run`
 (секрет `X-Ops-Secret`), который каждые 30 минут вызывает `.github/workflows/cron.yml` ([core.md](core.md), [deploy](../guides/deploy.md)).

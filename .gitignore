@@ -19,3 +19,6 @@ rest/http-client.private.env.json
 # Immutable metadata generated from the deploy checkout, never committed.
 backend/build.json
 frontend/public/build.json
+
+# Generated only for the loopback development server; contains a local login secret.
+frontend/public/local-test-login.html

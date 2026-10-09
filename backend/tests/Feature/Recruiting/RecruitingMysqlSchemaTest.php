@@ -11,7 +11,7 @@ use Tests\Support\MysqlSchemaAssertions;
 use Tests\TestCase;
 
 /**
- * Recruiting schema on MySQL 8.4 (ADR 0011): opaque ids in binary collation; candidate contacts unique, NULL repeatable
+ * Recruiting schema on MySQL 8.4 (ADR 0010): opaque ids in binary collation; candidate contacts unique, NULL repeatable
  * (a plain MySQL unique index — MySQL never collides NULLs).
  */
 final class RecruitingMysqlSchemaTest extends TestCase
