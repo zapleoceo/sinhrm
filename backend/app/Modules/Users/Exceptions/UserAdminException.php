@@ -19,10 +19,10 @@ final class UserAdminException extends BusinessRuleException
         return new self('self_change_forbidden', 422);
     }
 
-    /** Superadmin comes only from SUPERADMIN_EMAIL (bootstrap): the API may keep it on a user, never give it. */
-    public static function superadminNotAssignable(): self
+    /** Only an actor acting as superadmin may give or take the superadmin role (defence in depth behind manage-users). */
+    public static function superadminForbidden(): self
     {
-        return new self('superadmin_not_assignable', 422);
+        return new self('superadmin_forbidden', 403);
     }
 
     public static function lastSuperadmin(): self

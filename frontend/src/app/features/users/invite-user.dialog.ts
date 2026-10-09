@@ -6,11 +6,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { INVITABLE_ROLES, UserRole } from '../../core/auth/auth.model';
-import { AdminUser } from './users.model';
+import { USER_ROLES, UserRole } from '../../core/auth/auth.model';
+import { AdminUser, InviteUser } from './users.model';
+import { SuperadminConfirm } from './superadmin-confirm';
 import { UsersService, userErrorKey } from './users.service';
 
-/** Invite form; closes with the created user, stays open and shows the error otherwise. */
+/** Invite form; closes with the created user, stays open and shows the error otherwise. Superadmin asks first. */
 @Component({
   selector: 'app-invite-user-dialog',
   imports: [ReactiveFormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, TranslocoPipe],
@@ -60,8 +61,9 @@ import { UsersService, userErrorKey } from './users.service';
 export class InviteUserDialog {
   private readonly users = inject(UsersService);
   private readonly ref = inject<MatDialogRef<InviteUserDialog, AdminUser>>(MatDialogRef);
+  private readonly superadmin = inject(SuperadminConfirm);
 
-  protected readonly roles = INVITABLE_ROLES;
+  protected readonly roles = USER_ROLES;
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly form = inject(NonNullableFormBuilder).group({
@@ -75,9 +77,18 @@ export class InviteUserDialog {
       this.form.markAllAsTouched();
       return;
     }
+    const body = this.form.getRawValue();
+    if (body.role !== 'superadmin') {
+      this.send(body);
+      return;
+    }
+    this.superadmin.ask('grant', body.name).subscribe((ok) => ok && this.send(body));
+  }
+
+  private send(body: InviteUser): void {
     this.saving.set(true);
     this.error.set(null);
-    this.users.invite(this.form.getRawValue()).subscribe({
+    this.users.invite(body).subscribe({
       next: (user) => this.ref.close(user),
       error: (e: unknown) => {
         this.error.set(userErrorKey(e));

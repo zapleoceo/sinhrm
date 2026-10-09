@@ -12,6 +12,8 @@ use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Users\Contracts\UserAdminRepository;
 use App\Modules\Users\DTO\UserFilter;
 use App\Modules\Users\Exceptions\UserAdminException;
+use App\Modules\Users\Providers\UsersServiceProvider;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Psr\Log\LoggerInterface;
 
@@ -21,6 +23,7 @@ final class UserAdminService
         private readonly UserAdminRepository $users,
         private readonly LoggerInterface $log,
         private readonly AuditLogger $audit,
+        private readonly Gate $gate,
     ) {}
 
     /** @return LengthAwarePaginator<int, User> */
@@ -32,6 +35,9 @@ final class UserAdminService
     /** Invited users have no password: they sign in with Google using the same e-mail. */
     public function invite(User $actor, string $email, string $name, UserRole $role): User
     {
+        if ($role === UserRole::Superadmin && ! $this->actsAsSuperadmin($actor)) {
+            throw UserAdminException::superadminForbidden();
+        }
         if ($this->users->emailExists($email)) {
             throw UserAdminException::emailTaken();
         }
@@ -46,7 +52,8 @@ final class UserAdminService
 
     /**
      * @param  list<UserRole>|null  $roles  null = unchanged; otherwise the full new set of global roles (at least one).
-     *                                      Superadmin may be kept on a user who has it, never given.
+     *                                      Giving or taking superadmin needs an actor acting as superadmin; the last
+     *                                      active superadmin never loses it (blocked superadmins do not count).
      * @param  list<int>|null  $branchIds  null = unchanged; a list replaces the user's branches
      * @param  bool|null  $safeSpeakHandler  null = unchanged; true only for HR staff — superadmin/admin/hr_manager (may be set on oneself)
      */
@@ -66,8 +73,9 @@ final class UserAdminService
             $this->users->lockAndRefresh($target);
             $previous = $this->users->rolesOf($target);
             $wasSuperadmin = in_array(UserRole::Superadmin, $previous, true);
-            if ($roles !== null && ! $wasSuperadmin && in_array(UserRole::Superadmin, $roles, true)) {
-                throw UserAdminException::superadminNotAssignable();
+            $superadminChanges = $roles !== null && $wasSuperadmin !== in_array(UserRole::Superadmin, $roles, true);
+            if ($superadminChanges && ! $this->actsAsSuperadmin($actor)) {
+                throw UserAdminException::superadminForbidden();
             }
             $losesSuperadmin = ($roles !== null && ! in_array(UserRole::Superadmin, $roles, true))
                 || $status === UserStatus::Blocked;
@@ -116,6 +124,12 @@ final class UserAdminService
 
             return $target;
         });
+    }
+
+    /** Gate manage-superadmins: an active superadmin; one working as another role ("Працювати як") may not. */
+    private function actsAsSuperadmin(User $actor): bool
+    {
+        return $this->gate->forUser($actor)->allows(UsersServiceProvider::MANAGE_SUPERADMINS);
     }
 
     /**

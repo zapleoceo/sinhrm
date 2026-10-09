@@ -17,10 +17,10 @@ final class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Superadmin is never assigned through the API: it comes only from SUPERADMIN_EMAIL (bootstrap).
-            'role' => ['sometimes', 'required', 'prohibits:roles', Rule::in(UserRole::invitableValues())],
-            // Several global roles at once (full replacement, at least one). "superadmin" is accepted only to KEEP it
-            // on a user who already has it — the service refuses to give it (superadmin_not_assignable).
+            // Any global role, superadmin included (HRM-84). Giving or taking superadmin is re-checked by the service:
+            // only an actor acting as superadmin (403 superadmin_forbidden), never the last active one (last_superadmin).
+            'role' => ['sometimes', 'required', 'prohibits:roles', Rule::in(UserRole::values())],
+            // Several global roles at once (full replacement, at least one).
             'roles' => ['sometimes', 'required', 'array', 'min:1', 'max:'.count(UserRole::cases())],
             'roles.*' => ['string', 'distinct', Rule::in(UserRole::values())],
             'status' => ['sometimes', 'required', Rule::enum(UserStatus::class)],

@@ -94,7 +94,7 @@ final class UsersAdminTest extends TestCase
 
     public function test_invite_validation(): void
     {
-        $this->actingAs($this->superadmin)->postJson('/api/users', ['email' => 'nope', 'name' => '', 'role' => 'superadmin'])
+        $this->actingAs($this->superadmin)->postJson('/api/users', ['email' => 'nope', 'name' => '', 'role' => 'god'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['email', 'name', 'role']);
     }
@@ -128,17 +128,6 @@ final class UsersAdminTest extends TestCase
             ->assertJsonValidationErrors(['role', 'status']);
     }
 
-    public function test_superadmin_role_cannot_be_assigned_through_the_api(): void
-    {
-        $user = User::factory()->withRole(UserRole::Admin)->create();
-
-        $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['role' => 'superadmin'])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['role']);
-
-        $this->assertFalse($user->fresh()->hasRole(UserRole::Superadmin->value));
-    }
-
     public function test_several_roles_are_assigned_with_roles_array_and_audited(): void
     {
         $user = User::factory()->withRole(UserRole::Recruiter)->create();
@@ -165,8 +154,6 @@ final class UsersAdminTest extends TestCase
         }
         $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['role' => 'viewer', 'roles' => ['viewer']])
             ->assertUnprocessable();
-        $this->actingAs($this->superadmin)->patchJson("/api/users/{$user->id}", ['roles' => ['superadmin', 'admin']])
-            ->assertUnprocessable()->assertJsonPath('code', 'superadmin_not_assignable');
         $this->assertSame(['admin'], $user->fresh()?->getRoleNames()->all());
     }
 

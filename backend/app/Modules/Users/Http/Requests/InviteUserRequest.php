@@ -16,7 +16,9 @@ final class InviteUserRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email:rfc', 'max:255'],
             'name' => ['required', 'string', 'min:2', 'max:255'],
-            'role' => ['required', 'string', Rule::in(UserRole::invitableValues())],
+            // Any global role, superadmin included (HRM-84): the route is superadmin-only (gate manage-users) and the service
+            // re-checks that the actor acts as superadmin before giving it.
+            'role' => ['required', 'string', Rule::in(UserRole::values())],
         ];
     }
 

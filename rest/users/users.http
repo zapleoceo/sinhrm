@@ -39,3 +39,42 @@ Content-Type: application/json
     ],
     "safe_speak_handler": true
 }
+
+### PATCH /api/users/{user} — make another user a superadmin (HRM-84; superadmin only, never oneself)
+# Expected: 200, data.roles contains "superadmin"; audit "role_changed". Admin/hr_manager/others → 403.
+PATCH {{host}}/api/users/{{user}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "roles": ["superadmin", "admin"]
+}
+
+### PATCH /api/users/{user} — take superadmin back (the last active superadmin → 422 last_superadmin)
+PATCH {{host}}/api/users/{{user}}
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "roles": ["admin"]
+}
+
+### POST /api/users — invite a superadmin (HRM-84)
+POST {{host}}/api/users
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "email": "second.owner@example.com",
+    "name": "Second Owner",
+    "role": "superadmin"
+}

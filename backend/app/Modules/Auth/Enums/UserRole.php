@@ -18,16 +18,6 @@ enum UserRole: string
     case Employee = 'employee';
     case Viewer = 'viewer';
 
-    /**
-     * Roles a superadmin may give through an invitation (superadmin itself is bootstrapped or promoted).
-     *
-     * @return list<string>
-     */
-    public static function invitableValues(): array
-    {
-        return self::valuesOf(array_values(array_filter(self::cases(), static fn (self $r): bool => $r !== self::Superadmin)));
-    }
-
     /** @return list<string> */
     public static function values(): array
     {
