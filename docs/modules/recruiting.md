@@ -374,6 +374,10 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 
 Остальные коды (`no_application`, `forbidden`, `same_stage`, …) остаются, но только для кандидатов, которых актор и так видит.
 
+**Журнал (HRM-28, 2026-10-09).** Каждый элемент выполняется внутри `AuditContext::within(["bulk" => "candidates.<action>"])`
+(контракт Audit): изменённый кандидат или заявка получает **свою** строку журнала с id объекта, действием (`stage_changed`,
+`updated`, …) и `meta.bulk`; элемент с ошибкой строки не оставляет. Тест — `CandidateBulkTest::test_bulk_actions_write_one_audit_row_per_object`.
+
 **Вид доски (2026-10-02, рестайл C «Маршрут»).** Заголовки колонок — станции на одной линии, которая идёт через всю
 доску: кольцо-станция (`.app-station` из `styles.scss`) и отрезок до следующей станции в цвете **типа** этапа
 (`data-kind`: attract / select / hire / closed → токены `--app-stage-*`; закрытый этап — квадрат, а не только красный), число
@@ -478,6 +482,14 @@ Documents категории `offer` (переменные `{ПІБ}`, `{Пос�
 - `GET /api/touchpoints/{id}/evaluation` (Scripts) — 403.
 
 Пишущие рекрутинг в скоупе и нанимающий менеджер видят текст как прежде (`redacted: false`).
+
+**Журнал действий по офферу (HRM-28, 2026-10-09).** `OfferService` пишет через контракт Audit `AuditLogger::recordDiff`
+строку `offer` на создание (`created`), отправку и решение кандидата (`status_changed`: `draft → sent`, `sent → accepted|declined`)
+с автором и `meta {application_id, candidate_id}`. **Зарплата, должность, условия и текст — только `***`**: в журнале видно, какие
+поля заданы/изменились, но не значения ([audit.md](audit.md)). Отказ в записи (422/409) строки не оставляет. Строки оффера видит
+только суперадмин в «Журнал дій» (ссылка ведёт в карточку кандидата); во вкладку «Історія» кандидата они не попадают — её
+открывают шире, чем `ApplicationPolicy::offer`. Ответы эндпоинтов оффера не менялись. Тесты —
+`OfferApiTest::test_offer_lifecycle_is_audited_with_the_salary_masked`, `…::test_declined_offer_is_audited_and_only_the_superadmin_sees_offer_rows`.
 
 ## Личная доска на «Кандидатах» (Список | Дошка)
 

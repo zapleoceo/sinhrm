@@ -49,6 +49,18 @@ PeopleForce (табель компании: Очікувано, Відпраць
 Если владелец выдаст право согласовывать свой табель другой роли, меняется `canDecideFor`, а не этот модуль
 (`canDecideFor` используют только табели и подача отпуска за другого).
 
+### Журнал аудита табелей (HRM-28, 2026-10-09)
+`TimesheetService` пишет в журнал действий ([audit.md](audit.md)) через контракт Audit `AuditLogger`, тип записи `timesheet`,
+по строке на событие с автором и `meta` `{employee_id, week_start, on_behalf}` (`on_behalf` — автор не владелец табеля):
+- отправка (`draft|rejected → submitted`), согласование (`→ approved`), возврат с комментарием (`→ rejected`) — `status_changed`
+  с изменившимися полями (`status`, `submitted_at`, `decided_by`, `decided_at`, `decision_comment`);
+- сохранение возвращённой недели, которое снова делает её черновиком, — `status_changed`;
+- **любое сохранение чужой недели** (админ заполняет за сотрудника) — `updated`; повторное сохранение тех же записей строки не даёт.
+Часы, комментарий и записи недели **не пишутся значениями**: записи — поля `entries.date|hours|project|category|note` со
+значением `***` (видно, что менялось, но не сколько). Черновик своей недели сотрудником не пишется. Строки видит только
+суперадмин в «Журнал дій». Ответы `/api/time/*` не менялись. Тесты — `TimeApiTest::test_timesheet_workflow_is_audited_with_hours_and_comment_masked`,
+`TimeApiTest::test_admin_edit_of_someone_elses_week_is_audited_once_per_real_change`.
+
 ### Таблицы (`Database/Migrations/2026_10_06_300001_create_time_tables.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|
@@ -117,6 +129,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 ### Зависимости через контракты (2026-10-08)
 - `TimesheetService` и `TimeDashboardSection` получают контекст и карточку через контракт People `PeopleAccess`. Тест — `tests/Unit/Time/TimePeopleAccessTest.php`.
 - `TimeReminderJob` и `TimesheetService` ставят и закрывают задачи табеля через контракт Scripts `TaskScheduler`.
+- `TimesheetService` пишет журнал действий через контракт Audit `AuditLogger::recordDiff`/`record` (HRM-28).
 
 ## Как проверить
 - `php artisan test --filter=Time` — матрица доступа, сверхурочные, валидация недели, отправка/возврат/согласование,

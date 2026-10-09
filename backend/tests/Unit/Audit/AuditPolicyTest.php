@@ -7,7 +7,9 @@ namespace Tests\Unit\Audit;
 use App\Modules\Audit\Providers\AuditServiceProvider;
 use App\Modules\Audit\Support\AuditPolicy;
 use App\Modules\Pulse\Models\SurveyResponse;
+use App\Modules\Recruiting\Models\Offer;
 use App\Modules\SafeSpeak\Models\SafeSpeakReport;
+use App\Modules\Time\Models\Timesheet;
 use Illuminate\Database\Eloquent\Model;
 use LogicException;
 use PHPUnit\Framework\TestCase;
@@ -62,6 +64,35 @@ final class AuditPolicyTest extends TestCase
                     $this->assertSame(['from' => '***', 'to' => '***'], $pair, "{$type}.{$field} leaked a value");
                 }
             }
+        }
+    }
+
+    /**
+     * Rows recorded by hand through the Audit contract (HRM-28): offers and timesheets. Same guarantee as for tracked
+     * models — the salary, the offer text, hours, entries and comments never keep a value.
+     */
+    public function test_hand_recorded_entities_keep_no_value_outside_their_allow_list(): void
+    {
+        $models = ['offer' => Offer::class, 'timesheet' => Timesheet::class];
+        foreach ($models as $type => $class) {
+            $this->assertArrayHasKey($type, AuditPolicy::SAFE_FIELDS, "no allow-list for {$type}");
+            foreach (AuditPolicy::SAFE_FIELDS[$type] as $safe) {
+                $this->assertDoesNotMatchRegularExpression(self::SENSITIVE, $safe, "{$type}.{$safe} looks sensitive");
+            }
+            $model = new $class;
+            $fields = [...$model->getFillable(), 'entries.hours', 'entries.note', 'entries.project'];
+            $changes = array_fill_keys($fields, ['from' => 'SECRET-OLD', 'to' => 'SECRET-NEW']);
+            foreach ($this->policy->sanitize($type, $changes) as $field => $pair) {
+                if (! in_array($field, AuditPolicy::SAFE_FIELDS[$type], true)) {
+                    $this->assertSame(['from' => '***', 'to' => '***'], $pair, "{$type}.{$field} leaked a value");
+                }
+            }
+        }
+        foreach (['salary', 'position', 'conditions', 'content_md'] as $field) {
+            $this->assertFalse($this->policy->isSafe('offer', $field), "offer.{$field} must be masked");
+        }
+        foreach (['worked_hours', 'expected_hours', 'overtime_hours', 'decision_comment'] as $field) {
+            $this->assertFalse($this->policy->isSafe('timesheet', $field), "timesheet.{$field} must be masked");
         }
     }
 

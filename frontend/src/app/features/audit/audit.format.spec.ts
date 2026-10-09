@@ -18,8 +18,15 @@ describe('auditEntityLink', () => {
     expect(auditEntityLink(e('application', 3))).toBeNull();
   });
 
+  it('links offers to their candidate card like applications (HRM-28)', () => {
+    expect(auditEntityLink(e('offer', 5, { candidate_id: 11, application_id: 3 }))).toBe('/candidates/11');
+    expect(auditEntityLink(e('offer', 5, { candidate_id: '../x' }))).toBeNull();
+    expect(auditEntityKey('offer')).toBe('audit.entities.offer');
+    expect(auditEntityKey('timesheet')).toBe('audit.entities.timesheet');
+  });
+
   it('returns null for entities without a page', () => {
-    for (const t of ['ai_prompt_version', 'leave_request', 'document', 'hiring_request', 'hiring_approval', 'workflow_template', 'module_setting', 'x']) {
+    for (const t of ['ai_prompt_version', 'leave_request', 'document', 'hiring_request', 'hiring_approval', 'workflow_template', 'module_setting', 'timesheet', 'x']) {
       expect(auditEntityLink(e(t))).toBeNull();
     }
   });
