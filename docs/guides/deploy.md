@@ -3,7 +3,7 @@
 > **Vercel заморожен с 2026-10-08.** Автовыкладка `main` и preview для PR отключены. Подробности — в разделе
 > [Заморозка Vercel](#заморозка-vercel) ниже.
 
-Для app-side runtime/build requirements при переносе с Vercel см. [хенд-офф приложения для Itstep](itstep-app-handoff.md). Этот файл ниже описывает действующий Vercel workflow.
+Размещение на инфраструктуре IT STEP: требования приложения — [хенд-офф для Itstep](itstep-app-handoff.md), база данных MySQL 8.4 (учётные записи, миграции, TLS, cron) — [deploy-mysql.md](deploy-mysql.md). Этот файл ниже описывает действующий Vercel workflow.
 
 ## Простыми словами
 Как только изменение принято в `main`, GitHub сам прогоняет тесты и выкладывает новую версию на Vercel.
@@ -48,15 +48,18 @@ merge-base) или падение самого шага — всё это даё
 | `demo-fill.yml` | вручную (Run workflow, флаг `reset`) | заполняет прод синтетическими данными (один филиал «Тестовий філіал», пометка « [ТЕСТ]» в конце имён) по шагам (`confirm=demo&step=…`) или удаляет только строки из `demo_records` и старые тестовые строки (`reset`; с `dry` — только показывает, что удалит); секрет `X-Ops-Secret` не покидает GitHub Actions |
 | `cron.yml` | каждые 30 мин (и вручную: Run workflow) | обычный `curl -X POST https://sinhrm-api.vercel.app/api/ops/jobs/run` с `X-Ops-Secret` (секрет только через `env`, не в тексте скрипта) — все `ScheduledJob` (напоминания Scripts, начисление отпусков, шаги воркфлоу `workflows.tick` и др.); в лог — только счётчики и вердикт `jobs: ok/FAILED` |
 | `night-window.yml` | раз в неделю (понедельник 05:17 UTC) и вручную | весь backend PHPUnit под `faketime` 22:30 UTC (окно, где дата UTC и Киева различается); не входит в «Protect main» — [development.md](development.md#ночное-окно-utc-против-киева) |
-| `mysql-data-transfer.yml` | PR и push в `main` с изменениями `backend/**` (и самого workflow), вручную | необязательная проверка: репетиция `db:transfer-to-mysql` на синтетике в CI; удаляется после cutover — [mysql-cutover.md](mysql-cutover.md) |
+>>>
+
 
 ### Раскладка CI: параллельные job и обязательные проверки
 Бэкенд в `ci.yml` разбит на три параллельных job: `lint` (Pint `--parallel` + PHPStan, без БД; кеши
 результатов Pint и PHPStan в `actions/cache`), `tests` (MySQL 8.4, PHPUnit + покрытие не ниже 70 %) и `api-docs`
-(миграции, экспорт OpenAPI через Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
+(на MySQL 8.4: все миграции с нуля → полный откат `migrate:reset` → снова вверх; `migrate:fresh --seed` и smoke по
+реальному HTTP — каждый `GET /api/...` без параметров под токеном суперадмина отвечает не 5xx; затем экспорт OpenAPI через
+Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
 Job `backend` — агрегатор: `needs` всех трёх, `if: always()`, зелёный только если все три `success`.
 
-Отдельного job `tests-mysql` больше нет: `tests` сам идёт на MySQL 8.4 — единственной БД проекта ([ADR 0011](../adr/0011-mysql-only.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([itstep-app-handoff.md](itstep-app-handoff.md)). Прежний боевой релиз на Vercel заморожен до переезда ([mysql-cutover.md](mysql-cutover.md#замороженный-боевой-релиз-до-cutover)); `main` на Vercel не выкладывается (заморозка `VERCEL_DEPLOY_ENABLED`, PR #176, раздел ниже).
+Job `tests` идёт на MySQL 8.4 — единственной СУБД проекта ([ADR 0010](../adr/0010-mysql.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([deploy-mysql.md](deploy-mysql.md)). `main` на Vercel не выкладывается (заморозка `VERCEL_DEPLOY_ENABLED`, PR #176, раздел ниже).
 Job `frontend`: `ng lint`, `ng test --watch=false --coverage` (Vitest + `@vitest/coverage-v8`) с порогами покрытия
 в `frontend/angular.json` → `test.options.coverageThresholds`: statements 57,5 %, branches 63,5 %, functions 55 %,
 lines 64,5 % — замер 08.10.2026 (59,9 / 65,8 / 57,6 / 67,0 %, PR #207) минус запас ≈ 2,5 п.п.; ниже порога job падает. Порог
@@ -107,17 +110,17 @@ preview-API. Вход Google на preview по-прежнему не работ�
 `deploy` выполняются только при репозиторной переменной `VERCEL_DEPLOY_ENABLED=true`. Переменной нет — jobs пропущены
 (skipped), CI (`ci.yml`) и обязательные проверки не затронуты. Логика `.github/scripts/deploy-gate.js` не менялась.
 
-**Почему:** владелец перевёл проект на MySQL 8.4 (IT STEP, см. PROD-46 в
-[production-backlog.md](../product/production-backlog.md)). Код `main` — только MySQL, и автовыкладка сломала бы
-прежний боевой сайт на Vercel. Он остаётся как есть и больше не обновляется; где его код и как выложить хотфикс до
-переезда — [mysql-cutover.md](mysql-cutover.md#замороженный-боевой-релиз-до-cutover).
+**Почему:** проект развёртывается на MySQL 8.4 IT STEP (PROD-46 в
+[production-backlog.md](../product/production-backlog.md)). Код `main` — только MySQL, а сайт на Vercel работает со своей
+базой из отдельной ветки релиза; автовыкладка `main` его сломала бы. Сайт на Vercel остаётся как есть и обновляется
+только хотфиксом из той ветки (ниже); её имя и удаление — решение владельца.
 
 **Как включить обратно:** Settings → Secrets and variables → Actions → Variables → New repository variable
 `VERCEL_DEPLOY_ENABLED` = `true` (удалить переменную или поставить другое значение — снова заморозка).
 
-**Хотфикс на замороженный Vercel вручную** (из ветки замороженного релиза, нужен доступ к проектам Vercel):
+**Хотфикс на замороженный Vercel вручную** (из ветки релиза Vercel, нужен доступ к проектам Vercel):
 ```bash
-git switch <ветка замороженного релиза>   # имя — в mysql-cutover.md
+git switch <ветка релиза Vercel>   # имя — у владельца репозитория (git branch -r)
 # API
 cd backend && vercel pull --yes --environment=production && composer install --no-dev --prefer-dist --optimize-autoloader   && vercel build --prod && vercel deploy --prebuilt --prod
 # Web

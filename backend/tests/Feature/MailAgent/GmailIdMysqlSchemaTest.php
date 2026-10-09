@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\MysqlSchemaAssertions;
 use Tests\TestCase;
 
-/** mail_messages.gmail_id keeps the source message identity: binary collation + unique on MySQL 8.4 (ADR 0011). */
+/** mail_messages.gmail_id keeps the source message identity: binary collation + unique on MySQL 8.4 (ADR 0010). */
 final class GmailIdMysqlSchemaTest extends TestCase
 {
     use MysqlSchemaAssertions, RefreshDatabase;

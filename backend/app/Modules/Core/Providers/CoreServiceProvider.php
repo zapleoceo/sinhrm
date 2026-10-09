@@ -19,7 +19,6 @@ use App\Modules\Core\Services\ModuleAccess;
 use App\Modules\Core\Services\ModuleRegistry;
 use App\Modules\Core\Services\NavBadgeService;
 use App\Modules\Core\Support\ModuleServiceProvider;
-use App\Modules\Core\Transfer\TransferServiceProvider;
 
 final class CoreServiceProvider extends ModuleServiceProvider
 {
@@ -52,9 +51,6 @@ final class CoreServiceProvider extends ModuleServiceProvider
         $this->app->singleton(ModuleRegistry::class);
         $this->app->bind(ModuleSettingsRepository::class, EloquentModuleSettingsRepository::class);
         $this->app->scoped(ModuleAccess::class);
-
-        // One-off cutover tool db:transfer-to-mysql, isolated in Core/Transfer — remove after cutover (mysql-cutover.md).
-        $this->app->register(TransferServiceProvider::class);
     }
 
     public function boot(): void

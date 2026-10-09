@@ -28,5 +28,5 @@
 Бэкенд: `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `php artisan test --coverage --min=70`.
 Фронт: `npx ng lint`, `npx ng test --watch=false`, `npm run test:docs`, `npm run build` (собирает справку `/docs` из `docs/` и приложение).
 UI parity: `npm run build && npm run e2e` (job `ui-parity`, не входит в обязательные проверки «Protect main»).
-Скрипты репозитория (node, без установки): `node scripts/mysql-only-guard.mjs` (job `lint`), `node scripts/docs-links-check.mjs` — мёртвые внутренние ссылки в документации (job `docs`), тесты проверок — `node --test scripts/<имя>.test.mjs` (те, что вызывает `ci.yml`).
+Скрипты репозитория (node, без установки): `node scripts/mysql-only-guard.mjs` (job `lint`; MySQL 8.4 — единственная СУБД, упоминания и SQL других СУБД запрещены везде, исключений нет — [ADR 0010](docs/adr/0010-mysql.md)), `node scripts/docs-links-check.mjs` — мёртвые внутренние ссылки в документации (job `docs`), тесты проверок — `node --test scripts/<имя>.test.mjs` (те, что вызывает `ci.yml`).
 Обязательные проверки «Protect main»: `backend`, `frontend`, `extension`, `security`, `docs`, `worklog`. Передача проекта — [docs/guides/handover-checklist.md](docs/guides/handover-checklist.md).

@@ -159,4 +159,4 @@ Eloquent (`Support\AuditObserver`) на `created / updated / deleted`. Дейс�
 
 Сортировки журнала по пользователю, действию и сущности оставляют записи с пустым значением в конце как при прямом, так и при обратном порядке. SQL строится через `Core\Support\Database\Sql::orderByNullsLast`: в MySQL нет `NULLS LAST`, поэтому пара «`expr is null`, затем `expr dir`»; контракт покрывает `AuditSortFilterApiTest` в CI на MySQL 8.4.
 
-**Переносимый SQL (2026-10-08).** Сортировка журнала строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце в обоих направлениях, без драйверных веток в модуле ([ADR 0011](../adr/0011-mysql-only.md)). Колонки `changes`/`meta` — тип `json` MySQL (в миграции `json()`; прежний `jsonb()` на MySQL давал тот же DDL).
+**SQL на MySQL 8.4 (2026-10-08).** Сортировка журнала строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце в обоих направлениях, без драйверных веток в модуле ([ADR 0010](../adr/0010-mysql.md)). Колонки `changes`/`meta` — тип `json` MySQL (в миграции `json()`).

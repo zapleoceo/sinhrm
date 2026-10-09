@@ -21,6 +21,9 @@ return [
     | The only account that may sign in without an invitation (first login bootstraps the superadmin role).
     */
     'superadmin_email' => env('SUPERADMIN_EMAIL'),
+    'local_test_login_enabled' => env('LOCAL_TEST_LOGIN_ENABLED', false),
+    'local_test_login_secret' => env('LOCAL_TEST_LOGIN_SECRET'),
+    'local_test_login_email' => env('LOCAL_TEST_LOGIN_EMAIL'),
 
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
