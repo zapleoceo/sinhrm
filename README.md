@@ -7,6 +7,6 @@ Recruiting & HR platform — successor of Sintegrum (test, non-commercial projec
 - `extension/` — Chrome extension «SinHRM Clipper» (MV3): adds a candidate from the open LinkedIn / Work.ua / Djinni / DOU profile page on click (`docs/modules/extension.md`)
 - `docs/` — project documentation (start with `docs/README.md`)
 
-Развёртывание — инфраструктура IT STEP на MySQL 8.4 (`docs/guides/deploy.md`, `docs/guides/deploy-mysql.md`).
+Автовыкладка на Vercel заморожена с 2026-10-08 (`docs/guides/deploy.md`, раздел «Заморозка Vercel»); боевой сайт `https://sinhrm.vercel.app` работает на отдельной ветке релиза; развёртывание `main` — инфраструктура IT STEP на MySQL 8.4 (`docs/guides/deploy-mysql.md`).
 
 All rights reserved. Source is public for transparency only.

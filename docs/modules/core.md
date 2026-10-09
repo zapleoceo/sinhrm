@@ -150,9 +150,8 @@ IP клиента или адрес края фронтенд-проекта —
 15 минут). Тест: `tests/Feature/Core/TrustedProxiesTest.php`.
 
 ## Служебные эндпоинты `/api/ops/*`
-**Зачем.** Миграции, фоновые задачи и демо-данные запускаются вызовом API с `X-Ops-Secret`, без доступа к БД и к
-shell хоста у вызывающего (GitHub Actions). На IT STEP миграции рекомендуется запускать консольным
-`php artisan migrate --force` отдельной учётной записью ([deploy-mysql.md](../guides/deploy-mysql.md#миграции)).
+**Зачем.** Vercel не отдаёт защищённый `DATABASE_URL` наружу (`vercel pull` получает маску), поэтому миграции
+запускает сам API — доступ к БД не покидает Vercel.
 
 | Эндпоинт | Что делает |
 |---|---|
@@ -262,21 +261,21 @@ Vercel обрезает длинные сообщения, и текст оши�
 формы хранится в браузере и стирается после сохранения.
 
 ## SHA сборки Web и API
-Перед сборкой релиза `node scripts/stamp-build.mjs` генерирует `backend/build.json` и `frontend/public/build.json` из
-`git rev-parse HEAD` собираемого checkout ([deploy.md](../guides/deploy.md#идентификатор-реально-собранной-ревизии)).
-Переменные CI (`GITHUB_SHA` и т.п.) не используются: они могут относиться к другой ревизии.
+Deploy генерирует `backend/build.json` и `frontend/public/build.json` из `git rev-parse HEAD`
+после checkout `workflow_run.head_sha`, до сборки. SHA событий `github.sha` и переменные Vercel не используются:
+в workflow_run они могут относиться к main, а preview собирается из другой ревизии.
 API `GET /api/health` возвращает полный SHA в существующем поле `version`; `ok`, `checks` и HTTP 200/503 сохранены.
 Если метаданных нет либо SHA некорректен, возвращается `dev`; APP_VERSION не подтверждает происхождение сборки.
 Web `GET /build.json` отдаёт только `{sha}` как статический asset с `Cache-Control: no-store`.
-SHA Web и API сверяют отдельно: релиз может обновить только одну часть, поэтому они законно различаются.
-Generated файлы игнорируются git; новых обязательных env нет. Сборка без stamping не доказывает SHA.
+SHA Web и API сверяют отдельно: production gate может обновить только один проект, поэтому они законно различаются.
+Generated файлы игнорируются git; новых обязательных env нет. Ручной обход Deploy без stamping не доказывает SHA.
 Проверка: `node --test scripts/stamp-build.test.mjs`, backend `HealthTest`, `BuildVersionTest`.
-После выкладки сравнить `/build.json` и `/api/health` с HEAD собранного checkout.
+После разрешённого deploy сравнить `/build.json` и `/api/health` с HEAD конкретного успешного Deploy checkout.
 До этого runtime provenance не считается подтверждённым.
 
 ## SQL на MySQL 8.4 (2026-10-08)
 
-Единственная СУБД — MySQL 8.4 ([ADR 0010](../adr/0010-mysql.md)). `DB_CONNECTION` по умолчанию — `mysql`; CI-страж `scripts/mysql-only-guard.mjs` (job `lint`) падает на любое упоминание другой СУБД или её SQL в репозитории — исключений нет. Развёртывание БД (учётные записи, миграции, TLS, cron) — [deploy-mysql.md](../guides/deploy-mysql.md).
+Единственная СУБД — MySQL 8.4 ([ADR 0010](../adr/0010-mysql.md)). `DB_CONNECTION` по умолчанию — `mysql`; CI-страж `scripts/mysql-only-guard.mjs` (job `lint`) падает на любое упоминание другой СУБД или её SQL в репозитории — исключений нет. Развёртывание БД (учётные записи, миграции, TLS, cron) — [deploy-mysql.md](../guides/deploy-mysql.md); CI job `api-docs` проверяет на MySQL 8.4 миграции с нуля и полный откат (`migrate:fresh` → `migrate:rollback`).
 
 - `Core\Support\Database\Sql` — то, чего нет в билдере Laravel на MySQL: `orderByNullsLast/First` (в MySQL нет `NULLS LAST/FIRST`: `expr is null asc/desc, expr dir`), `whereContainsCi` (`lower(..) like ? escape '!'`, подстановочные знаки литеральны), `jsonText` (`json_unquote(json_extract(..))` — то же, что Laravel строит для `'col->key'`), `castText` (`cast(.. as char(n))`, MySQL не знает `CAST AS VARCHAR/TEXT`). API прежний; `jsonText`/`castText` с драйвером, отличным от `mysql`/`mariadb`, — `InvalidArgumentException`. Выражение — только идентификатор колонки (`col`/`table.col`); подзапрос или вычисляемое — явным `new Illuminate\Database\Query\Expression(...)`, иная строка (пробелы, кавычки, `;`, `--`) → `InvalidArgumentException`. `jsonText`: JSON null даёт строку `'null'`, отсутствующий ключ — SQL NULL. Апсерты — `upsert()/insertOrIgnore()/insertGetId()` Laravel, JSON в `where` — `'col->key'`/`whereJsonContains`.
 - Соединение `mysql` (`config/database.php`): `utf8mb4`, collation `utf8mb4_0900_ai_ci` (`DB_COLLATION`), `strict` (включая `ONLY_FULL_GROUP_BY`), сессия `+00:00`, InnoDB. Проверка — `PortableSqlTest` (job `tests` на MySQL 8.4: NULLS LAST/FIRST, «содержит» с кириллицей и `é = e`, JSON, сессия 8.4/UTC/strict), `SqlTest`.

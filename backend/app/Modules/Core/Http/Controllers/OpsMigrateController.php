@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 /**
  * POST /api/ops/migrate            — apply pending migrations (all environments).
  * POST /api/ops/migrate?fresh=1    — rebuild DB with synthetic seed; refused in production.
- * Lets an operator migrate with X-Ops-Secret only, without DB credentials or shell access to the host.
+ * Called by the deploy workflow so DB credentials never leave Vercel.
  */
 final class OpsMigrateController
 {

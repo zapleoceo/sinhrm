@@ -35,8 +35,10 @@
    таблицы; тогда базу пересоздают и запускают заново.
 2. Каждый релиз: `cd backend && php artisan migrate --force` в окружении релиза **до** переключения трафика.
    `php artisan migrate:status` — проверка, что ожидающих миграций нет.
-3. Режим `?fresh=1` эндпоинта `/api/ops/migrate` (пересоздание БД с синтетикой) в production запрещён кодом.
-4. Среди миграций есть миграция данных `Recruiting/Database/Migrations/2026_10_28_100001_mark_sent_offer_touchpoints`:
+3. В CI (job `api-docs`, MySQL 8.4) каждая версия проходит: все миграции с нуля, полный откат (`migrate:reset`), снова
+   вверх, затем `migrate:fresh --seed` и smoke всех `GET /api/...` без параметров по HTTP ([deploy.md](deploy.md)).
+4. Режим `?fresh=1` эндпоинта `/api/ops/migrate` (пересоздание БД с синтетикой) в production запрещён кодом.
+5. Среди миграций есть миграция данных `Recruiting/Database/Migrations/2026_10_28_100001_mark_sent_offer_touchpoints`:
    помечает письма уже отправленных офферов (`touchpoints.meta.kind = offer`), чтобы таймлайн скрывал зарплату. Только
    `UPDATE` поля `meta` порциями по 200, повторный запуск ничего не меняет; `down()` пустой намеренно.
 

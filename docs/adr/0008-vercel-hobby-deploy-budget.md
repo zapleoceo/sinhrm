@@ -1,7 +1,6 @@
 # ADR 0008 — Бюджет деплоев Vercel Hobby: preview только по метке
 
-**Статус:** снято (2026-10-09): выкладки из GitHub Actions больше нет, `deploy.yml` и `deploy-gate.js` удалены; выкладку
-делает pipeline DevOps IT STEP ([guides/deploy.md](../guides/deploy.md)). Ниже — текст решения на 2026-09-26.
+**Статус:** принято (2026-09-26). Подробности — [guides/deploy.md](../guides/deploy.md).
 
 **Контекст.** Vercel Hobby — 100 выкладок в сутки. Каждый зелёный push в PR давал две (API и сайт); 2026-09-26
 лимит был исчерпан.

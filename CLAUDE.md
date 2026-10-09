@@ -6,7 +6,7 @@
 1. Одна задача = одна ветка от `main` → PR → зелёный CI → независимое ревью Astra локального и GitHub diff (approve) → разрешённый squash-merge. В `main` не пушить.
 2. По инструкции владельца от 05.10.2026 исполнение передано недорогой Luna; она продолжает сохранённые задачи SOL. Выводы проверяет отдельный агент, код перед merge проверяет независимый Astra: SOLID, DRY, модульность, безопасность, тесты, документация. Эта инструкция имеет приоритет над прежним процессом SOL/Luna и Opus/Sonnet. Вердикт агента и формальный GitHub approval — разные доказательства.
 3. Репозиторий ПУБЛИЧНЫЙ: никаких секретов, токенов, реальных персональных данных, справочников компании,
-   внутренних URL с токенами. Секреты — только в БД (`integration_secrets`) или в окружении хостинга (DB_URL, APP_KEY, SUPERADMIN_EMAIL).
+   внутренних URL с токенами. Секреты — только в БД (`integration_secrets`) или Vercel env (DB_URL, APP_KEY, SUPERADMIN_EMAIL).
 4. Изменил модуль → обнови `docs/modules/<модуль>.md`. Каждый PR добавляет запись в журнал — новый файл
    `docs/worklog.d/<YYYY-MM-DD>-<slug>.md` (формат — `docs/worklog.d/README.md`); `docs/worklog.md` в PR не править —
    хронологию собирает сборка справки («Довідка» → «Журнал работ»). Без записи — только метка `no-worklog`. CI проверяет (jobs `docs`, `worklog`).
@@ -14,7 +14,7 @@
    (исключение для тестов — метка `no-tests-needed`; правила — `docs/guides/development.md`, job `docs`).
 5. Бэкенд: `app/Modules/<Name>` — Controller (оркестрация) → FormRequest → Service → Repository; интерфейсы + DI;
    Feature-тест на эндпоинт, Unit на сервис. Фронт: `core/` + `features/<name>`, standalone, signals, без `any`, i18n ru/uk/en.
-6. Локально среду не поднимаем. Проверка — CI (preview-деплоя нет: выкладку делает pipeline IT STEP, `docs/guides/deploy.md`); в PR раздел «Доказательство» с реальными curl.
+6. Локально среду не поднимаем. Проверка — CI и preview-деплой; в PR раздел «Доказательство» с реальными curl.
 7. AI утверждён владельцем (AI Broker; возможность по функции, сейчас `chat:fast`). Вызывать провайдеров только через `Ai/Services/AiService` (флаг в админке,
    лимиты, без логирования промптов); новый/изменённый промпт — новая версия и текст в `docs/modules/ai.md`.
 8. Метрики сабагентов — ledger вне репозитория (`D:\Projects\HRM\docs\tasks\*.agent-metrics.tsv`).

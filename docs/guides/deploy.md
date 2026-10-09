@@ -1,28 +1,65 @@
 # Деплой
 
+> **Vercel заморожен с 2026-10-08.** Автовыкладка `main` и preview для PR отключены. Подробности — в разделе
+> [Заморозка Vercel](#заморозка-vercel) ниже.
+
+Размещение на инфраструктуре IT STEP: требования приложения — [хенд-офф для Itstep](itstep-app-handoff.md), база данных MySQL 8.4 (учётные записи, миграции, TLS, cron) — [deploy-mysql.md](deploy-mysql.md). Этот файл ниже описывает действующий Vercel workflow.
+
 ## Простыми словами
-Боевой контур — инфраструктура IT STEP: Laravel API и Angular SPA под одним HTTPS-адресом, база — MySQL 8.4
-([ADR 0010](../adr/0010-mysql.md)). Сборку и выкладку делает pipeline DevOps IT STEP; репозиторий описывает, **что** собрать
-и как проверить: требования приложения — [itstep-app-handoff.md](itstep-app-handoff.md), база данных, учётные записи,
-миграции, TLS и cron — [deploy-mysql.md](deploy-mysql.md), резервные копии — [backup-restore.md](backup-restore.md).
-GitHub Actions прогоняют проверки (CI), запускают плановые задания и заполнение демо-данными; выкладки из GitHub нет.
+Как только изменение принято в `main`, GitHub сам прогоняет тесты и выкладывает новую версию на Vercel.
+Тестовая копия (preview) выкладывается только для Pull Request с меткой `preview`, ссылка появляется в комментарии к PR.
+Причина — лимит Vercel Hobby: 100 выкладок в сутки (каждый зелёный push в PR давал две — API и сайт; 2026-09-26 лимит
+исчерпан, прод не обновлялся). Прод (`main`) выкладывается всегда; одновременно идёт только одна выкладка на ветку,
+более свежий зелёный CI отменяет ожидающую (`concurrency`).
+
+### Деплоится только то, что изменилось
+Каждый прогон раньше выкладывал оба проекта (API и Web) независимо от того, что реально поменялось. Теперь job
+`gate` смотрит на изменённые пути и решает отдельно для API и для Web, нужен ли новый деплой:
+- `api=true`, если менялось что-то в `backend/**` или сам `.github/workflows/deploy.yml`;
+- `web=true`, если менялось что-то в `frontend/**`, `docs/**` (документация встраивается в SPA-страницу помощи)
+  или `.github/workflows/deploy.yml`;
+- остальное (`extension/**`, `README*`, `rest/**` и т.п.) не включает ни то, ни другое.
+
+Для `main` (прод) база сравнения — sha последнего успешного продовского деплоя (последний прогон `deploy.yml` на
+`main`, где job `deploy` завершился `success`); если такого прогона не нашлось (например, самый первый запуск) —
+деплоятся оба проекта. Для PR/preview база — merge-base ветки PR и `main`.
+
+**Preview: Web форсирует API.** Для превью, если меняется `web`, `api` форсируется в `true` тоже, даже если
+backend не менялся — иначе превью-сайт указывал бы на прод-API (`/api` rewrite), а это реальные данные клиентов
+за публичным превью-логином. Для прода (`main`) `api` и `web` полностью независимы — правило форсирования там не
+применяется.
+
+**Сбой = деплоим оба.** Любая ошибка при вычислении (ошибка/лимит GitHub API, 404 на сравнении после
+force-push), недоверенный diff (300+ файлов — лимит compare API, статус `diverged`/`behind` для прода, нет
+merge-base) или падение самого шага — всё это даёт `api=true, web=true` с предупреждением в логе. Лишний деплой
+дешевле пропущенного продового.
+
+Если оба флага `false` — job `deploy` не делает ничего (оба шага сборки/деплоя пропускаются), без ошибки.
+
+Логика классификации путей и поиска sha последнего успешного деплоя вынесена в
+[`.github/scripts/deploy-gate.js`](../../.github/scripts/deploy-gate.js) и покрыта юнит-тестами
+(`.github/scripts/deploy-gate.test.js`, команда `node .github/scripts/deploy-gate.test.js`).
 
 ## Как устроено
 | Workflow | Когда | Что делает |
 |---|---|---|
-| `ci.yml` | каждый PR и push в `main` | бэкенд (параллельные job `lint` / `tests` / `api-docs` + агрегатор `backend`, см. ниже): страж `scripts/mysql-only-guard.mjs`, Pint, PHPStan, PHPUnit на MySQL 8.4 (сервис в CI); фронт: lint, test, build; расширение (`extension`): lint, typecheck, test, package → артефакт `sinhrm-clipper` (zip); gitleaks; `docs` (содержательная правка `docs/modules/<модуль>.md` и тест в том же модуле — [development.md](development.md)); `worklog` |
-| `demo-fill.yml` | вручную (Run workflow, флаг `reset`) | заполняет стенд синтетическими данными (один филиал «Тестовий філіал», пометка « [ТЕСТ]» в конце имён) по шагам (`confirm=demo&step=…`) или удаляет только строки из `demo_records` и старые тестовые строки (`reset`; с `dry` — только показывает, что удалит); секрет `X-Ops-Secret` не покидает GitHub Actions |
-| `cron.yml` | каждые 30 мин (и вручную: Run workflow) | обычный `curl -X POST <API_URL>/api/ops/jobs/run` с `X-Ops-Secret` (секрет только через `env`, не в тексте скрипта) — все `ScheduledJob` (напоминания Scripts, начисление отпусков, шаги воркфлоу `workflows.tick` и др.); в лог — только счётчики и вердикт `jobs: ok/FAILED`. Адрес API — переменная `API_URL` в самом workflow; на IT STEP вызов может делать планировщик DevOps ([deploy-mysql.md](deploy-mysql.md#плановые-задания-cron)) |
+| `ci.yml` | каждый PR и push в `main` | бэкенд (параллельные job `lint` / `tests` / `api-docs` + агрегатор `backend`, см. ниже): Pint, PHPStan, PHPUnit на MySQL 8.4 (сервис в CI); фронт: lint, test, build; расширение (`extension`): lint, typecheck, test, package → артефакт `sinhrm-clipper` (zip); gitleaks; `docs` (содержательная правка `docs/modules/<модуль>.md` и тест в том же модуле — [development.md](development.md)); `worklog` |
+| `deploy.yml` | после зелёного CI (push в `main` / PR) | `vercel pull` → `vercel build` → `vercel deploy --prebuilt` для `sinhrm-api` и `sinhrm`; миграции через `POST /api/ops/migrate` (prod) / `?fresh=1` (preview, синтетика) |
+| `demo-fill.yml` | вручную (Run workflow, флаг `reset`) | заполняет прод синтетическими данными (один филиал «Тестовий філіал», пометка « [ТЕСТ]» в конце имён) по шагам (`confirm=demo&step=…`) или удаляет только строки из `demo_records` и старые тестовые строки (`reset`; с `dry` — только показывает, что удалит); секрет `X-Ops-Secret` не покидает GitHub Actions |
+| `cron.yml` | каждые 30 мин (и вручную: Run workflow) | обычный `curl -X POST https://sinhrm-api.vercel.app/api/ops/jobs/run` с `X-Ops-Secret` (секрет только через `env`, не в тексте скрипта) — все `ScheduledJob` (напоминания Scripts, начисление отпусков, шаги воркфлоу `workflows.tick` и др.); в лог — только счётчики и вердикт `jobs: ok/FAILED` |
 | `night-window.yml` | раз в неделю (понедельник 05:17 UTC) и вручную | весь backend PHPUnit под `faketime` 22:30 UTC (окно, где дата UTC и Киева различается); не входит в «Protect main» — [development.md](development.md#ночное-окно-utc-против-киева) |
+>>>
+
 
 ### Раскладка CI: параллельные job и обязательные проверки
-Бэкенд в `ci.yml` разбит на три параллельных job: `lint` (страж MySQL, Pint `--parallel` + PHPStan, без БД; кеши
+Бэкенд в `ci.yml` разбит на три параллельных job: `lint` (Pint `--parallel` + PHPStan, без БД; кеши
 результатов Pint и PHPStan в `actions/cache`), `tests` (MySQL 8.4, PHPUnit + покрытие не ниже 70 %) и `api-docs`
-(миграции, экспорт OpenAPI через Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
+(на MySQL 8.4: все миграции с нуля → полный откат `migrate:reset` → снова вверх; `migrate:fresh --seed` и smoke по
+реальному HTTP — каждый `GET /api/...` без параметров под токеном суперадмина отвечает не 5xx; затем экспорт OpenAPI через
+Scramble → артефакт `openapi`, проверка размера прод-бандла `< 200 MB`).
 Job `backend` — агрегатор: `needs` всех трёх, `if: always()`, зелёный только если все три `success`.
 
-Job `tests` идёт на MySQL 8.4 — единственной СУБД проекта ([ADR 0010](../adr/0010-mysql.md)). На инфраструктуре IT STEP:
-`DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([deploy-mysql.md](deploy-mysql.md)).
+Job `tests` идёт на MySQL 8.4 — единственной СУБД проекта ([ADR 0010](../adr/0010-mysql.md)). На инфраструктуре IT STEP: `DB_CONNECTION=mysql`, `DB_URL=mysql://<user>:<password>@<host>:3306/<db>` ([deploy-mysql.md](deploy-mysql.md)). `main` на Vercel не выкладывается (заморозка `VERCEL_DEPLOY_ENABLED`, PR #176, раздел ниже).
 Job `frontend`: `ng lint`, `ng test --watch=false --coverage` (Vitest + `@vitest/coverage-v8`) с порогами покрытия
 в `frontend/angular.json` → `test.options.coverageThresholds`: statements 57,5 %, branches 63,5 %, functions 55 %,
 lines 64,5 % — замер 08.10.2026 (59,9 / 65,8 / 57,6 / 67,0 %, PR #207) минус запас ≈ 2,5 п.п.; ниже порога job падает. Порог
@@ -33,29 +70,61 @@ lines 64,5 % — замер 08.10.2026 (59,9 / 65,8 / 57,6 / 67,0 %, PR #207) м
 
 Ruleset «Protect main» требует проверки с именами **ровно** `backend`, `frontend`, `extension`, `security`, `docs`, `worklog`.
 Эти job **нельзя переименовывать и удалять**: PR будет вечно ждать отсутствующую проверку. Новые части бэкенда
-добавляются в `needs` агрегатора, а не в ruleset.
+добавляются в `needs` агрегатора, а не в ruleset. Workflow называется `CI` — на это имя подписан `deploy.yml`
+(`workflow_run`), его статус учитывает все job. В `deploy.yml` версия Vercel CLI закреплена (`vercel@~61.0.0`),
+обновлять осознанно.
 
-Секрет GitHub Actions: `OPS_SECRET` (`cron.yml`, `demo-fill.yml`). В GitHub нет доступа к БД: задания и демо-данные
-выполняет API по защищённым эндпоинтам. Переменные окружения API (`DB_URL` — `config/database.php` читает её, запасное
-имя `DATABASE_URL`; `APP_KEY`, `APP_ENV`, `SUPERADMIN_EMAIL`, `OPS_SECRET` — то же значение, что в секрете GitHub Actions;
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — OAuth-клиент входа) задаются в окружении хостинга; полный перечень —
-[secrets.md](../architecture/secrets.md) и [itstep-app-handoff.md](itstep-app-handoff.md#переменные-приложения).
+Секреты GitHub Actions: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_API`, `VERCEL_PROJECT_ID_WEB`, `OPS_SECRET`.
+В GitHub нет доступа к БД: миграции выполняет API по защищённому эндпоинту.
+Переменная репозитория (не секрет): `VERCEL_DEPLOY_ENABLED` — выключатель автовыкладки ([Заморозка Vercel](#заморозка-vercel)).
+Переменные окружения API (`DB_URL` — `config/database.php` читает её, запасное имя `DATABASE_URL`; `APP_KEY`, `APP_ENV`, `SUPERADMIN_EMAIL`, `OPS_SECRET` — то же значение, что в секрете GitHub Actions; `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — OAuth-клиент входа) — в настройках проектов Vercel; полный перечень — [secrets.md](../architecture/secrets.md).
 
-## Выкладка релиза
-1. `node scripts/stamp-build.mjs` — записывает SHA собранной ревизии (ниже).
-2. Backend: `cd backend && composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader`; document root —
-   `backend/public`.
-3. Frontend: `cd frontend && npm ci && npm run build`; публиковать `frontend/dist/frontend/browser` как SPA.
-4. `php artisan migrate --force` до переключения трафика ([deploy-mysql.md](deploy-mysql.md#миграции)).
-5. Security headers и маршруты (`/api/*`, `/sanctum/*` → Laravel, остальное → `index.html`, `/build.json` без кеша) —
-   эталон в `frontend/vercel.json` (его проверяют `frontend/scripts/vercel-headers.test.mjs` и
-   `scripts/stamp-build.test.mjs`); на web-сервере IT STEP те же правила настраивает DevOps.
+Защита preview-деплоев Vercel (Vercel Authentication) отключена: на preview только синтетические данные,
+а эндпоинты закрыты авторизацией или `X-Ops-Secret`. Поэтому CI обращается к ним обычным `curl`
+(`vercel curl` ломает передачу аргументов после `--`: «URL rejected: Malformed input»).
+
+### Preview ходит в preview-API
+В `frontend/vercel.json` адрес API — прод (`sinhrm-api.vercel.app`). Для `TARGET=preview` шаг «Web — build & deploy»
+перед `vercel build` переписывает в рабочей копии CI два правила (`/api/:path*` и `/sanctum/:path*`) на URL
+preview-API этого же PR (`steps.api.outputs.url`) — node-однострочник; URL должен быть `https://*.vercel.app`, и
+правил должно быть ровно два, иначе шаг падает. Закоммиченный файл и prod-деплой не меняются. Проверка: в логе шага
+выводится число вхождений preview-URL в `vercel.json` (`2`); на preview `curl <web-preview>/api/health` отвечает
+preview-API. Вход Google на preview по-прежнему не работает (см. [development.md](development.md)).
+
+Деплой запускается только для веток этого репозитория: PR из форков не получают секреты и не деплоятся.
 
 ## Как проверить
-`curl https://<внешний-origin>/api/health` → `{"ok":true,...}` (проверяет подключение к MySQL; при ошибке — HTTP 503).
+`curl https://sinhrm.vercel.app/api/health` → `{"ok":true,...}`.
+
+- Выкладка только сайта (сервер не менялся): прод-сайт берёт адрес API из закоммиченного `frontend/vercel.json`, поэтому проверка адреса API нужна только для preview (исправлено 2026-09-28: 24 ночные попытки падали с «bad API url»).
 
 ## Идентификатор реально собранной ревизии
-Перед сборкой выполняется `node scripts/stamp-build.mjs`. Он получает SHA через Git из checkout (не из переменных CI)
-и пишет его в `backend/build.json` и `frontend/public/build.json`. Проверяйте Web `/build.json` и API `/api/health`
-(поле `version`) отдельно. Файлы содержат только публичный SHA, без путей, времени, окружения или персональных данных.
-При выкладке только одной части разные SHA API и Web допустимы; прежний API нельзя объявлять новым по SHA Web.
+Перед `vercel build` Deploy выполняет `node scripts/stamp-build.mjs`. Он получает SHA через Git из checkout,
+а не `github.sha` контекста workflow_run; generated JSON попадает в API function и Web static assets.
+Проверяйте Web `/build.json` и API `/api/health` (поле `version`) отдельно по соответствующему Deploy run.
+Файлы содержат только публичный SHA, без путей, времени, окружения или персональных данных.
+При частичном production deploy разные SHA проектов допустимы; прежний API нельзя объявлять новым по SHA Web.
+
+## Заморозка Vercel
+**Что:** с 2026-10-08 workflow `Deploy` не выкладывает ничего ни из `main`, ни из PR с меткой `preview`: jobs `gate` и
+`deploy` выполняются только при репозиторной переменной `VERCEL_DEPLOY_ENABLED=true`. Переменной нет — jobs пропущены
+(skipped), CI (`ci.yml`) и обязательные проверки не затронуты. Логика `.github/scripts/deploy-gate.js` не менялась.
+
+**Почему:** проект развёртывается на MySQL 8.4 IT STEP (PROD-46 в
+[production-backlog.md](../product/production-backlog.md)). Код `main` — только MySQL, а сайт на Vercel работает со своей
+базой из отдельной ветки релиза; автовыкладка `main` его сломала бы. Сайт на Vercel остаётся как есть и обновляется
+только хотфиксом из той ветки (ниже); её имя и удаление — решение владельца.
+
+**Как включить обратно:** Settings → Secrets and variables → Actions → Variables → New repository variable
+`VERCEL_DEPLOY_ENABLED` = `true` (удалить переменную или поставить другое значение — снова заморозка).
+
+**Хотфикс на замороженный Vercel вручную** (из ветки релиза Vercel, нужен доступ к проектам Vercel):
+```bash
+git switch <ветка релиза Vercel>   # имя — у владельца репозитория (git branch -r)
+# API
+cd backend && vercel pull --yes --environment=production && composer install --no-dev --prefer-dist --optimize-autoloader   && vercel build --prod && vercel deploy --prebuilt --prod
+# Web
+cd ../frontend && vercel pull --yes --environment=production && vercel build --prod && vercel deploy --prebuilt --prod
+```
+`VERCEL_PROJECT_ID` берётся из проекта (`vercel link` или переменная окружения для каждого проекта: API и Web), CLI — `vercel@~61.0.0`.
+Миграции после выкладки API — `POST /api/ops/migrate` с заголовком `X-Ops-Secret` (как в шаге `Deploy` workflow).
