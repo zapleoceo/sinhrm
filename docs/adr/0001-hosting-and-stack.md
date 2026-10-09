@@ -5,7 +5,7 @@
 **Контекст.** Тестовый некоммерческий проект, бюджет $0, владелец выбрал Angular + Laravel и Vercel.
 
 **Решение.** Angular SPA — Vercel; Laravel — Vercel через community-рантайм `vercel-php` (PHP 8.5);
-Postgres — Neon Free (Frankfurt); CI/CD и cron — GitHub Actions; репозиторий публичный.
+база данных — MySQL 8.4 ([ADR 0010](0010-mysql.md)); CI/CD и cron — GitHub Actions; репозиторий публичный.
 
 **Последствия.** Нет воркеров и постоянных соединений → очередь в БД + cron каждые 30 мин, только вебхуки
 (Telegram userbot отложен до собственного сервера). `vercel-php` неофициальный — риск отставания версий.

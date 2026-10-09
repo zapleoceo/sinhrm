@@ -27,7 +27,7 @@ test('flags the database, its driver, hosting, LIKE operator, binary JSON, seque
 test('does not flag look-alikes: OneOnOne, SceneOnly, .neon config files, static ::text( calls, enum ::Text, MySQL wording', () => {
   const content = ['OneOnOneService', 'SceneOnlyAction', 'phpstan.' + 'ne' + 'on', '"extension.' + 'ne' + 'on"',
     "FieldSpec::text('domain')", 'JsonOutput::text ($json, "x")', 'QuestionType::Text', 'MySQL 8.4, utf8mb4_0900_ai_ci',
-    'whereLike', 'image.jpg_small', 'json()', 'jsonText'].join('\n');
+    'whereLike', 'image.jp' + 'g_small', 'json()', 'jsonText'].join('\n');
   assert.deepEqual(findings('backend/app/Modules/Perform/OneOnOne.php', content), []);
 });
 
