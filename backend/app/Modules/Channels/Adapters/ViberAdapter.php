@@ -16,6 +16,7 @@ use App\Modules\Channels\Enums\WebhookAuth;
 use App\Modules\Channels\Exceptions\ChannelException;
 use App\Modules\Channels\Support\Payload;
 use App\Modules\Channels\Support\ProviderHttp;
+use App\Modules\Channels\Support\WebhookCredentials;
 use App\Modules\Integrations\Definitions\ViberDefinition;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Recruiting\Enums\Channel;
@@ -58,10 +59,8 @@ final readonly class ViberAdapter implements ChannelAdapter, MessageSender, Webh
     public function verify(Request $request, IntegrationConfig $config): bool
     {
         $token = $config->secret('token');
-        $given = $request->header(self::SIGNATURE_HEADER);
 
-        return $token !== null && is_string($given)
-            && hash_equals(hash_hmac('sha256', $request->getContent(), $token), strtolower($given));
+        return $token !== null && WebhookCredentials::signatureMatches($request, $token, self::SIGNATURE_HEADER);
     }
 
     public function parse(array $payload, IntegrationConfig $config): array

@@ -15,11 +15,14 @@ final class WebhookController
 {
     public function __construct(private readonly WebhookService $service) {}
 
+    /** RFC 9745 Deprecation value (@epoch of 2026-10-09, HRM-26) for deliveries that used the deprecated ?token=. */
+    public const string DEPRECATED_SINCE = '@1791504000';
+
     public function receive(Request $request, ChannelAdapter $channelKey): JsonResponse
     {
-        $this->service->receive($channelKey, $request);
+        $result = $this->service->receive($channelKey, $request);
 
-        return new JsonResponse($channelKey->acknowledge());
+        return new JsonResponse($channelKey->acknowledge(), 200, $result->deprecatedAuth ? ['Deprecation' => self::DEPRECATED_SINCE] : []);
     }
 
     /** GET handshake (WhatsApp): echo hub.challenge as plain text. */

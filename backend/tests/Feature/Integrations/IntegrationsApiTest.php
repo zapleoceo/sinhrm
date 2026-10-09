@@ -147,6 +147,26 @@ final class IntegrationsApiTest extends TestCase
         $this->assertDatabaseCount('integration_secrets', 0);
     }
 
+    /** HRM-26: telephony has the webhook token (secret) and the transitional ?token= flag, off for a new connection. */
+    public function test_telephony_query_token_flag_defaults_off_and_accepts_only_on_or_off(): void
+    {
+        $byKey = $this->byKey($this->actingAs($this->superadmin)->getJson('/api/integrations')->assertOk());
+        foreach (['phonet', 'ringostat', 'binotel'] as $key) {
+            $fields = array_column($byKey[$key]['fields'], null, 'name');
+            $this->assertSame('secret', $fields['webhook_token']['type'], $key);
+            $this->assertSame(['type' => 'select', 'options' => ['off', 'on'], 'default' => 'off', 'value' => null],
+                array_intersect_key($fields['webhook_query_token'], array_flip(['type', 'options', 'default', 'value'])), $key);
+        }
+
+        $this->actingAs($this->superadmin)
+            ->putJson('/api/integrations/binotel', ['settings' => ['webhook_query_token' => 'yes']])
+            ->assertUnprocessable()->assertJsonValidationErrors('settings.webhook_query_token');
+        $response = $this->actingAs($this->superadmin)
+            ->putJson('/api/integrations/binotel', ['settings' => ['webhook_query_token' => 'off']])->assertOk();
+        $fields = array_column($response->json('data.fields'), null, 'name');
+        $this->assertSame('off', $fields['webhook_query_token']['value']);
+    }
+
     public function test_update_saves_settings_and_validates_against_field_spec(): void
     {
         $this->actingAs($this->superadmin)

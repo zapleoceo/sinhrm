@@ -11,6 +11,9 @@ enum WebhookAuth: string
     case HeaderSecret = 'header_secret';
     /** HMAC-SHA256 of the raw body (WhatsApp X-Hub-Signature-256, Viber X-Viber-Content-Signature). */
     case Hmac = 'hmac';
-    /** Shared secret in the URL query (?token=…); provisional for telephony. */
-    case QueryToken = 'query_token';
+    /**
+     * Shared token in a header (X-Webhook-Token / Authorization: Bearer) or X-Signature HMAC-SHA256 of the body
+     * (telephony). The legacy ?token= is not a mode of its own: a transitional flag of the integration (HRM-26).
+     */
+    case HeaderToken = 'header_token';
 }

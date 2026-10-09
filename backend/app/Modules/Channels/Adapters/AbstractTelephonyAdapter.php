@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Channels\Adapters;
 
 use App\Modules\Channels\Contracts\ChannelAdapter;
+use App\Modules\Channels\Contracts\LegacyQueryTokenAuth;
 use App\Modules\Channels\DTO\IncomingEvent;
 use App\Modules\Channels\Enums\EventKind;
 use App\Modules\Channels\Enums\WebhookAuth;
 use App\Modules\Channels\Support\Payload;
+use App\Modules\Channels\Support\WebhookCredentials;
+use App\Modules\Integrations\Definitions\TelephonyWebhookFields;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
@@ -16,12 +19,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 /**
- * Telephony webhooks (PROVISIONAL: payload formats are not confirmed on real accounts). Auth: ?token= compared in
- * constant time with vault "webhook_token". Only the call-end event creates a touchpoint (channel call, duration,
- * recording link in meta — never downloaded). Mapping is tolerant: each provider lists the keys it may send.
+ * Telephony webhooks (PROVISIONAL: payload formats are not confirmed on real accounts). Auth (HRM-26), constant time
+ * against vault "webhook_token": header X-Webhook-Token or Authorization: Bearer, or X-Signature = hex HMAC-SHA256 of
+ * the raw body. The legacy ?token= is accepted ONLY while the integration flag "webhook_query_token" is on (off by
+ * default); with the flag off any request with ?token= is rejected, even if it also has a valid header, so a
+ * misconfigured provider is noticed instead of silently leaking the token into access logs.
+ * Only the call-end event creates a touchpoint (channel call, duration, recording link in meta — never downloaded). Mapping is tolerant: each provider lists the keys it may send.
  * No transcript yet, so script evaluation skips these calls until speech-to-text (Deepgram) is connected.
  */
-abstract class AbstractTelephonyAdapter implements ChannelAdapter
+abstract class AbstractTelephonyAdapter implements ChannelAdapter, LegacyQueryTokenAuth
 {
     public function channel(): Channel
     {
@@ -30,15 +36,32 @@ abstract class AbstractTelephonyAdapter implements ChannelAdapter
 
     public function auth(): WebhookAuth
     {
-        return WebhookAuth::QueryToken;
+        return WebhookAuth::HeaderToken;
     }
 
     public function verify(Request $request, IntegrationConfig $config): bool
     {
-        $token = $config->secret('webhook_token');
-        $given = $request->query('token');
+        $secret = $config->secret(TelephonyWebhookFields::TOKEN);
+        if ($secret === null) {
+            return false;
+        }
+        if ($this->usesQueryToken($request)) {
+            return $this->queryTokenAllowed($config)
+                && WebhookCredentials::tokenMatches($secret, $request->query(WebhookCredentials::QUERY_TOKEN));
+        }
 
-        return $token !== null && is_string($given) && hash_equals($token, $given);
+        return WebhookCredentials::tokenMatches($secret, WebhookCredentials::headerToken($request))
+            || WebhookCredentials::signatureMatches($request, $secret);
+    }
+
+    public function queryTokenAllowed(IntegrationConfig $config): bool
+    {
+        return $config->setting(TelephonyWebhookFields::QUERY_TOKEN_FLAG) === TelephonyWebhookFields::ON;
+    }
+
+    public function usesQueryToken(Request $request): bool
+    {
+        return WebhookCredentials::hasQueryToken($request);
     }
 
     public function parse(array $payload, IntegrationConfig $config): array

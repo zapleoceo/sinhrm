@@ -26,6 +26,7 @@ final class ChannelInfoResource extends JsonResource
             'can_send' => $info->canSend,
             'can_call' => $info->canCall,
             'handshake' => $info->handshake,
+            'legacy_query_token' => $info->legacyQueryToken,
         ];
     }
 }

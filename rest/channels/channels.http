@@ -12,6 +12,40 @@ Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 X-XSRF-TOKEN: {{xsrf}}
 Referer: {{host}}/
 
+### POST /api/webhooks/phonet — telephony webhook, token in a header (HRM-26). 200 when it matches the
+### "Webhook token" field; wrong/missing → 401. Never put the token into the URL; placeholder only, the repo is public.
+@phoneWebhookToken = YOUR_WEBHOOK_TOKEN
+POST {{host}}/api/webhooks/phonet
+Content-Type: application/json
+X-Webhook-Token: {{phoneWebhookToken}}
+
+{
+    "event": "call.hangup",
+    "uuid": "demo-call-1",
+    "lgDirection": 4,
+    "otherLegs": [{"num": "0500000000"}],
+    "billSecs": 12
+}
+
+### POST /api/webhooks/ringostat — the same token as a Bearer value (also accepted: X-Signature = hex HMAC-SHA256 of the body)
+POST {{host}}/api/webhooks/ringostat
+Content-Type: application/json
+Authorization: Bearer {{phoneWebhookToken}}
+
+{
+    "uniqueid": "demo-1",
+    "call_type": "in",
+    "caller": "+380500000000",
+    "duration": 12
+}
+
+### POST /api/webhooks/binotel?token=… — DEPRECATED: 401 while the integration flag webhook_query_token is off (default);
+### with the flag on (existing connections only) → 200 + "Deprecation" response header.
+POST {{host}}/api/webhooks/binotel?token={{phoneWebhookToken}}
+Content-Type: application/x-www-form-urlencoded
+
+requestType=apiCallCompleted&callDetails[generalCallID]=demo-1&callDetails[callType]=0&callDetails[externalNumber]=0500000000
+
 ### GET /api/webhooks/{channelKey} — GET handshake (WhatsApp): echo hub.challenge as plain text
 GET {{host}}/api/webhooks/{{channelKey}}
 Accept: application/json

@@ -473,6 +473,17 @@
         "updated_at": null,
         "masked": null
        }
+      },
+      {
+       "name": "webhook_query_token",
+       "type": "select",
+       "required": false,
+       "options": [
+        "off",
+        "on"
+       ],
+       "default": "off",
+       "value": null
       }
      ]
     },
@@ -524,6 +535,17 @@
         "updated_at": null,
         "masked": null
        }
+      },
+      {
+       "name": "webhook_query_token",
+       "type": "select",
+       "required": false,
+       "options": [
+        "off",
+        "on"
+       ],
+       "default": "off",
+       "value": null
       }
      ]
     },
@@ -567,6 +589,17 @@
         "updated_at": null,
         "masked": null
        }
+      },
+      {
+       "name": "webhook_query_token",
+       "type": "select",
+       "required": false,
+       "options": [
+        "off",
+        "on"
+       ],
+       "default": "off",
+       "value": null
       }
      ]
     },

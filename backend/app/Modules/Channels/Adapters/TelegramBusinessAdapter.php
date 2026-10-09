@@ -16,6 +16,7 @@ use App\Modules\Channels\Enums\WebhookAuth;
 use App\Modules\Channels\Exceptions\ChannelException;
 use App\Modules\Channels\Support\Payload;
 use App\Modules\Channels\Support\ProviderHttp;
+use App\Modules\Channels\Support\WebhookCredentials;
 use App\Modules\Integrations\Definitions\TelegramBusinessDefinition;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Recruiting\Enums\Channel;
@@ -60,9 +61,8 @@ final readonly class TelegramBusinessAdapter implements ChannelAdapter, MessageS
     public function verify(Request $request, IntegrationConfig $config): bool
     {
         $secret = $config->secret('webhook_secret');
-        $given = $request->header(self::SECRET_HEADER);
 
-        return $secret !== null && is_string($given) && hash_equals($secret, $given);
+        return $secret !== null && WebhookCredentials::tokenMatches($secret, $request->header(self::SECRET_HEADER));
     }
 
     public function parse(array $payload, IntegrationConfig $config): array

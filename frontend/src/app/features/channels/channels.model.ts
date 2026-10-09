@@ -1,8 +1,8 @@
 /** Mirrors backend App\Modules\Channels\Enums\ChannelMode: off → nothing, demo → recorded without the provider, live → real calls. */
 export type ChannelMode = 'off' | 'demo' | 'live';
 
-/** Mirrors backend App\Modules\Channels\Enums\WebhookAuth. */
-export type WebhookAuth = 'header_secret' | 'hmac' | 'query_token';
+/** Mirrors backend App\Modules\Channels\Enums\WebhookAuth (header_token: telephony, HRM-26). */
+export type WebhookAuth = 'header_secret' | 'hmac' | 'header_token';
 
 /** Timeline channels that can be sent from the candidate card (backend SendMessageRequest::CHANNELS). E-mail = connected Gmail. */
 export type SendChannel = 'telegram' | 'whatsapp' | 'viber' | 'email';
@@ -28,6 +28,8 @@ export interface ChannelInfo {
   can_send: boolean;
   can_call: boolean;
   handshake: boolean;
+  /** Telephony: the deprecated ?token= in the URL is still accepted (integration flag on) — show a warning. */
+  legacy_query_token: boolean;
 }
 
 /** Body of POST /api/candidates/{id}/messages. */

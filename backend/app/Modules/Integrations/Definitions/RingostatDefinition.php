@@ -27,9 +27,8 @@ final class RingostatDefinition extends AbstractDefinition
             FieldSpec::secret('api_key'),
             // Click-to-call (provisional): SIP extension that rings first.
             FieldSpec::text('callback_extension'),
-            // Shared secret of the webhook URL (?token=…), compared in constant time. Provisional: the provider's
-            // own signature scheme is not confirmed on a real account.
-            FieldSpec::secret('webhook_token', required: false),
+            // Webhook token (header / HMAC) + the transitional ?token= flag (HRM-26).
+            ...TelephonyWebhookFields::fields(),
         ];
     }
 }
