@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\TimeOff\Services;
 
 use App\Modules\GoogleWorkspace\Contracts\CalendarClient;
+use App\Modules\GoogleWorkspace\Contracts\GoogleConnections;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
 use App\Modules\GoogleWorkspace\Exceptions\GoogleException;
-use App\Modules\GoogleWorkspace\Services\GoogleConnectionStore;
 use App\Modules\TimeOff\Contracts\LeaveRequestRepository;
 use App\Modules\TimeOff\Models\LeaveRequest;
 use Psr\Log\LoggerInterface;
@@ -20,7 +20,7 @@ final readonly class LeaveCalendarSync
 {
     public function __construct(
         private CalendarClient $calendar,
-        private GoogleConnectionStore $connections,
+        private GoogleConnections $connections,
         private LeaveRequestRepository $requests,
         private LoggerInterface $log,
     ) {}

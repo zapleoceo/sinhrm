@@ -10,13 +10,12 @@ use App\Modules\Overview\Contracts\DashboardNotices;
 use App\Modules\Overview\Contracts\DashboardRepository;
 use App\Modules\Overview\Contracts\DashboardSection;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
 use App\Modules\Recruiting\Models\Application;
-use App\Modules\Recruiting\Services\RecruitingScope;
-use App\Modules\Recruiting\Services\StalenessService;
+use App\Modules\Scripts\Contracts\TaskReader;
 use App\Modules\Scripts\DTO\TaskFilter;
 use App\Modules\Scripts\Enums\TaskDue;
 use App\Modules\Scripts\Models\Task;
-use App\Modules\Scripts\Services\TaskService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -36,8 +35,8 @@ final readonly class DashboardService
     public function __construct(
         private DashboardRepository $dashboard,
         private ApplicationRepository $applications,
-        private RecruitingScope $scope,
-        private TaskService $tasks,
+        private RecruitingAccess $scope,
+        private TaskReader $tasks,
         private DayRouteService $dayRoute,
         private FunnelInsightsService $funnelInsights,
         /** @var iterable<DashboardNotices> */
@@ -54,14 +53,14 @@ final readonly class DashboardService
         $today = UserTime::now($now);
         $todayStart = UserTime::toStorage($today->copy()->startOfDay());
         $scope = $this->scope->for($actor);
-        $staleBefore = $now->copy()->subDays(StalenessService::DEFAULT_DAYS);
+        $staleBefore = $now->copy()->subDays(ApplicationRepository::STALE_DAYS);
 
         $tasks = $this->tasks->list($actor, new TaskFilter(mine: true, due: TaskDue::Today), $today);
         $stale = $this->applications->stale($scope, $staleBefore, self::STALE_LIST);
 
         $data = [
             'counts' => $this->dashboard->counts($scope, $staleBefore, $todayStart),
-            'stale_days' => StalenessService::DEFAULT_DAYS,
+            'stale_days' => ApplicationRepository::STALE_DAYS,
             'my_tasks' => [
                 'total' => $tasks->count(),
                 'overdue' => $tasks->filter(static fn (Task $t): bool => $t->due_at->lt($todayStart))->count(),

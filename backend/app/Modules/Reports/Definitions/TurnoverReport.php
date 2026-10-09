@@ -6,25 +6,19 @@ namespace App\Modules\Reports\Definitions;
 
 use App\Modules\Reports\Contracts\ReportDataRepository;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 use Illuminate\Support\Carbon;
 
 /**
  * Monthly turnover: terminations of the month ÷ average headcount (first and last day of the month) × 100.
  * The last row is the whole period: terminations ÷ average headcount (start and end of the period).
  */
-final class TurnoverReport extends AbstractReport
+final class TurnoverReport extends AbstractTeamReport
 {
     public function __construct(private readonly ReportDataRepository $data) {}
 
     public function key(): string
     {
         return 'turnover';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Hr;
     }
 
     public function filters(): array
@@ -45,11 +39,6 @@ final class TurnoverReport extends AbstractReport
     public function chart(): array
     {
         return ['label' => 'month', 'value' => 'turnover_pct'];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->seesTeam();
     }
 
     public function rows(ScopedContext $ctx, array $filters): array

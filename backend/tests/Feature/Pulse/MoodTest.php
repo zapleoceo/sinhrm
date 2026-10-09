@@ -6,11 +6,13 @@ namespace Tests\Feature\Pulse;
 
 use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Directory\Models\Department;
 use App\Modules\People\Models\Employee;
 use App\Modules\Pulse\Models\MoodCheckin;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\PeopleFixtures;
 use Tests\Support\PulseFixtures;
 use Tests\TestCase;
@@ -123,6 +125,62 @@ final class MoodTest extends TestCase
         $this->actingAs($this->login(UserRole::Admin))->getJson('/api/pulse/mood/team?weeks=1')->assertOk()->assertJsonPath('data.weeks.0.respondents', 5);
     }
 
+    /**
+     * A manager must not slice their own team: "everybody" minus "one department" is the score and the comment of
+     * the people left over (here: one person).
+     */
+    public function test_a_manager_cannot_slice_the_team_trend_by_branch_or_department(): void
+    {
+        ['lead' => $lead] = $this->org();
+        $sales = Department::factory()->create(['name' => 'Sales']);
+        $ops = Department::factory()->create(['name' => 'Ops']);
+        $team = $this->people(5, ['manager_id' => $lead->id, 'department_id' => $sales->id]);
+        [$alone] = $this->people(1, ['manager_id' => $lead->id, 'department_id' => $ops->id]);
+        $this->moods($team, '2026-10-06', 5);
+        $this->moods([$alone], '2026-10-06', 1);
+        MoodCheckin::query()->where('employee_id', $alone->id)->update(['comment' => 'I am leaving']);
+        $manager = $this->userOf($lead);
+
+        $this->actingAs($manager)->getJson('/api/pulse/mood/team?weeks=1')->assertOk()
+            ->assertJsonPath('data.weeks.0.respondents', 6);
+        // Filters belong to admins only: for a manager they are the second half of a differencing attack.
+        $this->actingAs($manager)->getJson('/api/pulse/mood/team?weeks=1&department_id='.$sales->id)->assertForbidden();
+        $this->actingAs($manager)->getJson('/api/pulse/mood/team?weeks=1&branch_id=1')->assertForbidden();
+    }
+
+    /** The same subtraction with an admin's filters: a slice is shown only when the rest of the scope stays safe. */
+    public function test_an_admin_slice_is_hidden_when_the_rest_of_the_company_is_a_handful_of_people(): void
+    {
+        $org = array_values($this->org());
+        $sales = Department::factory()->create(['name' => 'Sales']);
+        $ops = Department::factory()->create(['name' => 'Ops']);
+        Employee::query()->whereIn('id', array_map(static fn (Employee $e): int => $e->id, $org))->update(['department_id' => $sales->id]);
+        $more = $this->people(2, ['department_id' => $sales->id]);
+        [$alone] = $this->people(1, ['department_id' => $ops->id]);
+        $this->moods([...$org, ...$more], '2026-10-06', 5);
+        $this->moods([$alone], '2026-10-06', 1);
+        $admin = $this->login(UserRole::Admin);
+
+        $this->actingAs($admin)->getJson('/api/pulse/mood/team?weeks=1')->assertOk()
+            ->assertJsonPath('data.weeks.0.respondents', 8);
+        // Sales is 7 of the 8 people: "everybody minus Sales" would be the one person in Ops.
+        $this->actingAs($admin)->getJson('/api/pulse/mood/team?weeks=1&department_id='.$sales->id)->assertOk()
+            ->assertJsonPath('data.team_size', null)
+            ->assertJsonPath('data.coverage', null)
+            ->assertJsonPath('data.weeks.0.suppressed', true)
+            ->assertJsonPath('data.weeks.0.average', null)
+            ->assertJsonPath('data.comments', []);
+
+        // Ops grown to 5: both slices and the remainder are at least the minimum group, so both may be shown.
+        $this->moods($this->people(4, ['department_id' => $ops->id]), '2026-10-06', 3);
+        $this->actingAs($admin)->getJson('/api/pulse/mood/team?weeks=1&department_id='.$sales->id)->assertOk()
+            ->assertJsonPath('data.weeks.0.respondents', 7)
+            ->assertJsonPath('data.weeks.0.suppressed', false);
+        $this->actingAs($admin)->getJson('/api/pulse/mood/team?weeks=1&department_id='.$ops->id)->assertOk()
+            ->assertJsonPath('data.weeks.0.respondents', 5)
+            ->assertJsonPath('data.weeks.0.suppressed', false);
+    }
+
     public function test_manager_alert_when_team_mood_drops(): void
     {
         ['head' => $head, 'lead' => $lead, 'worker' => $worker, 'peer' => $peer] = $this->org();
@@ -159,5 +217,43 @@ final class MoodTest extends TestCase
         MoodCheckin::query()->whereDate('day', '2026-09-28')->update(['score' => 4]);
         $this->assertSame(0, $this->pulseTick()['mood_alerts']);
         $this->assertSame(0, Task::query()->where('type', 'mood_alert')->count());
+    }
+
+    /** At 00:30 Kyiv (21:30 UTC) the check-in belongs to the new Kyiv day, not to the UTC "yesterday" (MySQL e2e, round 2). */
+    public function test_check_in_after_kyiv_midnight_counts_for_the_kyiv_day(): void
+    {
+        $user = $this->userOf($this->org()['worker']);
+        Carbon::setTestNow('2026-10-11 20:00:00'); // Sunday 23:00 Kyiv
+        $this->actingAs($user)->postJson('/api/pulse/mood', ['score' => 2])->assertCreated()->assertJsonPath('data.day', '2026-10-11');
+        Carbon::setTestNow('2026-10-11 21:30:00'); // Monday 2026-10-12 00:30 Kyiv
+        $this->actingAs($user)->getJson('/api/pulse/mood/today')->assertOk()->assertJsonPath('data.today', null)->assertJsonPath('data.ask', true);
+        $this->actingAs($user)->postJson('/api/pulse/mood', ['score' => 5])->assertCreated()->assertJsonPath('data.day', '2026-10-12');
+        $this->actingAs($user)->getJson('/api/pulse/mood/me?days=2')->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.day', '2026-10-12')->assertJsonPath('data.0.score', 5)->assertJsonPath('data.1.score', 2);
+    }
+
+    /** @return array<string, array{string, string, string, string, string}> now (UTC), previous week, compared week, ISO week, due (UTC) */
+    public static function kyivMondayNights(): array
+    {
+        return [
+            'summer, Mon 00:30 Kyiv = Sun 21:30 UTC' => ['2026-10-11 21:30:00', '2026-09-28', '2026-10-06', 'mood:2026-W41', '2026-10-14 15:00:00'],
+            'winter, Mon 00:30 Kyiv = Sun 22:30 UTC' => ['2026-01-11 22:30:00', '2025-12-29', '2026-01-06', 'mood:2026-W02', '2026-01-14 16:00:00'],
+        ];
+    }
+
+    /** The "last completed week" of the alerts is the Kyiv week: on Monday 00:30 Kyiv the week that just ended. Due 18:00 Kyiv. */
+    #[DataProvider('kyivMondayNights')]
+    public function test_mood_alert_week_turns_at_kyiv_midnight(string $now, string $previous, string $compared, string $rule, string $due): void
+    {
+        ['lead' => $lead, 'worker' => $worker, 'peer' => $peer] = $this->org();
+        $team = [$worker, $peer, ...$this->people(3, ['manager_id' => $lead->id])];
+        $this->moods($team, $previous, 5);
+        $this->moods($team, $compared, 3);
+
+        Carbon::setTestNow($now);
+        $this->assertGreaterThan(0, $this->pulseTick()['mood_alerts']);
+        $task = Task::query()->where('type', 'mood_alert')->where('assignee_id', $this->userOf($lead)->id)->sole();
+        $this->assertSame($rule, $task->rule_key);
+        $this->assertSame($due, $task->due_at->utc()->format('Y-m-d H:i:s'));
     }
 }

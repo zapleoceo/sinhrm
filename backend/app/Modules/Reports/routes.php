@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Auth\Http\Middleware\EnsureUserIsActive;
 use App\Modules\Reports\Http\Controllers\ReportsController;
+use App\Modules\Reports\Providers\ReportsServiceProvider;
 use Illuminate\Support\Facades\Route;
 
 // /api/reports/* of the Reports module (the older /api/reports/{touches,funnel,sources,reject-reasons,scripts} stay in
@@ -14,8 +15,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     Route::get('catalog/{key}/csv', [ReportsController::class, 'csv'])->where('key', '[a-z_]+')->name('reports.csv');
 
     Route::get('builder/datasets', [ReportsController::class, 'datasets'])->name('reports.builder.datasets');
-    Route::post('builder/run', [ReportsController::class, 'build'])->name('reports.builder.run');
-    Route::post('builder/csv', [ReportsController::class, 'buildCsv'])->name('reports.builder.csv');
+    Route::post('builder/run', [ReportsController::class, 'build'])->middleware(ReportsServiceProvider::BUILDER_THROTTLE)->name('reports.builder.run');
+    Route::post('builder/csv', [ReportsController::class, 'buildCsv'])->middleware(ReportsServiceProvider::BUILDER_THROTTLE)->name('reports.builder.csv');
 
     Route::get('saved', [ReportsController::class, 'saved'])->name('reports.saved.index');
     Route::post('saved', [ReportsController::class, 'store'])->name('reports.saved.store');

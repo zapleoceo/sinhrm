@@ -4,17 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Desk\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in Desk; rendered as {message, code} with its HTTP status. */
-final class DeskException extends RuntimeException
+final class DeskException extends BusinessRuleException
 {
-    private function __construct(public readonly string $errorCode, public readonly int $status)
-    {
-        parent::__construct($errorCode);
-    }
-
     /** The user has no employee record, so there is nobody to open the case for. */
     public static function noEmployee(): self
     {
@@ -59,8 +53,15 @@ final class DeskException extends RuntimeException
         return new self('too_many_files', 422);
     }
 
-    public function render(): JsonResponse
+    /** The requester already holds DeskService::MAX_OPEN_CASES unclosed cases. */
+    public static function tooManyOpenCases(): self
     {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode], $this->status);
+        return new self('too_many_open_cases', 422);
+    }
+
+    /** The attachments of this case already fill DeskService::MAX_CASE_BYTES. */
+    public static function attachmentQuotaExceeded(): self
+    {
+        return new self('attachment_quota_exceeded', 422);
     }
 }

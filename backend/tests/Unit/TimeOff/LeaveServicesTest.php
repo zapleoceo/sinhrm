@@ -53,7 +53,9 @@ final class LeaveServicesTest extends TestCase
         $data = new LeaveRequestData($this->vacation->id, Carbon::parse('2026-10-12'), Carbon::parse('2026-10-13'), overrideBalance: true);
 
         $request = $service->create($this->actor, $admin, $this->employee, $this->vacation, $data);
-        $approved = $service->approve($this->actor, $admin, $request, null);
+        // Separation of duties: the author never signs it off, so a second admin approves.
+        $approver = User::factory()->create();
+        $approved = $service->approve($approver, new PeopleContext($approver->id, true, null, []), $request, null);
 
         $this->assertSame(LeaveRequestStatus::Approved, $approved->status);
         $this->assertSame(-2.0, $this->app->make(BalanceService::class)->available($this->employee, $this->vacation));
@@ -69,16 +71,24 @@ final class LeaveServicesTest extends TestCase
         $this->app->make(LeaveRequestService::class)->create($this->actor, $self, $this->employee, $this->vacation, $data);
     }
 
-    public function test_nobody_but_an_admin_decides_their_own_request(): void
+    /** Separation of duties: own request is never one's own to decide — being an admin changes nothing. */
+    public function test_nobody_decides_their_own_request(): void
     {
         LedgerEntry::query()->create(['employee_id' => $this->employee->id, 'leave_type_id' => $this->vacation->id, 'delta' => 5, 'reason' => 'adjustment']);
         $service = $this->app->make(LeaveRequestService::class);
         $self = new PeopleContext($this->actor->id, false, $this->employee->id, []);
+        $selfAdmin = new PeopleContext($this->actor->id, true, $this->employee->id, []);
         $request = $service->create($this->actor, $self, $this->employee, $this->vacation,
             new LeaveRequestData($this->vacation->id, Carbon::parse('2026-10-12'), Carbon::parse('2026-10-12')));
 
-        $this->expectExceptionMessage('forbidden');
-        $service->approve($this->actor, $self, $request, null);
+        foreach ([$self, $selfAdmin] as $ctx) {
+            try {
+                $service->approve($this->actor, $ctx, $request, null);
+                $this->fail('own request approved');
+            } catch (TimeOffException $e) {
+                $this->assertSame('forbidden', $e->getMessage());
+            }
+        }
     }
 
     public function test_hire_grant_and_the_job_do_not_double_count(): void

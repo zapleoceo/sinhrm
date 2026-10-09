@@ -10,6 +10,8 @@ use App\Modules\Integrations\Contracts\AiPolicy;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\Touchpoint;
+use App\Modules\Recruiting\Services\ApplicationService;
 use App\Modules\Scripts\Enums\ScriptChannel;
 use App\Modules\Scripts\Jobs\EvaluateTouchpoint;
 use App\Modules\Scripts\Models\ScriptEvaluation;
@@ -150,6 +152,40 @@ final class EvaluationApiTest extends TestCase
         $this->actingAs($recruiter)->getJson("/api/candidates/{$this->application->candidate_id}/timeline?channel=call")->assertOk()
             ->assertJsonPath('data.0.touchpoint.id', $id)
             ->assertJsonPath('data.0.touchpoint.evaluation', null);
+    }
+
+    /** A candidate may apply in several branches: the touch of an application out of scope stays closed. */
+    public function test_evaluation_of_a_touch_on_an_invisible_application_is_forbidden(): void
+    {
+        Bus::fake([EvaluateTouchpoint::class]);
+        $this->publishedScript(ScriptChannel::Call);
+        $otherBranch = Branch::factory()->create();
+        $candidate = $this->application->candidate;
+        $applicationB = $this->app->make(ApplicationService::class)
+            ->apply(null, $candidate, $this->vacancyIn($otherBranch));
+        $recruiterA = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $mine = $this->touchOn($this->application->id);
+        $theirs = $this->touchOn($applicationB->id);
+
+        // The candidate card is visible to recruiter A (they applied in A), the other branch's application is not.
+        $this->actingAs($recruiterA)->getJson("/api/touchpoints/$mine/evaluation")->assertOk()->assertJsonPath('data.score', 80);
+        $this->actingAs($recruiterA)->getJson("/api/touchpoints/$theirs/evaluation")->assertForbidden();
+        $this->actingAs($this->userWith(UserRole::Recruiter, [$otherBranch]))
+            ->getJson("/api/touchpoints/$theirs/evaluation")->assertOk()->assertJsonPath('data.score', 80);
+    }
+
+    private function touchOn(int $applicationId): int
+    {
+        return Touchpoint::query()->create([
+            'candidate_id' => $this->application->candidate_id,
+            'application_id' => $applicationId,
+            'channel' => Channel::Call->value,
+            'direction' => Direction::Out->value,
+            'occurred_at' => now(),
+            'body' => $this->goodTranscript(),
+            'via_product' => true,
+            'integration_key' => 'test',
+        ])->id;
     }
 
     public function test_ai_switched_on_without_a_configured_provider_falls_back_to_rules(): void

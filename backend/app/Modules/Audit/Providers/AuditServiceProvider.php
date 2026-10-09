@@ -6,6 +6,7 @@ namespace App\Modules\Audit\Providers;
 
 use App\Models\User;
 use App\Modules\Ai\Models\AiPromptVersion;
+use App\Modules\Audit\Contracts\AuditHistory;
 use App\Modules\Audit\Contracts\AuditLogger;
 use App\Modules\Audit\Contracts\AuditLogRepository;
 use App\Modules\Audit\Privacy\AuditPersonalData;
@@ -18,6 +19,7 @@ use App\Modules\Audit\Support\SecretAuditObserver;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
+use App\Modules\Core\Models\ModuleSetting;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\Documents\Models\Document;
 use App\Modules\HiringRequests\Models\HiringApproval;
@@ -59,6 +61,7 @@ final class AuditServiceProvider extends ModuleServiceProvider
         HiringRequest::class => 'hiring_request',
         HiringApproval::class => 'hiring_approval',
         WorkflowTemplate::class => 'workflow_template',
+        ModuleSetting::class => 'module_setting',
     ];
 
     protected string $prefix = 'audit';
@@ -75,6 +78,7 @@ final class AuditServiceProvider extends ModuleServiceProvider
         $this->app->bind(AuditLogRepository::class, EloquentAuditLogRepository::class);
         $this->app->singleton(AuditPolicy::class);
         $this->app->bind(AuditLogger::class, AuditService::class);
+        $this->app->bind(AuditHistory::class, AuditService::class);
         $this->app->bind(AuditObserver::class, fn (App $app): AuditObserver => new AuditObserver(
             $app->make(AuditLogger::class),
             self::TRACKED,

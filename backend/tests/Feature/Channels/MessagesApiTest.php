@@ -94,6 +94,28 @@ final class MessagesApiTest extends TestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * Outbound provider calls (ProviderHttp) dial the IPs the SSRF guard approved (CURLOPT_RESOLVE) instead of
+     * resolving the host again, so DNS cannot be re-pointed inward between the check and the send.
+     */
+    public function test_outbound_provider_call_pins_the_connection_to_the_approved_ips(): void
+    {
+        $this->whatsapp();
+        $this->whatsappWebhook($this->waMessage('380671234567', 'wamid.IN1', 'Hello'))->assertOk();
+        $options = [];
+        Http::fake(function (Request $request, array $sent) use (&$options) {
+            $options = $sent;
+
+            return Http::response(['messages' => [['id' => 'wamid.OUT1']]]);
+        });
+
+        $this->actingAs($this->recruiter)->postJson($this->url(), ['channel' => 'whatsapp', 'text' => 'Thanks!'])->assertCreated();
+
+        $this->assertSame(['graph.facebook.com:443:93.184.216.34'], $options['curl'][CURLOPT_RESOLVE] ?? null);
+        $this->assertFalse($options['curl'][CURLOPT_FOLLOWLOCATION] ?? null);
+        $this->assertFalse($options['allow_redirects'] ?? null);
+    }
+
     public function test_telegram_replies_into_the_known_business_chat(): void
     {
         $this->telegram();

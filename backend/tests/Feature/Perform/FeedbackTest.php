@@ -38,6 +38,19 @@ final class FeedbackTest extends TestCase
         $this->actingAs($from)->getJson('/api/perform/feedback?box=nope')->assertUnprocessable();
     }
 
+    /** A non-scalar box must be refused by validation, not crash the request (array to string conversion → 500). */
+    public function test_a_malformed_box_parameter_is_rejected(): void
+    {
+        ['worker' => $worker] = $this->org();
+        $user = $this->userOf($worker);
+
+        $this->actingAs($user)->getJson('/api/perform/feedback?box[]=x')->assertUnprocessable()
+            ->assertJsonValidationErrors('box');
+        $this->actingAs($user)->getJson('/api/perform/feedback?box[]=received')->assertUnprocessable();
+        $this->actingAs($user)->getJson('/api/perform/feedback?box=')->assertOk();
+        $this->actingAs($user)->getJson('/api/perform/feedback')->assertOk();
+    }
+
     public function test_request_and_answer_once(): void
     {
         ['worker' => $worker, 'peer' => $peer, 'other' => $other] = $this->org();

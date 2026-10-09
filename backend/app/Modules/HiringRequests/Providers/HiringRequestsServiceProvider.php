@@ -25,7 +25,7 @@ final class HiringRequestsServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'recruiting';
 
-    /** Settings, vacancy link, closing: superadmin, admin (HR). */
+    /** Settings, vacancy link, closing: HR staff (UserRole::hrStaff(): superadmin, admin, hr_manager). */
     public const string MANAGE = 'hiring-manage';
 
     protected string $prefix = 'hiring-requests';

@@ -39,6 +39,11 @@
 после запуска или наступления дня.
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/WorkflowException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): список шаблонов (`workflow-templates.page.ts`) держит `PagedList` вместо своего `load()` (тот же `failed`).
+- Фронт (2026-10-08): `RunsStore` держит запуски в `PagedList` (`core/ui/table/paged-list.ts`) вместо ручного счётчика `seq`: новый запрос отменяется HttpClient, а не только игнорируется.
 Бэкенд — `backend/app/Modules/Workflows`, маршруты `/api/workflows/*` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`. Gate `workflows-manage` (`Providers/WorkflowsServiceProvider::MANAGE`) = `PeopleScope::isAdmin`.
 
@@ -116,9 +121,15 @@ skipped, failed}`.
 в этом запросе (`attempts` растёт). Воркфлоу с упавшим шагом остаётся `running`, пока шаг не повторят или не пропустят.
 
 ### Вебхук (`Executors/WebhookExecutor`)
-1. `OutboundUrlGuard` (модуль Integrations): только https, порт 443, все IP хоста публичные (без localhost, частных
-   сетей, `169.254.169.254` и т.п.) — иначе `failed` с кодом `invalid_url` / `blocked_port` / `blocked_host` /
+1. `OutboundUrlGuard::inspect()` (модуль Integrations): только https, порт 443, все IP хоста публичные (без localhost,
+   частных сетей, CGNAT, multicast, `169.254.169.254`, 6to4/NAT64-обёрток и т.п. — полная таблица в
+   [integrations.md](integrations.md)) — иначе `failed` с кодом `invalid_url` / `blocked_port` / `blocked_host` /
    `unresolved_host`, **запрос не отправляется**. Редиректы не выполняются, таймаут 10 с.
+   Проверенные IP возвращаются в `PinnedTarget`, и соединение прибивается именно к ним: `requestOptions()` кладёт
+   `CURLOPT_RESOLVE` (+ `CURLOPT_FOLLOWLOCATION = false`) в опции запроса, поэтому имя не резолвится второй раз и
+   **DNS-rebinding между проверкой и отправкой невозможен**. В URL остаётся имя хоста — `Host`, SNI и проверка
+   сертификата не меняются. Тест: `tests/Unit/Workflows/ExecutorsTest::test_webhook_pins_the_connection_to_the_ips_the_guard_approved`
+   (резолвер отдаёт публичный адрес на проверку и метаданные облака на любой следующий запрос).
 2. Ключ подписи — **свой у каждого шаблона**, хранится в `SecretVault` (`integration_secrets`, ключ интеграции
    `workflows`, имя `webhook_secret:<id шаблона>`), задаётся `PUT …/webhook-secret`; API показывает только `is_set` и
    маску. Нет ключа → `failed: missing_secret`.
@@ -152,7 +163,9 @@ skipped, failed}`.
 проверяет `config` правилами исполнителя) → `Services` (`WorkflowTemplateService`, `WorkflowRunService`,
 `WorkflowStarter`, `StepRunner`, `WorkflowTriggers`, `AssigneeResolver`, `WorkflowTickJob`) → `Contracts/*Repository`
 (`Repositories/Eloquent*`, `EloquentAssigneeDirectory`). `Executors/*` — действия; `Support/WebhookSecrets` — ключ в
-хранилище. Ошибки — `Exceptions/WorkflowException` (`{message, code}`). Связи: People — события, `PeopleScope`,
+хранилище. Задачные шаги наследуют `Executors/TaskStepExecutor` (задача в общем списке, фолбэк на HR); шаги
+«задача по профилю» с одним необязательным `title` — `create_task`, `assign_buddy` и `request_form` (+ `url`) — общий
+`Executors/ProfileTaskExecutor` (DRY, 2026-10-08; правила конфигурации прежние, `ProfileTaskExecutorTest`). Ошибки — `Exceptions/WorkflowException` (`{message, code}`). Связи: People — события, `PeopleScope`,
 `EmployeeRepository`; Scripts — задачи и `TaskCompleted`; Documents — `create_document`; Integrations —
 `OutboundUrlGuard`, `SecretVault`; GoogleWorkspace — состояние подключения и `CalendarClient`; Core — `ScheduledJob`.
 
@@ -178,6 +191,7 @@ skipped, failed}`.
 ### Общие хелперы Core (2026-10-02)
 - «сегодня» по умолчанию (якорь ручного запуска и офбординга без даты увольнения) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
 - gate `workflows-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Комментарии `routes.php`, `WorkflowTemplateController` и `WorkflowsServiceProvider::MANAGE` исправлены на фактический набор HR staff (superadmin, admin, hr_manager); тест `WorkflowTemplatesApiTest::test_hr_manager_manages_templates` (2026-10-08).
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось, кроме ночной границы «сегодня» (пункт выше); подробности — [core.md](core.md), раздел «Общие хелперы модулей».
@@ -187,6 +201,12 @@ skipped, failed}`.
 - Ошибки API → i18n-ключ: `workflowsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `WorkflowRunController` и `AssigneeResolver` берут контекст, HR-проверку и сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`. Тест — `tests/Unit/Workflows/WorkflowsPeopleAccessTest.php`.
+- `TaskStepExecutor` (и наследники) и `WorkflowRunService` ставят и закрывают задачи шагов через контракт Scripts `TaskScheduler`.
+- `AddCalendarEventExecutor` проверяет подключение Календаря через контракт GoogleWorkspace `GoogleConnections`.
+- `CreateDocumentExecutor` ищет шаблон через контракт Documents `DocumentTemplateRepository::find()` (нет шаблона → шаг `failed`, `document_template_missing`, как раньше), проверка конфига — `Rule::exists('document_templates', 'id')` без импорта модели Documents. Класс `DocumentService` остаётся прямым импортом: его контракт потребовал бы модели People/Documents в сигнатуре (новые нарушения границы). Тест — `tests/Unit/Workflows/CreateDocumentExecutorTest.php`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Workflows/WorkflowTemplatesApiTest` (401/403, CRUD с шагами, проверка `config` каждого действия,

@@ -11,6 +11,7 @@ use App\Modules\TimeOff\Models\Holiday;
 use App\Modules\TimeOff\Models\LeaveRequest;
 use App\Modules\TimeOff\Models\LeaveType;
 use App\Modules\TimeOff\Models\LedgerEntry;
+use App\Modules\TimeOff\Providers\TimeOffServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\Support\NavBadgeAssertions;
@@ -54,6 +55,19 @@ final class LeaveRequestApiTest extends TestCase
         $this->getJson('/api/timeoff/balances')->assertUnauthorized();
         $this->getJson('/api/timeoff/calendar')->assertUnauthorized();
         $this->getJson('/api/timeoff/approvals')->assertUnauthorized();
+    }
+
+    /** New requests are throttled per user (timeoff-requests, 30 per minute): the 31st is 429, others are not affected. */
+    public function test_new_requests_are_throttled_per_user(): void
+    {
+        $this->grant($this->org['peer'], 10);
+        $worker = $this->userOf($this->org['worker']);
+        for ($i = 0; $i < TimeOffServiceProvider::REQUESTS_PER_MINUTE; $i++) {
+            $this->actingAs($worker)->postJson('/api/timeoff/requests', [])->assertUnprocessable(); // the attempt counts
+        }
+        $this->actingAs($worker)->postJson('/api/timeoff/requests', $this->payload('2026-10-12', '2026-10-13'))->assertStatus(429);
+        $this->actingAs($worker)->getJson('/api/timeoff/requests')->assertOk();
+        $this->actingAs($this->userOf($this->org['peer']))->postJson('/api/timeoff/requests', $this->payload('2026-10-12', '2026-10-13'))->assertCreated();
     }
 
     public function test_day_count_excludes_weekends_and_holidays_with_half_days(): void
@@ -300,6 +314,24 @@ final class LeaveRequestApiTest extends TestCase
         $this->actingAs($this->userOf($this->org['other']))->getJson('/api/dashboard')->assertOk()
             ->assertJsonCount(0, 'data.timeoff.out_today')
             ->assertJsonPath('data.timeoff.my_approvals.count', 0);
+    }
+
+    /** «Out today» follows the Kyiv day: at 00:30 Kyiv (21:30 UTC) the UTC date is still yesterday (MySQL e2e, round 2). */
+    public function test_dashboard_out_today_after_kyiv_midnight(): void
+    {
+        Carbon::setTestNow('2026-10-11 21:30:00'); // Monday 2026-10-12 00:30 in Kyiv (EEST, +03:00)
+        LeaveRequest::query()->create([
+            'employee_id' => $this->org['worker']->id, 'leave_type_id' => $this->sick->id,
+            'starts_on' => '2026-10-12', 'ends_on' => '2026-10-12', 'days' => 1, 'status' => 'approved',
+        ]);
+        LeaveRequest::query()->create([
+            'employee_id' => $this->org['peer']->id, 'leave_type_id' => $this->sick->id,
+            'starts_on' => '2026-10-11', 'ends_on' => '2026-10-11', 'days' => 1, 'status' => 'approved',
+        ]);
+
+        $this->actingAs($this->userOf($this->org['lead']))->getJson('/api/dashboard')->assertOk()
+            ->assertJsonCount(1, 'data.timeoff.out_today')
+            ->assertJsonPath('data.timeoff.out_today.0.employee.id', $this->org['worker']->id);
     }
 
     /** @return array<string, mixed> */

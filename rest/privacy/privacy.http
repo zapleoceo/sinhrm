@@ -1,0 +1,46 @@
+# Privacy — personal-data rights (Law No. 2297-VI): superadmin and admin (gate privacy-manage). Synthetic data only.
+# Path ids below are placeholders — replace with real ids from a list call. {type} = candidate | employee.
+@type = candidate
+@id = 1
+# Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
+# Full list of Privacy operations: /api/docs (tag "Privacy"). Page: docs/modules/privacy.md
+
+### GET /api/privacy/settings — privacy.settings.show
+GET {{host}}/api/privacy/settings
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PUT /api/privacy/settings — privacy.settings.update (retention_rejected_months: 1..120 or null = off)
+PUT {{host}}/api/privacy/settings
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+  "retention_rejected_months": 12
+}
+
+### GET /api/privacy/{type}/{id}/export — privacy.export (format=json|html)
+GET {{host}}/api/privacy/{{type}}/{{id}}/export?format=json
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### GET /api/privacy/{type}/{id}/requests — privacy.requests
+GET {{host}}/api/privacy/{{type}}/{{id}}/requests
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### POST /api/privacy/{type}/{id}/erase — privacy.erase (irreversible; reason 3..500, confirm accepted)
+POST {{host}}/api/privacy/{{type}}/{{id}}/erase
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+  "reason": "Synthetic erase request",
+  "confirm": true
+}

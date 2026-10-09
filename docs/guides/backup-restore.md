@@ -20,6 +20,8 @@ DevOps must confirm MySQL 8.4, InnoDB-only tables or a write/DDL freeze for a co
 
 ## Isolated operator drill
 
+> Until the cutover the live site still runs the frozen legacy release on its previous database ([ADR 0011](../adr/0011-mysql-only.md), [cutover runbook](mysql-cutover.md#замороженный-боевой-релиз-до-cutover)); back that database up with its own provider tools under the same rules: a recorded restore point, the matching `APP_KEY`, and a separate inventory of external files. The drill below applies to MySQL 8.4 IT STEP after the cutover.
+
 Obtain a protected MySQL client option file from the approved secret manager (mode `0600`). Use separate source and restore accounts. Independently confirm source and target host and database names. Use a matching MySQL 8.4 client on a trusted host with the certificate validation required by IT STEP. Freeze writes and DDL if the consistency preconditions above are not met. Never log passwords or include them in command arguments.
 
 ```bash

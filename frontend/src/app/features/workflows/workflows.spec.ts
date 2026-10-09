@@ -309,6 +309,16 @@ describe('RunsStore', () => {
     expect(msg).toBe('workflows.errors.step_not_open');
   });
 
+  it('a newer load cancels the request still in flight (HttpClient aborts it)', () => {
+    store.load({ employee_id: 13 });
+    const stale = http.expectOne((r) => r.url === '/api/workflows/runs' && r.params.get('employee_id') === '13');
+    store.load({ employee_id: 14 });
+    expect(stale.cancelled).toBe(true);
+    http.expectOne((r) => r.url === '/api/workflows/runs' && r.params.get('employee_id') === '14').flush({ data: [] });
+    expect(store.items()).toEqual([]);
+    expect(store.query()).toEqual({ employee_id: 14 });
+  });
+
   it('cancels and starts runs', () => {
     store.cancel(store.items()[0], () => undefined);
     http.expectOne('/api/workflows/runs/3/cancel').flush({ data: { ...run(), status: 'cancelled', can_cancel: false } });

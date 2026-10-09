@@ -60,12 +60,16 @@ SinHRM умеет просить языковую модель о трёх ве�
 правило = удалить его; уже разобранные письма обратно не переразбираются.
 
 ## Как устроено
+- Фронт (2026-10-08): шапка панели ИИ (`ai-panel.ts`: отступы карточки, ряд заголовка, строка уведомления) — общий миксин `service-panel.base` из `core/ui/styles/_service-panel.scss`, тот же, что у Google-панели; `.small` — глобальная утилита `styles.scss`.
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/AiException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
 
 ### Модули и слои
 ```
 backend/app/Modules/Ai/
   Contracts/  AiProvider (submit/poll) · AiResultHandler (parse/apply/failed/rebuild) · AiPromptTemplate · AiRequestRepository
-  Services/   AiService (единственный вход) · AiBrokerProvider (по умолчанию) · OpenRouterProvider (альтернатива)
+  Services/   AiService (единственный вход) · AiGate (ворота) · AiBudget (дневные лимиты)
+              AiBrokerProvider (по умолчанию) · OpenRouterProvider (альтернатива)
               AiPollJob ("ai.poll") · AiAdminService (статус/тест)
   Support/    PromptBuilder · JsonOutput · PiiRedactor · AiSettingsReader · AiHandlerRegistry · AiPromptRegistry
   Prompts/    TestPrompt (+ handler) · Console/AiExperimentCommand (ai:experiment)
@@ -73,6 +77,13 @@ Scripts/Ai/     ScriptEvaluationPrompt · AiEvaluationMapper · ScriptEvaluation
 MailAgent/Ai/   MailClassificationPrompt · MailClassificationAiHandler                  (+ Services/AiMailClassifier, MailReprocessService)
 Recruiting/Ai/  ScreeningPrompt · ScreeningInput · ScreeningPromptFactory · ScreeningAiHandler (+ Services/ScreeningService, AutoScreeningJob)
 ```
+`AiService` оркестрирует путь запроса и делегирует две отдельные ответственности (SRP, 2026-10-08): **`AiGate`** —
+шаг 1 ниже (`unavailableReason`/`assertAvailable`, тот же порядок проверок и коды), **`AiBudget`** — шаг 2
+(`usageToday`, `assertWithin`; проверяется перед первой отправкой и перед повтором). Публичный API `AiService` прежний —
+он просто передаёт вызов. Первая отправка чата и транскрипции — общий приватный `submitAndAwait`; разбор ответа
+брокера `202 {job_id}` для чата и аудио — общий `AiBrokerProvider::jobRef`. Тесты — `tests/Unit/Ai/AiGateAndBudgetTest`.
+Тексты промптов и версии не менялись.
+
 Модуль Ai не знает предметной области: каждая функция живёт в своём модуле и регистрирует обработчик
 (`AiServiceProvider::HANDLERS_TAG`) и шаблон промпта (`PROMPTS_TAG`).
 
@@ -94,7 +105,9 @@ Recruiting/Ai/  ScreeningPrompt · ScreeningInput · ScreeningPromptFactory · S
 
 Логи: только id, счётчики и коды (`ai.request_done`, `ai.request_failed`, `ai.invalid_output`, `ai.budget_exceeded`).
 Промпты, ответы и ключ **никогда** не пишутся ни в лог, ни в БД. Ключ регистрируется в `SecretScrubber`, URL проверяет
-`OutboundUrlGuard` (https, публичный IP, без редиректов), ошибки провайдера — коды `ai_provider_http_401`,
+`OutboundUrlGuard::inspect()` (https, публичный IP, без редиректов; соединение прибито к проверенным IP через
+`PinnedTarget::httpOptions()` — `CURLOPT_RESOLVE`, поэтому DNS-rebinding между проверкой и запросом не уводит
+ключ проекта на внутренний адрес; тест `AiServiceTest::test_broker_call_pins_the_connection_to_the_approved_ips`), ошибки провайдера — коды `ai_provider_http_401`,
 `ai_provider_connection_failed`, `ai_provider_budget` (дневной лимит самого брокера) и т.п.
 
 ### Таблица `ai_requests`
@@ -114,6 +127,8 @@ is_active, activated_by, activated_at, created_at, updated_at`. Хранится
 пробный запрос не повторяется). Пример для проб — `backend/app/Modules/Ai/Samples/<purpose>.json` (первый кейс из
 тестовых фикстур, только синтетика). Аудит: автор и кто активировал — в строке, плюс строки лога `ai.prompt_saved`,
 `ai.prompt_activated`, `ai.prompt_builtin` (id пользователя, без текста); смена возможности — `integration_logs`.
+Имена авторов версий `AiPromptAdminService` берёт через контракт Auth `UserRepository::namesByIds()`, а не запросом
+к модели `User` (тест `AiPromptEditorTest::test_each_version_shows_its_own_author`).
 Кеш промпта: текст версии стабилен (без дат/id — проверяется при сохранении), так что префикс кешируется так же, как у
 встроенного.
 
@@ -407,6 +422,10 @@ AIB_PROJECT_KEY=<ключ, только в своей оболочке> php arti
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Ошибки: `aiErrorKey` (панели ИИ, скрининг) и `aiTextErrorKey` (подсказка под разделом вакансии; любой 429 → «throttled», коды провайдера не показываются) живут в `ai.service.ts` и читают код/статус ответа общими `apiErrorCode`/`apiErrorStatus` (`core/api/api-error.ts`). Две функции намеренно разные: на 429 с кодом `ai_budget_exceeded` панель ИИ пишет про бюджет, а форма вакансии — «слишком часто».
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- Другие модули зависят от контракта `Contracts\AiGateway` (`available`, `unavailableReason`, `assertAvailable`, `run`, `transcribe`, `refresh`, константа `WAIT_SECONDS`), а не от класса `AiService`. Реализует контракт только `Services\AiService` (правило 7 CLAUDE.md: шлюзы, лимиты, отсрочка и запрет логирования промптов живут там), биндинг — `AiServiceProvider`. Константа `WAIT_SECONDS` (40 с) объявлена в одном месте — в контракте `AiGateway`; `AiService` её наследует, своей копии нет (проверяет `tests/Unit/Ai/AiGatewayTest.php`).
+- `AiSettingsReader` и `OpenRouterProvider` читают настройки брокера через контракт Integrations `IntegrationConfigs`, `AiPromptAdminService` меняет возможность функции через `IntegrationSettings::update()`. Тест — `tests/Unit/Ai/AiSettingsReaderContractTest.php`.
 
 ## Как проверить
 - `tests/Feature/Ai/AiServiceTest` — submit/poll, возможность и модель (пусто → без `model`), бэкофф в пределах 40 с →

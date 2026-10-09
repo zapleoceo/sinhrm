@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Time\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Overview\Contracts\DashboardSection;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\Time\Models\Timesheet;
 use App\Modules\Time\Support\WeekCalculator;
 use Illuminate\Support\Carbon;
@@ -20,7 +21,7 @@ final readonly class TimeDashboardSection implements DashboardSection
     public const int LIST = 5;
 
     public function __construct(
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private WeekSummaryService $summaries,
         private TimesheetService $timesheets,
     ) {}
@@ -35,7 +36,7 @@ final readonly class TimeDashboardSection implements DashboardSection
         $self = $this->scope->employeeOf($user);
         $week = null;
         if ($self !== null) {
-            $s = $this->summaries->week($self, WeekCalculator::weekStart($now));
+            $s = $this->summaries->week($self, WeekCalculator::weekStart(UserTime::today($now)));
             $week = ['week_start' => $s['week_start'], 'status' => $s['status'], 'expected' => $s['expected'], 'worked' => $s['worked'], 'missing' => $s['missing']];
         }
         $approvals = $this->timesheets->approvals($user);

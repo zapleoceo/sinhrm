@@ -6,30 +6,19 @@ namespace App\Modules\Reports\Definitions;
 
 use App\Modules\Recruiting\Services\ReportService;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 
 /**
  * Acquisition channel effectiveness (tz3): candidates of the period by channel → applications → reached the
  * select/hire stages → hired, conversion, prorated cost and cost per hire (cost only for recruiting managers).
  * Reuses Recruiting\Services\ReportService::channels (the same scope as the sources report).
  */
-final class ChannelEffectivenessReport extends AbstractReport
+final class ChannelEffectivenessReport extends AbstractRecruitingReport
 {
     public function __construct(private readonly ReportService $recruiting) {}
 
     public function key(): string
     {
         return 'channel_effectiveness';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Recruiting;
-    }
-
-    public function filters(): array
-    {
-        return [self::FILTER_FROM, self::FILTER_TO];
     }
 
     public function columns(): array
@@ -50,11 +39,6 @@ final class ChannelEffectivenessReport extends AbstractReport
     public function chart(): array
     {
         return ['label' => 'channel', 'value' => 'candidates'];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->user->isActive();
     }
 
     public function rows(ScopedContext $ctx, array $filters): array

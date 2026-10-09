@@ -9,6 +9,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { HrDocument, fileSize } from './documents.model';
 import { DocumentsService, documentsErrorKey } from './documents.service';
+import { eventValue } from '../../core/ui/event-value';
 
 /**
  * A document: rendered content (sanitized html from the API), attached file, signatures; the employee can
@@ -86,6 +87,8 @@ import { DocumentsService, documentsErrorKey } from './documents.service';
   `,
 })
 export class DocumentViewDialog implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly id = inject<number>(MAT_DIALOG_DATA);
   private readonly ref = inject<MatDialogRef<DocumentViewDialog, HrDocument>>(MatDialogRef);
   private readonly api = inject(DocumentsService);
@@ -117,10 +120,6 @@ export class DocumentViewDialog implements OnInit {
 
   protected size(bytes: number): string {
     return fileSize(bytes);
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLTextAreaElement).value;
   }
 
   protected acknowledge(): void {

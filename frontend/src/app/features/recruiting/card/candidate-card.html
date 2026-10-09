@@ -83,6 +83,14 @@
             </mat-menu>
           }
         </div>
+        @if (app.cv; as cv) {
+          <p class="cv">
+            <a [href]="cvUrl(app.id)" download [matTooltip]="'recruiting.card.cvHint' | transloco"
+              ><mat-icon inline>description</mat-icon>{{ 'recruiting.card.cv' | transloco }}: {{ cv.filename }}</a
+            >
+            <span class="muted mono">{{ size(cv.size) }}</span>
+          </p>
+        }
         <app-interviewers-panel [application]="app" [canEdit]="canWrite()" (changed)="store.refresh()" />
         @if (canWrite()) {
           <app-offer-panel [application]="app" />
@@ -185,9 +193,7 @@
               @if (item.touchpoint.meta.cv_url; as cv) {
                 <a class="small" [href]="cv" target="_blank" rel="noopener noreferrer"><mat-icon inline>description</mat-icon>{{ 'mail.cv' | transloco }}</a>
               }
-              @if (item.touchpoint.body) {
-                <p class="text">{{ item.touchpoint.body }}</p>
-              }
+              <app-touch-body [touch]="item.touchpoint" />
               @if (item.touchpoint.author) {
                 <span class="muted small">{{ item.touchpoint.author.name }}</span>
               }

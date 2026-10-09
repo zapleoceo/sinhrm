@@ -13,6 +13,8 @@ import { Subject, catchError, debounceTime, distinctUntilChanged, of, switchMap 
 import { DOCUMENT_VARIABLES, DocumentTemplate, TemplatePreview, insertVariable } from '../documents.model';
 import { DocumentsService, documentsErrorKey, unknownVariables } from '../documents.service';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
+import { eventValue } from '../../../core/ui/event-value';
 
 interface Draft {
   id: number | null;
@@ -144,7 +146,6 @@ const EMPTY_DRAFT: Draft = { id: null, name: '', category: '', body: '', archive
     .two mat-form-field { width: 100%; }
     .preview { padding: 0.75rem; border-radius: var(--app-radius); background: var(--mat-sys-surface-container-low); overflow-wrap: anywhere; }
     .error { color: var(--app-danger); font-size: 0.85rem; margin: 0; }
-    .small { font-size: 0.8rem; }
     mat-chip { cursor: pointer; }
     @media (max-width: 900px) {
       .layout, .two { grid-template-columns: 1fr; }
@@ -152,14 +153,17 @@ const EMPTY_DRAFT: Draft = { id: null, name: '', category: '', body: '', archive
   `,
 })
 export class DocumentTemplatesPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly api = inject(DocumentsService);
   private readonly notify = inject(NotifyService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly bodyChanges = new Subject<string>();
 
   protected readonly variables = DOCUMENT_VARIABLES;
-  protected readonly templates = signal<DocumentTemplate[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<DocumentTemplate>();
+  protected readonly templates = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly saving = signal(false);
   protected readonly withArchived = signal(false);
   protected readonly editing = signal(false);
@@ -183,17 +187,7 @@ export class DocumentTemplatesPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.api.templates(this.withArchived()).subscribe({
-      next: (list) => {
-        this.templates.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(documentsErrorKey(e));
-      },
-    });
+    this.list.load(this.api.templates(this.withArchived()), { error: (e) => this.notify.show(documentsErrorKey(e)) });
   }
 
   protected toggleArchived(on: boolean): void {
@@ -207,10 +201,6 @@ export class DocumentTemplatesPage implements OnInit {
     this.preview.set(null);
     this.editing.set(true);
     this.bodyChanges.next(this.draft().body);
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
 
   protected patch(p: Partial<Draft>): void {

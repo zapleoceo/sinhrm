@@ -8,7 +8,8 @@ use App\Modules\Workflows\Http\Controllers\WorkflowTemplateController;
 use App\Modules\Workflows\Providers\WorkflowsServiceProvider;
 use Illuminate\Support\Facades\Route;
 
-// /api/workflows/* — templates and start/cancel/retry: gate workflows-manage (superadmin, admin — they act as HR);
+// /api/workflows/* — templates and start/cancel/retry: gate workflows-manage (HR staff, UserRole::hrStaff():
+// superadmin, admin, hr_manager);
 // runs: admin all, managers their people (WorkflowRunService); complete/skip a step: its assignee or an admin.
 Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (): void {
     Route::get('runs', [WorkflowRunController::class, 'index'])->name('workflows.runs.index');

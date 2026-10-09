@@ -32,7 +32,7 @@
   карточка вернётся и появится сообщение. Карточки без контакта 3+ дня отмечены значком ⏱ и текстом «N дн. без контакту».
   «Додати кандидата» — новый кандидат сразу на первый этап этой вакансии.
 - **Кандидати** — слева список (поиск по имени/телефону/e-mail/@telegram, фильтры статуса и источника), справа карточка.
-  Клавиши: `j`/`k` или `↓`/`↑` — следующий/предыдущий кандидат, `/` — поиск. Карточка: контакты (кликабельные), источник, UTM и теги;
+  Карточка: контакты (кликабельные), источник, UTM и теги;
   **Маршрут** по каждой вакансии (этапы с датой входа и длительностью, текущий подсвечен) и кнопка «Перемістити»; поле записи касания
   (канал, направление, текст, минуты для звонка/встречи; кнопка **«Шаблон»** вставляет сообщение из
   активного скрипта с подставленными именем, рекрутером и вакансией; для подключённых Telegram/WhatsApp/Viber и e-mail (Gmail с правом отправки;
@@ -65,6 +65,14 @@
 Наблюдатель (viewer) всё видит в пределах своих филиалов, но ничего не меняет (кнопок записи нет, API вернёт 403).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/RecruitingException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+**Новый кандидат** (DRY, 2026-10-08): колонки при ручном создании (`CandidateService::create`) и при импорте/сопоставлении (`createOrMatch`) собирает один приватный `newCandidate()` — различаются только значение «как добавлен» по умолчанию (`manual` / `import`) и то, что импорт может идти без пользователя. Статусы в правилах и запросах берутся из enum, без строк: активный пользователь в `AssignInterviewersRequest`/`SaveVacancyRequest` — `Auth\Enums\UserStatus::Active`, статус заявки по умолчанию в `Repositories/ScreeningRanking` — `ApplicationStatus::Active` (`tests/Unit/Recruiting/NewCandidateAttributesTest`).
+
+- Фронт (2026-10-08): правила формы вакансии вынесены из `vacancy-form.page.ts` в `vacancies/vacancy-form.body.ts`: `vacancyBody` (тело запроса: пустые тексты → null, менеджер найма — только у recruiting writers, воронка — только у новой вакансии), `templateData` (шаблон без филиала, людей, статуса, публикации и воронки), `serverFieldErrors` (422 → ключи полей), `displayName`. Решение «что делает перенос карточки» доски — `BoardStore.planMove` (`file`/`forbidden`/`move`/`reason`). Тесты — `vacancy-form.body.spec.ts`, `recruiting.stores.spec.ts`.
+- Фронт (2026-10-08): `recruiting.access.ts` — `isRecruitingAdmin` через общий `isAdmin`, `canWriteRecruiting` — по `ADMIN_ROLES` + recruiter (`core/auth/auth.model.ts`); роли не перечисляются заново.
+- Фронт (2026-10-08): `CandidatesStore`, `VacanciesStore` (счётчик `active_count` — через `next`), `InboxStore` держат списки в `PagedList` (`core/ui/table/paged-list.ts`); `BoardStore` и `CandidateCardStore` вместо ручных счётчиков `seq` отменяют устаревшие запросы через `LatestRequest` (доска и личный слой, карточка и лента).
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/InboxNavBadges` — ключ `inbox`: сообщения во «Вхідні» без кандидата в области видимости пользователя (`InboxService::list(..., 1)->total()`, то же число, что `meta.total` списка).
 
 ### Сущности и таблицы (`backend/app/Modules/Recruiting/Database/Migrations`)
@@ -105,7 +113,9 @@ Enum-ы: `Enums/StageKind`, `VacancyStatus`, `ApplicationStatus`, `Channel` (`MA
   - Гонка двух одновременных созданий: второй `INSERT` падает на индексе (`UniqueConstraintViolationException`), сервис отвечает
     тем же 409 (с тем же правилом раскрытия).
 - **Импорт-готовый DTO:** `DTO/CandidateData::fromArray(array)` принимает «грязную» строку (таблица, выгрузка job-сайта):
-  обрезает пробелы, чистит UTM/теги, неизвестный источник → `import`.
+  обрезает пробелы, чистит UTM/теги, неизвестный источник → `import`. ФИО длиннее колонки (`MAX_NAME` = 255 символов) обрезается
+  (2026-10-08, MySQL e2e раунд 2): иначе строка таблицы падала целиком (`row_failed`, SQLSTATE 22001 в strict-режиме MySQL).
+  Тест — `tests/Unit/Recruiting/CandidateDataTest.php`.
 - **Создать или найти (для машинных источников)** — `CandidateService::createOrMatch(?User $actor, CandidateData, ?Vacancy,
   ?Carbon $at): DTO/CandidateMatch {candidate, created, application?, applicationCreated}`. Используют импорт из Google Sheets и
   почтовый агент ([google-workspace.md](google-workspace.md), [mail-agent.md](mail-agent.md)). Вместо 409 при совпадении
@@ -260,7 +270,7 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 «Вхідних» (`candidate_id = null`), `branchId` линии/аккаунта определяет, каким рекрутерам его видно. Его вызывают почтовый агент
 ([mail-agent.md](mail-agent.md)) и модуль Channels ([channels.md](channels.md)) — вебхуки Telegram/WhatsApp/Viber/телефонии,
 демо-события и сообщения, отправленные из карточки. Для каналов есть ещё `TouchpointRepository::latestThreadOf` (куда отвечать),
-`latestInbound` (последнее входящее — письмо, на которое отвечает e-mail из карточки) и `lastInboundAt` (окно 24 ч WhatsApp). В `TouchpointResource` добавлены публичные ключи meta `sender_name, call_status, edited, demo`.
+`latestInbound` (последнее входящее — письмо, на которое отвечает e-mail из карточки) и `lastInboundAt` (окно 24 ч WhatsApp). В `TouchpointResource` добавлены публичные ключи meta `sender_name, call_status, edited, demo` и `kind` (метка касания оффера, см. «Офферы»).
 
 ### Демо-данные
 Логика — сервис `Services/RecruitingDemoData::generate(): DTO/DemoReport` (`skipped`, `counts`, `seconds`). В production бросает
@@ -285,6 +295,13 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 ### Слои
 `Http/Controllers/*` (оркестрация) → `Http/Requests/*` (валидация + `authorize()`) → `Services/*` → `Contracts/*Repository`
 (`Repositories/Eloquent*`, `QueryReportRepository`). Привязки — `Providers/RecruitingServiceProvider`.
+- Шаблоны формы вакансии (`vacancy_templates`) хранит `Contracts\VacancyRepository` (`templates()`, `createTemplate()`,
+  `saveTemplate()`, `deleteTemplate()`): `VacancyTemplateController` только проверяет политику и отдаёт ответ.
+  Тест — `tests/Unit/Recruiting/VacancyTemplateControllerTest.php`.
+- Сервисы не строят запросы сами: офферы (`offers`, один на отклик) — `ApplicationRepository::offerFor()/createOffer()/updateOffer()`,
+  шаблоны офферов — контракт Documents `DocumentTemplateRepository` (`activeOfCategory('offer')`, `find()`), страница
+  карьеры — `VacancyRepository::published()/findPublishedBySlug()/createCareerSubmission()`, категория и филиал для
+  «Створити з ШІ» — `Directory\Contracts\DictionaryRepository::find()`. Тест — `tests/Unit/Recruiting/RecruitingRepositoriesTest.php`.
 
 ### Фронтенд (`frontend/src/app/features/recruiting`)
 | Файл | Что |
@@ -328,9 +345,11 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 Простыми словами: кандидат может попросить показать всё, что мы о нём храним, и удалить это.
 - **Показать** — суперадмин или админ открывает карточку кандидата → «Персональні дані» → «Експорт даних». Есть два файла:
   JSON (для машин) и HTML (для чтения человеком). Внутри — профиль, ссылки на профили, отклики с историей этапов, все
-  сообщения и звонки, заметки, встречи, ШІ-скринінг, задачи рекрутера, журнал писем.
+  сообщения и звонки, заметки, встречи, ШІ-скринінг, отклики со страницы вакансий (сообщение, время согласия, описание CV),
+  задачи рекрутера, журнал писем.
 - **Удалить** — там же «Видалити персональні дані»: нужна причина и подтверждение, действие необратимо. Имя меняется на
-  «Видалений кандидат #id», контакты, тексты сообщений и заметок, ссылки, ШІ-оценки стираются. Остаётся обезличенный след
+  «Видалений кандидат #id», контакты, тексты сообщений и заметок, ссылки, ШІ-оценки, сообщение и файл CV отклика со страницы
+  вакансий стираются (CV после этого не скачивается — 404). Остаётся обезличенный след
   для отчётов: вакансия, этапы, даты, канал — поэтому воронка и отчёты не «проседают».
 - **Срок хранения** — в «Адміністрування → Персональні дані» можно включить автоматическое обезличивание отклонённых
   кандидатов через N месяцев (по умолчанию выключено).
@@ -344,6 +363,16 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data: [{id, ok, error}]}`. Каждый элемент проходит ту же
 политику (`move` для заявки, `update` для кандидата) и тот же сервис (`ApplicationService::move`, `CandidateService::update`), что и
 одиночное действие; ошибки по элементу: `not_found`, `no_application`, `forbidden`, коды `RecruitingException` (`same_stage`, …).
+
+**Ответ не рассказывает лишнего (2026-10-08).** Раньше по кодам на элемент можно было перебрать чужой скоуп: `not_found`
+против `no_application` против `forbidden` отвечали, существует ли кандидат, подавался ли он на эту вакансию и в чьей
+она ветке, а `vacancy_id` проверялся только правилом `exists`. Теперь `CandidateBulkService`:
+- для `move`/`reject` один раз проверяет вакансию (`RecruitingScope::canSeeVacancy`); чужая → 403 `vacancy_out_of_scope`
+  на весь запрос, как в расширении-клипере, а не перебор по кандидатам;
+- кандидат вне скоупа (`RecruitingScope::canSeeCandidate`) даёт `not_found` — тот же код, что и несуществующий id,
+  поэтому «есть, но не ваш» и «нет такого» снаружи неразличимы.
+
+Остальные коды (`no_application`, `forbidden`, `same_stage`, …) остаются, но только для кандидатов, которых актор и так видит.
 
 **Вид доски (2026-10-02, рестайл C «Маршрут»).** Заголовки колонок — станции на одной линии, которая идёт через всю
 доску: кольцо-станция (`.app-station` из `styles.scss`) и отрезок до следующей станции в цвете **типа** этапа
@@ -365,6 +394,13 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
 
+### Зависимости через контракты (2026-10-08)
+- `CareerSiteService` ставит задачу «перезвонить» через контракт Scripts `TaskScheduler::scheduleNewApplicantCall()`.
+- `ScreeningService` и `VacancyTextService` зовут ИИ через контракт Ai `AiGateway` (значение ожидания по умолчанию — `AiGateway::WAIT_SECONDS`). Тест — `tests/Unit/Recruiting/RecruitingAiGatewayTest.php`.
+- Для других модулей Recruiting отдаёт контракт `Contracts\RecruitingAccess` (`for` → `Scope`, `canWrite`, `canManage`, `canSeeCandidate`, `canSeeInboxItem`; реализация — `Services\RecruitingScope`, биндинг в `RecruitingServiceProvider`). Scripts, Reports и Overview зависят от него, а не от класса. Порог «застоя» — константа `ApplicationRepository::STALE_DAYS` (3 дня), `StalenessService::DEFAULT_DAYS` ссылается на неё. Тест — `tests/Unit/Recruiting/RecruitingAccessTest.php`.
+- `CandidateHistoryController` читает журнал через контракт Audit `AuditHistory`.
+- Машинные источники других модулей идут через контракты: `Contracts\CandidateIntake::createOrMatch()` (импорт из Google Sheets, письма с job-сайтов; реализация — `CandidateService`) и `Contracts\TouchpointLogger::log()` (встреча из GoogleWorkspace; реализация — `TouchpointService`). Биндинги — `RecruitingServiceProvider`, тест — `tests/Unit/Recruiting/RecruitingAccessTest.php`.
+
 ## Страница вакансий и офферы
 
 **Страница вакансий (`/jobs`, `/jobs/:slug`)** — публичная, без входа и без сайдбара, логотип + переключатель uk/ru/en.
@@ -384,9 +420,37 @@ vacancy_id?, stage_id?, reject_reason_id?, reason?, tag?, owner_id?}` → `{data
 вакансии. Антиспам: honeypot-поле `website` (заполнено → 201 без записи) и 5 откликов в час на HMAC-хэш IP (429
 `too_many_requests`) + `throttle:30,1`. Модуль Recruiting выключен → публичные API отвечают 404.
 
+**CV отклика в карточке кандидата.** Карточка (`GET /api/candidates/{id}`) отдаёт у каждой видимой заявки
+`applications[].cv = {filename, size, mime, uploaded_at}` — самое новое CV, присланное со страницы вакансий на эту
+заявку, или `null`; тело файла в карточку не попадает (грузятся только колонки `CareerSubmission::CV_META`).
+Скачивание — отдельный защищённый маршрут:
+
+| Метод | Путь | Ответ |
+|---|---|---|
+| GET | `/api/applications/{application}/cv` | файл CV (attachment) |
+
+- **Кто может:** тот, кто видит заявку по `ApplicationVisibility` — рекрутер/наблюдатель филиала вакансии, admin/hr_manager/
+  superadmin, нанимающий менеджер вакансии, интервьюер этой заявки. Владелец кандидата без доступа к заявке, рекрутер
+  чужого филиала, сотрудник → **404** (без раскрытия существования); без сессии → 401.
+- **Нет CV** (отклик без файла, заявка без откликов с сайта, битый base64) → 404.
+- **Ответ** — общий `Core\Http\Responses\Download::file()`: `Content-Disposition: attachment` (RFC 6266, ASCII-запасное
+  имя), `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-store`. `Content-Type` заново определяется по байтам
+  (`CareerSiteService::cvMime()`, та же проверка, что при отклике); сохранённому `cv_mime` не доверяем, неизвестный тип →
+  `application/octet-stream`.
+- Сервис — `CareerSiteService::cvFor()`, репозиторий — `ApplicationRepository::isVisible()/latestCv()`; тесты —
+  `tests/Feature/Recruiting/CandidateCvDownloadTest.php` (матрица прав, заголовки, 404), `tests/Unit/Recruiting/CareerCvMimeTest.php`.
+- Персональные данные: экспорт кандидата содержит `career_submissions` (сообщение, время согласия, описание CV без
+  файла); удаление ПД стирает сообщение и CV (`cv_*` → null, `consent_at` остаётся) — после этого скачивание отвечает 404.
+- Фронт: в блоке «Маршрут» карточки у заявки — ссылка «Резюме» с именем файла и размером (`/api/applications/{id}/cv`, та же
+  cookie-сессия, `download`).
+
 **Офферы.** В карточке кандидата на заявке в этапе оффера (kind `hire`, не терминальный) — «Створити оффер»: шаблон
 Documents категории `offer` (переменные `{ПІБ}`, `{Посада}`, `{Зарплата}`, `{Дата виходу}`, `{Умови}`, `{Філія}`,
 `{Сьогодні}`), должность, зарплата, дата выхода, условия → текст в `offers` (один на заявку), статус `draft`.
+Отрисованный оффер больше `OfferService::MAX_CONTENT_BYTES` (64 000 байт) → 422 `offer_too_long {max_bytes}`, ничего не сохраняется:
+`offers.content_md` и тело отправленного касания — `TEXT` (64 КБ), а шаблон допускает 50 000 символов (~100 КБ кириллицей), и MySQL
+в strict-режиме отвечал 500 (SQLSTATE 22001; найдено MySQL e2e, раунд 2). Схему не расширяем до переноса боевых данных (заморозка схемы,
+[mysql-cutover.md](../guides/mysql-cutover.md)). Тест — `OfferApiTest::test_offer_over_the_text_column_is_refused_with_422_and_one_under_it_is_sent_whole`.
 «Надіслати» — письмо кандидату через Mailer (Gmail) тем же путём, что сообщения из карточки (исходящий touchpoint на заявке) → `sent`;
 «Прийняв/Відмовився» рекрутер отмечает вручную → `accepted`/`declined`. Зарплата чувствительна: все эндпоинты оффера —
 только `ApplicationPolicy::offer` (пишущие рекрутинг в своём скоупе + нанимающий менеджер вакансии), остальным 403.
@@ -397,6 +461,23 @@ Documents категории `offer` (переменные `{ПІБ}`, `{Пос�
 | GET/POST | `/api/applications/{id}/offer` | оффер заявки / создать (422 `not_in_offer_stage`, `template_not_offer`; 409 `offer_exists`) |
 | POST | `/api/applications/{id}/offer/send` | отправить (422 `offer_status`) |
 | POST | `/api/applications/{id}/offer/decision` | `{status: accepted\|declined}` |
+
+**Текст оффера не утекает через таймлайн (2026-10-08).** «Надіслати» кладёт письмо в таймлайн заявки, а карточка кандидата
+открыта шире оффера: её видят читатели филиала и сотрудники, назначенные интервьюерами на заявку. Раньше они читали
+в `GET /api/candidates/{id}/timeline` тело этого касания вместе с зарплатой, минуя `ApplicationPolicy::offer`.
+Теперь касание оффера помечается `meta.kind = offer` (`Touchpoint::KIND_OFFER`, ставит `OfferService::send`; офферы,
+отправленные раньше, помечает миграция данных `2026_10_28_100001_mark_sent_offer_touchpoints` — исходящее e-mail-касание
+заявки с отправленным оффером и темой «Оффер: …», порциями, идемпотентно), а
+`Support/TouchpointRedaction::restricted()` — единственное место, где решается, можно ли читать его текст:
+`Gate::allows('offer', $application)`, и «нет заявки / нет пользователя» трактуется как «нельзя».
+Через неё проходят все пути чтения касаний:
+- `TouchpointResource` (таймлайн, «Вхідні», ответ на отправку сообщения, встречи) — `body: null`, из `meta` убраны
+  `subject` и `recording_url`, добавлено поле `redacted: true|false` (оно есть у каждого касания, UI по нему рисует
+  «текст приховано» вместо пустого сообщения);
+- `TimelineEntryResource` — у скрытого касания `evaluation` тоже `null` (оценка цитирует тот же текст);
+- `GET /api/touchpoints/{id}/evaluation` (Scripts) — 403.
+
+Пишущие рекрутинг в скоупе и нанимающий менеджер видят текст как прежде (`redacted: false`).
 
 ## Личная доска на «Кандидатах» (Список | Дошка)
 
@@ -463,6 +544,10 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 В журнал действий не пишется (личное состояние вида). Персональных данных в этих строках нет: при обезличивании кандидата они
 остаются; при удалении пользователя, вакансии или отклика удаляются каскадом. Фронт: `board/board.page.ts` с входом
 `personal`, `board/board.store.ts` (оптимистичный перенос с откатом), `candidates/candidates-view.ts`.
+Запросы к трём таблицам доски — в `Contracts\PersonalBoardRepository` (`Repositories\EloquentPersonalBoardRepository`:
+колонки, карточки, атомарный upsert порядка, сброс); id этапов воронки по порядку — `PipelineRepository::stageIds()`.
+В `PersonalBoardService` остались только правила: лимит колонок, проверка и «починка» порядка. Тест —
+`tests/Unit/Recruiting/PersonalBoardServiceTest.php` (на моках репозиториев, без БД).
 
 ### Сортировка и фильтры таблиц отчётов и источников (2026-10-02)
 Клик по названию колонки сортирует (повторный — в обратную сторону), воронка рядом — фильтр колонки; общий компонент `core/ui/table` (клиентская таблица `ClientTable`: все строки уже пришли, сравнение строк по языку интерфейса, пустые — в конце). Состояние — в адресе страницы с префиксом таблицы, ссылкой можно поделиться. Подключение — [guides/tables.md](../guides/tables.md).
@@ -476,6 +561,13 @@ hidden) и `candidate_board_cards` (user_id, application_id, column_id; уник
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 - Компоненты не ходят в HTTP сами: оффер — через `card/offers.service.ts` (`OffersService`), публичные страницы вакансий — через `careers/careers.service.ts` (`PublicCareersService`); запросы и ответы прежние.
+
+**Дата в оффере (2026-10-08, MySQL e2e раунд 2).** `{Сьогодні}` в тексте оффера — дата по Киеву (`Core\Support\UserTime`), а не UTC:
+в 00:30 по Киеву кандидат получал вчерашнюю дату. Тест — `OfferApiTest::test_offer_today_variable_is_the_kyiv_date_after_midnight`.
+
+**Отчёты по дням Киева (2026-10-08).** `DTO\DateRange` — дни пользователя: без `to` конец диапазона — сегодня по Киеву (`UserTime::today()`), а сравнение с моментами (`occurred_at`, `created_at`, `closed_at`) идёт через `DateRange::moments()` — границы дня 00:00–23:59:59 по Киеву в UTC (касание в 21:30 UTC 11.10 входит в день 12.10). Даты-колонки и подписи `range` — как прежде. Ограничение 366 днями — `DateRange::lastDays()`. Тест — `tests/Unit/Recruiting/DateRangeTest.php`.
+
+**Ошибки оффера на фронте.** `offer_too_long` (422, `max_bytes`) и `template_not_offer` (422) входят в `RECRUITING_ERROR_CODES` (`recruiting.model.ts`): панель оффера показывает «Текст оферу задовгий: максимум ~64 КБ…» / «Обраний шаблон не є шаблоном оферу…» (uk/ru/en), а не общий текст. Спек `recruiting.service.spec.ts` проверяет маппинг и наличие перевода каждого кода на трёх языках.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Recruiting/*` — вакансии (401/403, филиалы, роли, фильтры, доска, добавление), кандидаты (нормализация,

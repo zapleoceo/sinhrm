@@ -63,7 +63,7 @@ final class EloquentEvaluationRepository implements EvaluationRepository
             ->leftJoin('users as u', 'u.id', '=', 't.author_id')
             ->leftJoin('applications as a', 'a.id', '=', 't.application_id')
             ->leftJoin('vacancies as v', 'v.id', '=', 'a.vacancy_id')
-            ->whereBetween('t.occurred_at', [$range->from, $range->to])
+            ->whereBetween('t.occurred_at', $range->moments())
             ->when(! $scope->isUnrestricted(), fn (Builder $q) => $q->where(function (Builder $w) use ($scope): void {
                 $ids = $scope->branchIds ?? [];
                 $w->where('t.author_id', $scope->userId)->orWhereIn('t.branch_id', $ids)->orWhereIn('v.branch_id', $ids);

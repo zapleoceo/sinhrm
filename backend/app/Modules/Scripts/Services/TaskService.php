@@ -6,7 +6,8 @@ namespace App\Modules\Scripts\Services;
 
 use App\Models\User;
 use App\Modules\Core\Support\UserTime;
-use App\Modules\Recruiting\Services\RecruitingScope;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
+use App\Modules\Scripts\Contracts\TaskReader;
 use App\Modules\Scripts\Contracts\TaskRepository;
 use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
@@ -22,7 +23,7 @@ use Illuminate\Support\Carbon;
  * The unified task list: recruiter follow-ups (Recruiting scope) plus workflow and document tasks of employees
  * (assigned to a person). Listing, marking done/undone, creating tasks for other modules exactly once.
  */
-final readonly class TaskService implements TaskScheduler
+final readonly class TaskService implements TaskReader, TaskScheduler
 {
     public const int LIMIT = 200;
 
@@ -35,7 +36,7 @@ final readonly class TaskService implements TaskScheduler
 
     public function __construct(
         private TaskRepository $tasks,
-        private RecruitingScope $scope,
+        private RecruitingAccess $scope,
         private Dispatcher $events,
     ) {}
 

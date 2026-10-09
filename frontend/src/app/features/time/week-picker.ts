@@ -4,7 +4,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { fromIsoDate, toIsoDate } from '../../core/date/iso-date';
-import { addDays, mondayOf } from './time.model';
+import { mondayOf } from './time.model';
+import { addIsoDays } from '../../core/date/iso-day';
 
 /** Dropdown calendar to jump to any week: picking a day emits that week's Monday ('YYYY-MM-DD'). */
 @Component({
@@ -29,7 +30,7 @@ export class WeekPicker {
   readonly weekChange = output<string>();
 
   protected readonly monday = computed(() => fromIsoDate(this.weekStart()));
-  private readonly sunday = computed(() => addDays(this.weekStart(), 6));
+  private readonly sunday = computed(() => addIsoDays(this.weekStart(), 6));
 
   /** Highlights the days of the shown week in the calendar (global class `.app-week-day`, styles.scss: the popup is an overlay). */
   protected readonly inWeek = (date: Date, view: string): string => {

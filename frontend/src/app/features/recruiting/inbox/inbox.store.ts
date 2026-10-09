@@ -1,5 +1,6 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
+import { PagedList } from '../../../core/ui/table/paged-list';
 import { Candidate, Touchpoint } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
 
@@ -7,26 +8,16 @@ import { RecruitingService } from '../recruiting.service';
 @Injectable()
 export class InboxStore {
   private readonly api = inject(RecruitingService);
+  private readonly list = new PagedList<Touchpoint>();
 
-  readonly items = signal<Touchpoint[]>([]);
-  readonly total = signal(0);
-  readonly loading = signal(false);
-  readonly failed = signal(false);
+  readonly items = this.list.items;
+  readonly total = this.list.total;
+  readonly loading = this.list.loading;
+  readonly failed = this.list.failed;
 
+  /** A repeated load (refresh) cancels the one still in flight. */
   load(): void {
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.inbox().subscribe({
-      next: (page) => {
-        this.items.set(page.data);
-        this.total.set(page.meta.total);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.inbox());
   }
 
   link(message: Touchpoint, candidateId: number): Observable<Touchpoint> {

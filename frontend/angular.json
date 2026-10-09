@@ -77,7 +77,7 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "coverageReporters": ["text-summary", "json-summary"],
-            "coverageThresholds": { "statements": 45.5, "branches": 57, "functions": 54.5, "lines": 54 }
+            "coverageThresholds": { "statements": 57.5, "branches": 63.5, "functions": 55, "lines": 64.5 }
           }
         },
         "lint": {

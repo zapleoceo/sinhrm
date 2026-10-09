@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Workflows\Executors;
 
 use App\Modules\GoogleWorkspace\Contracts\CalendarClient;
+use App\Modules\GoogleWorkspace\Contracts\GoogleConnections;
 use App\Modules\GoogleWorkspace\DTO\MeetingData;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
 use App\Modules\GoogleWorkspace\Exceptions\GoogleException;
-use App\Modules\GoogleWorkspace\Services\GoogleConnectionStore;
 use App\Modules\Workflows\Contracts\AssigneeDirectory;
 use App\Modules\Workflows\Contracts\StepExecutor;
 use App\Modules\Workflows\DTO\StepContext;
@@ -29,7 +29,7 @@ final readonly class AddCalendarEventExecutor implements StepExecutor
     public const int DEFAULT_MINUTES = 60;
 
     public function __construct(
-        private GoogleConnectionStore $connections,
+        private GoogleConnections $connections,
         private CalendarClient $calendar,
         private AssigneeDirectory $users,
     ) {}

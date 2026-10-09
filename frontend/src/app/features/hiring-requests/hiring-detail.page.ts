@@ -150,6 +150,7 @@ import { NotifyService } from '../../core/ui/notify.service';
     }
   `,
   styles: `
+    @use '../../core/ui/styles/trace';
     .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
     .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: var(--app-gap); }
     .box { padding: 1rem 1.25rem; }
@@ -176,17 +177,11 @@ import { NotifyService } from '../../core/ui/notify.service';
     .timeline li[data-status='skipped'] mat-icon { border-style: dashed; }
     .timeline li[data-status='waiting'], .timeline li[data-status='skipped'] { color: var(--app-muted); }
     blockquote { margin: 0.25rem 0 0; padding-left: 0.6rem; border-left: var(--app-border-w) solid var(--app-border); }
-    .small { font-size: 0.8rem; }
     .warn { color: var(--app-bad-text); }
     .wide { width: 100%; }
     .decide { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
     .bar { height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; }
-    .bar span {
-      display: block; height: 100%; border-radius: inherit; background: var(--mat-sys-primary);
-      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    }
-    @keyframes trace { from { transform: scaleX(0); } }
-    @media (prefers-reduced-motion: reduce) { .bar span { animation: none; } }
+    @include trace.fill('.bar span', var(--mat-sys-primary));
   `,
 })
 export class HiringDetailPage {

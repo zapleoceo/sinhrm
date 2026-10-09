@@ -10,9 +10,9 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { CreateDocument, DocumentTemplate, HrDocument } from '../documents.model';
 import { DocumentsService, documentsErrorKey, unknownVariables } from '../documents.service';
 
-export type CreateMode = 'template' | 'manual';
+type CreateMode = 'template' | 'manual';
 
-export interface CreateFormValue {
+interface CreateFormValue {
   mode: CreateMode;
   template_id: number | null;
   title: string;

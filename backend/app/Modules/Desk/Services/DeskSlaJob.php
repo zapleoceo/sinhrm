@@ -7,9 +7,9 @@ namespace App\Modules\Desk\Services;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Desk\Contracts\DeskRepository;
 use App\Modules\Desk\Support\Sla;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\Enums\TaskType;
-use App\Modules\Scripts\Services\TaskService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -21,7 +21,7 @@ final readonly class DeskSlaJob implements ScheduledJob
 {
     public const string RULE_PREFIX = 'desk:';
 
-    public function __construct(private DeskRepository $desk, private TaskService $tasks) {}
+    public function __construct(private DeskRepository $desk, private TaskScheduler $tasks) {}
 
     public function name(): string
     {

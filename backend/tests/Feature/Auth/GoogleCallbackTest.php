@@ -47,6 +47,20 @@ final class GoogleCallbackTest extends TestCase
         $this->assertAuthenticatedAs($user, 'web');
     }
 
+    public function test_remember_cookie_lives_fourteen_days_not_the_framework_default(): void
+    {
+        User::factory()->withRole(UserRole::Recruiter)->create(['email' => 'remember@example.com', 'password' => null]);
+        $this->fakeGoogle(FakeGoogleIdentityProvider::returning('remember@example.com', 'g-77'));
+
+        $response = $this->get(self::CALLBACK)->assertRedirect('/');
+
+        $cookie = collect($response->headers->getCookies())->first(fn ($c): bool => str_starts_with($c->getName(), 'remember_web_'));
+        $this->assertNotNull($cookie);
+        $days = ($cookie->getExpiresTime() - time()) / 86400;
+        $this->assertGreaterThan(13.9, $days);
+        $this->assertLessThan(14.1, $days);
+    }
+
     public function test_invited_user_is_linked_to_google_account(): void
     {
         $invited = User::factory()->withRole(UserRole::Recruiter)->create(['email' => 'Invited@Example.com', 'password' => null]);

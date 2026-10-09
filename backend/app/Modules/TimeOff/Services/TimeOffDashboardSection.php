@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\TimeOff\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\Overview\Contracts\DashboardSection;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\TimeOff\Models\LeaveRequest;
 use Illuminate\Support\Carbon;
 
@@ -16,7 +17,7 @@ final readonly class TimeOffDashboardSection implements DashboardSection
     public const int APPROVALS_LIST = 5;
 
     public function __construct(
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private CalendarService $calendar,
         private LeaveRequestService $requests,
     ) {}
@@ -32,7 +33,8 @@ final readonly class TimeOffDashboardSection implements DashboardSection
         $approvals = $this->requests->approvals($ctx);
 
         return [
-            'out_today' => $this->calendar->outOn($ctx, $now->copy()->startOfDay()),
+            // The user's (Kyiv) day: after 00:00 Kyiv the UTC date is still yesterday.
+            'out_today' => $this->calendar->outOn($ctx, UserTime::today($now)),
             'my_approvals' => [
                 'count' => $approvals->count(),
                 'items' => array_values($approvals->take(self::APPROVALS_LIST)->map(static fn (LeaveRequest $r): array => [

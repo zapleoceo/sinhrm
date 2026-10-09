@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { LeaveRequest, LeaveRequestQuery } from './timeoff.model';
 import { TimeOffService, timeoffErrorKey } from './timeoff.service';
 import { RequestAction } from './widgets/requests-list';
@@ -10,13 +11,14 @@ import { RequestAction } from './widgets/requests-list';
 @Injectable()
 export class LeaveRequestsStore {
   private readonly api = inject(TimeOffService);
-  private seq = 0;
+  /** A newer query cancels the request still in flight. */
+  private readonly list = new PagedList<LeaveRequest>();
 
   readonly query = signal<LeaveRequestQuery>({ perPage: 50 });
-  readonly items = signal<LeaveRequest[]>([]);
-  readonly total = signal(0);
-  readonly loading = signal(false);
-  readonly failed = signal(false);
+  readonly items = this.list.items;
+  readonly total = this.list.total;
+  readonly loading = this.list.loading;
+  readonly failed = this.list.failed;
   readonly version = signal(0);
 
   setQuery(query: LeaveRequestQuery): void {
@@ -25,25 +27,7 @@ export class LeaveRequestsStore {
   }
 
   load(): void {
-    const seq = ++this.seq;
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.requests(this.query()).subscribe({
-      next: (page) => {
-        if (seq !== this.seq) {
-          return;
-        }
-        this.items.set(page.data);
-        this.total.set(page.meta.total);
-        this.loading.set(false);
-      },
-      error: () => {
-        if (seq === this.seq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
-      },
-    });
+    this.list.load(this.api.requests(this.query()));
   }
 
   /** Applies an action; the row is replaced by the server's answer. Errors go to `onError` as i18n keys. */

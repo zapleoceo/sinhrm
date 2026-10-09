@@ -22,7 +22,7 @@
 |---|---|
 | `fingerprint` | sha256 от `source + класс + файл + строка` — ключ группировки |
 | `exception_class`, `file`, `line` | класс исключения и место в коде (путь от корня `backend/`); для web — имя ошибки и `chunk-XXXX.js:строка:столбец` |
-| `message` | текст ошибки после очистки: `SecretScrubber` (токены, Bearer, секреты из vault), затем e-mail → `[email]`, длинные цифры (телефоны, номера документов) → `[number]`; до 1000 символов |
+| `message` | текст ошибки после очистки: `SecretScrubber` (токены, Bearer, `sinhrm_`-токены, секреты из vault), реквизиты подключения БД из `QueryException` (значения запроса замаскированы самим подключением), затем e-mail → `[email]`, длинные цифры (телефоны, номера документов) → `[number]`; до 1000 символов |
 | `route` | имя маршрута API или путь SPA без query-строки |
 | `last_user_id` | только id пользователя, последнего столкнувшегося с ошибкой |
 | `count`, `first_seen_at`, `last_seen_at` | сколько раз, первый и последний раз |
@@ -31,7 +31,7 @@
 **Чего нет никогда:** тела запроса и ответа, заголовков, cookies, IP, стека целиком, имён и e-mail.
 
 **Как пишется.** `bootstrap/app.php` регистрирует репортер первым: `ErrorRecorder::recordException()`. Запись — один
-`INSERT … ON CONFLICT (fingerprint) DO UPDATE count = count + 1`. Регистратор **никогда не бросает исключений**:
+`upsert` по `fingerprint` (на MySQL — `INSERT … ON DUPLICATE KEY UPDATE`, счётчик `count` растёт на 1). Регистратор **никогда не бросает исключений**:
 если запись не удалась (база недоступна), в stderr уходит одна JSON-строка `error_log.record_failed` с классом
 ошибки, и обычный лог Laravel работает как раньше. Ошибка внутри записи не записывается повторно (защита от петли).
 
@@ -64,7 +64,7 @@ JSON, ему ничего грузить не нужно), `X-Frame-Options: DEN
 только суперадмин) без CSP — он грузит свои скрипты; остальные заголовки есть.
 
 **SPA** (`frontend/vercel.json`, `headers`, все пути кроме `/api/*` и `/sanctum/*`, которые проксируются в API) — те же
-заголовки и CSP под то, что приложение реально грузит:
+заголовки плюс `Cross-Origin-Opener-Policy: same-origin` (чужая вкладка, открытая из приложения или открывшая его, не получает `window.opener`; аудит 2026-10) и CSP под то, что приложение реально грузит:
 | Директива | Значение | Почему |
 |---|---|---|
 | `script-src` | `'self'` | только свои бандлы; inline-скриптов нет |
@@ -95,5 +95,5 @@ JSON, ему ничего грузить не нужно), `X-Frame-Options: DEN
 Тесты: `tests/Feature/Observability/ErrorLogTest.php` (запись и очистка, группировка, повторное открытие, 4xx не
 пишутся, отказ базы не ломает ответ, хранение 30 дней, лимит клиентского эндпоинта, доступ только суперадмину),
 `tests/Feature/Core/SecurityHeadersTest.php`, `frontend/src/app/core/errors/error-reporter.spec.ts`.
-Вручную: `curl -sI https://sinhrm.vercel.app/ | grep -i -E 'content-security|x-frame|strict-transport'` и то же для
+Вручную (на замороженном Vercel-проде до переезда — релиз замороженной ветки, без правок `main`; после переезда — на адресе IT STEP): `curl -sI https://sinhrm.vercel.app/ | grep -i -E 'content-security|x-frame|strict-transport'` и то же для
 `/api/health`.

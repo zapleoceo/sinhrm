@@ -46,6 +46,12 @@ final class SchemaInspector
         return array_values(array_map(fn (object $r): string => (string) $r->name, $rows));
     }
 
+    /** Row count of a source table (SchemaCheck reports LEGACY_SOURCE_ONLY_TABLES with it; never reads values). */
+    public function sourceRowCount(string $table): int
+    {
+        return $this->dbs->source->table($table)->count();
+    }
+
     /** @return list<string> applied migration names on the given side ([] when the table is missing) */
     public function migrations(bool $source): array
     {
@@ -56,6 +62,20 @@ final class SchemaInspector
 
         return array_values($connection->table(self::MIGRATIONS)->orderBy('migration')->pluck('migration')
             ->map(fn (mixed $m): string => (string) $m)->all());
+    }
+
+    /**
+     * The only write to the target bookkeeping table: un-record the given migrations (SchemaCheck::requeuePostFreeze).
+     *
+     * @param  list<string>  $names
+     */
+    public function forgetTargetMigrations(array $names): int
+    {
+        if ($names === [] || ! $this->dbs->target->getSchemaBuilder()->hasTable(self::MIGRATIONS)) {
+            return 0;
+        }
+
+        return $this->dbs->target->table(self::MIGRATIONS)->whereIn('migration', $names)->delete();
     }
 
     /** @return array<string, Table> tables present on BOTH sides, by name */

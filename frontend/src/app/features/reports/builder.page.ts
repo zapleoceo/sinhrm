@@ -7,7 +7,6 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { saveBlob } from '../../core/http/api-error';
 import {
   BUILDER_AGGREGATES,
   BUILDER_OPERATORS,
@@ -22,6 +21,8 @@ import {
 import { ReportTable } from './report-table';
 import { ReportsService, reportsErrorKey } from './reports.service';
 import { NotifyService } from '../../core/ui/notify.service';
+import { ReportRun } from './report-run';
+import { eventValue } from '../../core/ui/event-value';
 
 /**
  * Custom report builder (/reports/builder[?saved=id]): dataset → columns → filters → group by + aggregate.
@@ -148,6 +149,8 @@ import { NotifyService } from '../../core/ui/notify.service';
   `,
 })
 export class ReportBuilderPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   /** ?saved=<id> opens a saved builder report. */
   readonly saved = input(undefined, { transform: (v: unknown) => (v === undefined || v === null || v === '' ? undefined : numberAttribute(v)) });
 
@@ -164,8 +167,9 @@ export class ReportBuilderPage implements OnInit {
   protected readonly aggregateColumn = signal<string | null>(null);
   protected readonly name = signal('');
   protected readonly savedId = signal<number | null>(null);
-  protected readonly result = signal<BuilderResult | null>(null);
-  protected readonly loading = signal(false);
+  private readonly report = new ReportRun<BuilderResult>();
+  protected readonly result = this.report.result;
+  protected readonly loading = this.report.loading;
   protected readonly available = computed(() => this.datasets().find((d) => d.key === this.dataset())?.columns ?? []);
   protected readonly numeric = computed(() => this.available().filter((c) => c.type === 'number'));
   protected readonly resultColumns = computed(() => {
@@ -205,10 +209,6 @@ export class ReportBuilderPage implements OnInit {
     });
   }
 
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement).value;
-  }
-
   protected pickDataset(key: string): void {
     this.dataset.set(key);
     this.columns.set([]);
@@ -241,21 +241,11 @@ export class ReportBuilderPage implements OnInit {
   }
 
   protected run(): void {
-    this.loading.set(true);
-    this.api.build(this.spec()).subscribe({
-      next: (res) => {
-        this.result.set(res);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(reportsErrorKey(e));
-      },
-    });
+    this.report.run(this.api.build(this.spec()));
   }
 
   protected csv(): void {
-    this.api.buildCsv(this.spec()).subscribe({ next: (blob) => saveBlob(blob, `${this.dataset()}.csv`), error: (e: unknown) => this.notify.show(reportsErrorKey(e)) });
+    this.report.download(this.api.buildCsv(this.spec()), `${this.dataset()}.csv`);
   }
 
   protected save(): void {

@@ -16,12 +16,13 @@
 
 ## Как пользоваться
 Меню слева → «Адміністрування → Довідники» (видно суперадмину и админу).
-- Вкладки: Філії, Міста, Відділи, Посади. Поиск по названию, фильтр по статусу, постраничный вывод.
+- Вкладки: Філії, Міста, Відділи, Посади, Категорії вакансій. Поиск по названию, фильтр по статусу, постраничный вывод.
 - **Додати** — новая запись по названию. **✎** — переименовать прямо в строке (Enter — сохранить, Esc — отмена).
   **Вимкнути / Увімкнути** — кнопка в строке. Изменения видны сразу; если сервер отказал — строка возвращается как была.
 - Филиалы пользователя — в «Адміністрування → Користувачі», колонка «Філії» (см. [users.md](users.md)).
 
 ## Как устроено
+- Фронт (2026-10-08): `DirectoryStore` держит строки, итог, загрузку и ошибку в `PagedList` (`core/ui/table/paged-list.ts`) — общий помощник списков вместо своих сигналов и `LatestRequest`.
 ### Таблицы (миграции `Database/Migrations/2026_09_26_120001_create_directory_tables.php`, `2026_10_07_100001_drop_directory_external_ids.php`)
 | Таблица | Колонки | Заметки |
 |---|---|---|
@@ -31,7 +32,7 @@
 
 Колонка `external_id` (ключ внешнего импорта) удалена миграцией `2026_10_07_100001_drop_directory_external_ids`.
 Модели: `Models/DictionaryItem` (общая база) → `Branch` (+ `city()`), `City`, `Department`, `Position`.
-Enum `Enums/DirectoryStatus` (`active`, `disabled`), `Enums/DictionaryType` (`branches|cities|departments|positions` →
+Enum `Enums/DirectoryStatus` (`active`, `disabled`), `Enums/DictionaryType` (`branches|cities|departments|positions|vacancy_categories` →
 модель). У `App\Models\User` связь `branches()` (через `branch_user`).
 
 ### Доступ

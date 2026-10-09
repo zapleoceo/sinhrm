@@ -1,6 +1,6 @@
 # Directory — main endpoints. Generated skeleton, synthetic data only.
 # Path ids below are placeholders — replace with real ids from a list call.
-@dictionary = 1
+@dictionary = branches
 @id = 1
 # Variables: see rest/http-client.env.json (host, session, xsrf). How to get them: docs/guides/api.md
 # Full list of Directory operations: /api/docs (tag "Directory").

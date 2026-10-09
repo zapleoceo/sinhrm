@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Scripts;
 
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\Direction;
@@ -14,6 +15,7 @@ use App\Modules\Scripts\Enums\ScriptChannel;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Tests\Support\NavBadgeAssertions;
 use Tests\Support\RecruitingFixtures;
 use Tests\Support\ScriptFixtures;
@@ -123,6 +125,23 @@ final class TasksAndFollowupsTest extends TestCase
         $this->actingAs($mine)->getJson('/api/tasks?mine=1')->assertOk()->assertJsonCount(2, 'data');
         $this->actingAs($mine)->getJson('/api/tasks?mine=1&done=1')->assertOk()->assertJsonCount(3, 'data')
             ->assertJsonPath('data.2.id', $today->id);
+    }
+
+    /** TaskPolicy::view — the same scope as the task list: own branch and the assignee see it, another branch and a blocked login do not. */
+    public function test_task_view_policy_follows_the_list_scope(): void
+    {
+        Carbon::setTestNow('2026-09-10 12:00:00');
+        $mine = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $colleague = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $stranger = $this->userWith(UserRole::Recruiter, [Branch::factory()->create()]);
+        $task = $this->task($mine->id, $this->applied($this->vacancy), '2026-09-10 18:00');
+
+        $this->assertTrue(Gate::forUser($mine)->allows('view', $task));
+        $this->assertTrue(Gate::forUser($colleague)->allows('view', $task));
+        $this->assertFalse(Gate::forUser($stranger)->allows('view', $task));
+
+        $mine->forceFill(['status' => UserStatus::Blocked])->save();
+        $this->assertFalse(Gate::forUser($mine->refresh())->allows('view', $task), 'a blocked login sees nothing');
     }
 
     /**

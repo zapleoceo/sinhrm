@@ -14,6 +14,13 @@ interface DocumentTemplateRepository
 
     public function find(int $id): ?DocumentTemplate;
 
+    /**
+     * Not archived templates of a category by name, only id and name loaded (pickers of other modules).
+     *
+     * @return Collection<int, DocumentTemplate>
+     */
+    public function activeOfCategory(string $category): Collection;
+
     /** @param  array<string, mixed>  $attributes */
     public function create(array $attributes): DocumentTemplate;
 

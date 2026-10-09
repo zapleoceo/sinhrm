@@ -25,13 +25,18 @@ h3 { font: var(--mat-sys-title-medium); margin: 0 0 0.6rem; }
   margin-bottom: 0.75rem;
 }
 .app-head { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
-.spacer { flex: 1; }
 .status[data-status='active'] { --pill-text: var(--app-info-text); --pill-bg: var(--app-info-bg); --pill-line: transparent; }
 .status[data-status='hired'] { --pill-text: var(--app-good-text); --pill-bg: var(--app-good-bg); --pill-line: transparent; }
 .status[data-status='hired']::before { background: currentColor; }
 .status[data-status='rejected'] { --pill-text: var(--app-bad-text); --pill-bg: var(--app-bad-bg); --pill-line: transparent; }
 .status[data-status='rejected']::before { border-radius: 1px; background: currentColor; }
 .stale { color: var(--app-warn-text); }
+/* Career-site CV: a download link under the application head; long file names wrap instead of overflowing. */
+.cv {
+  margin: 0.5rem 0 0; font-size: 0.8125rem; overflow-wrap: anywhere;
+  a { color: var(--mat-sys-primary); }
+  .muted { margin-left: 0.35rem; }
+}
 
 /* Route: stations on one line; a station = ring in the stage-type colour, the current one filled. */
 .steps {

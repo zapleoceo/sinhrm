@@ -7,6 +7,7 @@ import { boardSteps } from './pages.mjs';
 import { runSteps, settle, watchNetwork } from './steps.mjs';
 import { E2E_ORIGIN } from './port.mjs';
 import type { AssistantStatus } from '../src/app/features/assistant/assistant.model';
+import type { LeaveRequest, NewLeaveRequest } from '../src/app/features/timeoff/timeoff.model';
 
 const writes = (mock: Mock) => mock.mutations.filter((m) => m.path !== '/sanctum/csrf-cookie');
 
@@ -643,6 +644,105 @@ test.describe('desktop flows', () => {
     await page.keyboard.press('Enter');
     await expect(autoHide).toHaveAttribute('aria-pressed', 'false');
     await expect(page.getByRole('button', { name: 'Згорнути меню' })).toBeVisible();
+  });
+
+  test('time off: a new request → exactly one POST /api/timeoff/requests with the type and the dates, the row appears', async ({ page, context }) => {
+    const mock = await open(page, context, '/timeoff');
+    // Mock mutations answer with the echoed body; the list needs a whole request (type, dates, status), so answer it here.
+    const posts: { path: string; body: unknown }[] = [];
+    await page.route(`${E2E_ORIGIN}/api/timeoff/requests`, async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      const body = route.request().postDataJSON() as NewLeaveRequest;
+      posts.push({ path: new URL(route.request().url()).pathname, body });
+      const created: LeaveRequest = {
+        id: 9001,
+        employee: { id: 1, full_name: 'Коваленко Олена [ТЕСТ]' },
+        leave_type: { id: body.leave_type_id, name: 'Vacation', color: '#4f7cff' },
+        starts_on: body.starts_on,
+        ends_on: body.ends_on,
+        half_day: body.half_day,
+        days: 1,
+        comment: body.comment ?? null,
+        handover_to: null,
+        status: 'pending',
+        balance_override: false,
+        approver: null,
+        decided_at: null,
+        decision_comment: null,
+        can_decide: false,
+        can_cancel: true,
+        created_at: null,
+      };
+      await route.fulfill({ status: 201, json: { data: created } });
+    });
+    const rows = page.locator('app-requests-list li.row');
+    await expect(rows.first()).toBeVisible();
+    const before = await rows.count();
+    // The form starts on the first active type and on «today» — which is the frozen clock, not the real date.
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv' }).format(RECORDED_AT);
+    await expect(page.getByRole('combobox', { name: 'Тип відсутності' })).toContainText('Vacation');
+    await page.getByRole('textbox', { name: 'Коментар' }).fill('Відпустка [ТЕСТ]');
+    await page.getByRole('button', { name: 'Надіслати запит' }).click();
+    await expect.poll(() => posts.length).toBe(1);
+    await settle(page);
+    expect(posts).toHaveLength(1);
+    expect(posts[0].path).toBe('/api/timeoff/requests');
+    expect(posts[0].body).toEqual({ leave_type_id: 1, starts_on: today, ends_on: today, half_day: 'none', comment: 'Відпустка [ТЕСТ]' });
+    await expect(rows).toHaveCount(before + 1);
+    expect(writes(mock).filter((m) => m.path.startsWith('/api/timeoff'))).toEqual([]); // nothing else went to the API
+  });
+
+  test('time off approvals: «Погодити» on a request → exactly one POST …/approve, the row leaves the list', async ({ page, context }) => {
+    const mock = await open(page, context, '/timeoff/approvals');
+    const rows = page.locator('section', { has: page.getByRole('heading', { name: /^Запити на відсутність/ }) }).locator('li.row');
+    await expect(rows.first()).toBeVisible();
+    const before = await rows.count();
+    expect(before).toBeGreaterThan(1);
+    await rows.first().getByRole('button', { name: 'Погодити' }).click();
+    await expect(rows).toHaveCount(before - 1);
+    await settle(page);
+    const sent = writes(mock);
+    expect(sent, JSON.stringify(sent)).toHaveLength(1);
+    expect(sent[0]).toEqual({ method: 'POST', path: expect.stringMatching(/^\/api\/timeoff\/requests\/\d+\/approve$/), body: { comment: null } });
+  });
+
+  test('safe speak: sending a report → one POST with category/subject/body, the code is shown once and never leaves the screen', async ({ page, context }) => {
+    const mock = await open(page, context, '/safe-speak');
+    const code = 'TEST-AAAA-BBBB-CCCC';
+    const urls: string[] = [];
+    page.on('request', (r) => urls.push(r.url()));
+    await page.route(`${E2E_ORIGIN}/api/safe-speak/public/reports`, async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      // The mock logs the mutation itself, so do the same here (the route above would swallow it).
+      mock.mutations.push({ method: 'POST', path: new URL(route.request().url()).pathname, body: route.request().postDataJSON() as unknown });
+      await route.fulfill({ status: 201, json: { data: { code, report: {} } } });
+    });
+    const send = page.getByRole('button', { name: 'Надіслати', exact: true });
+    await expect(send).toBeDisabled();
+    await page.getByRole('combobox', { name: 'Категорія' }).click();
+    await page.getByRole('option').first().click();
+    await page.getByRole('textbox', { name: 'Тема' }).fill('Тема [ТЕСТ]');
+    await page.getByRole('textbox', { name: 'Що сталося' }).fill('Текст повідомлення [ТЕСТ]');
+    await expect(send).toBeEnabled();
+    await send.click();
+    await expect(page.getByTestId('access-code')).toHaveText(code);
+    await settle(page);
+    const sent = writes(mock);
+    expect(sent, JSON.stringify(sent)).toHaveLength(1);
+    expect(sent[0]).toEqual({
+      method: 'POST',
+      path: '/api/safe-speak/public/reports',
+      body: { category: expect.any(String), subject: 'Тема [ТЕСТ]', body: 'Текст повідомлення [ТЕСТ]' },
+    });
+    // The code is not in the address bar, in any request URL, or in the browser's storage.
+    expect(page.url()).not.toContain(code);
+    expect(urls.filter((u) => u.includes(code))).toEqual([]);
+    const stored = await page.evaluate(() => JSON.stringify([{ ...localStorage }, { ...sessionStorage }]));
+    expect(stored).not.toContain(code);
+    // «Збережено»: the code disappears with the button and the form comes back empty.
+    await page.getByRole('button', { name: 'Я зберіг(ла)' }).click();
+    await expect(page.getByTestId('access-code')).toHaveCount(0);
+    await expect(page.getByRole('textbox', { name: 'Тема' })).toHaveValue('');
   });
 
   test('login: language switch translates the page', async ({ page, context }) => {

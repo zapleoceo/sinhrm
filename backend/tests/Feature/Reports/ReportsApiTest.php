@@ -8,6 +8,7 @@ use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\People\Models\EmployeeCompensation;
 use App\Modules\Pulse\Models\SurveyWave;
+use App\Modules\Reports\Providers\ReportsServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
@@ -182,8 +183,39 @@ final class ReportsApiTest extends TestCase
         $this->assertArrayNotHasKey('assets', $datasets);
     }
 
+    /** 22:30 UTC on 31 Oct is 00:30 on 1 Nov in Kyiv: the export downloaded then is the 1 Nov file, not 31 Oct. */
+    public function test_csv_file_name_carries_the_users_date_not_the_utc_date(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+        Carbon::setTestNow(Carbon::parse('2026-10-31 22:30:00', 'UTC'));
+        $admin = $this->login(UserRole::Admin);
+
+        $this->assertSame(
+            'attachment; filename="headcount-2026-11-01.csv"',
+            $this->actingAs($admin)->get('/api/reports/catalog/headcount/csv')->assertOk()->headers->get('Content-Disposition'),
+        );
+    }
+
+    /** builder/run and builder/csv share one per-user bucket (reports-builder, 30 per minute); catalog reports do not. */
+    public function test_builder_run_and_csv_are_throttled_per_user(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $other = $this->login(UserRole::Admin);
+        $spec = ['dataset' => 'employees', 'columns' => ['full_name']];
+
+        for ($i = 0; $i < ReportsServiceProvider::BUILDS_PER_MINUTE - 1; $i++) {
+            $this->actingAs($admin)->postJson('/api/reports/builder/run', $spec)->assertOk();
+        }
+        $this->actingAs($admin)->post('/api/reports/builder/csv', $spec, ['Accept' => 'application/json'])->assertOk();
+        $this->actingAs($admin)->postJson('/api/reports/builder/run', $spec)->assertStatus(429);
+        $this->actingAs($admin)->post('/api/reports/builder/csv', $spec, ['Accept' => 'application/json'])->assertStatus(429);
+        $this->actingAs($other)->postJson('/api/reports/builder/run', $spec)->assertOk();
+        $this->actingAs($admin)->getJson('/api/reports/catalog/headcount')->assertOk();
+    }
+
     public function test_csv_export_is_streamed_and_injection_safe(): void
     {
+        Carbon::setTestNow('2026-10-05 10:00:00');
         $admin = $this->login(UserRole::Admin);
         $this->employee(['full_name' => '=HYPERLINK("http://example.test","click")']);
         $this->employee(['full_name' => '+SUM(A1:A2)']);
@@ -191,7 +223,7 @@ final class ReportsApiTest extends TestCase
         $response = $this->actingAs($admin)->post('/api/reports/builder/csv', ['dataset' => 'employees', 'columns' => ['full_name', 'id']], ['Accept' => 'application/json'])->assertOk();
         $this->assertStringContainsString('text/csv', (string) $response->headers->get('Content-Type'));
         // Core Download::disposition: the quoted "<name>-<date>.csv" form, plus no sniffing and no caching.
-        $this->assertSame('attachment; filename="employees-'.date('Y-m-d').'.csv"', $response->headers->get('Content-Disposition'));
+        $this->assertSame('attachment; filename="employees-2026-10-05.csv"', $response->headers->get('Content-Disposition'));
         $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
         $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));

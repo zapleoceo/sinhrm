@@ -47,6 +47,10 @@
   (основное → участники и типы → компетенции → создать), «Запустити» (создаются формы), «Завершити». Список циклов — таблица со строкой заголовков: сортировка и фильтры (название, период — по дате начала, статус; прогресс — сортировка по доле сданных), состояние в адресе. Открытый фильтр колонки объявляет число показанных строк — «Знайдено: N» (`appTableSortCount` = `rows().length`, с 2026-10-03). Так же — у блока KPI во вкладке «Продуктивність».
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PerformException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): списки страниц «Мої оцінювання», 1:1, OKR и «Відгуки» держит `PagedList` (`core/ui/table/paged-list.ts`) вместо четырёх одинаковых `load()`: ошибка — уведомление `performErrorKey`, смена периода или ящика отменяет запрос в пути.
 Бэкенд — `backend/app/Modules/Perform`, маршруты `/api/perform/*` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`. Доступ строится на People: `Services/PerformAccess::viewer()` → `DTO/PerformViewer`
 (обёртка над `PeopleContext`: `admin()`, `isSelf()`, `isAbove()` — руководитель выше по `manager_id`,
@@ -121,7 +125,7 @@ hidden_reason: "anonymity"}`, без баллов и комментариев. �
 | `GET one-on-one-templates`; `POST/PUT/DELETE one-on-one-templates[/{id}]` | все; запись — админ | шаблоны повестки |
 | `GET objectives?period&owner_employee_id`, `GET objectives/{id}` (с `checkins`), `POST`, `PUT objectives/{id}`, `DELETE`, `POST objectives/{id}/check-ins {key_results:[{id,current}], comment?}` | см. матрицу | цели |
 | `GET kpis?employee_id&period`, `POST kpis`, `PUT/DELETE kpis/{id}` | см. матрицу | `attainment` = факт / план, % |
-| `GET feedback?box=received\|given\|requests\|team\|public`, `POST feedback {to_employee_id \| request_id, type, text, visibility?}` | все | `team`: руководителю — `manager`+`public` о людях ниже, админу — всё |
+| `GET feedback?box=received\|given\|requests\|team\|public`, `POST feedback {to_employee_id \| request_id, type, text, visibility?}` | все | `team`: руководителю — `manager`+`public` о людях ниже, админу — всё; `box` проверяет `ListFeedbackRequest` (`Rule::in`, пусто → `received`), любое другое значение и нескалярное `box[]=x` — 422, а не 500 (аудит безопасности 2026-10-08) |
 | `GET development-plans?employee_id`, `POST`, `PUT/DELETE development-plans/{id}`, `PATCH development-plans/{id}/actions/{actionId} {done}` | см. матрицу | `progress {done,total}` |
 | `GET review/assignments`, `GET review/assignments/{id}`, `POST review/assignments/{id}/submit {answers}` | оценщик | свои формы |
 | `GET review/cycles/{cycle}/results/{employee}`, `GET review/employees/{employee}/results` | см. матрицу | агрегаты `ReviewResults` |
@@ -158,6 +162,7 @@ hidden_reason: "anonymity"}`, без баллов и комментариев. �
 
 ### Общие хелперы Core (2026-10-02)
 - gate `perform-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Комментарий `PerformServiceProvider::MANAGE` исправлен на фактический набор: HR staff (superadmin, admin, hr_manager), 2026-10-08. Аудит дат: в Perform только моменты (`activated_at`, `closed_at`, `submitted_at`) и даты `due_on`, введённые человеком — UTC-«сегодня» не используется.
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (в базовом `PerformController` он `protected` — через алиас трейта).
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
@@ -171,6 +176,9 @@ hidden_reason: "anonymity"}`, без баллов и комментариев. �
 - Ошибки API → i18n-ключ: `performErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `PerformAccess` строит `PerformViewer` из контракта People `PeopleAccess` (`for`, `employeeOf`, `isAdmin`). Тест — `tests/Unit/Perform/PerformPeopleAccessTest.php`.
 
 ## Как проверить
 - `php artisan test --filter=Perform` — Feature: `OneOnOnesTest` (личные заметки не уходят никому, кроме

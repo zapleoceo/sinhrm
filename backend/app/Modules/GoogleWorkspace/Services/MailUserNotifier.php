@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\GoogleWorkspace\Services;
 
-use App\Models\User;
+use App\Modules\Auth\Contracts\UserRepository;
 use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\Core\Services\ModuleAccess;
@@ -22,11 +22,12 @@ final readonly class MailUserNotifier implements UserNotifier
         private ModuleAccess $access,
         private LoggerInterface $log,
         private string $frontendUrl,
+        private UserRepository $users,
     ) {}
 
     public function notify(int $userId, string $module, string $subject, string $body, string $link): void
     {
-        $user = User::query()->find($userId);
+        $user = $this->users->find($userId);
         if ($user === null || $user->status !== UserStatus::Active || ! $user->approval_emails || ! $this->access->allows($user, $module)) {
             return;
         }

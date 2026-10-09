@@ -8,7 +8,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDialog, ConfirmDialogData } from '../confirm.dialog';
@@ -18,9 +17,11 @@ import { ClientColumn, ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER, trans
 import { ColumnHeader } from '../../../core/ui/table/column-header';
 import { TableSortDirective } from '../../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../../core/ui/table/table-url-state';
+import { PagedList } from '../../../core/ui/table/paged-list';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /** Columns of the templates list (all rows are on the page). Kind and trigger sort in their list order. */
-export const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
+const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
   { key: 'name', value: (t) => t.name, filter: 'text' },
   { key: 'kind', value: (t) => WORKFLOW_KINDS.indexOf(t.kind), filter: 'select', filterValue: (t) => t.kind },
   { key: 'trigger', value: (t) => WORKFLOW_TRIGGERS.indexOf(t.trigger), filter: 'select', filterValue: (t) => t.trigger },
@@ -152,15 +153,16 @@ export const TEMPLATE_COLUMNS: readonly ClientColumn<WorkflowTemplate>[] = [
 export class WorkflowTemplatesPage implements OnInit {
   private readonly api = inject(WorkflowsService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   private readonly dialog = inject(MatDialog);
 
   protected readonly kinds = WORKFLOW_KINDS;
   protected readonly triggers = WORKFLOW_TRIGGERS;
-  protected readonly templates = signal<WorkflowTemplate[]>([]);
-  protected readonly loading = signal(false);
-  protected readonly failed = signal(false);
+  private readonly list = new PagedList<WorkflowTemplate>();
+  protected readonly templates = this.list.items;
+  protected readonly loading = this.list.loading;
+  protected readonly failed = this.list.failed;
   protected readonly busy = signal(false);
   protected readonly form = inject(NonNullableFormBuilder).group({
     name: ['', [Validators.required, Validators.maxLength(200)]],
@@ -179,18 +181,7 @@ export class WorkflowTemplatesPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.templates().subscribe({
-      next: (list) => {
-        this.templates.set(list);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.templates());
   }
 
   protected create(): void {
@@ -233,6 +224,6 @@ export class WorkflowTemplatesPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 5000 });
+    this.notify.show(key, { duration: 5000 });
   }
 }

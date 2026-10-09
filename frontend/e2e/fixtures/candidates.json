@@ -1933,6 +1933,12 @@
        }
       ],
       "interviewers": [],
+      "cv": {
+       "filename": "cv-demo-kovalenko.pdf",
+       "size": 48213,
+       "mime": "application/pdf",
+       "uploaded_at": "2026-04-01T09:00:00+00:00"
+      },
       "stage": {
        "id": 1,
        "name": "Новий відгук",

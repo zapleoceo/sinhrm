@@ -32,6 +32,8 @@
 | Scripts | задачи рекрутера о человеке, оценки звонков по скрипту (в них цитаты разговора) | оценки удаляются; заголовок задачи → «Видалений кандидат #id» (строка остаётся для статистики нагрузки) |
 | MailAgent | журнал обработанных писем: отправитель, тема | отправитель и тема стёрты |
 | People (сотрудник) | профиль: контакты, дата рождения, адрес, контакт на экстренный случай, аватар, доп. поля, запросы на изменение | имя → «Видалений співробітник #id», всё перечисленное стёрто; даты приёма/увольнения, филиал, отдел, должность остаются |
+| People: компенсации (сотрудник) | история выплат: сумма, валюта, период, дата, причина | не стирается: оплата труда — кадровая запись, хранится по закону |
+| Audit | строки журнала действий о человеке (маскированные изменения) | остаётся; значения вне текущего allow-list повторно маскируются |
 | Documents (сотрудник) | список документов: название, статус, даты, имя/тип/размер файла (сам файл — нет) | неподписанные (чернетка, отправлен, отклонён): текст и файл удаляются. Подписанные и архивные — кадровые документы, хранятся столько, сколько требует закон |
 
 Удаление идёт одной транзакцией во всех модулях (всё или ничего) и повторяемо: второй запуск ничего не ломает.
@@ -47,11 +49,15 @@
   это учёт по трудовому законодательству. Если понадобится — модуль добавляет своего провайдера (ниже), остальное не меняется.
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PrivacyException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): `canManagePrivacy` (`privacy.service.ts`) — обёртка над общим `isAdmin` из `core/auth/auth.model.ts` (superadmin + admin), своей копии списка ролей нет.
 - Контракт `Core\Contracts\PersonalDataProvider` (`section()`, `blocker()`, `export()`, `erase()`): каждый модуль
   описывает только свои таблицы и регистрируется через `$app->tag([...], PersonalDataProvider::class)` — так же, как
   `ScheduledJob` и `HealthCheck`. Privacy не лезет в чужие таблицы. Субъект — `Core\DTO\DataSubject` (`candidate` | `employee` + id).
 - Провайдеры: `Recruiting\Privacy\CandidatePersonalData`, `Scripts\Privacy\ScriptsPersonalData`,
-  `MailAgent\Privacy\MailPersonalData`, `People\Privacy\EmployeePersonalData`, `Documents\Privacy\DocumentsPersonalData`.
+  `MailAgent\Privacy\MailPersonalData`, `People\Privacy\EmployeePersonalData`, `People\Privacy\CompensationPersonalData`, `Documents\Privacy\DocumentsPersonalData`, `Audit\Privacy\AuditPersonalData`.
 - `blocker()` — причина отказа (`not_found` → 404, `hired`/`not_terminated` → 409). Отвечает модуль-владелец.
 - `Privacy\Services\PersonalDataService` запускает всех провайдеров, пишет журнал `privacy_requests` (кто, что, когда,
   причина, счётчики — без самих данных; `counts` — колонка типа `json` MySQL) и лог `privacy.erased`.
@@ -59,8 +65,16 @@
 - Правило хранения: `Core\Contracts\RetentionSource` (Recruiting отдаёт кандидатов, у которых все отклики отклонены и
   закрыты раньше срока), задача `privacy.retention` (cron каждые ~30 мин, до 50 человек за запуск), настройка —
   одна строка `privacy_settings.retention_rejected_months` (null = выключено). В журнале такие удаления с `trigger = retention`.
+- Свои таблицы модуль читает и пишет только через `Contracts\PrivacyRepository` (`Repositories\EloquentPrivacyRepository`,
+  биндинг в `PrivacyServiceProvider`): журнал `privacy_requests` (запись и список по человеку) и правило хранения
+  `privacy_settings`. Контроллер, `PersonalDataService` и `RetentionJob` запросов к БД не строят. Транзакция стирания
+  (`DB::transaction`) осталась в `PersonalDataService`: это единица работы над провайдерами всех модулей плюс строка
+  журнала, ни один репозиторий этими таблицами не владеет. Тест — `tests/Unit/Privacy/PrivacyRepositoryTest.php`.
 
 ### Эндпоинты (`auth:sanctum` + активный пользователь + gate `privacy-manage`: superadmin, admin; иначе 403)
+
+Валидация — FormRequest (2026-10-08): `ExportPersonalDataRequest` (`format` ∈ json|html, иначе 422 до экспорта — запрос не журналируется), `UpdatePrivacySettingsRequest` (`retention_rejected_months` обязателен, `null` или целое 1..120; строка `"12"` принимается как 12). Тест `PersonalDataApiTest::test_export_and_settings_validation`.
+
 | Метод | Путь | Что |
 |---|---|---|
 | GET | `/api/privacy/{candidate\|employee}/{id}/export?format=json\|html` | файл-выгрузка (`Content-Disposition: attachment`, `Cache-Control: private, no-store` — персональные данные не оседают в кеше браузера и прокси) |

@@ -10,14 +10,15 @@ use App\Modules\Core\Contracts\NavBadgeProvider;
 use App\Modules\Core\Contracts\PersonalDataProvider;
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
 use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
 use App\Modules\Recruiting\Events\TouchpointRecorded;
-use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Scripts\Ai\ScriptEvaluationAiHandler;
 use App\Modules\Scripts\Ai\ScriptEvaluationPrompt;
 use App\Modules\Scripts\Contracts\EvaluationRepository;
 use App\Modules\Scripts\Contracts\ScriptEvaluator;
 use App\Modules\Scripts\Contracts\ScriptRepository;
+use App\Modules\Scripts\Contracts\TaskReader;
 use App\Modules\Scripts\Contracts\TaskRepository;
 use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\Listeners\EvaluateRecordedTouch;
@@ -58,6 +59,7 @@ final class ScriptsServiceProvider extends ModuleServiceProvider
         $this->app->bind(TaskRepository::class, EloquentTaskRepository::class);
         // Other modules schedule/close their tasks through the contract (TimeOff handover).
         $this->app->bind(TaskScheduler::class, TaskService::class);
+        $this->app->bind(TaskReader::class, TaskService::class);
         // The always-available engine; EvaluationService adds the AI one when AI is available (Ai module).
         $this->app->bind(ScriptEvaluator::class, RulesScriptEvaluator::class);
         // Evaluation summaries on Recruiting timeline items.
@@ -73,7 +75,7 @@ final class ScriptsServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         Gate::policy(Task::class, TaskPolicy::class);
-        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(RecruitingScope::class)->canManage($user));
+        Gate::define(self::MANAGE, fn (User $user): bool => $this->app->make(RecruitingAccess::class)->canManage($user));
 
         Event::listen(TouchpointRecorded::class, EvaluateRecordedTouch::class);
     }

@@ -9,13 +9,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { INVITABLE_ROLES, USER_ROLES, USER_STATUSES, UserRole, UserStatus, isHrStaff } from '../../core/auth/auth.model';
 import { AuthService } from '../../core/auth/auth.service';
 import { ColumnHeader } from '../../core/ui/table/column-header';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import {
   ColumnFilter,
@@ -23,9 +22,7 @@ import {
   RangeValue,
   TableSort,
   dateRangeToParams,
-  filterToParam,
   sameQuery,
-  sortToParams,
 } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { DictionaryItem } from '../directory/directory.model';
@@ -34,6 +31,8 @@ import { InviteUserDialog } from './invite-user.dialog';
 import { AdminUser, UpdateUser, UsersQuery, nextRoles } from './users.model';
 import { USERS_PAGE_SIZE, usersQueryFromParams } from './users.query';
 import { UsersService, userErrorKey } from './users.service';
+import { withMember } from '../../core/ui/with-member';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** API order without ?sort (by name, A→Z): the name column carries the arrow. */
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
@@ -67,10 +66,10 @@ const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 export class UsersPage implements OnInit {
   private readonly api = inject(UsersService);
   private readonly dialog = inject(MatDialog);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly url = inject(TableUrlState);
-  private readonly request = new LatestRequest();
+  /** A newer query cancels the request still in flight: an old answer never lands over the new filters. */
+  private readonly list = new PagedList<AdminUser>();
   private loaded = false;
 
   /** Superadmin is bootstrap-only (SUPERADMIN_EMAIL) and cannot be assigned from the UI. */
@@ -99,10 +98,10 @@ export class UsersPage implements OnInit {
     const q = this.query();
     return q.last_login_from || q.last_login_to ? { from: q.last_login_from ?? null, to: q.last_login_to ?? null } : null;
   });
-  protected readonly users = signal<AdminUser[]>([]);
-  protected readonly total = signal(0);
-  protected readonly loading = signal(false);
-  protected readonly failed = signal(false);
+  protected readonly users = this.list.items;
+  protected readonly total = this.list.total;
+  protected readonly loading = this.list.loading;
+  protected readonly failed = this.list.failed;
   protected readonly pending = signal<ReadonlySet<number>>(new Set());
   /**
    * Selected branch ids per branch-scoped user (recruiter/viewer/employee; HR staff see every branch).
@@ -127,33 +126,20 @@ export class UsersPage implements OnInit {
 
   protected load(): void {
     this.loaded = true;
-    this.loading.set(true);
-    this.failed.set(false);
-    // A newer query cancels the request still in flight: an old answer never lands over the new filters.
-    this.request.run(this.api.list(this.query()), {
-      next: (page) => {
-        this.users.set(page.data);
-        this.total.set(page.meta.total);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.failed.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.list(this.query()));
   }
 
   protected onPage(e: PageEvent): void {
-    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+    this.url.setPage(e);
   }
 
   protected onSort(sort: TableSort | null): void {
-    this.url.update(sortToParams(sort));
+    this.url.setSort(sort);
   }
 
   /** Header filters: text / chosen value; cleared → removed from the URL (and the page goes back to 1). */
   protected setFilter(name: 'q' | 'role' | 'status', value: FilterValue): void {
-    this.url.update({ [name]: filterToParam(value) });
+    this.url.setFilter(name, value);
   }
 
   protected setLastLogin(value: FilterValue): void {
@@ -239,15 +225,7 @@ export class UsersPage implements OnInit {
   }
 
   private setPending(id: number, on: boolean): void {
-    this.pending.update((set) => {
-      const next = new Set(set);
-      if (on) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.pending.update((set) => withMember(set, id, on));
   }
 
   /** New query from the URL: loads unless it is the one already shown. */
@@ -258,6 +236,6 @@ export class UsersPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.notify.show(key, { duration: 3000 });
   }
 }

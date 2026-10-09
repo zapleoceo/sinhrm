@@ -6,9 +6,9 @@ namespace App\Modules\Ai\Support;
 
 use App\Modules\Ai\DTO\AiSettings;
 use App\Modules\Ai\Enums\AiPurpose;
+use App\Modules\Integrations\Contracts\IntegrationConfigs;
 use App\Modules\Integrations\Definitions\AiBrokerDefinition;
 use App\Modules\Integrations\Enums\IntegrationStatus;
-use App\Modules\Integrations\Services\IntegrationConfigLoader;
 
 /**
  * AI settings live in the ai_broker integration (admin "Інтеграції" → AI Broker): capability (default chat:fast),
@@ -20,7 +20,7 @@ final class AiSettingsReader
     private ?AiSettings $cached = null;
 
     public function __construct(
-        private readonly IntegrationConfigLoader $loader,
+        private readonly IntegrationConfigs $loader,
         private readonly AiBrokerDefinition $definition,
     ) {}
 

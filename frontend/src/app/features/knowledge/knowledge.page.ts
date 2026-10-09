@@ -14,6 +14,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth/auth.service';
 import { ArticleQuery, KbArticle, KbCategory, helpfulPercent } from './knowledge.model';
 import { KnowledgeService } from './knowledge.service';
+import { PagedList } from '../../core/ui/table/paged-list';
+import { eventValue } from '../../core/ui/event-value';
 
 /** Knowledge base (/knowledge): categories, search, tags; editors also see drafts and create articles. */
 @Component({
@@ -86,17 +88,19 @@ import { KnowledgeService } from './knowledge.service';
     }
     .tag:hover { text-decoration: underline; }
     @media (max-width: 600px) { .tags { gap: 0.5rem; } .tag { min-height: 2.75rem; padding: 0 0.35rem; } } /* 44px touch targets */
-    .small { font-size: 0.8rem; }
   `,
 })
 export class KnowledgePage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly api = inject(KnowledgeService);
   private readonly auth = inject(AuthService);
   protected readonly typed = new Subject<string>();
-  protected readonly items = signal<KbArticle[]>([]);
+  private readonly list = new PagedList<KbArticle>();
+  protected readonly items = this.list.items;
   protected readonly categories = signal<KbCategory[]>([]);
   protected readonly query = signal<ArticleQuery>({});
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
   /** Admins (HR) write articles; the API enforces it (gate knowledge-manage). */
   protected readonly editor = computed(() => isHrStaff(this.auth.user()?.roles ?? []));
 
@@ -110,10 +114,6 @@ export class KnowledgePage implements OnInit {
   ngOnInit(): void {
     this.api.categories().subscribe({ next: (list) => this.categories.set(list), error: () => this.categories.set([]) });
     this.load();
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement).value;
   }
 
   protected helpful(a: KbArticle): number | null {
@@ -131,16 +131,6 @@ export class KnowledgePage implements OnInit {
   }
 
   private load(): void {
-    this.loading.set(true);
-    this.api.search(this.query()).subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.items.set([]);
-        this.loading.set(false);
-      },
-    });
+    this.list.load(this.api.search(this.query()), { error: () => this.items.set([]) });
   }
 }

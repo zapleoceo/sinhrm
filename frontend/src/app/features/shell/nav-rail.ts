@@ -231,7 +231,7 @@ export function namedBy(el: Element, message: string): boolean {
  * «Відкрити меню» and described by the user's name. Provided per RailTip host, the app-wide AriaDescriber does the work.
  */
 @Injectable()
-export class RailTipDescriber extends AriaDescriber {
+class RailTipDescriber extends AriaDescriber {
   private readonly shared = inject(AriaDescriber, { skipSelf: true });
 
   override describe(host: Element, message: string, role?: string): void;

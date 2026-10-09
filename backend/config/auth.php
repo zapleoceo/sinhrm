@@ -48,6 +48,9 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+            // Remember-me cookie of the Google sign-in lives 14 days (minutes), not the framework's ~400 days
+            // (security audit 2026-10): a forgotten unlocked laptop does not keep HR data open for a year.
+            'remember' => (int) env('AUTH_REMEMBER_MINUTES', 60 * 24 * 14),
         ],
     ],
 

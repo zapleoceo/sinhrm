@@ -155,7 +155,6 @@ import { VacanciesStore } from './vacancies.store';
     </section>
   `,
   styles: `
-    .rows { list-style: none; margin: 0; padding: 0; }
     .row {
       display: flex; align-items: center; gap: 1rem; padding: 0.5rem 1rem; min-height: 52px; box-sizing: border-box;
       border-bottom: var(--app-border-w) solid var(--app-track); transition: background-color var(--app-fast);

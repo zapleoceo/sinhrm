@@ -7,9 +7,9 @@ namespace App\Modules\MailAgent\Services;
 use App\Models\User;
 use App\Modules\Auth\Contracts\UserRepository;
 use App\Modules\GoogleWorkspace\Contracts\GmailClient;
+use App\Modules\GoogleWorkspace\Contracts\GoogleConnections;
 use App\Modules\GoogleWorkspace\Enums\GoogleService;
 use App\Modules\GoogleWorkspace\Exceptions\GoogleException;
-use App\Modules\GoogleWorkspace\Services\GoogleConnectionStore;
 use App\Modules\MailAgent\Contracts\MailLogRepository;
 use App\Modules\MailAgent\Enums\MailOutcome;
 use App\Modules\MailAgent\Support\MailRecord;
@@ -40,7 +40,7 @@ final readonly class MailSyncService
 
     public function __construct(
         private GmailClient $gmail,
-        private GoogleConnectionStore $connections,
+        private GoogleConnections $connections,
         private MailLogRepository $log,
         private MailMessageProcessor $processor,
         private UserRepository $users,

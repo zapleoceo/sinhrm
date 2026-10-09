@@ -12,6 +12,8 @@ import { CASE_STATUS_TONE, DeskCase, DeskCategory } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
 import { NotifyService } from '../../core/ui/notify.service';
+import { PagedList } from '../../core/ui/table/paged-list';
+import { eventValue } from '../../core/ui/event-value';
 
 /** "Мої звернення" (/desk): own helpdesk cases and a form to open a new one. */
 @Component({
@@ -80,17 +82,19 @@ import { NotifyService } from '../../core/ui/notify.service';
     .cases li:hover:not(.app-empty) { background: var(--app-row-hover); }
     .cases li.app-empty { display: block; }
     .main { flex: 1 1 16rem; display: flex; flex-direction: column; color: inherit; text-decoration: none; min-width: 0; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class MyCasesPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   private readonly api = inject(DeskService);
   private readonly router = inject(Router);
   private readonly notify = inject(NotifyService);
   protected readonly statusTone = CASE_STATUS_TONE;
-  protected readonly items = signal<DeskCase[]>([]);
+  private readonly list = new PagedList<DeskCase>();
+  protected readonly items = this.list.items;
   protected readonly categories = signal<DeskCategory[]>([]);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
   protected readonly saving = signal(false);
   protected readonly formOpen = signal(false);
   protected readonly categoryId = signal<number | null>(null);
@@ -98,22 +102,8 @@ export class MyCasesPage implements OnInit {
   protected readonly body = signal('');
 
   ngOnInit(): void {
-    this.loading.set(true);
-    this.api.mine().subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(deskErrorKey(e));
-      },
-    });
+    this.list.load(this.api.mine(), { error: (e) => this.notify.show(deskErrorKey(e)) });
     this.api.categories().subscribe({ next: (list) => this.categories.set(list), error: () => this.categories.set([]) });
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
 
   protected valid(): boolean {

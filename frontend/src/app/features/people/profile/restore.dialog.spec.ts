@@ -76,6 +76,13 @@ describe('RestoreDialog', () => {
 });
 
 describe('isAfterToday (terminate dialog: schedule vs. terminate now)', () => {
+  // A fixed clock: `now` here and today() inside must be the same day even when the run crosses midnight.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T22:30:00Z')); // 01:30 next day in Kyiv: UTC and Kyiv dates differ
+  });
+  afterEach(() => vi.useRealTimers());
+
   it('is true only for a day after today', () => {
     const now = new Date();
     expect(isAfterToday(null)).toBe(false);

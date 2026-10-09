@@ -47,7 +47,7 @@ final readonly class LifecycleSurveys
     public function employeeTerminated(Employee $employee, ?Carbon $now = null): int
     {
         $now ??= Carbon::now();
-        $anchor = $employee->fired_at ?? $now->copy()->startOfDay();
+        $anchor = $employee->fired_at ?? UserTime::today($now);
 
         return $this->startExit($employee, $anchor, $now, $now->copy()->addDays(self::DURATION_DAYS));
     }
@@ -59,7 +59,7 @@ final readonly class LifecycleSurveys
         if ($employee->fired_at === null || $employee->isTerminated()) {
             return 0;
         }
-        $lastMoment = UserTime::toStorage(Carbon::parse($employee->fired_at->toDateString(), UserTime::timezone())->endOfDay());
+        $lastMoment = UserTime::endOfDay($employee->fired_at);
         $limit = $now->copy()->addDays(self::DURATION_DAYS);
         $ends = $lastMoment->lt($limit) ? $lastMoment : $limit;
 
@@ -109,7 +109,7 @@ final readonly class LifecycleSurveys
     /** @return int waves started for hire_30 / hire_90 anniversaries due today (or within the catch-up window) */
     public function hiresDue(Carbon $now): int
     {
-        $today = $now->copy()->startOfDay();
+        $today = UserTime::today($now); // anniversaries are calendar days of the user's zone, not of UTC
         $started = 0;
         foreach ([LifecycleTrigger::Hire30, LifecycleTrigger::Hire90] as $trigger) {
             $surveys = $this->surveys->activeLifecycle($trigger);

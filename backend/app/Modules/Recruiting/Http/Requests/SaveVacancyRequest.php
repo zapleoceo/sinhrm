@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Http\Requests;
 
 use App\Models\User;
+use App\Modules\Auth\Enums\UserStatus;
 use App\Modules\Directory\Enums\DirectoryStatus;
 use App\Modules\Directory\Models\Branch;
 use App\Modules\Directory\Models\City;
@@ -56,10 +57,10 @@ final class SaveVacancyRequest extends FormRequest
             'branch_id' => [$creating ? 'required' : 'sometimes', 'required', 'integer', $active(Branch::class)],
             'department_id' => ['sometimes', 'nullable', 'integer', $active(Department::class)],
             'position_id' => ['sometimes', 'nullable', 'integer', $active(Position::class)],
-            'recruiter_id' => ['sometimes', 'required', 'integer', Rule::exists(User::class, 'id')->where('status', 'active')],
+            'recruiter_id' => ['sometimes', 'required', 'integer', Rule::exists(User::class, 'id')->where('status', UserStatus::Active->value)],
             // Contextual role; only recruiting writers assign it (a hiring manager cannot hand the vacancy over).
             'hiring_manager_id' => $this->canAssignHiringManager()
-                ? ['sometimes', 'nullable', 'integer', Rule::exists(User::class, 'id')->where('status', 'active')]
+                ? ['sometimes', 'nullable', 'integer', Rule::exists(User::class, 'id')->where('status', UserStatus::Active->value)]
                 : ['prohibited'],
             // The pipeline is fixed once the vacancy exists: stages of applications must stay valid.
             'pipeline_id' => $creating ? ['sometimes', 'required', 'integer', Rule::exists(Pipeline::class, 'id')] : ['prohibited'],

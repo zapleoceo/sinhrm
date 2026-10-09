@@ -10,13 +10,13 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { DevelopmentPlan, Kpi, Objective, OneOnOne, ReviewResult, progressTone } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { ReviewResults } from '../reviews/review-results';
 import { toIsoDate } from '../../../core/date/iso-date';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Profile tab "Performance": objectives, KPIs, development plans (managers/admins add a plan and KPIs; the
@@ -161,6 +161,7 @@ import { toIsoDate } from '../../../core/date/iso-date';
     </section>
   `,
   styles: `
+    @use '../../../core/ui/styles/trace';
     :host { display: block; padding: 1rem 0; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
     .box { padding: 1rem 1.25rem; }
@@ -168,12 +169,7 @@ import { toIsoDate } from '../../../core/date/iso-date';
     .line { display: grid; grid-template-columns: minmax(0, 1fr) 6rem 3rem; gap: 0.5rem; align-items: center; margin-bottom: 0.35rem; }
     .pct { font: 500 0.8rem var(--app-font-mono); text-align: right; }
     .bar { display: block; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; }
-    .bar span {
-      display: block; height: 100%; border-radius: inherit; background: var(--app-success);
-      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    }
-    @keyframes trace { from { transform: scaleX(0); } }
-    @media (prefers-reduced-motion: reduce) { .bar span { animation: none; } }
+    @include trace.fill('.bar span', var(--app-success));
     .bar span[data-tone='danger'] { background: var(--app-danger); }
     .bar span[data-tone='warning'] { background: var(--app-warning); }
     .scroll { overflow-x: auto; }
@@ -184,7 +180,6 @@ import { toIsoDate } from '../../../core/date/iso-date';
     .plan { margin-bottom: 0.75rem; display: flex; flex-direction: column; }
     .plan ul { margin: 0.25rem 0; padding-left: 1.25rem; }
     .num { width: 7rem; }
-    .rows { list-style: none; padding: 0; margin: 0; }
   `,
 })
 export class PerformanceTab {
@@ -193,8 +188,7 @@ export class PerformanceTab {
   readonly canManage = input(false);
 
   private readonly api = inject(PerformService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly objectives = signal<Objective[]>([]);
   protected readonly kpis = signal<Kpi[]>([]);
   protected readonly plans = signal<DevelopmentPlan[]>([]);
@@ -267,6 +261,6 @@ export class PerformanceTab {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

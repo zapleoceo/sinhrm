@@ -4,28 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\Integrations\Definitions;
 
-use App\Modules\Integrations\Contracts\ConnectionChecker;
 use App\Modules\Integrations\DTO\CheckResult;
 use App\Modules\Integrations\DTO\FieldSpec;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Integrations\Enums\IntegrationGroup;
-use App\Modules\Integrations\Support\OutboundUrlGuard;
-use Illuminate\Http\Client\Factory as Http;
-use Throwable;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 
 /**
  * WhatsApp Cloud API (Meta). Check: read-only GET /{phone_number_id}?fields=id with the access token (header, not URL).
  * app_secret signs webhooks (X-Hub-Signature-256), verify_token answers the GET subscription handshake.
  */
-final class WhatsappCloudDefinition extends AbstractDefinition implements ConnectionChecker
+final class WhatsappCloudDefinition extends AbstractHttpCheckedDefinition
 {
     public const string GRAPH_API = 'https://graph.facebook.com/v21.0';
 
     public const string ID_PATTERN = '/^\d{5,32}$/';
-
-    private const int TIMEOUT_SECONDS = 10;
-
-    public function __construct(private readonly Http $http, private readonly OutboundUrlGuard $guard) {}
 
     public function key(): string
     {
@@ -55,16 +49,10 @@ final class WhatsappCloudDefinition extends AbstractDefinition implements Connec
             return CheckResult::error('invalid_url');
         }
         $url = self::GRAPH_API.'/'.$phoneId.'?fields=id';
-        $blocked = $this->guard->check($url);
-        if ($blocked !== null) {
-            return CheckResult::error($blocked);
-        }
-
-        try {
-            $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)
-                ->withToken((string) $config->secret('access_token'))->acceptJson()->get($url);
-        } catch (Throwable) {
-            return CheckResult::error('connection_failed');
+        $response = $this->probe($url, static fn (PendingRequest $r): Response => $r
+            ->withToken((string) $config->secret('access_token'))->get($url));
+        if ($response instanceof CheckResult) {
+            return $response;
         }
 
         if ($response->successful() && $response->json('id') === $phoneId) {

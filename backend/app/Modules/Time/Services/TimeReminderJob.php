@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Time\Services;
 
 use App\Modules\Core\Contracts\ScheduledJob;
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Models\Employee;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use App\Modules\Scripts\DTO\NewTask;
 use App\Modules\Scripts\Enums\TaskType;
-use App\Modules\Scripts\Services\TaskService;
 use App\Modules\Time\Enums\TimesheetStatus;
 use App\Modules\Time\Support\WeekCalculator;
 use Illuminate\Support\Carbon;
@@ -27,7 +28,7 @@ final readonly class TimeReminderJob implements ScheduledJob
     public function __construct(
         private EmployeeRepository $employees,
         private WeekSummaryService $summaries,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
     ) {}
 
     public static function ruleKey(Carbon $weekStart): string
@@ -42,10 +43,13 @@ final readonly class TimeReminderJob implements ScheduledJob
 
     public function run(Carbon $now): array
     {
-        if ($now->dayOfWeekIso < Carbon::FRIDAY) {
+        // Friday..Sunday and the week are the user's (Kyiv) calendar: Monday 00:30 Kyiv is still Sunday in UTC and
+        // must not remind about the week that has just ended.
+        $today = UserTime::today($now);
+        if ($today->dayOfWeekIso < Carbon::FRIDAY) {
             return ['time_reminders' => 0, 'time_skipped' => 'not_friday'];
         }
-        $start = WeekCalculator::weekStart($now);
+        $start = WeekCalculator::weekStart($today);
         $people = $this->employees->working()->filter(static fn (Employee $e): bool => $e->user_id !== null);
         $sums = $this->summaries->summaries($people, $start, $start);
         $reminded = 0;
@@ -59,7 +63,7 @@ final readonly class TimeReminderJob implements ScheduledJob
                 assigneeId: $e->user_id,
                 type: TaskType::TimesheetReminder,
                 title: 'Заповніть табель за тиждень '.$start->format('d.m'),
-                dueAt: $start->copy()->addDays(6)->endOfDay(),
+                dueAt: UserTime::endOfDay($start->copy()->addDays(6)), // Sunday 23:59:59 Kyiv
                 ruleKey: self::ruleKey($start),
                 employeeId: $e->id,
                 link: '/time?week='.$start->toDateString(),

@@ -12,7 +12,7 @@ use App\Modules\Workflows\Enums\StepAction;
  * request_form: "fill in the form" task for the assignee. Link — the form's https URL (e.g. a Google Form) when
  * set, otherwise the employee profile. Forms of our own are a later module.
  */
-final class RequestFormExecutor extends TaskStepExecutor
+final class RequestFormExecutor extends ProfileTaskExecutor
 {
     public function action(): StepAction
     {
@@ -21,10 +21,7 @@ final class RequestFormExecutor extends TaskStepExecutor
 
     public function configRules(): array
     {
-        return [
-            'title' => ['nullable', 'string', 'max:255'],
-            'url' => ['nullable', 'url:https', 'max:500'],
-        ];
+        return parent::configRules() + ['url' => ['nullable', 'url:https', 'max:500']];
     }
 
     public function execute(StepContext $context): StepOutcome

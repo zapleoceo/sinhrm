@@ -134,7 +134,7 @@ export class OrgChartControls {
   readonly action = output<OrgChartAction>();
 }
 
-export interface LegendItem {
+interface LegendItem {
   id: number;
   name: string;
   hue: number | null;

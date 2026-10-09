@@ -6,9 +6,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-export type MarkdownFormat = 'bold' | 'italic' | 'ol' | 'ul' | 'clear';
+type MarkdownFormat = 'bold' | 'italic' | 'ol' | 'ul' | 'clear';
 
-export interface FormattedText {
+interface FormattedText {
   text: string;
   start: number;
   end: number;

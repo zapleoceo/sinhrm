@@ -18,7 +18,7 @@
 7. AI утверждён владельцем (AI Broker; возможность по функции, сейчас `chat:fast`). Вызывать провайдеров только через `Ai/Services/AiService` (флаг в админке,
    лимиты, без логирования промптов); новый/изменённый промпт — новая версия и текст в `docs/modules/ai.md`.
 8. Метрики сабагентов — ledger вне репозитория (`D:\Projects\HRM\docs\tasks\*.agent-metrics.tsv`).
-9. Все файлы — рабочие копии, скрипты, скриншоты, выгрузки, любые временные файлы — только в `D:\Projects\`. Не в `C:\`, не в `%TEMP%`, не в `/tmp`, не в папках профиля. Нужна папка для временных файлов — создаём её там же, под проект: `D:\Projects\_tmp\<проект>\` (для SinHRM — `D:\Projects\_tmp\sinhrm\`; рабочие копии агентов — `D:\Projects\sinhrm-wt\<имя>`). Как только временные файлы больше не нужны (PR влит, задача закрыта, проверка закончена) — удаляем их и пустую папку. Секреты во временные файлы не кладём. Подробнее — `docs/guides/development.md`, раздел «Файлы и временные папки».
+9. Все файлы — рабочие копии, скрипты, скриншоты, выгрузки, любые временные файлы — только внутри папки проекта `D:\Projects\HRM\`. Не создаём новые папки прямо в `D:\Projects\`, не в `C:\`, не в `%TEMP%`, не в `/tmp`, не в папках профиля. Нужна папка для временных файлов — создаём её внутри папки проекта: `D:\Projects\HRM	mp\<задача>\` (рабочие копии агентов — `D:\Projects\HRM\worktrees\<имя>`, выгрузки и дампы — `D:\Projects\HRM\dumps\`). Как только временные файлы больше не нужны (PR влит, задача закрыта, проверка закончена) — удаляем их и пустую папку. Секреты во временные файлы не кладём. Подробнее — `docs/guides/development.md`, раздел «Файлы и временные папки».
 10. Правка UI (особенно рестайл) держит job `ui-parity` зелёным: инвентарь кнопок/полей/колонок не теряется молча; снапшоты обновляются только осознанно (`npm run e2e:update`, дифф в PR) — `docs/guides/ui-parity.md`.
 11. Тяжёлое тестирование выносим в GitHub Actions, локально минимум (владелец, 02.10.2026): локально только lint и точечные тесты изменённых файлов (`ng test --include <файл>`, `phpunit --filter`); полные `ng test`, `npm run e2e`, ui-parity, весь phpunit/phpstan — в CI. Пушим рано, чиним по логам CI; несколько тяжёлых локальных прогонов параллельно не держим. Исключение — CI недоступен или нужен снимок/реальный запрос для «Доказ» — один точечный прогон. Подробнее — `docs/guides/development.md`, «Тесты: что локально, что в CI».
 
@@ -27,4 +27,6 @@
 
 Бэкенд: `vendor/bin/pint --test`, `vendor/bin/phpstan analyse`, `php artisan test --coverage --min=70`.
 Фронт: `npx ng lint`, `npx ng test --watch=false`, `npm run test:docs`, `npm run build` (собирает справку `/docs` из `docs/` и приложение).
-UI parity: `npm run build && npm run e2e` (job `ui-parity`, пока не обязательный).
+UI parity: `npm run build && npm run e2e` (job `ui-parity`, не входит в обязательные проверки «Protect main»).
+Скрипты репозитория (node, без установки): `node scripts/mysql-only-guard.mjs` (job `lint`), `node scripts/docs-links-check.mjs` — мёртвые внутренние ссылки в документации (job `docs`), тесты проверок — `node --test scripts/<имя>.test.mjs` (те, что вызывает `ci.yml`).
+Обязательные проверки «Protect main»: `backend`, `frontend`, `extension`, `security`, `docs`, `worklog`. Передача проекта — [docs/guides/handover-checklist.md](docs/guides/handover-checklist.md).

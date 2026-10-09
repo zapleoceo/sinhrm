@@ -7,6 +7,7 @@ namespace App\Modules\Recruiting\Services;
 use App\Models\User;
 use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\Contracts\TouchpointEvaluations;
+use App\Modules\Recruiting\Contracts\TouchpointLogger;
 use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\DTO\TimelineEntry;
 use App\Modules\Recruiting\DTO\TouchpointData;
@@ -20,7 +21,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 /** Touches logged in the product and the merged candidate timeline. */
-final readonly class TouchpointService
+final readonly class TouchpointService implements TouchpointLogger
 {
     public function __construct(
         private TouchpointRepository $touchpoints,

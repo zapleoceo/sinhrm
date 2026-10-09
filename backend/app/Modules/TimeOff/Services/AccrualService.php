@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\TimeOff\Services;
 
+use App\Modules\Core\Support\UserTime;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\Models\Employee;
 use App\Modules\TimeOff\Contracts\LeaveSettingsRepository;
@@ -58,7 +59,10 @@ final readonly class AccrualService
     private function forEmployee(Employee $employee, array $types, Carbon $now): array
     {
         $counts = ['accrued' => 0, 'expired' => 0];
-        if ($employee->isTerminated() || $employee->hired_at->gt($now->copy()->endOfMonth())) {
+        // Periods (year / month) are the user's calendar (Kyiv): on Dec 31 22:30 UTC it is already Jan 1 in Kyiv.
+        // The ledger's created_at stays the UTC moment $now.
+        $local = UserTime::now($now);
+        if ($employee->isTerminated() || $employee->hired_at->toDateString() > $local->copy()->endOfMonth()->toDateString()) {
             return $counts;
         }
         foreach ($types as $type) {
@@ -66,15 +70,15 @@ final readonly class AccrualService
             if ($policy === null) {
                 continue;
             }
-            $counts['expired'] += (int) $this->expire($employee, $type, $policy->carryOverMax(), $now);
-            $period = AccrualCalculator::period($policy->accrual_mode, $now);
+            $counts['expired'] += (int) $this->expire($employee, $type, $policy->carryOverMax(), $local);
+            $period = AccrualCalculator::period($policy->accrual_mode, $local);
             if ($this->ledger->hasPeriod($employee->id, $type->id, LedgerReason::Accrual, $period)) {
                 continue;
             }
             $accrued = $policy->accrual_mode === AccrualMode::Monthly
-                ? $this->ledger->accruedInYear($employee->id, $type->id, $now->year)
+                ? $this->ledger->accruedInYear($employee->id, $type->id, $local->year)
                 : 0.0;
-            $amount = AccrualCalculator::amount($policy->accrual_mode, $policy->annualDays(), $employee->hired_at, $now, $accrued);
+            $amount = AccrualCalculator::amount($policy->accrual_mode, $policy->annualDays(), $employee->hired_at, $local, $accrued);
             if ($amount === null || $amount <= 0) {
                 continue;
             }
@@ -92,10 +96,10 @@ final readonly class AccrualService
     }
 
     /** Unused balance from previous years above the carry-over limit expires once per year. */
-    private function expire(Employee $employee, LeaveType $type, ?float $carryOverMax, Carbon $now): bool
+    private function expire(Employee $employee, LeaveType $type, ?float $carryOverMax, Carbon $local): bool
     {
-        $yearStart = $now->copy()->startOfYear();
-        $period = $now->format('Y');
+        $yearStart = UserTime::toStorage($local->copy()->startOfYear()); // Jan 1 00:00 Kyiv as a UTC moment for created_at
+        $period = $local->format('Y');
         if ($carryOverMax === null
             || $this->ledger->hasPeriod($employee->id, $type->id, LedgerReason::Expiry, $period)
             || ! $this->ledger->hasEntriesBefore($employee->id, $type->id, $yearStart)) {
@@ -112,7 +116,7 @@ final readonly class AccrualService
             'delta' => -$expiring,
             'reason' => LedgerReason::Expiry->value,
             'period' => $period,
-            'created_at' => $now,
+            'created_at' => UserTime::toStorage($local),
         ]);
     }
 

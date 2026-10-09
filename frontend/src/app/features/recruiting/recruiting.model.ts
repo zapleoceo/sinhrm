@@ -247,6 +247,21 @@ export interface Application {
   route?: RouteStep[];
   /** Contextual role: who interviews this candidate for this vacancy (card only). */
   interviewers?: Ref[];
+  /** Newest CV sent from the career site with this application (card only); null — none. */
+  cv?: ApplicationCv | null;
+}
+
+/** CV metadata of an application; the file itself — {@link applicationCvUrl}. */
+export interface ApplicationCv {
+  filename: string;
+  size: number;
+  mime: string;
+  uploaded_at: string | null;
+}
+
+/** Same-origin download link (cookie session); the API answers with Content-Disposition: attachment. */
+export function applicationCvUrl(applicationId: number): string {
+  return `/api/applications/${applicationId}/cv`;
 }
 
 /** Acquisition channel (tz3; backend Recruiting AcquisitionChannel). utm_rules/costs — managers only. */
@@ -334,6 +349,11 @@ export interface Touchpoint {
   meta: TouchpointMeta;
   via_product: boolean;
   integration_key: string | null;
+  /**
+   * The text is hidden from this viewer (an offer touch carries the salary: only who may see the offer reads it).
+   * `body`, the sensitive meta and the evaluation come back empty — the touch itself still shows in the timeline.
+   */
+  redacted?: boolean;
   /** Script evaluation (timeline only; filled by the Scripts module), null = not evaluated. */
   evaluation?: EvaluationSummary | null;
 }
@@ -403,7 +423,7 @@ export interface MoveApplication {
   reject_reason_id?: number;
 }
 
-export type { PageMeta, Paged } from '../../core/api/api.model';
+export type { Paged } from '../../core/api/api.model';
 
 /** GET /api/vacancies meta: + active vacancies (open AND published) in the user's scope, for the list header. */
 export interface VacancyPageMeta extends PageMeta {
@@ -522,6 +542,8 @@ export const RECRUITING_ERROR_CODES = [
   'vacancy_out_of_scope',
   'already_linked',
   'channel_inactive',
+  'offer_too_long',
+  'template_not_offer',
 ] as const;
 
 /** Body of 409 duplicate_candidate: the existing candidate to open instead. */

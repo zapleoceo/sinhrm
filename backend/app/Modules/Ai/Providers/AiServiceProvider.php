@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Ai\Providers;
 
 use App\Modules\Ai\Console\AiExperimentCommand;
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiProvider;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\Contracts\AiTranscriber;
@@ -14,6 +15,7 @@ use App\Modules\Ai\Prompts\TestPromptHandler;
 use App\Modules\Ai\Repositories\EloquentAiRequestRepository;
 use App\Modules\Ai\Services\AiBrokerProvider;
 use App\Modules\Ai\Services\AiPollJob;
+use App\Modules\Ai\Services\AiService;
 use App\Modules\Ai\Support\AiHandlerRegistry;
 use App\Modules\Ai\Support\AiPromptRegistry;
 use App\Modules\Auth\Enums\UserRole;
@@ -50,6 +52,8 @@ final class AiServiceProvider extends ModuleServiceProvider
         // Speech → text exists only on the broker (Whisper chain), whichever chat provider is bound above.
         $this->app->bind(AiTranscriber::class, AiBrokerProvider::class);
         $this->app->bind(AiRequestRepository::class, EloquentAiRequestRepository::class);
+        // Other modules reach AI only through this contract, and only AiService implements it (CLAUDE.md rule 7).
+        $this->app->bind(AiGateway::class, AiService::class);
         $this->app->tag([TestPromptHandler::class, PromptTrialHandler::class], self::HANDLERS_TAG);
         $this->app->tag([TestPrompt::class], self::PROMPTS_TAG);
         $this->app->bind(AiHandlerRegistry::class, fn (Application $app): AiHandlerRegistry => new AiHandlerRegistry(

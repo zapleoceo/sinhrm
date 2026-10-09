@@ -9,14 +9,16 @@ use Illuminate\Database\Connection;
 /**
  * Read-only reconciliation source <-> target, result OK/FAIL. The report holds table/column names and counters only.
  *
- * - schema identity (SchemaCheck: migrations, tables and columns on one side only);
+ * - schema identity (SchemaCheck: migrations, tables and columns on one side only; SchemaCheck::LEGACY_SOURCE_ONLY_TABLES
+ *   are an info line and never compared — tables() holds only tables present on both sides);
  * - row count per table;
  * - per-column checksum: XOR of sha256(primary key + canonical value) over all rows — order-independent (MySQL and
  *   PostgreSQL sort strings differently) and sensitive to any changed cell; tables without a primary key get one
  *   checksum over the sorted row hashes;
  * - attachments: sha256 of the decoded base64 content on the target equals its stored sha256 column;
  * - foreign keys: no orphans on the target (the copy ran with FOREIGN_KEY_CHECKS=0);
- * - AUTO_INCREMENT = max(id) + 1 on the target.
+ * - AUTO_INCREMENT = max(id) + 1 on the target;
+ * - --without-secrets: the skipped tables (WithoutSecrets) hold 0 rows on the target; only counts are read.
  *
  * @phpstan-import-type Table from SchemaInspector
  */
@@ -28,13 +30,21 @@ final class Reconciler
         private readonly int $chunk,
     ) {}
 
-    public function run(): TransferReport
+    /** @param  list<string>  $skip  tables not copied (--without-secrets): expected EMPTY on the target, values never read */
+    public function run(array $skip = []): TransferReport
     {
         $report = new TransferReport;
         // Same schema gate as the preflight: a table or column on one side only, or other migration versions, is a
         // FAIL — comparing just the intersection would report OK for data that has nowhere to go.
         SchemaCheck::check($this->schema, $report);
         foreach ($this->schema->tables() as $table) {
+            if (in_array($table['name'], $skip, true)) {
+                $source = $this->dbs->source->table($table['name'])->count();
+                $target = $this->dbs->target->table($table['name'])->count();
+                $report->table($table['name'], $source, $target, WithoutSecrets::reconcile($table['name'], $source, $target, $report));
+
+                continue;
+            }
             $source = $this->digest($this->dbs->source, $table);
             $target = $this->digest($this->dbs->target, $table);
             $differ = [];

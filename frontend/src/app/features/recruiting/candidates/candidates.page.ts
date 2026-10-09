@@ -26,6 +26,7 @@ import { RecruitingService } from '../recruiting.service';
 import { CandidatesStore } from './candidates.store';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { withMember } from '../../../core/ui/with-member';
 
 /**
  * Split view: candidates list on the left, the open card on the right (/candidates/:id).
@@ -315,9 +316,7 @@ export class CandidatesPage implements OnInit {
   }
 
   protected toggle(id: number): void {
-    const next = new Set(this.selected());
-    if (!next.delete(id)) next.add(id);
-    this.selected.set(next);
+    this.selected.update((s) => withMember(s, id, !s.has(id)));
   }
 
   protected bulk(): void {

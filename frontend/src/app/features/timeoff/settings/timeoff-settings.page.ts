@@ -162,7 +162,6 @@ import { NotifyService } from '../../../core/ui/notify.service';
     .rows { list-style: none; margin: 0; padding: 0.5rem 0; }
     .rows li { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; border-bottom: var(--app-border-w) solid var(--app-track); flex-wrap: wrap; }
     .dot { width: 0.9rem; height: 0.9rem; border-radius: 50%; }
-    .spacer { flex: 1; }
     .inline { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; padding: 1rem 0; }
     .narrow { width: 8rem; }
   `,

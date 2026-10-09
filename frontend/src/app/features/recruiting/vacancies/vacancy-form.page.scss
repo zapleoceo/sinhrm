@@ -24,7 +24,6 @@
 h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.5rem; }
 
 .head-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.spacer { flex: 1; }
 .chip {
   display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.6rem; border-radius: var(--app-radius-pill);
   border: var(--app-border-w) solid var(--app-border); font: var(--mat-sys-label-medium); color: var(--app-muted);

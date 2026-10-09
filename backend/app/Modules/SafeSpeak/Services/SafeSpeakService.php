@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\SafeSpeak\Services;
 
 use App\Models\User;
-use App\Modules\People\Services\PeopleScope;
+use App\Modules\Core\Support\UserTime;
+use App\Modules\People\Contracts\PeopleAccess;
 use App\Modules\SafeSpeak\Contracts\SafeSpeakRepository;
 use App\Modules\SafeSpeak\Enums\ReportCategory;
 use App\Modules\SafeSpeak\Enums\ReportStatus;
@@ -36,7 +37,7 @@ final readonly class SafeSpeakService
 
     public function __construct(
         private SafeSpeakRepository $reports,
-        private PeopleScope $scope,
+        private PeopleAccess $scope,
         private RateLimiter $limiter,
         private string $appKey,
     ) {}
@@ -54,7 +55,7 @@ final readonly class SafeSpeakService
             throw SafeSpeakException::tooManyAttempts($this->limiter->availableIn($key));
         }
         $this->limiter->hit($key, 3600);
-        $today = ($now ?? Carbon::now())->toDateString();
+        $today = UserTime::today($now)->toDateString();
         $code = AccessCode::generate();
         $report = $this->reports->create([
             'access_code_hash' => AccessCode::hash($code, $this->appKey),
@@ -91,7 +92,7 @@ final readonly class SafeSpeakService
         if ($report->status === ReportStatus::Closed) {
             throw SafeSpeakException::closed();
         }
-        $this->reports->addMessage($report, SafeSpeakMessage::REPORTER, null, $body, ($now ?? Carbon::now())->toDateString());
+        $this->reports->addMessage($report, SafeSpeakMessage::REPORTER, null, $body, UserTime::today($now)->toDateString());
 
         return $report;
     }
@@ -112,7 +113,7 @@ final readonly class SafeSpeakService
         if ($report->status === ReportStatus::Closed) {
             throw SafeSpeakException::closed();
         }
-        $this->reports->addMessage($report, SafeSpeakMessage::HANDLER, $handler->id, $body, ($now ?? Carbon::now())->toDateString());
+        $this->reports->addMessage($report, SafeSpeakMessage::HANDLER, $handler->id, $body, UserTime::today($now)->toDateString());
         if ($report->status === ReportStatus::New) {
             $this->reports->update($report, ['status' => ReportStatus::InReview->value]);
         }
@@ -122,6 +123,6 @@ final readonly class SafeSpeakService
 
     public function setStatus(SafeSpeakReport $report, ReportStatus $status, ?Carbon $now = null): SafeSpeakReport
     {
-        return $this->reports->update($report, ['status' => $status->value, 'updated_on' => ($now ?? Carbon::now())->toDateString()]);
+        return $this->reports->update($report, ['status' => $status->value, 'updated_on' => UserTime::today($now)->toDateString()]);
     }
 }

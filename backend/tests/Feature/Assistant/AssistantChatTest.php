@@ -96,6 +96,20 @@ final class AssistantChatTest extends TestCase
         $this->assertStringEndsWith('Знайди Олену', $body['messages'][1]['content']);
     }
 
+    /** "today" in the per-turn context is the user's Kyiv date (Dec 31 22:30 UTC is already Jan 1), in the user message. */
+    public function test_turn_context_date_is_the_kyiv_date(): void
+    {
+        $this->enableAi(self::NATIVE);
+        $this->fakeBroker([[self::toolAnswer([['id' => 'call_1', 'name' => 'find_endpoints', 'arguments' => '{"query":"x"}']])]]);
+        Carbon::setTestNow('2026-12-31 22:30:00');
+        $user = User::factory()->withRole(UserRole::Recruiter)->create();
+
+        $this->actingAs($user)->postJson('/api/assistant/turn', ['messages' => [['role' => 'user', 'content' => 'hi']]])->assertOk();
+
+        $this->assertStringContainsString('today 2027-01-01 (Friday)', $this->brokerSubmits[0]['messages'][1]['content']);
+        $this->assertSame(AssistantPrompt::SYSTEM, $this->brokerSubmits[0]['messages'][0]['content']);
+    }
+
     public function test_by_default_tools_are_emulated_through_strict_json_for_any_provider(): void
     {
         $this->enableAi();

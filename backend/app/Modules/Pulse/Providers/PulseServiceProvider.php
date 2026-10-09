@@ -38,7 +38,7 @@ final class PulseServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'perform';
 
-    /** The survey builder, waves, identified responses, mood settings: superadmin, admin. */
+    /** The survey builder, waves, identified responses, mood settings: HR staff (UserRole::hrStaff() — superadmin, admin, hr_manager). */
     public const string MANAGE = 'pulse-manage';
 
     protected string $prefix = 'pulse';

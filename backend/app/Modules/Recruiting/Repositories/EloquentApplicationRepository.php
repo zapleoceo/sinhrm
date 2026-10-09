@@ -8,6 +8,8 @@ use App\Modules\Recruiting\Contracts\ApplicationRepository;
 use App\Modules\Recruiting\DTO\Scope;
 use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\CareerSubmission;
+use App\Modules\Recruiting\Models\Offer;
 use App\Modules\Recruiting\Models\StageChange;
 use App\Modules\Recruiting\Support\ApplicationVisibility;
 use Illuminate\Database\Eloquent\Builder;
@@ -40,7 +42,8 @@ final class EloquentApplicationRepository implements ApplicationRepository
     public function forCandidate(int $candidateId, Scope $scope): Collection
     {
         return ApplicationVisibility::query($scope)
-            ->with(['vacancy.branch', 'vacancy.pipeline.stages', 'stage', 'rejectReason', 'stageChanges.toStage', 'stageChanges.byUser', 'interviewers'])
+            ->with(['vacancy.branch', 'vacancy.pipeline.stages', 'stage', 'rejectReason', 'stageChanges.toStage', 'stageChanges.byUser', 'interviewers',
+                'cvSubmissions' => fn ($q) => $q->select(CareerSubmission::CV_META)])
             ->where('candidate_id', $candidateId)
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
@@ -91,6 +94,35 @@ final class EloquentApplicationRepository implements ApplicationRepository
             ->orderBy('id')
             ->limit($limit)
             ->get();
+    }
+
+    public function isVisible(int $applicationId, Scope $scope): bool
+    {
+        return ApplicationVisibility::query($scope)->whereKey($applicationId)->exists();
+    }
+
+    public function latestCv(int $applicationId): ?CareerSubmission
+    {
+        return CareerSubmission::query()
+            ->where('application_id', $applicationId)
+            ->whereNotNull('cv_size')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    public function offerFor(int $applicationId): ?Offer
+    {
+        return Offer::query()->where('application_id', $applicationId)->first();
+    }
+
+    public function createOffer(array $attributes): Offer
+    {
+        return Offer::query()->create($attributes);
+    }
+
+    public function updateOffer(Offer $offer, array $attributes): void
+    {
+        $offer->update($attributes);
     }
 
     public function transaction(callable $callback): mixed

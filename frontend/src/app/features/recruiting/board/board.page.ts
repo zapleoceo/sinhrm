@@ -507,16 +507,17 @@ export class BoardPage {
    * vacancy board); the card leaves its own column only once the server accepted the move.
    */
   protected moveTo(app: Application, target: BoardTarget): void {
+    const plan = this.store.planMove(app, target, this.canWrite());
     if (target.type === 'personal') {
       this.store.file(app, target.column.id, this.toast);
       return;
     }
     const stage = target.stage;
-    if (app.stage_id !== stage.id && !this.canWrite()) {
+    if (plan === 'forbidden') {
       this.toast('recruiting.errors.forbidden');
       return;
     }
-    if (app.stage_id === stage.id || !this.store.needsReason(stage)) {
+    if (plan === 'move') {
       this.store.moveToStage(app, stage, {}, this.toast);
       return;
     }

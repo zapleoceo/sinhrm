@@ -189,23 +189,12 @@ import { wideDialog } from '../../core/ui/dialog';
     </section>
   `,
   styles: `
-    .panel {
-      padding: 1rem 1.25rem;
-      margin-bottom: 1rem;
-    }
-    .head {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
+    @use '../../core/ui/styles/service-panel';
+    @include service-panel.base;
     .text {
       display: flex;
       flex-direction: column;
       flex: 1 1 16rem;
-    }
-    .notice {
-      margin: 0.5rem 0 0;
     }
     .notice.error,
     .state.off {
@@ -294,9 +283,6 @@ import { wideDialog } from '../../core/ui/dialog';
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
-    }
-    .small {
-      font-size: 0.8rem;
     }
   `,
 })

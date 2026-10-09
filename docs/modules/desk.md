@@ -21,6 +21,13 @@
 - Задачи о просрочке — в «Мої задачі», источник «Звернення» (`desk`).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/DeskException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+**Тема и текст обращения**: правила `subject`/`body` и их чтение в `Http/Requests/OpenCaseRequest` — общий трейт `Core\Http\Requests\Concerns\HasSubjectAndBody` (тот же, что у SafeSpeak); лимиты 200/10000 и trim темы прежние.
+
+- Фронт (2026-10-08): «Мої звернення» (`my-cases.page.ts`) держит список в `PagedList`, ошибка — уведомление.
+- Фронт (2026-10-08): очередь `/desk/queue` держит обращения и загрузку в `PagedList` (`core/ui/table/paged-list.ts`): новый фильтр отменяет запрос в пути, ошибка — уведомление.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/DeskNavBadges` — ключ `desk_mine` («Мої звернення»): мои обращения в статусе «Очікує відповіді» (`waiting`, HR ждёт ответа от меня); ключ `desk_queue` («Черга звернень», только HR с правом `desk-manage`): открытые обращения — как фильтр очереди по умолчанию. Оба числа — один `count(*)` (`DeskService::countMine/countQueue`, общий с `cases()` построитель запроса).
 Бэкенд — `backend/app/Modules/Desk`, маршруты `/api/desk/*` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`; gate `desk-manage` = `PeopleScope::isAdmin` (очередь, категории).
@@ -40,7 +47,7 @@
 | `POST /api/desk/categories`, `PATCH …/{id}` | HR | категория и SLA (часы 1..2160); ответственный по умолчанию — только HR-пользователь (422 `invalid_assignee`) |
 | `GET /api/desk/cases/mine` | все | свои обращения (нет карточки сотрудника — пусто) |
 | `GET /api/desk/cases?status=&category_id=&assignee_id=&open=1` | HR | очередь |
-| `POST /api/desk/cases` `{category_id, subject, body}` | сотрудник с карточкой | 201; без карточки — 422 `no_employee`; выключенная категория — 422 |
+| `POST /api/desk/cases` `{category_id, subject, body}` | сотрудник с карточкой | 201; без карточки — 422 `no_employee`; выключенная категория — 422; больше 20 открытых обращений — 422 `too_many_open_cases` |
 | `GET /api/desk/cases/{id}` | автор, HR | детали: ветка (автору — без внутренних), файлы, SLA |
 | `PATCH /api/desk/cases/{id}` `{status?, assignee_id?, category_id?}` | HR; автор — только `status: closed` | иначе 403 |
 | `POST /api/desk/cases/{id}/comments` `{body, internal?, article_id?}` | автор (без `internal`/`article_id` — иначе 403), HR | закрытое — 409 `case_closed`; черновик статьи — 422 `article_not_found` |
@@ -58,6 +65,21 @@
 `desk_sla` («SLA порушено (перша відповідь|вирішення): звернення #N», ссылка `/desk/cases/N`) ответственному, иначе
 ответственному категории, иначе первому активному админу. Идемпотентно: ключ `desk:<id>:first_response|resolve` —
 одна задача на обращение и цель (`TaskService::schedule`). Ответ: `{sla_breaches, sla_unassigned}`.
+
+### Лимиты против злоупотреблений (2026-10-08)
+Пишущие эндпоинты открыты любому активному сотруднику, а вложения лежат base64 **в БД**, поэтому:
+
+| Лимит | Значение | Что отвечает |
+|---|---|---|
+| Частота записи (`POST` обращение / комментарий / вложение) | именованный лимитер `DeskServiceProvider::WRITE_LIMITER` = `desk-write`: `WRITES_PER_MINUTE` = 20 в минуту, ключ `desk` + id пользователя — своя корзина, не общая с `throttle:N,1` Channels/Recruiting (обычный `throttle:20,1` считает по пользователю на все такие маршруты сразу) | 429 |
+| Открытых обращений на сотрудника | `DeskService::MAX_OPEN_CASES` = 20 (считаются незакрытые; закрытие освобождает слот) | 422 `too_many_open_cases` |
+| Файлов на обращение | `DeskService::MAX_FILES` = 10 | 422 `too_many_files` |
+| Суммарный размер вложений обращения | `DeskService::MAX_CASE_BYTES` = 25 МБ (`DeskRepository::attachmentBytes` — сумма `size`) | 422 `attachment_quota_exceeded` |
+
+Лимитер объявляется общим `ModuleServiceProvider::definePerUserLimiter` (ключ корзины теперь `desk-write|<id>`), как у Documents, Reports и TimeOff ([core.md](core.md)).
+
+Тесты — `tests/Feature/Desk/DeskLimitsTest.php` (429 на 21-м запросе к каждому пишущему маршруту, 422 на обоих
+лимитах, освобождение слота после закрытия обращения).
 
 ### Файлы — переиспользование Documents
 Загрузка валидируется тем же `Documents\Http\Requests\UploadDocumentFileRequest` (pdf/png/jpg/docx, ≤ 2 МБ), тип
@@ -86,6 +108,10 @@
 - Ошибки API → i18n-ключ: `deskErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `DeskService` спрашивает «это HR?» и «чья карточка?» через контракт People `PeopleAccess` (не через класс `PeopleScope`). Тест — `tests/Unit/Desk/DeskPeopleAccessTest.php`.
+- `DeskSlaJob` ставит задачи эскалации через контракт Scripts `TaskScheduler`.
 
 ## Как проверить
 - `php artisan test --filter=Desk` — матрица доступа (сотрудник/руководитель/коллега/HR), скрытие внутренних заметок,

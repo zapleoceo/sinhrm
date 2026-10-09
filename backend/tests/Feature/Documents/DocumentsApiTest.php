@@ -7,10 +7,12 @@ namespace Tests\Feature\Documents;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Directory\Models\Position;
 use App\Modules\Documents\Contracts\DocumentStorage;
+use App\Modules\Documents\Contracts\DocumentTemplateRepository;
 use App\Modules\Documents\Models\Document;
 use App\Modules\Documents\Models\DocumentFile;
 use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Documents\Models\Signature;
+use App\Modules\Documents\Providers\DocumentsServiceProvider;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
 use App\Modules\Scripts\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,6 +33,19 @@ final class DocumentsApiTest extends TestCase
     {
         Carbon::setTestNow();
         parent::tearDown();
+    }
+
+    public function test_active_of_category_gives_live_templates_of_one_category_by_name(): void
+    {
+        DocumentTemplate::query()->create(['name' => 'Senior offer', 'category' => 'offer', 'body' => 'a']);
+        DocumentTemplate::query()->create(['name' => 'Archived offer', 'category' => 'offer', 'body' => 'b', 'archived' => true]);
+        DocumentTemplate::query()->create(['name' => 'Base offer', 'category' => 'offer', 'body' => 'c']);
+        DocumentTemplate::query()->create(['name' => 'Order', 'category' => 'orders', 'body' => 'd']);
+
+        $templates = $this->app->make(DocumentTemplateRepository::class)->activeOfCategory('offer');
+
+        $this->assertSame(['Base offer', 'Senior offer'], $templates->pluck('name')->all());
+        $this->assertNull($templates->first()?->getAttributes()['body'] ?? null); // a picker loads id and name only
     }
 
     public function test_guest_401_and_writes_admin_only(): void
@@ -110,6 +125,20 @@ final class DocumentsApiTest extends TestCase
 
         $this->actingAs($admin)->postJson('/api/documents', ['employee_id' => $org['worker']->id])
             ->assertUnprocessable()->assertJsonValidationErrors(['title']);
+    }
+
+    /** {Сьогодні} is the Kyiv date: at 00:30 Kyiv (21:30 UTC) it is already the new day (MySQL e2e, round 2). */
+    public function test_today_variable_is_the_kyiv_date_after_midnight(): void
+    {
+        Carbon::setTestNow('2026-10-11 21:30:00'); // 2026-10-12 00:30 in Kyiv
+        $admin = $this->login(UserRole::Admin);
+        $worker = $this->org()['worker'];
+        $template = DocumentTemplate::query()->create(['name' => 'Today', 'category' => 'orders', 'body' => 'Дата: {Сьогодні}']);
+
+        $this->actingAs($admin)->postJson('/api/documents', ['employee_id' => $worker->id, 'template_id' => $template->id])
+            ->assertCreated()->assertJsonPath('data.content_md', 'Дата: 12.10.2026');
+        $this->actingAs($admin)->postJson('/api/documents/templates/preview', ['body' => '{Сьогодні}'])
+            ->assertOk()->assertJsonPath('data.markdown', '12.10.2026');
     }
 
     public function test_access_matrix_and_drafts_hidden_from_non_admins(): void
@@ -223,6 +252,23 @@ final class DocumentsApiTest extends TestCase
         $doc = $this->document($this->employee()->id, ['content_md' => 'Text']);
 
         $this->actingAs($admin)->postJson("/api/documents/{$doc->id}/send")->assertUnprocessable()->assertJsonPath('code', 'employee_has_no_login');
+    }
+
+    /** Uploads are throttled per user in their own bucket (documents-upload): the 31st in a minute is 429. */
+    public function test_file_upload_is_throttled_per_user(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $hr = $this->login(UserRole::HrManager);
+        $doc = $this->document($this->org()['worker']->id);
+        $upload = fn ($user) => $this->actingAs($user)->post("/api/documents/{$doc->id}/file", [], ['Accept' => 'application/json']);
+
+        for ($i = 0; $i < DocumentsServiceProvider::UPLOADS_PER_MINUTE; $i++) {
+            $upload($admin)->assertUnprocessable(); // no file: validation, but the attempt counts
+        }
+        $upload($admin)->assertStatus(429);
+        $upload($hr)->assertUnprocessable(); // another user's bucket; hr_manager is HR staff (documents-manage)
+        $this->actingAs($admin)->getJson("/api/documents/{$doc->id}")->assertOk(); // other endpoints are not in this bucket
+        $this->actingAs($this->login(UserRole::Employee))->post("/api/documents/{$doc->id}/file", [], ['Accept' => 'application/json'])->assertForbidden();
     }
 
     public function test_file_upload_validates_type_and_size_and_downloads_as_attachment(): void

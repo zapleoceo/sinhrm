@@ -1,9 +1,8 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { TimesheetApproval } from './time.model';
@@ -12,9 +11,11 @@ import { ClientColumn, ClientTable, DATE_RANGE, NUMBER_RANGE, TEXT_FILTER } from
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
+import { PagedList } from '../../core/ui/table/paged-list';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** Columns of the approvals list (all submitted weeks are on the page). */
-export const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
+const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
   { key: 'employee', value: (t) => t.employee.full_name, filter: 'text' },
   { key: 'week', value: (t) => t.week_start, filter: 'date' },
   { key: 'expected', value: (t) => t.expected, filter: 'number' },
@@ -86,10 +87,11 @@ export const APPROVAL_COLUMNS: readonly ClientColumn<TimesheetApproval>[] = [
 })
 export class TimeApprovalsPage implements OnInit {
   private readonly api = inject(TimeService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
-  protected readonly items = signal<TimesheetApproval[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<TimesheetApproval>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly table = new ClientTable({ rows: this.items, columns: APPROVAL_COLUMNS });
   protected readonly textFilter = TEXT_FILTER;
   protected readonly numberFilter = NUMBER_RANGE;
@@ -106,21 +108,11 @@ export class TimeApprovalsPage implements OnInit {
     }
     this.api.decide(t.id, approve, comment).subscribe({
       next: () => this.items.update((list) => list.filter((x) => x.id !== t.id)),
-      error: (e: unknown) => this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 }),
+      error: (e: unknown) => this.notify.show(timeErrorKey(e)),
     });
   }
 
   private load(): void {
-    this.loading.set(true);
-    this.api.approvals().subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.snack.open(this.i18n.translate(timeErrorKey(e)), undefined, { duration: 4000 });
-      },
-    });
+    this.list.load(this.api.approvals(), { error: (e) => this.notify.show(timeErrorKey(e)) });
   }
 }

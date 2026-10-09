@@ -10,6 +10,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { Objective, VISIBILITIES, Visibility, keyResultRatio, objectiveTree, progressTone, quarterOf, quarterOptions } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 interface KrDraft {
   title: string;
@@ -144,6 +145,7 @@ interface KrDraft {
     </ul>
   `,
   styles: `
+    @use '../../../core/ui/styles/trace';
     .create { padding: 0.75rem 1.25rem; margin-bottom: 1rem; }
     .create summary { cursor: pointer; font-weight: 700; min-height: 2rem; display: flex; align-items: center; }
     .create form { margin-top: 0.75rem; }
@@ -161,12 +163,7 @@ interface KrDraft {
     /* Progress = a route line: track + filled part in the tone colour, drawn once («trace», transform only). */
     .bar, .mini { display: block; height: 6px; border-radius: var(--app-radius-pill); background: var(--app-track); overflow: hidden; margin: 0.6rem 0; }
     .mini { width: 6rem; height: 4px; margin: 0; display: inline-block; }
-    .bar span, .mini span {
-      display: block; height: 100%; border-radius: inherit; background: var(--mat-sys-primary);
-      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    }
-    @keyframes trace { from { transform: scaleX(0); } }
-    @media (prefers-reduced-motion: reduce) { .bar span, .mini span { animation: none; } }
+    @include trace.fill('.bar span, .mini span', var(--mat-sys-primary));
     [data-tone='danger'] { color: var(--app-bad-text); }
     [data-tone='warning'] { color: var(--app-warn-text); }
     [data-tone='success'] { color: var(--app-good-text); }
@@ -190,8 +187,9 @@ export class ObjectivesPage implements OnInit {
   protected readonly periods = quarterOptions(new Date());
   protected readonly visibilities = VISIBILITIES;
   protected readonly period = signal(quarterOf(new Date()));
-  protected readonly items = signal<Objective[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<Objective>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly tree = computed(() => objectiveTree(this.items()));
   protected readonly checkinId = signal<number | null>(null);
   protected readonly values = signal<Record<string, number>>({});
@@ -213,17 +211,7 @@ export class ObjectivesPage implements OnInit {
   }
 
   protected load(): void {
-    this.loading.set(true);
-    this.api.objectives({ period: this.period() }).subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(performErrorKey(e));
-      },
-    });
+    this.list.load(this.api.objectives({ period: this.period() }), { error: (e) => this.notify.show(performErrorKey(e)) });
   }
 
   protected addDraft(): void {

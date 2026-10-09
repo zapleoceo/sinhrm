@@ -6,6 +6,8 @@ namespace App\Modules\Observability\Providers;
 
 use App\Modules\Core\Contracts\ScheduledJob;
 use App\Modules\Core\Support\ModuleServiceProvider;
+use App\Modules\Observability\Contracts\ErrorEventRepository;
+use App\Modules\Observability\Repositories\EloquentErrorEventRepository;
 use App\Modules\Observability\Services\ErrorLogPruneJob;
 use App\Modules\Observability\Services\ErrorRecorder;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -35,6 +37,7 @@ final class ObservabilityServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        $this->app->bind(ErrorEventRepository::class, EloquentErrorEventRepository::class);
         $this->app->singleton(ErrorRecorder::class);
         $this->app->tag([ErrorLogPruneJob::class], ScheduledJob::class);
     }

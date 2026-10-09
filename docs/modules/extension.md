@@ -56,8 +56,12 @@
   использовать расширение на LinkedIn — за владельцем процесса. Work.ua, Djinni, DOU и Robota.ua также ограничивают массовый сбор.
 - Расширение передаёт в SinHRM только то, что человек видит на странице и подтверждает кнопкой. Персональные данные
   кандидата обрабатываются по правилам [secrets.md](../architecture/secrets.md) (Закон Украины №2297-VI).
-- Токен хранится в `chrome.storage.local` этого браузера. Он даёт доступ **только** к `/api/clipper/*`
+- Токен хранится в `chrome.storage.local` этого браузера с уровнем доступа `TRUSTED_CONTEXTS` (страницы расширения;
+  скрипт извлечения, который работает внутри чужих сайтов, его не видит). Он даёт доступ **только** к `/api/clipper/*`
   (см. «Как устроено»), не к остальному API.
+- Постоянного доступа к сайтам вакансий нет: скрипт внедряется только во вкладку, где нажали значок (`activeTab`).
+- Ссылка «Відкрити кандидата» открывается, только если она https и ведёт на тот же адрес SinHRM, что в настройках
+  (`trustedLink`); иначе ссылки нет. Тест — `extension/tests/security.test.ts`.
 
 ## Ограничения
 - **Селекторы ломаются, когда сайты меняют вёрстку.** Порядок извлечения: JSON-LD (`Person`) → мета-теги `og:` →
@@ -69,11 +73,13 @@
   пройдут только через CORS `/api/clipper/*`.
 
 ## Как устроено
+- Расширение (2026-10-08, проверка DRY/knip): дублей кода нет (jscpd 0), `npm run lint` и `typecheck` чистые; удалена мёртвая `getLang()` (`src/i18n/index.ts`) — язык читает только `t()` через `setLang()`. Экспорт помощников `extractors/common.ts` и `selectors` площадок оставлен: это контракт извлекателей, им пользуются сами модули.
+- Фронт (2026-10-08): страница расширения берёт `.small` из глобальных утилит `styles.scss` вместо своей копии правила.
 ### Расширение (`extension/`)
 TypeScript без фреймворка, сборка esbuild, тесты Vitest + jsdom, линт ESLint (typescript-eslint).
 | Файл | Что |
 |---|---|
-| `static/manifest.json` | MV3: `permissions: activeTab, scripting, storage`; `host_permissions` — только пять сайтов (для Robota.ua — `robota.ua` и `www.robota.ua`) и `https://sinhrm.vercel.app/*`; без content scripts и service worker |
+| `static/manifest.json` | MV3: `permissions: activeTab, scripting, storage`; `host_permissions` — только `https://sinhrm.vercel.app/*` (сайты вакансий — через `activeTab` по клику; аудит 2026-10); без content scripts и service worker |
 | `src/popup.ts`, `static/popup.html` | окошко: определение сайта по адресу вкладки, извлечение, форма, отправка |
 | `src/detect.ts` | адрес вкладки → `linkedin \| work_ua \| djinni \| dou \| robota_ua` или «не поддерживается» |
 | `src/extract.ts` | точка входа внедряемого скрипта: собирается в один самодостаточный `extract.js`, последняя строка — вызов `run()`; popup вызывает `chrome.scripting.executeScript({files: ['extract.js']})` и получает результат последнего выражения (вариант с `func:` не подходит — функция сериализуется без импортов) |
@@ -95,7 +101,7 @@ TypeScript без фреймворка, сборка esbuild, тесты Vitest 
 | `GET /api/clipper/me` | токен `clipper` | `{user: {id, name, email}, vacancies: [{id, title, branch}]}` — открытые вакансии в области видимости |
 | `POST /api/clipper/candidates` | токен `clipper`, роль с правом записи | `{full_name, source_site (linkedin\|work_ua\|djinni\|dou\|robota_ua), profile_url, headline?, location?, phone?, email?, telegram?, summary?, vacancy_id?}` → 201 `{candidate_id, url, created: true}` / 200 `{…, created: false}`; 409 `duplicate_candidate {restricted: true}`; 403 `vacancy_out_of_scope`; 422 (в т.ч. `profile_url` не https или не на хосте сайта); 429 |
 
-Подробности токенов — [auth.md](auth.md#токены-браузерного-расширения), дедупликации и заметки — [recruiting.md](recruiting.md).
+Подробности токенов — [auth.md](auth.md#персональные-токены-расширение-mcp), дедупликации и заметки — [recruiting.md](recruiting.md).
 
 **Интерфейс (2026-09-26):** Под описанием — строка «Підтримувані сайти» с иконками LinkedIn, Work.ua, Djinni, DOU, Robota.ua (`app-channel-icon`, [core.md](core.md)), тот же набор, что в `extension/src/extractors`.
 
@@ -107,7 +113,7 @@ TypeScript без фреймворка, сборка esbuild, тесты Vitest 
 
 ## Как проверить
 - Расширение: `cd extension && npm ci && npm run lint && npm run typecheck && npm test && npm run package`
-  (тесты: определение сайта, извлечение на вымышленных страницах всех четырёх сайтов — JSON-LD, `og:`, DOM, обрезка
+  (тесты: определение сайта, извлечение на вымышленных страницах всех пяти сайтов — JSON-LD, `og:`, DOM, обрезка
   до 2000, Telegram; API-клиент с подменённым `fetch`; одинаковые ключи в трёх словарях).
 - Бэкенд: `tests/Feature/Recruiting/ExtensionApiTest.php`, `tests/Unit/Recruiting/ClipperSiteTest.php`.
 - Фронт: `frontend/src/app/features/extension/extension.spec.ts`.

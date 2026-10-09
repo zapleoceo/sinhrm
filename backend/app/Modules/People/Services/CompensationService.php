@@ -5,21 +5,40 @@ declare(strict_types=1);
 namespace App\Modules\People\Services;
 
 use App\Models\User;
+use App\Modules\Core\Support\UserTime;
+use App\Modules\People\Contracts\EmployeeRepository;
+use App\Modules\People\DTO\PeopleContext;
+use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
 use App\Modules\People\Models\EmployeeCompensation;
-use Illuminate\Support\Carbon;
+use App\Modules\People\Support\SelfDecisionAudit;
 use Psr\Log\LoggerInterface;
 
 /** Compensation history. Access (HR staff / the employee read-only) is decided by the caller: route gate or own profile. */
 final readonly class CompensationService
 {
-    public function __construct(private LoggerInterface $log) {}
+    public function __construct(
+        private LoggerInterface $log,
+        private EmployeeRepository $employees,
+        private SelfDecisionAudit $selfDecisions,
+    ) {}
 
-    /** @param  array<string, mixed>  $data  validated SaveCompensationRequest */
-    public function add(User $actor, Employee $employee, array $data): EmployeeCompensation
+    /**
+     * Separation of duties: HR never writes their own compensation row — a raise is signed off by somebody else.
+     * Only break-glass (sole superadmin, PeopleContext::canDecideOrBreakGlass) may, audited as self_decision.
+     *
+     * @param  array<string, mixed>  $data  validated SaveCompensationRequest
+     *
+     * @throws PeopleException forbidden
+     */
+    public function add(User $actor, PeopleContext $ctx, Employee $employee, array $data): EmployeeCompensation
     {
-        $record = EmployeeCompensation::query()->create($data + ['employee_id' => $employee->id, 'created_by' => $actor->id]);
+        if (! $ctx->canDecideOrBreakGlass($employee->id)) {
+            throw PeopleException::forbidden();
+        }
+        $record = $this->employees->addCompensation($data + ['employee_id' => $employee->id, 'created_by' => $actor->id]);
         // No amount in the log: salary is personal data.
+        $this->selfDecisions->record($ctx, $employee->id, 'people.compensation_added', $record->id);
         $this->log->info('people.compensation_added', ['employee' => $employee->id, 'id' => $record->id, 'by' => $actor->id]);
 
         return $record;
@@ -28,9 +47,10 @@ final readonly class CompensationService
     /** @return array{current: array<string, mixed>|null, history: list<array<string, mixed>>} */
     public function payload(Employee $employee): array
     {
-        $history = EmployeeCompensation::query()->where('employee_id', $employee->id)
-            ->orderByDesc('effective_on')->orderByDesc('id')->get();
-        $today = Carbon::now()->toDateString();
+        $history = $this->employees->compensationHistory($employee->id);
+        // The user's day (Europe/Kyiv), not the UTC day: right after midnight in Kyiv a raise effective "today" is
+        // already current, although the UTC date is still yesterday (UserTime::today, docs/modules/people.md).
+        $today = UserTime::today()->toDateString();
         $current = $history->first(static fn (EmployeeCompensation $c): bool => $c->effective_on->toDateString() <= $today);
         $row = static fn (EmployeeCompensation $c): array => [
             'id' => $c->id,

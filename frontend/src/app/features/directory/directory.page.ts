@@ -5,19 +5,19 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ColumnHeader } from '../../core/ui/table/column-header';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
-import { ColumnFilter, FilterValue, TableSort, filterToParam, sortToParams } from '../../core/ui/table/table-state';
+import { ColumnFilter, FilterValue, TableSort, idToFilter } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { DICTIONARY_TYPES, DIRECTORY_STATUSES, DictionaryItem } from './directory.model';
 import { directoryViewFromParams } from './directory.query';
 import { DirectoryService, directoryErrorKey } from './directory.service';
 import { DirectoryStore } from './directory.store';
+import { NotifyService } from '../../core/ui/notify.service';
 
 /** API order without ?sort (by name, A→Z): the name column carries the arrow. */
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
@@ -49,9 +49,10 @@ const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 })
 export class DirectoryPage implements OnInit {
   protected readonly store = inject(DirectoryStore);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   private readonly url = inject(TableUrlState);
+  /** Select value of an optional id of the query (none → «all»). */
+  protected readonly idValue = idToFilter;
   private readonly directory = inject(DirectoryService);
   private readonly cities = signal<DictionaryItem[]>([]);
 
@@ -89,20 +90,16 @@ export class DirectoryPage implements OnInit {
   }
 
   protected onPage(e: PageEvent): void {
-    this.url.update({ page: e.pageIndex + 1, perPage: e.pageSize }, { paging: true });
+    this.url.setPage(e);
   }
 
   protected onSort(sort: TableSort | null): void {
-    this.url.update(sortToParams(sort));
+    this.url.setSort(sort);
   }
 
   /** Header filters: text / chosen value; cleared → removed from the URL (and the page goes back to 1). */
   protected setFilter(name: 'q' | 'status' | 'city_id', value: FilterValue): void {
-    this.url.update({ [name]: filterToParam(value) });
-  }
-
-  protected idValue(id: number | undefined): string | null {
-    return id ? String(id) : null;
+    this.url.setFilter(name, value);
   }
 
   protected startEdit(item: DictionaryItem): void {
@@ -142,6 +139,6 @@ export class DirectoryPage implements OnInit {
   }
 
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 3000 });
+    this.notify.show(key, { duration: 3000 });
   }
 }

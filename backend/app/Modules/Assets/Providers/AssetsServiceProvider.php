@@ -21,7 +21,7 @@ final class AssetsServiceProvider extends ModuleServiceProvider
 
     protected string $moduleGroup = 'admin';
 
-    /** Inventory, assign/return: superadmin, admin (HR). */
+    /** Inventory, assign/return: HR staff (UserRole::hrStaff(): superadmin, admin, hr_manager). */
     public const string MANAGE = 'assets-manage';
 
     protected string $prefix = 'assets';

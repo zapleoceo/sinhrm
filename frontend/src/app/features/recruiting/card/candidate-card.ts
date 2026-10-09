@@ -20,7 +20,8 @@ import { TasksWidget } from '../../scripts/tasks/tasks-widget';
 import { RejectDialog, RejectDialogData, RejectDialogResult } from '../board/reject.dialog';
 import { canWriteRecruiting } from '../recruiting.access';
 import { formatDuration } from '../recruiting.format';
-import { Application, CHANNELS, LogTouch, STAGE_FILTER, Stage, TimelineFilter } from '../recruiting.model';
+import { Application, CHANNELS, LogTouch, STAGE_FILTER, Stage, TimelineFilter, applicationCvUrl } from '../recruiting.model';
+import { fileSize } from '../../documents/documents.model';
 import { recruitingErrorKey } from '../recruiting.service';
 import { CandidateCardStore } from './candidate-card.store';
 import { ScreeningPanel } from './screening-panel';
@@ -29,6 +30,7 @@ import { AuditLoader } from '../../audit/audit.model';
 import { AuditService } from '../../audit/audit.service';
 import { InterviewersPanel } from './interviewers-panel';
 import { OfferPanel } from './offer-panel';
+import { TouchBody } from './touch-body';
 import { TouchComposer } from './touch-composer';
 import { ChannelIcon } from '../../../core/ui/channel-icon';
 import { PrivacyActions } from '../../privacy/privacy-actions';
@@ -54,6 +56,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
     MatTooltipModule,
     TranslocoPipe,
     TouchComposer,
+    TouchBody,
     EvaluationBadge,
     TasksWidget,
     ScreeningPanel,
@@ -90,6 +93,9 @@ export class CandidateCard {
   });
   protected readonly utm = computed(() => Object.entries(this.store.candidate()?.utm ?? {}));
   protected readonly duration = formatDuration;
+  /** Career-site CV of an application: same-origin download link and a readable size. */
+  protected readonly cvUrl = applicationCvUrl;
+  protected readonly size = fileSize;
   /** "Schedule a meeting" works only with a connected Google Calendar. */
   protected readonly calendarConnected = signal(false);
 

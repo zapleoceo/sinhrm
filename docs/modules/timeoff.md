@@ -34,7 +34,13 @@
   филиал) и праздники по годам (общие или для филиала).
 
 ## Как устроено
-- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeOffNavBadges` — ключ `timeoff_approvals`: заявки, которые я могу решить (как «Погодження»; своя не считается). `LeaveRequestService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`. Не руководителю — 0 (значка нет).
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/TimeOffException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): «Погодження» (`approvals.page.ts`) держит заявки на отпуск в `PagedList` вместо своего `load()`.
+- Фронт (2026-10-08): `timeoff.dates.ts` больше не держит свои `toIso/parseIso/addDays` — месяц, выходные и оценка дней считаются через `core/date/iso-day.ts` (UTC-полночь, без сдвига на переходе времени).
+- Фронт (2026-10-08): `LeaveRequestsStore` держит заявки в `PagedList` (`core/ui/table/paged-list.ts`), `CalendarStore` отменяет загрузку прошлого месяца через `LatestRequest` — вместо ручных счётчиков `seq`.
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeOffNavBadges` — ключ `timeoff_approvals`: заявки, которые я могу решить (как «Погодження»; своя не считается ни у кого, включая админа). `LeaveRequestService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`. Не руководителю — 0 (значка нет).
 Бэкенд — `backend/app/Modules/TimeOff`, маршруты `/api/timeoff/*` (`auth:sanctum` + `EnsureUserIsActive`). Права берутся из
 модуля People (`PeopleScope`, [people.md](people.md)); запись настроек — gate `timeoff-manage` (superadmin, admin, hr_manager — `PeopleScope::isAdmin`, т. е. `UserRole::hrStaff()`).
 
@@ -64,6 +70,9 @@
   (20 дней → 20.00, без дрейфа 20.04), а первый запуск в году догоняет прошедшие месяцы этого года; `expiring(balance, carryMax)` — сколько сгорает.
 
 ### Правила запросов (`Services/LeaveRequestService`)
+Письма потока (руководителю — «Погодити відпустку: …» по новой заявке на согласование, сотруднику — решение с
+комментарием) вынесены из сервиса в `Services/LeaveNotifications` (SRP, 2026-10-08): те же получатели, тексты и ссылки,
+автор заявки-руководитель письма о своей заявке не получает (`tests/Unit/TimeOff/LeaveNotificationsTest`).
 **Гонки.** Создание, согласование и отмена берут блокировку строки сотрудника
 (`EmployeeRepository::lockForUpdate` → `SELECT … FOR UPDATE` в транзакции): проверки пересечения и баланса — «прочитал,
 потом записал», и два параллельных запроса одного сотрудника выполняются по очереди (на MySQL; в SQLite-тестах путь
@@ -77,6 +86,15 @@
 (`pending → approved`, иначе 409 `invalid_status`), в журнал `−days` (`reason=request`, `reference_id`).
 Отклонение — только из `pending`. Отмена: сотрудник — ожидающий или ещё не начавшийся согласованный; руководитель/админ —
 любой ожидающий/согласованный; отмена согласованного возвращает `+days` в журнал.
+
+**Своё не решаем (2026-10-08).** Разделение обязанностей из People (`PeopleContext::canDecideOrBreakGlass`, см.
+[people.md](people.md)) действует и здесь: согласовать или отклонить собственную заявку
+нельзя (403 `forbidden`), своя заявка не попадает ни в `GET approvals`, ни в счётчик бейджа `timeoff_approvals`
+(раньше её там видел админ), свой баланс не корректируется (`POST balances/adjust` → 403). Исключение — break-glass
+единственного суперадмина (нет другого активного superadmin/admin; решение по умолчанию, владелец может изменить):
+он видит свою заявку в очереди, решает её и корректирует свой баланс, каждое действие — в журнале с `self_decision`. Отмена собственной заявки
+правилами не ограничена: она ничего себе не присуждает, а возвращает дни в журнал — проверка идёт через
+`PeopleContext::hasAuthorityOver`.
 
 **Передача дел (PROD-13, 2026-10-06).** Необязательное `handover_to_employee_id` у заявки любого типа (форма показывает
 его для всех типов — отпуск, больничный и прочие одинаково). Проверка (`EmployeeResolver::handover`, вызывает контроллер
@@ -101,6 +119,8 @@
 `Listeners/GrantAccrualOnHire` сразу начисляет текущий период (пропорционально).
 
 ### Эндпоинты `/api/timeoff`
+«admin» в колонке «Кто» — gate `timeoff-manage`: superadmin, admin и hr_manager (`UserRole::hrStaff()`).
+
 | Метод и путь | Кто | Параметры / тело | Ответ |
 |---|---|---|---|
 | `GET types` | любой активный | `all=1` (с выключенными — только админ) | список |
@@ -110,13 +130,13 @@
 | `POST holidays`, `PATCH holidays/{id}`, `DELETE holidays/{id}` | admin | `{date Y-m-d, name, branch_id?}` | 201 / 200 / 204 |
 | `GET balances` | сам; `employee_id` — admin или руководитель выше (иначе 403) | `employee_id?` | `[{leave_type, tracked, balance, pending, available, used_this_year, policy}]`, `meta.employee`; нет записи сотрудника → 404 `no_employee` |
 | `GET balances/history` | как выше | `employee_id?, leave_type_id?` | последние 100 строк журнала |
-| `POST balances/adjust` | admin | `{employee_id, leave_type_id (с балансом), delta ≠ 0, comment?}` | 201, новые балансы |
+| `POST balances/adjust` | admin, **кроме своей записи** | `{employee_id, leave_type_id (с балансом), delta ≠ 0, comment?}` | 201, новые балансы; свой `employee_id` → 403 `forbidden` |
 | `GET requests` | любой активный | `employee_id?, status?, leave_type_id?, perPage` | admin — все; остальные — свои и людей ниже; `can_decide`, `can_cancel` в строке |
 | `GET requests/preview` | как создание | те же поля, что у создания | `{days, holidays[], tracked, available, sufficient, overlap}` |
 | `POST requests` | сам; за другого — admin или руководитель выше | `{leave_type_id, starts_on, ends_on, half_day?, comment?, employee_id?, override_balance?, handover_to_employee_id?}` | 201; ошибки — см. «Правила», 422 `invalid_handover` |
 | `GET requests/{id}` | кто видит «работу» сотрудника | — | запрос |
 | `POST requests/{id}/approve\|reject\|cancel` | см. «Правила» | `{comment?}` | 200 / 403 `forbidden` / 409 `invalid_status` / 422 `insufficient_balance` |
-| `GET approvals` | руководитель, admin | — | ожидающие, которые вы можете решить (свои исключены), старые сверху |
+| `GET approvals` | руководитель, admin | — | ожидающие, которые вы можете решить (свои исключены у всех, в том числе у админа), старые сверху |
 | `GET calendar` | любой активный | `from, to` (по умолч. текущий месяц, ≤ 62 дня), `branch_id?` | `{absences[{employee, leave_type, starts_on, ends_on, half_day, status, handover_to}], holidays[]}` — только `approved` и `pending` |
 
 Главная страница: `TimeOffDashboardSection` (контракт `Overview\Contracts\DashboardSection`, [overview.md](overview.md)) →
@@ -135,7 +155,7 @@
 | `timeoff.model.ts`, `timeoff.service.ts` | типы, HTTP, `timeoffErrorKey` |
 | `timeoff.dates.ts` | даты `YYYY-MM-DD` на UTC-полночах: месяц, сдвиг, выходные, раскладка отсутствий по дням, оценка дней до ответа сервера |
 | `leave-requests.store.ts` | список запросов + действия, `version` для перезагрузки балансов |
-| `widgets/` | `BalancesPanel`, `RequestsList` (строка «На кого передати справи: <имя>»), `LeaveRequestForm` (нативные `type="date"`, превью с сервера с задержкой 300 мс; необязательный `app-person-picker` «На кого передати справи», scope `employees`) |
+| `widgets/` | `BalancesPanel`, `RequestsList` (строка «На кого передати справи: <имя>»), `LeaveRequestForm` (период — `mat-date-range-picker`, превью с сервера с задержкой 300 мс; необязательный `app-person-picker` «На кого передати справи», scope `employees`) |
 | `my/`, `calendar/`, `approvals/`, `settings/` | страницы `/timeoff`, `/timeoff/calendar` (CSS grid, без библиотек; в подсказке ячейки — кто заміщує), `/timeoff/approvals`, `/admin/timeoff` |
 
 Строки — `timeoff.*` в `public/i18n/{uk,ru,en}.json`.
@@ -146,6 +166,9 @@
 
 ### Общие хелперы Core (2026-10-02)
 - «сегодня» по умолчанию (отмена заявки, календарь без `from`, признак «можно отменить свою» в ответе) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
+- (2026-10-08, MySQL e2e раунд 2) так же считаются «Сьогодні відсутні» на главной (`TimeOffDashboardSection`, тест `LeaveRequestApiTest::test_dashboard_out_today_after_kyiv_midnight`) и год «использовано в этом году» в балансах (`BalanceController` → `UserTime::now()`);
+- По Киеву, не по UTC (2026-10-08, ночное окно 21:00/22:00–24:00 UTC): начисления (`AccrualService`) берут год/месяц периода, 1 января для сгорания и год «использовано в этом году» (`BalanceService`) по Киеву — 31.12 в 22:30 UTC уже начисляется «2027» и сгорает остаток 2026 (тест `AccrualJobTest::test_the_year_turns_at_kyiv_midnight_not_utc`, `…_month_turns_at_kyiv_midnight`); `created_at` записи — момент UTC. `HolidayWorkingCalendar::addWorkingDays` (сроки согласования заявок на найм) считает выходные/праздники и время суток по Киеву: пятница 21:30 UTC — это суббота, +2 рабочих дня → вторник 00:30 по Киеву (`tests/Unit/TimeOff/HolidayWorkingCalendarTest.php`).
+- Новая заявка `POST /api/timeoff/requests` — именованный лимитер `timeoff-requests` (`TimeOffServiceProvider::REQUEST_THROTTLE`), 30 в минуту на пользователя, своя корзина; 31-я — 429 (`LeaveRequestApiTest::test_new_requests_are_throttled_per_user`).
 - `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..200`, по умолчанию 50, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListLeaveRequestsRequest`);
 - gate `timeoff-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
@@ -157,6 +180,10 @@
 - Ошибки API → i18n-ключ: `timeoffErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `BalanceController`, `LeaveRequestController`, `TimeOffDashboardSection`, `TimeOffNavBadges` и `EmployeeResolver` зависят от контрактов People `PeopleAccess` и `EmployeeLookup`, а не от `PeopleScope`/`EmployeeService`. Тест — `tests/Unit/TimeOff/EmployeeResolverTest.php`.
+- `LeaveCalendarSync` проверяет подключение Календаря через контракт GoogleWorkspace `GoogleConnections`. Тест — `tests/Unit/TimeOff/LeaveCalendarSyncTest.php`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/TimeOff/LeaveRequestApiTest` (401, выходные/праздники/полдня в превью и при создании, праздник

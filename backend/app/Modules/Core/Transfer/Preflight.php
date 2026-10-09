@@ -39,16 +39,26 @@ final class Preflight
     /**
      * @param  callable(): StringEncrypter  $encrypter
      * @param  bool  $truncate  the run will empty the target first (then rows already on the target do not matter)
+     * @param  list<string>  $skip  tables not copied (--without-secrets): no APP_KEY check, no data checks, must stay empty
      */
-    public function run(callable $encrypter, bool $truncate = false): TransferReport
+    public function run(callable $encrypter, bool $truncate = false, array $skip = []): TransferReport
     {
         $report = new TransferReport;
         if (! SchemaCheck::check($this->schema, $report)) {
             return $report; // further checks need identical schemas
         }
         $this->checkSession($report);
-        KeyCheck::check($this->dbs->source, $encrypter, $report);
         $tables = $this->schema->tables();
+        if ($skip === []) {
+            KeyCheck::check($this->dbs->source, $encrypter, $report);
+        }
+        foreach ($skip as $name) {
+            if (isset($tables[$name])) {
+                $target = $truncate ? 0 : $this->dbs->target->table($name)->count();
+                WithoutSecrets::preflight($name, $this->dbs->source->table($name)->count(), $target, $truncate, $report);
+                unset($tables[$name]);
+            }
+        }
         if (! $truncate) {
             foreach ($tables as $table) {
                 $this->checkTargetRows($table, $report);

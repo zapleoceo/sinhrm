@@ -6,6 +6,7 @@ namespace App\Modules\Recruiting\Repositories;
 
 use App\Modules\Recruiting\DTO\CandidateFilter;
 use App\Modules\Recruiting\DTO\Scope;
+use App\Modules\Recruiting\Enums\ApplicationStatus;
 use App\Modules\Recruiting\Models\CandidateScreening;
 use App\Modules\Recruiting\Support\ApplicationVisibility;
 use Illuminate\Database\Query\Builder;
@@ -39,7 +40,7 @@ final class ScreeningRanking
 
         return $query->selectRaw('max(screening.score)')
             ->whereColumn('ranked_application.candidate_id', 'candidates.id')
-            ->where('ranked_application.status', $filter->status->value ?? 'active')
+            ->where('ranked_application.status', $filter->status->value ?? ApplicationStatus::Active->value)
             ->when($filter->vacancyId, fn (Builder $q, int $id) => $q->where('ranked_application.vacancy_id', $id))
             ->when($filter->stageId, fn (Builder $q, int $id) => $q->where('ranked_application.stage_id', $id));
     }

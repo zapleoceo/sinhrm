@@ -13,6 +13,7 @@ import { DirectoryService } from '../directory/directory.service';
 import { ArticleStatus, Audience, KbCategory, KbVersion, SaveArticle, parseTags } from './knowledge.model';
 import { KnowledgeService, knowledgeErrorKey } from './knowledge.service';
 import { NotifyService } from '../../core/ui/notify.service';
+import { eventValue } from '../../core/ui/event-value';
 
 type AudienceType = Audience['type'];
 
@@ -135,6 +136,8 @@ export function audienceOf(type: AudienceType, branchIds: number[], roles: UserR
   `,
 })
 export class KnowledgeEditorPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   /** Route param: "new" or an article id. */
   readonly id = input<string>('new');
 
@@ -171,10 +174,6 @@ export class KnowledgeEditorPage implements OnInit {
   ngOnInit(): void {
     this.api.categories().subscribe({ next: (list) => this.categories.set(list), error: () => this.categories.set([]) });
     this.directory.active('branches').subscribe({ next: (list) => this.branches.set(list), error: () => this.branches.set([]) });
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
 
   protected restore(v: KbVersion): void {

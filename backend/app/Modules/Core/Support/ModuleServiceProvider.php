@@ -8,7 +8,10 @@ use App\Models\User;
 use App\Modules\Auth\Enums\UserRole;
 use App\Modules\Core\Http\Middleware\EnsureModuleAccessible;
 use App\Modules\Core\Services\ModuleRegistry;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -116,6 +119,17 @@ abstract class ModuleServiceProvider extends ServiceProvider
     {
         $names = UserRole::valuesOf($roles);
         Gate::define($ability, static fn (User $user): bool => $user->isActive() && $user->hasAnyRole($names));
+    }
+
+    /**
+     * A named per-user rate limiter with its own bucket ("<name>|<user id or IP>"); routes use 'throttle:<name>'.
+     * A plain "throttle:N,1" keys on the user only, so every such route shares one counter: sending messages could
+     * lock a user out of filing a case. Limits are generous — a brake on scripts and loops, not on normal work.
+     */
+    protected function definePerUserLimiter(string $name, int $perMinute): void
+    {
+        RateLimiter::for($name, static fn (Request $request): Limit => Limit::perMinute($perMinute)
+            ->by($name.'|'.($request->user()?->getAuthIdentifier() ?? $request->ip())));
     }
 
     protected function moduleDir(): string

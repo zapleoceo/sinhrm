@@ -11,6 +11,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { FORM_FIELD_TYPES, FormField, FormFieldType, ROUTE_STEP_KINDS, RouteStep, RouteStepKind } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 import { NotifyService } from '../../core/ui/notify.service';
+import { eventValue } from '../../core/ui/event-value';
 
 const ROLES = USER_ROLES;
 
@@ -134,6 +135,8 @@ export function moveItem<T>(list: readonly T[], index: number, delta: -1 | 1): T
   `,
 })
 export class HiringSettingsPage implements OnInit {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly value = eventValue;
   private readonly api = inject(HiringRequestsService);
   private readonly notify = inject(NotifyService);
   protected readonly kinds = ROUTE_STEP_KINDS;
@@ -149,10 +152,6 @@ export class HiringSettingsPage implements OnInit {
 
   ngOnInit(): void {
     this.api.settings().subscribe({ next: (s) => this.apply(s), error: (e: unknown) => this.notify.show(hiringErrorKey(e)) });
-  }
-
-  protected value(event: Event): string {
-    return (event.target as HTMLInputElement).value;
   }
 
   protected numberOrNull(event: Event): number | null {

@@ -1,9 +1,10 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AssetHistory } from './assets.model';
 import { AssetsService } from './assets.service';
+import { PagedList } from '../../core/ui/table/paged-list';
 
 /** Profile tab "Активи": what the employee holds now and held before (People job tier; others get 404). */
 @Component({
@@ -42,32 +43,22 @@ import { AssetsService } from './assets.service';
     h3 { font: var(--mat-sys-title-small); margin: 0.5rem 0; }
     .list { list-style: none; margin: 0; padding: 0; }
     .list li { padding: 0.4rem 0; border-bottom: var(--app-border-w) solid var(--app-track); }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class EmployeeAssetsTab {
   readonly employeeId = input.required<number>();
 
   private readonly api = inject(AssetsService);
-  protected readonly items = signal<AssetHistory[]>([]);
-  protected readonly loading = signal(false);
+  private readonly list = new PagedList<AssetHistory>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly current = computed(() => this.items().filter((h) => h.returned_at === null));
   protected readonly past = computed(() => this.items().filter((h) => h.returned_at !== null));
 
   constructor() {
     effect(() => {
       const id = this.employeeId();
-      this.loading.set(true);
-      this.api.ofEmployee(id).subscribe({
-        next: (list) => {
-          this.items.set(list);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.items.set([]);
-          this.loading.set(false);
-        },
-      });
+      this.list.load(this.api.ofEmployee(id), { error: () => this.items.set([]) });
     });
   }
 }

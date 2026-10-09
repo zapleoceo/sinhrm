@@ -17,6 +17,7 @@ import { PersonPicker, PickerValue } from '../../people/picker/person-picker';
 import { ConfigChange, StepConfigForm } from './step-config';
 import { WorkflowEditorStore } from './workflow-editor.store';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { eventValue } from '../../../core/ui/event-value';
 
 /** Nested server messages of one step's config: steps.2.config.url → { url }. */
 export function stepConfigErrors(errors: Record<string, string>, index: number): Record<string, string> {
@@ -60,6 +61,8 @@ export function stepConfigErrors(errors: Record<string, string>, index: number):
   styleUrl: './workflow-editor.page.scss',
 })
 export class WorkflowEditorPage {
+  /** Text of the field that fired the event (core/ui/event-value.ts). */
+  protected readonly val = eventValue;
   readonly id = input.required({ transform: numberAttribute });
 
   protected readonly store = inject(WorkflowEditorStore);
@@ -73,10 +76,6 @@ export class WorkflowEditorPage {
 
   constructor() {
     effect(() => this.store.load(this.id()));
-  }
-
-  protected val(event: Event): string {
-    return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
 
   protected int(event: Event, min: number, max: number): number {

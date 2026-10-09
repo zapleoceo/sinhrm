@@ -2,7 +2,7 @@
 
 export type NavGroupId = 'recruiting' | 'people' | 'perform' | 'services' | 'admin';
 
-export const NAV_GROUP_IDS: readonly NavGroupId[] = ['recruiting', 'people', 'perform', 'services', 'admin'];
+const NAV_GROUP_IDS: readonly NavGroupId[] = ['recruiting', 'people', 'perform', 'services', 'admin'];
 
 /** URL prefixes per group. The longest matching prefix wins (so /reports/catalog → services, /reports → recruiting). */
 const GROUP_PREFIXES: Readonly<Record<NavGroupId, readonly string[]>> = {

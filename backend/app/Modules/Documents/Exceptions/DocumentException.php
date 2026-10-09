@@ -4,18 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Documents\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in Documents; rendered as {message, code, ...extra} with its HTTP status. */
-final class DocumentException extends RuntimeException
+final class DocumentException extends BusinessRuleException
 {
-    /** @param  array<string, mixed>  $extra */
-    private function __construct(public readonly string $errorCode, public readonly int $status, public readonly array $extra = [])
-    {
-        parent::__construct($errorCode);
-    }
-
     /** @param  list<string>  $tokens */
     public static function unknownVariables(array $tokens): self
     {
@@ -63,10 +56,5 @@ final class DocumentException extends RuntimeException
     public static function templateArchived(): self
     {
         return new self('template_archived', 422);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);
     }
 }

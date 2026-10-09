@@ -17,6 +17,7 @@
 | `--preflight` | нет | схемы совпадают (миграции, таблицы, колонки); сессия MySQL `time_zone=+00:00` и строгий `sql_mode`; все значения `integration_secrets.value` расшифровываются `APP_KEY` окружения; **коллизии уникальных значений** под collation цели (`utf8mb4_0900_ai_ci`: регистр и диакритика — `a@x`/`A@x`, `jose`/`josé`; ключи сравнения считает сам MySQL через `WEIGHT_STRING`, поэтому отчёт совпадает с поведением сервера: замер на 8.4 — `Йосип`/`Иосип` **различаются**, у `Й` свой первичный вес); даты вне диапазона `TIMESTAMP` (до 1970 и после 2038-01-19); невалидный для MySQL JSON; строки длиннее колонок MySQL; строки больше `max_allowed_packet` |
 | без флага | да | preflight → подтверждение → перенос → сверка. Любая блокирующая находка preflight — перенос **не начинается** (флага «игнорировать» нет и не будет) |
 | `--verify` | нет | сверка: строки по таблицам, контрольные суммы каждой колонки, SHA-256 вложений, сироты FK, `AUTO_INCREMENT = max(id)+1`; итог `ИТОГ: OK` / `ИТОГ: FAIL` |
+| `--without-secrets` (с любым режимом) | — | **только тестовый дамп**: таблицы, зашифрованные `APP_KEY` (`integration_secrets`), не копируются и остаются пустыми на цели, `APP_KEY` не нужен — [ниже](#тестовый-дамп-без-секретов---without-secrets) |
 
 Перенос: порциями по первичному ключу, id сохраняются, `FOREIGN_KEY_CHECKS=0` только в сессии переноса (циклы вроде
 `scripts ↔ script_versions` не требуют порядка) и проверка сирот после. Сессия MySQL — из соединения `mysql`
@@ -43,9 +44,69 @@
 ключей вроде `password_reset_tokens.email` — только номер строки) — без значений ячеек, ПДн, строк подключения и
 паролей. Индекс по выражению на коллизии не проверяется — в отчёте отдельная строка `info`.
 
+## Допустимые расхождения схемы
+
+Схемы источника и цели сравниваются строго (preflight и `--verify`, `SchemaCheck`): миграция, таблица или колонка
+только на одной стороне — `FAIL`. Молча ничего не игнорируется; допустимы только расхождения из двух явных списков,
+каждое печатается строкой `info`:
+
+| Список | Что допускает | Сейчас |
+|---|---|---|
+| `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS` | миграции данных `main` после заморозки, уже выполненные на цели (подробности — [ниже](#где-запускать)) | `2026_10_28_100001_mark_sent_offer_touchpoints` |
+| `SchemaCheck::LEGACY_SOURCE_ONLY_TABLES` | мёртвые таблицы, которые есть **только в источнике** и не переносятся | `app_state` |
+
+**`LEGACY_SOURCE_ONLY_TABLES`.** Таблица есть в источнике и её нет на цели → строка
+`info | schema | app_state | устаревшая таблица только в источнике, не переносится: app_state (N строк)` (только число
+строк, без значений) в отчёте preflight и в итоговой сверке; копирование, проверки данных preflight и `--verify` её не
+видят (они работают по таблицам, которые есть на обеих сторонах). Если такая таблица **появилась и на цели** (её кто-то
+добавил миграцией) — `FAIL` как обычный дрейф: список не должен маскировать настоящую таблицу.
+
+- `app_state` (колонки `id text`, `data jsonb`, `updated_at timestamptz`; на боевом Neon одна строка `id='main'` с
+  `{"stages": [...]}`) — остаток самого раннего прототипа (2026-09-25). Найдена замером на боевом Neon (только чтение):
+  до этого preflight падал `FAIL schema app_state — таблица есть только в источнике`.
+- **Правило для списка:** только таблицы, на которые нет **ни одной** ссылки в коде — ни в `main`, ни в
+  `legacy/vercel-postgres` (`git grep <таблица> origin/main origin/legacy/vercel-postgres` пуст). Таблица с данными,
+  которые где-то читаются, сюда не попадает — её переносят миграцией. Unit `SchemaCheckTest` проверяет, что имена из
+  списка не встречаются в `app/`, `database/`, `routes/`, `config/` (кроме самого инструмента), и правила `info`/`FAIL`;
+  feature — `MysqlDataTransferTest::test_legacy_source_only_table_is_reported_not_copied_and_fails_when_on_the_target`
+  (фикстура создаёт `app_state` с одной синтетической строкой на источнике CI, шаг `CLI preflight` проверяет строку `info`).
+
+## Тестовый дамп без секретов (`--without-secrets`)
+
+**Когда уместна.** Нужна копия данных без секретов: тестовая/демо-база, дамп для передачи третьим лицам (DevOps IT STEP
+для проверки окружения, подрядчикам), репетиция переноса там, где прод-`APP_KEY` нет и быть не должно.
+
+**Когда нельзя.** Боевой cutover (шаги 2–5 ниже) и любая база, на которую потом переключится прод: без
+`integration_secrets` приложение теряет все токены интеграций (Google, AI Broker, Telegram, ключи подписи вебхуков) —
+интеграции в статусе «подключено» начнут падать до повторного ввода секретов в админке. Боевой перенос — только без
+флага и с тем же `APP_KEY`, что у прода.
+
+Что меняется с флагом:
+
+- список таблиц — `KeyCheck::ENCRYPTED` (сейчас одна `integration_secrets`; unit-тест `KeyCheckTest` падает, если в
+  `app/Modules` появится ещё одна модель с кастом `encrypted`/`Crypt`, а в списке её нет);
+- preflight не расшифровывает значения и не требует `APP_KEY` (проверка `app_key` не выполняется); остальные проверки
+  для этих таблиц не нужны — их данные не читаются. Без `--truncate-target` строки, уже лежащие в такой таблице на
+  цели (например, после полного прогона), — стоп `without_secrets` («перенос только с --truncate-target»);
+- перенос пропускает таблицу (с `--truncate-target` она очищается вместе со всеми), `AUTO_INCREMENT` = 1;
+- `--verify --without-secrets` ожидает на цели **0 строк** в этих таблицах (иначе `FAIL without_secrets`); без флага та же
+  пустая таблица — обычное расхождение `rows` → `ИТОГ: FAIL`;
+- в конце отчёта строка `Пропущены таблицы (--without-secrets, на цели пусто): integration_secrets (в источнике N строк)`
+  — только имена и число строк источника, без значений.
+
+Без флага поведение прежнее и **fail-closed**: нет или чужой `APP_KEY` → `app_key` FAIL, перенос не начинается.
+
+```bash
+php -d memory_limit=1G artisan db:transfer-to-mysql --production --without-secrets --truncate-target
+php artisan db:transfer-to-mysql --production --without-secrets --verify   # ИТОГ: OK, integration_secrets = 0
+```
+
+Остальные данные (ПДн сотрудников и кандидатов, вложения) копируются как есть — флаг убирает только секреты, а не
+персональные данные; передавать такой дамп наружу можно лишь по правилам обращения с ПДн.
+
 ## Защита от случайного запуска
 
-- Подключения — только из окружения: `TRANSFER_SOURCE_URL` (`postgresql://…?sslmode=require`) и `TRANSFER_TARGET_URL`
+- Подключения — только из окружения: `TRANSFER_SOURCE_URL` (`postgresql://…?sslmode=require`; в CI-репетиции — `pgsql://…`) и `TRANSFER_TARGET_URL`
   (`mysql://…`). Аргументов со строкой подключения или паролем нет; URL и пароль не печатаются (маскируются и в ошибках).
 - `--production` обязателен, если `APP_ENV=production` или хоть одна база не на `127.0.0.1/localhost`.
 - Любая запись — только после ввода **имени целевой базы** (диалог) или `--confirm-target=<имя>`; иначе ничего не пишется.
@@ -62,6 +123,15 @@
 С машины/контейнера DevOps IT STEP рядом с MySQL (Vercel для этого не годится), из релиза `main`, чей список миграций совпадает с Neon
 (preflight сверяет список миграций; Neon мигрирован релизом `legacy/vercel-postgres`). Миграции, появившиеся в `main` после
 заморозки, накатываются на MySQL **после** переноса (`php artisan migrate` текущим релизом); перенос запускается релизом без них.
+Среди них есть **миграция данных** `Recruiting/Database/Migrations/2026_10_28_100001_mark_sent_offer_touchpoints` (#183):
+помечает `touchpoints.meta.kind = offer` у писем уже отправленных офферов, чтобы таймлайн скрывал зарплату. Только
+`UPDATE` поля `meta` (JSON разбирается в PHP, без JSON-функций SQL), порциями по 200, повторный запуск ничего не меняет;
+`down()` пустой намеренно (снятие пометки снова открыло бы зарплаты). Перенос копирует `meta` как есть, поэтому порядок
+«перенос → migrate» безопасен. Если цель уже мигрирована текущим релизом (миграция отработала по пустой таблице),
+preflight это допускает: такие миграции перечислены в `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS` (только миграции
+данных, без таблиц и колонок — схема по-прежнему сравнивается строго) и показываются строкой `info`. После копирования
+команда снимает их с учёта в `migrations` цели и печатает напоминание — выполните `php artisan migrate --force`, и они
+пройдут по перенесённым строкам. Тест — `MysqlDataTransferTest::test_post_freeze_data_migration_is_accepted_and_requeued_after_copy`.
 Команде нужен `pdo_pgsql` с libpq ≥ 14 (SNI для Neon). Окружение: `APP_KEY` — **тот же, что у прода** (Vercel env), `APP_ENV=production`,
 `TRANSFER_SOURCE_URL`, `TRANSFER_TARGET_URL`. Секреты — через env/секрет-хранилище, не в истории shell, не во временных
 файлах. Память: `php -d memory_limit=1G artisan …` (таблицы с вложениями читаются порциями по 4 строки).
@@ -112,13 +182,14 @@
 CI: `MySQL data transfer` — PostgreSQL 17 + MySQL 8.4; источник мигрирует и наполняет демо-данными (`db:seed` + `DemoDataService`)
 замороженный релиз `legacy/vercel-postgres` (как боевой Neon), цель и команда — текущий код, приложение — отдельная БД MySQL; feature-тест
 `MysqlDataTransferTest` (коллизии `a@x/A@x` и `jose/josé` блокируют перенос без печати значений, `Йосип/Иосип` — не коллизия на MySQL 8.4; повторный запуск и
-возобновление после «сбоя»; порча вложения/ячейки/FK/`AUTO_INCREMENT` → `ИТОГ: FAIL`; чужой `APP_KEY` → стоп; без
+возобновление после «сбоя»; порча вложения/ячейки/FK/`AUTO_INCREMENT` → `ИТОГ: FAIL`; чужой `APP_KEY` → стоп; `--without-secrets` без `APP_KEY` →
+`integration_secrets` пустая, `--verify` ожидает 0 строк, строка в ней → FAIL, без флага нет ключа → стоп; без
 подтверждения и без `--production` → отказ; приложение на соседней БД MySQL сравнивается и разрешено, не-MySQL соединение → fail-closed), затем те же шаги через CLI. Unit: `tests/Unit/Core/Transfer/*`.
 
 ## Устройство инструмента
 
 - `TransferToMysqlCommand` — оркестрация: `--preflight` (без записи), `--verify` (без записи), по умолчанию preflight → подтверждение именем целевой БД (`--confirm-target=<имя>` без диалога) → перенос (`--truncate-target` — очистить цель) → сверка. `--production` обязателен при `APP_ENV=production` или не локальных хостах. Подключения — только env `TRANSFER_SOURCE_URL`/`TRANSFER_TARGET_URL` (конфиг `db_transfer.*` — `Core/Transfer/config.php`, подключает `TransferServiceProvider`), цель собирается из настроек соединения `mysql` (тот же `sql_mode`, `+00:00`).
-- `TransferDatabases` (подключения, без печати URL; база соединения-источника PostgreSQL — константа `SOURCE_BASE`, в `config/database.php` её нет), `SchemaInspector` (каталоги; схема цели — эталон), `Preflight` (коллизии уникальных значений через `CollationKeys` → `MysqlCollationKeys` = `WEIGHT_STRING` на цели, `CollisionFinder`; 2038; длины; JSON; `max_allowed_packet`; `KeyCheck` — расшифровка `integration_secrets` ключом окружения), `DataCopier` (порции по PK, пропуск уже перенесённых id, `FOREIGN_KEY_CHECKS=0` на сессию, `AUTO_INCREMENT = max+1`), `Reconciler` (строки, XOR-суммы sha256 по колонкам, SHA-256 вложений, сироты FK, `AUTO_INCREMENT`), `ValueCanonicalizer` (bool/JSON/даты/decimal к общему виду), `LaunchGuard`, `SafeError` (ошибки без значений и секретов), `TransferReport` (только имена и счётчики).
+- `TransferDatabases` (подключения, без печати URL; база соединения-источника PostgreSQL — константа `SOURCE_BASE`, в `config/database.php` её нет), `SchemaInspector` (каталоги; схема цели — эталон), `Preflight` (коллизии уникальных значений через `CollationKeys` → `MysqlCollationKeys` = `WEIGHT_STRING` на цели, `CollisionFinder`; 2038; длины; JSON; `max_allowed_packet`; `KeyCheck` — расшифровка `integration_secrets` ключом окружения), `DataCopier` (порции по PK, пропуск уже перенесённых id, `FOREIGN_KEY_CHECKS=0` на сессию, `AUTO_INCREMENT = max+1`), `Reconciler` (строки, XOR-суммы sha256 по колонкам, SHA-256 вложений, сироты FK, `AUTO_INCREMENT`), `ValueCanonicalizer` (bool/JSON/даты/decimal к общему виду), `WithoutSecrets` (правила `--without-secrets`: какие таблицы пропустить, находки preflight/сверки, итоговая строка), `LaunchGuard`, `SafeError` (ошибки без значений и секретов), `TransferReport` (только имена и счётчики).
 - Ревью безопасности (PR #175): цель ≠ рабочая БД — по настройкам с нормализацией loopback-алиасов и сокета и по `@@server_uuid` (MariaDB — `@@hostname:@@port`), fail-closed (`TransferDatabases::appServerVerdict`); без `--truncate-target` строки цели должны быть подмножеством источника (`target_not_empty`); `--verify` включает проверку схемы (`SchemaCheck`: миграции, таблицы и колонки только на одной стороне); текстовые ключи в отчёте коллизий не печатаются; `SafeError` вырезает всё в кавычках; пароли маскируются любой длины.
 
 ## Удаление после cutover
@@ -130,5 +201,5 @@ CI: `MySQL data transfer` — PostgreSQL 17 + MySQL 8.4; источник миг
 2. В `CoreServiceProvider::register()` убрать строку `$this->app->register(TransferServiceProvider::class)` и её `use`;
    в `backend/phpstan.neon` убрать `ignoreErrors` для `app/Modules/Core/Transfer/config.php`.
 3. В `scripts/mysql-only-guard.mjs` убрать эти пути из `ALLOWED`; `node scripts/mysql-only-guard.mjs` должен остаться зелёным.
-4. Этот документ свести к истории (или удалить), строку PROD-49 в [production-backlog.md](../product/production-backlog.md) закрыть;
+4. Этот документ свести к истории (или удалить), строку PROD-51 в [production-backlog.md](../product/production-backlog.md) закрыть;
    ветку `legacy/vercel-postgres` и Neon удаляет владелец отдельно.

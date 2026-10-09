@@ -11,6 +11,7 @@ use App\Modules\SafeSpeak\Services\SafeSpeakService;
 use App\Modules\SafeSpeak\Support\AccessCode;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\Support\NavBadgeAssertions;
@@ -174,5 +175,18 @@ final class SafeSpeakApiTest extends TestCase
         // Demotion drops the flag.
         $this->actingAs($super)->patchJson("/api/users/{$admin->id}", ['role' => 'recruiter'])->assertOk()->assertJsonPath('data.safe_speak_handler', false);
         $this->actingAs($admin)->patchJson("/api/users/{$super->id}", ['safe_speak_handler' => false])->assertForbidden();
+    }
+
+    /** The only time trace (a day, no time) is the reporter's Kyiv day: 00:30 Kyiv on Jan 1 is not Dec 31 of UTC. */
+    public function test_report_day_is_the_kyiv_day(): void
+    {
+        try {
+            Carbon::setTestNow('2026-12-31 22:30:00'); // 2027-01-01 00:30 Kyiv
+            $this->submit();
+            $this->assertSame('2027-01-01', SafeSpeakReport::query()->sole()->created_on->toDateString());
+            $this->assertSame('2027-01-01', substr((string) DB::table('safe_speak_messages')->value('created_on'), 0, 10));
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 }

@@ -10,7 +10,7 @@ const CSRF_MISMATCH = 419;
 
 /** Fetches the Sanctum XSRF-TOKEN cookie once per page load (again after a 419). */
 @Injectable({ providedIn: 'root' })
-export class CsrfTokenService {
+class CsrfTokenService {
   private readonly http = inject(HttpClient);
   private ready$: Observable<void> | null = null;
 

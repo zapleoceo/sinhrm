@@ -56,7 +56,7 @@ final class DeskSlaReport extends AbstractReport
     {
         $range = self::range($filters, 90);
         $rows = [];
-        foreach ($this->data->deskCases($range->from, $range->to) as $c) {
+        foreach ($this->data->deskCases(...$range->moments()) as $c) {
             $sla = Sla::of(
                 Carbon::parse($c['created_at']),
                 $c['first_response_hours'],

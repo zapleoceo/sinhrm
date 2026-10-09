@@ -18,6 +18,7 @@
 группы меньше 5 человек скрыты — см. ниже.
 
 ## Как устроено
+- Фронт (2026-10-08): запуск отчёта и CSV у страницы отчёта каталога (`report-view.page.ts`) и конструктора (`builder.page.ts`) — общий `ReportRun<R>` (`report-run.ts`): `result`, `loading`, `run(request$)` (новый запуск отменяет предыдущий, ошибка — уведомление `reportsErrorKey`), `download(blob$, имя)`. Раньше обе страницы держали копию. Тест — `report-run.spec.ts`.
 Бэкенд — `backend/app/Modules/Reports`, маршруты `/api/reports/{catalog,builder,saved}` (старые
 `/api/reports/{touches,funnel,sources,reject-reasons,scripts}` остаются в Recruiting/Scripts).
 
@@ -76,6 +77,20 @@
 «Рекрутинговые» отчёты доступны любому активному пользователю, как и прежняя страница `/reports`, — данные ограничены
 его филиалами (у пользователя без филиалов — пусто).
 
+**Общие каркасы определений (DRY, 2026-10-08).** Повторяющиеся `group()/filters()/available()/columns()` вынесены
+в абстрактные базы `Definitions/*`, сами отчёты описывают только ключ, колонки и сборку строк:
+- `AbstractReport` — хелперы периода (`range`, `months`), `pct`, `workingOn`, `branch`;
+- `AbstractRecruitingReport` — группа `recruiting`, фильтр `from/to`, доступ любому активному пользователю
+  (7 рекрутинговых отчётов: funnel, time_to_hire, source/channel effectiveness, reject_reasons, recruiter_touches,
+  script_scores);
+- `AbstractTeamReport` — группа `hr`, доступ `seesTeam()` (headcount, hires_terminations, turnover, leave_balances,
+  а также `AbstractTimeReport` для четырёх Time-отчётов);
+- `AbstractLeaveReport` (наследник `AbstractTeamReport`) — фильтр `from/to`, `ReportDataRepository` и `countPeople()`:
+  число разных сотрудников в строке и округление дней до 2 знаков (leave_usage, absences_summary);
+- `AbstractBucketReport` — группа `hr`, фильтр `branch_id`, колонки/диаграмма `bucket/employees`, `bucketOf()` (первая
+  корзина с верхней границей выше значения) и `bucketRows()` (age, tenure; доступ у каждого свой).
+Колонки, порядок строк, значения и CSV не изменились — это фиксирует `tests/Unit/Reports/ReportBaseClassesTest`.
+
 ### Конструктор (`Services/BuilderService`, `Repositories/QueryBuilderRepository`)
 Наборы — `Datasets/*` (тег `reports.datasets`): **белый список** колонок `ключ → фиксированное SQL-выражение, тип,
 pii`. Пользователь присылает только ключи: неизвестный набор/колонка — 422 `unknown_dataset`/`unknown_column`,
@@ -99,13 +114,19 @@ catalog — доступностью отчёта, лишние фильтры �
 сохранённый отчёт не сохраняет доступ, который у пользователя отобрали. Чужой — 404. Не больше 100 на пользователя.
 API: `GET/POST /api/reports/saved`, `PUT/DELETE /saved/{id}`, `GET /saved/{id}/run[?format=csv]`.
 
-### CSV (`Support/Csv`, `Http/Resources/CsvResponse`)
+### CSV (`Core\Support\Export\Csv`, `Http/Resources/CsvResponse`)
 `StreamedResponse` (`fputcsv` в `php://output`), UTF-8 BOM (Excel и кириллица), `Content-Disposition: attachment`,
-`no-store`. **Защита от CSV/formula injection (OWASP):** текстовая ячейка, начинающаяся с `=`, `+`, `-`, `@` (а
+`no-store`. Имя файла — `<отчёт>-<дата>.csv`, дата — день пользователя (`UserTime::today()`, Europe/Kyiv): до 08.10.2026
+бралась дата UTC, и выгрузка с 00:00 до 02:00/03:00 по Киеву получала вчерашнюю дату (регрессия
+`ReportsApiTest::test_csv_file_name_carries_the_users_date_not_the_utc_date`). **Защита от CSV/formula injection (OWASP):** текстовая ячейка, начинающаяся с `=`, `+`, `-`, `@` (а
 также табуляции и `\r`), получает префикс `'`; числа не трогаются. Эндпоинты: `GET /api/reports/catalog/{key}/csv`,
 `POST /api/reports/builder/csv`, `GET /saved/{id}/run?format=csv`. Последняя строка CSV — итог, если он есть: первая
 ячейка всегда с меткой (`Total` или `Total: <сумма>`, если первая колонка суммируется), «—» у колонок без итога; защита
 та же. В UI метка «Разом» тоже всегда в первой ячейке.
+
+**День пользователя в отчётах (2026-10-08).** `ScopedContextFactory` отдаёт `$ctx->now` в поясе пользователя (`UserTime::now()`): «сегодня» численности, стажа, возраста и текущей зарплаты — дата по Киеву (в 21:30 UTC 11.10 принятый 12.10 уже в численности). Диапазоны каталога — дни Киева (`Recruiting\DTO\DateRange`, моменты через `moments()`: SLA обращений, время до найма, касания). Тест `ReportDefinitionsDataTest::test_report_days_are_kyiv_days`.
+
+**Лимит конструктора.** `POST /api/reports/builder/run` и `/builder/csv` — одна именованная корзина `reports-builder` (`ReportsServiceProvider::BUILDER_THROTTLE`), 30 запросов в минуту на пользователя; 31-й — 429, каталог отчётов не затронут (`ReportsApiTest::test_builder_run_and_csv_are_throttled_per_user`).
 
 ### Строка «Разом» (`Support/Totals`)
 Итог считает бэкенд и отдаёт в `totals` (`run`, `builder/run`, `saved/{id}/run`; `null` при < 2 строк), UI рисует его
@@ -150,6 +171,9 @@ count/sum, `none` для avg; сырые строки — только коло�
 - Ошибки API → i18n-ключ: `reportsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `ScopedContextFactory` строит область отчёта из контрактов People `PeopleAccess` и Recruiting `RecruitingAccess`, а не из классов `PeopleScope`/`RecruitingScope`. Определения отчётов (`Definitions/*`) по-прежнему импортируют сервисы чужих модулей: их параллельно меняет ветка DRY-правок. Тест — `tests/Unit/Reports/ScopedContextFactoryTest.php`.
 
 ## Как проверить
 `php artisan test --filter=Reports` — состав каталога по ролям (26 отчётов у админа, включая `gender_pay_gap`), область People и

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { ScriptEditorStore } from './editor/script-editor.store';
 import { EvaluationDetails, ScriptContent, ScriptDetails, ScriptVersion, Task, emptyContent } from './scripts.model';
 import { ScriptsService } from './scripts.service';
@@ -125,6 +125,18 @@ describe('TasksStore', () => {
     expect(store.items()[0].done_at).not.toBeNull();
     expect(store.pending().size).toBe(0);
     expect(store.overdue()).toBe(1);
+  });
+
+  it('a newer load cancels the request in flight', () => {
+    const { store, api } = setup(TasksStore);
+    const late = new Subject<Task[]>();
+    api.tasks = () => late;
+    store.load({ mine: true });
+    api.tasks = () => of([task(3)]);
+    store.load({ candidate_id: 5 });
+    expect(late.observed).toBe(false);
+    expect(store.items().map((t) => t.id)).toEqual([3]);
+    expect(store.query()).toEqual({ candidate_id: 5 });
   });
 
   it('rolls back a refused change', () => {

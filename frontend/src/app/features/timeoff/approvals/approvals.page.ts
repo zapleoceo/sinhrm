@@ -5,17 +5,19 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { HiddenChangesLine } from '../../people/hidden-changes';
 import { CHANGEABLE_FIELDS, ChangeRequest, fieldLabelKey } from '../../people/people.model';
 import { PeopleService, peopleErrorKey } from '../../people/people.service';
 import { LeaveRequest } from '../timeoff.model';
 import { TimeOffService, timeoffErrorKey } from '../timeoff.service';
 import { RequestAction, RequestsList } from '../widgets/requests-list';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /** Approvals inbox of a manager/admin: pending leave requests and personal-data change requests of their people. */
 @Component({
   selector: 'app-approvals-page',
-  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, RequestsList],
+  imports: [DatePipe, MatButtonModule, MatIconModule, MatProgressBarModule, RouterLink, TranslocoPipe, RequestsList, HiddenChangesLine],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">
@@ -44,6 +46,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
                   <span class="muted">{{ label(f) | transloco }}: {{ c.changes[f] ?? '—' }}</span>
                 }
               }
+              <app-hidden-changes [fields]="c.hidden_changes" />
               <span class="muted small">{{ c.created_at | date: 'dd.MM.yyyy HH:mm' }}</span>
             </div>
             <button mat-stroked-button type="button" (click)="decide(c, true)"><mat-icon>check</mat-icon>{{ 'timeoff.actions.approve' | transloco }}</button>
@@ -58,13 +61,11 @@ import { NotifyService } from '../../../core/ui/notify.service';
   styles: `
     .card { padding: 1rem 1.25rem; margin-bottom: var(--app-gap); }
     h2 { font: var(--mat-sys-title-medium); margin: 0 0 0.75rem; }
-    .rows { list-style: none; margin: 0; padding: 0; }
     .rows li { display: flex; gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-bottom: var(--app-border-w) solid var(--app-track); flex-wrap: wrap; }
     .main { flex: 1; display: flex; flex-direction: column; }
     .rows li:last-child { border-bottom: 0; }
     .rows li.app-empty { display: block; }
     .main .small { font-family: var(--app-font-mono); }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class ApprovalsPage implements OnInit {
@@ -73,23 +74,17 @@ export class ApprovalsPage implements OnInit {
   private readonly notify = inject(NotifyService);
   protected readonly fields = CHANGEABLE_FIELDS;
   protected readonly label = fieldLabelKey;
-  protected readonly leave = signal<LeaveRequest[]>([]);
+  private readonly list = new PagedList<LeaveRequest>();
+  protected readonly leave = this.list.items;
   protected readonly changes = signal<ChangeRequest[]>([]);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
 
   ngOnInit(): void {
     this.load();
   }
 
   load(): void {
-    this.loading.set(true);
-    this.timeoff.approvals().subscribe({
-      next: (list) => {
-        this.leave.set(list);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
+    this.list.load(this.timeoff.approvals());
     this.people.changeRequests({ status: 'pending', perPage: 100 }).subscribe({
       next: (page) => this.changes.set(page.data.filter((c) => c.can_decide)),
       error: () => this.changes.set([]),

@@ -217,6 +217,26 @@ final class TimeRoutesTest extends TestCase
         $this->assertSame('approved', Timesheet::query()->findOrFail($id)->status->value);
     }
 
+    /**
+     * Owner's decision (docs/modules/time.md): timesheet approval is governed by roles only — an admin approves their
+     * own week, a manager does not (they are not in their own subtree). The People/TimeOff separation of duties
+     * (PeopleContext::canDecideOrBreakGlass) does not apply here.
+     */
+    public function test_admin_approves_own_week_manager_does_not(): void
+    {
+        $admin = $this->login(UserRole::Admin);
+        $this->employee(['full_name' => 'Admin Person'], $admin);
+        $this->login(UserRole::Admin); // a peer admin exists: not break-glass, still allowed
+        $own = $this->actingAs($admin)->postJson('/api/time/week/submit', ['week' => self::WEEK])->assertOk()->json('data.timesheet_id');
+        $this->actingAs($admin)->postJson("/api/time/timesheets/$own/decision", ['decision' => 'approve'])->assertOk()
+            ->assertJsonPath('data.status', 'approved');
+
+        $org = $this->org();
+        $lead = $this->userOf($org['lead']);
+        $leadWeek = $this->actingAs($lead)->postJson('/api/time/week/submit', ['week' => self::WEEK])->assertOk()->json('data.timesheet_id');
+        $this->actingAs($lead)->postJson("/api/time/timesheets/$leadWeek/decision", ['decision' => 'approve'])->assertForbidden();
+    }
+
     public function test_approvals_exclude_own_week_of_a_manager(): void
     {
         $org = $this->org();

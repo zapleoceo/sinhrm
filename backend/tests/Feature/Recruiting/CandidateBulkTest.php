@@ -29,7 +29,7 @@ final class CandidateBulkTest extends TestCase
         $this->actingAs($recruiter)->postJson('/api/candidates/bulk', ['action' => 'move', 'ids' => $ids, 'vacancy_id' => $vacancy->id, 'stage_id' => (string) $this->stageAt(2)->id])
             ->assertOk()
             ->assertJsonPath('data.0.ok', true)->assertJsonPath('data.1.ok', true)
-            ->assertJsonPath('data.2.error', 'no_application');
+            ->assertJsonPath('data.2.error', 'not_found'); // out of scope: indistinguishable from "no such candidate"
         $this->assertSame($this->stageAt(2)->id, $a->fresh()?->stage_id);
 
         // Same stage again → the single-action rule answers.
@@ -43,7 +43,7 @@ final class CandidateBulkTest extends TestCase
         $this->assertSame('rejected', $a->refresh()->status->value);
 
         $this->actingAs($recruiter)->postJson('/api/candidates/bulk', ['action' => 'tag', 'ids' => $ids, 'tag' => 'java'])
-            ->assertOk()->assertJsonPath('data.0.ok', true)->assertJsonPath('data.2.error', 'forbidden');
+            ->assertOk()->assertJsonPath('data.0.ok', true)->assertJsonPath('data.2.error', 'not_found');
         $this->assertSame(['java'], $b->candidate()->firstOrFail()->tags);
 
         $this->actingAs($recruiter)->postJson('/api/candidates/bulk', ['action' => 'assign', 'ids' => [$b->candidate_id], 'owner_id' => $recruiter->id])
@@ -51,5 +51,32 @@ final class CandidateBulkTest extends TestCase
         $this->assertSame($recruiter->id, $b->candidate()->firstOrFail()->owner_id);
 
         $this->actingAs($recruiter)->postJson('/api/candidates/bulk', ['action' => 'tag', 'ids' => range(1, 201), 'tag' => 'x'])->assertUnprocessable();
+    }
+
+    /** Per-id errors must not tell whether a candidate out of scope exists, nor where they applied. */
+    public function test_results_do_not_leak_candidates_or_applications_out_of_scope(): void
+    {
+        $branch = Branch::factory()->create();
+        $other = Branch::factory()->create();
+        $vacancy = $this->vacancyIn($branch);
+        $mine = $this->applied($vacancy);
+        $foreign = $this->applied($this->vacancyIn($other));
+        $recruiter = $this->userWith(UserRole::Recruiter, [$branch]);
+        $missing = $foreign->candidate_id + 1000;
+        $url = '/api/candidates/bulk';
+
+        foreach (['move' => ['stage_id' => $this->stageAt(2)->id], 'tag' => ['tag' => 'java']] as $action => $extra) {
+            $results = $this->actingAs($recruiter)->postJson($url, [
+                'action' => $action, 'ids' => [$foreign->candidate_id, $missing], 'vacancy_id' => $vacancy->id, ...$extra,
+            ])->assertOk()->json('data');
+            // Existing-but-invisible and simply absent must be indistinguishable.
+            $this->assertSame($results[0]['error'], $results[1]['error'], $action.': existence leaked');
+            $this->assertFalse($results[0]['ok']);
+        }
+
+        // A vacancy out of scope is refused once for the whole request, not probed candidate by candidate.
+        $this->actingAs($recruiter)->postJson($url, [
+            'action' => 'move', 'ids' => [$mine->candidate_id], 'vacancy_id' => $this->vacancyIn($other)->id, 'stage_id' => $this->stageAt(2)->id,
+        ])->assertForbidden()->assertJsonPath('code', 'vacancy_out_of_scope');
     }
 }

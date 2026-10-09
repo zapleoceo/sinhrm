@@ -13,6 +13,7 @@
   версий с «Підставити в редактор». Черновики видят только админы.
 
 ## Как устроено
+- Фронт (2026-10-08): поиск статей (`knowledge.page.ts`) держит `PagedList` (`core/ui/table/paged-list.ts`): новый запрос отменяет предыдущий, ошибка по-прежнему очищает список.
 Бэкенд — `backend/app/Modules/Knowledge`, маршруты `/api/knowledge/*`, `auth:sanctum` + `EnsureUserIsActive`;
 запись — gate `knowledge-manage` = `PeopleScope::isAdmin`.
 
@@ -70,6 +71,9 @@
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
 
+### Зависимости через контракты (2026-10-08)
+- `KnowledgeService` определяет редактора и филиал сотрудника через контракт People `PeopleAccess`. Тест — `tests/Unit/Knowledge/KnowledgePeopleAccessTest.php`.
+
 ## Как проверить
 `php artisan test --filter=Knowledge` — запись только админам, черновики скрыты (404), очистка XSS (`<script>`,
 `javascript:`, `<img onerror>`), аудитория по филиалу и роли, поиск без учёта регистра и с буквальными `%`/`_`,
@@ -83,4 +87,4 @@
 Ключ модуля `knowledge`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
 MySQL compatibility: article Markdown, rendered HTML and version history use `LONGTEXT` so accepted Unicode bodies exceeding 64 KiB roundtrip.
 
-**Поиск статей (2026-10-08).** `Sql::whereContainsCi`: `lower(title|body_md) like ? escape '!'`, регистр (включая кириллицу) не важен, `%`/`_`/`!` в запросе ищутся буквально; проверка — `KnowledgeApiTest::test_search_folds_cyrillic_case_on_every_driver` в job `tests` на MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md)). Поиск не различает и диакритику латиницы (`é` = `e`, collation `utf8mb4_0900_ai_ci`); фиксирует `PortableSqlTest::test_contains_diacritics_known_divergence_mysql_is_wider`.
+**Поиск статей (2026-10-08).** `Sql::whereContainsCi`: `lower(title|body_md) like ? escape '!'`, регистр (включая кириллицу) не важен, `%`/`_`/`!` в запросе ищутся буквально; проверка — `KnowledgeApiTest::test_search_folds_cyrillic_case_on_every_driver` в job `tests` на MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md)). Поиск не различает и диакритику латиницы (`é` = `e`, collation `utf8mb4_0900_ai_ci`); фиксирует `PortableSqlTest::test_contains_ignores_latin_diacritics_but_keeps_cyrillic_short_i`.

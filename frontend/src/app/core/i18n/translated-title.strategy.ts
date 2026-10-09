@@ -4,7 +4,7 @@ import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 import { TranslocoService } from '@jsverse/transloco';
 import { Observable, Subject, of, switchMap } from 'rxjs';
 
-export const APP_TITLE = 'SinHRM';
+const APP_TITLE = 'SinHRM';
 
 /** "SinHRM · Кандидати"; just "SinHRM" when a route has no title (or its key is not translated yet). */
 export function formatTitle(page: string | null | undefined): string {

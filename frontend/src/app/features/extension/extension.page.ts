@@ -101,7 +101,6 @@ const INACTIVE: ExtensionTokenStatus = { active: false, created_at: null, last_u
     code { word-break: break-all; user-select: all; font-family: var(--app-font-mono); }
     .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
     .error { color: var(--app-warn-text); }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class ExtensionPage implements OnInit {

@@ -76,6 +76,10 @@
 - **«Мої задачі»** — задачи «Настрій команди знизився» (источник «Опитування», `?source=pulse`).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PulseException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): «Мої опитування» (`my-surveys.page.ts`) держит список в `PagedList` (`core/ui/table/paged-list.ts`) вместо своего `load()`.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/PulseNavBadges` — ключ `surveys` («Опитування»): открытые волны для меня, на которые я ещё не ответил (`responded = false` в `GET /api/pulse/my/waves`). Анонимность не страдает: считается только мой собственный признак «ответил», как и на странице. Кто в аудитории волны, решает PHP (`WaveAudience`), поэтому открытые волны перебираются в коде (их единицы), а ответы считаются одним `count(*)` (`ResponseService::countPending`).
 Бэкенд — `backend/app/Modules/Pulse`, маршруты `/api/pulse/*`, все за `auth:sanctum` + `EnsureUserIsActive`.
 Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::isAdmin` — конструктор, волны,
@@ -129,6 +133,10 @@ Gate `pulse-manage` (`Providers/PulseServiceProvider::MANAGE`) = `PeopleScope::i
 Сравнение: предыдущая волна того же опроса (не lifecycle, уже начатая) или `?with=`; для числовых вопросов
 «заголовочное» число (`WaveResults::headline`: среднее шкалы или eNPS), по всем и по каждому отделу/филиалу
 (`?segment=department|branch`), `delta = current − previous`.
+Арифметика сравнения вынесена из `ResponseService` в чистый `Support/WaveComparison` (SRP, 2026-10-08):
+`groupBy()` — ответы по сегменту (без сегмента — только в итоге), `row()` — строка сравнения (ниже минимума группы —
+`null`, небезопасная строка — без `previous`/`delta`, `hidden_reason = anonymity`). Что безопасно показывать, решает
+по-прежнему `ResponseService::compare` (`SafeSegments`, `SafeComparison`, `WaveMembership`); тест — `WaveComparisonTest`.
 **Защита от вычитания между волнами** (`Support/SafeComparison::allowed(now, then, min)`): число ответов группы
 в двух волнах должно совпадать или отличаться не меньше чем на `min = max(min_group_size обеих волн)`. Проверяется
 для строки «Все» (итоги волн), для каждого отдела/филиала (по сырым числам ответов, до `SafeSegments`) и для его
@@ -184,6 +192,17 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
 неанонимная, `min_group_size = 1`, 14 дней, `trigger_key = "<триггер>:<дата>"` → повтор события/cron не создаёт
 вторую волну; повторный найм/увольнение с новой датой — новая волна.
 
+**Lifecycle-опрос не бывает командным (аудит безопасности 2026-10-08).** Ответы такой волны — это ответы одного
+названного человека, поэтому:
+- `POST surveys/{id}/waves` для опроса с `type = lifecycle` или заданным `lifecycle_trigger` → 409 `lifecycle_survey`
+  (`SurveyService::createWave`): ручная волна сделала бы lifecycle-опрос «командным» и открыла бы его руководителю;
+- `PUT surveys/{id}` не переводит в lifecycle опрос, у которого уже есть волны → 409 `has_waves`: иначе прошлые
+  командные выпуски задним числом стали бы персональными;
+- `ResponseService::compare` отбрасывает `previous`, если **любая** из двух волн персональная или принадлежит
+  lifecycle-опросу (в том числе при явном `?with=<id>`), а `departmentScope` отказывает руководителю в `results` и
+  `compare` по любой волне lifecycle-опроса, а не только по волне с `subject_employee_id`. До этого руководитель
+  получал `previous` = оценку увольняющимся своего руководителя (ответ exit-волны своего отдела).
+
 **Exit и дата увольнения (решение владельца 2026-10-07, B).** Увольнение вступает в силу в 00:00 по Киеву дня после
 `fired_at`, и вход в этот момент уже заблокирован — открывать опрос тогда поздно. Поэтому:
 - **будущая дата** — `Listeners/OpenScheduledExitSurvey` на событие People `EmployeeTerminationScheduled` открывает волну
@@ -219,10 +238,23 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
   (переписанный HR опрос с теми же id не трогается)).
 
 ### Настроение (`Services/MoodService`, `Services/MoodAlerts`, `Support/MoodStats`)
-`today()` — `ask = есть запись сотрудника ∧ сегодня день из настроек ∧ ещё не отвечал`. Тренд команды: только
+`today()` — `ask = есть запись сотрудника ∧ сегодня день из настроек ∧ ещё не отвечал`. «Сегодня», день отметки (`checkIn`),
+история и граница текущей недели тренда — день пользователя `Core\Support\UserTime` (Europe/Kyiv), не UTC (2026-10-08, MySQL e2e
+раунд 2: в 00:30 по Киеву отметка записывалась на вчера, а «сегодня» показывало вчерашний ответ; тест
+`MoodTest::test_check_in_after_kyiv_midnight_counts_for_the_kyiv_day`). Тренд команды: только
 завершённые недели (с понедельника по воскресенье, текущая не входит); `MoodStats::bucket()` — каждый человек учитывается один раз (сначала его среднее за неделю), меньше
 `min_group` разных людей → `suppressed`; покрытие «ответили N из M» (за последнюю завершённую неделю) и размер команды —
 только если команда ≥ `min_group`; комментарии — только из показанных недель, без имён и дат, по алфавиту, до 50.
+
+**По Киеву, не по UTC (2026-10-08, ночное окно 21:00/22:00–24:00 UTC).** «Последняя завершённая неделя» оповещений руководителю (`MoodAlerts`) и их срок «через 2 дня в 18:00 по Киеву» (`UserTime::wallTime`), день ответа опроса `submitted_on` (`ResponseService`), годовщины 30/90 дней после найма и якорь exit-волны (`LifecycleSurveys`). В понедельник 00:30 по Киеву оповещение сравнивает только что закончившуюся неделю, а не позапрошлую. Тесты: `MoodTest::test_mood_alert_week_turns_at_kyiv_midnight` (лето и зима), `AnonymityTest::test_submitted_on_is_the_kyiv_day` (включая 31.12 22:30 UTC → 01.01), `PulseTickTest::test_hire_anniversary_is_due_on_the_kyiv_day`.
+
+**Фильтры `branch_id` / `department_id` — только админу (аудит безопасности 2026-10-08).** Руководителю они
+запрещены (403, `MoodService::teamIds`): «вся команда» минус «один отдел» — это агрегат оставшихся, а с
+комментарием — уже имя. Руководитель видит своё поддерево целиком и только целиком.
+Для админа срез проходит через то же правило `SafeSegments`, что и разрезы волн: срез показывается, только если он
+сам ≥ `min_group` **и** остаток области (все минус срез) равен 0 или ≥ `min_group`. Иначе возвращается пустая
+область — `team_size: null`, `coverage: null`, все недели `suppressed`, без комментариев. Так «все» минус «отдел на
+7 из 8 человек» не даёт настроение одного оставшегося.
 **Уведомление руководителю** (`MoodAlerts`, в `pulse.tick`): для каждого руководителя с логином — его рабочее
 поддерево; среднее за последнюю завершённую неделю против недели до неё; оба окна ≥ `min_group` людей и падение ≥
 `alert_drop` → задача `mood_alert` «Настрій команди знизився: 4.2 → 3.1» (без имён) со ссылкой `/pulse/mood`;
@@ -237,7 +269,7 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
 | `GET waves/{id}/compare?segment&with` | админ; руководитель — свой отдел | закрытая волна: `{current, previous, questions, rows[{segment,name,questions[{id,current,previous,delta}]}]}` (только безопасные отделы); открытая: `participation` |
 | `PUT waves/{id} {min_group_size}` | админ | поднять минимум (не опустить), пока волна не закрыта |
 | `GET mood/today`, `POST mood {score, comment?}`, `GET mood/me?days` | сотрудник | своё |
-| `GET mood/team?weeks&branch_id&department_id` | руководитель (своё поддерево), админ (все / фильтр) | агрегаты |
+| `GET mood/team?weeks&branch_id&department_id` | руководитель — своё поддерево целиком (фильтры → 403), админ — все или срез | агрегаты; срез админа скрыт, если остаток области 1..`min_group−1` человек |
 | `GET mood/settings`; `PUT mood/settings` | все; запись — админ | |
 | `GET templates`, `GET/POST/PUT/DELETE surveys[/{id}]`, `GET/POST surveys/{id}/waves`, `GET waves/{id}`, `POST waves/{id}/close`, `GET waves/{id}/responses` | админ (`pulse-manage`) | конструктор, волны, ответы неанонимных волн |
 | `POST waves/{id}/responses-on-behalf {answers}` (30/мин) | HR (`pulse-manage`) | ответ за сотрудника в его открытой exit-волне, когда он сам не может (уволен / вход заблокирован / нет входа); `entered_by_user_id`; 409 `not_exit_wave` / `wave_not_open` / `employee_can_answer` / `already_responded`, 422 `invalid_answers` |
@@ -283,6 +315,10 @@ snapshot` → `decide`) видимость каждой группы (`s:X`, `c:
 - Ошибки API → i18n-ключ: `pulseErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `MoodService` находит сотрудника и контекст через контракт People `PeopleAccess`. `ResponseService` (форма и ответы опроса, «мои опросы», сводка) — через тот же контракт `PeopleAccess` (с 2026-10-08); импортов `PeopleScope` в модуле нет. Тесты — `tests/Unit/Pulse/MoodPeopleAccessTest.php`, `tests/Unit/Pulse/ResponsePeopleAccessTest.php`.
+- `MoodAlerts` ставит задачи о падении настроения через контракт Scripts `TaskScheduler`.
 
 ## Как проверить
 - `php artisan test --filter=Pulse` — Feature: `AnonymityTest` (**ответы по одному в открытой волне ничего не

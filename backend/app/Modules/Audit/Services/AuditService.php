@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Audit\Services;
 
 use App\Models\User;
+use App\Modules\Audit\Contracts\AuditHistory;
 use App\Modules\Audit\Contracts\AuditLogger;
 use App\Modules\Audit\Contracts\AuditLogRepository;
 use App\Modules\Audit\DTO\AuditFilter;
@@ -18,7 +19,7 @@ use Illuminate\Database\DatabaseManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
-final readonly class AuditService implements AuditLogger
+final readonly class AuditService implements AuditHistory, AuditLogger
 {
     public function __construct(
         private AuditLogRepository $repository,

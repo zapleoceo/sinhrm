@@ -9,7 +9,7 @@ import { PrivacyService } from './privacy.service';
 import { NotifyService } from '../../core/ui/notify.service';
 
 /** Default term offered when the rule is switched on. */
-export const DEFAULT_RETENTION_MONTHS = 12;
+const DEFAULT_RETENTION_MONTHS = 12;
 
 /**
  * Personal data settings (superadmin, admin): the retention rule — rejected candidates are anonymized automatically

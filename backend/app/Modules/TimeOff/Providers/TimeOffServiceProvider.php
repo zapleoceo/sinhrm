@@ -38,6 +38,13 @@ final class TimeOffServiceProvider extends ModuleServiceProvider
     /** Leave types, policies, holidays, balance adjustments: HR staff (superadmin, admin, hr_manager). */
     public const string MANAGE = 'timeoff-manage';
 
+    /** POST requests (a new leave request: days count, overlaps, notifications): 30 per minute per user, own bucket. */
+    public const string REQUEST_LIMITER = 'timeoff-requests';
+
+    public const string REQUEST_THROTTLE = 'throttle:'.self::REQUEST_LIMITER;
+
+    public const int REQUESTS_PER_MINUTE = 30;
+
     protected string $prefix = 'timeoff';
 
     public function register(): void
@@ -56,6 +63,7 @@ final class TimeOffServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         $this->defineRoleGate(self::MANAGE, UserRole::hrStaff());
+        $this->definePerUserLimiter(self::REQUEST_LIMITER, self::REQUESTS_PER_MINUTE);
         Event::listen(EmployeeHired::class, GrantAccrualOnHire::class);
     }
 }

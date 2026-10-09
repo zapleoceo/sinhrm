@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Http\Controllers;
 
+use App\Modules\Audit\Contracts\AuditHistory;
 use App\Modules\Audit\Http\Requests\HistoryRequest;
 use App\Modules\Audit\Http\Resources\AuditEntryResource;
-use App\Modules\Audit\Services\AuditService;
 use App\Modules\People\Models\Employee;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -16,7 +16,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 final class EmployeeHistoryController
 {
-    public function __construct(private readonly AuditService $audit) {}
+    public function __construct(private readonly AuditHistory $audit) {}
 
     public function __invoke(HistoryRequest $request, Employee $employee): AnonymousResourceCollection
     {

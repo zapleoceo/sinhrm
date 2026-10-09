@@ -171,7 +171,7 @@ export type StepCommand = 'complete' | 'skip' | 'retry';
 export const WORKFLOW_ERROR_CODES = ['depth_limit', 'run_not_running', 'step_not_open', 'step_not_failed', 'has_runs', 'invalid_order'] as const;
 
 /** Step result codes with their own message; http_<n> and exception:* are grouped. */
-export const STEP_RESULT_CODES = [
+const STEP_RESULT_CODES = [
   'not_connected',
   'send_not_supported',
   'reconnect_to_send',

@@ -206,6 +206,31 @@ final class TimeApiTest extends TestCase
         return $jobs['time.reminders'];
     }
 
+    /** The default week follows the Kyiv day: Monday 00:30 Kyiv is already the new week (MySQL e2e, round 2). */
+    public function test_default_week_follows_the_kyiv_day(): void
+    {
+        $worker = $this->userOf($this->org()['worker']);
+        Carbon::setTestNow('2026-10-11 21:30:00'); // Monday 2026-10-12 00:30 in Kyiv, still Sunday in UTC
+        $this->actingAs($worker)->getJson('/api/time/week')->assertOk()->assertJsonPath('data.week_start', '2026-10-12');
+        $this->actingAs($worker)->getJson('/api/dashboard')->assertOk()->assertJsonPath('data.time.my_week.week_start', '2026-10-12');
+    }
+
+    /**
+     * Reminders follow the Kyiv calendar: Monday 00:30 Kyiv (Sunday 21:30 UTC) is a new week — no reminder for the
+     * week that has just ended; Friday 00:30 Kyiv (Thursday 21:30 UTC) is already Friday. Due: Sunday 23:59:59 Kyiv.
+     */
+    public function test_reminders_follow_the_kyiv_week_and_day(): void
+    {
+        $this->org();
+        Carbon::setTestNow('2026-10-11 21:30:00'); // Monday 2026-10-12 00:30 Kyiv
+        $this->assertSame('not_friday', $this->reminders()['time_skipped'] ?? null);
+        Carbon::setTestNow('2026-10-15 21:30:00'); // Friday 2026-10-16 00:30 Kyiv, Thursday in UTC
+        $this->assertGreaterThan(0, $this->reminders()['time_reminders']);
+        $task = Task::query()->where('type', 'time_reminder')->firstOrFail();
+        $this->assertSame('/time?week=2026-10-12', $task->link);
+        $this->assertSame('2026-10-18 20:59:59', $task->due_at->utc()->format('Y-m-d H:i:s')); // Sunday 23:59:59 Kyiv (+03:00)
+    }
+
     /**
      * Report rows keyed by a column.
      *

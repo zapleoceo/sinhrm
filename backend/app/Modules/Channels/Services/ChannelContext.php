@@ -6,10 +6,10 @@ namespace App\Modules\Channels\Services;
 
 use App\Modules\Channels\Contracts\ChannelAdapter;
 use App\Modules\Channels\Enums\ChannelMode;
+use App\Modules\Integrations\Contracts\IntegrationConfigs;
 use App\Modules\Integrations\Contracts\IntegrationRepository;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Integrations\Enums\LogLevel;
-use App\Modules\Integrations\Services\IntegrationConfigLoader;
 use App\Modules\Integrations\Support\IntegrationRegistry;
 
 /**
@@ -20,7 +20,7 @@ final readonly class ChannelContext
 {
     public function __construct(
         private IntegrationRegistry $definitions,
-        private IntegrationConfigLoader $loader,
+        private IntegrationConfigs $loader,
         private IntegrationRepository $integrations,
     ) {}
 

@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { UserRole, isHrStaff } from '../../core/auth/auth.model';
+import { SUPERADMIN_ROLE, UserRole, isAdmin, isHrStaff } from '../../core/auth/auth.model';
 import { A11yModule, FocusMonitor } from '@angular/cdk/a11y';
 import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -63,9 +63,9 @@ export class ShellLayout {
   private readonly i18n = inject(TranslocoService);
 
   protected readonly user = this.auth.user;
-  protected readonly isSuperadmin = computed(() => this.user()?.roles.includes('superadmin') ?? false);
+  protected readonly isSuperadmin = computed(() => this.user()?.roles.includes(SUPERADMIN_ROLE) ?? false);
   /** Dictionaries are managed by superadmin and admin. */
-  protected readonly isAdmin = computed(() => this.isSuperadmin() || (this.user()?.roles.includes('admin') ?? false));
+  protected readonly isAdmin = computed(() => isAdmin(this.user()?.roles ?? []));
   /** HR settings pages (People, TimeOff, Desk, Pulse, Workflows, …): superadmin, admin, hr_manager. */
   protected readonly isHr = computed(() => isHrStaff(this.user()?.roles ?? []));
   protected readonly activeRole = computed(() => this.user()?.active_role ?? null);

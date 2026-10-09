@@ -1,4 +1,5 @@
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { NotifyService } from '../../core/ui/notify.service';
 import { of } from 'rxjs';
 import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { MailOutcome, ProcessedMail } from './mail.model';
@@ -82,5 +83,24 @@ describe('MailPage «Журнал»: sortable / filterable headers bound to the 
     await page.router.navigateByUrl('/?tab=log');
     await page.settle();
     expect(tabs()[2].getAttribute('aria-selected')).toBe('true');
+  });
+});
+
+describe('MailPage notifications', () => {
+  it('store results are shown through NotifyService for 3 s', async () => {
+    const show = vi.fn();
+    const api = {
+      status: () => of({ connection: { connected: true, account_email: 'hr@example.com', error: null }, last_sync: null, counts: { rules: 0, unknown: 0, processed_24h: 0 } }),
+      rules: () => of([]),
+      unknown: () => of([]),
+      messages: () => of([]),
+    };
+    const page = await openTablePage(MailPage, '/', [
+      { provide: MailService, useValue: api },
+      { provide: NotifyService, useValue: { show } },
+      { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+    ]);
+    page.fixture.componentInstance['toast']('mail.rules.created');
+    expect(show).toHaveBeenCalledWith('mail.rules.created', { duration: 3000 });
   });
 });

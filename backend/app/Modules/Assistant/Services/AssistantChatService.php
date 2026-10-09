@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace App\Modules\Assistant\Services;
 
 use App\Models\User;
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\DTO\AiOutcome;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Enums\AiRequestStatus;
 use App\Modules\Ai\Exceptions\AiException;
-use App\Modules\Ai\Services\AiService;
 use App\Modules\Assistant\Ai\AssistantChatHandler;
 use App\Modules\Assistant\Ai\AssistantPrompt;
 use App\Modules\Assistant\Enums\ToolRunner;
 use App\Modules\Assistant\Support\AssistantDataPolicy;
 use App\Modules\Assistant\Support\ToolRegistry;
 use App\Modules\Auth\Enums\UserRole;
+use App\Modules\Core\Support\UserTime;
 use Illuminate\Contracts\Cache\Repository as Cache;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -39,7 +39,7 @@ final readonly class AssistantChatService
     public const int WAIT_SECONDS = 25;
 
     public function __construct(
-        private AiService $ai,
+        private AiGateway $ai,
         private AiRequestRepository $requests,
         private ToolRegistry $tools,
         private Cache $cache,
@@ -202,7 +202,7 @@ final readonly class AssistantChatService
     private static function context(User $user, array $page): string
     {
         $roles = implode(', ', array_intersect($user->getRoleNames()->all(), UserRole::values())) ?: 'employee';
-        $today = Carbon::now()->format('Y-m-d (l)');
+        $today = UserTime::now()->format('Y-m-d (l)'); // the user's (Kyiv) date: after 00:00 Kyiv the UTC date is yesterday
         $path = AssistantDataPolicy::pagePath($page['path']);
 
         return "roles: {$roles}; today {$today}; current page {$path}";

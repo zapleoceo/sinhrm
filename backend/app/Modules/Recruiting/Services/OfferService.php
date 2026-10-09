@@ -6,16 +6,20 @@ namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
 use App\Modules\Channels\Services\MessageService;
+use App\Modules\Core\Support\UserTime;
+use App\Modules\Documents\Contracts\DocumentTemplateRepository;
 use App\Modules\Documents\Enums\DocumentVariable;
 use App\Modules\Documents\Exceptions\DocumentException;
-use App\Modules\Documents\Models\DocumentTemplate;
 use App\Modules\Documents\Support\TemplateFiller;
+use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\TouchpointRepository;
 use App\Modules\Recruiting\Enums\Channel;
 use App\Modules\Recruiting\Enums\OfferStatus;
 use App\Modules\Recruiting\Enums\StageKind;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\Application;
 use App\Modules\Recruiting\Models\Offer;
+use App\Modules\Recruiting\Models\Touchpoint;
 use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 
@@ -28,24 +32,34 @@ final readonly class OfferService
 {
     public const string TEMPLATE_CATEGORY = 'offer';
 
-    public function __construct(private MessageService $messages, private LoggerInterface $log) {}
+    /** TEXT holds 65 535 bytes; the touchpoint body also carries the subject line «Оффер: <position>» (≤ 255 chars). */
+    public const int MAX_CONTENT_BYTES = 64_000;
+
+    public function __construct(
+        private MessageService $messages,
+        private LoggerInterface $log,
+        private DocumentTemplateRepository $documentTemplates,
+        private ApplicationRepository $applications,
+        private TouchpointRepository $touchpoints,
+    ) {}
 
     /** @return list<array{id: int, name: string}> */
     public function templates(): array
     {
-        return DocumentTemplate::query()->where('category', self::TEMPLATE_CATEGORY)->where('archived', false)->orderBy('name')
-            ->get(['id', 'name'])->map(static fn (DocumentTemplate $t): array => ['id' => $t->id, 'name' => $t->name])->values()->all();
+        $templates = $this->documentTemplates->activeOfCategory(self::TEMPLATE_CATEGORY);
+
+        return array_values($templates->map(static fn ($t): array => ['id' => $t->id, 'name' => $t->name])->all());
     }
 
     public function forApplication(Application $application): ?Offer
     {
-        return Offer::query()->where('application_id', $application->id)->first();
+        return $this->applications->offerFor($application->id);
     }
 
     /**
      * @param  array{template_id: int, position: string, salary: string, start_date: ?string, conditions: ?string}  $data
      *
-     * @throws RecruitingException not_in_offer_stage | offer_exists | template_not_offer
+     * @throws RecruitingException not_in_offer_stage | offer_exists | template_not_offer | offer_too_long
      * @throws DocumentException template_archived
      */
     public function create(User $actor, Application $application, array $data, ?Carbon $today = null): Offer
@@ -58,7 +72,7 @@ final readonly class OfferService
         if ($existing !== null) {
             throw RecruitingException::offerExists($existing->id);
         }
-        $template = DocumentTemplate::query()->find($data['template_id']);
+        $template = $this->documentTemplates->find($data['template_id']);
         if ($template === null || $template->category !== self::TEMPLATE_CATEGORY) {
             throw RecruitingException::templateNotOffer();
         }
@@ -73,13 +87,19 @@ final readonly class OfferService
             DocumentVariable::FirstName->value => (preg_split('/\s+/u', trim($name)) ?: [])[0] ?? null,
             DocumentVariable::Position->value => $data['position'],
             DocumentVariable::Branch->value => $application->vacancy->branch->name,
-            DocumentVariable::Today->value => $today->format('d.m.Y'),
+            DocumentVariable::Today->value => UserTime::now($today)->format('d.m.Y'), // the Kyiv date, not the UTC one
             DocumentVariable::Salary->value => $data['salary'],
             DocumentVariable::StartDate->value => $start?->format('d.m.Y'),
             DocumentVariable::Conditions->value => $data['conditions'],
         ])['text'];
+        // offers.content_md and the sent touchpoint's body are TEXT (65 535 bytes); a template may hold 50 000 characters
+        // (~100 KB in Cyrillic). MySQL strict mode refused such an insert with a 500 (MySQL e2e, round 2). The schema is
+        // frozen until the production data transfer (docs/guides/mysql-cutover.md), so the limit is checked here.
+        if (strlen($content) > self::MAX_CONTENT_BYTES) {
+            throw RecruitingException::offerTooLong(self::MAX_CONTENT_BYTES);
+        }
 
-        $offer = Offer::query()->create([
+        $offer = $this->applications->createOffer([
             'application_id' => $application->id,
             'template_id' => $template->id,
             'position' => $data['position'],
@@ -106,8 +126,10 @@ final readonly class OfferService
             throw RecruitingException::offerStatus();
         }
         $application = $offer->application;
-        $this->messages->send($actor, $application->candidate, Channel::Email, $offer->content_md, $application->id, 'Оффер: '.$offer->position);
-        $offer->update(['status' => OfferStatus::Sent->value, 'sent_at' => Carbon::now()]);
+        $touchpoint = $this->messages->send($actor, $application->candidate, Channel::Email, $offer->content_md, $application->id, 'Оффер: '.$offer->position);
+        // The touch carries the salary: mark it so the timeline hides its text from everyone but ApplicationPolicy::offer.
+        $this->touchpoints->update($touchpoint, ['meta' => [...$touchpoint->meta ?? [], 'kind' => Touchpoint::KIND_OFFER]]);
+        $this->applications->updateOffer($offer, ['status' => OfferStatus::Sent->value, 'sent_at' => Carbon::now()]);
         $this->log->info('recruiting.offer_sent', ['id' => $offer->id, 'by' => $actor->id]);
 
         return $offer;
@@ -119,7 +141,7 @@ final readonly class OfferService
         if ($offer->status !== OfferStatus::Sent || ! in_array($status, [OfferStatus::Accepted, OfferStatus::Declined], true)) {
             throw RecruitingException::offerStatus();
         }
-        $offer->update(['status' => $status->value, 'decided_at' => Carbon::now()]);
+        $this->applications->updateOffer($offer, ['status' => $status->value, 'decided_at' => Carbon::now()]);
         $this->log->info('recruiting.offer_decided', ['id' => $offer->id, 'status' => $status->value, 'by' => $actor->id]);
 
         return $offer;

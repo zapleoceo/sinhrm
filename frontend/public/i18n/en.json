@@ -376,6 +376,8 @@
       "move": "Move",
       "stale": "No contact for 3+ days",
       "rejectedFor": "Rejection reason",
+      "cv": "CV",
+      "cvHint": "CV from the career site application — download",
       "noApplications": "Not added to any vacancy yet",
       "timeline": "Touches",
       "filter": "Channel filter",
@@ -386,7 +388,7 @@
       "viaProductHint": "Made from the product",
       "capturedHint": "Captured from an external channel (integration)",
       "created": "Created",
-      "noTouches": "No touches yet",
+      "noTouches": "No touches yet", "redacted": "Text hidden",
       "more": "Show more"
     },
     "composer": {
@@ -477,7 +479,9 @@
       "forbidden": "Not allowed",
       "validation": "Check the fields",
       "generic": "Action failed",
-      "channel_inactive": "The channel is inactive or missing"
+      "channel_inactive": "The channel is inactive or missing",
+      "offer_too_long": "The offer text is too long: ~64 KB at most. Shorten the template or the conditions",
+      "template_not_offer": "The chosen template is not an offer template. Choose an offer template"
     },
     "addedVia": { "manual": "Manually", "import": "Import", "mail": "Mail (application)", "extension": "Browser extension", "webhook": "Webhook / form", "sheets": "Google Sheets" },
     "channels": {
@@ -660,7 +664,7 @@
     "invalidEmail": "Invalid email",
     "save": "Save",
     "directory": { "title": "Employees", "subtitle": "{{n}} people", "search": "Name, e-mail or phone", "add": "Add employee", "working": "Working", "empty": "Nobody found", "view": "View", "table": "Table", "cards": "Cards" },
-    "fields": { "fullName": "Full name", "position": "Position", "department": "Department", "branch": "Branch", "manager": "Manager", "status": "Status", "contacts": "Contacts", "workEmail": "Work e-mail", "phone": "Phone", "hiredAt": "Hire date", "firedAt": "Last working day", "employmentType": "Employment type", "birthDate": "Birth date", "personalEmail": "Personal e-mail", "address": "Address", "emergencyContact": "Emergency contact", "reports": "Direct reports", "gender": "Gender", "schedule": "Work schedule" },
+    "fields": { "fullName": "Full name", "position": "Position", "department": "Department", "branch": "Branch", "manager": "Manager", "status": "Status", "contacts": "Contacts", "workEmail": "Work e-mail", "phone": "Phone", "hiredAt": "Hire date", "firedAt": "Last working day", "employmentType": "Employment type", "birthDate": "Birth date", "personalEmail": "Personal e-mail", "personalPhone": "Personal phone", "address": "Address", "emergencyContact": "Emergency contact", "reports": "Direct reports", "gender": "Gender", "schedule": "Work schedule" },
     "status": { "active": "Working", "on_leave": "On leave", "terminated": "Terminated" },
     "employmentType": { "full_time": "Full time", "part_time": "Part time", "contractor": "Contractor" },
     "weekday": { "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat", "7": "Sun" },
@@ -669,11 +673,11 @@
     "terminate": { "handover": "Hand over work to", "handoverHint": "Optional. The colleague gets a \"Take over the work\" task when the termination takes effect.", "handoverScheduled": "Work goes to: {{name}}", "action": "Terminate", "title": "Terminate {{name}}", "hint": "The record stays in the history; the person disappears from the directory and the org chart.", "dateHint": "Last working day. Today or earlier terminates at once; a later date schedules the termination, the person works and keeps access until the end of that day (Kyiv time).", "reason": "Reason", "confirm": "Terminate", "scheduledConfirm": "Schedule", "done": "Employee terminated", "scheduledDone": "Termination scheduled for {{date}} (access until the end of the day)", "scheduled": "Termination scheduled for {{date}} (access until the end of the day)", "cancel": "Cancel termination", "cancelTitle": "Cancel the scheduled termination?", "cancelBody": "{{name}} keeps working; the termination date is removed.", "cancelConfirm": "Cancel termination", "keep": "Keep", "cancelled": "Termination cancelled" },
     "restore": { "action": "Restore", "title": "Restore {{name}}", "hint": "The person works again. Keep the previous position, department, branch and manager or pick new ones. The login is restored only if the termination itself blocked it.", "hiredAt": "New hire date (optional)", "hiredAtHint": "Empty keeps the previous one", "none": "—", "confirm": "Restore", "done": "Employee restored" },
     "approvalEmails": "E-mail me about approvals",
-    "changes": { "new": "Request a change", "hint": "Your manager or HR will review the change; the profile updates after approval.", "comment": "Comment", "send": "Send", "sent": "Request sent", "nothing": "Nothing has changed", "empty": "No change requests" },
+    "changes": { "new": "Request a change", "hint": "Your manager or HR will review the change; the profile updates after approval.", "comment": "Comment", "send": "Send", "sent": "Request sent", "nothing": "Nothing has changed", "empty": "No change requests", "hidden": "Hidden" },
     "changeStatus": { "pending": "Pending", "approved": "Approved", "rejected": "Rejected" },
     "orgChart": { "title": "Org chart", "subtitle": "{{n}} people", "myTeam": "My team", "expand": "Expand all", "collapse": "Collapse all", "all": "Whole company", "empty": "Nobody here yet", "toggle": "Show or hide reports", "showTeam": "Show in the org chart", "find": "Find a person", "allBranches": "All branches", "allDepartments": "All departments", "branch": "Branch", "department": "Department", "manager": "Manager", "email": "Email", "phone": "Phone", "directReports": "Direct reports ({{n}})", "openProfile": "Open profile", "headcount": "{{n}} in team", "legend": "Departments", "zoomIn": "Zoom in", "zoomOut": "Zoom out", "fit": "Fit to screen", "orientation": "Top-down / left-right", "myPlace": "Show my place", "export": "Export", "notInChart": "This person is not in the chart", "keyboardHint": "Drag to pan, wheel or pinch to zoom. Keyboard: arrows move, Enter opens, Space expands, +/− zoom, 0 fits." },
     "hire": { "action": "Create employee", "created": "Employee {{name}} created", "exists": "{{name}} is already an employee", "open": "Open" },
-    "errors": { "invalid_handover": "This colleague cannot be chosen: pick a working employee other than the one leaving", "termination_scheduled": "A termination is already scheduled: cancel it first", "termination_not_scheduled": "There is no scheduled termination", "not_terminated": "The employee is not terminated", "anonymized": "Personal data was already erased: the record cannot be restored", "no_employee": "Your account is not linked to an employee record yet. Ask HR to link it.", "manager_cycle": "A person cannot report to themselves or to someone below them", "already_terminated": "Already terminated", "already_decided": "This request has already been decided", "not_hired": "Move the candidate to the hire stage first", "forbidden": "Not allowed", "not_found": "Not found", "validation": "Check the fields" }
+    "errors": { "invalid_handover": "This colleague cannot be chosen: pick a working employee other than the one leaving", "termination_scheduled": "A termination is already scheduled: cancel it first", "termination_not_scheduled": "There is no scheduled termination", "not_terminated": "The employee is not terminated", "anonymized": "Personal data was already erased: the record cannot be restored", "no_employee": "Your account is not linked to an employee record yet. Ask HR to link it.", "manager_cycle": "A person cannot report to themselves or to someone below them", "already_terminated": "Already terminated", "already_decided": "This request has already been decided", "not_hired": "Move the candidate to the hire stage first", "user_outranks_actor": "This record cannot be linked to an account with more rights than yours", "forbidden": "Not allowed", "not_found": "Not found", "validation": "Check the fields" }
   },
   "timeoff": {
     "loadError": "Could not load time off",

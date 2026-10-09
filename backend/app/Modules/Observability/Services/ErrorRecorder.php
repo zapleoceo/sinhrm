@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Observability\Services;
 
 use App\Modules\Integrations\Support\SecretScrubber;
+use App\Modules\Observability\Contracts\ErrorEventRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -26,7 +26,11 @@ final class ErrorRecorder
 
     private bool $recording = false;
 
-    public function __construct(private readonly Application $app, private readonly SecretScrubber $scrubber) {}
+    public function __construct(
+        private readonly Application $app,
+        private readonly SecretScrubber $scrubber,
+        private readonly ErrorEventRepository $events,
+    ) {}
 
     /** Unhandled server exception (the exception reporter in bootstrap/app.php). */
     public function recordException(Throwable $e): void
@@ -50,10 +54,15 @@ final class ErrorRecorder
         $this->guard(fn () => $this->store(self::SOURCE_WEB, $kind, $message, $location, null, $route, $userId));
     }
 
-    /** Secrets (SecretScrubber), then emails and long digit runs (phones, document numbers) are masked. */
+    /**
+     * Secrets (SecretScrubber), the DB connection details of a QueryException (host, port, database name), then emails
+     * and long digit runs (phones, document numbers) are masked. Bound values never get here: the mysql connection
+     * masks them (mask_bindings_in_exception_messages).
+     */
     public function clean(string $message): string
     {
         $text = $this->scrubber->scrub($message);
+        $text = (string) preg_replace('/\(Connection: [^,()]+, (?:Host: [^,()]+, )?(?:Port: [^,()]+, )?(?:Database: [^,()]+, )?SQL: /', '(SQL: ', $text);
         $text = (string) preg_replace('/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/', '[email]', $text);
         $text = (string) preg_replace('/\+?\d[\d\s()-]{7,}\d/', '[number]', $text);
 
@@ -82,15 +91,7 @@ final class ErrorRecorder
             'updated_at' => $now,
         ];
         // One statement: a new group, or bump the existing one (and reopen it if it was resolved).
-        DB::table('error_events')->upsert([$row], ['fingerprint'], [
-            'count' => DB::raw('error_events.count + 1'),
-            'message' => $clean,
-            'route' => $route,
-            'last_user_id' => $userId,
-            'last_seen_at' => $now,
-            'resolved_at' => null,
-            'updated_at' => $now,
-        ]);
+        $this->events->upsertGroup($row);
     }
 
     private function relativeFile(string $file): string

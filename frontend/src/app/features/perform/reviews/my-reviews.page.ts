@@ -10,6 +10,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { Assignment } from '../perform.model';
 import { PerformService, performErrorKey } from '../perform.service';
 import { NotifyService } from '../../../core/ui/notify.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 /**
  * "My reviews" (/perform/reviews): the forms the user fills as a reviewer (self, manager, peer, upward) and the
@@ -97,24 +98,15 @@ import { NotifyService } from '../../../core/ui/notify.service';
 export class MyReviewsPage implements OnInit {
   private readonly api = inject(PerformService);
   private readonly notify = inject(NotifyService);
-  protected readonly items = signal<Assignment[]>([]);
+  private readonly list = new PagedList<Assignment>();
+  protected readonly items = this.list.items;
   protected readonly open = signal<Assignment | null>(null);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
   protected ratings: Record<number, number> = {};
   protected comments: Record<number, string> = {};
 
   ngOnInit(): void {
-    this.loading.set(true);
-    this.api.myAssignments().subscribe({
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.notify.show(performErrorKey(e));
-      },
-    });
+    this.list.load(this.api.myAssignments(), { error: (e) => this.notify.show(performErrorKey(e)) });
   }
 
   protected select(a: Assignment): void {

@@ -27,20 +27,27 @@ PeopleForce (табель компании: Очікувано, Відпраць
 - Главная: «Мій тиждень» (часы, сколько не хватает) и «Табелі чекають мого погодження».
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/TimeException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): списки «На погодження» и «Команда» держит `PagedList` (`core/ui/table/paged-list.ts`): другая неделя отменяет запрос в пути, ошибка — уведомление.
+- Фронт (2026-10-08): `mondayOf`/`addWeeks` (`time.model.ts`) и конец недели (`my-week.page.ts`, `week-picker.ts`) считаются общими `addIsoDays`/`isoWeekday` из `core/date/iso-day.ts`; своя копия `addDays` удалена.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeNavBadges` — ключ `time_approvals`: отправленные табели, которые я могу решить (как «Погодження табелів»). `TimesheetService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`.
 Бэкенд — `backend/app/Modules/Time`, маршруты `/api/time/*`; доступ — `People\Services\PeopleScope` (`PeopleContext`:
 `canSeeJob`, `canDecideFor`, `isSelf`), gate `time-manage` (админ) для изменения графиков.
 
 ### Кто согласует (`TimesheetService::decide`, `PeopleContext::canDecideFor`)
 Правило одно, без отдельного запрета «себе»: `canDecideFor(employee_id) = админ || сотрудник в поддереве текущего
-пользователя` (`PeopleContext.php:52-55`). Следствия:
+пользователя` (`PeopleContext::canDecideFor`). Запрет «себе» из People/TimeOff (`canDecideOrBreakGlass`) сюда не
+распространяется — решение владельца; регрессия — `TimeRoutesTest::test_admin_approves_own_week_manager_does_not`. Следствия:
 - руководитель согласует недели прямых и непрямых подчинённых;
 - админ согласует любую неделю, **включая свою**: самосогласование разрешено, если у пользователя есть право
   (роль админа). Отдельного запрета нет, 403 в этом случае не возвращается;
 - сотрудник без роли админа и без подчинённых по своей неделе получает 403; руководитель по своей — тоже 403 (себя нет в
   собственном поддереве), выше него решает его руководитель или админ;
 - порядок проверок: нет недели или она вне `canSeeJob` — 404; нет `canDecideFor` — 403; статус не `submitted` — 409.
-Если владелец выдаст право согласовывать свой табель другой роли, меняется `canDecideFor`, а не этот модуль.
+Если владелец выдаст право согласовывать свой табель другой роли, меняется `canDecideFor`, а не этот модуль
+(`canDecideFor` используют только табели и подача отпуска за другого).
 
 ### Таблицы (`Database/Migrations/2026_10_06_300001_create_time_tables.php`)
 | Таблица | Колонки | Заметки |
@@ -68,7 +75,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 ### API
 | Метод и путь | Кто | Что |
 |---|---|---|
-| `GET /api/time/week?week=Y-m-d&employee_id=` | сам / руководитель / админ | неделя: дни (график, праздник, отпуск, ожидаемо), записи, итоги, `can.edit`, `can.decide`; без карточки — 422 `no_employee` |
+| `GET /api/time/week?week=Y-m-d&employee_id=` | сам / руководитель / админ | неделя: дни (график, праздник, отпуск, ожидаемо), записи, итоги, `can.edit`, `can.decide`; без карточки — 422 `no_employee`. Без `week` — неделя «сегодня» по Киеву (`UserTime::today()`), как и «Мій тиждень» на главной: в понедельник 00:00–03:00 по Киеву уже новая неделя (2026-10-08, MySQL e2e раунд 2; тест `TimeApiTest::test_default_week_follows_the_kyiv_day`) |
 | `PUT /api/time/week` `{week, employee_id?, entries[]}` | сам, админ | замена записей; даты вне недели → 422 `outside_week`, > 24 ч за день → 422 `day_overflow`, отправленная → 409 `not_editable`; возвращённая становится черновиком |
 | `POST /api/time/week/submit` `{week, employee_id?}` | сам, админ | `draft/rejected → submitted`, иначе 409 |
 | `POST /api/time/timesheets/{id}/decision` `{decision, comment (обязателен при reject)}` | админ (любой табель, включая свой), руководитель выше сотрудника | 403 нет права решать (сотрудник по своему, руководитель по своему или по табелю вне подчинения, но в области видимости), 404 вне области видимости, 409 не `submitted` |
@@ -96,6 +103,7 @@ PeopleForce (табель компании: Очікувано, Відпраць
 
 ### Общие хелперы Core (2026-10-02)
 - gate `time-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- По Киеву, не по UTC (2026-10-08, ночное окно 21:00/22:00–24:00 UTC): напоминание «Заповніть табель» (`TimeReminderJob`) проверяет пятницу–воскресенье и неделю по Киеву — в понедельник 00:30 по Киеву (вс 21:30 UTC) напоминания о закончившейся неделе нет, в пятницу 00:30 по Киеву оно уже есть; срок — воскресенье 23:59:59 по Киеву (`UserTime::endOfDay`). Тест `TimeApiTest::test_reminders_follow_the_kyiv_week_and_day`.
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (`TimeController`).
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
@@ -105,6 +113,10 @@ PeopleForce (табель компании: Очікувано, Відпраць
 - Ошибки API → i18n-ключ: `timeErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `TimesheetService` и `TimeDashboardSection` получают контекст и карточку через контракт People `PeopleAccess`. Тест — `tests/Unit/Time/TimePeopleAccessTest.php`.
+- `TimeReminderJob` и `TimesheetService` ставят и закрывают задачи табеля через контракт Scripts `TaskScheduler`.
 
 ## Как проверить
 - `php artisan test --filter=Time` — матрица доступа, сверхурочные, валидация недели, отправка/возврат/согласование,

@@ -201,6 +201,8 @@ PNG пустого чата/ошибки/MCP privacy warning с provenance, ге
 Middleware: `auth:sanctum`, `EnsureUserIsActive`, доступ к модулю `assistant`, `throttle` 60/мин на токен.
 В OpenAPI (`/api/docs`) маршрут не попадает — это не REST.
 
+Дата в контексте хода («today YYYY-MM-DD (день)») — дата пользователя по Киеву (`UserTime::now()`), а не UTC; она в последнем user-сообщении, системный промпт байт-в-байт неизменен (кэш). Тест `AssistantChatTest::test_turn_context_date_is_the_kyiv_date`.
+
 ### Токены
 `Services/McpTokenService`: имя `mcp`, ability `mcp`, 90 дней, один на пользователя — поверх общих
 `Auth/Services/PersonalTokens` (те же, что у токена расширения, [auth.md](auth.md)). Где токен принимается, решает
@@ -224,7 +226,7 @@ Middleware: `auth:sanctum`, `EnsureUserIsActive`, доступ к модулю `
 
 ### Фронтенд
 `features/assistant/`: маскот «Стік» (`mascot/`: skeleton, ik, springs, physics, effects, face, ink, animations, brain,
-engine, renderer, loop — чистые модули с тестами; 12 появлений, 12 idle, 6 уходов, 17 движений, 17 занятий, перетаскивание и бросок с физикой),
+mascot-engine, mascot-renderer, mascot-loop — чистые модули с тестами; 12 появлений, 12 idle, 6 уходов, 17 движений, 17 занятий, перетаскивание и бросок с физикой),
 чат `chat/` (карточка подтверждения записи, панель MCP с предупреждением о правах токена), диктовка `voice/`
 (MediaRecorder webm/opus → mp4 → ogg, 24 кбит/с, ≤ 120 с, ≤ 4 МБ; `POST /transcribe`, опрос каждые 2 с до 90 с;
 текст только вставляется в поле ввода). Монтируется в `ShellLayout` лениво (когда браузер простаивает) и только если у
@@ -333,6 +335,9 @@ pointer capture, уход фокуса с окна, скрытая вкладк�
 ### Общие примитивы фронта
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `AssistantChatService`, `AssistantQuipService` и `AssistantVoiceService` зовут ИИ через контракт Ai `AiGateway` (реализация — только `AiService`). Тест — `tests/Unit/Assistant/AssistantAiGatewayTest.php`.
 
 ## Как проверить
 - Mobile flow открытия/закрытия чата в `e2e/flows.pw.ts` отвечает только на один синтетический `GET /api/assistant/status` на локальном origin теста: `{ data: { available, reason, mcp_url } }`. Проверки незаписанных GET и отсутствия записей остаются строгими; ход AI и MCP не вызываются.

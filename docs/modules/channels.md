@@ -42,6 +42,9 @@
 `ringostat`, `binotel`). Точный адрес показан на странице — копируйте его оттуда.
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/ChannelException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
 ### Один путь приёма
 ```
 провайдер ─POST /api/webhooks/{key}─► LimitWebhookBody (≤1 МБ) ─► throttle ─► WebhookService::receive
@@ -96,11 +99,16 @@ Ringostat станет доступен только после появлени
 - Подписи сравниваются `hash_equals`; секрет не задан → любой запрос 403. Отклонённый запрос пишется в журнал интеграции
   (`webhook_rejected`) без тела и заголовков.
 - Тело > 1 МБ → 413 (`Http/Middleware/LimitWebhookBody`); лимит 300 запросов/мин на ключ+IP (`channel-webhooks`), отправка из
-  карточки 30/мин, тест 10/мин, звонок 10/мин на пользователя.
+  карточки 30/мин, тест 10/мин, симуляция 30/мин, звонок 10/мин на пользователя.
 - Секреты — только через `SecretVault` (`Integrations\Services\IntegrationConfigLoader`), в логах их нет: журнал хранит коды и
   счётчики, исключения HTTP-клиента не сохраняются (URL Telegram содержит токен) — `Support/ProviderHttp` превращает любой
   сбой в `send_failed`; общий `SecretScrubber` дополнительно чистит логи исключений.
-- Любой исходящий URL проходит `OutboundUrlGuard` (https, 443, только публичные IP), редиректы выключены, таймаут 10 с.
+- Любой исходящий URL проходит `OutboundUrlGuard::inspect()` (https, 443, только публичные IP — таблица запрещённых
+  диапазонов в [integrations.md](integrations.md)), редиректы выключены, таймаут 10 с. `ProviderHttp` отправляет запрос
+  с `PinnedTarget::httpOptions()`: соединение прибито к уже проверенным IP (`CURLOPT_RESOLVE`), имя повторно не
+  резолвится, поэтому между проверкой и отправкой DNS нельзя перенаправить внутрь (DNS-rebinding). Заголовок `Host`,
+  SNI и проверка сертификата не меняются — в URL остаётся имя хоста. Тест —
+  `MessagesApiTest::test_outbound_provider_call_pins_the_connection_to_the_approved_ips`.
 - Текст сообщений хранится как есть и выводится в интерфейсе как текст (Angular-интерполяция), **сырой HTML не рендерится**.
   Ссылка на запись разговора — только `https://`.
 - `?token=` в адресе телефонии виден в логах доступа провайдера/Vercel — это временная схема, пока не подтверждены
@@ -145,6 +153,9 @@ Ringostat станет доступен только после появлени
 - Ошибки: `channelErrorCode`/`channelErrorKey` читают код и статус ответа общими `apiErrorCode`/`apiErrorStatus` (`core/api/api-error.ts`); 403 по-прежнему показывает `recruiting.errors.forbidden` (кандидат вне области доступа).
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `ChannelContext` берёт режим канала и его конфиг через контракт Integrations `IntegrationConfigs` (не через класс `IntegrationConfigLoader`). Тест — `tests/Unit/Channels/ChannelContextTest.php`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Channels/WebhookApiTest.php` (404 неизвестного/выключенного, 403 на неверный/отсутствующий секрет

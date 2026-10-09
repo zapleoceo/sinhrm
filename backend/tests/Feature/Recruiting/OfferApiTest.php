@@ -13,8 +13,11 @@ use App\Modules\GoogleWorkspace\DTO\OutgoingMail;
 use App\Modules\GoogleWorkspace\DTO\SentMail;
 use App\Modules\GoogleWorkspace\Enums\MailerState;
 use App\Modules\Recruiting\Models\Application;
+use App\Modules\Recruiting\Models\Offer;
 use App\Modules\Recruiting\Models\Touchpoint;
+use App\Modules\Recruiting\Services\OfferService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\Support\RecruitingFixtures;
 use Tests\TestCase;
 
@@ -91,6 +94,32 @@ final class OfferApiTest extends TestCase
         $this->actingAs($recruiter)->getJson($url)->assertOk()->assertJsonPath('data.salary', '30000 UAH');
     }
 
+    /**
+     * A long template (the Documents limit is 50 000 characters; Cyrillic is 2 bytes in utf8mb4) renders an offer over the
+     * 64 KB of the TEXT columns: a clear 422 offer_too_long, nothing stored (MySQL 8.4 e2e, round 2: was a 500, SQLSTATE
+     * 22001). An offer just under the limit is stored and sent whole.
+     */
+    public function test_offer_over_the_text_column_is_refused_with_422_and_one_under_it_is_sent_whole(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $long = DocumentTemplate::query()->create(['name' => 'Long offer', 'category' => 'offer', 'body' => '{ПІБ}: '.str_repeat('Ґанок, їжа, ЄВРО — умови. ', 1700)]);
+
+        $this->actingAs($recruiter)->postJson($url, ['template_id' => $long->id, 'position' => 'Manager', 'salary' => '30000 UAH'])
+            ->assertUnprocessable()->assertJsonPath('code', 'offer_too_long')->assertJsonPath('max_bytes', OfferService::MAX_CONTENT_BYTES);
+        $this->assertSame(0, Offer::query()->count());
+
+        $fits = DocumentTemplate::query()->create(['name' => 'Fits', 'category' => 'offer', 'body' => '{ПІБ}: '.str_repeat('Ґ', 31_900)]);
+        $content = $this->actingAs($recruiter)->postJson($url, ['template_id' => $fits->id, 'position' => 'Manager', 'salary' => '30000 UAH'])
+            ->assertCreated()->json('data.content_md');
+        $this->assertIsString($content);
+        $this->assertGreaterThan(63_000, strlen($content));
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk()->assertJsonPath('data.status', 'sent');
+        $touch = Touchpoint::query()->where('application_id', $this->application->id)->where('channel', 'email')->firstOrFail();
+        $this->assertStringContainsString($content, (string) $touch->body);
+    }
+
     public function test_salary_is_visible_only_to_writers_and_hiring_manager(): void
     {
         $this->application->update(['stage_id' => $this->stageAt(6)->id]);
@@ -111,6 +140,84 @@ final class OfferApiTest extends TestCase
         $this->actingAs($manager)->getJson($url)->assertOk()->assertJsonPath('data.salary', '30000 UAH');
     }
 
+    /** The sent offer becomes a touchpoint on the application: its text must not leak the salary through the timeline. */
+    public function test_sent_offer_text_is_redacted_in_the_timeline_for_non_writers(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $this->actingAs($recruiter)->postJson($url, [
+            'template_id' => $this->template->id, 'position' => 'Manager', 'salary' => '30000 UAH',
+        ])->assertCreated();
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
+        $timeline = '/api/candidates/'.$this->application->candidate_id.'/timeline?channel=email';
+
+        $interviewer = User::factory()->withRole(UserRole::Employee)->create();
+        $this->application->interviewers()->sync([$interviewer->id => ['created_at' => now()]]);
+        foreach ([$this->userWith(UserRole::Viewer, [$this->branch]), $interviewer] as $reader) {
+            $touchpoint = $this->actingAs($reader)->getJson($timeline)->assertOk()
+                ->assertJsonPath('data.0.touchpoint.channel', 'email')
+                ->json('data.0.touchpoint');
+            $this->assertStringNotContainsString('30000 UAH', json_encode($touchpoint, JSON_THROW_ON_ERROR));
+            $this->assertNull($touchpoint['body']);
+            $this->assertSame('offer', $touchpoint['meta']['kind'] ?? null);
+            $this->assertTrue($touchpoint['redacted'] ?? false);
+        }
+
+        $this->actingAs($recruiter)->getJson($timeline)->assertOk()
+            ->assertJsonPath('data.0.touchpoint.redacted', false);
+        $this->assertStringContainsString(
+            '30000 UAH',
+            (string) $this->actingAs($recruiter)->getJson($timeline)->json('data.0.touchpoint.body'),
+        );
+    }
+
+    /** Data migration 2026_10_28_100001: offer e-mails sent before meta.kind existed get marked, nothing else does. */
+    public function test_backfill_marks_offer_touches_sent_before_the_fix_and_is_idempotent(): void
+    {
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $recruiter = $this->userWith(UserRole::Recruiter, [$this->branch]);
+        $url = '/api/applications/'.$this->application->id.'/offer';
+        $this->actingAs($recruiter)->postJson($url, [
+            'template_id' => $this->template->id, 'position' => 'Manager', 'salary' => '30000 UAH',
+        ])->assertCreated();
+        $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
+
+        // The touch as the pre-fix code stored it: no meta.kind. Plus an old row with no meta.subject at all.
+        $offerTouch = Touchpoint::query()->where('application_id', $this->application->id)->where('channel', 'email')->sole();
+        $offerTouch->update(['meta' => ['subject' => 'Оффер: Manager', 'gmail_thread' => 't1']]);
+        $legacy = $this->touch(['body' => "Оффер: Manager\n\n30000 UAH", 'meta' => null]);
+        // Not offers: another e-mail on the same application, an inbound reply, a touch of an application without a sent offer.
+        $plain = $this->touch(['body' => "Interview\n\nTomorrow", 'meta' => ['subject' => 'Interview']]);
+        $reply = $this->touch(['direction' => 'in', 'body' => 'Re: Оффер: Manager', 'meta' => ['subject' => 'Оффер: Manager']]);
+        $otherApplication = $this->applied($this->vacancyIn($this->branch), ['full_name' => 'Petro Sample', 'email' => 'petro.sample@example.test']);
+        $unsent = $this->touch([
+            'application_id' => $otherApplication->id,
+            'candidate_id' => $otherApplication->candidate_id,
+            'meta' => ['subject' => 'Оффер: Draft'],
+        ]);
+
+        $migration = require base_path('app/Modules/Recruiting/Database/Migrations/2026_10_28_100001_mark_sent_offer_touchpoints.php');
+        $migration->up();
+        $migration->up(); // idempotent
+
+        // assertEquals: MySQL JSON stores object keys in its own order (shorter keys first), not insertion order.
+        $this->assertEquals(['subject' => 'Оффер: Manager', 'gmail_thread' => 't1', 'kind' => 'offer'], $offerTouch->fresh()?->meta);
+        $this->assertEquals(['kind' => 'offer'], $legacy->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Interview'], $plain->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Оффер: Manager'], $reply->fresh()?->meta);
+        $this->assertEquals(['subject' => 'Оффер: Draft'], $unsent->fresh()?->meta);
+    }
+
+    /** @param  array<string, mixed>  $attributes */
+    private function touch(array $attributes): Touchpoint
+    {
+        return Touchpoint::query()->create($attributes + [
+            'candidate_id' => $this->application->candidate_id, 'application_id' => $this->application->id,
+            'channel' => 'email', 'direction' => 'out', 'occurred_at' => now(), 'body' => 'Оффер: Draft', 'via_product' => true,
+        ]);
+    }
+
     public function test_template_must_be_an_offer_template(): void
     {
         $this->application->update(['stage_id' => $this->stageAt(6)->id]);
@@ -119,5 +226,18 @@ final class OfferApiTest extends TestCase
         $this->actingAs($this->userWith(UserRole::Admin))->postJson('/api/applications/'.$this->application->id.'/offer', [
             'template_id' => $other->id, 'position' => 'Manager', 'salary' => '1',
         ])->assertUnprocessable()->assertJsonPath('message', 'template_not_offer');
+    }
+
+    /** {Сьогодні} in the offer is the Kyiv date: at 00:30 Kyiv (21:30 UTC) it is already the new day (MySQL e2e, round 2). */
+    public function test_offer_today_variable_is_the_kyiv_date_after_midnight(): void
+    {
+        Carbon::setTestNow('2026-10-11 21:30:00'); // 2026-10-12 00:30 in Kyiv
+        $this->application->update(['stage_id' => $this->stageAt(6)->id]);
+        $template = DocumentTemplate::query()->create(['name' => 'Dated offer', 'category' => 'offer', 'body' => '{ПІБ}, {Сьогодні}']);
+
+        $this->actingAs($this->userWith(UserRole::Recruiter, [$this->branch]))
+            ->postJson('/api/applications/'.$this->application->id.'/offer', ['template_id' => $template->id, 'position' => 'Manager', 'salary' => '1'])
+            ->assertCreated()->assertJsonPath('data.content_md', 'Olena Sample, 12.10.2026');
+        Carbon::setTestNow();
     }
 }

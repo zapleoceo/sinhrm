@@ -97,6 +97,34 @@ final class AccrualJobTest extends TestCase
         $this->assertSame(-19.0, (float) LedgerEntry::query()->where('reason', 'expiry')->sole()->delta);
     }
 
+    /** Dec 31 22:30 UTC is Jan 1 00:30 in Kyiv: the new year's grant and the expiry run then, not 2 hours later. */
+    public function test_the_year_turns_at_kyiv_midnight_not_utc(): void
+    {
+        LeavePolicy::query()->update(['carry_over_max' => 5]);
+        $employee = $this->employee(['hired_at' => '2025-01-15']);
+        Carbon::setTestNow('2026-06-01 09:00:00');
+        $this->runJobs();
+
+        Carbon::setTestNow('2026-12-31 22:30:00'); // 2027-01-01 00:30 Kyiv
+        $this->assertSame(['ok' => true, 'employees' => 1, 'accrued' => 1, 'expired' => 1], $this->runJobs());
+        $this->assertSame(['2026', '2027'], LedgerEntry::query()->where('reason', 'accrual')->orderBy('id')->pluck('period')->all());
+        $this->assertSame('2027', LedgerEntry::query()->where('reason', 'expiry')->sole()->period);
+        $this->assertSame(29.0, $this->balance($employee));
+    }
+
+    /** Monthly grant at 00:30 Kyiv on the 1st (22:30 UTC of the last day, winter): the new month's period. */
+    public function test_the_month_turns_at_kyiv_midnight(): void
+    {
+        LeavePolicy::query()->update(['accrual_mode' => 'monthly', 'annual_days' => 24]);
+        $this->employee(['hired_at' => '2025-01-15']);
+
+        Carbon::setTestNow('2026-01-31 22:30:00'); // 2026-02-01 00:30 Kyiv (+02:00)
+        $this->runJobs();
+
+        $this->assertSame(['2026-02'], LedgerEntry::query()->pluck('period')->all());
+        $this->assertSame(4.0, (float) LedgerEntry::query()->sole()->delta); // Jan + Feb = 24 × 2/12
+    }
+
     public function test_untracked_types_and_missing_policies_accrue_nothing(): void
     {
         Carbon::setTestNow('2026-10-05 09:00:00');

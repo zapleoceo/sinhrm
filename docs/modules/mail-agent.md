@@ -33,6 +33,10 @@
   галочка «Для всього домену» → «Застосувати»: создаётся правило, отправитель (и весь домен) уходит из очереди. Новые
   письма от него дальше обрабатываются по правилу; уже пропущенные письма не перечитываются.
 - **Правила**: `hr@site.ua` — один адрес, `@site.ua` — домен и его поддомены (`@work.ua` покрывает `notify.work.ua`).
+  Созданное доменное правило вычищает из очереди адреса этого домена (`UnknownSenderRepository::deleteDomain`): шаблон
+  LIKE строится через `Core\Support\Database\Like::escape` c `escape '!'`, поэтому `_` и `%` в домене — обычные символы,
+  а не подстановочные (правило `@a_b.example.test` не трогает `axb.example.test`; тест —
+  `MailAdminApiTest::test_domain_sweep_treats_like_wildcards_literally`).
   Точный адрес важнее домена, более длинный домен — важнее короткого. Тип, разбор, счётчик срабатываний, удаление.
 - **Журнал**: последние 50 писем — когда, от кого, тема, результат (ссылка на кандидата или «Вхідні»); новые сверху, заголовки сортируют и фильтруют (дата — диапазон, отправитель и тема — текст, результат — выбор), состояние в адресе ([guides/tables.md](../guides/tables.md)). Открытая вкладка тоже в адресе (`?tab=unknown|rules|log`); ссылка без `tab`, но с параметрами журнала (`?sort=sender`, `?outcome=…`), открывает «Журнал». Открытый фильтр колонки объявляет число показанных строк — «Знайдено: N» (`appTableSortCount` = `rows().length`, с 2026-10-03).
 
@@ -48,6 +52,10 @@
    `tests/Unit/MailAgent/MailParsersTest`). Реальные письма в репозиторий **не коммитить** — он публичный.
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/MailAgentException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): уведомления страницы (`mail.page.ts`, `toast`) идут через общий `NotifyService` (`core/ui/notify.service.ts`) на 3 с, а не через свой `MatSnackBar` + `TranslocoService`.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/MailNavBadges` — ключ `mail_unknown` («Пошта», только суперадмин): неизвестные отправители в очереди; не больше 50 — столько же показывает список на странице.
 ### Таблицы (миграция `Database/Migrations/2026_09_29_110001_create_mail_agent_tables.php`)
 | Таблица | Колонки | Заметки |
@@ -83,7 +91,13 @@
 | ничего не подошло | `unknown_senders` (адрес + тема + подсказка правил) → `unknown`; для отправителя без ответа ШІ — запрос ШІ без ожидания (`ai_status = pending`) |
 
 **Отклик (`job_board`):** парсер правила → `DTO/IncomingApplication {fullName, phone, email, vacancyTitle, vacancyRef,
-cvUrl}`; нет ни телефона, ни e-mail → `parse_failed`. Вакансия ищется по названию: открытая вакансия с **точно таким же
+cvUrl}`; нет ни телефона, ни e-mail → `parse_failed`.
+`cvUrl` показывается рекрутеру кнопкой «CV» в карточке кандидата, а входящее письмо подконтрольно отправителю,
+поэтому ссылка сохраняется **только если её хост** — сайт вакансий, который мы разбираем (`AbstractMailParser::CV_HOSTS`:
+`work.ua`, `robota.ua`, `rabota.ua`, `djinni.co`, `dou.ua`, `linkedin.com` и их поддомены). Сравнивается именно хост
+(`parse_url`), а не подстрока URL, и отбрасываются ссылки с логином/паролем: `https://djinni.co@evil.test/cv/1`,
+`https://work.ua.evil.test/resume/1`, `https://evil.test/download?from=djinni.co` дают `cv_url = null`. Проверка —
+`tests/Unit/MailAgent/MailParsersTest::test_cv_url_is_kept_only_for_known_job_boards`. Вакансия ищется по названию: открытая вакансия с **точно таким же
 названием без учёта регистра**, ровно одна (`VacancyRepository::findOpenByTitle`).
 - Нашлась → `CandidateService::createOrMatch()` (совпадение по телефону/e-mail/Telegram — тот же кандидат; иначе новый,
   источник по парсеру: `work_ua | robota_ua | djinni | other`, способ добавления `added_via = mail`, канал привлечения — по
@@ -168,6 +182,12 @@ Auth — `UserRepository::find` (фоновый actor).
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Ошибки API → i18n-ключ: `mailErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `MailMessageProcessor` ставит задачу «перезвонить новому кандидату» через контракт Scripts `TaskScheduler::scheduleNewApplicantCall()`.
+- `AiMailClassifier` зовёт ИИ через контракт Ai `AiGateway`. Тест — `tests/Unit/MailAgent/MailAiGatewayTest.php` (ИИ выключен → ничего не отправляется).
+- `MailAgentService` и `MailSyncService` узнают состояние Gmail и того, кто его подключил, через контракт GoogleWorkspace `GoogleConnections`.
+- `MailMessageProcessor` создаёт или находит кандидата через контракт Recruiting `CandidateIntake::createOrMatch()`.
 
 ## Как проверить
 Бэкенд (Gmail подменён `Http::fake`, письма **выдуманы**, `tests/Support/MailFixtures`):

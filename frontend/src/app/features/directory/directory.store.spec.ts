@@ -68,11 +68,18 @@ describe('DirectoryStore', () => {
     expect(store.items().map((i) => i.name)).toEqual(['B']);
   });
 
-  it('flags a load error', () => {
+  it('flags a load error; the rows already shown stay, and the next load clears the flag', () => {
+    api.list$ = of(page([item(1, 'A')]));
+    store.load();
     api.list$ = throwError(() => new Error('down'));
     store.load();
     expect(store.failed()).toBe(true);
     expect(store.loading()).toBe(false);
+    expect(store.items().map((i) => i.name)).toEqual(['A']);
+    api.list$ = new Subject<DictionaryPage>();
+    store.load();
+    expect(store.failed()).toBe(false);
+    expect(store.loading()).toBe(true);
   });
 
   it('renames optimistically and keeps the server answer', () => {

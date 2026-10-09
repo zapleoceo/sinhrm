@@ -16,7 +16,10 @@ use Throwable;
  */
 final class KeyCheck
 {
-    /** table => columns written through the Eloquent "encrypted" cast. */
+    /**
+     * table => columns written through the Eloquent "encrypted" cast (or Crypt). Also the list of tables that
+     * `--without-secrets` leaves empty (WithoutSecrets::tables); KeyCheckTest fails when a new encrypted cast is missing.
+     */
     public const array ENCRYPTED = ['integration_secrets' => ['value']];
 
     /**

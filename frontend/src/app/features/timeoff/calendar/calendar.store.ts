@@ -3,12 +3,14 @@ import { calendarRows, monthDays, monthRange, shiftMonth } from '../timeoff.date
 import { CalendarData } from '../timeoff.model';
 import { TimeOffService } from '../timeoff.service';
 import { toIsoDate } from '../../../core/date/iso-date';
+import { LatestRequest } from '../../../core/ui/table/latest-request';
 
 /** Team calendar state: the month shown, optional branch filter, absences laid out per employee × day. */
 @Injectable()
 export class CalendarStore {
   private readonly api = inject(TimeOffService);
-  private seq = 0;
+  /** Another month or branch cancels the request still in flight. */
+  private readonly request = new LatestRequest();
 
   readonly month = signal(shiftMonth(toIsoDate(new Date()), 0));
   readonly branchId = signal<number | undefined>(undefined);
@@ -21,22 +23,17 @@ export class CalendarStore {
   readonly holidays = computed(() => new Map(this.data().holidays.map((h) => [h.date, h.name])));
 
   load(): void {
-    const seq = ++this.seq;
     const { from, to } = monthRange(this.month());
     this.loading.set(true);
     this.failed.set(false);
-    this.api.calendar(from, to, this.branchId()).subscribe({
+    this.request.run(this.api.calendar(from, to, this.branchId()), {
       next: (d) => {
-        if (seq === this.seq) {
-          this.data.set(d);
-          this.loading.set(false);
-        }
+        this.data.set(d);
+        this.loading.set(false);
       },
       error: () => {
-        if (seq === this.seq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
+        this.failed.set(true);
+        this.loading.set(false);
       },
     });
   }

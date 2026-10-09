@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Recruiting\Services;
 
 use App\Models\User;
+use App\Modules\Ai\Contracts\AiGateway;
 use App\Modules\Ai\Contracts\AiRequestRepository;
 use App\Modules\Ai\Enums\AiPurpose;
 use App\Modules\Ai\Exceptions\AiException;
-use App\Modules\Ai\Services\AiService;
 use App\Modules\Ai\Support\AiSettingsReader;
 use App\Modules\Recruiting\Ai\ScreeningAiHandler;
 use App\Modules\Recruiting\Ai\ScreeningPrompt;
@@ -36,7 +36,7 @@ final readonly class ScreeningService
     public const int AUTO_WINDOW_HOURS = 48;
 
     public function __construct(
-        private AiService $ai,
+        private AiGateway $ai,
         private AiSettingsReader $settings,
         private AiRequestRepository $requests,
         private ScreeningRepository $screenings,
@@ -49,7 +49,7 @@ final readonly class ScreeningService
      *
      * @throws AiException AI off / not configured / purpose off / over the cap (the row is stored as failed)
      */
-    public function start(Application $application, ?User $actor, string $trigger, int $waitSeconds = AiService::WAIT_SECONDS): CandidateScreening
+    public function start(Application $application, ?User $actor, string $trigger, int $waitSeconds = AiGateway::WAIT_SECONDS): CandidateScreening
     {
         $pending = $this->screenings->pendingFor($application->id);
         if ($pending !== null) {

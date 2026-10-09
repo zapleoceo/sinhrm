@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Scripts\Services;
 
 use App\Models\User;
+use App\Modules\Recruiting\Contracts\RecruitingAccess;
 use App\Modules\Recruiting\DTO\DateRange;
-use App\Modules\Recruiting\Services\RecruitingScope;
 use App\Modules\Scripts\Contracts\EvaluationRepository;
 
 /**
@@ -18,7 +18,7 @@ final readonly class ScriptReportService
     /** Evaluations aggregated per request; the newest ones win when there are more. */
     public const int LIMIT = 5000;
 
-    public function __construct(private EvaluationRepository $evaluations, private RecruitingScope $scope) {}
+    public function __construct(private EvaluationRepository $evaluations, private RecruitingAccess $scope) {}
 
     /** @return array<string, mixed> */
     public function report(User $actor, DateRange $range): array

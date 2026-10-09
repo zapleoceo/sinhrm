@@ -6,22 +6,16 @@ namespace App\Modules\Reports\Definitions;
 
 use App\Modules\Reports\Contracts\ReportDataRepository;
 use App\Modules\Reports\DTO\ScopedContext;
-use App\Modules\Reports\Enums\ReportGroup;
 use Illuminate\Support\Carbon;
 
 /** Working employees on a day (filter "to", default today) by branch and department. */
-final class HeadcountReport extends AbstractReport
+final class HeadcountReport extends AbstractTeamReport
 {
     public function __construct(private readonly ReportDataRepository $data) {}
 
     public function key(): string
     {
         return 'headcount';
-    }
-
-    public function group(): ReportGroup
-    {
-        return ReportGroup::Hr;
     }
 
     public function filters(): array
@@ -37,11 +31,6 @@ final class HeadcountReport extends AbstractReport
     public function chart(): array
     {
         return ['label' => 'department', 'value' => 'headcount'];
-    }
-
-    public function available(ScopedContext $ctx): bool
-    {
-        return $ctx->seesTeam();
     }
 
     public function rows(ScopedContext $ctx, array $filters): array

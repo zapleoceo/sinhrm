@@ -4,17 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Users\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation of the users admin; rendered as {message, code} with its HTTP status. */
-final class UserAdminException extends RuntimeException
+final class UserAdminException extends BusinessRuleException
 {
-    private function __construct(public readonly string $errorCode, public readonly int $status)
-    {
-        parent::__construct($errorCode);
-    }
-
     public static function emailTaken(): self
     {
         return new self('email_taken', 409);
@@ -40,10 +34,5 @@ final class UserAdminException extends RuntimeException
     public static function handlerRequiresAdmin(): self
     {
         return new self('handler_requires_admin', 422);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode], $this->status);
     }
 }

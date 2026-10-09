@@ -56,6 +56,17 @@ final class DocumentsSupportTest extends TestCase
         $this->assertSame('05.10.2026', $values['Сьогодні']);
     }
 
+    /** The editor preview's dates are the Kyiv calendar too: Dec 31 22:30 UTC previews as Jan 1 of the next year. */
+    public function test_sample_dates_follow_the_kyiv_day(): void
+    {
+        config(['app.user_timezone' => 'Europe/Kyiv']);
+        $values = DocumentVariables::sample(Carbon::parse('2026-12-31 22:30:00', 'UTC'));
+
+        $this->assertSame('01.01.2027', $values['Сьогодні']);
+        $this->assertSame('01.12.2026', $values['Дата прийому']);
+        $this->assertSame('15.01.2027', $values[DocumentVariable::StartDate->value]);
+    }
+
     public function test_markdown_is_rendered_and_raw_html_escaped(): void
     {
         $html = MarkdownRenderer::toHtml("**bold** <b onclick=x>raw</b>\n\n[ok](https://example.test) [bad](javascript:alert(1)) ![i](data:text/html;base64,PHNjcmlwdD4=)");

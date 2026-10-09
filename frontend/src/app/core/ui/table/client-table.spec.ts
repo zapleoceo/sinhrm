@@ -342,6 +342,27 @@ describe('TableUrlState live edits', () => {
 
   afterEach(() => vi.useRealTimers());
 
+  it('paginator, sort and filter helpers write the same params the pages wrote by hand', async () => {
+    const { url, navigate } = setup();
+    url.setPage({ pageIndex: 2, pageSize: 50 });
+    expect(navigate.mock.calls[0][1]).toMatchObject({ queryParams: { page: 3, perPage: 50 } });
+    expect(navigate.mock.calls[0][1]?.queryParams).not.toHaveProperty('page', null); // paging keeps the page
+    await new Promise((r) => setTimeout(r, 0));
+    url.setSort({ key: 'name', dir: 'desc' });
+    await new Promise((r) => setTimeout(r, 0));
+    url.setSort(null);
+    await new Promise((r) => setTimeout(r, 0));
+    url.setFilter('q', '  ann ');
+    await new Promise((r) => setTimeout(r, 0));
+    url.setFilter('q', '');
+    expect(navigate.mock.calls.slice(1).map((c) => c[1]?.queryParams)).toEqual([
+      { sort: 'name', dir: 'desc', page: null },
+      { sort: null, dir: null, page: null },
+      { q: 'ann', page: null },
+      { q: null, page: null },
+    ]);
+  });
+
   it('queues updates made inside live() and writes them once after the pause, back to page 1', () => {
     vi.useFakeTimers();
     const { url, navigate } = setup();

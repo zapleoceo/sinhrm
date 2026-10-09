@@ -6,8 +6,8 @@ namespace App\Modules\Privacy\Services;
 
 use App\Modules\Core\Contracts\RetentionSource;
 use App\Modules\Core\Contracts\ScheduledJob;
+use App\Modules\Privacy\Contracts\PrivacyRepository;
 use App\Modules\Privacy\Exceptions\PrivacyException;
-use App\Modules\Privacy\Models\PrivacySettings;
 use Illuminate\Support\Carbon;
 
 /**
@@ -20,7 +20,7 @@ final readonly class RetentionJob implements ScheduledJob
     public const int BATCH = 50;
 
     /** @param  iterable<RetentionSource>  $sources */
-    public function __construct(private iterable $sources, private PersonalDataService $service) {}
+    public function __construct(private iterable $sources, private PersonalDataService $service, private PrivacyRepository $privacy) {}
 
     public function name(): string
     {
@@ -29,7 +29,7 @@ final readonly class RetentionJob implements ScheduledJob
 
     public function run(Carbon $now): array
     {
-        $months = PrivacySettings::current()->retention_rejected_months;
+        $months = $this->privacy->retentionRejectedMonths();
         if ($months === null || $months < 1) {
             return ['enabled' => false];
         }

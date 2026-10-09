@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\People\Services;
 
 use App\Models\User;
+use App\Modules\People\Contracts\EmployeeLookup;
 use App\Modules\People\Contracts\EmployeeRepository;
 use App\Modules\People\DTO\EmployeeFilter;
 use App\Modules\People\DTO\PeopleContext;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Psr\Log\LoggerInterface;
 
 /** Employee records: directory, profile, create/edit (admin), org chart. Termination and restore: TerminationService. */
-final readonly class EmployeeService
+final readonly class EmployeeService implements EmployeeLookup
 {
     public function __construct(
         private EmployeeRepository $employees,

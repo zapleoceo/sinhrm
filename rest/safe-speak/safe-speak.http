@@ -40,7 +40,7 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "status": "new"
+    "body": "Example reply"
 }
 
 ### POST /api/safe-speak/public/reports — safe-speak.public.submit
@@ -78,5 +78,6 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "code": "Example code"
+    "code": "Example code",
+    "body": "Example body"
 }

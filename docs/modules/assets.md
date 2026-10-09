@@ -15,6 +15,11 @@
 - **Воркфлоу:** шаг «Зібрати активи» (`collect_assets`) в шаблоне офбординга ([workflows.md](workflows.md)).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/AssetException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): вкладка активов сотрудника (`employee-assets.tab.ts`) держит историю в `PagedList`; ошибка, как раньше, очищает список.
+- Фронт (2026-10-08): список активов страницы `/admin/assets` держит `PagedList` из `core/ui/table/paged-list.ts` (строки, загрузка, отмена устаревшего запроса; ошибка — уведомление, строки остаются) вместо своих сигналов и `LatestRequest`.
 Бэкенд — `backend/app/Modules/Assets`, маршруты `/api/assets/*`; реестр — gate `assets-manage` = `PeopleScope::isAdmin`.
 
 ### Таблицы (`Database/Migrations/2026_10_05_500001_create_assets_tables.php`)
@@ -63,6 +68,7 @@
 - «сегодня» по умолчанию (дата выдачи и возврата без `date`) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
 - поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (`ESCAPE '!'`, `Like::contains(…, Like::PORTABLE)`) (номер, название, серийный);
 - gate `assets-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Комментарий `AssetsServiceProvider::MANAGE` исправлен на фактический набор: HR staff (`UserRole::hrStaff()`: superadmin, admin, hr_manager), 2026-10-08.
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось, кроме ночной границы «сегодня» (пункт выше); подробности — [core.md](core.md), раздел «Общие хелперы модулей».
@@ -71,6 +77,10 @@
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - Ошибки API → i18n-ключ: `assetsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `AssetController` получает контекст доступа и карточку сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`, а не через `PeopleScope`/`EmployeeService`. Тест — `tests/Unit/Assets/AssetPeopleAccessTest.php` (чужой сотрудник → 404 без запроса карточки).
+- `CollectAssetsExecutor` (шаг воркфлоу «сдать имущество») передаёт базовому `TaskStepExecutor` контракт Scripts `TaskScheduler`, а не класс `TaskService`.
 
 ## Как проверить
 `php artisan test --filter=Assets` — доступ, уникальность номера (в т.ч. регистр), выдача/возврат/повторная выдача и

@@ -4,18 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\People\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in People; rendered as {message, code, ...extra} with its HTTP status. */
-final class PeopleException extends RuntimeException
+final class PeopleException extends BusinessRuleException
 {
-    /** @param  array<string, mixed>  $extra */
-    private function __construct(public readonly string $errorCode, public readonly int $status, public readonly array $extra = [])
-    {
-        parent::__construct($errorCode);
-    }
-
     /** The user has no employee record (self-service endpoints). */
     public static function noEmployee(): self
     {
@@ -77,10 +70,5 @@ final class PeopleException extends RuntimeException
     public static function forbidden(): self
     {
         return new self('forbidden', 403);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);
     }
 }

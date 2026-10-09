@@ -52,6 +52,10 @@ SinHRM умеет работать с **одним Google-аккаунтом к�
    ограничение — перевести приложение в Production (для Gmail-scopes Google требует верификацию).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/GoogleException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): новый импорт и повтор сохранённого (`sheets-import.page.ts`) идут одним приватным `importWith(call)`: занятость, отчёт, перезагрузка списка импортов, ошибка — как раньше. Тест — `sheets-import.page.spec.ts`.
 ### OAuth-подключение (`Http/Controllers/GoogleConnectController`, `routes.web.php`, группа `web`)
 - `GET /api/google/connect?services=gmail,calendar,sheets` (по умолчанию все три; неизвестные имена игнорируются) —
   суперадмин (`auth:sanctum` + активный + `can:manage-integrations`). Генерирует `state` (40 символов), кладёт в сессию
@@ -149,7 +153,8 @@ start, end, meeting_type, title`). Ошибка Google → касание не �
 Строка → `Recruiting\DTO\CandidateData` (источник — значение колонки, если это известный источник, иначе `import`;
 `utm_*` → `utm`; способ добавления `added_via = sheets`, канал привлечения — по UTM-колонкам или источнику,
 [acquisition-channels.md](acquisition-channels.md)) → `Recruiting\Services\CandidateService::createOrMatch()`: совпадение по нормализованному телефону /
-e-mail / Telegram (глобально) — **matched**, иначе **created** (нет ФИО → ошибка `full_name_required`); колонка
+e-mail / Telegram (глобально) — **matched**, иначе **created** (нет ФИО → ошибка `full_name_required`; ФИО длиннее 255 символов
+обрезается, а не роняет строку — `test_name_longer_than_the_column_is_cut_not_a_failed_row`); колонка
 «вакансия» → открытая вакансия с таким же названием без учёта регистра (одна; иначе `vacancy_unmatched`) → заявка на
 первом этапе с датой из «дата заявки» (если это дата не из будущего). Пустые строки и строки без контактов — **skipped**.
 Отчёт: `created, matched, skipped, applied, vacancy_unmatched, errors[{row, code}] (≤100), last_row, rows` — **без
@@ -180,6 +185,10 @@ e-mail / Telegram (глобально) — **matched**, иначе **created** (
 - Ошибки API → i18n-ключ: `googleErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- Другим модулям состояние подключений Google отдаётся контрактом `Contracts\GoogleConnections` (`state`, `connectedBy`; реализация — `Services\GoogleConnectionStore`, биндинг в `GoogleWorkspaceServiceProvider`). Токены и запись подключения остаются внутри модуля. Тест — `tests/Unit/GoogleWorkspace/GoogleConnectionsTest.php`.
+- `SheetsImportService` создаёт кандидатов через контракт Recruiting `CandidateIntake`, `MeetingService` пишет касание через `TouchpointLogger` — без импорта классов сервисов Recruiting.
 
 ## Как проверить
 Бэкенд (Google везде подменён `Http::fake`, `Http::preventStrayRequests()`; все значения синтетические):
@@ -218,6 +227,8 @@ curl -i https://sinhrm.vercel.app/api/google/connect         # без сесси
 ## Листи про погодження (UserNotifier)
 
 `MailUserNotifier` реалізує `Core\Contracts\UserNotifier`: тема + 2 рядки + посилання (`app.frontend_url` + шлях) на e-mail користувача. Мовчки пропускає, якщо користувач вимкнув «Листи про погодження» у «Мій профіль» (`users.approval_emails`, за замовчуванням увімкнено), модуль закритий для нього, або Mailer не готовий (`not_connected` / `reconnect_to_send` → лог `notify.mail_skipped`; помилка Gmail → `notify.mail_failed`). `CalendarClient` має також `insertAllDayEvent` / `deleteEvent` (TimeOff).
+Отримувача `MailUserNotifier` шукає через контракт Auth `UserRepository::find()`, без власного запиту до `users`
+(тест `tests/Unit/GoogleWorkspace/MailUserNotifierTest.php`: немає користувача або він заблокований → листа немає).
 
 ### Контекст переподключения
 После обработки OAuth callback удаляются только параметры результата connected/missing/google_error; остальные query параметры, включая выбранную карточку integration, сохраняются. Тест google-connect.panel.spec.ts проверяет отказ в согласии и сохранение контекста. Подключение из карточки использует тот же общий URL для Gmail, Calendar и Sheets; scopes и серверный OAuth-контракт не изменены.

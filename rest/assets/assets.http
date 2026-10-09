@@ -86,9 +86,8 @@ Content-Type: application/json
 
 {
     "employee_id": 1,
-    "date": "2026-10-01T09:00:00Z",
-    "condition": "Example condition",
-    "status": "in_stock"
+    "date": "2026-10-01",
+    "condition": "Example condition"
 }
 
 ### POST /api/assets/{asset}/return — assets.return
@@ -100,8 +99,7 @@ Referer: {{host}}/
 Content-Type: application/json
 
 {
-    "employee_id": 1,
-    "date": "2026-10-01T09:00:00Z",
+    "date": "2026-10-01",
     "condition": "Example condition",
     "status": "in_stock"
 }

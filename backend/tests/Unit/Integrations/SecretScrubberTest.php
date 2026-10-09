@@ -26,6 +26,14 @@ final class SecretScrubberTest extends TestCase
         $this->assertStringContainsString('bot[redacted]', $out);
     }
 
+    public function test_redacts_sinhrm_personal_tokens(): void
+    {
+        $out = (new SecretScrubber)->scrub('token 12|sinhrm_AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcdef1234 leaked');
+
+        $this->assertStringNotContainsString('AbCdEf', $out);
+        $this->assertSame('token '.SecretScrubber::REDACTED.' leaked', $out);
+    }
+
     public function test_reported_exception_with_token_is_logged_redacted(): void
     {
         $log = Log::spy();

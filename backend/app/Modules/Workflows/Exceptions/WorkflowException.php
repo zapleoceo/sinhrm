@@ -4,18 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Workflows\Exceptions;
 
-use Illuminate\Http\JsonResponse;
-use RuntimeException;
+use App\Modules\Core\Exceptions\BusinessRuleException;
 
 /** Business-rule violation in Workflows; rendered as {message, code, ...extra} with its HTTP status. */
-final class WorkflowException extends RuntimeException
+final class WorkflowException extends BusinessRuleException
 {
-    /** @param  array<string, mixed>  $extra */
-    private function __construct(public readonly string $errorCode, public readonly int $status, public readonly array $extra = [])
-    {
-        parent::__construct($errorCode);
-    }
-
     /** start_workflow nesting deeper than WorkflowRunService::MAX_DEPTH. */
     public static function depthLimit(): self
     {
@@ -53,10 +46,5 @@ final class WorkflowException extends RuntimeException
     public static function invalidOrder(): self
     {
         return new self('invalid_order', 422);
-    }
-
-    public function render(): JsonResponse
-    {
-        return new JsonResponse(['message' => $this->errorCode, 'code' => $this->errorCode] + $this->extra, $this->status);
     }
 }

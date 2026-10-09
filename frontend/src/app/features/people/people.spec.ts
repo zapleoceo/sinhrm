@@ -7,9 +7,10 @@ import { PEOPLE_PAGE_SIZE, peopleQueryFromParams, sameQuery } from './directory/
 import { PeopleStore } from './directory/people.store';
 import { countNodes, expandedToDepth, filterTree, initials } from './org-tree';
 import { canManagePeople } from './people.access';
-import { Employee, OrgNode, Paged, fieldLabelKey } from './people.model';
+import { Employee, OrgNode, customFieldRows, fieldLabelKey } from './people.model';
+import { Paged } from '../../core/api/api.model';
 import { PeopleService, diffChanges, peopleErrorKey } from './people.service';
-import { profileTabs } from './profile/profile.store';
+import { ProfileStore, profileTabs } from './profile/profile.store';
 
 const EMPTY = { data: [], meta: { current_page: 1, per_page: 50, total: 0, last_page: 1 } };
 const node = (id: number, name: string, reports: OrgNode[] = [], position: string | null = null): OrgNode => ({
@@ -78,6 +79,13 @@ describe('PeopleService', () => {
     expect(peopleErrorKey(err(422, 'manager_cycle'))).toBe('people.errors.manager_cycle');
     expect(peopleErrorKey(err(403))).toBe('people.errors.forbidden');
     expect(peopleErrorKey(err(422))).toBe('people.errors.validation');
+    // 422 of SaveEmployeeRequest: the rule fails with a code as the field's message, not with a body {code}.
+    expect(
+      peopleErrorKey(new HttpErrorResponse({ status: 422, error: { message: 'user_outranks_actor', errors: { user_id: ['user_outranks_actor'] } } })),
+    ).toBe('people.errors.user_outranks_actor');
+    expect(peopleErrorKey(new HttpErrorResponse({ status: 422, error: { errors: { work_email: ['The work email must be a valid e-mail.'] } } }))).toBe(
+      'people.errors.validation',
+    );
     expect(peopleErrorKey(err(500))).toBe('common.error');
     expect(peopleErrorKey(new Error('x'))).toBe('common.error');
   });
@@ -89,6 +97,20 @@ describe('People helpers', () => {
       personal_email: 'a@example.test',
     });
     expect(diffChanges({ phone: '1' }, { phone: '' })).toEqual({ phone: null });
+  });
+
+  it('lists custom fields by name, not in the stored JSON order, without personal_phone', () => {
+    // MySQL returns {"n", "zeta", "alpha", "Мова"} for {"zeta", "alpha", "Мова", "n"}: the card must not depend on it.
+    expect(customFieldRows({ n: '42', zeta: 'z', alpha: 'a', personal_phone: '+380', field10: 'x', field2: 'y' })).toEqual([
+      ['alpha', 'a'],
+      ['field2', 'y'],
+      ['field10', 'x'],
+      ['n', '42'],
+      ['zeta', 'z'],
+    ]);
+    expect(customFieldRows({ Мова: 'uk', Адреса: null }).map(([k]) => k)).toEqual(['Адреса', 'Мова']);
+    expect(customFieldRows(undefined)).toEqual([]);
+    expect(customFieldRows(null)).toEqual([]);
   });
 
   it('builds field label keys', () => {
@@ -169,6 +191,22 @@ describe('PeopleStore', () => {
     store.setView('cards');
     expect(store.view()).toBe('cards');
     localStorage.removeItem('sinhrm.people.view'); // do not leak the choice into other specs
+  });
+});
+
+describe('ProfileStore', () => {
+  it('opening another profile cancels the request in flight: the previous person never shows up', () => {
+    const late = new Subject<Employee>();
+    const get = vi.fn((id: number) => (id === 1 ? late : of({ ...employee(), id })));
+    TestBed.configureTestingModule({ providers: [ProfileStore, { provide: PeopleService, useValue: { get, me: get } }] });
+    const store = TestBed.inject(ProfileStore);
+
+    store.load(1);
+    expect(store.loading()).toBe(true);
+    store.load(2);
+    expect(late.observed).toBe(false);
+    expect(store.employee()?.id).toBe(2);
+    expect(store.loading()).toBe(false);
   });
 });
 

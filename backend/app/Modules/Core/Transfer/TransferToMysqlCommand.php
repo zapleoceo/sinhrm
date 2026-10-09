@@ -14,7 +14,8 @@ use Throwable;
  * PostgreSQL (Neon) -> MySQL 8.4 data transfer for the cutover (ADR 0010, PROD-47). Runbook:
  * docs/guides/mysql-cutover.md. Modes: --preflight (read-only checks), --verify (read-only reconciliation),
  * default = preflight -> confirmation -> copy -> reconciliation. Connections only from env TRANSFER_SOURCE_URL /
- * TRANSFER_TARGET_URL; output never contains URLs, passwords or cell values.
+ * TRANSFER_TARGET_URL; output never contains URLs, passwords or cell values. --without-secrets (test dumps only, see
+ * WithoutSecrets) leaves the APP_KEY-encrypted tables out; without it the APP_KEY check stays fail-closed.
  * REMOVE AFTER CUTOVER together with the whole Core/Transfer directory (see TransferServiceProvider).
  */
 final class TransferToMysqlCommand extends Command
@@ -24,7 +25,8 @@ final class TransferToMysqlCommand extends Command
         {--verify : Только сверка источника и цели, без записи}
         {--truncate-target : Очистить таблицы цели перед переносом (кроме migrations)}
         {--confirm-target= : Имя целевой БД — подтверждение записи без диалога}
-        {--production : Явное разрешение работать с боевыми (не локальными) базами}';
+        {--production : Явное разрешение работать с боевыми (не локальными) базами}
+        {--without-secrets : Тестовый дамп без секретов: таблицы, зашифрованные APP_KEY (integration_secrets), не копируются и остаются пустыми на цели, APP_KEY не нужен. НЕ для боевого cutover}';
 
     protected $description = 'Перенос данных PostgreSQL -> MySQL 8.4 с preflight и сверкой (docs/guides/mysql-cutover.md)';
 
@@ -37,6 +39,10 @@ final class TransferToMysqlCommand extends Command
             return self::FAILURE;
         }
         $writes = ! $this->option('preflight') && ! $this->option('verify');
+        $skip = WithoutSecrets::tables((bool) $this->option('without-secrets'));
+        if ($skip !== []) {
+            $this->warn('Режим --without-secrets: '.implode(', ', $skip).' не копируются (на цели пусто), APP_KEY не проверяется. Только тестовые данные — не для боевого cutover.');
+        }
 
         try {
             $dbs = TransferDatabases::connect($db, $config);
@@ -69,13 +75,14 @@ final class TransferToMysqlCommand extends Command
             $chunk = max(1, (int) $config->get('db_transfer.chunk', 500));
 
             if ($this->option('verify')) {
-                return $this->verify(new Reconciler($dbs, $schema, $chunk));
+                return $this->verify(new Reconciler($dbs, $schema, $chunk), $dbs, $skip);
             }
 
             $this->info('Preflight (без записи)…');
             $preflight = (new Preflight($dbs, $schema, new MysqlCollationKeys($dbs->target), $chunk))
-                ->run(fn (): StringEncrypter => $this->laravel->make('encrypter'), $writes && (bool) $this->option('truncate-target'));
+                ->run(fn (): StringEncrypter => $this->laravel->make('encrypter'), $writes && (bool) $this->option('truncate-target'), $skip);
             $this->printFindings($preflight);
+            $this->printSkipped($dbs, $skip);
             if (! $preflight->ok()) {
                 $this->error('Preflight: FAIL — перенос не начат. Исправьте данные в источнике (или схему миграцией) и повторите.');
 
@@ -104,10 +111,14 @@ final class TransferToMysqlCommand extends Command
                 function (string $table, int $now, int $total): void {
                     $this->line(sprintf('  %-40s +%d (в источнике %d)', $table, $now, $total));
                 },
+                $skip,
             );
             $this->info('Скопировано строк: '.array_sum($copied));
+            if (SchemaCheck::requeuePostFreeze($schema) > 0) {
+                $this->warn('Миграции данных после заморозки сняты с учёта на цели: выполните `php artisan migrate --force` (docs/guides/mysql-cutover.md).');
+            }
 
-            return $this->verify(new Reconciler($dbs, $schema, $chunk));
+            return $this->verify(new Reconciler($dbs, $schema, $chunk), $dbs, $skip);
         } catch (Throwable $e) {
             $this->error('Остановлено: '.SafeError::text($e, $secrets));
             $this->line('Повторный запуск безопасен: уже перенесённые строки пропускаются (или --truncate-target).');
@@ -116,15 +127,17 @@ final class TransferToMysqlCommand extends Command
         }
     }
 
-    private function verify(Reconciler $reconciler): int
+    /** @param  list<string>  $skip */
+    private function verify(Reconciler $reconciler, TransferDatabases $dbs, array $skip): int
     {
         $this->info('Сверка (без записи)…');
-        $report = $reconciler->run();
+        $report = $reconciler->run($skip);
         $this->table(['Таблица', 'Источник', 'Цель', 'Статус'], array_map(
             fn (array $t): array => [$t['table'], $t['source'], $t['target'], $t['ok'] ? 'OK' : 'FAIL'],
             $report->tables(),
         ));
         $this->printFindings($report);
+        $this->printSkipped($dbs, $skip);
         if ($report->ok()) {
             $this->info('ИТОГ: OK');
 
@@ -144,6 +157,25 @@ final class TransferToMysqlCommand extends Command
             fn (array $f): array => [$f['blocking'] ? 'FAIL' : 'info', $f['check'], $f['table'], $f['detail'], $f['count']],
             $report->findings(),
         ));
+    }
+
+    /**
+     * Final report line of --without-secrets: skipped tables and their source row counts (counts only, never values).
+     *
+     * @param  list<string>  $skip
+     */
+    private function printSkipped(TransferDatabases $dbs, array $skip): void
+    {
+        if ($skip === []) {
+            return;
+        }
+        $counts = [];
+        foreach ($skip as $table) {
+            if ($dbs->source->getSchemaBuilder()->hasTable($table)) {
+                $counts[$table] = $dbs->source->table($table)->count();
+            }
+        }
+        $this->warn(WithoutSecrets::summary($counts));
     }
 
     /** @return list<string> URLs and passwords to mask in any error text */

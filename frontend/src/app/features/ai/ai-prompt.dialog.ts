@@ -247,9 +247,6 @@ import { AiService, aiCodeKey, aiErrorKey, promptProblemKeys } from './ai.servic
       align-items: center;
       flex-wrap: wrap;
     }
-    .small {
-      font-size: 0.8rem;
-    }
   `,
 })
 export class AiPromptDialog implements OnInit {

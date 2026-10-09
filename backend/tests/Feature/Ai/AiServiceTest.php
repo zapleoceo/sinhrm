@@ -43,6 +43,27 @@ final class AiServiceTest extends TestCase
         $this->captureLogs();
     }
 
+    /**
+     * The broker call dials the IPs the SSRF guard approved (CURLOPT_RESOLVE), so a second DNS answer between
+     * the check and the request cannot send the project key to an internal address.
+     */
+    public function test_broker_call_pins_the_connection_to_the_approved_ips(): void
+    {
+        $this->enableAi();
+        $options = [];
+        Http::fake(function (Request $request, array $sent) use (&$options) {
+            $options = $sent;
+
+            return Http::response(self::doneAnswer(['ok' => true]), 202);
+        });
+
+        $this->ai()->run(TestPrompt::build());
+
+        $this->assertSame(['aib.zapleo.com:443:93.184.216.34'], $options['curl'][CURLOPT_RESOLVE] ?? null);
+        $this->assertFalse($options['curl'][CURLOPT_FOLLOWLOCATION] ?? null);
+        $this->assertFalse($options['allow_redirects'] ?? null);
+    }
+
     public function test_submit_and_poll_capability_key_messages_and_usage(): void
     {
         $this->enableAi();

@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { CalendarStore } from './calendar/calendar.store';
 import { LeaveRequestsStore } from './leave-requests.store';
-import { addDays, calendarRows, estimateDays, isWeekend, monthDays, monthRange, shiftMonth } from './timeoff.dates';
+import { calendarRows, estimateDays, isWeekend, monthDays, monthRange, shiftMonth } from './timeoff.dates';
 import { Absence, LeaveRequest } from './timeoff.model';
 import { TimeOffService, timeoffErrorKey } from './timeoff.service';
 
@@ -27,7 +27,9 @@ describe('timeoff dates', () => {
     expect(monthDays('2026-10-05').length).toBe(31);
     expect(shiftMonth('2026-12-15', 1)).toBe('2027-01-01');
     expect(shiftMonth('2026-01-31', -1)).toBe('2025-12-01');
-    expect(addDays('2026-03-28', 2)).toBe('2026-03-30');
+    // The month of the spring DST switch (29.03) still has 31 days and ends on the 31st.
+    expect(monthRange('2026-03-29')).toEqual({ from: '2026-03-01', to: '2026-03-31' });
+    expect(monthDays('2026-03-01').at(-1)).toBe('2026-03-31');
     expect(isWeekend('2026-10-17')).toBe(true);
     expect(isWeekend('2026-10-16')).toBe(false);
   });
@@ -138,6 +140,19 @@ describe('LeaveRequestsStore', () => {
     expect(store.items()[0].id).toBe(3);
     expect(store.total()).toBe(3);
   });
+
+  it('a newer query cancels the request in flight', () => {
+    const late = new Subject<{ data: LeaveRequest[]; meta: { current_page: number; per_page: number; total: number; last_page: number } }>();
+    const fake = { requests: vi.fn(() => late as unknown) };
+    TestBed.configureTestingModule({ providers: [LeaveRequestsStore, { provide: TimeOffService, useValue: fake }] });
+    const store = TestBed.inject(LeaveRequestsStore);
+    store.setQuery({ employee_id: 5 });
+    fake.requests.mockReturnValue(of({ data: [request(9)], meta: { current_page: 1, per_page: 50, total: 1, last_page: 1 } }));
+    store.setQuery({ employee_id: 6 });
+    expect(late.observed).toBe(false);
+    expect(store.items().map((r) => r.id)).toEqual([9]);
+    expect(store.loading()).toBe(false);
+  });
 });
 
 describe('CalendarStore', () => {
@@ -158,5 +173,27 @@ describe('CalendarStore', () => {
     expect(calls).toEqual(['2026-10-01..2026-10-31', '2026-11-01..2026-11-30']);
     expect(store.rows().length).toBe(1);
     expect(store.holidays().get('2026-11-30')).toBe('H');
+  });
+
+  it('another month cancels the request still in flight', () => {
+    const late = new Subject<{ absences: Absence[]; holidays: [] }>();
+    let first = true;
+    const fake = {
+      calendar: (from: string) => {
+        if (first) {
+          first = false;
+          return late;
+        }
+        return of({ absences: [absence(2, 'Bob', from, from)], holidays: [] });
+      },
+    };
+    TestBed.configureTestingModule({ providers: [CalendarStore, { provide: TimeOffService, useValue: fake }] });
+    const store = TestBed.inject(CalendarStore);
+    store.month.set('2026-10-01');
+    store.load();
+    store.shift(1);
+    expect(late.observed).toBe(false);
+    expect(store.rows().map((r) => r.employee.full_name)).toEqual(['Bob']);
+    expect(store.loading()).toBe(false);
   });
 });

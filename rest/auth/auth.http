@@ -35,3 +35,27 @@ Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
 GET {{host}}/api/auth/google/callback
 Accept: application/json
 Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+
+### PATCH /api/auth/me/notifications — auth.me.notifications
+PATCH {{host}}/api/auth/me/notifications
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "approval_emails": true
+}
+
+### PUT /api/auth/active-role — auth.active-role ("Працювати як"; role must be one of the assigned roles, null = all roles; 30/min)
+PUT {{host}}/api/auth/active-role
+Accept: application/json
+Cookie: {{session_cookie_name}}={{session}}; XSRF-TOKEN={{xsrf}}
+X-XSRF-TOKEN: {{xsrf}}
+Referer: {{host}}/
+Content-Type: application/json
+
+{
+    "role": "employee"
+}

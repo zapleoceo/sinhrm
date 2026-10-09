@@ -51,6 +51,12 @@
 Наблюдатель видит всё то же, но не может закрывать задачи.
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/ScriptException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): список скриптов (`scripts.page.ts`) держит `PagedList` вместо своего `load()` (тот же `failed`).
+- Фронт (2026-10-08): `canManageScripts` (`scripts.access.ts`) проверяет роли через общий `isAdmin` из `core/auth/auth.model.ts`, а не своим перечислением superadmin/admin.
+- Фронт (2026-10-08): `TasksStore` держит задачи в `PagedList` (`core/ui/table/paged-list.ts`) вместо ручного счётчика `seq`: новый запрос отменяет предыдущий.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TaskNavBadges` — ключ `tasks`: мои незакрытые задачи, тот же фильтр, что у «Мої задачі» по умолчанию (`mine`, без выполненных); считается `TaskService::count()` одним `count(*)` по тому же запросу, что и список.
 
 ### Как считается оценка (`Services/RulesScriptEvaluator`)
@@ -117,6 +123,8 @@
 Киеву вчера — просрочена, на 18:00 по Киеву сегодня — «на сегодня», хотя по UTC она завтра.
 Тест: `TasksAndFollowupsTest::test_today_and_overdue_follow_the_users_day`.
 
+Отчёт по скриптам (`GET /api/reports/scripts?from&to`) считает дни по Киеву: оценки отбираются по `occurred_at` в границах `DateRange::moments()` (2026-10-08, `ScriptReportTest::test_range_days_are_kyiv_days`).
+
 ### Общий список задач («Мої задачі»)
 Таблица `tasks` — **единая** для всех модулей: кроме задач рекрутинга в ней задачи воркфлоу (тип `workflow`,
 [workflows.md](workflows.md)), «ознайомитися з документом» (тип `document`, [documents.md](documents.md)) и «настрій
@@ -139,7 +147,7 @@
 `Events/TaskCompleted` — Workflows закрывает связанный шаг. Отметить задачу может **её исполнитель** (даже с ролью
 viewer — например, новый сотрудник) и, как раньше, superadmin/admin/recruiter, которые её видят. Задачу `document`
 интерфейс не закрывает галочкой — ознакомление подтверждается кнопкой «Ознайомлений» в «Мої документи».
-Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse|desk|hiring|time`), сроку и
+Страница `/tasks` — все свои задачи с фильтрами по источнику (`?source=recruiting|workflows|documents|pulse|desk|hiring|time|timeoff`), сроку и
 закрытым. Миграция `Database/Migrations/2026_10_03_100001_generalize_tasks_table.php`.
 
 Запуск: `Services/FollowupJob` зарегистрирован как `Core\Contracts\ScheduledJob` → `POST /api/ops/jobs/run`
@@ -151,7 +159,7 @@ viewer — например, новый сотрудник) и, как рань�
 | `scripts` | `name, channel (call\|chat), active_version_id?, archived` |
 | `script_versions` | `script_id, version, published_at? (null = черновик), author_id, steps, objections, templates, followups, next_step_patterns` (json); `unique(script_id, version)`. Опубликованная версия неизменяема: сервис правит только черновик, а модель бросает `LogicException` при попытке изменить опубликованную |
 | `script_evaluations` | `touchpoint_id (unique), script_version_id, engine (rules\|ai), score, result (json: steps[+comment у ШІ], next_step, objections[+handled], recommendations[+ai_tip]), prompt_version? (ШІ, напр. `script_eval.v4`), ai_request_id? (fk ai_requests), created_at` — миграция `2026_10_08_100003` |
-| `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (followup\|manual\|new_applicant\|workflow\|document\|mood_alert), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
+| `tasks` | `assignee_id, candidate_id?, application_id?, employee_id?, type (`Enums/TaskType`: followup\|manual\|new_applicant\|workflow\|document\|mood_alert\|desk_sla\|hiring_approval\|time_reminder\|leave_handover\|exit_handover), title, link?, due_at, done_at?, template_key?, rule_key?`; `unique(application_id, rule_key)`, `unique(employee_id, rule_key)` |
 
 Форма контента (валидация `Http/Requests/ValidatesScriptContent` + value-объекты `DTO/ScriptContent`, `DTO/ScriptStep`):
 `steps[{id, title, goal, sample, required, weight 0..100, keywords[]}]` (до 30), `objections[{id, trigger, answer}]`,
@@ -175,16 +183,33 @@ viewer — например, новый сотрудник) и, как рань�
 | `POST /api/scripts/{id}/publish` | superadmin, admin | черновик → новая активная версия; нет черновика → 422 `no_draft` |
 | `POST /api/scripts/{id}/activate/{version}` | superadmin, admin | откат к опубликованной; черновик/нет такой → 422 `version_not_published` |
 | `GET /api/scripts/{id}/versions` | все | версии с контентом, новые сверху; `meta.active_version_id` |
-| `POST /api/scripts/{id}/test` | все | `{text, version?: draft\|active}` → оценка без сохранения |
+| `POST /api/scripts/{id}/test` | superadmin, admin + `throttle:10,1` | `{text, version?: draft\|active}` → оценка без сохранения |
 | `GET /api/candidates/{id}/templates` | кто видит карточку | заполненные шаблоны `{script_id, script_name, channel, key, title, text, missing[]}` |
-| `GET /api/touchpoints/{id}/evaluation` | кто видит кандидата (или сообщение во «Вхідних») | полная оценка; не оценено → 404 `not_evaluated` |
+| `GET /api/touchpoints/{id}/evaluation` | кто видит кандидата **и** заявку касания (или сообщение во «Вхідних») | полная оценка; не оценено → 404 `not_evaluated`; скрытое касание (оффер) → 403 |
 | `GET /api/reports/scripts` | все, в пределах филиалов | `from, to` (как у отчётов Recruiting) → `recruiters[{avg_score, next_step_fixed_pct, evaluations}]`, `steps[{title, total, missed, miss_rate_pct}]` (шаги группируются по названию), `totals` |
-| `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents\|pulse\|desk\|hiring\|time` (`Enums/TaskSource`; иное → 422), `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
+| `GET /api/tasks` | все, в пределах филиалов | `mine=1`, `due=today` (до конца дня, включая просроченные) \| `overdue` (раньше сегодня), `candidate_id`, `done=1` (с закрытыми), `source=recruiting\|workflows\|documents\|pulse\|desk\|hiring\|time\|timeoff` (`Enums/TaskSource`; иное → 422), `employee_id`; до 200, открытые и ближайшие сверху. В строке: `source`, `link`, `employee{id,name}` |
 | `PATCH /api/tasks/{id}` | исполнитель задачи (любая роль); superadmin, admin, recruiter (видящие задачу) | `{done: bool}`; чужая задача у viewer / чужой филиал → 403 |
 
 Доступ к задачам: без ограничений — superadmin/admin; остальные видят задачи, назначенные им, и задачи по заявкам вакансий
 своих филиалов (`Repositories/EloquentTaskRepository::scoped`, `Policies/TaskPolicy`). Закрыть задачу может её
 исполнитель или writer, который её видит (`TaskService::canUpdate`).
+
+### Два закрытых места (2026-10-08)
+**Оценка касания отвечала только за карточку кандидата.** `CandidateScriptController::evaluation` спрашивал
+`RecruitingScope::canSeeCandidate` и на этом останавливался. Но кандидат может подаваться в несколько филиалов, и лента
+карточки это учитывает: `GET /api/candidates/{id}/timeline` показывает только касания заявок в скоупе
+(`Recruiting\Support\ApplicationVisibility`). Оценка же отдавалась по любому `touchpoint_id`, то есть рекрутер филиала A
+читал разбор звонка по заявке филиала B вместе с цитатами из разговора. Теперь, если у касания есть `application_id`,
+заявка проверяется тем же `ApplicationVisibility`, что и лента; касание без кандидата («Вхідні») — как прежде,
+`canSeeInboxItem`. Сюда же добавлена проверка `Recruiting\Support\TouchpointRedaction::restricted()`: у скрытого
+касания (оффер) оценка закрыта вместе с текстом — она его цитирует.
+
+**«Тест на тексті» тратил общий бюджет ШІ без спроса.** `POST /api/scripts/{id}/test` стоял вне гейта
+(«чтение доступно всем»), хотя это полноценный вызов оценщика: любой активный сотрудник мог гонять его в цикле и выбрать
+дневной лимит AI на всех. Единственный клиент эндпоинта — вкладка «Тест» редактора скрипта
+(`features/scripts/editor`, маршрут `admin/scripts/:id` под `roleGuard(...ADMIN_ROLES)` = superadmin + admin), не-менеджеры его не
+вызывают. Поэтому эндпоинт переехал в группу `can:scripts-manage` и сверху получил `throttle:10,1` — лимит на пользователя,
+чтобы и менеджер случайным автоповтором не выжег бюджет. Не-менеджеру — 403, 11-й вызов в минуту — 429.
 
 ### Слои и связи с другими модулями
 `Http/Controllers/*` → `Http/Requests/*` → `Services/*` (`ScriptService`, `EvaluationService`, `TemplateService`,
@@ -232,6 +257,11 @@ viewer — например, новый сотрудник) и, как рань�
 - Ошибки API → i18n-ключ: `scriptsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- Задачи другие модули создают, закрывают и читают только через контракты: `Contracts\TaskScheduler` (`schedule`, `closeByRule`, `closeByRulePrefix`, плюс `scheduleNewApplicantCall` и `setDone`) и `Contracts\TaskReader` (`list` для главной страницы). Оба реализует `Services\TaskService`, биндинги — `ScriptsServiceProvider`. `closeByRulePrefix` (закрыть все задачи шага маршрута по префиксу ключа правила) входит в `TaskScheduler` с 2026-10-08 — им пользуется `HiringRequests\Services\ApproverNotifier`; импортов класса `TaskService` из чужих модулей больше нет. Тест — `tests/Unit/Scripts/TaskContractsTest.php`.
+- `AiScriptEvaluator` зовёт ИИ через контракт Ai `AiGateway`. Тест — `tests/Unit/Scripts/ScriptsAiGatewayTest.php`.
+- `TaskService`, `ScriptReportService`, `CandidateScriptController` и gate `scripts-manage` в `ScriptsServiceProvider` берут права и область Recruiting через контракт `RecruitingAccess`.
 
 ## Как проверить
 Бэкенд: `tests/Feature/Scripts/ScriptsApiTest` (права: recruiter/viewer только читают; версии: черновик → публикация →

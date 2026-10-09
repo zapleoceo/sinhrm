@@ -5,7 +5,8 @@ HR готовит документы сотрудникам — приказ о 
 человек с ними ознакомился. Модуль делает это без бумаги:
 
 - **Шаблоны документов** с переменными: `{ПІБ}`, `{Ім'я}`, `{Посада}`, `{Відділ}`, `{Філія}`, `{Дата прийому}`,
-  `{Дата звільнення}`, `{Керівник}`, `{Сьогодні}`. Текст — обычный текст или Markdown (заголовки `#`, **жирный**,
+  `{Дата звільнення}`, `{Керівник}`, `{Сьогодні}` (дата по Киеву — `UserTime`, не UTC: в 00:30 по Киеву уже новый день; 2026-10-08,
+  MySQL e2e раунд 2, тест `DocumentsApiTest::test_today_variable_is_the_kyiv_date_after_midnight`). Текст — обычный текст или Markdown (заголовки `#`, **жирный**,
   списки). Вставлять HTML нельзя: он показывается как текст.
 - **Документ сотрудника** создаётся из шаблона (переменные подставляются один раз — дальнейшие правки шаблона готовые
   документы не меняют) или пишется вручную; к нему можно приложить файл (PDF, PNG, JPG, DOCX до 2 МБ).
@@ -31,6 +32,10 @@ HR готовит документы сотрудникам — приказ о 
 - Воркфлоу может создать документ сам (действие `create_document`, [workflows.md](workflows.md)).
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/DocumentException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): списки «Мої документи», вкладки документов сотрудника и шаблонов держит `PagedList` (`core/ui/table/paged-list.ts`) вместо своих `load()`; смена сотрудника отменяет запрос в пути.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/DocumentNavBadges` — ключ `my_documents`: мои документы, которые можно подписать/ознакомиться (статус `sent`, в списке у них `can_acknowledge = true`); `DocumentService::countAwaitingMe()` — `count(*)` с тем же фильтром, что `mine()`.
 Бэкенд — `backend/app/Modules/Documents`, маршруты под `/api` (`routes.php`), все за `auth:sanctum` +
 `EnsureUserIsActive`. Gate `documents-manage` (`Providers/DocumentsServiceProvider::MANAGE`) = `PeopleScope::isAdmin`.
@@ -85,7 +90,7 @@ HTML с расширением `.pdf` отклоняется (422 `invalid_file`
 `Http/Controllers` (`DocumentTemplateController`, `DocumentController`) → `Http/Requests` → `Services`
 (`DocumentTemplateService`, `DocumentService`, `DocumentVariables`) → `Contracts/DocumentRepository`,
 `DocumentTemplateRepository`, `DocumentStorage` (`Repositories/*`). Ошибки — `Exceptions/DocumentException`. Связи:
-People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайомитися» через `TaskService`), Workflows вызывает
+People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайомитися» через контракт `TaskScheduler`), Workflows вызывает
 `DocumentService::generate/send`.
 
 ### Фронтенд (`frontend/src/app/features/documents`)
@@ -108,12 +113,16 @@ People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайо�
 
 Категория `offer` — шаблоны офферов для Recruiting (`docs/modules/recruiting.md`). Добавлены переменные `{Зарплата}`,
 `{Дата виходу}`, `{Умови}`: их заполняет только оффер; в документах сотрудника они остаются «—».
+Recruiting берёт шаблоны через контракт `Contracts\DocumentTemplateRepository` (`find()` и `activeOfCategory()` —
+неархивные шаблоны категории по имени, только id и имя), а не через модель `DocumentTemplate`. Тест —
+`DocumentsApiTest::test_active_of_category_gives_live_templates_of_one_category_by_name`.
 
 **Вид (рестайл C «Маршрут», 2026-10-02).** Статус документа — пилюля `.app-pill` (`DOCUMENT_STATUS_TONE`: черновик/архив — пунктирный ○, отправлен ◆ warn, подписан ● good, отклонён ■ bad); архивный документ — приглушённое название без потери контраста (не opacity); кнопка-название в профиле — 44px на телефоне; пустой список — `.app-empty` (пунктирная ветка). Тест вида — `features/documents/documents.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
 
 ### Общие хелперы Core (2026-10-02)
-- скачивание файла документа — `Core\Http\Responses\Download::file()`: те же заголовки, что раньше (attachment с ASCII-именем и `filename*`, `nosniff`, `private, no-store`, `Content-Length`); тот же хелпер у вложений Desk;
+- скачивание файла документа — `Core\Http\Responses\Download::file()`: те же заголовки, что раньше (attachment с ASCII-именем и `filename*`, `nosniff`, `private, no-store`, `Content-Length`); тот же хелпер у вложений Desk и у CV отклика со страницы вакансий (`GET /api/applications/{id}/cv`, [recruiting.md](recruiting.md));
 - gate `documents-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Загрузка файла `POST /api/documents/{id}/file` — именованный лимитер `documents-upload` (`DocumentsServiceProvider::UPLOAD_THROTTLE`), 30 в минуту на пользователя, своя корзина; 31-я — 429 (`DocumentsApiTest::test_file_upload_is_throttled_per_user`). Даты предпросмотра шаблона (`DocumentVariables::sample`) — по Киеву, как `{Сьогодні}`. Комментарии маршрутов: gate — HR staff (`UserRole::hrStaff()`: superadmin, admin, hr_manager).
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
@@ -123,6 +132,10 @@ People (`PeopleScope`, `EmployeeService`), Scripts (задача «ознайо�
 - Ошибки API → i18n-ключ: `documentsErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `DocumentController`, `DocumentTemplateController` и `DocumentNavBadges` берут контекст и карточку сотрудника через контракты People `PeopleAccess` и `EmployeeLookup`. Тест — `tests/Unit/Documents/DocumentsPeopleContractsTest.php` (предпросмотр шаблона с сотрудником из контракта).
+- `DocumentService` ставит, закрывает и отмечает задачи «ознакомиться» через контракт Scripts `TaskScheduler` (`schedule`, `closeByRule`, `setDone`).
 
 ## Как проверить
 Бэкенд: `tests/Feature/Documents/DocumentsApiTest` (401/403, неизвестные переменные и архив шаблонов, предпросмотр:

@@ -54,6 +54,7 @@ import { REVIEW_TYPES, ReviewResult, ReviewType, scoreWidth } from '../perform.m
     }
   `,
   styles: `
+    @use '../../../core/ui/styles/trace';
     :host { display: block; }
     h3 { font: var(--mat-sys-title-medium); margin: 0.5rem 0; }
     /* Reviewer types: colour + marker SHAPE (legend and every bar), never colour alone. */
@@ -70,12 +71,8 @@ import { REVIEW_TYPES, ReviewResult, ReviewType, scoreWidth } from '../perform.m
     .scores tr + tr th, .scores tr + tr td { border-top: var(--app-border-w) solid var(--app-track); }
     .barrow { display: flex; align-items: center; gap: 0.5rem; margin: 0.2rem 0; }
     .barrow::before { margin-right: 0; }
-    .bar {
-      display: inline-block; height: 0.5rem; border-radius: var(--app-radius-pill); background: var(--c); min-width: 2px;
-      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    }
-    @keyframes trace { from { transform: scaleX(0); } }
-    @media (prefers-reduced-motion: reduce) { .bar { animation: none; } }
+    .bar { display: inline-block; height: 0.5rem; border-radius: var(--app-radius-pill); background: var(--c); min-width: 2px; }
+    @include trace.draw('.bar');
     .num { font: 500 0.75rem var(--app-font-mono); color: var(--app-muted); }
     [data-type='self'] { --c: var(--mat-sys-tertiary); }
     [data-type='manager'] { --c: var(--mat-sys-primary); }

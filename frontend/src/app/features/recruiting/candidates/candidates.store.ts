@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Candidate, CandidateQuery } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
+import { PagedList } from '../../../core/ui/table/paged-list';
 
 const DEFAULT_QUERY: CandidateQuery = { page: 1, perPage: 50 };
 
@@ -8,34 +9,17 @@ const DEFAULT_QUERY: CandidateQuery = { page: 1, perPage: 50 };
 @Injectable()
 export class CandidatesStore {
   private readonly api = inject(RecruitingService);
-  private seq = 0;
+  /** A newer query cancels the request still in flight: an old answer never lands over new filters. */
+  private readonly list = new PagedList<Candidate>();
 
   readonly query = signal<CandidateQuery>(DEFAULT_QUERY);
-  readonly items = signal<Candidate[]>([]);
-  readonly total = signal(0);
-  readonly loading = signal(false);
-  readonly failed = signal(false);
+  readonly items = this.list.items;
+  readonly total = this.list.total;
+  readonly loading = this.list.loading;
+  readonly failed = this.list.failed;
 
   load(): void {
-    const seq = ++this.seq;
-    this.loading.set(true);
-    this.failed.set(false);
-    this.api.candidates(this.query()).subscribe({
-      next: (page) => {
-        if (seq !== this.seq) {
-          return;
-        }
-        this.items.set(page.data);
-        this.total.set(page.meta.total);
-        this.loading.set(false);
-      },
-      error: () => {
-        if (seq === this.seq) {
-          this.failed.set(true);
-          this.loading.set(false);
-        }
-      },
-    });
+    this.list.load(this.api.candidates(this.query()));
   }
 
   patchQuery(patch: Partial<CandidateQuery>): void {

@@ -22,6 +22,8 @@
 **Браузерное расширение (`extension/`):** TypeScript без фреймворка, esbuild, Vitest + jsdom на вымышленных HTML-фикстурах
 (реальные страницы сайтов в репозиторий не копируем), ESLint; `npm run lint|typecheck|test|package` — job `extension` в CI.
 
+**Версия TypeScript в `extension/` — 6.x (решение 2026-10-08).** Мажор TypeScript 7 не ставится: `typescript-eslint` (включая последнюю 8.71.1) объявляет peer `typescript >=4.8.4 <6.1.0`, поэтому `npm ci` падает с ERESOLVE (dependabot-PR #191, job `extension`). Обновление на TS 7 возможно в том PR, где `typescript-eslint` выпустит peer с поддержкой 7.x; проверка — `npm view typescript-eslint peerDependencies`. Dependabot для `/extension` игнорирует мажорные версии `typescript` (как и для `/frontend`).
+
 **Фронтенд (Angular):** standalone, signals, `inject()`, `OnPush`, typed forms, без `any`, строки интерфейса — через i18n (ru/uk/en).
 Тесты — Vitest. **HTTP только через сервисы:** компонент не держит `HttpClient`; HTTP-сервис живёт в самой фиче
 (`features/<name>/<name>.service.ts` или рядом с подфичей, например `recruiting/card/offers.service.ts`), а в `core/api` —
@@ -49,6 +51,7 @@ PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` м
 Оба правила — нижняя планка, а не доказательство качества (покрытие меряют job `backend` / `frontend` / `extension`). Логика — `scripts/pr-checks-lib.mjs`, тесты — `scripts/pr-checks.test.mjs`.
 - **Документация вместе с кодом** (`scripts/docs-check.mjs`): изменился код модуля (`backend/app/Modules/<M>`, `frontend/src/app/features/<f>`, `core`, `extension/`, кроме тестов) → его `docs/modules/<модуль>.md` изменён **содержательно**: хотя бы одна добавленная строка не короче 12 букв и цифр (правка пробела, пустой строки, точки или разделителя таблицы не считается; удаление модуля доки не требует). Изменились миграции, `backend/routes`, `config` или `bootstrap` → содержательно изменена любая страница в `docs/modules`, `architecture`, `guides` или `adr`. Запись в `docs/worklog.d` докой не считается.
 - **Тесты вместе с кодом** (`scripts/tests-check.mjs`): изменился код модуля/фичи/расширения → добавлен или изменён тест в **том же** модуле (`backend/tests/{Feature,Unit}/<M>/`, `*.spec.ts` той же фичи или `core`, `extension/tests/`). Правка только `.html`/`.scss` теста не требует (доку — требует). Файлы вне модулей (`backend/app/Http`, `Models`, `Providers`) проверками не покрыты. Не требуют теста: `Providers`, `Contracts`, `Enums`, `Models`, `Database`, `DTO`, `Exceptions`, файлы `*.model.ts`, `*.routes.ts`, `types.ts`, чисто удалённый код.
+- **Мёртвые внутренние ссылки** (`scripts/docs-links-check.mjs`, тесты — `scripts/docs-links-check.test.mjs`): каждая относительная ссылка `[текст](путь#якорь)` в `README.md`, `CLAUDE.md`, `AGENTS.md` и `docs/**/*.md` ведёт на существующий файл или папку репозитория, а якорь — на заголовок этого файла (правила якорей GitHub, кириллица сохраняется). Внешние ссылки (`http(s)`, `mailto`) и код не проверяются. Фрагменты `docs/worklog.d/*.md` ссылаются относительно `docs/`. Локально: `node scripts/docs-links-check.mjs`.
 - **Исключение для тестов:** метка `no-tests-needed` (правка не меняет поведение: переименование, комментарии, откат) — ставит ревьюер, после метки Re-run job; dependabot проходит сам. Исключения для документации нет.
 
 ## Таблицы
@@ -66,8 +69,8 @@ PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` м
 
 - Нельзя: `C:\`, `%TEMP%`, `/tmp`, каталог профиля пользователя, рабочий стол, папки инструментов вне `D:\Projects\`.
 - Нужна папка для временных файлов — создаём её под проект: `D:\Projects\_tmp\<проект>\` (для SinHRM — `D:\Projects\_tmp\sinhrm\`). Внутри — подпапка на задачу, например `D:\Projects\_tmp\sinhrm\board-drag\`.
-- Рабочие копии агентов (git worktree) — `D:\Projects\sinhrm-wt\<имя>`; после вливания PR удаляются (`git worktree remove --force`, затем `git worktree prune`).
-- **Чистим за собой:** как только временные файлы не нужны (PR влит, проверка закончена, задача закрыта) — удаляем файлы и пустую папку. В конце задачи агент проверяет, что в `D:\Projects\_tmp\<проект>\` не осталось его файлов.
+- Рабочие копии агентов (git worktree) — `D:\Projects\HRM\worktrees\<имя>`; после вливания PR удаляются (`git worktree remove --force`, затем `git worktree prune`).
+- **Чистим за собой:** как только временные файлы не нужны (PR влит, проверка закончена, задача закрыта) — удаляем файлы и пустую папку. В конце задачи агент проверяет, что в `D:\Projects\HRM	mp\` не осталось его файлов.
 - Секреты и токены во временные файлы не кладём; ключ, нужный на время эксперимента, передаём переменной окружения, а не файлом.
 - Артефакты, которые должны жить в репозитории (скриншоты для PR, примеры), кладём в `docs/assets/<тема>/` и коммитим; всё остальное — только временное.
 - Ledger метрик агентов (`D:\Projects\HRM\docs\tasks\*.agent-metrics.tsv`) — телеметрия процесса, не коммитится, живёт в `D:\Projects\`.
@@ -103,3 +106,10 @@ CI: обязательный job `tests` — MySQL 8.4 (`DB_CONNECTION=mysql`, �
 ## Ночное окно (UTC против Киева)
 
 Workflow `.github/workflows/night-window.yml` (необязательный, не в «Protect main») раз в неделю и по `workflow_dispatch` запускает весь backend phpunit под `faketime -f '@2026-10-15 22:30:00'` — 22:30 UTC = 01:30 Киев следующего дня, когда дата по UTC и по Киеву различается (инцидент 02–03.10.2026: `AssetsApiTest` краснел в окне 21:00–24:00 UTC). Сервер БД живёт на реальном времени — это нормально. Красный прогон — признак места, где код или тест считает дату в UTC вместо `UserTime::today()`/Киева; чиним их, а не перезапускаем.
+
+Страж в обязательном job `backend`: `tests/Unit/Core/UserDayGuardTest.php` падает на новой календарной операции от часов UTC в
+`backend/app` (`Carbon::today()`, `now()->startOfDay()`, `$now->toDateString()`, `$now->year` и т. п.). Правило: календарный день,
+неделя, месяц, год пользователя — `UserTime::today($now)` / `UserTime::now($now)`, срок «в этот день в 18:00» или «до конца дня» —
+`UserTime::wallTime()` / `UserTime::endOfDay()`; момент (created_at, сроки хранения, SLA в часах) остаётся UTC. Осознанный UTC —
+строка в `ALLOWED` теста с причиной ([core.md](../modules/core.md)). Тесты ночного окна пишем на три момента:
+`Carbon::setTestNow('2026-10-11 21:30:00')` (лето), `'2026-01-11 22:30:00'` (зима), `'2026-12-31 22:30:00'` (смена года).

@@ -17,6 +17,7 @@ use App\Modules\People\Events\EmployeeTerminationCancelled;
 use App\Modules\People\Events\EmployeeTerminationScheduled;
 use App\Modules\People\Exceptions\PeopleException;
 use App\Modules\People\Models\Employee;
+use App\Modules\People\Support\RoleRank;
 use App\Modules\Users\Contracts\AccountBlocker;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Carbon;
@@ -57,6 +58,12 @@ final readonly class TerminationService
     public function terminate(PeopleContext $ctx, User $actor, Employee $employee, Carbon $firedAt, ?string $reason, ?int $handoverId = null): Employee
     {
         $this->authorize($ctx, $employee->id);
+        // Terminating blocks the linked login and revokes its credentials: never against an account stronger than
+        // the caller's (an hr_manager must not be able to lock an admin or the superadmin out).
+        $linked = $employee->user;
+        if ($linked !== null && RoleRank::outranks($linked, $actor)) {
+            throw PeopleException::forbidden();
+        }
         $this->checkHandover($ctx, $employee, $handoverId);
         $applied = $this->employees->transaction(function () use ($actor, $employee, $firedAt, $reason, $handoverId): bool {
             $fresh = $this->locked($employee->id);

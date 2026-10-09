@@ -32,7 +32,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
     Route::get('requests', [LeaveRequestController::class, 'index'])->name('timeoff.requests.index');
     Route::get('requests/preview', [LeaveRequestController::class, 'preview'])->name('timeoff.requests.preview');
-    Route::post('requests', [LeaveRequestController::class, 'store'])->name('timeoff.requests.store');
+    Route::post('requests', [LeaveRequestController::class, 'store'])->middleware(TimeOffServiceProvider::REQUEST_THROTTLE)->name('timeoff.requests.store');
     Route::get('requests/{leaveRequest}', [LeaveRequestController::class, 'show'])->whereNumber('leaveRequest')->name('timeoff.requests.show');
     Route::post('requests/{leaveRequest}/approve', [LeaveRequestController::class, 'approve'])->whereNumber('leaveRequest')->name('timeoff.requests.approve');
     Route::post('requests/{leaveRequest}/reject', [LeaveRequestController::class, 'reject'])->whereNumber('leaveRequest')->name('timeoff.requests.reject');

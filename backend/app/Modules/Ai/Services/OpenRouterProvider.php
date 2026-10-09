@@ -10,8 +10,8 @@ use App\Modules\Ai\DTO\AiPrompt;
 use App\Modules\Ai\DTO\AiResult;
 use App\Modules\Ai\Exceptions\AiException;
 use App\Modules\Ai\Support\AiSettingsReader;
+use App\Modules\Integrations\Contracts\IntegrationConfigs;
 use App\Modules\Integrations\Definitions\OpenRouterDefinition;
-use App\Modules\Integrations\Services\IntegrationConfigLoader;
 use App\Modules\Integrations\Support\OutboundUrlGuard;
 use App\Modules\Integrations\Support\SecretScrubber;
 use Illuminate\Http\Client\Factory as Http;
@@ -38,7 +38,7 @@ final readonly class OpenRouterProvider implements AiProvider
         private Http $http,
         private OutboundUrlGuard $guard,
         private AiSettingsReader $settings,
-        private IntegrationConfigLoader $loader,
+        private IntegrationConfigs $loader,
         private OpenRouterDefinition $definition,
         private SecretScrubber $scrubber,
     ) {}
@@ -54,9 +54,9 @@ final readonly class OpenRouterProvider implements AiProvider
         if ($key === null) {
             throw AiException::notConfigured();
         }
-        $blocked = $this->guard->check(self::URL);
-        if ($blocked !== null) {
-            throw AiException::provider($blocked);
+        $target = $this->guard->inspect(self::URL);
+        if ($target->error !== null) {
+            throw AiException::provider($target->error);
         }
         $this->scrubber->remember($key);
 
@@ -78,7 +78,7 @@ final readonly class OpenRouterProvider implements AiProvider
         }
 
         try {
-            $response = $this->http->withOptions(['allow_redirects' => false])->timeout(self::TIMEOUT_SECONDS)
+            $response = $this->http->withOptions($target->httpOptions())->timeout(self::TIMEOUT_SECONDS)
                 ->acceptJson()->withToken($key)->post(self::URL, $body);
         } catch (Throwable) {
             throw AiException::provider('connection_failed');

@@ -25,6 +25,7 @@
 вакансий) и **Касання за 7 днів** по каналам. Кнопка «Оновити» перечитывает данные.
 
 ## Как устроено
+- Фронт (2026-10-08): список строк дашборда (`.rows` в `dashboard.page.scss`) — глобальная утилита `styles.scss`; своё правило осталось только у `.rows li`.
 Бэкенд — `backend/app/Modules/Overview`: `GET /api/dashboard` (`auth:sanctum` + активный пользователь, все роли).
 `Http/Controllers/DashboardController` → `Services/DashboardService` → `Contracts/DashboardRepository`
 (`Repositories/QueryDashboardRepository`, SQL на MySQL 8.4). Модуль только читает данные Recruiting и
@@ -33,7 +34,7 @@ Scripts; своих таблиц нет. Блоки других модулей 
 | Поле ответа `data` | Что | Откуда |
 |---|---|---|
 | `counts.active` | активные заявки | `applications.status = active` |
-| `counts.stale` | из них без реального касания ≥ 3 дней | `coalesce(last_touch_at, created_at)`, порог `StalenessService::DEFAULT_DAYS` |
+| `counts.stale` | из них без реального касания ≥ 3 дней | `coalesce(last_touch_at, created_at)`, порог `ApplicationRepository::STALE_DAYS` (3; отдаётся как `stale_days`) |
 | `counts.unmatched_inbox` | касания без кандидата | как видимость «Вхідних»: автор — пользователь или линия его филиала |
 | `counts.new_today` | заявки, созданные с начала сегодняшнего дня пользователя (см. «Сегодня» ниже) | `applications.created_at` |
 | `my_tasks` | `{total, overdue, items[≤20]}` мои открытые задачи до конца дня пользователя; `overdue` — со сроком раньше его начала | `Scripts\Services\TaskService` (`mine`, `due=today`) |
@@ -110,6 +111,10 @@ Scripts; своих таблиц нет. Блоки других модулей 
 ### Общие примитивы фронта
 Общий код фронта лежит в `frontend/src/app/core` ([core.md](core.md)); фича его только вызывает.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `DashboardService` читает задачи пользователя через контракт Scripts `TaskReader::list()` (не через класс `TaskService`).
+- `DashboardService` берёт область видимости через контракт Recruiting `RecruitingAccess`, порог «застоя» — из `ApplicationRepository::STALE_DAYS` (вместо `StalenessService::DEFAULT_DAYS`). Тест — `tests/Unit/Overview/DashboardContractsTest.php` (главная собирается из ответов контрактов, без БД).
 
 ## Как проверить
 `tests/Feature/TimeOff/LeaveRequestApiTest::test_dashboard_shows_who_is_out_and_my_approvals` — блок `timeoff`.

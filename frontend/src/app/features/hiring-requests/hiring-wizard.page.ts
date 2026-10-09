@@ -218,7 +218,6 @@ type Extra = Record<string, string | number | boolean>;
     .review dt { color: var(--app-muted); }
     .review dd { margin: 0; }
     .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
-    .spacer { flex: 1; }
     .warn { color: var(--app-bad-text); }
   `,
 })

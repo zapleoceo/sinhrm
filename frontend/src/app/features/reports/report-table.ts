@@ -98,16 +98,13 @@ const HEADER_FILTER: Record<ClientFilterKind, ColumnFilter> = { text: TEXT_FILTE
     </div>
   `,
   styles: `
+    @use '../../core/ui/styles/trace';
     /* Restyle C «Маршрут»: the chart is a set of route lines (brand), numbers in mono; the bars are drawn once on load
        («trace», transform only) and stay static with prefers-reduced-motion. */
     .chart { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
     .bar-row { display: grid; grid-template-columns: minmax(6rem, 14rem) 1fr auto; gap: 0.75rem; align-items: center; }
-    .bar-row .bar {
-      display: block; height: 0.5rem; border-radius: var(--app-radius-pill); background: var(--app-chart-1); min-width: 2px;
-      transform-origin: left center; animation: trace 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-    }
-    @keyframes trace { from { transform: scaleX(0); } }
-    @media (prefers-reduced-motion: reduce) { .bar-row .bar { animation: none; } }
+    .bar-row .bar { display: block; height: 0.5rem; border-radius: var(--app-radius-pill); background: var(--app-chart-1); min-width: 2px; }
+    @include trace.draw('.bar-row .bar');
     .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; }
     .val { font-family: var(--app-font-mono); font-variant-numeric: tabular-nums; font-size: 0.8rem; font-weight: 500; }
     .scroll { overflow-x: auto; }

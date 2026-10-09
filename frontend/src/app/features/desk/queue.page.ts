@@ -8,18 +8,18 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, NUMBER_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { ColumnFilter, FilterValue, intParam, oneOfParam, sameQuery } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { CASE_STATUSES, CASE_STATUS_TONE, DeskCase, DeskCategory, QueueQuery, slaState } from './desk.model';
 import { DeskService, deskErrorKey } from './desk.service';
 import { SlaBadge } from './sla-badge';
+import { NotifyService } from '../../core/ui/notify.service';
 
 const SLA_STATES = ['breached', 'due', 'ok'] as const;
 /** «All cases» in the URL (no param = the default «open» view). */
@@ -30,7 +30,7 @@ const ALL = 'all';
  * Status is a server filter only (`open` / `all` are not case statuses); category also goes to the API (the list is
  * capped at 300).
  */
-export const QUEUE_COLUMNS: readonly ClientColumn<DeskCase>[] = [
+const QUEUE_COLUMNS: readonly ClientColumn<DeskCase>[] = [
   { key: 'id', value: (c) => c.id },
   { key: 'subject', value: (c) => c.subject, filter: 'text' },
   { key: 'employee', value: (c) => c.employee.full_name, filter: 'text' },
@@ -41,7 +41,7 @@ export const QUEUE_COLUMNS: readonly ClientColumn<DeskCase>[] = [
 ];
 
 /** API query of the URL: no status = open cases, `all` = every case; junk statuses and category ids are dropped. */
-export function queueQueryFromParams(params: ParamMap): QueueQuery {
+function queueQueryFromParams(params: ParamMap): QueueQuery {
   const category_id = intParam(params, 'category');
   if (params.get('status') === ALL) return { category_id };
   const status = oneOfParam(params, 'status', CASE_STATUSES);
@@ -173,17 +173,17 @@ export function queueQueryFromParams(params: ParamMap): QueueQuery {
     .cats { margin-top: var(--app-gap); padding: 1rem 1.25rem; }
     .cats h2 { font: var(--mat-sys-title-medium); margin: 0; }
     .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
-    .small { font-size: 0.8rem; }
   `,
 })
 export class DeskQueuePage implements OnInit {
   private readonly api = inject(DeskService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly statusTone = CASE_STATUS_TONE;
-  protected readonly items = signal<DeskCase[]>([]);
+  /** A newer filter wins: the previous request is cancelled, so an older answer never overwrites the list. */
+  private readonly list = new PagedList<DeskCase>();
+  protected readonly items = this.list.items;
   protected readonly categories = signal<DeskCategory[]>([]);
-  protected readonly loading = signal(false);
+  protected readonly loading = this.list.loading;
   protected readonly textFilter = TEXT_FILTER;
   protected readonly numberRange = NUMBER_RANGE;
   protected readonly activeFilter = translatedSelect(() => ['true', 'false'], (v) => (v === 'true' ? 'table.yes' : 'table.no'));
@@ -204,7 +204,6 @@ export class DeskQueuePage implements OnInit {
   private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
   /** Server part of the URL (status, category): only its change reloads the queue. */
   private readonly query = computed(() => queueQueryFromParams(this.params()), { equal: sameQuery });
-  private readonly request = new LatestRequest();
   protected readonly table = new ClientTable({ rows: this.items, columns: QUEUE_COLUMNS });
   protected readonly statusFilter = translatedSelect(
     () => ['open', ...CASE_STATUSES],
@@ -256,20 +255,9 @@ export class DeskQueuePage implements OnInit {
   }
 
   private load(query: QueueQuery): void {
-    this.loading.set(true);
-    // A newer filter wins: the previous request is dropped, so an older answer never overwrites the list.
-    this.request.run(this.api.queue(query), {
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.toast(deskErrorKey(e));
-      },
-    });
+    this.list.load(this.api.queue(query), { error: (e) => this.toast(deskErrorKey(e)) });
   }
   private toast(key: string): void {
-    this.snack.open(this.i18n.translate(key), undefined, { duration: 4000 });
+    this.notify.show(key);
   }
 }

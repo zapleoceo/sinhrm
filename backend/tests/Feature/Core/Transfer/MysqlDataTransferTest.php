@@ -6,6 +6,7 @@ namespace Tests\Feature\Core\Transfer;
 
 use App\Models\User;
 use App\Modules\Core\Transfer\MysqlCollationKeys;
+use App\Modules\Core\Transfer\SchemaCheck;
 use App\Modules\Core\Transfer\TransferDatabases;
 use App\Modules\Documents\Models\Document;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
@@ -210,6 +211,67 @@ final class MysqlDataTransferTest extends TestCase
         $this->assertStringContainsString('ИТОГ: OK', $out);
     }
 
+    /**
+     * A post-freeze data migration already applied on the target is not drift (info line), and a copy un-records it so
+     * `php artisan migrate` re-runs it over the transferred rows.
+     */
+    public function test_post_freeze_data_migration_is_accepted_and_requeued_after_copy(): void
+    {
+        $name = SchemaCheck::POST_FREEZE_DATA_MIGRATIONS[0];
+        $target = $this->target();
+        if (! $target->table('migrations')->where('migration', $name)->exists()) {
+            $target->table('migrations')->insert(['migration' => $name, 'batch' => 99]);
+        }
+
+        [$code, $out] = $this->transfer(['--preflight' => true]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString($name, $out);
+        $this->assertStringNotContainsString('версии схемы расходятся', $out);
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString('php artisan migrate --force', $out);
+        $this->assertFalse($this->target()->table('migrations')->where('migration', $name)->exists());
+    }
+
+    /**
+     * A dead source-only table (SchemaCheck::LEGACY_SOURCE_ONLY_TABLES) is an info line with its row count, is not
+     * copied and is not compared; the same table appearing on the target is drift and fails like any other.
+     */
+    public function test_legacy_source_only_table_is_reported_not_copied_and_fails_when_on_the_target(): void
+    {
+        $table = SchemaCheck::LEGACY_SOURCE_ONLY_TABLES[0];
+        $rows = DB::table($table)->count();
+        $this->assertGreaterThan(0, $rows);
+        $line = "устаревшая таблица только в источнике, не переносится: {$table} ({$rows} строк)";
+
+        [$code, $out] = $this->transfer(['--preflight' => true]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString($line, $out);
+        $this->assertStringNotContainsString('таблица есть только в источнике', $out);
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out);
+        $this->assertStringContainsString('ИТОГ: OK', $out);
+        $this->assertSame(2, substr_count($out, $line), 'listed by the preflight and by the final reconciliation report');
+        $this->assertFalse($this->target()->getSchemaBuilder()->hasTable($table), 'not copied');
+
+        $target = $this->target();
+        try {
+            $target->statement("CREATE TABLE `{$table}` (`id` varchar(255) PRIMARY KEY, `data` json NOT NULL, `updated_at` timestamp NULL)");
+            [$code, $out] = $this->transfer(['--verify' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertMatchesRegularExpression('/schema\s*\|\s*'.$table.'\s*\|\s*таблица из LEGACY_SOURCE_ONLY_TABLES есть на цели/u', $out);
+            [$code, $out] = $this->transfer(['--preflight' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertStringContainsString('перенос не начат', $out);
+        } finally {
+            $this->target()->statement("DROP TABLE IF EXISTS `{$table}`");
+        }
+        [$code, $out] = $this->transfer(['--verify' => true]);
+        $this->assertSame(0, $code, $out);
+    }
+
     public function test_verify_fails_on_schema_drift(): void
     {
         [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
@@ -321,6 +383,61 @@ final class MysqlDataTransferTest extends TestCase
         $this->assertStringNotContainsString(self::SECRET, $out);
     }
 
+    /**
+     * --without-secrets (test dumps for third parties): no APP_KEY at all, integration_secrets is not copied and stays
+     * empty, --verify expects 0 rows there, the report lists the skipped table with the source row count only.
+     * Without the option the same environment stays fail-closed.
+     */
+    public function test_without_secrets_needs_no_app_key_and_leaves_encrypted_tables_empty(): void
+    {
+        $key = config('app.key');
+        $sourceSecrets = DB::table('integration_secrets')->count();
+        $this->assertGreaterThan(0, $sourceSecrets);
+        $ciphertext = (string) DB::table('integration_secrets')->where('name', 'transfer-fixture')->value('value');
+        config(['app.key' => '']);
+        $this->app->forgetInstance('encrypter');
+        try {
+            [$code, $out] = $this->transfer(['--preflight' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertMatchesRegularExpression('/app_key\s*\|\s*-\s*\|\s*APP_KEY не задан/u', $out);
+
+            [$code, $out] = $this->transfer(['--without-secrets' => true, '--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+            $this->assertSame(0, $code, $out);
+            $this->assertStringContainsString('ИТОГ: OK', $out);
+            $this->assertStringNotContainsString('app_key', $out);
+            $this->assertStringContainsString("Пропущены таблицы (--without-secrets, на цели пусто): integration_secrets (в источнике {$sourceSecrets} строк)", $out);
+            $this->assertStringNotContainsString($ciphertext, $out);
+            $this->assertSame(0, $this->target()->table('integration_secrets')->count());
+            $this->assertSame(DB::table('integrations')->count(), $this->target()->table('integrations')->count());
+
+            [$code, $out] = $this->transfer(['--verify' => true, '--without-secrets' => true]);
+            $this->assertSame(0, $code, $out);
+            $this->assertMatchesRegularExpression('/without_secrets\s*\|\s*integration_secrets\s*\|\s*не перенесена/u', $out);
+
+            // Without the option the empty table is a plain row mismatch.
+            [$code, $out] = $this->transfer(['--verify' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertMatchesRegularExpression('/rows\s*\|\s*integration_secrets/', $out);
+
+            // A row on the target breaks the "left empty" contract: verify FAILs, a run without truncate is refused.
+            $row = (array) DB::table('integration_secrets')->where('name', 'transfer-fixture')->first();
+            $this->target()->table('integration_secrets')->insert($row);
+            [$code, $out] = $this->transfer(['--verify' => true, '--without-secrets' => true]);
+            $this->assertSame(1, $code, $out);
+            $this->assertMatchesRegularExpression('/without_secrets\s*\|\s*integration_secrets\s*\|\s*--without-secrets: на цели 1 строк, ожидается 0/u', $out);
+            [$code, $out] = $this->transfer(['--without-secrets' => true, '--confirm-target' => self::TARGET_DB]);
+            $this->assertSame(1, $code, $out);
+            $this->assertStringContainsString('перенос не начат', $out);
+            $this->assertStringNotContainsString($ciphertext, $out);
+        } finally {
+            config(['app.key' => $key]);
+            $this->app->forgetInstance('encrypter');
+        }
+
+        [$code, $out] = $this->transfer(['--truncate-target' => true, '--confirm-target' => self::TARGET_DB]);
+        $this->assertSame(0, $code, $out); // full copy again for the next tests and the CLI steps
+    }
+
     public function test_write_needs_confirmation_and_production_needs_the_flag(): void
     {
         $before = $this->target()->table('users')->count();
@@ -367,9 +484,15 @@ final class MysqlDataTransferTest extends TestCase
         return TransferDatabases::connect(app('db'), config())->target;
     }
 
-    /** One synthetic attachment, one encrypted secret and Unicode/JSON on the source, created once. */
+    /**
+     * One synthetic attachment, one encrypted secret and Unicode/JSON on the source, created once; plus the dead
+     * prototype table app_state that production Neon still holds (SchemaCheck::LEGACY_SOURCE_ONLY_TABLES) — same
+     * columns, one synthetic row — so the preflight / CLI steps of the workflow reproduce the production schema.
+     */
     private function ensureFixtures(): void
     {
+        DB::statement('create table if not exists app_state (id text primary key, data jsonb not null, updated_at timestamptz not null default now())');
+        DB::statement("insert into app_state (id, data) values ('main', '{\"stages\": []}') on conflict (id) do nothing");
         if (DB::table('documents_files')->where('filename', 'transfer-fixture.pdf')->exists()) {
             return;
         }

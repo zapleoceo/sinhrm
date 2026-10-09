@@ -59,6 +59,20 @@ final class AiPromptEditorTest extends TestCase
         $this->actingAs($super)->getJson('/api/ai/prompts/unknown')->assertNotFound();
     }
 
+    public function test_each_version_shows_its_own_author(): void
+    {
+        $first = $this->superadmin();
+        $second = $this->superadmin();
+        $body = $this->builtinBody();
+
+        $this->actingAs($first)->postJson('/api/ai/prompts/candidate_screening', ['body' => $body."\n- First."])->assertCreated();
+        $this->actingAs($second)->postJson('/api/ai/prompts/candidate_screening', ['body' => $body."\n- Second."])->assertCreated();
+
+        $this->actingAs($first)->getJson('/api/ai/prompts/candidate_screening')->assertOk()
+            ->assertJsonPath('data.versions.0.author', $second->name)
+            ->assertJsonPath('data.versions.1.author', $first->name);
+    }
+
     public function test_save_creates_an_active_version_used_by_ai_requests_then_rollback_and_builtin(): void
     {
         $this->enableAi();

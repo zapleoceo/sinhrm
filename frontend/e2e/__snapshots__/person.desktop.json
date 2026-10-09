@@ -23,6 +23,7 @@
   "button \"Рекрутинг 2 нових\"",
   "button \"Сервіси\"",
   "link \"+380503000000\" -> tel:+380503000000",
+  "link \"+380509990001\" -> tel:+380509990001",
   "link \"SinHRM\" -> /",
   "link \"demo+emp-01@sinhrm.test\" -> mailto:demo+emp-01@sinhrm.test",
   "link \"Воркфлоу\" -> /workflows/runs",

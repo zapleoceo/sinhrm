@@ -9,6 +9,7 @@ use App\Modules\Core\Contracts\UserNotifier;
 use App\Modules\Core\Support\ModuleServiceProvider;
 use App\Modules\GoogleWorkspace\Contracts\CalendarClient;
 use App\Modules\GoogleWorkspace\Contracts\GmailClient;
+use App\Modules\GoogleWorkspace\Contracts\GoogleConnections;
 use App\Modules\GoogleWorkspace\Contracts\GoogleTokenProvider;
 use App\Modules\GoogleWorkspace\Contracts\Mailer;
 use App\Modules\GoogleWorkspace\Contracts\SheetImportRepository;
@@ -16,6 +17,7 @@ use App\Modules\GoogleWorkspace\Contracts\SheetsClient;
 use App\Modules\GoogleWorkspace\Repositories\EloquentSheetImportRepository;
 use App\Modules\GoogleWorkspace\Services\GmailMailer;
 use App\Modules\GoogleWorkspace\Services\GoogleCalendarClient;
+use App\Modules\GoogleWorkspace\Services\GoogleConnectionStore;
 use App\Modules\GoogleWorkspace\Services\GoogleDashboardNotices;
 use App\Modules\GoogleWorkspace\Services\GoogleGmailClient;
 use App\Modules\GoogleWorkspace\Services\GoogleSheetsClient;
@@ -45,6 +47,7 @@ final class GoogleWorkspaceServiceProvider extends ModuleServiceProvider
             (array) $app->make('config')->get('services.google', []),
         ));
         $this->app->bind(GoogleTokenProvider::class, GoogleTokenService::class);
+        $this->app->bind(GoogleConnections::class, GoogleConnectionStore::class);
         $this->app->bind(GmailClient::class, GoogleGmailClient::class);
         $this->app->bind(Mailer::class, GmailMailer::class);
         $this->app->bind(CalendarClient::class, GoogleCalendarClient::class);

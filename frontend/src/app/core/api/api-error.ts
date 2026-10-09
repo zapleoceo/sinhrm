@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 /** HTTP statuses with a common meaning → the last part of `<prefix>.errors.<name>`. */
-export const API_ERROR_STATUSES = { 403: 'forbidden', 404: 'not_found', 422: 'validation', 429: 'rate_limited' } as const;
+const API_ERROR_STATUSES = { 403: 'forbidden', 404: 'not_found', 422: 'validation', 429: 'rate_limited' } as const;
 
 export type ApiErrorStatus = keyof typeof API_ERROR_STATUSES;
 

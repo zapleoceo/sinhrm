@@ -5,7 +5,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -14,7 +13,8 @@ import { BalancesPanel } from '../../timeoff/widgets/balances-panel';
 import { LeaveRequestForm } from '../../timeoff/widgets/leave-request-form';
 import { RequestAction, RequestsList } from '../../timeoff/widgets/requests-list';
 import { initials } from '../org-tree';
-import { CHANGEABLE_FIELDS, ChangeRequest, Employee, fieldLabelKey } from '../people.model';
+import { CHANGEABLE_FIELDS, ChangeRequest, Employee, customFieldRows, fieldLabelKey } from '../people.model';
+import { HiddenChangesLine } from '../hidden-changes';
 import { EmployeeDocumentsTab } from '../../documents/profile/employee-documents.tab';
 import { EmployeeRunsTab } from '../../workflows/runs/employee-runs.tab';
 import { PerformanceTab } from '../../perform/profile/performance.tab';
@@ -34,6 +34,7 @@ import { ConfirmDialog, ConfirmDialogData } from '../../workflows/confirm.dialog
 import { PeopleService, peopleErrorKey } from '../people.service';
 import { PrivacyActions } from '../../privacy/privacy-actions';
 import { wideDialog } from '../../../core/ui/dialog';
+import { NotifyService } from '../../../core/ui/notify.service';
 
 /**
  * Employee profile (/people/:id) and "My profile" (/me). Tabs follow the API's access flags: Overview for everyone,
@@ -62,6 +63,7 @@ import { wideDialog } from '../../../core/ui/dialog';
     EmployeeAssetsTab,
     AuditHistory,
     PrivacyActions,
+    HiddenChangesLine,
   ],
   providers: [ProfileStore, LeaveRequestsStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -134,6 +136,10 @@ import { wideDialog } from '../../../core/ui/dialog';
               <dd>{{ e.birth_date ? (e.birth_date | date: 'dd.MM.yyyy') : '—' }}</dd>
               <dt>{{ 'people.fields.personalEmail' | transloco }}</dt>
               <dd>{{ e.personal_email ?? '—' }}</dd>
+              <dt>{{ 'people.fields.personalPhone' | transloco }}</dt>
+              <dd>
+                @if (personalPhone(); as phone) { <a class="mono" [href]="'tel:' + phone">{{ phone }}</a> } @else { — }
+              </dd>
               <dt>{{ 'people.fields.address' | transloco }}</dt>
               <dd>{{ e.address ?? '—' }}</dd>
               <dt>{{ 'people.fields.emergencyContact' | transloco }}</dt>
@@ -194,6 +200,7 @@ import { wideDialog } from '../../../core/ui/dialog';
                         <span><span class="muted">{{ label(f) | transloco }}:</span> {{ c.changes[f] ?? '—' }}</span>
                       }
                     }
+                    <app-hidden-changes [fields]="c.hidden_changes" />
                     @if (c.comment) {
                       <span class="muted">«{{ c.comment }}»</span>
                     }
@@ -239,7 +246,7 @@ import { wideDialog } from '../../../core/ui/dialog';
         @if (e.access?.manage || e.access?.self) {
           <mat-tab [label]="'people.tabs.compensation' | transloco">
             <ng-template matTabContent>
-              <app-compensation-tab [employeeId]="e.id" [canManage]="!!e.access?.manage" [self]="!!e.access?.self" />
+              <app-compensation-tab [employeeId]="e.id" [canManage]="!!e.access?.manage" [canAdd]="!!e.access?.manage && !!e.access?.decide" [self]="!!e.access?.self" />
             </ng-template>
           </mat-tab>
         }
@@ -294,7 +301,6 @@ import { wideDialog } from '../../../core/ui/dialog';
     .changes li[data-status='rejected'] .status { --pill-text: var(--app-bad-text); --pill-bg: var(--app-bad-bg); --pill-line: transparent; }
     .changes li[data-status='rejected'] .status::before { border-radius: 1px; background: currentColor; }
     .main { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
-    .small { font-size: 0.8rem; }
     @media (max-width: 600px) {
       .avatar { width: 3.25rem; height: 3.25rem; font-size: 1.1rem; }
       .facts { grid-template-columns: minmax(0, 1fr); }
@@ -313,7 +319,7 @@ export class ProfilePage {
   protected readonly requests = inject(LeaveRequestsStore);
   private readonly dialog = inject(MatDialog);
   private readonly people = inject(PeopleService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
   protected readonly fields = CHANGEABLE_FIELDS;
   protected readonly label = fieldLabelKey;
@@ -331,7 +337,9 @@ export class ProfilePage {
     if (id === undefined || !canManagePeople(this.auth.user()?.roles ?? [])) return null;
     return (paging) => this.audit.employeeHistory(id, paging);
   });
-  protected readonly customFields = computed(() => Object.entries(this.store.employee()?.custom_fields ?? {}));
+  /** Candidate's phone carried over at hire (HireService): PII tier, shown as its own row, not as a raw custom key. */
+  protected readonly personalPhone = computed(() => this.store.employee()?.custom_fields?.['personal_phone'] ?? null);
+  protected readonly customFields = computed(() => customFieldRows(this.store.employee()?.custom_fields));
 
   constructor() {
     effect(() => {
@@ -443,6 +451,6 @@ export class ProfilePage {
   }
 
   private toast(key: string, params?: Record<string, string>): void {
-    this.snack.open(this.i18n.translate(key, params), undefined, { duration: 4000 });
+    this.notify.show(key, { params });
   }
 }

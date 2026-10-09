@@ -5,17 +5,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
-import { LatestRequest } from '../../core/ui/table/latest-request';
+import { PagedList } from '../../core/ui/table/paged-list';
 import { TableSortDirective } from '../../core/ui/table/table-sort.directive';
 import { oneOfParam } from '../../core/ui/table/table-state';
 import { TableUrlState } from '../../core/ui/table/table-url-state';
 import { HIRING_STATUSES, HiringRequest, HiringStatus, PILL_TONE, statusTone } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
+import { NotifyService } from '../../core/ui/notify.service';
 
 type ListMode = 'all' | 'mine' | 'inbox';
 
@@ -24,7 +24,7 @@ type ListMode = 'all' | 'mine' | 'inbox';
  * list is capped at 300); the inbox API has no status filter, so the page match covers it. Status sorts in workflow
  * order, progress by the hired share.
  */
-export const HIRING_COLUMNS: readonly ClientColumn<HiringRequest>[] = [
+const HIRING_COLUMNS: readonly ClientColumn<HiringRequest>[] = [
   { key: 'title', value: (r) => r.title, filter: 'text' },
   { key: 'requester', value: (r) => r.requester?.name, filter: 'text' },
   { key: 'status', value: (r) => HIRING_STATUSES.indexOf(r.status), filter: 'select', filterValue: (r) => r.status },
@@ -34,7 +34,7 @@ export const HIRING_COLUMNS: readonly ClientColumn<HiringRequest>[] = [
 ];
 
 /** Status of the URL for the API (anything else is dropped). */
-export function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
+function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
   return oneOfParam(params, 'status', HIRING_STATUSES) ?? null;
 }
 
@@ -126,7 +126,6 @@ export function hiringStatusFromParams(params: ParamMap): HiringStatus | null {
     tr[data-overdue='true'] td:first-child { box-shadow: inset 4px 0 0 var(--app-danger); }
     .app-num { font-size: 0.8rem; white-space: nowrap; }
     .warn { color: var(--app-bad-text); }
-    .small { font-size: 0.8rem; }
     .panel { overflow-x: auto; }
   `,
 })
@@ -134,11 +133,12 @@ export class HiringListPage implements OnInit {
   /** Route data: "inbox" opens the approval inbox. */
   readonly view = input<ListMode>('all');
   private readonly api = inject(HiringRequestsService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly i18n = inject(TranslocoService);
+  private readonly notify = inject(NotifyService);
   protected readonly mode = signal<ListMode>('all');
-  protected readonly items = signal<HiringRequest[]>([]);
-  protected readonly loading = signal(false);
+  /** A newer mode or status wins: the previous request is cancelled, so an older answer never overwrites the list. */
+  private readonly list = new PagedList<HiringRequest>();
+  protected readonly items = this.list.items;
+  protected readonly loading = this.list.loading;
   protected readonly canCreate = signal(false);
   protected readonly tone = statusTone;
   protected readonly pill = PILL_TONE;
@@ -148,7 +148,6 @@ export class HiringListPage implements OnInit {
   private started = false;
   /** Status the shown list was loaded with (undefined = not loaded yet). */
   private loadedStatus: HiringStatus | null | undefined;
-  private readonly request = new LatestRequest();
   protected readonly table = new ClientTable({ rows: this.items, columns: HIRING_COLUMNS });
   protected readonly textFilter = TEXT_FILTER;
   protected readonly dateFilter = DATE_RANGE;
@@ -175,20 +174,9 @@ export class HiringListPage implements OnInit {
     this.load();
   }
   private load(): void {
-    this.loading.set(true);
     const mode = this.mode();
     this.loadedStatus = this.status();
     const call = mode === 'inbox' ? this.api.inbox() : this.api.list({ status: this.loadedStatus ?? undefined, mine: mode === 'mine' });
-    // A newer mode or status wins: the previous request is cancelled, so an older answer never overwrites the list.
-    this.request.run(call, {
-      next: (list) => {
-        this.items.set(list);
-        this.loading.set(false);
-      },
-      error: (e: unknown) => {
-        this.loading.set(false);
-        this.snack.open(this.i18n.translate(hiringErrorKey(e)), undefined, { duration: 4000 });
-      },
-    });
+    this.list.load(call, { error: (e) => this.notify.show(hiringErrorKey(e)) });
   }
 }

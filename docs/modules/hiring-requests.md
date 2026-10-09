@@ -38,10 +38,21 @@
   сроком шага; при просрочке — HR. Главная: блок «Заявки на підбір чекають мого рішення».
 
 ## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/HiringException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): список заявок держит строки и загрузку в `PagedList` (`core/ui/table/paged-list.ts`): смена режима или статуса отменяет запрос в пути, ошибка — уведомление.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/HiringNavBadges` — ключ `hiring_inbox` на пункте «Заявки на підбір»: заявки, чей текущий шаг ждёт моего решения (тот же список, что `GET /api/hiring-requests/inbox`; право решать проверяется в PHP, поэтому считается длина этого списка).
 Бэкенд — `backend/app/Modules/HiringRequests`, маршруты `/api/hiring-requests/*` (`routes.php`), `auth:sanctum` +
 `EnsureUserIsActive`; gate `hiring-manage` = `PeopleScope::isAdmin` (настройки, вакансия, закрытие). Права —
 `Services/HiringAccess`, логика — `Services/HiringRequestService`, SQL — `Repositories/EloquentHiringRequestRepository`.
+`HiringRequestService` ведёт жизненный цикл заявки (черновик → маршрут → решение → вакансия → закрытие) и делегирует
+отдельные ответственности (SRP, 2026-10-08): `Services/RouteSnapshot` — шаблон маршрута → шаги заявки при отправке
+(руководитель из People, пользователь, роль; неразрешимые шаги — `skipped`); `Support/RequestAttributes` — колонки из
+формы (только отправленные ключи, сброс `replaced_employee_id`, проверка вилки зарплаты, очистка доп. полей);
+`Support/VacancyDraft` — поля и описание вакансии из заявки; `Services/HiringProgress` — прогресс найма по вакансиям
+(`progress()` сервиса передаёт вызов). Эскалация в `ApproverNotifier` берёт роли из `Auth\Enums\UserRole`, без строк; задачи согласующих он создаёт и закрывает (`closeByRulePrefix` по шагу) через контракт Scripts `TaskScheduler`, а не класс `TaskService` (тест `tests/Unit/HiringRequests/ApproverTaskSchedulerTest.php`).
+Тест — `tests/Unit/HiringRequests/HiringRequestPartsTest`.
 
 ### Статусы
 `draft → pending → approved → in_progress (есть вакансия) → closed`; `pending → rejected`; `draft | pending | approved →
@@ -76,7 +87,7 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 ### Уведомления и задача `hiring.sla` (`Services/ApproverNotifier`, `Services/HiringSlaJob`)
 - Активация шага → задача `hiring_approval` каждому согласующему (роль — до 20 держателей роли, без автора), ключ
   `hrq:<шаг>:<пользователь>`, срок = `due_at`. «Один раз» гарантирует флаг `notified` (compare-and-set), не таблица
-  задач. Решение шага или отмена заявки закрывает задачи шага (`TaskService::closeByRulePrefix`).
+  задач. Решение шага или отмена заявки закрывает задачи шага (`TaskScheduler::closeByRulePrefix`).
 - `hiring.sla` (cron `POST /api/ops/jobs/run`, идемпотентно): шаг без уведомления → уведомить; просроченный шаг → одна
   задача каждому админу «Прострочено погодження…» (флаг `escalated`, ключ `hrq-sla:…`); заявка `in_progress`, у которой
   вакансия закрыта или нанято ≥ `headcount`, → `closed`. Ответ: `{hiring_notified, hiring_escalated, hiring_closed}`.
@@ -127,6 +138,7 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 
 ### Общие хелперы Core (2026-10-02)
 - gate `hiring-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Срок шага согласования (`addWorkingDays` в TimeOff `HolidayWorkingCalendar`) считается по календарю Киева: шаг, активированный в пятницу после 21:00/22:00 UTC (уже суббота по Киеву), получает срок «+N рабочих дней» от понедельника, время суток — киевское (2026-10-08).
 - текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
 
 Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
@@ -136,6 +148,9 @@ cancelled`. Соответствие ТЗ 2: Черновик = `draft`, На р
 - Ошибки API → i18n-ключ: `hiringErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `HiringAccess` узнаёт HR и руководителя через контракт People `PeopleAccess` (не через класс `PeopleScope`). Тест — `tests/Unit/HiringRequests/HiringPeopleAccessTest.php`.
 
 ## Как проверить
 - `php artisan test --filter=HiringRequest` — матрица доступа, маршрут и SLA (просрочка, эскалация один раз, пятница → вторник, праздник филиала),

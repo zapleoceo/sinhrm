@@ -18,6 +18,8 @@
   `closed`). Без флага обработчика — 403 даже админу.
 
 ## Как устроено
+- Тема и текст обращения (`Http/Requests/SubmitReportRequest`): правила `subject`/`body` и чтение — общий трейт `Core\Http\Requests\Concerns\HasSubjectAndBody` (тот же, что у Desk); лимиты 200/10000 и trim темы прежние, об отправителе по-прежнему ничего не читается.
+- Фронт (2026-10-08): список обращений HR (`inbox.page.ts`) держит `PagedList` (`core/ui/table/paged-list.ts`): смена статуса отменяет запрос в пути, ошибка — уведомление.
 - Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/SafeSpeakNavBadges` — ключ `safe_speak` («Вхідні Safe Speak», только обработчики — тот же gate `safe-speak-handle`): новые обращения (статус `new`), которые ещё никто не взял. Ничего об отправителе не раскрывается — это просто число.
 Бэкенд — `backend/app/Modules/SafeSpeak`.
 
@@ -53,11 +55,12 @@ JSON (ошибка валидации не превращается в реди�
 - **Отправка:** 5 сообщений в час на корзину клиента → 429 `too_many_attempts` + `Retry-After`.
 - **Подбор кода:** 10 **неверных** кодов за 15 минут на корзину → 429 (и верный код тоже, пока окно не истекло).
   Удачные входы не считаются. Ключ лимитера — `safe-speak:code:<HMAC-корзина>`: в кэш (таблица `cache` в MySQL) попадает только хэш.
+- Единственный след времени — день (`created_on`, `updated_on`, день сообщения) — день по Киеву (`UserTime::today()`), не UTC: обращение 31.12 в 22:30 UTC датировано 01.01 (2026-10-08, `SafeSpeakApiTest::test_report_day_is_the_kyiv_day`).
 - При 80 битах энтропии и 40 попытках в час на адрес подбор бессмыслен даже с тысячами адресов.
 
 ### Обработчики
-Колонка `users.safe_speak_handler` (миграция модуля Users). Gate `safe-speak-handle` = активный суперадмин/админ **и**
-флаг. Маршруты `routes.php` (`auth:sanctum`): `GET /api/safe-speak/me` (`{handler}` для меню), `GET /reports?status=`,
+Колонка `users.safe_speak_handler` (миграция модуля Users). Gate `safe-speak-handle` = активный HR-сотрудник
+(`UserRole::hrStaff()`: superadmin, admin, hr_manager) **и** флаг. Маршруты `routes.php` (`auth:sanctum`): `GET /api/safe-speak/me` (`{handler}` для меню), `GET /reports?status=`,
 `GET /reports/{id}`, `POST /reports/{id}/messages` (первый ответ: `new` → `in_review`), `PATCH /reports/{id}` `{status}`.
 
 ### Оговорки (что анонимность НЕ покрывает)
@@ -83,6 +86,9 @@ JSON (ошибка валидации не превращается в реди�
 - Ошибки API → i18n-ключ: `safeSpeakErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
 - Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
 - HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `SafeSpeakService::isHandler()` проверяет HR через контракт People `PeopleAccess`. Тест — `tests/Unit/SafeSpeak/SafeSpeakPeopleAccessTest.php`.
 
 ## Как проверить
 - `php artisan test --filter=SafeSpeak` — схема и строки БД не содержат ни IP, ни user agent, ни id/имени/почты

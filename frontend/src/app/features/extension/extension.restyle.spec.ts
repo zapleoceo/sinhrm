@@ -8,4 +8,8 @@ describe('Extension restyle', () => {
     expect(style).toContain('var(--app-font-mono)');
     expect(css(ExtensionPage)).not.toMatch(/#[0-9a-f]{3,8}\b/i);
   });
+
+  it('secondary text uses the global .small utility (styles.scss), not a local copy', () => {
+    expect(css(ExtensionPage)).not.toMatch(/\.small[^{]*\{/);
+  });
 });

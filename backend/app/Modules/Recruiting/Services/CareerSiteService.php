@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace App\Modules\Recruiting\Services;
 
+use App\Models\User;
 use App\Modules\Documents\Contracts\DocumentStorage;
+use App\Modules\Documents\DTO\StoredFile;
 use App\Modules\Documents\Repositories\DatabaseDocumentStorage;
+use App\Modules\Recruiting\Contracts\ApplicationRepository;
+use App\Modules\Recruiting\Contracts\VacancyRepository;
 use App\Modules\Recruiting\DTO\CandidateData;
 use App\Modules\Recruiting\Enums\AddedVia;
 use App\Modules\Recruiting\Enums\CandidateSource;
 use App\Modules\Recruiting\Exceptions\RecruitingException;
 use App\Modules\Recruiting\Models\CareerSubmission;
 use App\Modules\Recruiting\Models\Vacancy;
-use App\Modules\Scripts\Services\TaskService;
+use App\Modules\Scripts\Contracts\TaskScheduler;
 use finfo;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Database\Eloquent\Collection;
@@ -25,6 +29,7 @@ use Psr\Log\LoggerInterface;
  * same createOrMatch as other machine sources (dedup by e-mail/phone, first stage), source "site" → channel
  * "Career site", added_via career_site, plus a "call the new applicant" task for the vacancy recruiter.
  * Anti-spam: a honeypot field (handled by the controller) and MAX_PER_HOUR submissions per hashed client IP.
+ * The CV sent with an application is read back by recruiters through cvFor() (GET /api/applications/{id}/cv).
  */
 final readonly class CareerSiteService
 {
@@ -35,22 +40,23 @@ final readonly class CareerSiteService
 
     public function __construct(
         private CandidateService $candidates,
-        private TaskService $tasks,
+        private TaskScheduler $tasks,
         private RateLimiter $limiter,
         private LoggerInterface $log,
+        private VacancyRepository $vacancies,
+        private ApplicationRepository $applications,
+        private RecruitingScope $scope,
     ) {}
 
     /** @return Collection<int, Vacancy> */
     public function published(): Collection
     {
-        return Vacancy::query()->with(['branch', 'position', 'city'])->active()
-            ->orderByDesc('opened_at')->orderByDesc('id')->get();
+        return $this->vacancies->published();
     }
 
     public function findPublished(string $slug): Vacancy
     {
-        return Vacancy::query()->with(['branch', 'position', 'city'])->active()->where('slug', $slug)
-            ->first() ?? abort(404);
+        return $this->vacancies->findPublishedBySlug($slug) ?? abort(404);
     }
 
     /** Slug for a published vacancy without one: transliterated title + id (stable after title edits). */
@@ -94,7 +100,7 @@ final readonly class CareerSiteService
         if ($match->applicationCreated && $match->application !== null) {
             $this->tasks->scheduleNewApplicantCall($vacancy->recruiter_id, $match->candidate->id, $match->application->id, $now);
         }
-        $submission = CareerSubmission::query()->create([
+        $submission = $this->vacancies->createCareerSubmission([
             'vacancy_id' => $vacancy->id,
             'candidate_id' => $match->candidate->id,
             'application_id' => $match->application?->id,
@@ -111,6 +117,34 @@ final readonly class CareerSiteService
     }
 
     /**
+     * The newest CV sent with this application, for a user who sees the application (ApplicationVisibility:
+     * branch, hiring manager, interviewer). Not visible, no CV or an unreadable body → 404 (no existence leak).
+     * The MIME type is detected from the bytes again, not taken from the row.
+     */
+    public function cvFor(User $actor, int $applicationId): StoredFile
+    {
+        abort_unless($this->applications->isVisible($applicationId, $this->scope->for($actor)), 404);
+        $submission = $this->applications->latestCv($applicationId) ?? abort(404);
+        $content = base64_decode((string) $submission->cv_content, true);
+        abort_if($content === false || $content === '', 404);
+        $filename = (string) $submission->cv_filename;
+
+        return new StoredFile($filename, self::cvMime($content, $filename) ?? 'application/octet-stream', strlen($content), $content);
+    }
+
+    /** PDF, DOC or DOCX detected from the bytes (a .docx is a ZIP: its name tells DOCX from a plain ZIP); else null. */
+    public static function cvMime(string $content, string $name): ?string
+    {
+        $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->buffer($content);
+        if (in_array($mime, self::CV_MIMES, true)) {
+            return $mime;
+        }
+        $docx = DatabaseDocumentStorage::detect($content, $name);
+
+        return $docx === null || $docx === 'application/pdf' || str_starts_with($docx, 'image/') ? null : $docx;
+    }
+
+    /**
      * @return array<string, mixed>
      *
      * @throws RecruitingException invalid_cv
@@ -120,14 +154,7 @@ final readonly class CareerSiteService
         if ($content === '' || strlen($content) > DocumentStorage::MAX_BYTES) {
             throw RecruitingException::invalidCv();
         }
-        $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->buffer($content);
-        if (! in_array($mime, self::CV_MIMES, true)) {
-            $docx = DatabaseDocumentStorage::detect($content, $name);
-            if ($docx === null || $docx === 'application/pdf' || str_starts_with($docx, 'image/')) {
-                throw RecruitingException::invalidCv();
-            }
-            $mime = $docx;
-        }
+        $mime = self::cvMime($content, $name) ?? throw RecruitingException::invalidCv();
 
         return [
             'cv_filename' => DatabaseDocumentStorage::safeName($name === '' ? 'cv' : $name),

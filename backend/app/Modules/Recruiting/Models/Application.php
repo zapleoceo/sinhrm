@@ -34,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property-read RejectReason|null $rejectReason
  * @property-read Collection<int, StageChange> $stageChanges
  * @property-read Collection<int, User> $interviewers
+ * @property-read Collection<int, CareerSubmission> $cvSubmissions
  */
 final class Application extends Model
 {
@@ -83,6 +84,17 @@ final class Application extends Model
     public function interviewers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'application_interviewers')->withPivot('created_at')->orderBy('users.id');
+    }
+
+    /**
+     * Career-site submissions of this application that carry a CV, newest first. Eager-load it with
+     * CareerSubmission::CV_META columns only: the CV body (base64 longtext) is read just by the download.
+     *
+     * @return HasMany<CareerSubmission, $this>
+     */
+    public function cvSubmissions(): HasMany
+    {
+        return $this->hasMany(CareerSubmission::class)->whereNotNull('cv_size')->orderByDesc('id');
     }
 
     /** Last contact, or the moment the application appeared when nobody touched it yet. */
