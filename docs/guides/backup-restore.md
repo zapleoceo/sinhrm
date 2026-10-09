@@ -4,7 +4,7 @@
 
 The `synthetic-mysql-restore` job in `.github/workflows/backup-restore.yml` runs against a disposable MySQL 8.4 service. It migrates an empty source, creates a fresh CI `APP_KEY`, and seeds linked recruiting and employee rows, a 2 MiB database attachment, and an encrypted `integration_secrets` value. The matching service client runs `mysqldump` with `--single-transaction --routines --triggers --events --hex-blob --no-tablespaces --set-gtid-purged=OFF`. The job records exact per-table row counts, creates a separate restore database, removes the synthetic source, restores the dump, compares table/count inventory, and checks relationships, foreign-key cascade, next `AUTO_INCREMENT`, attachment bytes/SHA-256 and decryption under the unchanged key. A shell trap removes the dump and inventory files; the workflow does not upload them.
 
-This proves a synthetic logical dump and restore. It does not prove a production backup, PITR, RPO/RTO, or the one-time source-to-MySQL transfer ([cutover runbook](mysql-cutover.md)). The CI script accepts only fixed local CI databases and must never be run against a live database.
+This proves a synthetic logical dump and restore. It does not prove a production backup, PITR or RPO/RTO. The CI script accepts only fixed local CI databases and must never be run against a live database.
 
 ## Owner decisions before a production drill
 
@@ -19,8 +19,6 @@ This proves a synthetic logical dump and restore. It does not prove a production
 DevOps must confirm MySQL 8.4, InnoDB-only tables or a write/DDL freeze for a consistent snapshot, backup privileges including routines and triggers, TLS certificate validation, encrypted storage and retention, and an independent restore destination. Preserve the corresponding `APP_KEY` and any earlier key versions through a separate protected channel. The database stores document and career-submission content; inventory all other storage adapters and externally hosted objects separately. A database row containing an external link does not prove that its object can be restored.
 
 ## Isolated operator drill
-
-> Until the cutover the live site still runs the frozen legacy release on its previous database ([ADR 0011](../adr/0011-mysql-only.md), [cutover runbook](mysql-cutover.md#замороженный-боевой-релиз-до-cutover)); back that database up with its own provider tools under the same rules: a recorded restore point, the matching `APP_KEY`, and a separate inventory of external files. The drill below applies to MySQL 8.4 IT STEP after the cutover.
 
 Obtain a protected MySQL client option file from the approved secret manager (mode `0600`). Use separate source and restore accounts. Independently confirm source and target host and database names. Use a matching MySQL 8.4 client on a trusted host with the certificate validation required by IT STEP. Freeze writes and DDL if the consistency preconditions above are not met. Never log passwords or include them in command arguments.
 
@@ -38,4 +36,4 @@ mysql --defaults-extra-file="$RESTORE_CLIENT_CNF" --database="$RESTORE_DATABASE"
 
 `--defaults-extra-file` must be the first client option. Never use `--add-drop-database`, `--all-databases`, `--force`, or a restore target already in use. Disable jobs, mail, webhooks and other external effects in the isolated restore application. Verify exact table/row counts, primary and foreign keys, next auto-increments, attachment bytes and SHA-256, and encrypted-vault decryption with the retained `APP_KEY`. Record the backup hash, restore point, MySQL and application versions, elapsed time, results and exceptions without personal data or secrets. Compare with approved RPO/RTO.
 
-Stop before switching traffic if the hash, key, objects, schema, relationships or target identity do not match. Keep the source untouched. A live cutover and rollback require the separate [transfer and rollback rehearsal](mysql-cutover.md), including reconciliation of writes made after a switch. Remove disposable drill resources after recording evidence, subject to the approved retention policy.
+Stop before switching traffic if the hash, key, objects, schema, relationships or target identity do not match. Keep the source untouched. Switching production to a restored database is a separate DevOps step with its own rollback criteria. Remove disposable drill resources after recording evidence, subject to the approved retention policy.
