@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Conversation lookups of the Channels module (touchpoints of a channel by meta.thread): replies and continuity of threads.
- * MySQL 8.4 functional key part (PROD-50, ADR 0011). JSON/TEXT cannot be indexed directly, so the key is
+ * MySQL 8.4 functional key part (PROD-50, ADR 0010). JSON/TEXT cannot be indexed directly, so the key is
  * cast(... as char(255)) collate utf8mb4_bin. The optimizer matches it with Laravel's where('meta->thread', $x)
  * (json_unquote(json_extract(`meta`, '$."thread"')) — utf8mb4_bin as well), the JSON path is written exactly as Laravel
  * compiles it. Thread ids of all adapters are short (Gmail/Telegram/WhatsApp/telephony ids); a meta.thread longer than

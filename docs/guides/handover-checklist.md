@@ -12,16 +12,18 @@
 | `backend/` | Laravel 13 API, PHP 8.4 в CI (`composer.json`: `^8.3`), модули `app/Modules/<Name>` | [architecture/overview.md](../architecture/overview.md) |
 | `backend/app/Modules/<Name>/routes.php` | маршруты модуля (`/api/...`); публичные — `routes.public.php` | [api.md](api.md) |
 | `backend/.env.example` | все ключи окружения API с плейсхолдерами | [secrets.md](../architecture/secrets.md) |
-| `backend/vercel.json`, `backend/api/index.php` | запуск API на Vercel (`vercel-php`) | [deploy.md](deploy.md) |
+>>>
+
+| `backend/vercel.json`, `backend/api/index.php` | адаптер запуска API на Vercel (`vercel-php`); на IT STEP не нужен — document root `backend/public` | [itstep-app-handoff.md](itstep-app-handoff.md) |
 | `frontend/` | Angular 22 SPA: `src/app/core` (общее) + `src/app/features/<name>` (фичи), строки ru/uk/en | [core.md](../modules/core.md), [shell.md](../modules/shell.md) |
 | `frontend/scripts/build-docs.mjs` | сборка справки «Довідка» из `docs/` в `public/help/docs.json` | [shell.md](../modules/shell.md) |
 | `frontend/e2e/` | UI parity: инвентарь, снапшоты, axe на mock API | [ui-parity.md](ui-parity.md) |
 | `extension/` | Chrome-расширение «SinHRM Clipper» (MV3, TypeScript, esbuild, Vitest) | [extension.md](../modules/extension.md) |
 | `rest/<модуль>/*.http` | примеры запросов к API (`rest/http-client.env.json` — окружения без секретов) | [api.md](api.md) |
 | `scripts/` | node-проверки CI: документация и тесты вместе с кодом, журнал, MySQL-страж, мёртвые ссылки, штамп сборки | [development.md](development.md#что-проверяет-ci-в-job-docs) |
-| `.github/workflows/` | `ci.yml`, `deploy.yml`, `cron.yml`, `demo-fill.yml`, `night-window.yml`, `mysql-data-transfer.yml` | [deploy.md](deploy.md#как-устроено) |
+| `.github/workflows/` | `ci.yml`, `cron.yml`, `demo-fill.yml`, `night-window.yml` | [deploy.md](deploy.md#как-устроено) |
 | `docs/modules/` | страница на каждый модуль: «Что это и зачем» → «Как пользоваться» → «Как устроено» → «Как проверить» | [modules/README.md](../modules/README.md) |
-| `docs/guides/`, `docs/architecture/`, `docs/adr/` | правила, деплой, переезд, восстановление; архитектура и секреты; решения | [docs/README.md](../README.md) |
+| `docs/guides/`, `docs/architecture/`, `docs/adr/` | правила, деплой, развёртывание БД, восстановление; архитектура и секреты; решения | [docs/README.md](../README.md) |
 | `docs/product/` | единое ТЗ, свидетельства аудитории, production backlog, интеграция с Itstep | [production-backlog.md](../product/production-backlog.md) |
 | `docs/security/audit-2026-10.md` | аудит безопасности октября 2026 и оставшиеся риски | [audit-2026-10.md](../security/audit-2026-10.md) |
 | `docs/worklog.d/` | журнал работ: один файл на PR | [worklog.d/README.md](../worklog.d/README.md) |
@@ -32,8 +34,7 @@ HiringRequests, Integrations, Knowledge, MailAgent, Observability, Overview, Peo
 Reports, SafeSpeak, Scripts, Time, TimeOff, Users, Workflows. Назначение и статус каждого — [modules/README.md](../modules/README.md).
 Имя страницы документации — имя модуля в kebab-case ([development.md](development.md#документация)).
 
-Решения: [ADR 0001–0009](../adr/), [ADR 0010](../adr/0010-mysql-dual-support.md) заменён
-[ADR 0011 — MySQL 8.4 единственная СУБД](../adr/0011-mysql-only.md).
+Решения: [ADR 0001–0009](../adr/), [ADR 0010 — MySQL 8.4 единственная СУБД](../adr/0010-mysql.md).
 
 ## 2. Как проверить изменения
 
@@ -64,13 +65,13 @@ Reports, SafeSpeak, Scripts, Time, TimeOff, Users, Workflows. Назначени
 | Шаг | Где описано |
 |---|---|
 | Требования к runtime, сборке, миграциям, очереди, расписанию, файлам, health для DevOps Itstep | [itstep-app-handoff.md](itstep-app-handoff.md) |
-| Текущий Vercel-контур, заморозка автовыкладки (`VERCEL_DEPLOY_ENABLED`), ручной хотфикс замороженного релиза | [deploy.md](deploy.md#заморозка-vercel) |
-| Перенос данных `php artisan db:transfer-to-mysql`, порядок переключения, откат, удаление инструмента после переезда | [mysql-cutover.md](mysql-cutover.md) |
-| Резервирование и проверка восстановления (MySQL-доказательство — draft PR #174, PROD-48) | [backup-restore.md](backup-restore.md) |
+| Сборка и выкладка релиза, CI | [deploy.md](deploy.md#выкладка-релиза) |
+| Подготовка БД MySQL 8.4, учётные записи, миграции, TLS, cron | [deploy-mysql.md](deploy-mysql.md) |
+| Резервирование и проверка восстановления (`mysqldump`, PROD-48) | [backup-restore.md](backup-restore.md) |
 | Приёмка пилота | [pilot-acceptance.md](pilot-acceptance.md) |
 
-Замороженный боевой релиз — ветка и коммит указаны в [mysql-cutover.md](mysql-cutover.md#замороженный-боевой-релиз-до-cutover) (коммит `8875ac4e`). Миграции на целевой площадке
-запускает API: `POST /api/ops/migrate` с заголовком `X-Ops-Secret` (или `php artisan migrate --force` на сервере).
+Миграции на целевой площадке — `php artisan migrate --force` на сервере (или `POST /api/ops/migrate` с заголовком
+`X-Ops-Secret`, [deploy-mysql.md](deploy-mysql.md#миграции)).
 Фоновые задачи — `POST /api/ops/jobs/run` каждые 30 минут (`cron.yml`; на площадке Itstep — их планировщик,
 [ADR 0006](../adr/0006-cron-via-github-actions.md)). Проверка после выкладки — `GET /api/health` (поле `version` = SHA
 API) и `/build.json` SPA ([deploy.md](deploy.md#идентификатор-реально-собранной-ревизии)).
@@ -81,15 +82,13 @@ API) и `/build.json` SPA ([deploy.md](deploy.md#идентификатор-ре
 
 | Имя | Где хранится | Кто выдаёт |
 |---|---|---|
-| `DB_URL` (или `DB_HOST`/`DB_PORT`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD`), `MYSQL_ATTR_SSL_CA` | окружение API (Vercel env / площадка Itstep) | DevOps (сервер MySQL 8.4) |
-| `APP_KEY` (+ `APP_PREVIOUS_KEYS` после ротации) | окружение API; при переезде — **тот же** ключ ([mysql-cutover.md](mysql-cutover.md)) | владелец текущего Vercel-проекта |
+| `DB_URL` (или `DB_HOST`/`DB_PORT`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD`), `MYSQL_ATTR_SSL_CA` | окружение API (площадка Itstep) | DevOps (сервер MySQL 8.4) |
+| `APP_KEY` (+ `APP_PREVIOUS_KEYS` после ротации) | окружение API; постоянный, хранится вместе с резервными копиями ([deploy-mysql.md](deploy-mysql.md#резервные-копии)) | DevOps площадки Itstep |
 | `SUPERADMIN_EMAIL` | окружение API | владелец продукта |
 | `OPS_SECRET` | окружение API и секрет GitHub Actions с тем же значением | владелец репозитория |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (OAuth-клиент входа), `GOOGLE_REDIRECT_URI`, `GOOGLE_CONNECT_REDIRECT_URI` | окружение API; redirect URI регистрируются в Google Cloud | владелец Google Cloud-проекта |
 | Токены интеграций (AI Broker, Google Workspace OAuth, Telegram, WhatsApp, Viber, телефония и др.) | таблица `integration_secrets` (шифрование `APP_KEY`), ввод — «Адміністрування → Інтеграції» | суперадмин в интерфейсе ([integrations.md](../modules/integrations.md)) |
-| GitHub Actions secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_API`, `VERCEL_PROJECT_ID_WEB`, `OPS_SECRET` | Settings → Secrets and variables → Actions | владелец репозитория (zapleoceo) |
-| Переменная репозитория `VERCEL_DEPLOY_ENABLED` (не секрет) | Settings → Secrets and variables → Actions → Variables | владелец репозитория |
-| `TRANSFER_SOURCE_URL`, `TRANSFER_TARGET_URL` | переменные оболочки на время разового переноса | DevOps в окне переезда ([mysql-cutover.md](mysql-cutover.md)) |
+| GitHub Actions secret: `OPS_SECRET` | Settings → Secrets and variables → Actions | владелец репозитория (zapleoceo) |
 
 ## 5. Процессы и владельцы
 
@@ -101,7 +100,7 @@ API) и `/build.json` SPA ([deploy.md](deploy.md#идентификатор-ре
 - **Обязательные проверки** (ruleset «Protect main»): `backend`, `frontend`, `extension`, `security`, `docs`, `worklog`.
   Имена jobs не переименовываем ([deploy.md](deploy.md#раскладка-ci-параллельные-job-и-обязательные-проверки)).
 - **Метки:** `no-worklog` — PR без записи журнала (правки без изменения поведения), `no-tests-needed` — исключение
-  проверки тестов (ставит ревьюер), `preview` — preview-деплой Vercel (при включённой автовыкладке), `DO NOT MERGE` —
+  проверки тестов (ставит ревьюер), `DO NOT MERGE` —
   проверочный PR. После установки метки — Re-run job.
 - **Документация вместе с кодом:** правка модуля требует содержательной правки его `docs/modules/<модуль>.md` и теста
   того же модуля; каждый PR добавляет `docs/worklog.d/<YYYY-MM-DD>-<slug>.md`.
@@ -116,16 +115,15 @@ API) и `/build.json` SPA ([deploy.md](deploy.md#идентификатор-ре
 
 | ID | Что | Состояние |
 |---|---|---|
-| PROD-46, PROD-47 | Переезд на MySQL Itstep: репетиция переноса на копии прода и боевой перенос в окно DevOps | IN_PROGRESS |
+| PROD-46 | Развёртывание на MySQL 8.4 IT STEP ([deploy-mysql.md](deploy-mysql.md)) | DONE со стороны кода; площадка — DevOps |
 | PROD-48 | MySQL-бэкап и изолированное восстановление | IN_PROGRESS, draft PR #174 |
-| PROD-51 | Удаление инструмента переезда после cutover | QUEUED |
 | PROD-14 | Employee↔User lifecycle: прогон T01–T14 при включении автоматизации | IN_PROGRESS |
 | PROD-16, PROD-19–23, PROD-32, PROD-35, PROD-40 | Эксплуатация у DevOps, живые внешние потоки (Google, AI, мессенджеры, Clipper), пилот, авторизация Itstep | EXTERNAL_PENDING / OWNER_PENDING |
 | PROD-29 | Release/rollback/live acceptance | QUEUED |
 | PROD-30, 31, 34, 36, 38, 42 | Продуктовые хвосты ТЗ, зависимости модулей, рабочие копии, права импортированных сотрудников | QUEUED / OWNER_PENDING |
 
 **Оставшиеся риски безопасности** R1–R9 ([audit-2026-10.md](../security/audit-2026-10.md#оставшиеся-риски-и-владелец-решения)):
-права пользователя MySQL (DDL у приложения), TLS к MySQL, preview с секретами Vercel, `style-src 'unsafe-inline'`,
+права пользователя MySQL (DDL у приложения), TLS к MySQL, `style-src 'unsafe-inline'`,
 токен расширения в `chrome.storage.local`, старые токены без префикса `sinhrm_`, вложения base64 в БД, custom pattern
 secret scanning для `sinhrm_`, break-glass единственного суперадмина.
 

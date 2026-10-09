@@ -6,9 +6,3 @@ parameters:
     paths:
         - app
         - tests
-    ignoreErrors:
-        # One-off cutover tool keeps its config next to the code (merged by TransferServiceProvider, read only at boot);
-        # remove together with app/Modules/Core/Transfer after the cutover (docs/guides/mysql-cutover.md).
-        -
-            message: '#^Called ''env'' outside of the config directory#'
-            path: app/Modules/Core/Transfer/config.php

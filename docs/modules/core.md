@@ -150,8 +150,9 @@ IP клиента или адрес края фронтенд-проекта —
 15 минут). Тест: `tests/Feature/Core/TrustedProxiesTest.php`.
 
 ## Служебные эндпоинты `/api/ops/*`
-**Зачем.** Vercel не отдаёт защищённый `DATABASE_URL` наружу (`vercel pull` получает маску), поэтому миграции
-запускает сам API — доступ к БД не покидает Vercel.
+**Зачем.** Миграции, фоновые задачи и демо-данные запускаются вызовом API с `X-Ops-Secret`, без доступа к БД и к
+shell хоста у вызывающего (GitHub Actions). На IT STEP миграции рекомендуется запускать консольным
+`php artisan migrate --force` отдельной учётной записью ([deploy-mysql.md](../guides/deploy-mysql.md#миграции)).
 
 | Эндпоинт | Что делает |
 |---|---|
@@ -261,52 +262,21 @@ Vercel обрезает длинные сообщения, и текст оши�
 формы хранится в браузере и стирается после сохранения.
 
 ## SHA сборки Web и API
-Deploy генерирует `backend/build.json` и `frontend/public/build.json` из `git rev-parse HEAD`
-после checkout `workflow_run.head_sha`, до сборки. SHA событий `github.sha` и переменные Vercel не используются:
-в workflow_run они могут относиться к main, а preview собирается из другой ревизии.
+Перед сборкой релиза `node scripts/stamp-build.mjs` генерирует `backend/build.json` и `frontend/public/build.json` из
+`git rev-parse HEAD` собираемого checkout ([deploy.md](../guides/deploy.md#идентификатор-реально-собранной-ревизии)).
+Переменные CI (`GITHUB_SHA` и т.п.) не используются: они могут относиться к другой ревизии.
 API `GET /api/health` возвращает полный SHA в существующем поле `version`; `ok`, `checks` и HTTP 200/503 сохранены.
 Если метаданных нет либо SHA некорректен, возвращается `dev`; APP_VERSION не подтверждает происхождение сборки.
 Web `GET /build.json` отдаёт только `{sha}` как статический asset с `Cache-Control: no-store`.
-SHA Web и API сверяют отдельно: production gate может обновить только один проект, поэтому они законно различаются.
-Generated файлы игнорируются git; новых обязательных env нет. Ручной обход Deploy без stamping не доказывает SHA.
+SHA Web и API сверяют отдельно: релиз может обновить только одну часть, поэтому они законно различаются.
+Generated файлы игнорируются git; новых обязательных env нет. Сборка без stamping не доказывает SHA.
 Проверка: `node --test scripts/stamp-build.test.mjs`, backend `HealthTest`, `BuildVersionTest`.
-После разрешённого deploy сравнить `/build.json` и `/api/health` с HEAD конкретного успешного Deploy checkout.
+После выкладки сравнить `/build.json` и `/api/health` с HEAD собранного checkout.
 До этого runtime provenance не считается подтверждённым.
 
-## SQL на MySQL 8.4 (2026-10-08; только MySQL — с ADR 0011)
+## SQL на MySQL 8.4 (2026-10-08)
 
-Единственная СУБД — MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md), заменил двойную поддержку [ADR 0010](../adr/0010-mysql-dual-support.md)). `DB_CONNECTION` по умолчанию — `mysql`; CI-страж `scripts/mysql-only-guard.mjs` (job `lint`) падает, если упоминание другой СУБД появляется вне разового инструмента переезда.
+Единственная СУБД — MySQL 8.4 ([ADR 0010](../adr/0010-mysql.md)). `DB_CONNECTION` по умолчанию — `mysql`; CI-страж `scripts/mysql-only-guard.mjs` (job `lint`) падает на любое упоминание другой СУБД или её SQL в репозитории — исключений нет. Развёртывание БД (учётные записи, миграции, TLS, cron) — [deploy-mysql.md](../guides/deploy-mysql.md).
 
 - `Core\Support\Database\Sql` — то, чего нет в билдере Laravel на MySQL: `orderByNullsLast/First` (в MySQL нет `NULLS LAST/FIRST`: `expr is null asc/desc, expr dir`), `whereContainsCi` (`lower(..) like ? escape '!'`, подстановочные знаки литеральны), `jsonText` (`json_unquote(json_extract(..))` — то же, что Laravel строит для `'col->key'`), `castText` (`cast(.. as char(n))`, MySQL не знает `CAST AS VARCHAR/TEXT`). API прежний; `jsonText`/`castText` с драйвером, отличным от `mysql`/`mariadb`, — `InvalidArgumentException`. Выражение — только идентификатор колонки (`col`/`table.col`); подзапрос или вычисляемое — явным `new Illuminate\Database\Query\Expression(...)`, иная строка (пробелы, кавычки, `;`, `--`) → `InvalidArgumentException`. `jsonText`: JSON null даёт строку `'null'`, отсутствующий ключ — SQL NULL. Апсерты — `upsert()/insertOrIgnore()/insertGetId()` Laravel, JSON в `where` — `'col->key'`/`whereJsonContains`.
 - Соединение `mysql` (`config/database.php`): `utf8mb4`, collation `utf8mb4_0900_ai_ci` (`DB_COLLATION`), `strict` (включая `ONLY_FULL_GROUP_BY`), сессия `+00:00`, InnoDB. Проверка — `PortableSqlTest` (job `tests` на MySQL 8.4: NULLS LAST/FIRST, «содержит» с кириллицей и `é = e`, JSON, сессия 8.4/UTC/strict), `SqlTest`.
-
-## Разовый инструмент переезда `db:transfer-to-mysql` (2026-10-08, PROD-47; удалить после cutover)
-
-Команда переноса боевых данных на MySQL 8.4 — единственное исключение из «только MySQL» ([ADR 0011](../adr/0011-mysql-only.md)). Собрана в одном месте, чтобы после переезда удалить её одним коммитом:
-
-- код — `app/Modules/Core/Transfer/` (команда, сервисы, контракт `CollationKeys`, конфиг `db_transfer.*` в `Transfer/config.php`, `TransferServiceProvider`); Core подключает его одной строкой в `CoreServiceProvider::register()`; код приложения инструмент не вызывает;
-- тесты — `tests/Unit/Core/Transfer/*` (job `tests`), `tests/Feature/Core/Transfer/MysqlDataTransferTest` (workflow `MySQL data transfer`, необязательный);
-- устройство, порядок переключения, откат, проверка и чек-лист удаления — [mysql-cutover.md](../guides/mysql-cutover.md).
-- `--without-secrets` (2026-10-08) — режим тестового дампа (передача DevOps/третьим лицам, нет прод-`APP_KEY`): таблицы
-  из `KeyCheck::ENCRYPTED` (сейчас `integration_secrets`) не копируются и остаются пустыми, `APP_KEY` не проверяется,
-  `--verify` ожидает в них 0 строк, итог печатает пропущенные таблицы с числом строк источника. Правила — `WithoutSecrets`
-  (unit `WithoutSecretsTest`), `KeyCheckTest` ловит новую модель с `encrypted`, не внесённую в список; feature —
-  `MysqlDataTransferTest::test_without_secrets_needs_no_app_key_and_leaves_encrypted_tables_empty`. Без флага — прежний
-  fail-closed. Для боевого cutover флаг запрещён — [mysql-cutover.md](../guides/mysql-cutover.md#тестовый-дамп-без-секретов---without-secrets).
-- Проверка «цель ≠ рабочая БД приложения» по `@@server_uuid` больше не делает исключения для приложения на другом драйвере: приложение только на MySQL, несравнимое соединение — отказ (fail-closed); feature-тест запускает команду с приложением на соседней БД MySQL.
-- Миграции данных после заморозки (2026-10-08, #183): `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS` — список миграций
-  `main`, которых нет на замороженном источнике переноса и которые не меняют схему (сейчас одна:
-  `2026_10_28_100001_mark_sent_offer_touchpoints`, пометка писем отправленных офферов). Если цель уже мигрирована
-  текущим релизом, такие миграции «лишние на цели» не считаются расхождением: preflight/`--verify` печатают строку
-  `info`, а таблицы и колонки сравниваются строго, как раньше. После копирования команда снимает их с учёта в
-  `migrations` цели (`SchemaCheck::requeuePostFreeze` → `SchemaInspector::forgetTargetMigrations`, единственная запись в
-  эту таблицу) и печатает напоминание: `php artisan migrate --force` повторит их по перенесённым строкам (до копирования
-  они отработали по пустой таблице). Миграцию со схемой в список не добавлять — это спрятало бы реальный дрейф. Тест —
-  `MysqlDataTransferTest::test_post_freeze_data_migration_is_accepted_and_requeued_after_copy`.
-- Устаревшие таблицы только в источнике (2026-10-08): `SchemaCheck::LEGACY_SOURCE_ONLY_TABLES` (сейчас `app_state` —
-  остаток раннего прототипа на боевом источнике, на который нет ни одной ссылки в коде). Есть в источнике и нет на цели —
-  строка `info` «устаревшая таблица только в источнике, не переносится: app_state (N строк)» в preflight и итоговой
-  сверке, не `FAIL`; копирование и `--verify` её не трогают (`SchemaInspector::tables()` — пересечение сторон, число строк —
-  `SchemaInspector::sourceRowCount`). Появилась и на цели — `FAIL`, список не маскирует дрейф. В список — только таблицы
-  без ссылок в коде (unit `SchemaCheckTest` это проверяет). Правила и тесты —
-  [mysql-cutover.md](../guides/mysql-cutover.md#допустимые-расхождения-схемы).

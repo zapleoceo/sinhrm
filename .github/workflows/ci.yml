@@ -20,7 +20,7 @@ jobs:
     defaults: { run: { working-directory: backend } }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # MySQL 8.4 only (ADR 0011): no mention of the former database outside the one-off cutover tool (Core/Transfer).
+      # MySQL 8.4 only (ADR 0010): no mention of another database or its SQL anywhere in the repository (no allowlist).
       - name: MySQL-only guard
         working-directory: .
         run: node --test scripts/mysql-only-guard.test.mjs && node scripts/mysql-only-guard.mjs
@@ -48,7 +48,7 @@ jobs:
       - name: PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
-  # MySQL 8.4 — the only supported database (ADR 0011). Required through the `backend` aggregator.
+  # MySQL 8.4 — the only supported database (ADR 0010). Required through the `backend` aggregator.
   tests:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: backend } }

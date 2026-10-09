@@ -8,9 +8,9 @@
 ## Что где хранится
 | Что | Где | Почему |
 |---|---|---|
-| `DB_URL`, `APP_KEY`, `SUPERADMIN_EMAIL` | переменные окружения Vercel | без них приложение не может стартовать и расшифровать остальное |
-| `OPS_SECRET` (заголовок `X-Ops-Secret` для `/api/ops/*`: миграции, cron, демо-данные; `config/ops.php`) | переменная окружения API в Vercel и секрет GitHub Actions с тем же значением | GitHub Actions вызывает служебные эндпоинты без доступа к БД |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (OAuth-клиент **входа**) | переменные окружения Vercel | нужны до первого входа, когда админки ещё нет; Google-интеграции (Gmail и т.п.) — в `integration_secrets` |
+| `DB_URL`, `APP_KEY`, `SUPERADMIN_EMAIL` | переменные окружения хостинга | без них приложение не может стартовать и расшифровать остальное |
+| `OPS_SECRET` (заголовок `X-Ops-Secret` для `/api/ops/*`: миграции, cron, демо-данные; `config/ops.php`) | переменная окружения API на хостинге и секрет GitHub Actions с тем же значением | GitHub Actions вызывает служебные эндпоинты без доступа к БД |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (OAuth-клиент **входа**) | переменные окружения хостинга | нужны до первого входа, когда админки ещё нет; Google-интеграции (Gmail и т.п.) — в `integration_secrets` |
 | Токены интеграций (AI Broker, OpenRouter, Google, Telegram, телефония…) | таблица `integration_secrets`, шифрование `APP_KEY` (AES-256, `Crypt`) | меняются из админки без деплоя |
 | OAuth-токены Google (Gmail, Calendar, Sheets: `refresh_token`, `access_token`) | `integration_secrets` через `SecretVault` (ключи `google_*`) | появляются после согласия суперадмина («Підключити Google»), в API и логах не показываются никогда; код авторизации и токены не пишутся в URL и лог — [google-workspace.md](../modules/google-workspace.md) |
 | Справочники компании, сотрудники, кандидаты | MySQL 8.4 (БД приложения) | в репозиторий не попадают никогда |
@@ -31,16 +31,16 @@
 вычищаются. Подробнее — [modules/integrations.md](../modules/integrations.md).
 
 ## Трассировки без аргументов
-В `backend/api/index.php` (точка входа Vercel) включено `zend.exception_ignore_args=1`: стек исключений пишется
+Включено `zend.exception_ignore_args=1` (Vercel-адаптер `backend/api/index.php` задаёт сам, на PHP-FPM — настройка хостинга, [itstep-app-handoff.md](../guides/itstep-app-handoff.md)): стек исключений пишется
 **без значений аргументов функций**. Иначе токен, переданный аргументом (например, в HTTP-клиент или `Crypt`),
 мог бы попасть в лог или отчёт об ошибке через трассировку. Это дополнительная защита к `SecretScrubber`
 (тот вычищает секреты из текста исключения). Локальные тесты и `artisan` используют настройку `php.ini`.
 
 ## Правила
 1. Секрет никогда не пишется в код, логи, ответы API, описание PR и документацию.
-2. CI (job `security`) прогоняет `gitleaks` по **всей** истории git на каждом PR и push, плюс `composer audit` и `npm audit` (high+); в репозитории включены GitHub secret scanning и push protection. Все GitHub Actions закреплены по SHA коммита (тег — в комментарии; обновляет dependabot), у каждого job минимальные `permissions`, секреты попадают в shell только через `env` (токен Vercel — переменная `VERCEL_TOKEN`, не аргумент `--token`). Реакция на красный audit — [audit-2026-10.md](../security/audit-2026-10.md).
+2. CI (job `security`) прогоняет `gitleaks` по **всей** истории git на каждом PR и push, плюс `composer audit` и `npm audit` (high+); в репозитории включены GitHub secret scanning и push protection. Все GitHub Actions закреплены по SHA коммита (тег — в комментарии; обновляет dependabot), у каждого job минимальные `permissions`, секреты попадают в shell только через `env`, не аргументами команд. Реакция на красный audit — [audit-2026-10.md](../security/audit-2026-10.md).
 3. Preview-окружения и тесты работают **только на синтетических данных** — БД preview и CI не копирует prod.
-4. Секреты GitHub Actions: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID_API`, `VERCEL_PROJECT_ID_WEB` (`deploy.yml`), `OPS_SECRET` (`deploy.yml`, `cron.yml`, `demo-fill.yml`); переменная репозитория `VERCEL_DEPLOY_ENABLED` — не секрет ([deploy.md](../guides/deploy.md#заморозка-vercel)).
+4. Секрет GitHub Actions: `OPS_SECRET` (`cron.yml`, `demo-fill.yml`) — [deploy.md](../guides/deploy.md).
 5. Ротация `APP_KEY`: новый ключ в `APP_KEY`, старый — в `APP_PREVIOUS_KEYS`: Laravel расшифровывает старые шифротексты предыдущим ключом, а при сохранении секрета в «Интеграциях» шифрует его новым. Отдельной artisan-команды перешифровки нет; старый ключ держим в `APP_PREVIOUS_KEYS`, пока все секреты не сохранены заново.
    Снимки аудитории опросов (`survey_wave_members`) — HMAC от `APP_KEY`, у каждого записан `key_id` (16 знаков
    SHA-256 от метки и ключа, не сам ключ). Старый снимок пересчитывается под новый ключ при следующем закрытии

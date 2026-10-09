@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-/** Sql helper on the real MySQL 8.4 database (CI job `tests`, ADR 0011): NULLS LAST/FIRST, contains, JSON, session. */
+/** Sql helper on the real MySQL 8.4 database (CI job `tests`, ADR 0010): NULLS LAST/FIRST, contains, JSON, session. */
 final class PortableSqlTest extends TestCase
 {
     use RefreshDatabase;
@@ -69,7 +69,7 @@ final class PortableSqlTest extends TestCase
     }
 
     /**
-     * utf8mb4_0900_ai_ci (ADR 0011): the search ignores case and Latin diacritics (é = e), Cyrillic й is not folded into и.
+     * utf8mb4_0900_ai_ci (ADR 0010): the search ignores case and Latin diacritics (é = e), Cyrillic й is not folded into и.
      * Pinned so a collation change does not slip by.
      */
     public function test_contains_ignores_latin_diacritics_but_keeps_cyrillic_short_i(): void

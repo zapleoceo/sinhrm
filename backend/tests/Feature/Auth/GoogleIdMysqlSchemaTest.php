@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\MysqlSchemaAssertions;
 use Tests\TestCase;
 
-/** users.google_id is an opaque id: binary collation on MySQL 8.4 (ADR 0011), unique, case-sensitive. */
+/** users.google_id is an opaque id: binary collation on MySQL 8.4 (ADR 0010), unique, case-sensitive. */
 final class GoogleIdMysqlSchemaTest extends TestCase
 {
     use MysqlSchemaAssertions, RefreshDatabase;

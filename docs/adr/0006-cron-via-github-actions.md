@@ -7,7 +7,7 @@
 
 **Решение.** `.github/workflows/cron.yml` каждые 30 минут (`*/30 * * * *`, `concurrency: cron-jobs`) вызывает
 `POST /api/ops/jobs/run` с заголовком `X-Ops-Secret`; API сам выполняет все зарегистрированные
-`Core\Contracts\ScheduledJob`. Миграции — тем же способом: `POST /api/ops/migrate` из `deploy.yml`. Группа `ops`
+`Core\Contracts\ScheduledJob`. Миграции можно запускать тем же способом: `POST /api/ops/migrate`. Группа `ops`
 закрыта middleware `RequireOpsSecret`. В публичный лог Actions попадают только итог и счётчики.
 
 **Последствия.** Расписание бесплатное и лежит в репозитории; точность — «около 30 минут», GitHub может задерживать

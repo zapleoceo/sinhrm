@@ -7,7 +7,7 @@
 ## Процесс (обязателен)
 1. Задача → ветка от `main`: `feat/<кратко>`, `fix/<кратко>`, `docs/<кратко>`, `chore/<кратко>`.
 2. Код пишет Luna — владелец выбрал недорогую модель 05.10.2026; сохранённые изменения SOL продолжаются в их ветках. Коммиты — Conventional Commits (`feat: …`, `fix: …`).
-3. Pull Request по шаблону: что, зачем, **доказательство** (вывод CI, запрос к preview-API), документация.
+3. Pull Request по шаблону: что, зачем, **доказательство** (вывод CI, реальный запрос к API), документация.
 4. CI (GitHub Actions) должен быть зелёным: линт, статанализ, тесты, покрытие, сборка, gitleaks, проверка документации.
 5. Выводы перепроверяет отдельный агент. Независимый агент Astra проверяет локальный и GitHub diff: SOLID, DRY, модульность, безопасность, тесты, документация. Без approve актуального commit — не мержим. Это текущая инструкция владельца; формальный GitHub approval не следует приписывать агенту без опубликованного review.
 6. Разрешённый merge только squash в `main` → автодеплой в prod → smoke-проверка `/api/health` и изменённых сценариев. Общая работа над production backlog не выбирает нерешённые product/security gates. [Раунды и критерии production](../product/production-backlog.md).
@@ -59,9 +59,9 @@ PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` м
 ещё ждут — [tables.md](tables.md).
 
 ## Проверка входа и сессий
-Вход через Google работает только на prod-домене `sinhrm.vercel.app`: redirect URI в Google зарегистрирован только
-для него, а Sanctum считает stateful только этот домен. Preview-деплои проверяют API и интерфейс без входа;
-сценарии авторизации — Feature-тестами и smoke на проде после merge.
+Вход через Google работает только на боевом домене: redirect URI в Google зарегистрирован для него (`GOOGLE_REDIRECT_URI`),
+а Sanctum считает stateful только домены из `SANCTUM_STATEFUL_DOMAINS` ([itstep-app-handoff.md](itstep-app-handoff.md)).
+Сценарии авторизации — Feature-тестами и smoke на проде после выкладки.
 
 ## Файлы и временные папки
 
@@ -76,16 +76,15 @@ PR только в `docs/` и `.github/`, dependabot. Метку `no-worklog` м
 - Ledger метрик агентов (`D:\Projects\HRM\docs\tasks\*.agent-metrics.tsv`) — телеметрия процесса, не коммитится, живёт в `D:\Projects\`.
 
 ## Локально
-Локальную среду не поднимаем: тесты и сборка выполняются в CI, проверка — на preview-деплое PR.
+Локальную среду не поднимаем: тесты и сборка выполняются в CI (preview-деплоя PR нет — [deploy.md](deploy.md)).
 
 ## База данных: только MySQL 8.4
 
-Единственная СУБД — MySQL 8.4 ([ADR 0011](../adr/0011-mysql-only.md)); другие СУБД не поддерживаются (замороженный
-боевой релиз до переезда и правки в нём — только по решению владельца, [mysql-cutover.md](mysql-cutover.md)). Правила для нового кода: синтаксис других
+Единственная СУБД — MySQL 8.4 ([ADR 0010](../adr/0010-mysql.md)); другие СУБД не поддерживаются. Правила для нового кода: синтаксис других
 СУБД (регистронезависимый `LIKE`-оператор, `NULLS FIRST/LAST`, `->>`/`@>` в сыром SQL, `::type`, `ON CONFLICT`/`RETURNING`, `CAST AS VARCHAR/TEXT`)
 запрещён; вместо него `Core\Support\Database\Sql` (`orderByNullsLast/First`, `whereContainsCi`, `jsonText`, `castText`)
 и билдер Laravel (`upsert`, `insertOrIgnore`, `insertGetId`, `'col->key'`, `whereJsonContains`). Веток по
-`DB::getDriverName()` в модулях и миграциях нет; код другой СУБД допустим только в разовом `db:transfer-to-mysql` (`backend/app/Modules/Core/Transfer/`), это проверяет CI-страж `scripts/mysql-only-guard.mjs` в job `lint`. Миграции: без
+`DB::getDriverName()` в модулях и миграциях нет. CI-страж `scripts/mysql-only-guard.mjs` (job `lint`) падает на любое упоминание другой СУБД, её драйвера и хостинга и на её SQL — во всём репозитории, включая документацию и журнал; исключений нет (пропускаются только lock-файлы зависимостей). Миграции: без
 `DEFAULT` у `json/text`, `unique` не на `TEXT`, непрозрачные идентификаторы — `->collation('utf8mb4_bin')`, одна
 таблица/индекс на миграцию (DDL в MySQL не транзакционный).
 

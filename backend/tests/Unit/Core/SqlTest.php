@@ -9,7 +9,7 @@ use Illuminate\Database\Query\Builder;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
-/** SQL fragments of the MySQL-only helper (ADR 0011) and its input guards. */
+/** SQL fragments of the MySQL-only helper (ADR 0010) and its input guards. */
 final class SqlTest extends TestCase
 {
     public function test_json_text_is_the_expression_laravel_compiles_for_column_arrow_key(): void
@@ -56,7 +56,7 @@ final class SqlTest extends TestCase
         }
     }
 
-    /** Only MySQL is supported (ADR 0011): asking for another dialect is a programming error. */
+    /** Only MySQL is supported (ADR 0010): asking for another dialect is a programming error. */
     public function test_drivers_other_than_mysql_are_rejected(): void
     {
         foreach (['sqlite', 'sqlsrv', 'unknown'] as $driver) {

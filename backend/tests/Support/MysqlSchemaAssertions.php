@@ -6,7 +6,7 @@ namespace Tests\Support;
 
 use Illuminate\Support\Facades\DB;
 
-/** Schema facts of the MySQL 8.4 test database (ADR 0011), read from information_schema of the current database. */
+/** Schema facts of the MySQL 8.4 test database (ADR 0010), read from information_schema of the current database. */
 trait MysqlSchemaAssertions
 {
     protected function assertColumnCollation(string $table, string $column, string $collation): void
