@@ -3,7 +3,7 @@
 ## State
 
 - Время: 2026-10-09 06:24 UTC.
-- Область: только ноутбук; общий MySQL 3307, Vercel, Neon, stage и Jira не менялись.
+- Область: только ноутбук; общий MySQL 3307, Vercel, stage, Jira и удалённые ресурсы не менялись.
 - Рабочая копия: `D:/Projects/HRM/worktrees/local-mysql-runtime`, ветка `feat/local-mysql-runtime`. Источники: PR #174 `be14ee16` и PR #215 `75728547`; объединение и локальные исправления сохранены в этой рабочей ветке; итоговый SHA смотреть через `git rev-parse HEAD`.
 - MySQL: отдельный Community Server 8.4.8 на `127.0.0.1:3308`; UTC, `utf8mb4_0900_ai_ci`, strict SQL mode, packet 64 MiB, 0 таблиц вне InnoDB. Пароли и APP_KEY созданы только локально в закрытых файлах.
 - Базы: `sinhrm_local`, `sinhrm_restore_check`, `sinhrm_migration_probe`. На пробной базе полный `migrate` → `migrate:reset` → `migrate` прошёл; регрессионный тест отката `generalize_tasks_table` прошёл (10 assertions).
