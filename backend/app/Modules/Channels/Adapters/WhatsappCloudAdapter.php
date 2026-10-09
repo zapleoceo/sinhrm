@@ -16,6 +16,7 @@ use App\Modules\Channels\Enums\WebhookAuth;
 use App\Modules\Channels\Exceptions\ChannelException;
 use App\Modules\Channels\Support\Payload;
 use App\Modules\Channels\Support\ProviderHttp;
+use App\Modules\Channels\Support\WebhookCredentials;
 use App\Modules\Integrations\Definitions\WhatsappCloudDefinition;
 use App\Modules\Integrations\DTO\IntegrationConfig;
 use App\Modules\Recruiting\Enums\Channel;
@@ -32,6 +33,9 @@ use Illuminate\Support\Carbon;
 final readonly class WhatsappCloudAdapter implements ChannelAdapter, HandshakeResponder, MessageSender
 {
     public const string SIGNATURE_HEADER = 'X-Hub-Signature-256';
+
+    /** Required prefix of the signature; the hex after it is lower case, compared exactly. */
+    public const string SIGNATURE_PREFIX = 'sha256=';
 
     public const int WINDOW_HOURS = 24;
 
@@ -58,12 +62,8 @@ final readonly class WhatsappCloudAdapter implements ChannelAdapter, HandshakeRe
     public function verify(Request $request, IntegrationConfig $config): bool
     {
         $secret = $config->secret('app_secret');
-        $given = $request->header(self::SIGNATURE_HEADER);
-        if ($secret === null || ! is_string($given)) {
-            return false;
-        }
 
-        return hash_equals('sha256='.hash_hmac('sha256', $request->getContent(), $secret), $given);
+        return $secret !== null && WebhookCredentials::signatureMatches($request, $secret, self::SIGNATURE_HEADER, prefix: self::SIGNATURE_PREFIX, ignoreCase: false);
     }
 
     public function handshake(Request $request, IntegrationConfig $config): ?string

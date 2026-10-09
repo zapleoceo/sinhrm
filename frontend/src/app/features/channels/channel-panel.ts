@@ -9,12 +9,14 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { Observable } from 'rxjs';
 import { IntegrationStatus } from '../integrations/integrations.model';
 import { ChannelInfo } from './channels.model';
-import { ChannelsService, channelErrorKey, webhookUrlForConsole } from './channels.service';
+import { ChannelsService, channelErrorKey, tokenHeaderForConsole } from './channels.service';
 import { NotifyService } from '../../core/ui/notify.service';
 
 /**
  * Channel part of an integration card (superadmin): webhook URL to paste in the provider console (copy button),
- * "Register webhook" (Telegram, Viber), "Send test" to a recipient typed here, "Simulate event" in demo mode.
+ * for telephony the header that carries the token (placeholder only — the secret is never shown) and a warning while
+ * the deprecated ?token= is still allowed (HRM-26), "Register webhook" (Telegram, Viber), "Send test" to a recipient
+ * typed here, "Simulate event" in demo mode.
  * Renders nothing for an integration that is not a channel.
  */
 @Component({
@@ -27,11 +29,27 @@ import { NotifyService } from '../../core/ui/notify.service';
         <h4>{{ 'channels.panel.title' | transloco }}</h4>
         <p class="muted">{{ 'channels.auth.' + ch.auth | transloco }}</p>
         <div class="url">
-          <code>{{ consoleUrl() }}</code>
-          <button mat-icon-button type="button" (click)="copy()" [attr.aria-label]="'channels.panel.copy' | transloco" [title]="'channels.panel.copy' | transloco">
+          <code>{{ ch.webhook_url }}</code>
+          <button mat-icon-button type="button" (click)="copy(ch.webhook_url, 'channels.panel.copied')" [attr.aria-label]="'channels.panel.copy' | transloco" [title]="'channels.panel.copy' | transloco">
             <mat-icon>content_copy</mat-icon>
           </button>
         </div>
+        @if (tokenHeader(); as header) {
+          <p class="muted hint">{{ 'channels.panel.tokenHeaderTitle' | transloco }}</p>
+          <div class="url">
+            <code>{{ header }}</code>
+            <button mat-icon-button type="button" (click)="copy(header, 'channels.panel.headerCopied')" [attr.aria-label]="'channels.panel.copyHeader' | transloco" [title]="'channels.panel.copyHeader' | transloco">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+          <p class="muted hint">{{ 'channels.panel.tokenHeaderHint' | transloco }}</p>
+        }
+        @if (ch.legacy_query_token) {
+          <p class="legacy" role="status">
+            <mat-icon aria-hidden="true">warning</mat-icon>
+            <span>{{ 'channels.panel.legacyQueryToken' | transloco }}</span>
+          </p>
+        }
         @if (ch.handshake) {
           <p class="muted hint">{{ 'channels.panel.handshakeHint' | transloco }}</p>
         }
@@ -77,6 +95,11 @@ import { NotifyService } from '../../core/ui/notify.service';
     .url { display: flex; align-items: center; gap: 0.25rem; }
     code { overflow-wrap: anywhere; font-size: 0.85rem; padding: 0.25rem 0.5rem; border-radius: 6px; background: var(--mat-sys-surface-container); }
     .hint { font-size: 0.85rem; margin: 0; }
+    .legacy {
+      display: flex; gap: 0.4rem; align-items: flex-start; margin: 0; padding: 0.5rem 0.6rem; font-size: 0.85rem;
+      border-left: 3px solid var(--app-warning); border-radius: 4px; background: color-mix(in srgb, var(--app-warning) 10%, transparent);
+    }
+    .legacy mat-icon { flex-shrink: 0; width: 18px; height: 18px; font-size: 18px; color: var(--app-warning); }
     .buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .test { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     .grow { flex: 1; min-width: 12rem; }
@@ -95,9 +118,9 @@ export class ChannelPanel implements OnInit {
 
   protected readonly info = signal<ChannelInfo | null>(null);
   protected readonly busy = signal(false);
-  protected readonly consoleUrl = computed(() => {
+  protected readonly tokenHeader = computed(() => {
     const info = this.info();
-    return info ? webhookUrlForConsole(info, this.i18n.translate('channels.panel.tokenPlaceholder')) : '';
+    return info ? tokenHeaderForConsole(info, this.i18n.translate('channels.panel.tokenPlaceholder')) : null;
   });
   protected readonly testForm = inject(NonNullableFormBuilder).group({
     to: ['', [Validators.required, Validators.maxLength(64)]],
@@ -111,9 +134,9 @@ export class ChannelPanel implements OnInit {
     });
   }
 
-  protected copy(): void {
-    if (this.clipboard.copy(this.consoleUrl())) {
-      this.notify.show('channels.panel.copied', { duration: 3000 });
+  protected copy(text: string, okKey: string): void {
+    if (this.clipboard.copy(text)) {
+      this.notify.show(okKey, { duration: 3000 });
     }
   }
 

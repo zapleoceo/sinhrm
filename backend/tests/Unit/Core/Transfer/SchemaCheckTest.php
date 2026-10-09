@@ -60,6 +60,19 @@ final class SchemaCheckTest extends TestCase
         $this->assertSame([], $report->findings());
     }
 
+    /** Rule of POST_FREEZE_DATA_MIGRATIONS: each one exists and is data-only (no Schema builder, no DDL). */
+    public function test_post_freeze_migrations_exist_and_do_not_change_the_schema(): void
+    {
+        $backend = dirname(__DIR__, 4);
+        $files = glob($backend.'/app/Modules/*/Database/Migrations/*.php') ?: [];
+        $byName = array_combine(array_map(static fn (string $f): string => basename($f, '.php'), $files), $files);
+        foreach (SchemaCheck::POST_FREEZE_DATA_MIGRATIONS as $name) {
+            $this->assertArrayHasKey($name, $byName, $name);
+            $code = (string) file_get_contents($byName[$name]);
+            $this->assertDoesNotMatchRegularExpression('/\bSchema::|\b(CREATE|ALTER|DROP)\s+(TABLE|INDEX)\b/i', $code, $name);
+        }
+    }
+
     /** Rule of the list: only tables that no code references (the transfer tool itself excluded). */
     public function test_legacy_tables_are_not_referenced_by_the_code(): void
     {

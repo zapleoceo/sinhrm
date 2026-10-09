@@ -74,10 +74,24 @@ final class ChannelAdminApiTest extends TestCase
         $this->assertSame('demo', $data['telegram_business']['mode']);
         $this->assertTrue($data['telegram_business']['can_register']);
         $this->assertTrue($data['whatsapp_cloud']['handshake']);
-        $this->assertSame('query_token', $data['binotel']['auth']);
+        $this->assertSame('header_token', $data['binotel']['auth']);
+        $this->assertFalse($data['binotel']['legacy_query_token']);
+        $this->assertFalse($data['telegram_business']['legacy_query_token']);
         $this->assertTrue($data['ringostat']['can_call']);
         $this->assertFalse($data['phonet']['can_send']);
         $this->assertStringNotContainsString(self::TG_SECRET, (string) json_encode($data));
+    }
+
+    public function test_overview_flags_the_deprecated_query_token_without_showing_the_token(): void
+    {
+        $this->channel('ringostat', IntegrationStatus::Demo, ['webhook_token' => self::PHONE_TOKEN], ['project_id' => '1', 'webhook_query_token' => 'on']);
+        $response = $this->actingAs($this->superadmin)->getJson('/api/channels/admin')->assertOk();
+        $data = $response->collect('data')->keyBy('key');
+
+        $this->assertTrue($data['ringostat']['legacy_query_token']);
+        $this->assertFalse($data['phonet']['legacy_query_token']);
+        $this->assertStringEndsWith('/api/webhooks/ringostat', $data['ringostat']['webhook_url']);
+        $this->assertStringNotContainsString(self::PHONE_TOKEN, (string) $response->getContent());
     }
 
     public function test_register_telegram_webhook_stores_a_new_secret_that_webhooks_then_use(): void

@@ -84,7 +84,10 @@ export function channelErrorKey(error: unknown): string {
   return apiErrorStatus(error) === 403 ? 'recruiting.errors.forbidden' : 'channels.errors.generic';
 }
 
-/** URL to paste in the provider console; telephony adds the shared token as a placeholder (the value is never shown). */
-export function webhookUrlForConsole(info: ChannelInfo, tokenPlaceholder: string): string {
-  return info.auth === 'query_token' ? `${info.webhook_url}?token=${tokenPlaceholder}` : info.webhook_url;
+/** Header the provider must send with every telephony webhook (HRM-26); a placeholder, the secret is never shown. */
+export const WEBHOOK_TOKEN_HEADER = 'X-Webhook-Token';
+
+/** "X-Webhook-Token: <placeholder>" for header-token webhooks (telephony), null for the others. */
+export function tokenHeaderForConsole(info: ChannelInfo, tokenPlaceholder: string): string | null {
+  return info.auth === 'header_token' ? `${WEBHOOK_TOKEN_HEADER}: ${tokenPlaceholder}` : null;
 }

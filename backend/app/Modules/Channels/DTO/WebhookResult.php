@@ -14,5 +14,7 @@ final readonly class WebhookResult
         public int $events,
         public array $touchpoints,
         public int $created,
+        /** Accepted via the deprecated ?token= (telephony transitional flag): the answer carries a Deprecation header. */
+        public bool $deprecatedAuth = false,
     ) {}
 }

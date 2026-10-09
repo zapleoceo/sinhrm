@@ -11,8 +11,9 @@ use App\Modules\Channels\Providers\ChannelsServiceProvider;
 use App\Modules\Integrations\Providers\IntegrationsServiceProvider;
 use Illuminate\Support\Facades\Route;
 
-// Provider webhooks: no session, verified per provider (signature / secret header / ?token=), rate limited, ≤ 1 MB.
-// {channelKey} = adapter key (unknown → 404); a switched-off integration → 404; bad signature → 403.
+// Provider webhooks: no session, verified per provider (signature / secret header; telephony: X-Webhook-Token,
+// Authorization: Bearer or X-Signature, legacy ?token= only behind its flag), rate limited, ≤ 1 MB.
+// {channelKey} = adapter key (unknown → 404); a switched-off integration → 404; bad signature / token → 401.
 Route::middleware(['throttle:'.ChannelsServiceProvider::WEBHOOK_LIMITER, LimitWebhookBody::class])->group(function (): void {
     Route::post('webhooks/{channelKey}', [WebhookController::class, 'receive'])->name('channels.webhook');
     Route::get('webhooks/{channelKey}', [WebhookController::class, 'handshake'])->name('channels.webhook.handshake');

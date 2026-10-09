@@ -20,5 +20,7 @@ final readonly class ChannelInfo
         public bool $canSend,
         public bool $canCall,
         public bool $handshake,
+        /** Telephony: the deprecated ?token= is still accepted (integration flag on) — the page shows a warning. */
+        public bool $legacyQueryToken = false,
     ) {}
 }

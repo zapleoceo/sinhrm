@@ -52,7 +52,7 @@
 
 | Список | Что допускает | Сейчас |
 |---|---|---|
-| `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS` | миграции данных `main` после заморозки, уже выполненные на цели (подробности — [ниже](#где-запускать)) | `2026_10_28_100001_mark_sent_offer_touchpoints` |
+| `SchemaCheck::POST_FREEZE_DATA_MIGRATIONS` | миграции данных `main` после заморозки, уже выполненные на цели (подробности — [ниже](#где-запускать)) | `2026_10_28_100001_mark_sent_offer_touchpoints`, `2026_10_09_100001_keep_query_token_for_existing_telephony` |
 | `SchemaCheck::LEGACY_SOURCE_ONLY_TABLES` | мёртвые таблицы, которые есть **только в источнике** и не переносятся | `app_state` |
 
 **`LEGACY_SOURCE_ONLY_TABLES`.** Таблица есть в источнике и её нет на цели → строка
@@ -132,6 +132,12 @@ preflight это допускает: такие миграции перечис�
 данных, без таблиц и колонок — схема по-прежнему сравнивается строго) и показываются строкой `info`. После копирования
 команда снимает их с учёта в `migrations` цели и печатает напоминание — выполните `php artisan migrate --force`, и они
 пройдут по перенесённым строкам. Тест — `MysqlDataTransferTest::test_post_freeze_data_migration_is_accepted_and_requeued_after_copy`.
+Вторая такая миграция — `Channels/Database/Migrations/2026_10_09_100001_keep_query_token_for_existing_telephony` (HRM-26):
+только `integrations.settings` (JSON разбирается в PHP) — телефонии с уже сохранённым `webhook_token` ставит
+`webhook_query_token = on`, чтобы после переключения старый адрес с `?token=` у провайдера продолжал работать (как
+устаревший, см. [channels.md](../modules/channels.md)); явное значение не трогает, повторный запуск ничего не меняет.
+Поэтому её тоже нужно повторить `migrate` после переноса. Правило списка (файл есть, нет `Schema::`/DDL) проверяет
+`SchemaCheckTest::test_post_freeze_migrations_exist_and_do_not_change_the_schema`.
 Команде нужен `pdo_pgsql` с libpq ≥ 14 (SNI для Neon). Окружение: `APP_KEY` — **тот же, что у прода** (Vercel env), `APP_ENV=production`,
 `TRANSFER_SOURCE_URL`, `TRANSFER_TARGET_URL`. Секреты — через env/секрет-хранилище, не в истории shell, не во временных
 файлах. Память: `php -d memory_limit=1G artisan …` (таблицы с вложениями читаются порциями по 4 строки).

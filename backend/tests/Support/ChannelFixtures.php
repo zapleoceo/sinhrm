@@ -40,6 +40,16 @@ trait ChannelFixtures
         }
     }
 
+    /**
+     * Telephony webhook auth header (HRM-26): the shared token in X-Webhook-Token, never in the URL.
+     *
+     * @return array<string, string>
+     */
+    protected function phoneAuth(): array
+    {
+        return ['X-Webhook-Token' => self::PHONE_TOKEN];
+    }
+
     protected function telegram(IntegrationStatus $status = IntegrationStatus::Connected): void
     {
         $this->channel('telegram_business', $status, ['bot_token' => self::TG_BOT_TOKEN, 'webhook_secret' => self::TG_SECRET]);

@@ -2,18 +2,19 @@ import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ChannelInfo } from './channels.model';
-import { ChannelsService, channelErrorCode, channelErrorKey, webhookUrlForConsole } from './channels.service';
+import { ChannelsService, channelErrorCode, channelErrorKey, tokenHeaderForConsole } from './channels.service';
 
 const INFO: ChannelInfo = {
   key: 'binotel',
   channel: 'call',
   mode: 'demo',
   webhook_url: 'https://app.example.test/api/webhooks/binotel',
-  auth: 'query_token',
+  auth: 'header_token',
   can_register: false,
   can_send: false,
   can_call: false,
   handshake: false,
+  legacy_query_token: false,
 };
 
 describe('ChannelsService', () => {
@@ -101,8 +102,10 @@ describe('ChannelsService', () => {
     expect(channelErrorCode(new Error('x'))).toBeNull();
   });
 
-  it('adds the token placeholder only for query-token webhooks', () => {
-    expect(webhookUrlForConsole(INFO, 'TOKEN')).toBe('https://app.example.test/api/webhooks/binotel?token=TOKEN');
-    expect(webhookUrlForConsole({ ...INFO, auth: 'hmac' }, 'TOKEN')).toBe('https://app.example.test/api/webhooks/binotel');
+  it('shows the token header (placeholder only) for header-token webhooks and never puts the token in the URL', () => {
+    expect(tokenHeaderForConsole(INFO, 'TOKEN')).toBe('X-Webhook-Token: TOKEN');
+    expect(tokenHeaderForConsole({ ...INFO, legacy_query_token: true }, 'TOKEN')).toBe('X-Webhook-Token: TOKEN');
+    expect(tokenHeaderForConsole({ ...INFO, auth: 'hmac' }, 'TOKEN')).toBeNull();
+    expect(INFO.webhook_url).not.toContain('token');
   });
 });

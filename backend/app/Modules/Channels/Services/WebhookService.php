@@ -7,6 +7,7 @@ namespace App\Modules\Channels\Services;
 use App\Models\User;
 use App\Modules\Channels\Contracts\ChannelAdapter;
 use App\Modules\Channels\Contracts\HandshakeResponder;
+use App\Modules\Channels\Contracts\LegacyQueryTokenAuth;
 use App\Modules\Channels\DTO\DemoSeed;
 use App\Modules\Channels\DTO\IncomingEvent;
 use App\Modules\Channels\DTO\WebhookResult;
@@ -18,14 +19,29 @@ use App\Modules\Recruiting\DTO\IncomingMessage;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 /**
  * The ONE inbound path of every channel: verify → parse → TouchpointIngestor (match by thread / contact, else inbox;
  * idempotent by (channel, external id), so provider retries and replays never duplicate a touchpoint).
- * A switched-off integration answers 404; a bad signature 403. Payloads and secrets are never logged.
+ * A switched-off integration answers 404; a bad signature / token 401 (HRM-26; the GET handshake keeps 403).
+ * Payloads, secrets and request URLs are never logged: a rejection stores only a reason code.
+ * Telephony may still accept the deprecated ?token= behind its integration flag: EVERY such accepted delivery (also
+ * call progress events and retries that create nothing) writes the warning "webhook_deprecated_auth"
+ * (auth=query_token, never the value) to the integration log and gets a Deprecation header
+ * (WebhookResult::$deprecatedAuth). With the flag off a ?token= request is rejected (reason query_token_disabled).
  */
 final readonly class WebhookService
 {
+    /** Challenge of the 401 answer (RFC 9110 requires WWW-Authenticate). */
+    public const string CHALLENGE = 'Bearer realm="webhooks"';
+
+    public const string QUERY_TOKEN_DISABLED = 'query_token_disabled';
+
+    public const string DEPRECATED_AUTH = 'webhook_deprecated_auth';
+
+    public const string QUERY_TOKEN = 'query_token';
+
     public function __construct(
         private ChannelContext $context,
         private TouchpointIngestor $ingestor,
@@ -47,14 +63,19 @@ final readonly class WebhookService
             throw new NotFoundHttpException;
         }
         $config = $this->context->config($adapter);
+        $legacy = $adapter instanceof LegacyQueryTokenAuth && $adapter->usesQueryToken($request);
         if (! $adapter->verify($request, $config)) {
-            $this->context->log($adapter, LogLevel::Warning, 'webhook_rejected');
+            $disabled = $legacy && ! $adapter->queryTokenAllowed($config);
+            $this->context->log($adapter, LogLevel::Warning, 'webhook_rejected', $disabled ? ['reason' => self::QUERY_TOKEN_DISABLED] : []);
 
-            throw new AccessDeniedHttpException;
+            throw new UnauthorizedHttpException(self::CHALLENGE);
+        }
+        if ($legacy) {
+            $this->context->log($adapter, LogLevel::Warning, self::DEPRECATED_AUTH, ['auth' => self::QUERY_TOKEN]);
         }
         $payload = $request->isJson() ? $request->json()->all() : $request->request->all();
 
-        return $this->ingest($adapter, $adapter->parse($payload, $config), 'webhook_received');
+        return $this->ingest($adapter, $adapter->parse($payload, $config), 'webhook_received', deprecatedAuth: $legacy);
     }
 
     /**
@@ -79,8 +100,13 @@ final readonly class WebhookService
      * @param  list<IncomingEvent>  $events
      * @param  array<string, int>  $logContext
      */
-    private function ingest(ChannelAdapter $adapter, array $events, string $logMessage, array $logContext = []): WebhookResult
-    {
+    private function ingest(
+        ChannelAdapter $adapter,
+        array $events,
+        string $logMessage,
+        array $logContext = [],
+        bool $deprecatedAuth = false,
+    ): WebhookResult {
         $touchpoints = [];
         $created = 0;
         foreach ($events as $event) {
@@ -109,7 +135,7 @@ final readonly class WebhookService
             $this->context->log($adapter, LogLevel::Info, $logMessage, $logContext + ['events' => count($events), 'created' => $created]);
         }
 
-        return new WebhookResult(count($events), $touchpoints, $created);
+        return new WebhookResult(count($events), $touchpoints, $created, $deprecatedAuth);
     }
 
     private function logStatus(ChannelAdapter $adapter, IncomingEvent $event): void

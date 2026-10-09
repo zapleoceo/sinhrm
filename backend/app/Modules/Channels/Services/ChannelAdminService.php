@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Channels\Contracts\CallInitiator;
 use App\Modules\Channels\Contracts\ChannelAdapter;
 use App\Modules\Channels\Contracts\HandshakeResponder;
+use App\Modules\Channels\Contracts\LegacyQueryTokenAuth;
 use App\Modules\Channels\Contracts\MessageSender;
 use App\Modules\Channels\Contracts\WebhookRegistrar;
 use App\Modules\Channels\DTO\ChannelInfo;
@@ -43,6 +44,7 @@ final readonly class ChannelAdminService
             canSend: $a instanceof MessageSender,
             canCall: $a instanceof CallInitiator,
             handshake: $a instanceof HandshakeResponder,
+            legacyQueryToken: $a instanceof LegacyQueryTokenAuth && $a->queryTokenAllowed($this->context->config($a)),
         ), $this->channels->all());
     }
 
@@ -94,7 +96,7 @@ final readonly class ChannelAdminService
         return $sent;
     }
 
-    /** Public URL to paste in the provider console (telephony adds ?token=<webhook_token> on the page). */
+    /** Public URL to paste in the provider console; the token never goes into it (telephony: header, HRM-26). */
     public static function webhookUrl(ChannelAdapter $adapter): string
     {
         return route('channels.webhook', ['channelKey' => $adapter->key()]);
