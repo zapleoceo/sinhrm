@@ -230,12 +230,12 @@ final class OfferApiTest extends TestCase
         }
         $created = $rows[0]->changes ?? [];
         foreach (['salary', 'position', 'conditions', 'content_md'] as $field) {
-            $this->assertSame(['from' => null, 'to' => '***'], $created[$field] ?? null, $field);
+            $this->assertEquals(['from' => null, 'to' => '***'], $created[$field] ?? null, $field);
         }
         $this->assertSame('draft', $created['status']['to'] ?? null);
-        $this->assertSame(['from' => 'draft', 'to' => 'sent'], $rows[1]->changes['status'] ?? null);
+        $this->assertEquals(['from' => 'draft', 'to' => 'sent'], $rows[1]->changes['status'] ?? null);
         $this->assertArrayHasKey('sent_at', $rows[1]->changes ?? []);
-        $this->assertSame(['from' => 'sent', 'to' => 'accepted'], $rows[2]->changes['status'] ?? null);
+        $this->assertEquals(['from' => 'sent', 'to' => 'accepted'], $rows[2]->changes['status'] ?? null);
 
         $raw = (string) json_encode(AuditEntry::query()->get()->toArray());
         $this->assertStringNotContainsString('30000', $raw);
@@ -256,7 +256,7 @@ final class OfferApiTest extends TestCase
         $this->actingAs($recruiter)->postJson($url, $body)->assertCreated();
         $this->actingAs($recruiter)->postJson($url.'/send')->assertOk();
         $this->actingAs($recruiter)->postJson($url.'/decision', ['status' => 'declined'])->assertOk();
-        $this->assertSame(['from' => 'sent', 'to' => 'declined'], AuditEntry::query()->where('entity_type', 'offer')->latest('id')->firstOrFail()->changes['status'] ?? null);
+        $this->assertEquals(['from' => 'sent', 'to' => 'declined'], AuditEntry::query()->where('entity_type', 'offer')->latest('id')->firstOrFail()->changes['status'] ?? null);
 
         foreach ([$recruiter, User::factory()->withRole(UserRole::Admin)->create(), User::factory()->withRole(UserRole::HrManager)->create()] as $other) {
             $this->actingAs($other)->getJson('/api/audit?entity_type=offer')->assertForbidden();

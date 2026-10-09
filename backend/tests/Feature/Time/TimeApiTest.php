@@ -144,8 +144,8 @@ final class TimeApiTest extends TestCase
             $rows->map(static fn (AuditEntry $r): array => [$r->changes['status']['to'] ?? null, $r->user_id])->all(),
         );
         $this->assertSame(['status_changed'], $rows->pluck('action')->unique()->values()->all());
-        $this->assertSame(['from' => null, 'to' => '***'], $rows[1]->changes['decision_comment'] ?? null);
-        $this->assertSame(['from' => '***', 'to' => '***'], $rows[2]->changes['entries.hours'] ?? null);
+        $this->assertEquals(['from' => null, 'to' => '***'], $rows[1]->changes['decision_comment'] ?? null);
+        $this->assertEquals(['from' => '***', 'to' => '***'], $rows[2]->changes['entries.hours'] ?? null);
         $this->assertSame($org['worker']->id, $rows[0]->meta['employee_id'] ?? null);
         $this->assertSame(self::WEEK, $rows[0]->meta['week_start'] ?? null);
         $this->assertFalse($rows[0]->meta['on_behalf'] ?? null);
@@ -182,9 +182,10 @@ final class TimeApiTest extends TestCase
             $this->assertTrue($row->meta['on_behalf'] ?? null);
             $this->assertSame($wid, $row->meta['employee_id'] ?? null);
         }
-        $this->assertSame(['entries.date', 'entries.hours', 'entries.project', 'entries.category', 'entries.note'], array_keys($rows[0]->changes ?? []));
-        $this->assertSame(['from' => null, 'to' => '***'], $rows[0]->changes['entries.hours'] ?? null);
-        $this->assertSame(['from' => '***', 'to' => '***'], $rows[1]->changes['entries.note'] ?? null);
+        // MySQL JSON keeps object keys in its own order: compare as a set.
+        $this->assertEqualsCanonicalizing(['entries.date', 'entries.hours', 'entries.project', 'entries.category', 'entries.note'], array_keys($rows[0]->changes ?? []));
+        $this->assertEquals(['from' => null, 'to' => '***'], $rows[0]->changes['entries.hours'] ?? null);
+        $this->assertEquals(['from' => '***', 'to' => '***'], $rows[1]->changes['entries.note'] ?? null);
         $this->assertStringNotContainsString('Weekend duty', (string) json_encode($rows->toArray()));
     }
 
