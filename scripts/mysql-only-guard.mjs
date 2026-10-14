@@ -27,10 +27,6 @@ export const ALLOWED = [
   '.github/workflows/mysql-data-transfer.yml',
   'docs/guides/mysql-cutover.md',
   'docs/tasks/HRM-2-mysql-migration.md',
-  // owned by draft PR #174 (HRM-38, MySQL backup/restore): it rewrites these files; drop the entries in its rebase
-  'docs/guides/backup-restore.md',
-  'docs/guides/itstep-app-handoff.md',
-  'scripts/backup-restore-proof.test.mjs',
 ];
 
 export const isAllowed = (path) => ALLOWED.some((prefix) => path === prefix || (prefix.endsWith('/') && path.startsWith(prefix)));
