@@ -14,7 +14,7 @@
     "e2e:update": "node e2e/run.mjs --update",
     "e2e:visual": "node e2e/run.mjs --visual",
     "e2e:record": "node e2e/record-fixtures.mjs",
-    "e2e:lint": "node --test e2e/inventory.test.mjs && eslint -c e2e/eslint.config.mjs e2e && tsc -p e2e/tsconfig.json"
+    "e2e:lint": "node --test e2e/inventory.test.mjs e2e/project-coverage.test.mjs && eslint -c e2e/eslint.config.mjs e2e && tsc -p e2e/tsconfig.json"
   },
   "private": true,
   "packageManager": "npm@11.17.0",
@@ -60,5 +60,10 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "8.71.0",
     "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "@angular/build": {
+      "vite": "8.3.5"
+    }
   }
 }

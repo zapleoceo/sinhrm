@@ -12,6 +12,8 @@ import { AssistantChat } from '../chat/assistant-chat';
 import { AssistantVoice } from '../voice/assistant-voice';
 import { AssistantJokes } from '../jokes';
 import { LanguageService } from '../../../core/i18n/language.service';
+import { ThemeService } from '../../../core/theme/theme.service';
+import { isWindowControlOnlyNavigation } from '../../../core/windows/window-navigation';
 import { PanelRect, Stage } from './animations';
 import { BrainCommand, MascotBrain, dispatchEngineEvent } from './brain';
 import { EngineEvent, MascotEngine } from './mascot-engine';
@@ -38,6 +40,20 @@ export function prefersLite(nav: NavigatorHints | undefined): boolean {
   return (nav?.hardwareConcurrency ?? 8) <= 4 || nav?.connection?.saveData === true;
 }
 
+export interface MascotLoopConditions {
+  compact: boolean;
+  visible: boolean;
+  pageVisible: boolean;
+  paused: boolean;
+  fastMode: boolean;
+  reducedMotion: boolean;
+}
+
+/** Keep chat controls usable while user-selected performance or motion settings suspend decorative canvas frames. */
+export function shouldRunMascotLoop(state: MascotLoopConditions): boolean {
+  return state.visible && state.pageVisible && !state.paused && !state.compact && !state.fastMode && !state.reducedMotion;
+}
+
 /** «Стік»: the hand-drawn helper living on the page edges; mounted once in the shell (docs/modules/assistant.md). */
 @Component({
   selector: 'app-assistant-mascot',
@@ -57,6 +73,7 @@ export class AssistantMascot {
   private readonly voice = inject(AssistantVoice);
   private readonly jokes = inject(AssistantJokes);
   private readonly language = inject(LanguageService);
+  private readonly theme = inject(ThemeService);
   private readonly clock = inject(MASCOT_FRAME_CLOCK);
   protected readonly settings = inject(AssistantSettings);
   private readonly stageRef = viewChild.required<ElementRef<HTMLDivElement>>('stage');
@@ -71,6 +88,8 @@ export class AssistantMascot {
   private brain: MascotBrain | null = null;
   private loop: MascotLoop | null = null;
   private reduced = false;
+  private systemReducedMotion = false;
+  private fastMode = false;
   private autoLite = false;
   private paused = false;
   private viewport = { width: 1280, height: 800 };
@@ -106,6 +125,17 @@ export class AssistantMascot {
       untracked(() => this.applyLite());
     });
     effect(() => {
+      const preferences = this.theme.preferences();
+      untracked(() => {
+        this.fastMode = preferences.fastMode;
+        this.reduced = this.systemReducedMotion || preferences.reducedMotion;
+        this.engine?.setReducedMotion(this.reduced);
+        this.brain?.setReducedMotion(this.reduced);
+        this.applyLite();
+        this.syncLoop();
+      });
+    });
+    effect(() => {
       const open = this.settings.chatOpen();
       untracked(() => this.onChat(open));
     });
@@ -126,12 +156,18 @@ export class AssistantMascot {
         this.loop?.kick();
       });
     });
+    let previousUrl = this.router.url;
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        filter((event) => {
+          const controlOnly = isWindowControlOnlyNavigation(this.router, previousUrl, event.urlAfterRedirects);
+          previousUrl = event.urlAfterRedirects;
+          return !controlOnly;
+        }),
         takeUntilDestroyed(),
       )
-      .subscribe((e) => this.brain?.routeChanged(e.urlAfterRedirects));
+      .subscribe((event) => this.brain?.routeChanged(event.urlAfterRedirects));
   }
 
   protected turnOn(): void {
@@ -150,7 +186,8 @@ export class AssistantMascot {
       return;
     }
     const media = typeof win.matchMedia === 'function' ? win.matchMedia(REDUCED_QUERY) : null;
-    this.reduced = media?.matches ?? false;
+    this.systemReducedMotion = media?.matches ?? false;
+    this.reduced = this.systemReducedMotion || this.theme.preferences().reducedMotion;
     this.autoLite = prefersLite(win.navigator as NavigatorHints);
     this.cacheViewport();
     const stageEl = this.stageRef().nativeElement;
@@ -197,10 +234,12 @@ export class AssistantMascot {
       this.listen(this.renderer!.hit, 'pointerleave', () => this.brain?.hover(false));
       if (media) {
         this.listen(media, 'change', () => {
-          this.reduced = media.matches;
+          this.systemReducedMotion = media.matches;
+          this.reduced = this.systemReducedMotion || this.theme.preferences().reducedMotion;
           this.engine?.setReducedMotion(this.reduced);
           this.brain?.setReducedMotion(this.reduced);
           this.applyLite();
+          this.syncLoop();
         });
       }
     });
@@ -254,7 +293,7 @@ export class AssistantMascot {
   }
 
   private applyLite(): void {
-    const lite = this.settings.lite() || this.autoLite || this.reduced;
+    const lite = this.settings.lite() || this.autoLite || this.reduced || this.fastMode;
     this.engine?.setLite(lite);
     this.brain?.setLite(lite);
   }
@@ -334,7 +373,14 @@ export class AssistantMascot {
   /* ───────────── loop ───────────── */
 
   private syncLoop(): void {
-    const on = !this.compact() && !!this.brain?.visible && this.document.visibilityState !== 'hidden' && !this.paused;
+    const on = shouldRunMascotLoop({
+      compact: this.compact(),
+      visible: !!this.brain?.visible,
+      pageVisible: this.document.visibilityState !== 'hidden',
+      paused: this.paused,
+      fastMode: this.fastMode,
+      reducedMotion: this.reduced,
+    });
     this.loop?.setEnabled(on);
     if (on) {
       this.armBlink();
@@ -356,7 +402,7 @@ export class AssistantMascot {
     for (const e of events) {
       this.engineEvent(e);
     }
-    renderer.render(frame, this.viewport, this.reduced || this.settings.lite() || this.autoLite);
+    renderer.render(frame, this.viewport, this.reduced || this.fastMode || this.settings.lite() || this.autoLite);
     return engine.fps;
   }
 

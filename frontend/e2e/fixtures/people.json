@@ -1529,6 +1529,42 @@
    }
   }
  },
+ "GET /api/people/70": {
+  "status": 200,
+  "body": {
+   "data": {
+    "id": 70,
+    "full_name": "Бондаренко Євген [ТЕСТ]",
+    "avatar_url": null,
+    "work_email": "demo+emp-70@sinhrm.test",
+    "phone": "+380503533163",
+    "status": "active",
+    "branch": {
+     "id": 1,
+     "name": "Тестовий філіал"
+    },
+    "department": {
+     "id": 15,
+     "name": "Навчальний відділ Дніпро [ТЕСТ]"
+    },
+    "position": {
+     "id": 12,
+     "name": "Викладач [ТЕСТ]"
+    },
+    "manager": {
+     "id": 67,
+     "name": "Поліщук Анна [ТЕСТ]"
+    },
+    "access": {
+     "job": false,
+     "pii": false,
+     "decide": false,
+     "manage": false,
+     "self": false
+    }
+   }
+  }
+ },
  "GET /api/people/1": {
   "status": 200,
   "body": {

@@ -1,0 +1,55 @@
+{
+ "path": "/settings/appearance",
+ "state": null,
+ "headings": [
+  "Акцентний колір",
+  "Зовнішній вигляд",
+  "Стиль поверхонь",
+  "Тема",
+  "Швидкий режим"
+ ],
+ "landmarks": [
+  "banner \"\"",
+  "main \"\"",
+  "main \"\"",
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
+ ],
+ "interactive": [
+  "button \"Звіти\"",
+  "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
+  "button \"Поговорити зі Стіком\"",
+  "button \"Скинути налаштування\"",
+  "button \"Співробітники\"",
+  "combobox \"Колірна схема\"",
+  "combobox \"Тло робочого столу\"",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
+  "option \"Sintegrum\"",
+  "option \"Власна\" [selected]",
+  "option \"Пісок\"",
+  "option \"Сутінки\"",
+  "option \"Туман\" [selected]",
+  "radio \"Графітовий\"",
+  "radio \"Зелений\"",
+  "radio \"Світла\"",
+  "radio \"Синій\" [checked]",
+  "radio \"Скло\" [checked]",
+  "radio \"Суцільний\"",
+  "radio \"Темна\"",
+  "radio \"Фіолетовий\"",
+  "radio \"Як у системі\" [checked]",
+  "slider \"\"",
+  "switch \"Зменшити рух\"",
+  "switch \"Швидкий режим\""
+ ],
+ "columns": [],
+ "counts": {
+  "img": 2,
+  "option": 5
+ }
+}

@@ -5,34 +5,27 @@
   "Мої опитування"
  ],
  "landmarks": [
-  "complementary \"\"",
+  "banner \"\"",
   "main \"\"",
-  "navigation \"Головне меню\""
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Автоприховування меню\"",
-  "button \"Адміністрування 9 нових\"",
-  "button \"Згорнути меню\" [expanded]",
-  "button \"Люди 70 нових\"",
+  "button \"Звіти\"",
   "button \"Меню користувача\"",
-  "button \"Продуктивність\" [expanded]",
-  "button \"Рекрутинг 2 нових\"",
-  "button \"Сервіси\"",
-  "link \"SinHRM\" -> /",
-  "link \"Довідка\" -> /docs",
-  "link \"Зустрічі 1:1\" -> /perform/one-on-ones",
-  "link \"Мої задачі\" -> /tasks",
-  "link \"Мої оцінювання\" -> /perform/reviews",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
+  "button \"Поговорити зі Стіком\"",
+  "button \"Співробітники\"",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
   "link \"Настрій\" -> /pulse/mood",
-  "link \"Настрій\" -> /pulse/mood",
-  "link \"Огляд\" -> /",
-  "link \"Опитування\" -> /pulse",
-  "link \"Фідбек\" -> /perform/feedback",
-  "link \"Цілі (OKR)\" -> /perform/objectives"
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /"
  ],
  "columns": [],
  "counts": {
-  "img": 4,
+  "img": 2,
   "listitem": 1
  }
 }

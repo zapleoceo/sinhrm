@@ -6,18 +6,27 @@
  ],
  "landmarks": [
   "banner \"\"",
-  "main \"\""
+  "main \"\"",
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Головне меню\"",
   "button \"Далі\" [disabled]",
+  "button \"Звіти\"",
+  "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
   "button \"Поговорити зі Стіком\"",
+  "button \"Співробітники\"",
   "combobox \"Відділ\"",
   "combobox \"Посада (довідник)\"",
   "combobox \"Пріоритет\"",
   "combobox \"Філія\"",
   "link \"Заявки на підбір\" -> /hiring-requests",
-  "link \"Огляд\" -> /",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
   "spinbutton \"Кількість позицій\"",
   "textbox \"Посада / назва\""
  ],

@@ -1,5 +1,7 @@
 import { Subject, of } from 'rxjs';
 import { TablePage, clickTitle, column, header, openTablePage, sortCount } from '../../../testing/table-page';
+import { windowQueryAdapter } from '../../../testing/window-query-adapter';
+import { TABLE_QUERY_ADAPTER } from '../../core/ui/table/table-query-adapter';
 import { CaseStatus, DeskCase, DeskCategory, QueueQuery } from './desk.model';
 import { DeskService } from './desk.service';
 import { DeskQueuePage } from './queue.page';
@@ -150,5 +152,22 @@ describe('DeskQueuePage: only the latest queue request counts', () => {
     answers[1].next([CASES[1]]);
     await page.settle();
     expect(column(page.el.querySelector('table.queue')!, 2)).toEqual(['Бойко']);
+  });
+});
+
+describe('DeskQueuePage: window query context', () => {
+  it('filters the queue from its own query while leaving the canonical primary query independent', async () => {
+    const queries: QueueQuery[] = [];
+    const windowQuery = windowQueryAdapter({ status: 'waiting', category: '1' });
+    const page = await openTablePage(DeskQueuePage, '/?status=new', [
+      { provide: TABLE_QUERY_ADAPTER, useValue: windowQuery.adapter },
+      { provide: DeskService, useValue: { queue: (query: QueueQuery) => (queries.push(query), of(CASES)), categories: () => of([]) } },
+    ]);
+    expect(queries[0]).toEqual({ status: 'waiting', category_id: 1 });
+
+    windowQuery.set({ status: 'new' });
+    await page.settle();
+    expect(queries.at(-1)).toEqual({ status: 'new', category_id: undefined });
+    expect(new URL(page.router.url, 'http://x').searchParams.get('status')).toBe('new');
   });
 });

@@ -7,7 +7,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { AssistantSettings, ENABLED_KEY } from '../assistant-settings';
 import { AssistantService } from '../assistant.service';
 import { Stage } from './animations';
-import { AssistantMascot, prefersLite } from './assistant-mascot';
+import { AssistantMascot, prefersLite, shouldRunMascotLoop } from './assistant-mascot';
 import { MascotEngine } from './mascot-engine';
 import { FrameClock, MASCOT_FRAME_CLOCK, MascotLoop } from './mascot-loop';
 import { PHYSICS_DT } from './physics';
@@ -43,6 +43,13 @@ class FakeClock implements FrameClock {
 }
 
 describe('MascotLoop budget', () => {
+  it('pauses decorative canvas frames for fast or reduced-motion preferences but keeps standard mode active', () => {
+    const standard = { compact: false, visible: true, pageVisible: true, paused: false, fastMode: false, reducedMotion: false };
+    expect(shouldRunMascotLoop(standard)).toBe(true);
+    expect(shouldRunMascotLoop({ ...standard, fastMode: true })).toBe(false);
+    expect(shouldRunMascotLoop({ ...standard, reducedMotion: true })).toBe(false);
+    expect(shouldRunMascotLoop({ ...standard, visible: false })).toBe(false);
+  });
   it('does nothing until enabled, stops when disabled', () => {
     const clock = new FakeClock();
     const frame = vi.fn(() => 30);

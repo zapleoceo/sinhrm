@@ -9,20 +9,29 @@
  ],
  "landmarks": [
   "banner \"\"",
-  "main \"\""
+  "main \"\"",
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
   "button \"Open calendar\"",
-  "button \"Головне меню\"",
+  "button \"Звіти\"",
+  "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
   "button \"Надіслати запит\"",
   "button \"Поговорити зі Стіком\"",
   "button \"Скасувати запит\"",
   "button \"Скасувати запит\"",
+  "button \"Співробітники\"",
   "combobox \"На кого передати справи\"",
   "combobox \"Пів дня\"",
   "combobox \"Тип відсутності\"",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
   "link \"Календар команди\" -> /timeoff/calendar",
-  "link \"Огляд\" -> /",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
   "textbox \"З\"",
   "textbox \"Коментар\"",
   "textbox \"По\""

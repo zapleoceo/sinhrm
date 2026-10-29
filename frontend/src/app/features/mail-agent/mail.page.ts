@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -10,7 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
-import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
+import { ParamMap, RouterLink } from '@angular/router';
+import { windowAwareQueryParamMap } from '../../core/windows/window-aware-query';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
@@ -84,7 +84,7 @@ export class MailPage implements OnInit {
   protected readonly store = inject(MailStore);
   private readonly notify = inject(NotifyService);
   private readonly url = inject(TableUrlState);
-  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  private readonly params = windowAwareQueryParamMap();
   /** Open tab (in the URL, so a shared link or «back» lands on the same tab). */
   protected readonly tabIndex = computed(() => MAIL_TABS.indexOf(mailTabFromParams(this.params())));
 

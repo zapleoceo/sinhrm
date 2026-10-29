@@ -1,5 +1,7 @@
 # Модуль People (сотрудники, оргструктура, самообслуживание)
 
+Recruiting's shared `HireAction` is root-scoped, but each invocation receives the caller's Router facade and `DestroyRef`. Closing or invalidating the caller unsubscribes its pending response handler and dismisses any snackbar, so late success/error feedback and delayed actions cannot affect a later occupant of the slot. While the caller is alive, the snackbar opens the employee in that routed window. See `frontend/src/app/features/people/hire.action.ts` and the routed overlay regression in `features/recruiting/candidates/candidate-dialog.window.spec.ts`.
+
 ## Что это и зачем
 Справочник сотрудников компании — «кто у нас работает, кем, где и кому подчиняется». Здесь же профиль человека,
 оргструктура (дерево подчинения) и **самообслуживание**: сотрудник сам просит поменять свой телефон, личный e-mail,
@@ -406,6 +408,8 @@ admin / сам / руководитель прямой и через урове�
 Ключ модуля `people`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
 
 Профіль (/me): перемикач «Листи про погодження на пошту».
+
+**Оконный пилот (HRM-11).** Только список сотрудников `/people` зарегистрирован для окон `os1`/`os2`. Используется тот же маршрут, компонент, module guard и API; прямой URL закрытого модуля в auxiliary outlet отклоняется. Фильтры окна сериализуются в ограниченные матричные параметры `wq_*`; query основного экрана сохраняются независимо. Карточка сотрудника, оргструктура, самообслуживание и прочие страницы People остаются в основном потоке до отдельного аудита.
 
 ### Совместимость с MySQL
 

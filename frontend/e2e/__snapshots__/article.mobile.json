@@ -6,15 +6,24 @@
  ],
  "landmarks": [
   "banner \"\"",
-  "main \"\""
+  "main \"\"",
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
   "button \"25\"",
   "button \"7\" [pressed]",
-  "button \"Головне меню\"",
+  "button \"Звіти\"",
+  "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
   "button \"Поговорити зі Стіком\"",
-  "link \"Огляд\" -> /",
+  "button \"Співробітники\"",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
   "link \"Редагувати\" -> /admin/knowledge/1",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
   "link \"← База знань\" -> /knowledge"
  ],
  "columns": [],

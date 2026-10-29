@@ -1,5 +1,7 @@
 import { Subject, of } from 'rxjs';
 import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../testing/table-page';
+import { windowQueryAdapter } from '../../../testing/window-query-adapter';
+import { TABLE_QUERY_ADAPTER } from '../../core/ui/table/table-query-adapter';
 import { HiringListPage } from './hiring-list.page';
 import { HiringRequest, HiringStatus } from './hiring-requests.model';
 import { HiringRequestsService } from './hiring-requests.service';
@@ -76,5 +78,28 @@ describe('HiringListPage: only the latest list request counts', () => {
     answers[1].next([LIST[1]]);
     await page.settle();
     expect([...page.el.querySelectorAll('tbody tr td:first-child a')].map((a) => a.textContent?.trim())).toEqual(['Аналітик']);
+  });
+});
+
+describe('HiringListPage: window query context', () => {
+  it('selects the request status from the current window and updates independently of primary navigation', async () => {
+    const calls: { status?: HiringStatus; mine?: boolean }[] = [];
+    const windowQuery = windowQueryAdapter({ status: 'approved' });
+    const api = {
+      list: (query: { status?: HiringStatus; mine?: boolean }) => (calls.push(query), of(LIST)),
+      inbox: () => of(LIST),
+      meta: () => of({ can_create: false, can_manage: false, form_fields: [] }),
+    };
+    const page = await openTablePage(HiringListPage, '/?status=pending', [
+      { provide: TABLE_QUERY_ADAPTER, useValue: windowQuery.adapter },
+      { provide: HiringRequestsService, useValue: api },
+    ]);
+    expect(calls[0]).toEqual({ status: 'approved', mine: false });
+    expect([...page.el.querySelectorAll('tbody tr td:first-child a')].map((a) => a.textContent?.trim())).toEqual(['Аналітик']);
+
+    windowQuery.set({ status: 'pending' });
+    await page.settle();
+    expect(calls.at(-1)).toEqual({ status: 'pending', mine: false });
+    expect(new URL(page.router.url, 'http://x').searchParams.get('status')).toBe('pending');
   });
 });

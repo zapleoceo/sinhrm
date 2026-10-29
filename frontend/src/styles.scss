@@ -1,13 +1,37 @@
-// Direction C «Маршрут» (Route): the hiring funnel is a metro line — calm neutral base, colour only on stage lines,
-// actions and status. Light/dark via color-scheme — every value is light-dark(), the explicit ThemeService choice
-// (html[data-theme]) wins over the OS preference.
-// Palette / type / shape tables and rules: docs/architecture/design-direction.md §4.2; contrast check:
-// scripts/contrast-check.mjs (keep both in sync with the values below). Pages never write hex — only these tokens.
+// Browser OS foundation: ThemeService applies the root appearance contract; Material and app aliases below carry it
+// through every route and CDK overlay. Custom accent is separate from semantic stage/status colors.
 @use 'sass:map';
 @use '@angular/material' as mat;
 
-$font-text: ('Wix Madefor Text', 'Wix Madefor Text Fallback', 'Segoe UI', system-ui, -apple-system, Roboto, 'Noto Sans', sans-serif);
-$font-display: ('Wix Madefor Display', 'Wix Madefor Display Fallback', 'Wix Madefor Text', 'Segoe UI', system-ui, sans-serif);
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('../node_modules/material-symbols/material-symbols-outlined.woff2') format('woff2');
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'liga';
+}
+
+$font-system: (system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', sans-serif);
+$font-text: $font-system;
+$font-display: $font-system;
 
 // Type scale 11 / 12 / 12.5 / 13.5 / 14 / 15 / 22 / 26 (Material composite tokens are literal, so set all parts).
 @function type-role($weight, $size, $lh, $family, $tracking: 0) {
@@ -34,31 +58,29 @@ $type-overrides: ();
   }
 }
 
-// Metric-matched local fallbacks (no network): while the Google fonts swap in (display=swap), text is set in
-// Arial/Helvetica/Roboto scaled to Wix Madefor metrics, so nav items and buttons don't jump on load.
-// Values: width ratio measured on a uk+en UI sample in Chromium (Text 400 = 1.035, Display 800 vs Arial Bold = 1.055),
-// ascent/descent = Wix Madefor hhea 1008/252 per 1000 divided by size-adjust.
-@font-face {
-  font-family: 'Wix Madefor Text Fallback';
-  src: local('Arial'), local('ArialMT'), local('Helvetica Neue'), local('Helvetica'), local('Roboto');
-  size-adjust: 103.5%;
-  ascent-override: 97.4%;
-  descent-override: 24.35%;
-  line-gap-override: 0%;
-}
-@font-face {
-  font-family: 'Wix Madefor Display Fallback';
-  src: local('Arial Bold'), local('Arial-BoldMT'), local('Helvetica Neue Bold'), local('Helvetica Bold'), local('Roboto Bold');
-  font-weight: 700 800;
-  size-adjust: 105.5%;
-  ascent-override: 95.5%;
-  descent-override: 23.9%;
-  line-gap-override: 0%;
-}
-
 html {
+  --os-inverse-primary: light-dark(#b6cdf2, #385f98);
   height: 100%;
   color-scheme: light dark;
+  // Root appearance contract from ThemeService; inherited by routes and CDK overlays.
+  --os-primary: light-dark(#1a5fb4, #86b4f0);
+  --os-on-primary: light-dark(#ffffff, #08203f);
+  --os-primary-container: light-dark(#dce8f8, #1b3557);
+  --os-on-primary-container: light-dark(#0b3b75, #d6e5fa);
+  --os-surface: light-dark(#f5f6f8, #0e1218);
+  --os-surface-lowest: light-dark(#ffffff, #0a0d12);
+  --os-surface-low: light-dark(#f9fafb, #151a22);
+  --os-surface-mid: light-dark(#f1f3f6, #191f28);
+  --os-surface-high: light-dark(#eceff3, #1e2530);
+  --os-surface-highest: light-dark(#e6e9ee, #252d39);
+  --os-on-surface: light-dark(#121722, #e7eaef);
+  --os-on-surface-variant: light-dark(#4e5666, #a0a8b6);
+  --os-outline: light-dark(#767e8c, #7b8494);
+  --os-outline-variant: light-dark(#d9dde4, #2a313d);
+  --os-card: light-dark(#ffffff, #151a22);
+  --os-card-2: light-dark(#f9fafb, #191f28);
+  --os-wallpaper-a: color-mix(in srgb, var(--os-primary) 9%, transparent);
+  --os-wallpaper-b: color-mix(in srgb, var(--app-accent) 7%, transparent);
   @include mat.theme(
     (
       color: (
@@ -80,10 +102,10 @@ html {
   @include mat.theme-overrides(
     map.merge(
       (
-        primary: light-dark(#1a5fb4, #86b4f0),
-        on-primary: light-dark(#ffffff, #08203f),
-        primary-container: light-dark(#dce8f8, #1b3557),
-        on-primary-container: light-dark(#0b3b75, #d6e5fa),
+        primary: var(--os-primary),
+        on-primary: var(--os-on-primary),
+        primary-container: var(--os-primary-container),
+        on-primary-container: var(--os-on-primary-container),
         secondary: light-dark(#4e5666, #a0a8b6),
         secondary-container: light-dark(#e3ecf8, #1f3150),
         on-secondary-container: light-dark(#123f73, #cfe0f7),
@@ -91,20 +113,20 @@ html {
         on-tertiary: light-dark(#ffffff, #002824),
         error: light-dark(#b42318, #f59a8f),
         on-error: light-dark(#ffffff, #3b0904),
-        background: light-dark(#f5f6f8, #0e1218),
-        surface: light-dark(#f5f6f8, #0e1218),
-        surface-container-lowest: light-dark(#ffffff, #0a0d12),
-        surface-container-low: light-dark(#f9fafb, #151a22),
-        surface-container: light-dark(#f1f3f6, #191f28),
-        surface-container-high: light-dark(#eceff3, #1e2530),
-        surface-container-highest: light-dark(#e6e9ee, #252d39),
-        on-surface: light-dark(#121722, #e7eaef),
-        on-surface-variant: light-dark(#4e5666, #a0a8b6),
-        outline: light-dark(#767e8c, #7b8494),
-        outline-variant: light-dark(#d9dde4, #2a313d),
-        inverse-surface: light-dark(#121722, #e7eaef),
-        inverse-on-surface: light-dark(#f5f6f8, #0e1218),
-        inverse-primary: light-dark(#86b4f0, #1a5fb4),
+        background: var(--os-surface),
+        surface: var(--os-surface),
+        surface-container-lowest: var(--os-surface-lowest),
+        surface-container-low: var(--os-surface-low),
+        surface-container: var(--os-surface-mid),
+        surface-container-high: var(--os-surface-high),
+        surface-container-highest: var(--os-surface-highest),
+        on-surface: var(--os-on-surface),
+        on-surface-variant: var(--os-on-surface-variant),
+        outline: var(--os-outline),
+        outline-variant: var(--os-outline-variant),
+        inverse-surface: var(--os-on-surface),
+        inverse-on-surface: var(--os-surface),
+        inverse-primary: var(--os-inverse-primary),
         corner-extra-small: 6px,
         corner-extra-small-top: 6px 6px 0 0,
         corner-small: 8px,
@@ -147,8 +169,8 @@ html {
       shape: 999px,
       height: 40px,
       divider-color: var(--app-border),
-      selected-state-background-color: var(--app-ink),
-      selected-state-text-color: var(--app-on-ink),
+      selected-state-background-color: var(--mat-sys-primary),
+      selected-state-text-color: var(--mat-sys-on-primary),
       label-text-weight: 700,
       label-text-size: 0.78125rem,
     )
@@ -161,14 +183,14 @@ html {
     (
       filled-container-color: var(--app-card),
       filled-disabled-container-color: var(--app-card-2),
-      filled-container-shape: 8px,
+        filled-container-shape: var(--app-radius-sm),
       filled-active-indicator-color: transparent,
       filled-hover-active-indicator-color: transparent,
       filled-focus-active-indicator-color: transparent,
       filled-error-active-indicator-color: transparent,
       filled-error-hover-active-indicator-color: transparent,
       filled-error-focus-active-indicator-color: transparent,
-      outlined-container-shape: 8px,
+      outlined-container-shape: var(--app-radius-sm),
       outlined-outline-width: 1.5px,
       outlined-focus-outline-width: 2px,
       outlined-outline-color: var(--mat-sys-outline),
@@ -195,7 +217,7 @@ html {
       header-container-height: 44px,
       row-item-outline-color: var(--app-track),
       row-item-outline-width: 1.5px,
-      row-item-label-text-size: 0.84375rem, // 13.5px: the wider Wix Madefor keeps today's columns on one line
+      row-item-label-text-size: 0.84375rem, // 13.5px keeps dense data columns compact
     )
   );
   // Tabs: brand «line» indicator 3px, divider = route track.
@@ -223,11 +245,11 @@ html {
   }
   @include mat.progress-bar-overrides((active-indicator-color: var(--app-accent)));
   // Overlays: white card + 1.5px line (border added below), soft shadow only to lift them off the page.
-  @include mat.dialog-overrides((container-color: var(--app-card), container-shape: 14px));
-  @include mat.menu-overrides((container-color: var(--app-card), container-shape: 10px));
+  @include mat.dialog-overrides((container-color: var(--app-card), container-shape: var(--app-radius-lg)));
+  @include mat.menu-overrides((container-color: var(--app-card), container-shape: var(--app-radius-sm)));
   @include mat.select-overrides((panel-background-color: var(--app-card)));
   @include mat.autocomplete-overrides((background-color: var(--app-card)));
-  @include mat.datepicker-overrides((calendar-container-background-color: var(--app-card), calendar-container-shape: 12px));
+  @include mat.datepicker-overrides((calendar-container-background-color: var(--app-card), calendar-container-shape: var(--app-radius)));
   @include mat.tooltip-overrides(
     (
       container-color: var(--app-ink),
@@ -243,9 +265,9 @@ html {
       outlined-container-color: var(--app-card),
       outlined-outline-color: var(--app-border),
       outlined-outline-width: 1.5px,
-      outlined-container-shape: 10px,
+      outlined-container-shape: var(--app-radius),
       elevated-container-color: var(--app-card),
-      elevated-container-shape: 10px,
+      elevated-container-shape: var(--app-radius),
     )
   );
   @include mat.sidenav-overrides((container-background-color: var(--app-card), container-shape: 0));
@@ -254,37 +276,39 @@ html {
 
   // ---- App tokens on top of Material system variables ----
   --app-gap: 1.5rem;
-  --app-radius: 10px; // cards, panels
+  --app-radius: 12px; // cards, panels
+  --app-radius-lg: var(--app-radius); // shared appearance controls use the same quiet panel geometry
   --app-card-pad: 1.1rem 1.25rem; // inner padding of a .panel card (1rem on phones, see below)
-  --app-radius-sm: 8px; // small elements, inputs
+  --app-radius-sm: 10px; // small elements, inputs
   --app-radius-pill: 999px; // buttons, chips, search
   --app-border-w: 1.5px; // line language: borders instead of shadows
   --app-sidebar-width: 240px;
   --app-font-text: #{$font-text};
   --app-font-display: #{$font-display};
-  --app-font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --app-font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'Liberation Mono', monospace;
   --app-fast: 120ms;
 
   --app-canvas: var(--mat-sys-surface);
+  --app-surface: var(--app-card);
   --app-ink: var(--mat-sys-on-surface);
   --app-on-ink: var(--mat-sys-surface); // text on ink-filled buttons, tooltips, snackbars
   --app-border: var(--mat-sys-outline-variant); // «line» — decorative frame, meaning is never carried by it
   --app-track: light-dark(#e6e9ee, #232a35); // lighter «track» line: row dividers, rails, dashed separators
   --app-muted: var(--mat-sys-on-surface-variant);
   --app-success: light-dark(#2e7d32, #72cf7a);
-  --app-brand: light-dark(#1a5fb4, #3584e4); // logo square only
-  --app-brand-text: light-dark(#1a5fb4, #86b4f0);
+  --app-brand: var(--os-primary); // logo square and selected-action color
+  --app-brand-text: var(--os-primary);
   --app-danger: light-dark(#b42318, #f59a8f);
   --app-warning: light-dark(#a65a00, #f0a74a);
   --app-info: var(--app-brand-text);
-  // Teal = hints and focus («інтерв'ю» line colour); >= 3:1 as a UI colour in both themes.
-  --app-accent: light-dark(#0e7c73, #3ccfc0);
-  --app-focus-ring: var(--app-accent);
+  // User-selectable UI accent; domain stage/status colors below stay fixed semantic colors.
+  --app-accent: var(--os-primary);
+  --app-focus-ring: var(--os-primary);
 
   // Stage lines — fixed semantics by stage TYPE (data-kind), never by column order.
   --app-stage-new: light-dark(#5d6b80, #a3afc2);
-  --app-stage-screen: var(--mat-sys-primary);
-  --app-stage-interview: var(--app-accent);
+  --app-stage-screen: light-dark(#1a5fb4, #86b4f0);
+  --app-stage-interview: light-dark(#0e7c73, #3ccfc0);
   --app-stage-offer: var(--app-warning);
   --app-stage-hire: var(--app-success);
   --app-stage-closed: var(--app-danger);
@@ -305,17 +329,28 @@ html {
   --app-badge-text: light-dark(#ffffff, #1e1200);
 
   // Shell and shared surfaces.
-  --app-card: light-dark(#ffffff, #151a22);
-  --app-card-2: light-dark(#f9fafb, #191f28); // hover / quiet fill inside cards
+  --app-card: var(--os-card);
+  --app-card-2: var(--os-card-2); // hover / quiet fill inside cards
   --app-board-card: var(--app-card);
   --app-card-shadow: none; // line language: no shadows on cards
   --app-overlay-shadow: 0 12px 32px -12px light-dark(rgb(18 23 34 / 0.22), rgb(0 0 0 / 0.6));
   --app-drag-shadow: 0 18px 36px -16px rgb(18 23 34 / 0.45), 0 4px 10px -4px rgb(18 23 34 / 0.25);
   --app-sidebar-bg: var(--app-card);
+  // Shared OS chrome contract: shell surfaces and future desktop windows consume the same inherited values.
+  --os-chrome-background: var(--app-sidebar-bg);
+  --os-chrome-filter: none;
+  --os-window-frame-background: var(--app-sidebar-bg);
+  --os-chrome-edge: var(--app-border);
+  --os-chrome-reflection: none;
+  --os-chrome-shadow: none;
+  --os-rail-motion: 180ms;
+  --os-control-motion: 120ms;
+  --os-disclosure-motion: 150ms;
+  --os-drawer-motion: 200ms;
   --app-nav-heading: var(--app-muted);
   --app-nav-hover: var(--app-card-2);
   --app-nav-active-bg: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
-  --app-nav-active-text: light-dark(#154f97, #a9caf5);
+  --app-nav-active-text: var(--os-primary);
   --app-table-head: var(--app-card);
   --app-row-hover: var(--app-card-2);
   --app-row-selected: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
@@ -323,7 +358,7 @@ html {
 
   // Chart ramp (reports): stage lines brand → teal → amber.
   --app-chart-1: var(--mat-sys-primary);
-  --app-chart-2: var(--app-accent);
+  --app-chart-2: light-dark(#0e7c73, #3ccfc0);
   --app-chart-3: var(--app-warning);
 
   scrollbar-color: var(--app-scrollbar) transparent;
@@ -338,14 +373,142 @@ html[data-theme='dark'] {
   color-scheme: dark;
 }
 
+html[data-interface-style='glass'] {
+  --os-chrome-background: color-mix(in srgb, var(--app-sidebar-bg) var(--os-glass-opacity), transparent);
+  --os-chrome-filter: blur(20px) saturate(1.12);
+  --os-window-frame-background: transparent;
+  --os-chrome-edge: light-dark(rgb(255 255 255 / 0.72), rgb(255 255 255 / 0.2));
+  --os-chrome-reflection: linear-gradient(180deg, light-dark(rgb(255 255 255 / 0.36), rgb(255 255 255 / 0.1)), transparent 58%);
+  --os-chrome-shadow: 0 16px 40px -24px light-dark(rgb(28 38 56 / 0.52), rgb(0 0 0 / 0.72));
+}
+
+@media (max-width: 767.98px) {
+  html[data-interface-style='glass'] { --os-chrome-filter: blur(10px) saturate(1.08); }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  html[data-interface-style='glass'] {
+    --os-chrome-background: var(--app-sidebar-bg);
+    --os-chrome-filter: none;
+    --os-window-frame-background: var(--app-sidebar-bg);
+    --os-chrome-edge: var(--app-border);
+    --os-chrome-reflection: none;
+    --os-chrome-shadow: none;
+  }
+}
+
+html[data-performance='fast'] {
+  --os-chrome-background: var(--app-sidebar-bg);
+  --os-chrome-filter: none;
+  --os-window-frame-background: var(--app-sidebar-bg);
+  --os-chrome-edge: var(--app-border);
+  --os-chrome-reflection: none;
+  --os-chrome-shadow: none;
+  --os-rail-motion: 0ms;
+  --os-control-motion: 0ms;
+  --os-disclosure-motion: 0ms;
+  --os-drawer-motion: 0ms;
+}
+
+// Accent changes the interactive/brand channel; stage, success, warning and error colors remain semantic.
+html[data-color-scheme='custom'][data-accent='violet'] {
+  --os-primary: light-dark(#5f469b, #c0aaff);
+  --os-on-primary: light-dark(#ffffff, #251742);
+  --os-primary-container: light-dark(#eee8f8, #342747);
+  --os-on-primary-container: light-dark(#38275e, #eee6ff);
+}
+
+html[data-color-scheme='custom'][data-accent='green'] {
+  --os-primary: light-dark(#286a4d, #8dd7ae);
+  --os-on-primary: light-dark(#ffffff, #123021);
+  --os-primary-container: light-dark(#e1f3e8, #1d3b2b);
+  --os-on-primary-container: light-dark(#17472f, #d5f5e0);
+}
+
+html[data-color-scheme='custom'][data-accent='graphite'] {
+  --os-primary: light-dark(#485365, #bac5d6);
+  --os-on-primary: light-dark(#ffffff, #202936);
+  --os-primary-container: light-dark(#e9edf3, #303a49);
+  --os-on-primary-container: light-dark(#303b4b, #e2e9f4);
+}
+
+html[data-color-scheme='sintegrum'] {
+  color-scheme: dark;
+  --os-primary: #9b85ff;
+  --os-inverse-primary: #62509f;
+  --os-on-primary: #171326;
+  --os-primary-container: #302842;
+  --os-on-primary-container: #e5ddff;
+  --os-surface: #0d0b18;
+  --os-surface-lowest: #17151f;
+  --os-surface-low: #17151f;
+  --os-surface-mid: #201d2b;
+  --os-surface-high: #232030;
+  --os-surface-highest: #302c40;
+  --os-on-surface: #f2f0fa;
+  --os-on-surface-variant: #c9c4dc;
+  --os-outline: #766e87;
+  --os-outline-variant: #454052;
+  --os-card: #17151f;
+  --os-card-2: #201d2b;
+  --os-wallpaper-a: rgb(109 40 217 / 14%);
+  --os-wallpaper-b: rgb(29 78 216 / 11%);
+  --app-success: #5ab48e;
+  --app-warning: #e6ad63;
+  --app-good-text: #5ab48e;
+  --app-warn-text: #e6ad63;
+  --app-nav-active-text: #d2c3ff;
+  --app-overlay-shadow: 0 14px 38px -12px rgb(8 7 17 / 58%), 0 2px 6px rgb(8 7 17 / 40%);
+}
+
+html[data-wallpaper='sand'] {
+  --os-wallpaper-a: color-mix(in srgb, #c89569 16%, transparent);
+  --os-wallpaper-b: color-mix(in srgb, #9b7890 10%, transparent);
+}
+
+html[data-wallpaper='dusk'] {
+  --os-wallpaper-a: color-mix(in srgb, #8d7de2 15%, transparent);
+  --os-wallpaper-b: color-mix(in srgb, #719fce 11%, transparent);
+}
+
+html[data-motion='reduced'] {
+  scroll-behavior: auto;
+  --app-fast: 0ms;
+  --os-rail-motion: 0ms;
+  --os-control-motion: 0ms;
+  --os-disclosure-motion: 0ms;
+  --os-drawer-motion: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    --app-fast: 0ms;
+    --os-rail-motion: 0ms;
+    --os-control-motion: 0ms;
+    --os-disclosure-motion: 0ms;
+    --os-drawer-motion: 0ms;
+  }
+}
+
+html[data-performance='fast'] {
+  --app-card-shadow: none;
+  --app-overlay-shadow: none;
+  --app-drag-shadow: none;
+}
+
 body {
   background-color: var(--app-canvas);
+  background-image: radial-gradient(ellipse at 100% 0%, var(--os-wallpaper-a), transparent 52%),
+    radial-gradient(ellipse at 0% 100%, var(--os-wallpaper-b), transparent 54%);
+  background-attachment: fixed;
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
   margin: 0;
   height: 100%;
   -webkit-font-smoothing: antialiased;
 }
+
+html[data-performance='fast'] body { background-image: none; }
 
 ::selection {
   background: color-mix(in srgb, var(--mat-sys-primary) 24%, transparent);
@@ -420,7 +583,7 @@ body {
   overflow-x: auto;
 }
 
-/* Table cells read at 13.5px (the wider Wix Madefor keeps today's columns on one line). Zero specificity:
+/* Table cells read at 13.5px to keep dense data columns compact. Zero specificity:
    any page rule that sets a cell font still wins; only the inherited 14px body size is replaced. */
 :where(td) { font-size: 0.84375rem; }
 

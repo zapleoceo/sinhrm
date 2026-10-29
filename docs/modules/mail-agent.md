@@ -215,3 +215,7 @@ Auth — `UserRepository::find` (фоновый actor).
 
 Ключ модуля `mail-agent`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — только суперадмин. Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
 MySQL 8.4 only (ADR 0011, 2026-10-08): `gmail_id` uses `utf8mb4_bin` unconditionally to preserve source message identity. Test: `tests/Feature/MailAgent/GmailIdMysqlSchemaTest` (binary collation, unique index, `18aB` and `18ab` are two messages).
+
+## Почта в окнах SinHRM OS
+
+Параметр `tab` и фильтры журнала обрабатываются в query контексте текущего окна. Поэтому ссылка на журнал или правила не переключает вкладку в основной странице, а прямые ссылки с обычным query параметром продолжают работать.

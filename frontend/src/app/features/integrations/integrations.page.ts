@@ -1,6 +1,4 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,6 +13,7 @@ import { IntegrationCard } from './integration-card';
 import { IntegrationsDirectoryStore } from './integrations-directory.store';
 import { IntegrationsStore } from './integrations.store';
 import { NotifyService } from '../../core/ui/notify.service';
+import { windowAwareQueryParamMap } from '../../core/windows/window-aware-query';
 
 /** Superadmin: integrations grouped by kind + the global AI policy switch (confirmed, optimistic). */
 @Component({
@@ -28,7 +27,7 @@ import { NotifyService } from '../../core/ui/notify.service';
 export class IntegrationsPage implements OnInit {
   protected readonly store = inject(IntegrationsStore);
   protected readonly googleOAuthState = signal<GoogleOAuthState>('loading');
-  private readonly query = toSignal(inject(ActivatedRoute).queryParamMap);
+  private readonly query = windowAwareQueryParamMap();
   protected readonly focusedIntegration = computed(() => this.query()?.get('integration') ?? null);
   private readonly dialog = inject(MatDialog);
   private readonly notify = inject(NotifyService);

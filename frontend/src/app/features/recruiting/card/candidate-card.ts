@@ -1,6 +1,6 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
@@ -9,6 +9,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { SendMessage } from '../../channels/channels.model';
 import { channelErrorCode, channelErrorKey } from '../../channels/channels.service';
@@ -78,6 +79,8 @@ export class CandidateCard {
   private readonly composer = viewChild(TouchComposer);
   private readonly google = inject(GoogleService);
   private readonly clipboard = inject(Clipboard);
+  protected readonly destroyRef = inject(DestroyRef);
+  protected readonly router = inject(Router);
   protected readonly hire = inject(HireAction);
 
   protected readonly hasIcon = hasChannelIcon;

@@ -9,37 +9,31 @@
   "Маршрут погодження"
  ],
  "landmarks": [
-  "complementary \"\"",
+  "banner \"\"",
   "main \"\"",
-  "navigation \"Головне меню\""
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Автоприховування меню\"",
-  "button \"Адміністрування 9 нових\"",
   "button \"Відхилити\"",
-  "button \"Згорнути меню\" [expanded]",
-  "button \"Люди 70 нових\"",
+  "button \"Звіти\"",
   "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
+  "button \"Поговорити зі Стіком\"",
   "button \"Погодити\"",
-  "button \"Продуктивність\"",
-  "button \"Рекрутинг\" [expanded]",
-  "button \"Сервіси\"",
   "button \"Скасувати заявку\"",
-  "link \"SinHRM\" -> /",
-  "link \"Вакансії\" -> /vacancies",
-  "link \"Вхідні\" -> /inbox",
-  "link \"Довідка\" -> /docs",
-  "link \"Заявки на підбір 2 нових\" -> /hiring-requests",
+  "button \"Співробітники\"",
   "link \"Заявки на підбір\" -> /hiring-requests",
-  "link \"Звіти\" -> /reports",
-  "link \"Кандидати\" -> /candidates",
-  "link \"Мої задачі\" -> /tasks",
-  "link \"Огляд\" -> /",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
   "textbox \"Коментар (обов'язковий при відхиленні)\""
  ],
  "columns": [],
  "counts": {
-  "img": 4,
+  "img": 2,
   "listitem": 2
  }
 }

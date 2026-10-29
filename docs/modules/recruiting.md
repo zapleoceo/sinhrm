@@ -319,6 +319,8 @@ interface TouchpointIngestor { public function ingest(IncomingMessage $message):
 | `careers/careers.ts`, `careers/careers.service.ts` | публичные `/jobs` и `/jobs/:slug` (`JobsPage`, `JobPage`); HTTP — `PublicCareersService` (список, вакансия по slug, отклик multipart), тип `PublicVacancy` |
 | `features/extension/` | `/settings/extension` — токен расширения ([extension.md](extension.md)); источники `linkedin`, `dou` в `recruiting.model.ts` |
 
+In the Browser OS shell, `CandidatesPage` and its nested `BoardPage` open `CandidateDialog` with their public `ViewContainerRef`. The dialog therefore receives the caller's scoped Router, so opening a visible duplicate stays in the candidate window. The owner closes its dialog on destruction and removes its destroy callback after the dialog closes; role invalidation cannot leave an overlay tied to a reused slot. Regression: `candidates/candidate-dialog.window.spec.ts` exercises the real overlay, duplicate response, guarded dirty sibling window and owner disposal.
+
 Строки — `recruiting.*` в `public/i18n/{uk,ru,en}.json`. Общие стили страниц (`.page-head`, `.filters`, `.panel`, `.state`)
 и токен `--app-warning` — в `styles.scss`.
 

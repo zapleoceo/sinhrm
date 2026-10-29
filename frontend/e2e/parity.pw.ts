@@ -14,6 +14,7 @@ import { runSteps, settle, watchNetwork } from './steps.mjs';
 const UPDATE = !!process.env['E2E_UPDATE'];
 const SCREENSHOTS = !!process.env['E2E_SCREENSHOTS'];
 const SNAPSHOTS = join(__dirname, '__snapshots__');
+const INVENTORIES = join(__dirname, '.out', 'inventories');
 const allowlist = JSON.parse(readFileSync(join(__dirname, 'layout-allowlist.json'), 'utf8')) as {
   pageOverflow: string[];
   clipped: Record<string, string[]>;
@@ -86,14 +87,45 @@ for (const p of PAGES) {
       await settle(page);
       await runSteps(page, state.steps);
 
+      // Establish that default CVA selections are painted before inventory and screenshots are captured.
+      if (p.id === 'appearance' && state.id === '') {
+        const scheme = page.getByTestId('appearance-scheme');
+        const wallpaper = page.getByTestId('appearance-wallpaper');
+        await expect(scheme).toHaveValue('custom');
+        await expect(scheme.locator('option:checked')).toHaveText('Власна');
+        await expect(wallpaper).toHaveValue('mist');
+        await expect(wallpaper.locator('option:checked')).toHaveText('Туман');
+      }
+
       // (a) inventory — identical across themes, so only the light run writes it.
       const inventory = await inventoryOf(page, p.volatile);
+      const actualInventory = { path: p.path, state: state.id || null, key, viewport, theme, inventory };
+      const inventoryDirectory = join(INVENTORIES, info.project.name);
+      mkdirSync(inventoryDirectory, { recursive: true });
+      writeFileSync(join(inventoryDirectory, `${name}.${viewport}.${theme}.json`), JSON.stringify(actualInventory, null, 2) + '\n');
       const file = join(SNAPSHOTS, `${key}.json`);
+      const snapshotExists = existsSync(file);
+      let snapshotMatches = false;
+      if (snapshotExists) {
+        const saved = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+        delete saved['path'];
+        delete saved['state'];
+        snapshotMatches = JSON.stringify(inventory) === JSON.stringify(saved);
+      }
+      if (!snapshotExists || !snapshotMatches) {
+        await info.attach('actual-ui-inventory', {
+          body: JSON.stringify(actualInventory, null, 2),
+          contentType: 'application/json',
+        });
+      }
+      if (SCREENSHOTS || !snapshotExists) {
+        await page.screenshot({ path: join(__dirname, '.out', 'screens', info.project.name, `${name}.png`), fullPage: true });
+      }
       if (UPDATE && theme === 'light') {
         mkdirSync(SNAPSHOTS, { recursive: true });
         writeFileSync(file, JSON.stringify({ path: p.path, state: state.id || null, ...inventory }, null, 1) + '\n');
       } else {
-        expect(existsSync(file), `no snapshot ${key}.json — run npm run e2e:update and review the diff`).toBe(true);
+        expect(snapshotExists, `no snapshot ${key}.json — run npm run e2e:update and review the diff`).toBe(true);
         const saved = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
         delete saved['path'];
         delete saved['state'];
@@ -164,8 +196,7 @@ for (const p of PAGES) {
         expect.soft(worse, `new axe violations on ${axeKey}`).toEqual([]);
       }
 
-      // (f) screenshots for reviewers (CI artifact), never compared here.
-      if (SCREENSHOTS) await page.screenshot({ path: join(__dirname, '.out', 'screens', info.project.name, `${name}.png`), fullPage: true });
+      // (f) screenshots were captured before assertions so missing-baseline failures retain rendered evidence.
     });
   }
 }

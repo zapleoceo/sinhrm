@@ -15,6 +15,7 @@ describe('moduleForUrl', () => {
     expect(moduleForUrl('/')).toBeNull();
     expect(moduleForUrl('/tasks')).toBeNull();
     expect(moduleForUrl('/admin/modules')).toBeNull();
+    expect(moduleForUrl('/desktop')).toBeNull();
     expect(moduleForUrl('/timesheet')).toBeNull();
   });
 });

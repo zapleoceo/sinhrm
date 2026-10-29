@@ -10,7 +10,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { RouterLink } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ASSIGNEE_RULES, AssigneeRule, EditableStep, WORKFLOW_ACTIONS, WORKFLOW_KINDS, WORKFLOW_TRIGGERS, WorkflowAction, WorkflowKind, WorkflowTrigger } from '../workflows.model';
 import { workflowsErrorKey } from '../workflows.service';
 import { PersonPicker, PickerValue } from '../../people/picker/person-picker';
@@ -18,6 +18,8 @@ import { ConfigChange, StepConfigForm } from './step-config';
 import { WorkflowEditorStore } from './workflow-editor.store';
 import { NotifyService } from '../../../core/ui/notify.service';
 import { eventValue } from '../../../core/ui/event-value';
+import { WINDOW_CONTEXT } from '../../../core/windows/window-context';
+import { WindowNavigation } from '../../../core/windows/window-navigation';
 
 /** Nested server messages of one step's config: steps.2.config.url → { url }. */
 export function stepConfigErrors(errors: Record<string, string>, index: number): Record<string, string> {
@@ -67,6 +69,9 @@ export class WorkflowEditorPage {
 
   protected readonly store = inject(WorkflowEditorStore);
   private readonly notify = inject(NotifyService);
+  private readonly i18n = inject(TranslocoService);
+  private readonly windowContext = inject(WINDOW_CONTEXT, { optional: true });
+  private readonly windowNavigation = inject(WindowNavigation, { optional: true });
 
   protected readonly kinds = WORKFLOW_KINDS;
   protected readonly triggers = WORKFLOW_TRIGGERS;
@@ -76,6 +81,11 @@ export class WorkflowEditorPage {
 
   constructor() {
     effect(() => this.store.load(this.id()));
+  }
+
+  canLeave(): boolean {
+    if (this.windowContext && this.windowNavigation && !this.windowNavigation.isAuthorizedSlot(this.windowContext.slot)) return true;
+    return !this.store.dirty() || window.confirm(this.i18n.translate('recruiting.form.leaveConfirm'));
   }
 
   protected int(event: Event, min: number, max: number): number {

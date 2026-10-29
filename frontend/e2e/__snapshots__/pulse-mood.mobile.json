@@ -10,12 +10,19 @@
  ],
  "landmarks": [
   "banner \"\"",
-  "main \"\""
+  "main \"\"",
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Головне меню\"",
   "button \"Зберегти\"",
+  "button \"Звіти\"",
+  "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
   "button \"Поговорити зі Стіком\"",
+  "button \"Співробітники\"",
   "checkbox \"Вт\" [checked]",
   "checkbox \"Нд\"",
   "checkbox \"Обов’язкове\"",
@@ -24,8 +31,10 @@
   "checkbox \"Сб\"",
   "checkbox \"Ср\" [checked]",
   "checkbox \"Чт\" [checked]",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
   "link \"Мій настрій\" -> /pulse/mood",
-  "link \"Огляд\" -> /",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
   "radio \"Добре\"",
   "radio \"Нормально\"",
   "radio \"Погано\"",

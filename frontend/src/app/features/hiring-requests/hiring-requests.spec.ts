@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { missingFields, salaryRange, statusTone, stepIcon } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 import { moveItem } from './hiring-settings.page';
+import { HiringWizardPage } from './hiring-wizard.page';
 
 describe('HiringRequestsService', () => {
   let api: HiringRequestsService;
@@ -75,5 +76,29 @@ describe('hiring helpers', () => {
     expect(missingFields(fields, { a: 'x', b: false })).toEqual(['b']);
     expect(moveItem(['x', 'y', 'z'], 0, 1)).toEqual(['y', 'x', 'z']);
     expect(moveItem(['x', 'y'], 0, -1)).toEqual(['x', 'y']);
+  });
+});
+
+describe('HiringWizardPage leave protection', () => {
+  const editor = (authorized: boolean): { canLeave(): boolean } => {
+    const page = Object.create(HiringWizardPage.prototype) as { canLeave(): boolean } & Record<string, unknown>;
+    Object.assign(page, {
+      form: { dirty: true },
+      i18n: { translate: (key: string) => key },
+      windowContext: { slot: 'os1' },
+      windowNavigation: { isAuthorizedSlot: () => authorized },
+    });
+    return page;
+  };
+
+  it('keeps a dirty draft when the user cancels, but allows security-scope cleanup without prompting', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    expect(editor(true).canLeave()).toBe(false);
+    expect(confirm).toHaveBeenCalledWith('recruiting.form.leaveConfirm');
+
+    confirm.mockClear();
+    expect(editor(false).canLeave()).toBe(true);
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
   });
 });

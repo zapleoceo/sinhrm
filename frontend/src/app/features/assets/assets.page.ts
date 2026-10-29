@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, OnInit, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,7 +9,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
+import { ParamMap, RouterLink } from '@angular/router';
+import { windowAwareQueryParamMap } from '../../core/windows/window-aware-query';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
@@ -226,7 +227,7 @@ export class AssetsPage implements OnInit {
   protected readonly employeeId = signal<number | null>(null);
   protected readonly returnStatus = signal<AssetStatus>('in_stock');
   private readonly url = inject(TableUrlState);
-  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  private readonly params = windowAwareQueryParamMap();
   /** Server part of the URL (search, status, type): only its change reloads the list, not sort or page filters. */
   private readonly query = computed(() => assetQueryFromParams(this.params()), { equal: sameQuery });
   protected readonly search$ = new Subject<string>();

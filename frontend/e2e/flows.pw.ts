@@ -29,6 +29,34 @@ async function open(page: Page, context: import('@playwright/test').BrowserConte
   return mock;
 }
 
+async function expectModulesBadgeOutsideLabel(page: Page, mobile: boolean): Promise<void> {
+  const button = page.getByRole('button', { name: 'Модулі', exact: true });
+  const badge = button.locator('app-nav-badge.modules-badge .nav-badge');
+  const label = button.locator('.modules-label');
+  const icon = button.locator('mat-icon');
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAccessibleName('Модулі');
+  await expect(badge).toBeVisible();
+
+  const adjacent = mobile ? icon : label;
+  if (mobile) {
+    await expect(label).toBeHidden();
+    await expect(icon).toBeVisible();
+  } else {
+    await expect(label).toBeVisible();
+  }
+  const [adjacentBox, badgeBox] = await Promise.all([adjacent.boundingBox(), badge.boundingBox()]);
+  expect(adjacentBox, mobile ? 'the mobile Modules icon has rendered bounds' : 'the desktop Modules label has rendered bounds').not.toBeNull();
+  expect(badgeBox, 'the Modules badge has rendered bounds').not.toBeNull();
+  const first = adjacentBox!;
+  const second = badgeBox!;
+  const intersects = first.x < second.x + second.width
+    && first.x + first.width > second.x
+    && first.y < second.y + second.height
+    && first.y + first.height > second.y;
+  expect(intersects, mobile ? 'the badge does not overlap the mobile menu icon' : 'the badge does not overlap the desktop Modules label').toBe(false);
+}
+
 /** Drags with real mouse moves (CDK drag-drop needs several pointer moves to start and to pick the target). */
 async function drag(page: Page, from: Locator, to: Locator): Promise<void> {
   const a = (await from.boundingBox())!;
@@ -70,6 +98,64 @@ async function cardNextTo(page: Page, target: Locator): Promise<Locator> {
 }
 
 test.describe('desktop flows', () => {
+  test('user menu opens appearance settings', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop-light', 'desktop-light only');
+    await open(page, context, '/');
+    await page.getByRole('button', { name: 'Меню користувача' }).click();
+    await page.getByRole('menuitem', { name: 'Зовнішній вигляд', exact: true }).click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/settings/appearance');
+    await expect.poll(() => new URL(page.url()).searchParams.get('osPrimary')).toBe('1');
+    await expect(page.locator('.primary-view').getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
+  });
+
+  test('appearance preferences apply immediately and persist across reload', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop-light', 'desktop-light only');
+    await open(page, context, '/settings/appearance');
+    await expect(page.getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
+    const scheme = page.getByTestId('appearance-scheme');
+    const wallpaper = page.getByTestId('appearance-wallpaper');
+    await expect(scheme).toHaveValue('custom');
+    await expect(scheme.locator('option:checked')).toHaveText('Власна');
+    await expect(wallpaper).toHaveValue('mist');
+    await expect(wallpaper.locator('option:checked')).toHaveText('Туман');
+
+    // Exercise actual Material controls and verify the shared root contract consumed by the app styles.
+    await page.getByRole('radio', { name: 'Темна', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await scheme.selectOption('sintegrum');
+    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'sintegrum');
+
+    await page.getByRole('radio', { name: 'Фіолетовий', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'custom');
+    await expect(page.locator('html')).toHaveAttribute('data-accent', 'violet');
+    await page.getByRole('radio', { name: 'Суцільний', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-interface-style', 'solid');
+    await wallpaper.selectOption('dusk');
+    await expect(page.locator('html')).toHaveAttribute('data-wallpaper', 'dusk');
+
+    const transparency = page.locator('input[type="range"]');
+    await transparency.focus();
+    await page.keyboard.press('Home');
+    for (let step = 0; step < 30; step++) await page.keyboard.press('ArrowRight');
+    await expect(transparency).toHaveValue('30');
+    await expect(page.locator('html')).toHaveCSS('--os-glass-opacity', '70%');
+    const fastMode = page.getByRole('switch', { name: 'Швидкий режим' });
+    await fastMode.click();
+    await expect(page.locator('html')).toHaveAttribute('data-performance', 'fast');
+
+    await page.reload();
+    await settle(page);
+    const root = page.locator('html');
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    await expect(root).toHaveAttribute('data-color-scheme', 'custom');
+    await expect(root).toHaveAttribute('data-accent', 'violet');
+    await expect(root).toHaveAttribute('data-interface-style', 'solid');
+    await expect(root).toHaveAttribute('data-wallpaper', 'dusk');
+    await expect(root).toHaveAttribute('data-performance', 'fast');
+    await expect(root).toHaveCSS('--os-glass-opacity', '70%');
+    await expect(page.locator('input[type="range"]')).toHaveValue('30');
+  });
+
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'desktop-light', 'desktop-light only'));
 
@@ -79,6 +165,139 @@ test.describe('desktop flows', () => {
     await expect(page.locator('section.column').first()).toBeVisible();
     return mock;
   }
+
+  test('routed windows drag and resize inside the workspace without navigating or reloading pages', async ({ page, context }) => {
+    const requests: string[] = [];
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      if (url.pathname === '/api/tasks' || url.pathname === '/api/people') requests.push(url.pathname);
+    });
+    await open(page, context, '/');
+    const dock = page.getByRole('navigation', { name: 'Вікна робочого простору' });
+    await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    await expect(page.getByTestId('os-window-os1').getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await dock.getByRole('button', { name: 'Співробітники', exact: true }).click();
+    const article = page.getByTestId('os-window-os2');
+    await expect(article.getByRole('heading', { level: 1, name: 'Співробітники' })).toBeVisible();
+    await settle(page);
+
+    const urlBefore = page.url();
+    const requestsBefore = requests.length;
+    await page.evaluate(() => {
+      const target = window as Window & { __osWindowHistoryWrites?: number };
+      target.__osWindowHistoryWrites = 0;
+      const push = window.history.pushState.bind(window.history);
+      const replace = window.history.replaceState.bind(window.history);
+      window.history.pushState = (...args: Parameters<History['pushState']>) => {
+        target.__osWindowHistoryWrites = (target.__osWindowHistoryWrites ?? 0) + 1;
+        push(...args);
+      };
+      window.history.replaceState = (...args: Parameters<History['replaceState']>) => {
+        target.__osWindowHistoryWrites = (target.__osWindowHistoryWrites ?? 0) + 1;
+        replace(...args);
+      };
+    });
+    const layer = page.locator('.window-layer');
+    const layerBefore = await layer.boundingBox();
+    const before = await article.boundingBox();
+    expect(before).not.toBeNull();
+    expect(layerBefore).not.toBeNull();
+    expect(layerBefore!.y).toBeGreaterThanOrEqual(56);
+    expect(layerBefore!.y + layerBefore!.height).toBeLessThanOrEqual(page.viewportSize()!.height - 56);
+    const title = await page.getByTestId('window-titlebar-os2').locator('h2').boundingBox();
+    expect(title).not.toBeNull();
+    await page.mouse.move(title!.x + title!.width / 2, title!.y + title!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(title!.x + title!.width / 2 + 24, title!.y + title!.height / 2 + 24, { steps: 4 });
+    await page.mouse.up();
+
+    const moved = await article.boundingBox();
+    expect(moved).not.toBeNull();
+    expect(moved!.x).not.toBe(before!.x);
+    expect(moved!.y).not.toBe(before!.y);
+    expect(moved!.x).toBeGreaterThanOrEqual(layerBefore!.x);
+    expect(moved!.y).toBeGreaterThanOrEqual(layerBefore!.y);
+    expect(moved!.x + moved!.width).toBeLessThanOrEqual(layerBefore!.x + layerBefore!.width);
+    expect(moved!.y + moved!.height).toBeLessThanOrEqual(layerBefore!.y + layerBefore!.height);
+
+    const resize = await page.getByTestId('window-resize-os2').boundingBox();
+    expect(resize).not.toBeNull();
+    const resizeBefore = await article.boundingBox();
+    await page.mouse.move(resize!.x + resize!.width / 2, resize!.y + resize!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(resize!.x + resize!.width / 2 + 48, resize!.y + resize!.height / 2 + 40, { steps: 4 });
+    await page.mouse.up();
+    const resized = await article.boundingBox();
+    expect(resized).not.toBeNull();
+    expect(resized!.width).toBeGreaterThan(resizeBefore!.width);
+    expect(resized!.height).toBeGreaterThan(resizeBefore!.height);
+    expect(resized!.x + resized!.width).toBeLessThanOrEqual(layerBefore!.x + layerBefore!.width);
+    expect(resized!.y + resized!.height).toBeLessThanOrEqual(layerBefore!.y + layerBefore!.height);
+    const titleAfterResize = await page.getByTestId('window-titlebar-os2').locator('h2').boundingBox();
+    expect(titleAfterResize).not.toBeNull();
+    await page.mouse.move(titleAfterResize!.x + titleAfterResize!.width / 2, titleAfterResize!.y + titleAfterResize!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(titleAfterResize!.x + titleAfterResize!.width / 2 + 4000, titleAfterResize!.y + titleAfterResize!.height / 2 + 4000, { steps: 5 });
+    await page.mouse.up();
+    const clamped = await article.boundingBox();
+    expect(clamped).not.toBeNull();
+    expect(clamped!.x + clamped!.width).toBeLessThanOrEqual(layerBefore!.x + layerBefore!.width);
+    expect(clamped!.y + clamped!.height).toBeLessThanOrEqual(layerBefore!.y + layerBefore!.height);
+    await page.setViewportSize({ width: 800, height: 640 });
+    await expect.poll(async () => {
+      const currentLayer = await layer.boundingBox();
+      const currentWindow = await article.boundingBox();
+      return !!currentLayer && !!currentWindow
+        && currentWindow.x >= currentLayer.x
+        && currentWindow.y >= currentLayer.y
+        && currentWindow.x + currentWindow.width <= currentLayer.x + currentLayer.width
+        && currentWindow.y + currentWindow.height <= currentLayer.y + currentLayer.height;
+    }).toBe(true);
+    expect(page.url()).toBe(urlBefore);
+    expect(await page.evaluate(() => (window as Window & { __osWindowHistoryWrites?: number }).__osWindowHistoryWrites)).toBe(0);
+    expect(requests).toHaveLength(requestsBefore);
+    await expect(article.getByRole('heading', { level: 1, name: 'Співробітники' })).toBeVisible();
+    const firstWindow = page.getByTestId('os-window-os1');
+    await expect(firstWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await page.getByTestId('dock-window-os1').click();
+    await expect(firstWindow).toHaveClass(/active/);
+    await firstWindow.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
+    await expect(firstWindow).toBeHidden();
+    const restore = page.getByTestId('dock-window-os1');
+    await expect(restore).toBeVisible();
+    await restore.click();
+    await expect(firstWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await expect.poll(() => page.url()).toContain('os1:window/tasks');
+    expect(requests).toHaveLength(requestsBefore);
+  });
+
+  test('routed windows stay within the visible safe band while tall reports content scrolls and viewport changes', async ({ page, context }) => {
+    await open(page, context, '/reports');
+    await page.getByRole('navigation', { name: 'Вікна робочого простору' }).getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    const article = page.getByTestId('os-window-os1');
+    await expect(article.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+    const assertSafeBand = async (): Promise<void> => {
+      const viewport = page.viewportSize()!;
+      const layer = await page.locator('.window-layer').boundingBox();
+      const windowBox = await article.boundingBox();
+      expect(layer).not.toBeNull();
+      expect(windowBox).not.toBeNull();
+      expect(layer!.y).toBeGreaterThanOrEqual(56);
+      expect(layer!.y + layer!.height).toBeLessThanOrEqual(viewport.height - 56);
+      expect(windowBox!.y).toBeGreaterThanOrEqual(layer!.y);
+      expect(windowBox!.y + windowBox!.height).toBeLessThanOrEqual(layer!.y + layer!.height);
+    };
+    await assertSafeBand();
+    await page.setViewportSize({ width: 900, height: 640 });
+    await expect.poll(async () => {
+      const layer = await page.locator('.window-layer').boundingBox();
+      return !!layer && layer.height <= 640 - 112;
+    }).toBe(true);
+    await assertSafeBand();
+  });
 
   test('candidates board: drag to a stage column → exactly one POST /move with stage_id', async ({ page, context }) => {
     const mock = await personalBoard(page, context);
@@ -536,114 +755,56 @@ test.describe('desktop flows', () => {
     expect(sent[0]).toEqual(expect.objectContaining({ method: 'PUT', body: { role: expect.any(String) } }));
   });
 
-  test('sidebar collapses to an icon rail and expands; the state survives a reload', async ({ page, context }) => {
+  test('Modules remembers expanded groups and supports keyboard navigation to a routed page', async ({ page, context }) => {
     await open(page, context, '/');
-    const sidebar = page.locator('#app-sidebar');
+    const modules = page.locator('.modules-toggle');
     const nav = page.getByRole('navigation', { name: 'Головне меню' });
-    const collapse = page.getByRole('button', { name: 'Згорнути меню' });
-    const expand = page.getByRole('button', { name: 'Розгорнути меню' });
-    const width = async (): Promise<number> => (await sidebar.boundingBox())!.width;
-    const pageOverflow = (): Promise<number> => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    const wide = await width();
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
+    await modules.click();
+    await expect(modules).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav).toBeVisible();
 
-    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
-    await collapse.click();
-    await expect(expand).toHaveAttribute('aria-expanded', 'false');
-    await expect.poll(width).toBeLessThanOrEqual(64);
-    expect(await pageOverflow(), 'horizontal page scroll on the rail').toBeLessThanOrEqual(0);
-    // Items keep their names (labels are visually hidden), a tooltip shows the name next to the icon.
-    const tasks = nav.getByRole('link', { name: 'Мої задачі' });
-    await tasks.hover();
-    await expect(page.locator('.mat-mdc-tooltip').filter({ hasText: 'Мої задачі' })).toBeVisible();
-    // The user menu stays reachable from the avatar.
-    await expect(page.getByRole('button', { name: 'Меню користувача' })).toBeVisible();
-
-    await page.reload();
-    await settle(page);
-    await expect(expand).toHaveAttribute('aria-expanded', 'false');
-    expect(await width()).toBeLessThanOrEqual(64);
-
-    // Keyboard: the toggle is a button (Enter), the sidebar comes back to its full width.
-    await expand.focus();
+    const recruiting = nav.getByRole('button', { name: /^Рекрутинг/ });
+    await expect(recruiting).toHaveAttribute('aria-expanded', 'false');
+    await recruiting.focus();
     await page.keyboard.press('Enter');
-    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
-    await expect.poll(width).toBe(wide);
+    await expect(recruiting).toHaveAttribute('aria-expanded', 'true');
+
     await page.reload();
     await settle(page);
-    await expect(collapse).toBeVisible();
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
+    await modules.click();
+    await expect(nav.getByRole('button', { name: /^Рекрутинг/ })).toHaveAttribute('aria-expanded', 'true');
+
+    const tasks = nav.getByRole('link', { name: 'Мої задачі' });
+    await tasks.focus();
+    await page.keyboard.press('Enter');
+    const tasksWindow = page.getByTestId('os-window-os1');
+    await expect(tasksWindow).toHaveClass(/open/);
+    await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('auto-hide: the rail opens over the content under the pointer and keyboard focus, folds back after a short delay', async ({ page, context }) => {
+  test('Modules closes on Escape, outside click, and navigation', async ({ page, context }) => {
     await open(page, context, '/');
-    const sidebar = page.locator('#app-sidebar');
-    const main = page.locator('main.content');
-    const autoHide = page.getByRole('button', { name: 'Автоприховування меню' });
-    const width = async (): Promise<number> => (await sidebar.boundingBox())!.width;
-    const mainX = async (): Promise<number> => (await main.boundingBox())!.x;
-    const away = (): Promise<void> => page.mouse.move(900, 400);
-
-    // Pinned 240px sidebar: logo + both toggles fit in the head (no overflow, buttons inside the sidebar).
-    const head = page.locator('.nav-head');
-    expect(await head.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
-    const box = (await sidebar.boundingBox())!;
-    const btn = (await autoHide.boundingBox())!;
-    expect(btn.x + btn.width).toBeLessThanOrEqual(box.x + box.width);
-
-    await expect(autoHide).toHaveAttribute('aria-pressed', 'false');
-    await autoHide.click();
-    await expect(autoHide).toHaveAttribute('aria-pressed', 'true');
-    // Switched on under the pointer: open until the pointer leaves, then a rail; the content keeps its place.
-    await expect(page.getByRole('button', { name: 'Згорнути меню' })).toHaveCount(0);
-    await away();
-    await expect.poll(width).toBeLessThanOrEqual(64);
-    const x = await mainX();
-
-    await sidebar.hover({ position: { x: 32, y: 300 } });
-    await expect.poll(width).toBeGreaterThan(200);
-    expect(await mainX(), 'the content does not move when the sidebar opens').toBe(x);
-    // A short overshoot is forgiven: back within the delay, still open.
-    await page.mouse.move(400, 300);
-    await page.mouse.move(100, 300);
-    await page.waitForTimeout(400);
-    expect(await width()).toBeGreaterThan(200);
-    await away();
-    await expect.poll(width).toBeLessThanOrEqual(64);
-
-    // The open user menu keeps the sidebar open while the pointer is over the menu.
-    await sidebar.hover({ position: { x: 32, y: 300 } });
-    await expect.poll(width).toBeGreaterThan(200);
-    await page.getByRole('button', { name: 'Меню користувача' }).click();
-    await expect(page.getByRole('menu')).toBeVisible();
-    await page.getByRole('menu').hover();
-    await away();
-    await page.waitForTimeout(400);
-    expect(await width()).toBeGreaterThan(200);
-    await page.mouse.click(900, 400); // closes the menu
-    await expect(page.getByRole('menu')).toHaveCount(0);
-    await expect.poll(width).toBeLessThanOrEqual(64);
-
-    // Keyboard: focus inside keeps it open, Esc folds it, focus leaving folds it.
-    await autoHide.focus();
-    await page.keyboard.press('Tab');
-    await expect.poll(width).toBeGreaterThan(200);
-    await page.waitForTimeout(400);
-    expect(await width()).toBeGreaterThan(200);
+    const modules = page.locator('.modules-toggle');
+    const nav = page.getByRole('navigation', { name: 'Головне меню' });
+    await modules.click();
+    await expect(modules).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect.poll(width).toBeLessThanOrEqual(64);
-    await page.keyboard.press('Tab');
-    await expect.poll(width).toBeGreaterThan(200);
-    await page.getByRole('button', { name: 'Оновити' }).focus();
-    await expect.poll(width).toBeLessThanOrEqual(64);
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
 
-    // Remembered; switching it off brings back the pinned sidebar.
-    await page.reload();
-    await settle(page);
-    await expect(autoHide).toHaveAttribute('aria-pressed', 'true');
-    expect(await width()).toBeLessThanOrEqual(64);
-    await autoHide.focus();
-    await page.keyboard.press('Enter');
-    await expect(autoHide).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.getByRole('button', { name: 'Згорнути меню' })).toBeVisible();
+    await modules.click();
+    await expect(modules).toHaveAttribute('aria-expanded', 'true');
+    await page.mouse.click(900, 400);
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
+
+    await modules.click();
+    await nav.getByRole('link', { name: 'Мої задачі' }).click();
+    const tasksWindow = page.getByTestId('os-window-os1');
+    await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('time off: a new request → exactly one POST /api/timeoff/requests with the type and the dates, the row appears', async ({ page, context }) => {
@@ -758,9 +919,98 @@ test.describe('mobile flows', () => {
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'mobile-light', 'mobile-light only'));
 
-  test('drawer opens, closes, and closes on navigation', async ({ page, context }) => {
+  test('fast mode removes shell blur, filters, transparency, and transitions, including after reload', async ({ page, context }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await open(page, context, '/settings/appearance');
+    await page.getByRole('radio', { name: 'Скло', exact: true }).click();
+    await page.getByRole('switch', { name: 'Швидкий режим' }).click();
+
+    const root = page.locator('html');
+    const assertFastShell = async (): Promise<void> => {
+      await expect(root).toHaveAttribute('data-performance', 'fast');
+      const surfaceState = await page.evaluate(() => {
+        const effects: { selector: string; pseudo: string; filter: string; backdropFilter: string; webkitBackdropFilter: string }[] = [];
+        const describe = (element: Element): string => {
+          const id = element.id ? `#${element.id}` : '';
+          const classes = Array.from(element.classList).slice(0, 2).map((name) => `.${name}`).join('');
+          return `${element.tagName.toLowerCase()}${id}${classes}`;
+        };
+        for (const element of document.querySelectorAll('*')) {
+          const base = getComputedStyle(element);
+          if (base.display !== 'none' && base.visibility !== 'hidden' && element.getClientRects().length > 0) {
+            for (const [pseudo, style] of [['', base], ['::before', getComputedStyle(element, '::before')], ['::after', getComputedStyle(element, '::after')]] as const) {
+              if (pseudo && (style.display === 'none' || style.content === 'none' || style.content === 'normal')) continue;
+              const filter = style.filter;
+              const backdropFilter = style.backdropFilter;
+              const webkitBackdropFilter = style.getPropertyValue('-webkit-backdrop-filter');
+              // Chromium may leave the unsupported prefixed property empty; only a non-empty
+              // non-none value represents an active WebKit backdrop filter.
+              if (filter !== 'none' || backdropFilter !== 'none' || (webkitBackdropFilter !== '' && webkitBackdropFilter !== 'none')) {
+                effects.push({ selector: describe(element), pseudo, filter, backdropFilter, webkitBackdropFilter });
+              }
+            }
+          }
+        }
+        const alpha = (color: string): number => {
+          const slash = color.match(/\/\s*([\d.]+)\s*\)$/);
+          if (slash) return Number(slash[1]);
+          const rgba = color.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
+          return rgba ? Number(rgba[1]) : color === 'transparent' ? 0 : 1;
+        };
+        const shell = ['#app-sidebar', '.topbar'].map((selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return { selector, missing: true };
+          const style = getComputedStyle(element);
+          return {
+            selector,
+            missing: false,
+            transitionDuration: style.transitionDuration,
+            backgroundColor: style.backgroundColor,
+            backgroundAlpha: alpha(style.backgroundColor),
+          };
+        });
+        return { effects, shell };
+      });
+
+      expect(surfaceState.effects, 'no rendered element or pseudo-element may retain filter/backdrop-filter in fast mode').toEqual([]);
+      for (const surface of surfaceState.shell) {
+        expect(surface.missing, `${surface.selector} exists in the authenticated shell`).toBe(false);
+        expect(surface.backgroundAlpha, `${surface.selector} background is opaque`).toBe(1);
+        expect(surface.transitionDuration, `${surface.selector} transitions are disabled`).toMatch(/^(0s)(,\s*0s)*$/);
+      }
+    };
+
+    const theme = await root.getAttribute('data-theme');
+    await assertFastShell();
+    await page.reload();
+    await settle(page);
+    await expect(root).toHaveAttribute('data-theme', theme ?? 'light');
+    await expect(root).toHaveAttribute('data-interface-style', 'glass');
+    await assertFastShell();
+  });
+
+  test('widget sizes preserve distinct card heights on mobile', async ({ page, context }) => {
+    await open(page, context, '/desktop');
+    const summary = page.locator('[data-widget="summary"]');
+    const tasks = page.locator('[data-widget="tasks"]');
+    const today = page.locator('[data-widget="today"]');
+    await summary.locator('.size-control button').nth(0).click();
+    await tasks.locator('.size-control button').nth(1).click();
+    await today.locator('.size-control button').nth(2).click();
+    await expect(summary).toHaveClass(/size-s/);
+    await expect(tasks).toHaveClass(/size-m/);
+    await expect(today).toHaveClass(/size-l/);
+
+    const heights = await page.evaluate(() => Object.fromEntries(
+      ['summary', 'tasks', 'today'].map((id) => [id, document.querySelector(`[data-widget="${id}"]`)?.getBoundingClientRect().height ?? 0]),
+    ));
+    expect(heights['summary']).toBeLessThan(heights['tasks']);
+    expect(heights['tasks']).toBeLessThan(heights['today']);
+  });
+
+  test('Modules drawer closes on Escape, outside tap, and navigation', async ({ page, context }) => {
     await open(page, context, '/');
-    const burger = page.getByRole('button', { name: 'Головне меню' });
+    const burger = page.locator('.modules-toggle');
     const nav = page.getByRole('navigation', { name: 'Головне меню' });
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
     await burger.click();
@@ -769,10 +1019,48 @@ test.describe('mobile flows', () => {
     await page.keyboard.press('Escape');
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
     await burger.click();
+    await expect(nav).toBeVisible();
+    const panelBox = await nav.boundingBox();
+    const viewport = page.viewportSize();
+    expect(panelBox, 'the open Modules panel has rendered bounds').not.toBeNull();
+    expect(viewport, 'mobile viewport dimensions are available').not.toBeNull();
+    const box = panelBox!;
+    const size = viewport!;
+    const rightX = box.x + box.width + 8;
+    const outsideX = rightX < size.width ? rightX : Math.max(0, box.x - 8);
+    const outsideY = Math.min(size.height - 1, Math.max(0, box.y + box.height / 2));
+    expect(outsideX < box.x || outsideX > box.x + box.width, 'outside click point is beyond the panel bounds').toBe(true);
+    await page.mouse.click(outsideX, outsideY);
+    await expect(burger).toHaveAttribute('aria-expanded', 'false');
+    await burger.click();
     await nav.getByRole('link', { name: 'Мої задачі' }).click();
-    await expect(page).toHaveURL(/\/tasks$/);
+    await expect(page).toHaveURL(/os1:window\/tasks/);
+    await expect(page.getByTestId('os-window-os1').getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
   });
+
+  test('workspace window occupies the mobile safe area without drag or resize controls', async ({ page, context }) => {
+    await open(page, context, '/');
+    await page.getByRole('navigation', { name: 'Вікна робочого простору' }).getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    const article = page.getByTestId('os-window-os1');
+    await expect(article.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await expect(page.getByTestId('window-resize-os1')).toHaveCount(0);
+    const windowBox = await article.boundingBox();
+    const layerBox = await page.locator('.window-layer').boundingBox();
+    expect(windowBox).not.toBeNull();
+    expect(layerBox).not.toBeNull();
+    expect(windowBox!.x).toBeCloseTo(layerBox!.x, 0);
+    expect(windowBox!.y).toBeCloseTo(layerBox!.y, 0);
+    expect(windowBox!.width).toBeCloseTo(layerBox!.width, 0);
+    expect(windowBox!.height).toBeCloseTo(layerBox!.height, 0);
+    expect(layerBox!.y).toBeGreaterThanOrEqual(56);
+    expect(layerBox!.y + layerBox!.height).toBeLessThanOrEqual(page.viewportSize()!.height - 56);
+  });
+});
+
+test('Modules badge stays beside its label or icon without overlap', async ({ page, context }, testInfo) => {
+  await open(page, context, '/');
+  await expectModulesBadgeOutsideLabel(page, testInfo.project.name.startsWith('mobile-'));
 });
 
 
@@ -808,4 +1096,97 @@ test('mobile assistant: in-flow launcher opens chat without covering candidate c
   await expect(launcher).toBeVisible();
   expect(writes(mock)).toEqual([]);
   expect(mock.missing).toEqual([]);
+});
+
+test('desktop: real launcher routes and per-user widgets support add, size, keyboard reorder, drag, and persistence', async ({ page, context }) => {
+  const mock = await open(page, context, '/desktop');
+  await expect(page.getByRole('heading', { name: 'Робочий стіл' })).toBeVisible();
+  await expect(page.locator('.widget')).toHaveCount(3);
+  await expect(page.locator('[data-widget="summary"]')).toContainText('Активні кандидати');
+
+  await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
+  const approvals = page.locator('[data-widget="approvals"]');
+  await expect(approvals).toBeVisible();
+  await approvals.getByRole('button', { name: 'Великий розмір для віджета «Мої погодження»' }).click();
+  await expect(approvals).toHaveClass(/size-l/);
+  await page.getByRole('button', { name: 'Перемістити «Мої погодження» вище' }).click();
+  await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
+
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string; size: string }[] });
+  expect(saved.widgets).toEqual([
+    { id: 'summary', size: 'm' }, { id: 'tasks', size: 's' }, { id: 'approvals', size: 'l' }, { id: 'today', size: 'm' },
+  ]);
+  await page.reload();
+  await settle(page);
+  await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
+  await page.getByRole('button', { name: 'Прибрати віджет «Мої погодження»' }).click();
+  await expect(page.locator('[data-widget="approvals"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Мої погодження', exact: true })).toBeFocused();
+
+  await drag(page, page.locator('[data-widget="tasks"] .drag-handle'), page.locator('[data-widget="summary"] .widget-header'));
+  await expect(page.locator('.widget').first()).toHaveAttribute('data-widget', 'tasks');
+  const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
+  expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
+
+  await page.locator('.modules-toggle').click();
+  const modules = page.getByRole('navigation', { name: 'Головне меню' });
+  const recruiting = modules.getByRole('button', { name: /^Рекрутинг/ });
+  if (await recruiting.getAttribute('aria-expanded') !== 'true') await recruiting.click();
+  await modules.getByRole('link', { name: 'Кандидати', exact: true }).click();
+  const candidatesWindow = page.getByTestId('os-window-os1');
+  await expect(candidatesWindow).toHaveClass(/open/);
+  await expect(candidatesWindow.getByRole('heading', { level: 1, name: 'Кандидати' })).toBeVisible();
+  expect(mock.missing).toEqual([]);
+});
+
+test('desktop mobile: widget titles and size actions remain readable at 390px', async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, context, '/desktop');
+  await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
+
+  const widget = page.locator('[data-widget="approvals"]');
+  const title = widget.locator('.widget-header h3');
+  const actions = widget.locator('.widget-actions');
+  const sizeGroup = widget.getByRole('group', { name: 'Розмір віджета «Мої погодження»' });
+  const expectReadableHeader = async (): Promise<void> => {
+    const widgetBounds = await widget.boundingBox();
+    const titleBounds = await title.boundingBox();
+    const actionBounds = await actions.boundingBox();
+    expect(widgetBounds).not.toBeNull();
+    expect(titleBounds).not.toBeNull();
+    expect(actionBounds).not.toBeNull();
+    expect(titleBounds!.width).toBeGreaterThan(100);
+    expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(actionBounds!.y);
+    expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(widgetBounds!.x + widgetBounds!.width + 1);
+  };
+  await expect(title).toHaveText('Мої погодження');
+  await expect(sizeGroup).toBeVisible();
+  await expect(sizeGroup.locator('button')).toHaveText(['s', 'm', 'l']);
+  await expect(actions.getByRole('button', { name: 'Малий розмір для віджета «Мої погодження»' })).toBeVisible();
+  await expectReadableHeader();
+
+  for (const [size, label] of [['s', 'Малий'], ['m', 'Середній'], ['l', 'Великий']] as const) {
+    await sizeGroup.getByRole('button', { name: `${label} розмір для віджета «Мої погодження»` }).click();
+    await expect(widget).toHaveClass(new RegExp(`size-${size}`));
+    await expectReadableHeader();
+  }
+});
+
+test('desktop S widget: title stays readable beside its wrapped controls at a wide viewport', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await open(page, context, '/desktop');
+
+  const widget = page.locator('[data-widget="tasks"]');
+  const title = widget.locator('.widget-header h3');
+  const actions = widget.locator('.widget-actions');
+  await expect(title).toHaveText('Мої задачі');
+  const widgetBounds = await widget.boundingBox();
+  const titleBounds = await title.boundingBox();
+  const actionBounds = await actions.boundingBox();
+  expect(widgetBounds).not.toBeNull();
+  expect(titleBounds).not.toBeNull();
+  expect(actionBounds).not.toBeNull();
+  expect(titleBounds!.width).toBeGreaterThan(70);
+  expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(actionBounds!.y);
+  expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(widgetBounds!.x + widgetBounds!.width + 1);
 });

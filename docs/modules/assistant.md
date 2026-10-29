@@ -370,3 +370,8 @@ pointer capture, уход фокуса с окна, скрытая вкладк�
 ## Доступ к модулю
 Ключ модуля `assistant`. По умолчанию: включён, все роли. Выключенный модуль отвечает 403 `module_disabled` и на
 `/api/assistant/*`, и на `/api/mcp`; Стік в интерфейсе не показывается. Подробнее — [modules-access.md](modules-access.md).
+
+
+### Browser OS appearance and decorative motion
+
+The shell mascot consumes the shared appearance preferences. Fast mode or reduced motion suspends its continuous decorative canvas loop while keeping assistant/chat controls available; the system reduced-motion preference is still respected. Returning to normal preferences restores the existing visibility, pause and compact-layout conditions. Window focus, minimize, maximize and restore URL controls do not trigger a new route reaction from the mascot; actual content navigation still does. These are resource-use contracts, not measured production FPS claims. Focused mascot performance tests cover the preference conditions; compiled browser profiling remains a separate acceptance gate.
