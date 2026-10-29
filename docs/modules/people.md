@@ -1,5 +1,8 @@
 # Модуль People (сотрудники, оргструктура, самообслуживание)
 
+Org Chart's `root` query value and employee detail path IDs are read through Angular's route contract. In a routed
+window, query-derived state uses the slot's bounded matrix namespace; the same route records and guards remain active.
+
 ## Что это и зачем
 Справочник сотрудников компании — «кто у нас работает, кем, где и кому подчиняется». Здесь же профиль человека,
 оргструктура (дерево подчинения) и **самообслуживание**: сотрудник сам просит поменять свой телефон, личный e-mail,

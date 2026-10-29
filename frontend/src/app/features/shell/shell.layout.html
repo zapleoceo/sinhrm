@@ -481,11 +481,11 @@
           </button>
         }
       </div>
-      <section class="primary-view" [class.mobile-inactive]="narrow() && windowNavigation.activeSlot() !== null"
+      <div class="primary-view" [class.mobile-inactive]="narrow() && windowNavigation.activeSlot() !== null"
                [attr.inert]="narrow() && windowNavigation.activeSlot() !== null ? '' : null"
                [attr.aria-hidden]="narrow() && windowNavigation.activeSlot() !== null ? 'true' : null">
         <router-outlet />
-      </section>
+      </div>
       <section class="window-layer" [attr.aria-label]="'osWindow.windows' | transloco">
         @let views = windowNavigation.windows();
         @for (slot of windowSlots; track slot) {

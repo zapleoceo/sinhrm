@@ -18,7 +18,7 @@ test.describe('OS routed windows', () => {
     await expect(page).toHaveURL(/os1:window\/tasks/);
     const tasksWindow = page.locator('article.os-window.window-os1.open');
     await expect(tasksWindow).toBeVisible();
-    await expect(tasksWindow.getByRole('heading', { name: 'Мої задачі' })).toBeVisible();
+    await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
 
     const oneWindowUrl = page.url();
     await page.getByRole('button', { name: 'Відкрити співробітників у вікні' }).click();
@@ -50,8 +50,17 @@ test.describe('OS routed windows', () => {
     await page.goForward();
     await expect(page).toHaveURL(/os2:window\/people/);
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
+
+    // A real relative-context RouterLink inside a routed page must keep the selected slot and its dynamic id.
+    const person = page.locator('article.os-window.window-os2.open').getByRole('link', { name: /Бондаренко Євген/ }).first();
+    await person.click();
+    await expect(page).toHaveURL(/os2:window\/people\/70/);
+    await expect(page.locator('article.os-window.window-os2.open')).toContainText('Бондаренко Євген');
   });
 
+});
+
+test.describe('OS routed windows on mobile', () => {
   test('mobile keeps inactive windows out of keyboard focus while primary and restore controls stay usable', async ({ page, context }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-light', 'mobile-light only');
     await installMock(context);
@@ -74,7 +83,7 @@ test.describe('OS routed windows', () => {
       }
 
       await page.getByRole('button', { name: 'Показати основну сторінку' }).click();
-      await expect(page.locator('section.primary-view')).toBeVisible();
+      await expect(page.locator('.primary-view')).toBeVisible();
       await expect(page.locator('article.os-window.open.mobile-inactive')).toHaveCount(2);
       await page.getByRole('button', { name: 'Відкрити співробітників у вікні' }).click();
       await expect(page.locator('article.os-window.window-os2.open')).not.toHaveClass(/mobile-inactive/);

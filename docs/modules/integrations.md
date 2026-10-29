@@ -269,3 +269,7 @@ UI parity инвентарь desktop/mobile осознанно дополнен 
 
 Connected/error remain automatic observations: the mode control shows the current translated state as a disabled option, while only off/demo can be assigned manually. Mobile deep-link cards reserve space above their header for the sticky navigation bar; configured-state CI checks both geometry and displayed mode.
 MySQL 8.4 only (ADR 0011, 2026-10-08): `integrations.settings` is `json NOT NULL` without a database default (MySQL JSON has no literal default; the driver-specific `'{}'` default branch is gone); the Integration model supplies an empty object for lazily created rows. Test: `tests/Feature/Integrations/IntegrationSettingsMysqlSchemaTest` (column type/default from `information_schema`, a row created without settings reads back `[]`).
+
+## Интеграции в окнах SinHRM OS
+
+Страница `/admin/integrations?integration=<key>` читает выбранную интеграцию из контекста своего окна, чтобы глубокая ссылка не меняла выбор основной страницы. OAuth callback остаётся в основной маршрутизации и обрабатывается прежним Google connect flow.

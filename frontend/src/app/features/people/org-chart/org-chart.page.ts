@@ -7,7 +7,6 @@ import {
   computed,
   effect,
   inject,
-  input,
   signal,
   untracked,
   viewChild,
@@ -26,6 +25,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
+import { windowAwareQueryParamMap } from '../../../core/windows/window-aware-query';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { countNodes, expandedToDepth, initials } from '../org-tree';
 import { OrgNode } from '../people.model';
@@ -555,7 +555,8 @@ import { orgKeyCommand, outsideViewport } from './org-keys';
 })
 export class OrgChartPage {
   /** ?root=<employee id> (withComponentInputBinding). */
-  readonly root = input<string | undefined>(undefined);
+  private readonly query = windowAwareQueryParamMap();
+  readonly root = computed(() => this.query().get('root') ?? undefined);
 
   private readonly api = inject(PeopleService);
   private readonly notify = inject(NotifyService);

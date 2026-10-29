@@ -1,6 +1,6 @@
 import { Signal, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, ParamMap, Params, convertToParamMap } from '@angular/router';
+import { ParamMap, Params, convertToParamMap } from '@angular/router';
 import { TranslocoService } from '@jsverse/transloco';
 import {
   ColumnFilter,
@@ -164,7 +164,7 @@ export interface ClientTableOptions<T> {
  */
 export class ClientTable<T> {
   private readonly url = inject(TableUrlState);
-  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  private readonly params = signal<ParamMap>(convertToParamMap({}));
   private readonly i18n = inject(TranslocoService);
   private readonly lang = toSignal(this.i18n.langChanges$, { initialValue: this.i18n.getActiveLang() });
   private readonly columns = computed(() => {
@@ -207,6 +207,7 @@ export class ClientTable<T> {
 
   constructor(options: ClientTableOptions<T>) {
     this.options = options;
+    this.url.watch((params) => params, (params) => this.params.set(params));
   }
 
   filterValue(key: string): FilterValue {

@@ -4,15 +4,18 @@ import {
   ActivatedRoute,
   ActivatedRouteSnapshot,
   NavigationEnd,
+  ParamMap,
   Params,
   Router,
   UrlCreationOptions,
+  UrlSegmentGroup,
   UrlTree,
+  convertToParamMap,
 } from '@angular/router';
-import { filter, map } from 'rxjs';
+import { filter, map, startWith, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { decodeWindowQuery, encodeWindowQuery } from './window-query-codec';
-import { WindowRouteId, WindowRouteDefinition, WindowSlot, WINDOW_SLOTS, windowRouteById, windowRouteByPath } from './window-context';
+import { WindowRouteId, WindowRouteDefinition, WindowSlot, WINDOW_SLOTS, windowRouteById, windowRouteByPath, windowRouteDefinitions } from './window-context';
 
 export interface WindowViewState {
   readonly slot: WindowSlot;
@@ -38,7 +41,7 @@ export class WindowNavigation {
   private readonly invalidating = new Set<WindowSlot>();
   private invalidationQueue: Promise<void> = Promise.resolve();
   private readonly ownTableNavigations = new Set<string>();
-  private readonly slotOwners = new Map<WindowSlot, number>();
+  private readonly slotOwners = new Map<WindowSlot, string>();
   private readonly url = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -67,10 +70,7 @@ export class WindowNavigation {
         ? null
         : open.find((slot) => !minimized.includes(slot)) ?? null;
 
-    return {
-      os1: this.makeView('os1', open, minimized, maximized, activeSlot),
-      os2: this.makeView('os2', open, minimized, maximized, activeSlot),
-    };
+    return Object.fromEntries(WINDOW_SLOTS.map((slot) => [slot, this.makeView(slot, open, minimized, maximized, activeSlot)])) as Record<WindowSlot, WindowViewState>;
   });
   readonly activeSlot = computed<WindowSlot | null>(() => {
     const windows = this.windows();
@@ -100,7 +100,8 @@ export class WindowNavigation {
   }
 
   open(slot: WindowSlot, routeId: WindowRouteId): Promise<boolean> {
-    const definition = windowRouteById(routeId);
+    const definition = this.definitionById(routeId);
+    if (!definition) return Promise.resolve(false);
     const existing = WINDOW_SLOTS.find((candidate) => this.routeId(candidate) === routeId);
     if (!this.isAuthorized(routeId, existing ?? slot)) return Promise.resolve(false);
     if (existing) return this.isMinimized(existing) ? this.restore(existing) : this.focus(existing);
@@ -110,10 +111,46 @@ export class WindowNavigation {
     return this.router.navigateByUrl(tree);
   }
 
+  /** Query values attached to the active workspace route as bounded matrix params. */
+  queryForWindow(slot: WindowSlot): ParamMap {
+    const branch = this.findUrlOutlet(this.router.parseUrl(this.router.url).root, slot);
+    return decodeWindowQuery(convertToParamMap(branch ? this.windowParams(branch) : {}));
+  }
+
+  queryChanges(slot: WindowSlot) {
+    return this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      startWith(null),
+      map(() => this.queryForWindow(slot)),
+      distinctUntilChanged((left, right) => left.keys.length === right.keys.length && left.keys.every((key) =>
+        left.getAll(key).join('\u0000') === right.getAll(key).join('\u0000'))),
+    );
+  }
+
+  visibilityChanges(slot: WindowSlot) {
+    return this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      startWith(null),
+      map(() => this.isVisible(slot)),
+      distinctUntilChanged(),
+    );
+  }
+
+  isVisible(slot: WindowSlot): boolean {
+    return this.isOpen(slot) && !this.isMinimized(slot);
+  }
+
   slotFor(routeId: WindowRouteId): WindowSlot | null {
     return WINDOW_SLOTS.find((slot) => this.routeId(slot) === routeId)
       ?? WINDOW_SLOTS.find((slot) => !this.isOpen(slot))
       ?? null;
+  }
+
+  /** Open or focus a route in an existing/free slot; return false at capacity without replacing a mounted page. */
+  openAvailable(routeId: WindowRouteId): Promise<boolean> {
+    const existing = WINDOW_SLOTS.find((slot) => this.routeId(slot) === routeId);
+    const slot = existing ?? this.slotFor(routeId);
+    return slot ? this.open(slot, routeId) : Promise.resolve(false);
   }
 
   close(slot: WindowSlot): Promise<boolean> {
@@ -173,9 +210,8 @@ export class WindowNavigation {
 
   createWindowTree(slot: WindowSlot, definition: WindowRouteDefinition, query: Params = {}, options: UrlCreationOptions = {}): UrlTree | null {
     if (!this.isAuthorized(definition.id, slot)) return null;
-    const current = this.findOutlet(slot);
     const routeId = this.routeId(slot);
-    const currentMatrix = routeId === definition.id ? decodeWindowQuery(this.leaf(current)?.paramMap ?? this.router.routerState.snapshot.root.paramMap) : this.emptyQuery();
+    const currentMatrix = routeId === definition.id ? this.windowQueryMap(slot) : this.emptyQuery();
     const queryHandling = options.queryParamsHandling ?? '';
     const startingQuery = queryHandling === 'preserve' || queryHandling === 'merge' ? currentMatrix : this.emptyQuery();
     const patch = queryHandling === 'preserve' ? {} : { ...query, ...options.queryParams } as Params;
@@ -184,40 +220,74 @@ export class WindowNavigation {
 
     const minimized = this.slotList(this.currentQuery()[MINIMIZED_PARAM]).filter((candidate) => candidate !== slot);
     const controls = this.controls({ [ACTIVE_PARAM]: slot, [MINIMIZED_PARAM]: this.encodeSlots(minimized), [MAXIMIZED_PARAM]: null });
-    const matrixCommand: Params = matrix;
-    const segments: (string | Params)[] = ['window', definition.path];
-    if (Object.keys(matrixCommand).length > 0) segments.push(matrixCommand);
-    return this.router.createUrlTree([{ outlets: { [slot]: segments } }], {
-      relativeTo: this.shellRoute,
-      queryParams: controls,
-      queryParamsHandling: 'merge',
-      fragment: options.fragment,
-      preserveFragment: options.preserveFragment,
-    });
+    return this.treeFor(slot, definition, matrix as Params, controls, options.fragment);
   }
 
   createCanonicalTree(slot: WindowSlot, path: string, options: UrlCreationOptions = {}): UrlTree | null {
-    const definition = windowRouteByPath(path);
+    const definition = this.definitionByPath(path);
     return definition ? this.createWindowTree(slot, definition, options.queryParams ?? {}, options) : null;
   }
 
   createUrlTreeFromCommands(slot: WindowSlot, commands: Parameters<Router['createUrlTree']>[0], options?: UrlCreationOptions): UrlTree | null {
-    if (commands.length !== 1 || typeof commands[0] !== 'string' || !commands[0].startsWith('/')) return null;
-    const [path, query = ''] = commands[0].split(/[?#]/, 2);
-    const definition = windowRouteByPath(path);
-    if (!definition) return null;
-    const queryParams = options?.queryParams ?? this.queryString(query);
-    return this.createWindowTree(slot, definition, queryParams, { ...options, queryParams });
+    const source = this.router.createUrlTree(commands, options);
+    const hasWorkspaceBranch = this.isWorkspaceTree(source, slot);
+    const absoluteCanonicalTarget = this.isAbsoluteCanonicalCommand(commands);
+    if (hasWorkspaceBranch && !absoluteCanonicalTarget) {
+      const currentId = this.routeId(slot);
+      const definition = currentId ? this.definitionById(currentId) : undefined;
+      if (commands.length === 0 && options?.queryParams && definition) {
+        if (definition.primaryOnlyQueryKeys.some((key) => key in options.queryParams!)) return source;
+        const updated = this.createWindowTree(slot, definition, options.queryParams, {
+          ...options,
+          queryParamsHandling: options.queryParamsHandling ?? 'replace',
+        });
+        if (!updated) throw new Error('The window route query exceeds the supported per-window URL limits.');
+        return updated;
+      }
+      return this.preservePrimaryQuery(source);
+    }
+    const scoped = this.routeTreeForUrl(slot, source, options ?? { queryParams: {} });
+    if (scoped) return scoped;
+    if (hasWorkspaceBranch) {
+      const currentId = this.routeId(slot);
+      const definition = currentId ? this.definitionById(currentId) : undefined;
+      if (options?.queryParams && definition && this.sameWindowBranch(source, slot)) {
+        if (definition.primaryOnlyQueryKeys.some((key) => key in options.queryParams!)) return source;
+        const updated = this.createWindowTree(slot, definition, options.queryParams, {
+          ...options,
+          queryParamsHandling: options.queryParamsHandling ?? 'replace',
+        });
+        if (!updated) throw new Error('The window route query exceeds the supported per-window URL limits.');
+        return updated;
+      }
+      return source;
+    }
+    if (this.isWindowTarget(source) && !this.isPrimaryOnlyTarget(source)) {
+      throw new Error('The window route query exceeds the supported per-window URL limits.');
+    }
+    return null;
+  }
+
+  private isAbsoluteCanonicalCommand(commands: Parameters<Router['createUrlTree']>[0]): boolean {
+    const first = commands[0];
+    return typeof first === 'string' && first.startsWith('/');
+  }
+
+  private preservePrimaryQuery(tree: UrlTree): UrlTree {
+    const currentQuery = this.router.parseUrl(this.router.url).queryParams;
+    return new UrlTree(tree.root, { ...currentQuery, ...tree.queryParams }, tree.fragment);
   }
 
   updateWindowQuery(slot: WindowSlot, patch: Params, replaceUrl: boolean): Promise<boolean> {
     const snapshot = this.findOutlet(slot);
     const routeId = this.routeId(slot);
     if (!snapshot || routeId === null || !this.isAuthorizedSlot(slot)) return Promise.resolve(false);
-    const current = decodeWindowQuery(this.leaf(snapshot)?.paramMap ?? this.router.routerState.snapshot.root.paramMap);
+    const current = this.windowQueryMap(slot);
     const matrix = encodeWindowQuery(current, patch);
     if (matrix === null) return Promise.resolve(false);
-    const tree = this.treeFor(slot, windowRouteById(routeId), matrix, {});
+    const definition = this.definitionById(routeId);
+    if (!definition) return Promise.resolve(false);
+    const tree = this.treeFor(slot, definition, matrix as Params, {});
     const targetUrl = this.router.serializeUrl(tree);
     this.ownTableNavigations.add(targetUrl);
     return this.router.navigateByUrl(tree, { replaceUrl }).finally(() => this.ownTableNavigations.delete(targetUrl));
@@ -236,25 +306,87 @@ export class WindowNavigation {
     return this.hasOutlet(tree.root, slot);
   }
 
-  routeTreeForUrl(slot: WindowSlot, tree: UrlTree): UrlTree | null {
-    const path = tree.root.children['primary']?.segments.map((segment) => segment.path).join('/') ?? '';
-    const definition = windowRouteByPath(path);
+  routeTreeForUrl(slot: WindowSlot, tree: UrlTree, options?: UrlCreationOptions): UrlTree | null {
+    const primary = tree.root.children['primary'];
+    const path = primary?.segments.map((segment) => segment.path).join('/') ?? '';
+    const definition = this.definitionByPath(path);
     if (!definition) return null;
-    const query: Params = {};
-    for (const [key, value] of Object.entries(tree.queryParams)) {
-      if (key !== ACTIVE_PARAM && key !== MINIMIZED_PARAM && key !== MAXIMIZED_PARAM) query[key] = value;
+    const requestedQuery: Params = { ...(options === undefined ? tree.queryParams : options.queryParams ?? {}) };
+    for (const key of Object.keys(requestedQuery)) {
+      if (key === ACTIVE_PARAM || key === MINIMIZED_PARAM || key === MAXIMIZED_PARAM || key === PRIMARY_FOCUS_PARAM) delete requestedQuery[key];
     }
-    return this.createWindowTree(slot, definition, query, { queryParams: query, fragment: tree.fragment ?? undefined });
-  }
-
-  private treeFor(slot: WindowSlot, definition: WindowRouteDefinition, matrix: Readonly<Record<string, string>>, controls: Params): UrlTree {
-    const segments: (string | Params)[] = ['window', definition.path];
-    if (Object.keys(matrix).length > 0) segments.push(matrix);
+    if (definition.primaryOnlyQueryKeys.some((key) => key in requestedQuery)) return null;
+    const matrix: Params = {};
+    for (const segment of primary?.segments ?? []) Object.assign(matrix, segment.parameters);
+    const existing = decodeWindowQuery(this.leaf(this.findOutlet(slot))?.paramMap ?? this.router.routerState.snapshot.root.paramMap);
+    const handling = options?.queryParamsHandling ?? 'replace';
+    const startingQuery = handling === 'preserve' || handling === 'merge' ? existing : this.emptyQuery();
+    const queryPatch = handling === 'preserve' ? {} : requestedQuery;
+    const namespaced = encodeWindowQuery(startingQuery, { ...matrix, ...queryPatch });
+    if (!namespaced) return null;
+    const segments: (string | Params)[] = ['window', ...(primary?.segments.map((segment) => segment.path) ?? [])];
+    if (Object.keys(namespaced).length) segments.push(namespaced);
+    const minimized = this.slotList(this.currentQuery()[MINIMIZED_PARAM]).filter((candidate) => candidate !== slot);
+    const controls = this.controls({ [ACTIVE_PARAM]: slot, [MINIMIZED_PARAM]: this.encodeSlots(minimized), [MAXIMIZED_PARAM]: null, [PRIMARY_FOCUS_PARAM]: null });
     return this.router.createUrlTree([{ outlets: { [slot]: segments } }], {
       relativeTo: this.shellRoute,
       queryParams: controls,
       queryParamsHandling: 'merge',
+      fragment: tree.fragment ?? undefined,
     });
+  }
+
+  isWindowTarget(tree: UrlTree): boolean {
+    const path = tree.root.children['primary']?.segments.map((segment) => segment.path).join('/') ?? '';
+    return this.definitionByPath(path) !== undefined;
+  }
+
+  isPrimaryOnlyTarget(tree: UrlTree): boolean {
+    const primary = tree.root.children['primary'];
+    const definition = this.definitionByPath(primary?.segments.map((segment) => segment.path).join('/') ?? '');
+    return !!definition?.primaryOnlyQueryKeys.some((key) => key in tree.queryParams);
+  }
+
+  private treeFor(slot: WindowSlot, definition: WindowRouteDefinition, matrix: Params, controls: Params, fragment?: string): UrlTree {
+    const current = this.findOutlet(slot);
+    const currentId = this.routeId(slot);
+    const actualSegments: (string | Params)[] = current && currentId === definition.id
+      ? this.routeSegments(slot)
+      : definition.path.split('/');
+    const cleanSegments: (string | Params)[] = [];
+    for (const segment of actualSegments) {
+      if (typeof segment !== 'object') {
+        cleanSegments.push(segment);
+        continue;
+      }
+      const retained = Object.fromEntries(Object.entries(segment).filter(([key]) => !key.startsWith('wq_')));
+      if (Object.keys(retained).length) cleanSegments.push(retained);
+    }
+    const segments: (string | Params)[] = ['window', ...cleanSegments];
+    if (Object.keys(matrix).length > 0) {
+      const last = segments.length - 1;
+      if (typeof segments[last] === 'object') segments[last] = { ...(segments[last] as Params), ...matrix };
+      else segments.push(matrix);
+    }
+    return this.router.createUrlTree([{ outlets: { [slot]: segments } }], {
+      relativeTo: this.shellRoute,
+      queryParams: controls,
+      queryParamsHandling: 'merge',
+      fragment,
+    });
+  }
+
+  private routeSegments(slot: WindowSlot): (string | Params)[] {
+    const segments: (string | Params)[] = [];
+    let current: UrlSegmentGroup | null = this.findUrlOutlet(this.router.parseUrl(this.router.url).root, slot);
+    while (current) {
+      for (const segment of current.segments) {
+        segments.push(segment.path);
+        if (Object.keys(segment.parameters).length) segments.push({ ...segment.parameters });
+      }
+      current = current.children['primary'] ?? null;
+    }
+    return segments.length > 1 ? segments.slice(1) : [];
   }
 
   private navigateControls(patch: Params): Promise<boolean> {
@@ -268,7 +400,7 @@ export class WindowNavigation {
       slot,
       open: open.includes(slot),
       routeId: id,
-      titleKey: id ? windowRouteById(id).titleKey : 'shell.window.title',
+      titleKey: id ? this.definitionById(id)?.titleKey ?? 'shell.window.title' : 'shell.window.title',
       minimized: minimized.includes(slot),
       maximized: maximized === slot,
       active: active === slot,
@@ -279,7 +411,7 @@ export class WindowNavigation {
     return this.findOutlet(slot) !== null;
   }
 
-  private isAuthorizedSlot(slot: WindowSlot): boolean {
+  isAuthorizedSlot(slot: WindowSlot): boolean {
     const routeId = this.routeId(slot);
     return routeId !== null && this.isAuthorized(routeId, slot);
   }
@@ -288,10 +420,12 @@ export class WindowNavigation {
     const user = this.auth.user();
     if (!user) return false;
     const owner = this.slotOwners.get(slot);
-    if (owner === undefined) this.slotOwners.set(slot, user.id);
-    else if (owner !== user.id) return false;
-    const module = windowRouteById(routeId).module;
-    return module === null || this.auth.hasModule(module);
+    const scope = JSON.stringify({ id: user.id, roles: [...user.roles].sort(), activeRole: user.active_role ?? null });
+    if (owner === undefined) this.slotOwners.set(slot, scope);
+    else if (owner !== scope) return false;
+    const module = this.definitionById(routeId)?.module;
+    if (!this.definitionById(routeId)) return false;
+    return module === null || (typeof module === 'string' && this.auth.hasModule(module));
   }
 
   private invalidate(slot: WindowSlot): void {
@@ -299,7 +433,7 @@ export class WindowNavigation {
     this.invalidating.add(slot);
     this.invalidationQueue = this.invalidationQueue
       .then(async () => {
-        if (this.findOutlet(slot)) await this.close(slot);
+        if (this.findOutlet(slot) && await this.close(slot)) this.slotOwners.delete(slot);
       })
       .catch(() => undefined)
       .finally(() => this.invalidating.delete(slot));
@@ -312,6 +446,12 @@ export class WindowNavigation {
       if (found) return found;
     }
     return null;
+  }
+
+  private sameWindowBranch(tree: UrlTree, slot: WindowSlot): boolean {
+    const current = this.findUrlOutlet(this.router.parseUrl(this.router.url).root, slot);
+    const target = this.findUrlOutlet(tree.root, slot);
+    return !!current && !!target && this.urlBranchPath(current) === this.urlBranchPath(target);
   }
 
   private urlBranchPath(group: UrlTree['root']): string {
@@ -332,6 +472,11 @@ export class WindowNavigation {
     return Object.fromEntries(Object.entries(params).sort(([left], [right]) => left.localeCompare(right)));
   }
 
+  private windowQueryMap(slot: WindowSlot): ParamMap {
+    const branch = this.findUrlOutlet(this.router.parseUrl(this.router.url).root, slot);
+    return decodeWindowQuery(convertToParamMap(branch ? this.windowParams(branch) : {}));
+  }
+
   private isMinimized(slot: WindowSlot): boolean {
     return this.slotList(this.currentQuery()[MINIMIZED_PARAM]).includes(slot);
   }
@@ -341,10 +486,22 @@ export class WindowNavigation {
     let current = outlet;
     while (current) {
       const value = current.routeConfig?.data?.['windowRoute'];
-      if (value === 'tasks' || value === 'people') return value;
+      if (typeof value === 'string') return value;
       current = current.firstChild;
     }
     return null;
+  }
+
+  private definitions(): readonly WindowRouteDefinition[] {
+    return windowRouteDefinitions(this.shellRoute.routeConfig?.children ?? []);
+  }
+
+  private definitionById(id: WindowRouteId): WindowRouteDefinition | undefined {
+    return windowRouteById(this.definitions().map((definition) => definition.route), id);
+  }
+
+  private definitionByPath(path: string): WindowRouteDefinition | undefined {
+    return windowRouteByPath(this.definitions().map((definition) => definition.route), path);
   }
 
   private findOutlet(slot: WindowSlot): ActivatedRouteSnapshot | null {
@@ -379,7 +536,7 @@ export class WindowNavigation {
   }
 
   private validSlot(value: unknown): WindowSlot | null {
-    return value === 'os1' || value === 'os2' ? value : null;
+    return WINDOW_SLOTS.find((slot) => slot === value) ?? null;
   }
 
   private slotList(value: unknown): WindowSlot[] {
@@ -393,12 +550,7 @@ export class WindowNavigation {
   }
 
   private emptyQuery() {
-    return decodeWindowQuery(this.router.routerState.snapshot.root.paramMap);
+    return convertToParamMap({});
   }
 
-  private queryString(query: string): Params {
-    const params: Params = {};
-    for (const [key, value] of new URLSearchParams(query)) params[key] = value;
-    return params;
-  }
 }

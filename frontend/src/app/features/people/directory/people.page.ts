@@ -34,8 +34,6 @@ import { TableUrlState } from '../../../core/ui/table/table-url-state';
 import { peopleQueryFromParams } from './people.query';
 import { withMember } from '../../../core/ui/with-member';
 import { NotifyService } from '../../../core/ui/notify.service';
-import { TABLE_QUERY_ADAPTER } from '../../../core/ui/table/table-query-adapter';
-import { WindowQueryState } from '../../../core/windows/window-query-state';
 
 const DEFAULT_SORT: TableSort = { key: 'name', dir: 'asc' };
 
@@ -74,7 +72,7 @@ function selectFilter(items: DictionaryItem[]): ColumnFilter {
     ActiveFilters,
     TranslocoPipe,
   ],
-  providers: [PeopleStore, TableUrlState, { provide: TABLE_QUERY_ADAPTER, useClass: WindowQueryState }],
+  providers: [PeopleStore, TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="page-head">

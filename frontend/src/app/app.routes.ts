@@ -2,6 +2,8 @@ import { Route, Routes } from '@angular/router';
 import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/auth.guards';
 import { ADMIN_ROLES, HR_STAFF_ROLES, SUPERADMIN_ROLE } from './core/auth/auth.model';
 import { windowOutletRoute } from './core/windows/window-route';
+import { WINDOW_MODULE_DATA, WINDOW_PRIMARY_ONLY_QUERY_DATA, WINDOW_ROUTE_DATA, WINDOW_SLOTS } from './core/windows/window-context';
+import { moduleForUrl } from './core/auth/module-map';
 
 /** Shared immutable route records: primary and named outlets mount the same real pages and guards. */
 const TASKS_ROUTE: Route = {
@@ -18,24 +20,7 @@ const PEOPLE_ROUTE: Route = {
   loadComponent: () => import('./features/people/directory/people.page').then((m) => m.PeoplePage),
 };
 
-// `title` is an i18n key (TranslatedTitleStrategy → "SinHRM · <page>").
-export const routes: Routes = [
-  {
-    path: 'login',
-    title: 'titles.login',
-    canActivate: [guestGuard],
-    loadComponent: () => import('./features/auth/login.page').then((m) => m.LoginPage),
-  },
-  // Public career page: no login, no sidebar (Recruiting disabled → the API answers 404, the page says "not found").
-  { path: 'jobs', title: 'careers.title', loadComponent: () => import('./features/recruiting/careers/careers').then((m) => m.JobsPage) },
-  { path: 'jobs/:slug', title: 'careers.title', loadComponent: () => import('./features/recruiting/careers/careers').then((m) => m.JobPage) },
-  {
-    path: '',
-    canActivate: [authGuard],
-    // Pages of a switched-off module → "Розділ вимкнено" (docs/modules/modules-access.md).
-    canActivateChild: [moduleGuard],
-    loadComponent: () => import('./features/shell/shell.layout').then((m) => m.ShellLayout),
-    children: [
+const workspaceRoutes: Routes = [
       { path: '', title: 'titles.overview', loadComponent: () => import('./features/overview/dashboard.page').then((m) => m.DashboardPage) },
       // Recruiting: every active role; the API scopes data by branch and blocks viewers from writing.
       { path: 'vacancies', title: 'titles.vacancies', loadComponent: () => import('./features/recruiting/vacancies/vacancies.page').then((m) => m.VacanciesPage) },
@@ -65,9 +50,9 @@ export const routes: Routes = [
         data: { view: 'inbox' },
         loadComponent: () => import('./features/hiring-requests/hiring-list.page').then((m) => m.HiringListPage),
       },
-      { path: 'hiring-requests/new', title: 'titles.hiringNew', loadComponent: () => import('./features/hiring-requests/hiring-wizard.page').then((m) => m.HiringWizardPage) },
+      { path: 'hiring-requests/new', title: 'titles.hiringNew', canDeactivate: [(page: { canLeave(): boolean }) => page.canLeave()], loadComponent: () => import('./features/hiring-requests/hiring-wizard.page').then((m) => m.HiringWizardPage) },
       { path: 'hiring-requests/:id', title: 'titles.hiringRequest', loadComponent: () => import('./features/hiring-requests/hiring-detail.page').then((m) => m.HiringDetailPage) },
-      { path: 'hiring-requests/:id/edit', title: 'titles.hiringNew', loadComponent: () => import('./features/hiring-requests/hiring-wizard.page').then((m) => m.HiringWizardPage) },
+      { path: 'hiring-requests/:id/edit', title: 'titles.hiringNew', canDeactivate: [(page: { canLeave(): boolean }) => page.canLeave()], loadComponent: () => import('./features/hiring-requests/hiring-wizard.page').then((m) => m.HiringWizardPage) },
       // Time: own week for everyone; approvals and team for managers (the API scopes by People).
       { path: 'time', title: 'titles.time', loadComponent: () => import('./features/time/my-week.page').then((m) => m.MyWeekPage) },
       { path: 'time/approvals', title: 'titles.timeApprovals', loadComponent: () => import('./features/time/time-approvals.page').then((m) => m.TimeApprovalsPage) },
@@ -121,6 +106,7 @@ export const routes: Routes = [
         path: 'admin/scripts/:id',
         title: 'titles.scriptEditor',
         canActivate: [roleGuard(...ADMIN_ROLES)],
+        canDeactivate: [(page: { canLeave(): boolean }) => page.canLeave()],
         loadComponent: () => import('./features/scripts/editor/script-editor.page').then((m) => m.ScriptEditorPage),
       },
       {
@@ -133,6 +119,7 @@ export const routes: Routes = [
         path: 'admin/workflows/:id',
         title: 'titles.workflowEditor',
         canActivate: [roleGuard(...HR_STAFF_ROLES)],
+        canDeactivate: [(page: { canLeave(): boolean }) => page.canLeave()],
         loadComponent: () => import('./features/workflows/editor/workflow-editor.page').then((m) => m.WorkflowEditorPage),
       },
       {
@@ -257,8 +244,42 @@ export const routes: Routes = [
         canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/integrations/integrations.page').then((m) => m.IntegrationsPage),
       },
-      windowOutletRoute('os1', [TASKS_ROUTE, PEOPLE_ROUTE]),
-      windowOutletRoute('os2', [TASKS_ROUTE, PEOPLE_ROUTE]),
+];
+
+// The same route objects serve primary and auxiliary outlets, so the original guards and page inputs stay intact.
+for (const route of workspaceRoutes) {
+  const path = route.path;
+  if (!path || path === 'module-off') continue;
+  const module = moduleForUrl(`/${path}`);
+  route.data = {
+    ...route.data,
+    [WINDOW_ROUTE_DATA]: path,
+    [WINDOW_MODULE_DATA]: module,
+    ...(path === 'admin/integrations' ? { [WINDOW_PRIMARY_ONLY_QUERY_DATA]: ['connected', 'missing', 'google_error'] } : {}),
+  };
+}
+const windowWorkspaceRoutes = workspaceRoutes.filter((route) => typeof route.data?.[WINDOW_ROUTE_DATA] === 'string');
+
+// `title` is an i18n key (TranslatedTitleStrategy → "SinHRM · <page>").
+export const routes: Routes = [
+  {
+    path: 'login',
+    title: 'titles.login',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./features/auth/login.page').then((m) => m.LoginPage),
+  },
+  // Public career page: no login, no sidebar (Recruiting disabled → the API answers 404, the page says "not found").
+  { path: 'jobs', title: 'careers.title', loadComponent: () => import('./features/recruiting/careers/careers').then((m) => m.JobsPage) },
+  { path: 'jobs/:slug', title: 'careers.title', loadComponent: () => import('./features/recruiting/careers/careers').then((m) => m.JobPage) },
+  {
+    path: '',
+    canActivate: [authGuard],
+    // Pages of a switched-off module → "Розділ вимкнено" (docs/modules/modules-access.md).
+    canActivateChild: [moduleGuard],
+    loadComponent: () => import('./features/shell/shell.layout').then((m) => m.ShellLayout),
+    children: [
+      ...workspaceRoutes,
+      ...WINDOW_SLOTS.map((slot) => windowOutletRoute(slot, windowWorkspaceRoutes)),
     ],
   },
   { path: '**', redirectTo: '' },

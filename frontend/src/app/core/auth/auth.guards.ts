@@ -46,9 +46,10 @@ export const moduleGuard: CanActivateChildFn = async (route) => {
   if (windowRoot) {
     const routeData = route.routeConfig?.data;
     if (routeData?.['windowRoot'] === true) return true;
-    if (routeData?.['windowRoute'] !== 'tasks' && routeData?.['windowRoute'] !== 'people') return false;
-    if (!Object.prototype.hasOwnProperty.call(routeData, 'module')) return false;
-    const branchModule: unknown = routeData['module'];
+    const branchModule = routeData && Object.prototype.hasOwnProperty.call(routeData, 'windowModule')
+      ? routeData['windowModule']
+      : routeData?.['module'];
+    if (typeof routeData?.['windowRoute'] !== 'string' || typeof branchModule !== 'string' && branchModule !== null) return false;
     return branchModule === null || (typeof branchModule === 'string' && auth.hasModule(branchModule));
   }
   const primaryPath = route.pathFromRoot

@@ -1,5 +1,8 @@
 # Модуль Time (учёт рабочего времени, табели)
 
+The week and employee selection stay in shareable route state. In a routed window, those values use the same per-slot
+query adapter as table filters; primary-route query links keep their existing format.
+
 ## Что это и зачем
 Сотрудник раз в неделю заполняет **табель**: сколько часов в какой день и над чем работал (проект/категория/заметка
 — по желанию). Система сравнивает с **графиком работы** и считает **сверхурочные** и **недоработку**. Согласованные

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, convertToParamMap, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
@@ -124,6 +124,17 @@ class HostComponent {
   readonly data = signal(rows);
   readonly table = new ClientTable<R>({ rows: this.data, columns, prefix: 't', defaultSort: { key: 'n', dir: 'asc' } });
   readonly kinds = translatedSelect(() => ['a', 'b'], (v) => 'kind.' + v);
+  readonly url = inject(TableUrlState);
+  readonly reasons = new ClientTable({
+    rows: () => [{ reason: 'Інше', count: 8 }, { reason: 'Не прийшов на зустріч', count: 3 }],
+    prefix: 'rej',
+    columns: [{ key: 'count', value: (row) => row.count }],
+  });
+  readonly recruiterTouches = new ClientTable({
+    rows: () => [{ recruiter: 'Анна Лисенко', total: 4 }, { recruiter: 'Дмитро Коваленко', total: 2 }],
+    prefix: 'tch',
+    columns: [{ key: 'recruiter', value: (row) => row.recruiter, filter: 'text' }, { key: 'total', value: (row) => row.total }],
+  });
 }
 
 describe('ClientTable bound to the URL', () => {
@@ -283,6 +294,20 @@ describe('ClientTable bound to the URL', () => {
     expect(plain.host.table.sort()).toEqual({ key: 'n', dir: 'asc' });
     expect(plain.el.querySelectorAll('th')[1].getAttribute('aria-sort')).toBe('ascending');
     expect(plain.host.table.touched()).toBe(false);
+  });
+
+  it('primary Reports tables keep independent prefixed state through real Router updates and async filtering', async () => {
+    const { host, router, detect } = await setup('/?rej_sort=count&rej_dir=asc');
+    expect(host.reasons.rows().map((row) => row.reason)).toEqual(['Не прийшов на зустріч', 'Інше']);
+
+    host.url.live(() => host.recruiterTouches.setFilter('recruiter', 'Анна'), { delay: LIVE_FILTER_DEBOUNCE_MS });
+    await pause();
+    await detect();
+
+    expect(decodeURIComponent(router.url)).toContain('rej_sort=count');
+    expect(decodeURIComponent(router.url)).toContain('tch_recruiter=Анна');
+    expect(host.recruiterTouches.rows().map((row) => row.recruiter)).toEqual(['Анна Лисенко']);
+    expect(host.reasons.rows().map((row) => row.reason)).toEqual(['Не прийшов на зустріч', 'Інше']);
   });
 
   it('a click on a title writes the prefixed sort to the URL and keeps other params', async () => {

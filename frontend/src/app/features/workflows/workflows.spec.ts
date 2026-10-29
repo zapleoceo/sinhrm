@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { stepConfigErrors } from './editor/workflow-editor.page';
+import { WorkflowEditorPage, stepConfigErrors } from './editor/workflow-editor.page';
 import { WorkflowEditorStore } from './editor/workflow-editor.store';
 import { RunsStore } from './runs/runs.store';
 import {
@@ -274,6 +274,30 @@ describe('WorkflowEditorStore', () => {
     http.expectOne('/api/workflows/templates/7').flush({ errors: { name: ['Required'] } }, { status: 422, statusText: 'Unprocessable' });
     expect(store.error('name')).toBe('Required');
     expect(store.dirty()).toBe(true);
+  });
+});
+
+describe('WorkflowEditorPage leave protection', () => {
+  const editor = (authorized: boolean): { canLeave(): boolean } => {
+    const page = Object.create(WorkflowEditorPage.prototype) as { canLeave(): boolean } & Record<string, unknown>;
+    Object.assign(page, {
+      store: { dirty: () => true },
+      i18n: { translate: (key: string) => key },
+      windowContext: { slot: 'os1' },
+      windowNavigation: { isAuthorizedSlot: () => authorized },
+    });
+    return page;
+  };
+
+  it('preserves a dirty workflow editor when cancellation is chosen and clears it after access revocation', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    expect(editor(true).canLeave()).toBe(false);
+    expect(confirm).toHaveBeenCalledWith('recruiting.form.leaveConfirm');
+
+    confirm.mockClear();
+    expect(editor(false).canLeave()).toBe(true);
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
   });
 });
 

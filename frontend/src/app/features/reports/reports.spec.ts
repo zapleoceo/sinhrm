@@ -3,10 +3,16 @@ import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
+import { of } from 'rxjs';
 import { sortCount } from '../../../testing/table-page';
 import { ReportTable } from './report-table';
 import { Row, barPercent, cleanSpec, columnMax, filterParams } from './reports.model';
 import { ReportsService, reportsErrorKey } from './reports.service';
+import { ReportBuilderPage } from './builder.page';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { NotifyService } from '../../core/ui/notify.service';
+import { TABLE_QUERY_ADAPTER } from '../../core/ui/table/table-query-adapter';
+import { windowQueryAdapter } from '../../../testing/window-query-adapter';
 
 describe('ReportsService', () => {
   let api: ReportsService;
@@ -69,6 +75,30 @@ describe('report helpers', () => {
       group_by: null,
       aggregate: null,
     });
+  });
+});
+
+describe('ReportBuilderPage window query context', () => {
+  it('loads saved report ids from its window URL instead of the primary query', () => {
+    const query = windowQueryAdapter({ saved: '17' });
+    const saved = vi.fn(() => of([]));
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: TABLE_QUERY_ADAPTER, useValue: query.adapter },
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap({ saved: '23' }) } } },
+        { provide: ReportsService, useValue: { saved } },
+        { provide: NotifyService, useValue: { show: vi.fn() } },
+      ],
+    });
+    const page = TestBed.runInInjectionContext(() => new ReportBuilderPage()) as unknown as { saved: () => number | undefined };
+    expect(page.saved()).toBe(17);
+    TestBed.flushEffects();
+    expect(saved).toHaveBeenCalledTimes(1);
+
+    query.set({ saved: '31' });
+    expect(page.saved()).toBe(31);
+    TestBed.flushEffects();
+    expect(saved).toHaveBeenCalledTimes(2);
   });
 });
 

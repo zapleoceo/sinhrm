@@ -1,5 +1,8 @@
 # Модуль Recruiting (вакансии, кандидаты, касания)
 
+Vacancy template selection reads route query state through the shared adapter inside a window. Dirty vacancy and
+hiring-request forms still ask before user navigation; security-scope invalidation discards the previous user's view.
+
 ## Что это и зачем
 Сердце SinHRM. Рекрутер в одной карточке кандидата видит:
 - **маршрут** — откуда кандидат пришёл (источник, UTM) → через какие этапы прошёл и сколько времени провёл на каждом → оффер, выход на работу или отказ с причиной;

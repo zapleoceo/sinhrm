@@ -3,7 +3,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
-import { Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { safeStorage } from '../../../core/storage/safe-storage';
 import { DirectoryService } from '../../directory/directory.service';
@@ -12,6 +12,10 @@ import { RecruitingService } from '../recruiting.service';
 import { applyMarkdown } from './markdown-field';
 import { VacanciesStore } from './vacancies.store';
 import { VacancyFormPage } from './vacancy-form.page';
+import { WINDOW_CONTEXT } from '../../../core/windows/window-context';
+import { WindowNavigation } from '../../../core/windows/window-navigation';
+import { TABLE_QUERY_ADAPTER } from '../../../core/ui/table/table-query-adapter';
+import { windowQueryAdapter } from '../../../../testing/window-query-adapter';
 
 const OPTIONS = {
   employment_types: ['full_time'],
@@ -48,9 +52,14 @@ class FakeApi {
   vacancyTextResult = () => this.text$;
 }
 
-function setup(params: Record<string, string> = {}, query: Record<string, string> = {}): { page: VacancyFormPage; api: FakeApi; navigate: ReturnType<typeof vi.fn> } {
+function setup(
+  params: Record<string, string> = {},
+  query: Record<string, string> = {},
+  windowState?: { query: Record<string, string>; authorized: boolean; visibility?: BehaviorSubject<boolean> },
+): { page: VacancyFormPage; api: FakeApi; navigate: ReturnType<typeof vi.fn> } {
   const api = new FakeApi();
   const navigate = vi.fn().mockResolvedValue(true);
+  const windowQuery = windowState ? windowQueryAdapter(windowState.query) : null;
   TestBed.configureTestingModule({
     imports: [TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     providers: [
@@ -58,7 +67,26 @@ function setup(params: Record<string, string> = {}, query: Record<string, string
       { provide: DirectoryService, useValue: { active: () => of([{ id: 1, name: 'North', status: 'active' }]) } },
       { provide: AuthService, useValue: { user: signal({ roles: ['recruiter'] }) } },
       { provide: Router, useValue: { navigate } },
-      { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap(params), queryParamMap: convertToParamMap(query) } } },
+      {
+        provide: ActivatedRoute,
+        useValue: {
+          snapshot: { paramMap: convertToParamMap(params), queryParamMap: convertToParamMap(query) },
+          queryParamMap: of(convertToParamMap(query)),
+        },
+      },
+      ...(windowState && windowQuery
+        ? [
+            { provide: TABLE_QUERY_ADAPTER, useValue: windowQuery.adapter },
+            { provide: WINDOW_CONTEXT, useValue: { slot: 'os1' } },
+            {
+              provide: WindowNavigation,
+              useValue: {
+                isAuthorizedSlot: () => windowState.authorized,
+                visibilityChanges: () => windowState.visibility?.asObservable() ?? of(true),
+              },
+            },
+          ]
+        : []),
     ],
   });
   const page = TestBed.runInInjectionContext(() => new VacancyFormPage());
@@ -166,6 +194,12 @@ describe('VacancyFormPage', () => {
     expect(page.form.controls.work_format.value).toBe('remote');
   });
 
+  it('prefills from its window query when the canonical primary URL has another template id', () => {
+    const { page } = setup({}, { template: '999' }, { query: { template: '4' }, authorized: true });
+    expect(page.form.controls.title.value).toBe('Sales rep');
+    expect(page.form.controls.work_format.value).toBe('remote');
+  });
+
   it('AI button fills the section or shows why AI did not help', () => {
     const { page, api } = setup();
     page.form.patchValue({ title: 'Tutor' });
@@ -192,6 +226,39 @@ describe('VacancyFormPage', () => {
     const second = setup();
     expect(second.page.form.controls.title.value).toBe('Draft title');
     expect(internals(second.page).draftRestored()).toBe(true);
+  });
+
+  it('keeps a dirty window on user cancellation and permits cleanup after access revocation', () => {
+    const state = { query: {}, authorized: true };
+    const { page } = setup({}, {}, state);
+    page.form.controls.title.setValue('Window draft');
+    page.form.markAsDirty();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    expect(page.canLeave()).toBe(false);
+    expect(confirm).toHaveBeenCalledWith('recruiting.form.leaveConfirm');
+
+    state.authorized = false;
+    confirm.mockClear();
+    expect(page.canLeave()).toBe(true);
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it('does not poll AI until its minimized window becomes visible', async () => {
+    vi.useFakeTimers();
+    const visibility = new BehaviorSubject(false);
+    const { page, api } = setup({}, {}, { query: {}, authorized: true, visibility });
+    api.text$ = of({ status: 'pending', request_id: 11, text: null, error: null } as unknown as VacancyTextDraft);
+    const poll = vi.spyOn(api, 'vacancyTextResult');
+
+    internals(page).generate('requirements');
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(poll).not.toHaveBeenCalled();
+
+    visibility.next(true);
+    expect(poll).toHaveBeenCalledWith(11);
+    visibility.complete();
+    vi.useRealTimers();
   });
 });
 

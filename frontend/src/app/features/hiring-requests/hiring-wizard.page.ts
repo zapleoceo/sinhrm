@@ -9,13 +9,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Router, RouterLink } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DirectoryService } from '../directory/directory.service';
 import { DictionaryItem } from '../directory/directory.model';
 import { PersonPicker } from '../people/picker/person-picker';
 import { FormField, HIRING_PRIORITIES, HiringPriority, HiringReason, SaveHiringRequest, missingFields } from './hiring-requests.model';
 import { HiringRequestsService, hiringErrorKey } from './hiring-requests.service';
 import { fromIsoDate, toIsoDate, toIsoDateOrNull } from '../../core/date/iso-date';
+import { WINDOW_CONTEXT } from '../../core/windows/window-context';
+import { WindowNavigation } from '../../core/windows/window-navigation';
 
 type Extra = Record<string, string | number | boolean>;
 
@@ -222,6 +224,9 @@ type Extra = Record<string, string | number | boolean>;
   `,
 })
 export class HiringWizardPage implements OnInit {
+  private readonly i18n = inject(TranslocoService);
+  private readonly windowContext = inject(WINDOW_CONTEXT, { optional: true });
+  private readonly windowNavigation = inject(WindowNavigation, { optional: true });
   /** Route param of /hiring-requests/:id/edit (a draft). */
   readonly id = input(undefined, { transform: (v: unknown) => (v === undefined ? undefined : numberAttribute(v)) });
   private readonly api = inject(HiringRequestsService);
@@ -252,6 +257,11 @@ export class HiringWizardPage implements OnInit {
     currency: [''],
     requirements: [''],
   });
+
+  canLeave(): boolean {
+    if (this.windowContext && this.windowNavigation && !this.windowNavigation.isAuthorizedSlot(this.windowContext.slot)) return true;
+    return !this.form.dirty || window.confirm(this.i18n.translate('recruiting.form.leaveConfirm'));
+  }
 
   ngOnInit(): void {
     this.directory.active('branches').subscribe({ next: (l) => this.branches.set(l) });

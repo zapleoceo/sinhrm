@@ -80,7 +80,7 @@ export class TableUrlState {
   /** Calls `apply` with the parsed query now and after every URL change, until the page is destroyed. */
   watch<Q>(parse: (params: ParamMap) => Q, apply: (query: Q) => void): void {
     if (this.queryAdapter) {
-      this.queryAdapter.watch(parse, apply);
+      this.queryAdapter.watch(parse, apply, this.destroyRef);
       return;
     }
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => apply(parse(params)));

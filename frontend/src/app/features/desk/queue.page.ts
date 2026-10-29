@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,7 +7,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
+import { ParamMap, RouterLink } from '@angular/router';
+import { windowAwareQueryParamMap } from '../../core/windows/window-aware-query';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, NUMBER_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
@@ -201,7 +201,7 @@ export class DeskQueuePage implements OnInit {
   });
   protected readonly breached = computed(() => this.items().filter((c) => slaState(c) === 'breached').length);
   private readonly url = inject(TableUrlState);
-  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  private readonly params = windowAwareQueryParamMap();
   /** Server part of the URL (status, category): only its change reloads the queue. */
   private readonly query = computed(() => queueQueryFromParams(this.params()), { equal: sameQuery });
   protected readonly table = new ClientTable({ rows: this.items, columns: QUEUE_COLUMNS });

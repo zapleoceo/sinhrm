@@ -1,10 +1,18 @@
 import { provideNativeDateAdapter } from '@angular/material/core';
+import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
+import { TranslocoService } from '@jsverse/transloco';
+import { NEVER } from 'rxjs';
 import { Subject, of } from 'rxjs';
 import { TablePage, clickTitle, header, openTablePage, sortCount } from '../../../testing/table-page';
 import { TeamRow, TimesheetApproval } from './time.model';
 import { TimeApprovalsPage } from './time-approvals.page';
 import { TimeService } from './time.service';
 import { TimeTeamPage } from './time-team.page';
+import { MyWeekPage } from './my-week.page';
+import { TABLE_QUERY_ADAPTER } from '../../core/ui/table/table-query-adapter';
+import { NotifyService } from '../../core/ui/notify.service';
+import { windowQueryAdapter } from '../../../testing/window-query-adapter';
 
 const approval = (id: number, name: string, week: string, worked: number, overtime: number): TimesheetApproval => ({
   id,
@@ -96,6 +104,32 @@ describe('TimeTeamPage: sortable / filterable headers, kept when the week change
     expect(params().get('week')).toBe('2026-10-05');
     expect(params().get('sort')).toBe('missing');
     expect(params().get('status')).toBe('draft');
+  });
+});
+
+describe('MyWeekPage window query context', () => {
+  it('loads the week and employee from the routed window query rather than the primary URL', () => {
+    const query = windowQueryAdapter({ week: '2026-09-21', employee_id: '14' });
+    const requests: [string, number | undefined][] = [];
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: TABLE_QUERY_ADAPTER, useValue: query.adapter },
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap({ week: '2026-10-05', employee_id: '2' }) } } },
+        { provide: TimeService, useValue: { week: (week: string, employee?: number) => (requests.push([week, employee]), NEVER) } },
+        { provide: Router, useValue: { navigate: vi.fn() } },
+        { provide: NotifyService, useValue: { show: vi.fn() } },
+        { provide: TranslocoService, useValue: { translate: (key: string) => key } },
+      ],
+    });
+    const page = TestBed.runInInjectionContext(() => new MyWeekPage()) as unknown as { week: () => string | undefined };
+    TestBed.flushEffects();
+    expect(page.week()).toBe('2026-09-21');
+    expect(requests).toEqual([['2026-09-21', 14]]);
+
+    query.set({ week: '2026-09-28', employee_id: '9' });
+    TestBed.flushEffects();
+    expect(page.week()).toBe('2026-09-28');
+    expect(requests.at(-1)).toEqual(['2026-09-28', 9]);
   });
 });
 

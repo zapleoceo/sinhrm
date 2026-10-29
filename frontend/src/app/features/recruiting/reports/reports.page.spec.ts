@@ -4,6 +4,8 @@ import { Router, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of } from 'rxjs';
 import { LIVE_FILTER_DEBOUNCE_MS } from '../../../core/ui/table/table-url-state';
+import { TableQueryAdapter, TABLE_QUERY_ADAPTER } from '../../../core/ui/table/table-query-adapter';
+import { windowQueryAdapter } from '../../../../testing/window-query-adapter';
 import { FunnelRow, TouchesRow } from '../recruiting.model';
 import { RecruitingService } from '../recruiting.service';
 import { ReportsPage } from './reports.page';
@@ -15,16 +17,17 @@ function stage(vacancy: number, title: string, position: number, kind: FunnelRow
   return { vacancy_id: vacancy, vacancy_title: title, stage_id: vacancy * 10 + position, stage_name: `S${position}`, stage_kind: kind, position, count };
 }
 
-function render(rows: FunnelRow[]): { el: HTMLElement; detect: () => void } {
+function render(rows: FunnelRow[], queryAdapter?: TableQueryAdapter, touches: TouchesRow[] = []): { el: HTMLElement; detect: () => void } {
   TestBed.configureTestingModule({
     imports: [ReportsPage, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     providers: [
       provideRouter([]),
       provideNativeDateAdapter(),
+      ...(queryAdapter ? [{ provide: TABLE_QUERY_ADAPTER, useValue: queryAdapter }] : []),
       {
         provide: RecruitingService,
         useValue: {
-          touchesReport: () => of({ range, rows: [], totals: { total: 0, via_product: 0, captured: 0 } }),
+          touchesReport: () => of({ range, rows: touches, totals: { total: touches.reduce((n, row) => n + row.count, 0), via_product: 0, captured: 0 } }),
           funnelReport: () => of({ range, rows, totals: { total: 0 } }),
           sourcesReport: () =>
             of({
@@ -90,6 +93,18 @@ describe('ReportsPage funnel cards', () => {
     const { el } = render([]);
     const footers = [...el.querySelectorAll('tfoot tr')].map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent?.trim()));
     expect(footers).toEqual([['5', '1']]);
+  });
+});
+
+describe('Recruiting ReportsPage window table state', () => {
+  it('applies recruiter filters from the window query without using primary table state', () => {
+    const query = windowQueryAdapter({ tch_recruiter: 'Ann' });
+    const { el } = render([], query.adapter, [
+      { author_id: 1, author_name: 'Ann', channel: 'call', via_product: true, count: 3 },
+      { author_id: 2, author_name: 'Bob', channel: 'email', via_product: false, count: 2 },
+    ]);
+    const names = [...el.querySelector('table')!.querySelectorAll('tbody th')].map((th) => th.textContent?.trim() ?? '');
+    expect(names).toEqual(['Ann']);
   });
 });
 

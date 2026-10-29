@@ -57,3 +57,27 @@ describe('ScriptEditorPage versions table (header sort and filter)', () => {
     expect(sortCount(fixture)).toBe(2); // what an open header filter announces
   });
 });
+
+describe('ScriptEditorPage leave protection', () => {
+  const editor = (authorized: boolean): { canLeave(): boolean } => {
+    const page = Object.create(ScriptEditorPage.prototype) as { canLeave(): boolean } & Record<string, unknown>;
+    Object.assign(page, {
+      store: { dirty: () => true },
+      i18n: { translate: (key: string) => key },
+      windowContext: { slot: 'os1' },
+      windowNavigation: { isAuthorizedSlot: () => authorized },
+    });
+    return page;
+  };
+
+  it('retains unsaved script edits after cancellation and bypasses the prompt only for revoked access', () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    expect(editor(true).canLeave()).toBe(false);
+    expect(confirm).toHaveBeenCalledWith('recruiting.form.leaveConfirm');
+
+    confirm.mockClear();
+    expect(editor(false).canLeave()).toBe(true);
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+});
