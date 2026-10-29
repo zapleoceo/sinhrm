@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, InjectionToken, computed, inject } 
 import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { Dashboard } from '../overview/overview.model';
 import {
@@ -54,6 +54,7 @@ export class DesktopPage {
   private readonly auth = inject(AuthService);
   private readonly launcher = inject(DESKTOP_LAUNCHER);
   private readonly document = inject(DOCUMENT);
+  private readonly i18n = inject(TranslocoService);
   protected readonly layout = inject(DesktopLayoutStore);
   protected readonly data = inject(DesktopDataStore);
   protected readonly groups = DESKTOP_GROUPS;
@@ -113,7 +114,8 @@ export class DesktopPage {
   }
 
   protected widgetTitle(id: DesktopWidgetId): string {
-    return this.widgetDefinitions.find((widget) => widget.id === id)?.title ?? 'desktop.widgets.title';
+    const key = this.widgetDefinitions.find((widget) => widget.id === id)?.title ?? 'desktop.widgets.title';
+    return this.i18n.translate(key);
   }
 
   protected widgetIcon(id: DesktopWidgetId): string {

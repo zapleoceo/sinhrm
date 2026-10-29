@@ -65,7 +65,7 @@
                 <mat-icon aria-hidden="true">drag_indicator</mat-icon>
               </button>
               <mat-icon class="widget-icon" aria-hidden="true">{{ widgetIcon(widget.id) }}</mat-icon>
-              <h3>{{ widgetTitle(widget.id) | transloco }}</h3>
+              <h3>{{ widgetTitle(widget.id) }}</h3>
               <div class="widget-actions">
                 <button mat-icon-button type="button" [id]="'desktop-widget-move-' + widget.id + '-up'" [attr.aria-label]="'desktop.widgets.moveUp' | transloco: { title: widgetTitle(widget.id) }" [disabled]="index === 0" (click)="moveWidget(widget.id, -1)"><mat-icon>arrow_upward</mat-icon></button>
                 <button mat-icon-button type="button" [id]="'desktop-widget-move-' + widget.id + '-down'" [attr.aria-label]="'desktop.widgets.moveDown' | transloco: { title: widgetTitle(widget.id) }" [disabled]="index === widgets().length - 1" (click)="moveWidget(widget.id, 1)"><mat-icon>arrow_downward</mat-icon></button>

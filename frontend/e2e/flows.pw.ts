@@ -758,6 +758,25 @@ test.describe('mobile flows', () => {
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'mobile-light', 'mobile-light only'));
 
+  test('widget sizes preserve distinct card heights on mobile', async ({ page, context }) => {
+    await open(page, context, '/desktop');
+    const summary = page.locator('[data-widget="summary"]');
+    const tasks = page.locator('[data-widget="tasks"]');
+    const today = page.locator('[data-widget="today"]');
+    await summary.locator('.size-control button').nth(0).click();
+    await tasks.locator('.size-control button').nth(1).click();
+    await today.locator('.size-control button').nth(2).click();
+    await expect(summary).toHaveClass(/size-s/);
+    await expect(tasks).toHaveClass(/size-m/);
+    await expect(today).toHaveClass(/size-l/);
+
+    const heights = await page.evaluate(() => Object.fromEntries(
+      ['summary', 'tasks', 'today'].map((id) => [id, document.querySelector(`[data-widget="${id}"]`)?.getBoundingClientRect().height ?? 0]),
+    ));
+    expect(heights['summary']).toBeLessThan(heights['tasks']);
+    expect(heights['tasks']).toBeLessThan(heights['today']);
+  });
+
   test('drawer opens, closes, and closes on navigation', async ({ page, context }) => {
     await open(page, context, '/');
     const burger = page.getByRole('button', { name: 'Головне меню' });

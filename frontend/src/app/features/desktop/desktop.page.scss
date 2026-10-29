@@ -4,24 +4,26 @@
 }
 
 .desktop-page {
+  --desktop-glow-position: 4% 0%;
+  --desktop-chrome-background: var(--app-card-2);
+  --desktop-chrome-filter: none;
   display: grid;
   gap: clamp(1.25rem, 2.2vw, 2rem);
   min-width: 0;
   padding: clamp(1rem, 2.2vw, 2rem);
   color: var(--mat-sys-on-surface);
+  background-image: radial-gradient(ellipse at var(--desktop-glow-position), color-mix(in srgb, var(--mat-sys-primary) 5%, transparent), transparent 34rem);
 }
 
-:host-context(html[data-wallpaper='mist']) .desktop-page {
-  background-image: radial-gradient(ellipse at 4% 0%, color-mix(in srgb, var(--mat-sys-primary) 5%, transparent), transparent 34rem);
+:host-context(html[data-wallpaper='sand']) .desktop-page { --desktop-glow-position: 96% 4%; }
+:host-context(html[data-wallpaper='dusk']) .desktop-page { --desktop-glow-position: 78% 100%; }
+:host-context(html[data-interface-style='glass']) .desktop-page {
+  --desktop-chrome-background: color-mix(in srgb, var(--app-card) var(--os-glass-opacity, 100%), transparent);
+  --desktop-chrome-filter: blur(20px) saturate(1.08);
 }
 
-:host-context(html[data-wallpaper='sand']) .desktop-page {
-  background-image: radial-gradient(ellipse at 96% 4%, color-mix(in srgb, var(--mat-sys-primary) 4%, transparent), transparent 38rem);
-}
-
-:host-context(html[data-wallpaper='dusk']) .desktop-page {
-  background-image: radial-gradient(ellipse at 78% 100%, color-mix(in srgb, var(--mat-sys-primary) 6%, transparent), transparent 42rem);
-}
+.widget-header,
+.app-icon { background: var(--desktop-chrome-background); -webkit-backdrop-filter: var(--desktop-chrome-filter); backdrop-filter: var(--desktop-chrome-filter); }
 
 .desktop-heading,
 .section-heading {
@@ -98,7 +100,6 @@
   cursor: pointer;
   font: var(--mat-sys-body-small);
   text-align: center;
-  transition: background-color var(--app-fast) ease, border-color var(--app-fast) ease;
 }
 
 .app-shortcut:hover,
@@ -172,35 +173,12 @@
 
 .cdk-drag-preview { border-radius: var(--app-radius); box-shadow: 0 12px 32px rgb(0 0 0 / 0.18); }
 .cdk-drag-placeholder { opacity: 0.35; }
-.cdk-drag-animating { transition: transform 150ms ease; }
-.widget-grid.cdk-drop-list-dragging .widget:not(.cdk-drag-placeholder) { transition: transform 150ms ease; }
-
-:host-context(html[data-interface-style='glass']) .widget-header,
-:host-context(html[data-interface-style='glass']) .app-icon {
-  background: color-mix(in srgb, var(--app-card) var(--os-glass-opacity, 100%), transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(1.08);
-  backdrop-filter: blur(20px) saturate(1.08);
-}
-
-:host-context(html[data-interface-style='solid']) .widget-header,
-:host-context(html[data-interface-style='solid']) .app-icon {
-  background: var(--app-card-2);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
 
 @supports not (backdrop-filter: blur(1px)) {
-  :host-context(html[data-interface-style='glass']) .widget-header,
-  :host-context(html[data-interface-style='glass']) .app-icon { background: var(--app-card-2); -webkit-backdrop-filter: none; backdrop-filter: none; }
-}
-
-:host-context(html[data-performance='fast']) .widget-header,
-:host-context(html[data-performance='fast']) .app-icon {
-  background: var(--app-card-2);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-  transition: none;
+  :host-context(html[data-interface-style='glass']) .desktop-page {
+    --desktop-chrome-background: var(--app-card-2);
+    --desktop-chrome-filter: none;
+  }
 }
 
 @media (max-width: 1000px) {
@@ -223,32 +201,18 @@
   .widget.size-s,
   .widget.size-m,
   .widget.size-l { grid-column: 1; }
+  .widget.size-s .widget-content { min-height: 7.5rem; }
+  .widget.size-m .widget-content { min-height: 9.5rem; }
+  .widget.size-l .widget-content { min-height: 11.5rem; }
   .widget-header { flex-wrap: wrap; }
   .widget-actions { gap: 0; }
   .widget-actions button { width: 2.75rem; height: 2.75rem; }
   .size-control button { width: 2rem; height: 2.25rem; }
-  :host-context(html[data-interface-style='glass']) .widget-header,
-  :host-context(html[data-interface-style='glass']) .app-icon { -webkit-backdrop-filter: blur(10px) saturate(1.05); backdrop-filter: blur(10px) saturate(1.05); }
+  :host-context(html[data-interface-style='glass']) .desktop-page { --desktop-chrome-filter: blur(10px) saturate(1.05); }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .app-shortcut,
-  .cdk-drag-animating,
-  .widget-grid.cdk-drop-list-dragging .widget:not(.cdk-drag-placeholder) { transition: none; }
-}
-
-:host-context(html[data-motion='reduced']) .app-shortcut,
-:host-context(html[data-motion='reduced']) .cdk-drag-animating,
-:host-context(html[data-motion='reduced']) .widget-grid.cdk-drop-list-dragging .widget:not(.cdk-drag-placeholder),
-:host-context(html[data-performance='fast']) .app-shortcut,
-:host-context(html[data-performance='fast']) .cdk-drag-animating,
-:host-context(html[data-performance='fast']) .widget-grid.cdk-drop-list-dragging .widget:not(.cdk-drag-placeholder) { transition: none; }
 
 /* Keep this after the mobile glass rule so fast mode is opaque at every width. */
-:host-context(html[data-performance='fast']) .widget-header,
-:host-context(html[data-performance='fast']) .app-icon {
-  background: var(--app-card-2);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
+:host-context(html[data-performance='fast']) .desktop-page {
+  --desktop-chrome-background: var(--app-card-2);
+  --desktop-chrome-filter: none;
 }

@@ -12,6 +12,8 @@ The typed registry in `frontend/src/app/features/desktop/desktop.model.ts` conta
 
 The current widgets show only the authenticated dashboard's aggregate candidate counts, current user's task counts, day-route interview/task counts, and available approval counts. They do not render names, task titles, candidate records, or approval rows. Dashboard results remain in memory and are never persisted by the desktop.
 
+S/M/L changes the widget grid span on desktop. On phones the widgets use one column and retain the selected size through minimum content heights of 7.5rem, 9.5rem, and 11.5rem, respectively, so size remains perceptible without forcing a fixed height or clipping longer localized content.
+
 ## Per-user layout
 
 `DesktopLayoutStore` stores only `{version: 1, widgets: [{id, size}]}` at `sinhrm.desktop.layout.v1.<userId>`. Layout validation requires exact object keys, version 1, recognized unique widget IDs, `s | m | l` sizes, and at most 12 entries. Empty layouts are saved. Missing, malformed, unavailable, or blocked browser storage falls back to the in-memory default layout without blocking use of the page. Current widget IDs are unique, so the active registry offers four kinds; the twelve-entry ceiling is a bounded schema limit for future unique widget types.

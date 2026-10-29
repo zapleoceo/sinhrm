@@ -82,6 +82,8 @@ describe('DesktopPage', () => {
     expect(element.textContent).not.toContain('private task title');
     expect(element.textContent).not.toContain('private interview title');
     expect(element.textContent).not.toContain('private person name');
+    expect(element.querySelector('.widget[data-widget="tasks"] .drag-handle')?.getAttribute('aria-label')).toBe('Drag Tasks');
+    expect(element.querySelector('.widget[data-widget="tasks"] h3')?.textContent).toBe('Tasks');
     expect(dashboardRequest).toHaveBeenCalledTimes(1);
     expect(element.querySelectorAll('.widget').length).toBe(3);
   });
