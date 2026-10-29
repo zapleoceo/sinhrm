@@ -51,4 +51,24 @@ describe('AppearancePage', () => {
     expect(theme.preferences().themePreference).toBe('dark');
     expect(theme.theme()).toBe('dark');
   });
+
+  it('keeps Material select values rendered across unrelated preference updates', async () => {
+    const theme = TestBed.inject(ThemeService);
+    theme.updatePreferences({ colorScheme: 'custom', wallpaper: 'mist' });
+    const fixture = TestBed.createComponent(AppearancePage);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const selectedText = (): string[] => Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.mat-mdc-select-value-text'),
+      (element) => element.textContent?.trim() ?? '',
+    );
+    expect(selectedText()).toEqual(['appearance.custom', 'appearance.mist']);
+
+    theme.updatePreferences({ fastMode: true });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(selectedText()).toEqual(['appearance.custom', 'appearance.mist']);
+  });
 });

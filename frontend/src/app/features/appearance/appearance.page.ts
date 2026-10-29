@@ -131,7 +131,7 @@ export class AppearancePage {
   constructor() {
     effect(() => {
       const preferences = this.theme.preferences();
-      untracked(() => this.form.setValue(preferences, { emitEvent: false }));
+      untracked(() => this.syncForm(preferences));
     });
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
       const patch: Partial<AppearancePreferences> = value;
@@ -155,5 +155,19 @@ export class AppearancePage {
       fastMode: new FormControl<boolean>(preferences.fastMode, { nonNullable: true }),
       reducedMotion: new FormControl<boolean>(preferences.reducedMotion, { nonNullable: true }),
     });
+  }
+
+  private syncForm(preferences: AppearancePreferences): void {
+    const current = this.form.getRawValue();
+    const patch: { -readonly [Key in keyof AppearancePreferences]?: AppearancePreferences[Key] } = {};
+    if (current.themePreference !== preferences.themePreference) patch.themePreference = preferences.themePreference;
+    if (current.colorScheme !== preferences.colorScheme) patch.colorScheme = preferences.colorScheme;
+    if (current.accent !== preferences.accent) patch.accent = preferences.accent;
+    if (current.interfaceStyle !== preferences.interfaceStyle) patch.interfaceStyle = preferences.interfaceStyle;
+    if (current.wallpaper !== preferences.wallpaper) patch.wallpaper = preferences.wallpaper;
+    if (current.transparency !== preferences.transparency) patch.transparency = preferences.transparency;
+    if (current.fastMode !== preferences.fastMode) patch.fastMode = preferences.fastMode;
+    if (current.reducedMotion !== preferences.reducedMotion) patch.reducedMotion = preferences.reducedMotion;
+    if (Object.keys(patch).length > 0) this.form.patchValue(patch, { emitEvent: false });
   }
 }
