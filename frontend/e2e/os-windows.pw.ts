@@ -58,6 +58,8 @@ test.describe('OS routed windows', () => {
 
     // Relative links inside the real People outlet keep the dynamic route in that same slot.
     const person = peopleWindow.getByRole('link', { name: /Бондаренко Євген/ }).first();
+    await page.getByTestId('dock-window-os2').click();
+    await expect(peopleWindow).toHaveClass(/active/);
     await person.click();
     await expect(page).toHaveURL(/os2:window\/people\/70/);
     await expect(peopleWindow).toContainText('Бондаренко Євген');
@@ -163,17 +165,18 @@ test.describe('OS routed windows on mobile', () => {
       await page.locator('.dock-home').click();
       await expect(page.locator('.primary-view')).toBeVisible();
       await expect(page.locator('article.os-window.open.mobile-inactive')).toHaveCount(2);
+      const peopleWindow = page.getByTestId('os-window-os2');
       await page.getByTestId('dock-window-os2').click();
-      await expect(page.locator('article.os-window.window-os2.open')).not.toHaveClass(/mobile-inactive/);
+      await expect(peopleWindow).not.toHaveClass(/mobile-inactive/);
 
-      await page.locator('article.os-window.window-os2.open .window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
-      const minimized = page.locator('article.os-window.window-os2.minimized');
-      await expect(minimized).toBeHidden();
+      await peopleWindow.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
+      await expect(peopleWindow).toHaveClass(/minimized/);
+      await expect(peopleWindow).toBeHidden();
       const restore = page.getByTestId('dock-window-os2');
       await expect(restore).toBeVisible();
       await restore.click();
-      await expect(minimized).not.toHaveClass(/minimized/);
-      await expect(minimized.getByRole('heading', { level: 1, name: /Співробітники/ })).toBeVisible();
+      await expect(peopleWindow).not.toHaveClass(/minimized/);
+      await expect(peopleWindow.getByRole('heading', { level: 1, name: /Співробітники/ })).toBeVisible();
     }
   });
 });

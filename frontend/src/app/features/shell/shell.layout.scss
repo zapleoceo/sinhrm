@@ -315,7 +315,6 @@
 .modules-toggle {
   position: relative;
   flex: none;
-  padding-inline-end: 2.75rem;
 }
 
 .topbar-brand { display: flex; text-decoration: none; --app-logo-size: 24px; border-radius: var(--app-radius-sm); }
@@ -376,11 +375,10 @@
 @media (max-width: 767.98px) {
   .os-dock { bottom: max(0.5rem, env(safe-area-inset-bottom)); }
   .modules-toggle {
-    width: 2.75rem;
     min-width: 2.75rem;
     height: 2.75rem;
     justify-content: center;
-    padding: 0;
+    padding: 0 0.5rem;
   }
   .modules-toggle .modules-label { display: none; }
 }

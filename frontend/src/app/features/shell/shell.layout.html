@@ -4,7 +4,7 @@
       <button mat-button type="button" class="modules-toggle" [attr.aria-label]="'shell.nav.modules' | transloco" aria-controls="app-sidebar" [attr.aria-expanded]="drawerOpen()" (click)="toggleDrawer()">
         <mat-icon>menu</mat-icon>
         <span class="modules-label">{{ 'shell.nav.modules' | transloco }}</span>
-        <app-nav-badge class="burger-badge" [count]="totalBadge()" />
+        <app-nav-badge class="modules-badge" [count]="totalBadge()" />
       </button>
       <span class="topbar-title">{{ pageTitleKey() ? (pageTitleKey()! | transloco) : 'SinHRM' }}</span>
       @if (can('assistant')) {

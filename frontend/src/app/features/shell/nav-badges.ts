@@ -77,8 +77,9 @@ export class NavBadgesService {
   `,
   styles: `
     :host { display: contents; }
-    /* Host is display:contents, so the burger's corner position goes on the pill itself (shell .burger is relative). */
-    :host(.burger-badge) .nav-badge { position: absolute; top: 0; right: -6px; margin: 0; pointer-events: none; }
+    /* The Modules counter participates in Material's label flow so its width is reserved beside the text/icon. */
+    :host(.modules-badge) { display: inline-flex; align-items: center; flex: none; margin-inline-start: 0.35rem; vertical-align: middle; }
+    :host(.modules-badge) .nav-badge { position: static; margin: 0; pointer-events: none; }
     /* Icon-only rail (shell .rail): the number sits on the top-right corner of the row's icon (rows are relative). */
     :host-context(.shell.rail) .nav-badge {
       position: absolute; top: 1px; right: 1px; min-width: 1rem; margin: 0; padding: 0 0.25rem; line-height: 1rem; pointer-events: none;

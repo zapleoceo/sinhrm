@@ -250,6 +250,7 @@ test('rendered desktop materials follow glass transparency, palette, solid, and 
   await expect(window.locator('.window-titlebar')).toBeVisible();
   await expect(page.locator('.desktop-page .widget-header').first()).toBeVisible();
   const slider = page.getByTestId('appearance-transparency');
+  let currentTransparency = 18;
   const openAppearance = async (): Promise<void> => {
     await page.locator('.topbar .os-user-launcher').click();
     await page.getByRole('menuitem', { name: 'Зовнішній вигляд', exact: true }).click();
@@ -263,8 +264,16 @@ test('rendered desktop materials follow glass transparency, palette, solid, and 
   };
   const setTransparency = async (value: number): Promise<void> => {
     await slider.focus();
-    await page.keyboard.press('Home');
-    for (let step = 0; step < value; step++) await page.keyboard.press('ArrowRight');
+    await expect(slider).toBeFocused();
+    await expect(slider).toHaveValue(String(currentTransparency));
+    const difference = value - currentTransparency;
+    const direction = difference < 0 ? 'ArrowLeft' : 'ArrowRight';
+    const step = Math.sign(difference);
+    for (let count = 0; count < Math.abs(difference); count++) {
+      await page.keyboard.press(direction);
+      currentTransparency += step;
+      await expect(slider).toHaveValue(String(currentTransparency));
+    }
     await expect(slider).toHaveValue(String(value));
   };
 

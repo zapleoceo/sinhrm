@@ -44,7 +44,15 @@
 }
 
 .window-controls { display: flex; align-items: center; flex: none; }
-.window-body { min-height: 0; flex: 1; overflow: auto; background: var(--app-card); }
+.window-body {
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+  background: var(--app-card);
+}
 .window-body[hidden] { display: none !important; }
 
 .window-resize {
@@ -71,6 +79,7 @@
   .os-window.mobile-inactive { display: none !important; }
   .os-window.open { inset: 0; width: auto; height: auto; border-radius: var(--app-radius); }
   .window-titlebar { min-height: 2.75rem; padding-left: 0.5rem; cursor: default; touch-action: auto; }
+  .window-body { padding: 0.75rem; }
   .window-controls button { width: 2.75rem; height: 2.75rem; }
   .window-resize { display: none; }
 }

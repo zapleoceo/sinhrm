@@ -29,6 +29,34 @@ async function open(page: Page, context: import('@playwright/test').BrowserConte
   return mock;
 }
 
+async function expectModulesBadgeOutsideLabel(page: Page, mobile: boolean): Promise<void> {
+  const button = page.getByRole('button', { name: 'Модулі', exact: true });
+  const badge = button.locator('app-nav-badge.modules-badge .nav-badge');
+  const label = button.locator('.modules-label');
+  const icon = button.locator('mat-icon');
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAccessibleName('Модулі');
+  await expect(badge).toBeVisible();
+
+  const adjacent = mobile ? icon : label;
+  if (mobile) {
+    await expect(label).toBeHidden();
+    await expect(icon).toBeVisible();
+  } else {
+    await expect(label).toBeVisible();
+  }
+  const [adjacentBox, badgeBox] = await Promise.all([adjacent.boundingBox(), badge.boundingBox()]);
+  expect(adjacentBox, mobile ? 'the mobile Modules icon has rendered bounds' : 'the desktop Modules label has rendered bounds').not.toBeNull();
+  expect(badgeBox, 'the Modules badge has rendered bounds').not.toBeNull();
+  const first = adjacentBox!;
+  const second = badgeBox!;
+  const intersects = first.x < second.x + second.width
+    && first.x + first.width > second.x
+    && first.y < second.y + second.height
+    && first.y + first.height > second.y;
+  expect(intersects, mobile ? 'the badge does not overlap the mobile menu icon' : 'the badge does not overlap the desktop Modules label').toBe(false);
+}
+
 /** Drags with real mouse moves (CDK drag-drop needs several pointer moves to start and to pick the target). */
 async function drag(page: Page, from: Locator, to: Locator): Promise<void> {
   const a = (await from.boundingBox())!;
@@ -1028,6 +1056,11 @@ test.describe('mobile flows', () => {
     expect(layerBox!.y).toBeGreaterThanOrEqual(56);
     expect(layerBox!.y + layerBox!.height).toBeLessThanOrEqual(page.viewportSize()!.height - 56);
   });
+});
+
+test('Modules badge stays beside its label or icon without overlap', async ({ page, context }, testInfo) => {
+  await open(page, context, '/');
+  await expectModulesBadgeOutsideLabel(page, testInfo.project.name.startsWith('mobile-'));
 });
 
 
