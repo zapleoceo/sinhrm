@@ -1,0 +1,19 @@
+# CI project sharding — independent source review
+
+Independent SOL, 2026-10-30 Asia/Saigon. Worktree D:/Projects/HRM/worktrees/browser-os-ci-projects; base 6a41a5072d526776f1365e89a2860ee8cbde3771. Reviewed full base→current workflow/config/parity/package/docs changes and new offline discovery test. Only this report is reviewer-owned. No product/workflow/Git/server/build/Vera edits.
+
+**CHANGES REQUIRED — one P2.** The new download step uses `actions/download-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9`, copied from upload-artifact. That commit does not exist in the download-artifact repository: independent GitHub API `repos/actions/download-artifact/commits/<pin>` returned HTTP422, “No commit found for SHA”. Every project job will fail before browser execution. Replace it with a verified full SHA belonging to download-artifact and check the action release/runtime compatibility. As a concrete verified option, official `actions/download-artifact` tag v7.0.0 currently resolves to commit `37930b1c2abaa49bbe596cd826c3c89aef350131`; verify/adopt the intended release rather than reusing upload's pin.
+
+The remaining design passes source review. Shared build and all project jobs check out the same workflow source/ref, install the same committed lock and use the named production dist artifact consumed by the existing static server. Matrix contains all four configured projects; each passes its own --project and two workers. fail-fast:false preserves independent failures. Stable ui-parity aggregate has always() and requires both needs results equal success, so build/project failure, cancellation or skip cannot become green. Global workflow cancellation may cancel the aggregate too, which is still a non-success check; it does not certify a completed run.
+
+Distinct report/screenshot/inventory artifact names isolate jobs. Inventory files persist after extraction and before snapshot assertion; prior comparison and conditional test attachment behavior is retained. Always uploads retain whatever exists after failures/cancellation, but cannot guarantee files that Playwright did not flush or upload after a runner is forcibly terminated. Missing HTML report is therefore not declared impossible. Screenshot/inventory path layout matches Playwright project directories; server dist path remains unchanged. No testMatch/test assertions/readiness/trace/axe/baseline thresholds were removed or loosened. E2E_UPDATE remains opt-in; normal shards do not rewrite axe baselines.
+
+Independent `node --test e2e/project-coverage.test.mjs` exited 0: full discovery equals the exact disjoint union of four project selections, no duplicate/missing project-qualified identities. It executes discovery only, not browser hooks; existing deliberate per-project runtime skips remain unchanged. Author 532 listed identities (133/project), lint/types/YAML/docs/worklog results are attributed. Independent diff check passed. No new browser timings/screenshots/build were produced.
+
+Next: correct the action pin, independently recheck the exact one-line correction, port and execute build/four jobs/aggregate in CI. CI evidence, completed artifact recovery and actual browser acceptance remain pending. No merge/deploy approval.
+
+## Corrected pin — independent SOURCE PASS
+
+2026-10-30. Verified workflow download-artifact now pins official v7.0.0 commit 37930b1c2abaa49bbe596cd826c3c89aef350131; independent GitHub tag lookup matches exactly. Upload pins remain unchanged. Diff check passes. This closes the sole P2; the prior independent coverage-union check and remaining source conclusions stand.
+
+SOURCE PASS to commit/port the frozen sharding change and run the complete CI matrix. This does not certify action execution, successful browser shards, artifact recovery or UI/runtime acceptance until CI produces that evidence. No app/source/Git edits by reviewer; only this report updated.
