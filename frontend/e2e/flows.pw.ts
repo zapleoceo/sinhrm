@@ -83,14 +83,17 @@ test.describe('desktop flows', () => {
     test.skip(info.project.name !== 'desktop-light', 'desktop-light only');
     await open(page, context, '/settings/appearance');
     await expect(page.getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
-    await expect(page.getByTestId('appearance-scheme').locator('.mat-mdc-select-value-text')).toHaveText('Власна');
-    await expect(page.getByTestId('appearance-wallpaper').locator('.mat-mdc-select-value-text')).toHaveText('Туман');
+    const scheme = page.getByTestId('appearance-scheme');
+    const wallpaper = page.getByTestId('appearance-wallpaper');
+    await expect(scheme).toHaveValue('custom');
+    await expect(scheme.locator('option:checked')).toHaveText('Власна');
+    await expect(wallpaper).toHaveValue('mist');
+    await expect(wallpaper.locator('option:checked')).toHaveText('Туман');
 
     // Exercise actual Material controls and verify the shared root contract consumed by the app styles.
     await page.getByRole('radio', { name: 'Темна', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await page.getByRole('combobox', { name: 'Колірна схема' }).click();
-    await page.getByRole('option', { name: 'Sintegrum' }).click();
+    await scheme.selectOption('sintegrum');
     await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'sintegrum');
 
     await page.getByRole('radio', { name: 'Фіолетовий', exact: true }).click();
@@ -98,8 +101,7 @@ test.describe('desktop flows', () => {
     await expect(page.locator('html')).toHaveAttribute('data-accent', 'violet');
     await page.getByRole('radio', { name: 'Суцільний', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-interface-style', 'solid');
-    await page.getByRole('combobox', { name: 'Тло робочого столу' }).click();
-    await page.getByRole('option', { name: 'Сутінки' }).click();
+    await wallpaper.selectOption('dusk');
     await expect(page.locator('html')).toHaveAttribute('data-wallpaper', 'dusk');
 
     const transparency = page.locator('input[type="range"]');

@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
@@ -30,7 +30,7 @@ type AppearanceForm = {
     MatButtonToggleModule,
     MatFormFieldModule,
     MatIconModule,
-    MatSelectModule,
+    MatInputModule,
     MatSlideToggleModule,
     TranslocoPipe,
   ],
@@ -56,10 +56,10 @@ type AppearanceForm = {
         </mat-button-toggle-group>
         <mat-form-field appearance="outline">
           <mat-label>{{ 'appearance.scheme' | transloco }}</mat-label>
-          <mat-select formControlName="colorScheme" data-testid="appearance-scheme">
-            <mat-option value="custom">{{ 'appearance.custom' | transloco }}</mat-option>
-            <mat-option value="sintegrum">{{ 'appearance.sintegrum' | transloco }}</mat-option>
-          </mat-select>
+          <select matNativeControl formControlName="colorScheme" data-testid="appearance-scheme">
+            <option value="custom">{{ 'appearance.custom' | transloco }}</option>
+            <option value="sintegrum">{{ 'appearance.sintegrum' | transloco }}</option>
+          </select>
         </mat-form-field>
       </section>
 
@@ -81,11 +81,11 @@ type AppearanceForm = {
         </mat-button-toggle-group>
         <mat-form-field appearance="outline">
           <mat-label>{{ 'appearance.wallpaper' | transloco }}</mat-label>
-          <mat-select formControlName="wallpaper" data-testid="appearance-wallpaper">
-            <mat-option value="mist">{{ 'appearance.mist' | transloco }}</mat-option>
-            <mat-option value="sand">{{ 'appearance.sand' | transloco }}</mat-option>
-            <mat-option value="dusk">{{ 'appearance.dusk' | transloco }}</mat-option>
-          </mat-select>
+          <select matNativeControl formControlName="wallpaper" data-testid="appearance-wallpaper">
+            <option value="mist">{{ 'appearance.mist' | transloco }}</option>
+            <option value="sand">{{ 'appearance.sand' | transloco }}</option>
+            <option value="dusk">{{ 'appearance.dusk' | transloco }}</option>
+          </select>
         </mat-form-field>
         <label class="range-field">
           <span>{{ 'appearance.transparency' | transloco }} <output>{{ form.controls.transparency.value }}%</output></span>

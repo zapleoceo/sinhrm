@@ -88,8 +88,12 @@ for (const p of PAGES) {
 
       // Establish that default CVA selections are painted before inventory and screenshots are captured.
       if (p.id === 'appearance' && state.id === '') {
-        await expect(page.getByTestId('appearance-scheme').locator('.mat-mdc-select-value-text')).toHaveText('Власна');
-        await expect(page.getByTestId('appearance-wallpaper').locator('.mat-mdc-select-value-text')).toHaveText('Туман');
+        const scheme = page.getByTestId('appearance-scheme');
+        const wallpaper = page.getByTestId('appearance-wallpaper');
+        await expect(scheme).toHaveValue('custom');
+        await expect(scheme.locator('option:checked')).toHaveText('Власна');
+        await expect(wallpaper).toHaveValue('mist');
+        await expect(wallpaper.locator('option:checked')).toHaveText('Туман');
       }
 
       // (a) inventory — identical across themes, so only the light run writes it.
