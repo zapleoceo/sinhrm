@@ -1,8 +1,8 @@
-import { InjectionToken } from '@angular/core';
+import { DestroyRef, InjectionToken } from '@angular/core';
 import { NavigationStart, ParamMap, Params } from '@angular/router';
 
 export interface TableQueryAdapter {
-  watch<Query>(parse: (params: ParamMap) => Query, apply: (query: Query) => void): void;
+  watch<Query>(parse: (params: ParamMap) => Query, apply: (query: Query) => void, consumerDestroyRef?: DestroyRef): void;
   write(params: Params, replaceUrl: boolean): Promise<boolean>;
   shouldDropPendingEdit(navigation: NavigationStart): boolean;
 }

@@ -1,6 +1,6 @@
 import { Provider, SkipSelf, inject } from '@angular/core';
 import { ActivatedRoute, IsActiveMatchOptions, NavigationBehaviorOptions, Router, UrlTree } from '@angular/router';
-import { WindowContext, WINDOW_CONTEXT } from './window-context';
+import { WindowContext, WINDOW_CONTEXT, isWindowSlot } from './window-context';
 import { WindowNavigation } from './window-navigation';
 
 type CreateUrlTreeArgs = Parameters<Router['createUrlTree']>;
@@ -19,8 +19,12 @@ export function createWindowRouter(root: Router, windows: WindowNavigation, cont
       }
       if (property === 'navigate') {
         return (...args: NavigateArgs): Promise<boolean> => {
-          const scoped = windows.createUrlTreeFromCommands(context.slot, args[0], args[1]);
-          return scoped ? target.navigateByUrl(scoped, args[1]) : target.navigate(...args);
+          try {
+            const scoped = windows.createUrlTreeFromCommands(context.slot, args[0], args[1]);
+            return scoped ? target.navigateByUrl(scoped, args[1]) : target.navigate(...args);
+          } catch {
+            return Promise.resolve(false);
+          }
         };
       }
       if (property === 'navigateByUrl') {
@@ -28,6 +32,7 @@ export function createWindowRouter(root: Router, windows: WindowNavigation, cont
           const source = typeof args[0] === 'string' ? target.parseUrl(args[0]) : args[0];
           if (windows.isWorkspaceTree(source, context.slot)) return target.navigateByUrl(...args);
           const scoped = windows.routeTreeForUrl(context.slot, source);
+          if (!scoped && windows.isWindowTarget(source) && !windows.isPrimaryOnlyTarget(source)) return Promise.resolve(false);
           return scoped ? target.navigateByUrl(scoped, args[1] as NavigationBehaviorOptions | undefined) : target.navigateByUrl(...args);
         };
       }
@@ -56,7 +61,7 @@ export function windowContextProvider(): Provider {
     useFactory: (): WindowContext => {
       const route = inject(ActivatedRoute);
       const slot: unknown = route.snapshot.data['windowSlot'];
-      if (slot !== 'os1' && slot !== 'os2') throw new Error('Missing registered window outlet context');
+      if (!isWindowSlot(slot)) throw new Error('Missing registered window outlet context');
       return { slot };
     },
   };

@@ -11,9 +11,12 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { debounceTime, takeWhile, timer } from 'rxjs';
+import { debounceTime, filter, first, of, switchMap, takeWhile, timer } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { safeStorage } from '../../../core/storage/safe-storage';
+import { windowAwareQueryParamMap } from '../../../core/windows/window-aware-query';
+import { WindowNavigation } from '../../../core/windows/window-navigation';
+import { WINDOW_CONTEXT } from '../../../core/windows/window-context';
 import { DictionaryItem } from '../../directory/directory.model';
 import { DirectoryService } from '../../directory/directory.service';
 import { withCurrent } from '../hiring-team';
@@ -77,7 +80,10 @@ export class VacancyFormPage implements OnInit {
   private readonly api = inject(RecruitingService);
   private readonly directory = inject(DirectoryService);
   private readonly auth = inject(AuthService);
+  private readonly query = windowAwareQueryParamMap();
   private readonly route = inject(ActivatedRoute);
+  private readonly windowContext = inject(WINDOW_CONTEXT, { optional: true });
+  private readonly windowNavigation = inject(WindowNavigation, { optional: true });
   private readonly router = inject(Router);
   private readonly i18n = inject(TranslocoService);
   private readonly destroyRef = inject(DestroyRef);
@@ -172,7 +178,7 @@ export class VacancyFormPage implements OnInit {
         },
       });
     } else {
-      const templateId = Number(this.route.snapshot.queryParamMap.get('template'));
+      const templateId = Number(this.query().get('template'));
       if (templateId > 0) {
         this.api.vacancyTemplates().subscribe({
           next: (list) => {
@@ -197,6 +203,7 @@ export class VacancyFormPage implements OnInit {
 
   /** CanDeactivate: saved or untouched → leave; otherwise ask. */
   canLeave(): boolean {
+    if (this.windowContext && this.windowNavigation && !this.windowNavigation.isAuthorizedSlot(this.windowContext.slot)) return true;
     return this.saved || !this.form.dirty || window.confirm(this.i18n.translate('recruiting.form.leaveConfirm'));
   }
 
@@ -351,6 +358,9 @@ export class VacancyFormPage implements OnInit {
     }
     timer(POLL_EVERY_MS)
       .pipe(
+        switchMap(() => this.windowContext && this.windowNavigation
+          ? this.windowNavigation.visibilityChanges(this.windowContext.slot).pipe(filter(Boolean), first())
+          : of(true)),
         takeWhile(() => this.aiBusy()[section] === true),
         takeUntilDestroyed(this.destroyRef),
       )

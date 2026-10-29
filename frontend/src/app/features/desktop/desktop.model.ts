@@ -28,7 +28,7 @@ export interface DesktopAppEntry {
 
 /** Real routes and labels from the signed-in shell navigation; guards remain the access authority. */
 export const DESKTOP_APPS: readonly DesktopAppEntry[] = [
-  { id: 'overview', group: 'personal', label: 'shell.nav.overview', icon: 'dashboard', route: '/', module: null },
+  { id: 'overview', group: 'personal', label: 'shell.nav.overview', icon: 'dashboard', route: '/overview', module: null },
   { id: 'tasks', group: 'personal', label: 'shell.nav.tasks', icon: 'task_alt', route: '/tasks', module: null },
   { id: 'docs', group: 'personal', label: 'shell.nav.docs', icon: 'help_outline', route: '/docs', module: null },
   { id: 'profile', group: 'personal', label: 'shell.menu.myProfile', icon: 'badge', route: '/me', module: 'people' },

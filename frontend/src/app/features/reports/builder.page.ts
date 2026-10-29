@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, numberAttribute, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,6 +23,7 @@ import { ReportsService, reportsErrorKey } from './reports.service';
 import { NotifyService } from '../../core/ui/notify.service';
 import { ReportRun } from './report-run';
 import { eventValue } from '../../core/ui/event-value';
+import { windowAwareQueryParamMap } from '../../core/windows/window-aware-query';
 
 /**
  * Custom report builder (/reports/builder[?saved=id]): dataset → columns → filters → group by + aggregate.
@@ -152,7 +153,11 @@ export class ReportBuilderPage implements OnInit {
   /** Text of the field that fired the event (core/ui/event-value.ts). */
   protected readonly val = eventValue;
   /** ?saved=<id> opens a saved builder report. */
-  readonly saved = input(undefined, { transform: (v: unknown) => (v === undefined || v === null || v === '' ? undefined : numberAttribute(v)) });
+  private readonly query = windowAwareQueryParamMap();
+  readonly saved = computed(() => {
+    const value = this.query().get('saved');
+    return value === null || value === '' ? undefined : Number(value);
+  });
 
   private readonly api = inject(ReportsService);
   private readonly notify = inject(NotifyService);

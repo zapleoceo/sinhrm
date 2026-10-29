@@ -1,11 +1,13 @@
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { CanActivateFn, Router, Routes, UrlTree, provideRouter } from '@angular/router';
-import { signal } from '@angular/core';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { authGuard, guestGuard, moduleGuard, roleGuard } from './auth.guards';
 import { AuthService } from './auth.service';
 import { CurrentUser, UserRole } from './auth.model';
-import { Component } from '@angular/core';
+import { windowOutletRoute } from '../windows/window-route';
+import { routes as appRoutes } from '../../app.routes';
+import { WINDOW_MODULE_DATA, windowRouteDefinitions } from '../windows/window-context';
 
 @Component({ template: '' })
 class Blank {}
@@ -74,23 +76,28 @@ describe('moduleGuard', () => {
       { path: 'perform/objectives', component: Blank },
       { path: 'admin/users', component: Blank },
       { path: 'module-off', component: Blank },
-      {
-        path: 'window', outlet: 'os1', component: Blank, data: { windowSlot: 'os1', windowRoot: true },
-        children: [
-          { path: 'tasks', component: Blank, data: { windowRoute: 'tasks', module: null } },
-          { path: 'people', component: Blank, data: { windowRoute: 'people', module: 'people' } },
-          { path: 'profile', component: Blank, data: { windowRoute: 'profile', module: 'people' } },
-        ],
-      },
+      windowOutletRoute('os1', [
+        { path: 'tasks', component: Blank, data: { windowRoute: 'tasks', module: null } },
+        { path: 'people', component: Blank, data: { windowRoute: 'people', module: 'people' } },
+        { path: 'profile', component: Blank, data: { module: 'people' } },
+      ]),
     ],
   }];
 
-  async function visit(url: string, modules: string[]): Promise<{ navigated: boolean; url: string }> {
+  async function visit(url: string, modules: string[], routeConfig: Routes = routes, roles: UserRole[] = []): Promise<{ navigated: boolean; url: string }> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        provideRouter(routes),
-        { provide: AuthService, useValue: { load: () => Promise.resolve(), hasModule: (k: string) => modules.includes(k) } },
+        provideRouter(routeConfig),
+        {
+          provide: AuthService,
+          useValue: {
+            load: () => Promise.resolve(),
+            isLoggedIn: () => true,
+            hasRole: (role: UserRole) => roles.includes(role),
+            hasModule: (k: string) => modules.includes(k),
+          },
+        },
       ],
     });
     const harness = await RouterTestingHarness.create();
@@ -120,7 +127,21 @@ describe('moduleGuard', () => {
     expect(await visit('/(os1:window/people)', [])).toEqual({ navigated: false, url: '/' });
   });
 
-  it('rejects an auxiliary route that is outside the window allowlist', async () => {
+  it('rejects an auxiliary route outside the window allowlist', async () => {
     expect(await visit('/(os1:window/profile)', ['people'])).toEqual({ navigated: false, url: '/' });
+  });
+
+  it('uses generated core-module metadata and preserves route role denial in auxiliary windows', async () => {
+    const appShell = appRoutes.find((route) => route.path === '' && route.children);
+    const generated = windowRouteDefinitions(appShell?.children ?? []);
+    const docs = generated.find((route) => route.path === 'docs')!;
+    const people = generated.find((route) => route.path === 'people')!;
+    const users = generated.find((route) => route.path === 'admin/users')!;
+    expect(docs.route.data?.[WINDOW_MODULE_DATA]).toBeNull();
+
+    const catalogRoutes: Routes = [{ path: '', component: Blank, canActivateChild: [moduleGuard], children: [windowOutletRoute('os1', [docs.route, people.route, users.route])] }];
+    expect(await visit('/(os1:window/docs)', [], catalogRoutes, ['viewer'])).toEqual({ navigated: true, url: '/(os1:window/docs)' });
+    expect(await visit('/(os1:window/people)', [], catalogRoutes, ['viewer'])).toEqual({ navigated: false, url: '/' });
+    expect(await visit('/(os1:window/admin/users)', [], catalogRoutes, ['viewer'])).toEqual({ navigated: false, url: '/' });
   });
 });

@@ -1,10 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { MatTooltip } from '@angular/material/tooltip';
-import { Router, Routes, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, Routes, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { of } from 'rxjs';
@@ -17,12 +17,19 @@ import { windowOutletRoute } from '../../core/windows/window-route';
 import { WindowNavigation } from '../../core/windows/window-navigation';
 
 @Component({ template: '' })
-class Blank {}
+class Blank {
+  readonly route = inject(ActivatedRoute);
+}
 
 const WINDOW_TEST_ROUTES: Routes = [
   { path: '', pathMatch: 'full', component: Blank },
   windowOutletRoute('os1', [{ path: 'tasks', component: Blank, data: { windowRoute: 'tasks', module: null } }]),
   windowOutletRoute('os2', [{ path: 'people', component: Blank, data: { windowRoute: 'people', module: 'people' } }]),
+  windowOutletRoute('os3', [{ path: 'calendar', component: Blank, data: { windowRoute: 'calendar', module: null } }]),
+  windowOutletRoute('os4', [{ path: 'reports', component: Blank, data: { windowRoute: 'reports', module: null } }]),
+  { path: 'settings/appearance', component: Blank },
+  { path: 'settings/extension', component: Blank },
+  { path: 'me', component: Blank },
   { path: '**', component: Blank },
 ];
 
@@ -139,6 +146,13 @@ describe('ShellLayout desktop Dock', () => {
     const { el, router, detect, fixture } = await setup(undefined, false, USER, true);
     await router.navigateByUrl('/');
     await detect();
+    const moduleLink = el.querySelector('a[href="/tasks"]') as HTMLAnchorElement;
+    expect(moduleLink).not.toBeNull();
+    moduleLink.click();
+    await detect();
+    expect(router.url).toContain('os1:window/tasks');
+    expect(fixture.debugElement.injector.get(WindowNavigation).windows().os1.routeId).toBe('tasks');
+
     const launcher = el.querySelector('.os-dock button[aria-label="shell.nav.tasks"]') as HTMLButtonElement;
     expect(launcher).not.toBeNull();
     launcher.click();
@@ -146,6 +160,72 @@ describe('ShellLayout desktop Dock', () => {
     expect(fixture.debugElement.injector.get(WindowNavigation).windows().os1.routeId).toBe('tasks');
     expect(router.url).toContain('os1:window/tasks');
     expect(el.querySelector('.os-dock button.dock-window')).not.toBeNull();
+  });
+
+  it('closes the mobile Modules drawer when launching the already-active window', async () => {
+    const { el, router, detect, fixture } = await setup(undefined, true, USER, true);
+    await router.navigateByUrl('/');
+    await detect();
+    const windows = fixture.debugElement.injector.get(WindowNavigation);
+    await windows.open('os1', 'tasks');
+    await detect();
+
+    (el.querySelector('.modules-toggle') as HTMLButtonElement).click();
+    await detect();
+    expect(el.querySelector('.modules-toggle')?.getAttribute('aria-expanded')).toBe('true');
+    const moduleLink = el.querySelector('a[href="/tasks"]') as HTMLAnchorElement;
+    moduleLink.click();
+    await detect();
+
+    expect(el.querySelector('.modules-toggle')?.getAttribute('aria-expanded')).toBe('false');
+    expect(windows.windows().os1.routeId).toBe('tasks');
+    expect(router.url).toContain('os1:window/tasks');
+  });
+
+  it('returns Home through the brand while preserving named windows', async () => {
+    const { el, router, detect, fixture } = await setup(undefined, false, USER, true);
+    await router.navigateByUrl('/');
+    await detect();
+    const windows = fixture.debugElement.injector.get(WindowNavigation);
+    await windows.open('os1', 'tasks');
+    await detect();
+    const brand = el.querySelector('.topbar-brand') as HTMLAnchorElement;
+    expect(brand.getAttribute('href')).toBe('/');
+
+    brand.click();
+    await detect();
+
+    expect(router.url).toContain('os1:window/tasks');
+    expect(windows.primaryFocused()).toBe(true);
+    expect(windows.windows().os1.open).toBe(true);
+  });
+
+  it('keeps all minimized pages in the Dock and restores each without closing its route', async () => {
+    const { el, router, detect, fixture } = await setup(undefined, false, USER, true);
+    await router.navigateByUrl('/');
+    await detect();
+    const windows = fixture.debugElement.injector.get(WindowNavigation);
+    const routes = ['tasks', 'people', 'calendar', 'reports'] as const;
+    for (let index = 0; index < routes.length; index++) {
+      await windows.open(`os${index + 1}` as 'os1' | 'os2' | 'os3' | 'os4', routes[index]);
+    }
+    for (const slot of ['os1', 'os2', 'os3', 'os4'] as const) await windows.minimize(slot);
+    await detect();
+
+    for (const slot of ['os1', 'os2', 'os3', 'os4'] as const) {
+      expect(windows.windows()[slot].minimized).toBe(true);
+      expect(el.querySelector(`[data-testid="dock-window-${slot}"]`)).not.toBeNull();
+      expect(el.querySelector(`article[data-testid="os-window-${slot}"]`)?.getAttribute('aria-hidden')).toBe('true');
+    }
+
+    const restore = el.querySelector('[data-testid="dock-window-os3"]') as HTMLButtonElement;
+    restore.click();
+    await detect();
+    expect(windows.windows().os3.minimized).toBe(false);
+    expect(windows.windows().os3.active).toBe(true);
+    for (const outlet of ['os1:window/tasks', 'os2:window/people', 'os3:window/calendar', 'os4:window/reports']) {
+      expect(router.url).toContain(outlet);
+    }
   });
 });
 
@@ -238,6 +318,38 @@ describe('ShellLayout user menu in system bar', () => {
     expect(panel.querySelector('a[href="/me"]')).toBeTruthy();
     expect(panel.querySelector('a[href="/settings/extension"]')).toBeTruthy();
     expect(panel.querySelector('button.logout')).toBeTruthy();
+  });
+
+  it('opens Appearance in the primary view while retaining all four routed windows', async () => {
+    const { el, router, detect, fixture } = await setup(undefined, false, USER, true);
+    await router.navigateByUrl('/');
+    const windows = fixture.debugElement.injector.get(WindowNavigation);
+    const routes = ['tasks', 'people', 'calendar', 'reports'] as const;
+    for (let index = 0; index < routes.length; index++) {
+      await windows.open(`os${index + 1}` as 'os1' | 'os2' | 'os3' | 'os4', routes[index]);
+    }
+    await detect();
+    const slots = ['os1', 'os2', 'os3', 'os4'];
+    const before = fixture.debugElement.queryAll(By.directive(Blank))
+      .map((debugElement) => debugElement.componentInstance as Blank)
+      .filter((view) => view.route.pathFromRoot.some((route) => slots.includes(route.outlet)));
+    expect(before).toHaveLength(4);
+
+    const panel = await openMenu(el, detect);
+    const appearance = panel.querySelector<HTMLAnchorElement>('a[href="/settings/appearance"]')!;
+    appearance.click();
+    await detect();
+
+    expect(router.url).toContain('settings/appearance');
+    expect(windows.primaryFocused()).toBe(true);
+    expect(windows.windows().os1.routeId).toBe('tasks');
+    expect(windows.windows().os2.routeId).toBe('people');
+    expect(windows.windows().os3.routeId).toBe('calendar');
+    expect(windows.windows().os4.routeId).toBe('reports');
+    const after = fixture.debugElement.queryAll(By.directive(Blank))
+      .map((debugElement) => debugElement.componentInstance as Blank)
+      .filter((view) => view.route.pathFromRoot.some((route) => slots.includes(route.outlet)));
+    expect(after).toEqual(before);
   });
 
   it('switches the language from the footer menu', async () => {

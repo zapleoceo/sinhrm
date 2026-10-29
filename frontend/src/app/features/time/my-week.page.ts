@@ -1,11 +1,11 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, numberAttribute, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, numberAttribute, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { windowAwareQueryParamMap } from '../../core/windows/window-aware-query';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { GridRow, TIMESHEET_STATUS_TONE, TimeWeek, addWeeks, dayTotals, entriesFromRows, expectedRow, gridTotals, mondayOf, rowsFromEntries } from './time.model';
 import { TimeService, timeErrorKey } from './time.service';
@@ -165,9 +165,9 @@ import { NotifyService } from '../../core/ui/notify.service';
   `,
 })
 export class MyWeekPage {
-  /** Query params (?week=Y-m-d&employee_id=N). */
-  readonly week = input<string | undefined>(undefined);
-  private readonly query = toSignal(inject(ActivatedRoute).queryParamMap);
+  private readonly query = windowAwareQueryParamMap();
+  /** Query params (?week=Y-m-d&employee_id=N), with the same key names in a routed window. */
+  readonly week = computed(() => this.query().get('week') ?? undefined);
   /** ?employee_id= (a manager / admin viewing someone's week); undefined = my own week. */
   protected readonly employeeId = computed(() => {
     const raw = this.query()?.get('employee_id');

@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, ViewContainerRef, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -243,6 +243,7 @@ export class CandidatesPage implements OnInit {
 
   protected readonly store = inject(CandidatesStore);
   private readonly dialog = inject(MatDialog);
+  private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -334,10 +335,13 @@ export class CandidatesPage implements OnInit {
   }
 
   protected create(): void {
-    this.dialog
-      .open(CandidateDialog)
+    const dialogRef = this.dialog.open(CandidateDialog, { viewContainerRef: this.viewContainerRef });
+    const unregisterDestroy = this.destroyRef.onDestroy(() => dialogRef.close());
+    dialogRef
       .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((created: Candidate | undefined) => {
+        unregisterDestroy();
         if (created) {
           this.store.load();
           void this.router.navigate(['/candidates', created.id]);

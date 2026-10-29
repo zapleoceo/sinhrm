@@ -1,5 +1,7 @@
 # Модуль People (сотрудники, оргструктура, самообслуживание)
 
+Recruiting's shared `HireAction` is root-scoped, but each invocation receives the caller's Router facade and `DestroyRef`. Closing or invalidating the caller unsubscribes its pending response handler and dismisses any snackbar, so late success/error feedback and delayed actions cannot affect a later occupant of the slot. While the caller is alive, the snackbar opens the employee in that routed window. See `frontend/src/app/features/people/hire.action.ts` and the routed overlay regression in `features/recruiting/candidates/candidate-dialog.window.spec.ts`.
+
 ## Что это и зачем
 Справочник сотрудников компании — «кто у нас работает, кем, где и кому подчиняется». Здесь же профиль человека,
 оргструктура (дерево подчинения) и **самообслуживание**: сотрудник сам просит поменять свой телефон, личный e-mail,

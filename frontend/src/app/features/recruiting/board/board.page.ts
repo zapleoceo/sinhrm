@@ -1,7 +1,8 @@
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
 import { CdkScrollable } from '@angular/cdk/scrolling';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, booleanAttribute, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, ViewContainerRef, afterNextRender, booleanAttribute, computed, effect, inject, input, numberAttribute, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -194,7 +195,7 @@ import { NotifyService } from '../../../core/ui/notify.service';
                     <span class="stale-text"><mat-icon inline>schedule</mat-icon>{{ 'recruiting.board.stale' | transloco: { days: idle(app) } }}</span>
                   }
                   @if (canWrite() && lane.kind === 'stage' && lane.stage.is_hire) {
-                    <button mat-stroked-button type="button" class="hire" (click)="hire.run(app.id)">
+                    <button mat-stroked-button type="button" class="hire" (click)="hire.run(app.id, router, destroyRef)">
                       <mat-icon>badge</mat-icon>{{ 'people.hire.action' | transloco }}
                     </button>
                   }
@@ -403,9 +404,11 @@ export class BoardPage {
 
   protected readonly store = inject(BoardStore);
   private readonly dialog = inject(MatDialog);
+  private readonly viewContainerRef = inject(ViewContainerRef);
+  protected readonly destroyRef = inject(DestroyRef);
   private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
-  private readonly router = inject(Router);
+  protected readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   protected readonly hire = inject(HireAction);
   protected readonly canWrite = computed(() => canWriteRecruiting(this.auth.user()?.roles ?? []));
@@ -562,10 +565,16 @@ export class BoardPage {
   }
 
   protected addCandidate(): void {
-    this.dialog
-      .open<CandidateDialog, CandidateDialogData>(CandidateDialog, { data: { vacancyId: this.id() } })
+    const dialogRef = this.dialog.open<CandidateDialog, CandidateDialogData>(CandidateDialog, {
+      data: { vacancyId: this.id() },
+      viewContainerRef: this.viewContainerRef,
+    });
+    const unregisterDestroy = this.destroyRef.onDestroy(() => dialogRef.close());
+    dialogRef
       .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((created) => {
+        unregisterDestroy();
         if (created) {
           this.load();
         }

@@ -14,25 +14,28 @@ test.describe('OS routed windows', () => {
     await settle(page);
 
     const tasksUrl = page.url();
-    await page.getByRole('button', { name: 'Відкрити задачі у вікні' }).click();
+    const dock = page.getByRole('navigation', { name: 'Вікна робочого простору' });
+    await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
     await expect(page).toHaveURL(/os1:window\/tasks/);
-    const tasksWindow = page.locator('article.os-window.window-os1.open');
+    const tasksWindow = page.getByTestId('os-window-os1');
     await expect(tasksWindow).toBeVisible();
-    await expect(tasksWindow.getByRole('heading', { name: 'Мої задачі' })).toBeVisible();
+    await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
 
     const oneWindowUrl = page.url();
-    await page.getByRole('button', { name: 'Відкрити співробітників у вікні' }).click();
+    await dock.getByRole('button', { name: 'Співробітники', exact: true }).click();
     await expect(page).toHaveURL(/os2:window\/people/);
-    const peopleWindow = page.locator('article.os-window.window-os2.open');
+    const peopleWindow = page.getByTestId('os-window-os2');
     await expect(peopleWindow).toBeVisible();
-    await expect(peopleWindow.getByRole('heading', { name: /Співробітники/ })).toBeVisible();
+    await expect(peopleWindow.getByRole('heading', { level: 1, name: /Співробітники/ })).toBeVisible();
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
 
     await tasksWindow.getByRole('button', { name: 'Згорнути вікно' }).click();
     await expect(tasksWindow).toHaveClass(/minimized/);
+    await expect(tasksWindow).toBeHidden();
     await expect(tasksWindow.locator('app-os-window-host router-outlet + *')).toHaveCount(1);
-    await tasksWindow.getByRole('button', { name: 'Відновити вікно' }).click();
+    await page.getByTestId('dock-window-os1').click();
     await expect(tasksWindow).not.toHaveClass(/minimized/);
+    await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(oneWindowUrl);
@@ -50,6 +53,12 @@ test.describe('OS routed windows', () => {
     await page.goForward();
     await expect(page).toHaveURL(/os2:window\/people/);
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
+
+    // Relative links inside the real People outlet keep the dynamic route in that same slot.
+    const person = peopleWindow.getByRole('link', { name: /Бондаренко Євген/ }).first();
+    await person.click();
+    await expect(page).toHaveURL(/os2:window\/people\/70/);
+    await expect(peopleWindow).toContainText('Бондаренко Євген');
   });
 
   test('repeated window controls do not reload APIs or remount routed views', async ({ page, context }, testInfo) => {
@@ -63,12 +72,13 @@ test.describe('OS routed windows', () => {
     watchNetwork(page);
     await page.goto('/tasks');
     await settle(page);
-    await page.getByRole('button', { name: 'Відкрити задачі у вікні' }).click();
-    const tasks = page.locator('article.os-window.window-os1.open');
-    await expect(tasks.getByRole('heading', { name: 'Мої задачі' })).toBeVisible();
-    await page.getByRole('button', { name: 'Відкрити співробітників у вікні' }).click();
-    const people = page.locator('article.os-window.window-os2.open');
-    await expect(people.getByRole('heading', { name: /Співробітники/ })).toBeVisible();
+    const dock = page.getByRole('navigation', { name: 'Вікна робочого простору' });
+    await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    const tasks = page.getByTestId('os-window-os1');
+    await expect(tasks.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await dock.getByRole('button', { name: 'Співробітники', exact: true }).click();
+    const people = page.getByTestId('os-window-os2');
+    await expect(people.getByRole('heading', { level: 1, name: /Співробітники/ })).toBeVisible();
     await settle(page);
 
     const mountedBefore = await page.locator('app-os-window-host router-outlet + *').count();
@@ -76,12 +86,14 @@ test.describe('OS routed windows', () => {
     const apiRequestOffset = apiRequests.length;
     const startedAt = await page.evaluate(() => performance.now());
     for (let round = 0; round < 3; round++) {
-      await tasks.locator('.window-titlebar').click();
+      await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
       await expect(tasks).toHaveClass(/active/);
       await tasks.getByRole('button', { name: 'Згорнути вікно' }).click();
       await expect(tasks).toHaveClass(/minimized/);
-      await tasks.getByRole('button', { name: 'Відновити вікно' }).click();
+      await expect(tasks).toBeHidden();
+      await page.getByTestId('dock-window-os1').click();
       await expect(tasks).toHaveClass(/active/);
+      await expect(tasks.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
     }
     const controlDurationMs = await page.evaluate((start) => performance.now() - start, startedAt);
     const controlApiRequests = apiRequests.slice(apiRequestOffset);
@@ -121,6 +133,9 @@ test.describe('OS routed windows', () => {
     });
   });
 
+});
+
+test.describe('OS routed windows on mobile', () => {
   test('mobile keeps inactive windows out of keyboard focus while primary and restore controls stay usable', async ({ page, context }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-light', 'mobile-light only');
     await installMock(context);
@@ -130,8 +145,9 @@ test.describe('OS routed windows', () => {
       await page.clock.setSystemTime(RECORDED_AT);
       await page.goto('/tasks');
       await settle(page);
-      await page.getByRole('button', { name: 'Відкрити задачі у вікні' }).click();
-      await page.getByRole('button', { name: 'Відкрити співробітників у вікні' }).click();
+      const dock = page.getByRole('navigation', { name: 'Вікна робочого простору' });
+      await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
+      await dock.getByRole('button', { name: 'Співробітники', exact: true }).click();
 
       const inactive = page.locator('article.os-window.window-os1.mobile-inactive');
       await expect(inactive).toHaveAttribute('aria-hidden', 'true');
@@ -145,12 +161,17 @@ test.describe('OS routed windows', () => {
       await page.getByRole('button', { name: 'Показати основну сторінку' }).click();
       await expect(page.locator('.primary-view')).toBeVisible();
       await expect(page.locator('article.os-window.open.mobile-inactive')).toHaveCount(2);
-      await page.getByRole('button', { name: 'Відкрити співробітників у вікні' }).click();
+      await dock.getByRole('button', { name: 'Співробітники', exact: true }).click();
       await expect(page.locator('article.os-window.window-os2.open')).not.toHaveClass(/mobile-inactive/);
 
       await page.locator('article.os-window.window-os2.open').getByRole('button', { name: 'Згорнути вікно' }).click();
       const minimized = page.locator('article.os-window.window-os2.minimized');
-      await expect(minimized.getByRole('button', { name: 'Відновити вікно' })).toBeVisible();
+      await expect(minimized).toBeHidden();
+      const restore = page.getByTestId('dock-window-os2');
+      await expect(restore).toBeVisible();
+      await restore.click();
+      await expect(minimized).not.toHaveClass(/minimized/);
+      await expect(minimized.getByRole('heading', { level: 1, name: /Співробітники/ })).toBeVisible();
     }
   });
 });

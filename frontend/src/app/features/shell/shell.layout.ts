@@ -2,7 +2,7 @@ import { Logo } from '../../core/ui/logo';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { SUPERADMIN_ROLE, UserRole, isAdmin, isHrStaff } from '../../core/auth/auth.model';
 import { A11yModule, FocusMonitor } from '@angular/cdk/a11y';
 import { DOCUMENT } from '@angular/common';
@@ -39,8 +39,6 @@ interface RoleChoice {
   imports: [
     Logo,
     RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
     MatButtonModule,
     MatDividerModule,
     MatIconModule,
@@ -61,11 +59,18 @@ interface RoleChoice {
       useFactory: () => {
         const router = inject(Router);
         const windows = inject(WindowNavigation);
+        const notify = inject(NotifyService);
         return {
           launch: (route: string) => {
-            const definition = windowRouteByPath(route);
+            const definition = windowRouteByPath(router.config, route);
+            // Only canonical pages absent from the authenticated workspace catalog stay in primary.
+            if (!definition) return router.navigateByUrl(route);
             const slot = definition ? windows.slotFor(definition.id) : null;
-            return definition && slot ? windows.open(slot, definition.id) : router.navigateByUrl(route);
+            if (!slot) {
+              notify.show('osWindow.capacity');
+              return Promise.resolve(false);
+            }
+            return windows.open(slot, definition.id);
           },
         };
       },
@@ -104,7 +109,45 @@ export class ShellLayout {
   protected readonly themeIcon = computed(() => (this.theme.theme() === 'dark' ? 'light_mode' : 'dark_mode'));
   protected readonly windowSlots = WINDOW_SLOTS;
   protected readonly dockApps = computed(() => DESKTOP_APPS.filter((app) =>
-    ['tasks', 'people'].includes(app.id) && appAllowed(app, this.user())));
+    appAllowed(app, this.user()) && windowRouteByPath(this.router.config, app.route) !== undefined));
+
+  protected moduleLinkActive(path: string, exact = false): boolean {
+    this.url();
+    const definition = windowRouteByPath(this.router.config, path);
+    if (definition && Object.values(this.windowNavigation.windows()).some((view) => view.active && view.routeId === definition.id)) return true;
+    return this.router.isActive(this.router.parseUrl(path), {
+      paths: exact ? 'exact' : 'subset',
+      queryParams: 'ignored',
+      matrixParams: 'ignored',
+      fragment: 'ignored',
+    });
+  }
+
+  protected navigateModule(event: MouseEvent, path: string): void {
+    const anchor = event.currentTarget;
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+      || (anchor instanceof HTMLAnchorElement && anchor.target)) return;
+    event.preventDefault();
+    void this.desktopLauncher.launch(path);
+    // Close on the launch action itself: focusing an already active window can be NavigationSkipped, so no
+    // NavigationEnd event is guaranteed to dismiss the mobile Modules drawer.
+    this.closeDrawer();
+  }
+
+  protected navigateDesktop(event: MouseEvent): void {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+    event.preventDefault();
+    void this.windowNavigation.focusPrimary();
+  }
+
+  /** Core destinations use the primary outlet while preserving live named windows and browser link semantics. */
+  protected navigatePrimary(event: MouseEvent, path: string): void {
+    const anchor = event.currentTarget;
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+      || (anchor instanceof HTMLAnchorElement && anchor.target)) return;
+    event.preventDefault();
+    void this.windowNavigation.navigatePrimary(path);
+  }
 
   private readonly url = toSignal(
     this.router.events.pipe(

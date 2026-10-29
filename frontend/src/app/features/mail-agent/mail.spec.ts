@@ -1,9 +1,17 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { TranslocoTestingModule } from '@jsverse/transloco';
 import { SenderRule, UnknownSender, isSenderPattern } from './mail.model';
 import { mailErrorKey } from './mail.service';
 import { MailStore } from './mail.store';
+import { MailPage } from './mail.page';
+import { TableUrlState } from '../../core/ui/table/table-url-state';
+import { TABLE_QUERY_ADAPTER } from '../../core/ui/table/table-query-adapter';
+import { NotifyService } from '../../core/ui/notify.service';
+import { windowQueryAdapter } from '../../../testing/window-query-adapter';
 
 const RULE: SenderRule = { id: 1, pattern: '@jobs.example.test', kind: 'job_board', parser: 'generic', hits: 0, last_seen_at: null, created_at: null };
 const SENDER: UnknownSender = {
@@ -102,5 +110,26 @@ describe('MailStore', () => {
     http.expectOne('/api/mail/unknown-senders').flush({ data: [] });
     expect(done).toBe(true);
     expect(store.unknown()).toEqual([]);
+  });
+});
+
+describe('MailPage window query context', () => {
+  it('selects the tab from the window URL state and follows its later query changes', () => {
+    const query = windowQueryAdapter({ tab: 'rules' });
+    TestBed.configureTestingModule({
+      imports: [TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
+      providers: [
+        { provide: TABLE_QUERY_ADAPTER, useValue: query.adapter },
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({}), queryParamMap: convertToParamMap({ tab: 'log' }) } } },
+        { provide: MailStore, useValue: { messages: signal([]) } },
+        { provide: TableUrlState, useValue: { writing: signal(null), watch: query.adapter.watch, update: vi.fn() } },
+        { provide: NotifyService, useValue: {} },
+      ],
+    });
+    const page = TestBed.runInInjectionContext(() => new MailPage()) as unknown as { tabIndex: () => number };
+    expect(page.tabIndex()).toBe(1);
+
+    query.set({ sort: 'sender' });
+    expect(page.tabIndex()).toBe(2);
   });
 });

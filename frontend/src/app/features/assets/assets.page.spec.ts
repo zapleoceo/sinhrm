@@ -1,5 +1,7 @@
 import { Subject, of } from 'rxjs';
 import { TablePage, clickTitle, column, header, openTablePage, sortCount } from '../../../testing/table-page';
+import { windowQueryAdapter } from '../../../testing/window-query-adapter';
+import { TABLE_QUERY_ADAPTER } from '../../core/ui/table/table-query-adapter';
 import { Asset, AssetQuery } from './assets.model';
 import { AssetsPage } from './assets.page';
 import { AssetsService } from './assets.service';
@@ -99,5 +101,24 @@ describe('AssetsPage: only the latest list request counts', () => {
     answers[1].next([ASSETS[1]]);
     await page.settle();
     expect(column(page.el.querySelector('table')!, 1)).toEqual(['ThinkPad']);
+  });
+});
+
+describe('AssetsPage: window query context', () => {
+  it('uses window filters instead of the primary URL filters, then applies window query changes', async () => {
+    const queries: AssetQuery[] = [];
+    const windowQuery = windowQueryAdapter({ q: 'mac', status: 'assigned', type: '2' });
+    const page = await openTablePage(AssetsPage, '/?q=dell&status=in_stock', [
+      { provide: TABLE_QUERY_ADAPTER, useValue: windowQuery.adapter },
+      { provide: AssetsService, useValue: { list: (query: AssetQuery) => (queries.push(query), of(ASSETS)), types: () => of([]) } },
+    ]);
+    await debounce();
+    expect(queries[0]).toEqual({ q: 'mac', status: 'assigned', type_id: 2 });
+
+    windowQuery.set({ q: 'dell', status: 'in_stock' });
+    await page.settle();
+    await debounce();
+    expect(queries.at(-1)).toEqual({ q: 'dell', status: 'in_stock', type_id: undefined });
+    expect(new URL(page.router.url, 'http://x').searchParams.get('q')).toBe('dell');
   });
 });

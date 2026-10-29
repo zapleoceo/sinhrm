@@ -1,11 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { ActivatedRoute, ParamMap, RouterLink, convertToParamMap } from '@angular/router';
+import { ParamMap, RouterLink } from '@angular/router';
+import { windowAwareQueryParamMap } from '../../core/windows/window-aware-query';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ClientColumn, ClientTable, DATE_RANGE, TEXT_FILTER, translatedSelect } from '../../core/ui/table/client-table';
 import { ColumnHeader } from '../../core/ui/table/column-header';
@@ -142,7 +142,7 @@ export class HiringListPage implements OnInit {
   protected readonly canCreate = signal(false);
   protected readonly tone = statusTone;
   protected readonly pill = PILL_TONE;
-  private readonly params = toSignal(inject(ActivatedRoute).queryParamMap, { initialValue: convertToParamMap({}) });
+  private readonly params = windowAwareQueryParamMap();
   /** Status of the URL: sent to the API outside the inbox; a change reloads. */
   private readonly status = computed(() => hiringStatusFromParams(this.params()));
   private started = false;

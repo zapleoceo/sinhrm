@@ -1,7 +1,7 @@
 import { provideLocationMocks } from '@angular/common/testing';
-import { ChangeDetectionStrategy, Component, inject, InjectionToken, OnDestroy, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, InjectionToken, input, OnDestroy, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { ActivatedRoute, CanActivateFn, CanDeactivateFn, NavigationStart, Router, RouterLink, RouterOutlet, Routes, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, CanActivateFn, CanDeactivateFn, NavigationStart, Router, RouterLink, RouterOutlet, Routes, convertToParamMap, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '../auth/auth.service';
@@ -10,9 +10,10 @@ import { TableUrlState } from '../ui/table/table-url-state';
 import { TABLE_QUERY_ADAPTER, TableQueryAdapter } from '../ui/table/table-query-adapter';
 import { isWindowControlOnlyNavigation, WindowNavigation } from './window-navigation';
 import { windowOutletRoute } from './window-route';
-import { WINDOW_ROUTE_REGISTRY } from './window-context';
+import { isWindowSlot, windowRouteDefinitions } from './window-context';
 import { WindowQueryState } from './window-query-state';
 import { decodeWindowQuery, encodeWindowQuery } from './window-query-codec';
+import { windowAwareQueryParamMap } from './window-aware-query';
 
 const peopleEnabled = signal(true);
 const authUser = signal<{ id: number; modules: string[]; roles: string[]; active_role: string | null } | null>({
@@ -38,7 +39,7 @@ const canLeave: CanDeactivateFn<WindowProbe> = (page) => page?.canLeave() ?? tru
   imports: [RouterOutlet],
   providers: [WindowNavigation],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: '<router-outlet name="os1" /><router-outlet name="os2" /><router-outlet />',
+  template: '<router-outlet name="os1" /><router-outlet name="os2" /><router-outlet name="os3" /><router-outlet name="os4" /><router-outlet />',
 })
 class WindowProbeShell {
   readonly navigation = inject(WindowNavigation);
@@ -68,17 +69,24 @@ class WindowProbeHome {
 @Component({
   selector: 'app-window-probe-page',
   imports: [RouterLink],
-  providers: [TableUrlState, { provide: TABLE_QUERY_ADAPTER, useClass: WindowQueryState }],
+  providers: [TableUrlState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h1>Window page {{ id }}</h1>
+    <h1>Window page {{ id() }}</h1>
     <a id="registered-link" routerLink="/people" target="_blank">People list</a>
+    <a id="dynamic-link" [routerLink]="['/people', 70]" [queryParams]="{ root: '70', saved: '91' }" fragment="member">Dynamic detail</a>
+    <a id="relative-link" [routerLink]="['./70']" fragment="relative">Relative detail</a>
     <a id="unsupported-link" routerLink="/people/org-chart">Org chart</a>
   `,
 })
 class WindowProbe implements OnDestroy {
-  readonly id = ++nextId;
+  readonly instanceId = ++nextId;
+  readonly id = input<string | undefined>();
+  private readonly query = windowAwareQueryParamMap();
+  readonly root = computed(() => this.query().get('root'));
+  readonly saved = computed(() => this.query().get('saved'));
   readonly router = inject(Router);
+  readonly routeEnvironmentNavigation = inject(WindowNavigation);
   readonly routeEnvironmentRouter = inject(ROUTE_ENV_ROUTER);
   readonly route = inject(ActivatedRoute);
   readonly table = inject(TABLE_QUERY_ADAPTER) as TableQueryAdapter;
@@ -95,11 +103,12 @@ class WindowProbe implements OnDestroy {
   }
 
   canLeave(): boolean {
-    return allowLeave;
+    const slot = this.route.pathFromRoot.find((route) => isWindowSlot(route.outlet))?.outlet;
+    return (isWindowSlot(slot) && !this.routeEnvironmentNavigation.isAuthorizedSlot(slot)) || allowLeave;
   }
 
   ngOnDestroy(): void {
-    destroyed.push(this.id);
+    destroyed.push(this.instanceId);
   }
 }
 
@@ -114,6 +123,26 @@ const windowPageRoutes: Routes = [
     data: { windowRoute: 'people', module: 'people' }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
     providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
   },
+  {
+    path: 'people/:id', title: 'titles.profile', component: WindowProbe,
+    data: { windowRoute: 'people/:id', module: 'people' }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
+    providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
+  },
+  {
+    path: 'time', title: 'titles.time', component: WindowProbe,
+    data: { windowRoute: 'time', module: null }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
+    providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
+  },
+  {
+    path: 'time/:id', title: 'titles.time-detail', component: WindowProbe,
+    data: { windowRoute: 'time/:id', module: null }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
+    providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
+  },
+  ...['calendar', 'recruiting', 'reports'].map((path) => ({
+    path, title: `titles.${path}`, component: WindowProbe,
+    data: { windowRoute: path, module: null }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
+    providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
+  })),
 ];
 
 const testRoutes: Routes = [
@@ -121,8 +150,11 @@ const testRoutes: Routes = [
     path: '', component: WindowProbeShell, canActivateChild: [moduleGuard],
     children: [
       { path: '', pathMatch: 'full', component: WindowProbeHome },
+      { path: 'people', component: WindowProbeHome },
       windowOutletRoute('os1', windowPageRoutes),
       windowOutletRoute('os2', windowPageRoutes),
+      windowOutletRoute('os3', windowPageRoutes),
+      windowOutletRoute('os4', windowPageRoutes),
     ],
   },
 ];
@@ -143,7 +175,7 @@ describe('fixed-slot OS routing', () => {
     TestBed.configureTestingModule({
       imports: [WindowProbeShell, WindowProbeHome, WindowProbe],
       providers: [
-        provideRouter(testRoutes),
+        provideRouter(testRoutes, withComponentInputBinding()),
         provideLocationMocks(),
         {
           provide: AuthService,
@@ -162,6 +194,7 @@ describe('fixed-slot OS routing', () => {
   });
 
   it('opens actual pages in both named outlets and scopes RouterLink hrefs without double wrapping', async () => {
+    await rootRouter.navigateByUrl('/?tenant=keep');
     await shell.navigation.open('os1', 'tasks');
     harness.fixture.detectChanges();
     expect(rootRouter.url).toContain('os1:window/tasks');
@@ -176,9 +209,8 @@ describe('fixed-slot OS routing', () => {
     const anchor = harness.fixture.nativeElement.querySelector('#registered-link') as HTMLAnchorElement;
     expect(anchor.href).toContain('os1:window/people');
     expect(anchor.href.match(/os1:/g)).toHaveLength(1);
-    const unsupported = harness.fixture.nativeElement.querySelector('#unsupported-link') as HTMLAnchorElement;
-    expect(unsupported.getAttribute('href')).toContain('/people/org-chart');
-    expect(unsupported.getAttribute('href')).toContain('os1:window/tasks');
+    const orgChart = harness.fixture.nativeElement.querySelector('#unsupported-link') as HTMLAnchorElement;
+    expect(orgChart.href).toContain('os1:window/people/org-chart');
 
     const prepared = tasks?.router.createUrlTree(['/people']);
     expect(prepared).toBeDefined();
@@ -193,6 +225,24 @@ describe('fixed-slot OS routing', () => {
     expect(rootRouter.url).toContain('os1:window/people');
     expect(rootRouter.url).toContain('os2:window/tasks');
     expect(created.filter((page) => page.route.outlet === 'primary')).toHaveLength(3);
+    const relative = harness.fixture.nativeElement.querySelector('#relative-link') as HTMLAnchorElement;
+    expect(relative.href).toContain('os1:window/people/70');
+    expect(relative.href).toContain('#relative');
+
+    const dynamic = harness.fixture.nativeElement.querySelector('#dynamic-link') as HTMLAnchorElement;
+    expect(dynamic.href).toContain('os1:window/people/70');
+    expect(dynamic.href).toContain('wq_root=70');
+    expect(dynamic.href).toContain('#member');
+    await dynamic.click();
+    await harness.fixture.whenStable();
+    expect(rootRouter.url).toContain('os1:window/people/70');
+    expect(rootRouter.url).toContain('wq_root=70');
+    expect(rootRouter.url).toContain('#member');
+    const detail = created.at(-1);
+    expect(detail?.id()).toBe('70');
+    expect(detail?.root()).toBe('70');
+    expect(detail?.saved()).toBe('91');
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['tenant']).toBe('keep');
   });
 
   it('classifies focus-state query changes without hiding content route or query changes', async () => {
@@ -207,6 +257,98 @@ describe('fixed-slot OS routing', () => {
     }));
     expect(isWindowControlOnlyNavigation(rootRouter, focusedPrimaryUrl, changedContentQuery)).toBe(false);
     expect(isWindowControlOnlyNavigation(rootRouter, focusedPrimaryUrl, focusedPrimaryUrl.replace('window/tasks', 'window/people'))).toBe(false);
+  });
+
+  it('applies canonical Router query handling to the window namespace and never imports primary filters', async () => {
+    await rootRouter.navigateByUrl('/?name=Primary');
+    await shell.navigation.open('os1', 'people');
+    harness.fixture.detectChanges();
+    const page = created.at(-1)!;
+    await page.table.write({ name: 'Window' }, false);
+    expect(rootRouter.url).toContain('wq_name=Window');
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+
+    const reset = page.router.createUrlTree(['/people']);
+    await page.router.navigateByUrl(reset);
+    expect(rootRouter.url).not.toContain('wq_name=');
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+
+    await page.table.write({ name: 'Window' }, false);
+    await page.router.navigate(['/people'], { queryParams: { sort: 'id' }, queryParamsHandling: 'merge' });
+    expect(rootRouter.url).toContain('wq_name=Window');
+    expect(rootRouter.url).toContain('wq_sort=id');
+    expect(rootRouter.url).not.toContain('wq_name=Primary');
+
+    const preserved = page.router.createUrlTree(['/people'], {
+      queryParams: { name: 'Ignored', sort: 'ignored' },
+      queryParamsHandling: 'preserve',
+    });
+    await page.router.navigateByUrl(preserved);
+    expect(rootRouter.url).toContain('wq_name=Window');
+    expect(rootRouter.url).toContain('wq_sort=id');
+    expect(rootRouter.url).not.toContain('ignored');
+
+    await page.router.navigate(['/people'], { queryParams: { name: null }, queryParamsHandling: 'merge' });
+    expect(rootRouter.url).not.toContain('wq_name=');
+    expect(rootRouter.url).toContain('wq_sort=id');
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+  });
+
+  it('keeps query-only and relative commands in the current window when primary is a catalog route', async () => {
+    await rootRouter.navigateByUrl('/people?name=Primary');
+    await shell.navigation.open('os1', 'time');
+    harness.fixture.detectChanges();
+    const time = created.at(-1)!;
+
+    await time.router.navigate([], { queryParams: { week: '2026-10-26' }, queryParamsHandling: 'merge' });
+    expect(rootRouter.url).toContain('/people');
+    expect(rootRouter.url).toContain('os1:window/time');
+    expect(rootRouter.url).toContain('wq_week=2026-10-26');
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+
+    harness.fixture.detectChanges();
+    const relative = harness.fixture.nativeElement.querySelector('#relative-link') as HTMLAnchorElement;
+    expect(relative.href).toContain('os1:window/time;wq_week=2026-10-26/70');
+    await relative.click();
+    await harness.fixture.whenStable();
+    expect(rootRouter.url).toContain('/people');
+    expect(rootRouter.url).toContain('os1:window/time;wq_week=2026-10-26/70');
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+
+    const detail = created.at(-1)!;
+    const canonicalPeople = detail.router.createUrlTree(['/people']);
+    expect(rootRouter.serializeUrl(canonicalPeople)).toContain('os1:window/people');
+    expect(rootRouter.serializeUrl(canonicalPeople)).not.toContain('os1:window/time');
+    await detail.router.navigateByUrl(canonicalPeople);
+    expect(rootRouter.url).toContain('/people');
+    expect(rootRouter.url).toContain('os1:window/people');
+    expect(rootRouter.url).not.toContain('os1:window/time');
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+  });
+
+  it('stops host query callbacks when a child page is replaced repeatedly in the same window', async () => {
+    await shell.navigation.open('os1', 'tasks');
+    harness.fixture.detectChanges();
+    const tasks = created.at(-1)!;
+    await tasks.table.write({ name: 'Task' }, false);
+    await tasks.router.navigate(['/people']);
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    const people = created.at(-1)!;
+    const taskEmissions = tasks.applied();
+    await people.table.write({ name: 'Person' }, false);
+    expect(tasks.applied()).toBe(taskEmissions);
+
+    await people.router.navigate(['/calendar']);
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    const calendar = created.at(-1)!;
+    const peopleEmissions = people.applied();
+    const taskEmissionsAfterReplace = tasks.applied();
+    await calendar.table.write({ name: 'Calendar' }, false);
+    expect(people.applied()).toBe(peopleEmissions);
+    expect(tasks.applied()).toBe(taskEmissionsAfterReplace);
+    expect(calendar.lastValue()).toBe('Calendar');
   });
 
   it('keeps minimized routes alive and closes through canDeactivate', async () => {
@@ -243,7 +385,27 @@ describe('fixed-slot OS routing', () => {
     allowLeave = true;
     expect(await shell.navigation.close('os1')).toBe(true);
     expect(rootRouter.url).not.toContain('os1:window/tasks');
-    expect(destroyed).toEqual([page?.id]);
+    expect(destroyed).toEqual([page?.instanceId]);
+  });
+
+  it('shows Desktop without destroying a dirty retained window and still honors canceled close', async () => {
+    await shell.navigation.open('os1', 'tasks');
+    harness.fixture.detectChanges();
+    const retained = created.at(-1);
+    expect(retained).toBeDefined();
+    expect(rootRouter.url).toContain('os1:window/tasks');
+
+    allowLeave = false;
+    expect(await shell.navigation.focusPrimary()).toBe(true);
+    harness.fixture.detectChanges();
+    expect(shell.navigation.primaryFocused()).toBe(true);
+    expect(rootRouter.url).toContain('os1:window/tasks');
+    expect(created).toContain(retained);
+    expect(destroyed).not.toContain(retained?.instanceId);
+
+    expect(await shell.navigation.close('os1')).toBe(false);
+    expect(rootRouter.url).toContain('os1:window/tasks');
+    expect(destroyed).not.toContain(retained?.instanceId);
   });
 
   it('rejects a direct disabled-module auxiliary URL while the primary route is core', async () => {
@@ -268,15 +430,17 @@ describe('fixed-slot OS routing', () => {
     expect(rootRouter.url).toContain(';wq_name=Window');
     expect(people?.lastValue()).toBe('Window');
     await people?.table.write({ sort: 'name', dir: 'asc' }, true);
-    expect(rootRouter.url).toContain(';wq_name=Window;wq_sort=name;wq_dir=asc');
+    for (const value of [';wq_name=Window', ';wq_sort=name', ';wq_dir=asc']) expect(rootRouter.url).toContain(value);
     await people?.table.write({ page: 2 }, true);
-    expect(rootRouter.url).toContain(';wq_name=Window;wq_sort=name;wq_dir=asc;wq_page=2');
-    const definition = WINDOW_ROUTE_REGISTRY.find((route) => route.id === 'people');
+    for (const value of [';wq_name=Window', ';wq_sort=name', ';wq_dir=asc', ';wq_page=2']) expect(rootRouter.url).toContain(value);
+    const { routes } = await import('../../app.routes');
+    const shellRoute = routes.find((route) => route.path === '' && route.children);
+    const definition = windowRouteDefinitions(shellRoute?.children ?? []).find((route) => route.id === 'people');
     expect(definition).toBeDefined();
     const merged = shell.navigation.createWindowTree('os1', definition!, { page: 3 }, { queryParamsHandling: 'merge', queryParams: { perPage: 20 } });
     const preserved = shell.navigation.createWindowTree('os1', definition!, { name: 'Ignored' }, { queryParamsHandling: 'preserve', queryParams: { sort: 'ignored' } });
-    expect(rootRouter.serializeUrl(merged!)).toContain('wq_name=Window;wq_sort=name;wq_dir=asc;wq_page=3;wq_perPage=20');
-    expect(rootRouter.serializeUrl(preserved!)).toContain('wq_name=Window;wq_sort=name;wq_dir=asc;wq_page=2');
+    for (const value of ['wq_name=Window', 'wq_sort=name', 'wq_dir=asc', 'wq_page=3', 'wq_perPage=20']) expect(rootRouter.serializeUrl(merged!)).toContain(value);
+    for (const value of ['wq_name=Window', 'wq_sort=name', 'wq_dir=asc', 'wq_page=2']) expect(rootRouter.serializeUrl(preserved!)).toContain(value);
     expect(rootRouter.serializeUrl(preserved!)).not.toContain('ignored');
     await people?.table.write({ name: null }, true);
     expect(rootRouter.url).not.toContain('wq_name=');
@@ -288,6 +452,17 @@ describe('fixed-slot OS routing', () => {
     expect(rootRouter.url).toContain(';wq_page=2');
     expect(people?.lastValue()).toBe('');
     expect(people?.applied()).toBe(peopleEmissions);
+
+    await people?.router.navigate([], { queryParams: { root: '81' }, queryParamsHandling: 'merge' });
+    expect(rootRouter.url).toContain(';wq_root=81');
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+    expect(people?.root()).toBe('81');
+  });
+
+  it('rejects an oversized window query instead of silently navigating the canonical route in primary', async () => {
+    await shell.navigation.open('os1', 'people');
+    expect(() => shell.navigation.createUrlTreeFromCommands('os1', ['/people'], { queryParams: { search: 'x'.repeat(1100) } })).toThrow(/per-window URL limits/);
+    expect(rootRouter.url).toContain('os1:window/people');
   });
 
   it('preserves queued window edits during focus and other-slot writes, but drops them when its route changes', async () => {
@@ -339,7 +514,7 @@ describe('fixed-slot OS routing', () => {
     await harness.fixture.whenStable();
     expect(rootRouter.url).not.toContain('os1:window/people');
     expect(rootRouter.url).toContain('os2:window/tasks');
-    expect(destroyed).toContain(people?.id);
+    expect(destroyed).toContain(people?.instanceId);
 
     peopleEnabled.set(true);
     await shell.navigation.open('os1', 'people');
@@ -348,19 +523,22 @@ describe('fixed-slot OS routing', () => {
     authUser.set({ id: 1, modules: [], roles: ['admin'], active_role: 'admin' });
     await harness.fixture.whenStable();
     expect(rootRouter.url).not.toContain('os1:window/people');
-    expect(destroyed).toContain(narrowedPeople?.id);
+    expect(destroyed).toContain(narrowedPeople?.instanceId);
 
     authUser.set({ id: 1, modules: ['people'], roles: ['admin'], active_role: 'admin' });
     await shell.navigation.open('os1', 'people');
     harness.fixture.detectChanges();
     const rolePeople = created.at(-1);
+    allowLeave = false; // Simulate a dirty editor that would normally reject user initiated close.
     authUser.set({ id: 1, modules: ['people'], roles: ['employee'], active_role: 'employee' });
     await harness.fixture.whenStable();
     expect(rootRouter.url).not.toContain('os1:window/people');
     expect(rootRouter.url).not.toContain('os2:window/tasks');
-    expect(destroyed).toContain(rolePeople?.id);
-    expect(destroyed).toContain(tasks?.id);
+    expect(destroyed).toContain(rolePeople?.instanceId);
+    expect(destroyed).toContain(tasks?.instanceId);
+    expect(await shell.navigation.focus('os1')).toBe(false);
 
+    allowLeave = true;
     await shell.navigation.open('os1', 'people');
     harness.fixture.detectChanges();
     const replacementPeople = created.at(-1);
@@ -373,8 +551,8 @@ describe('fixed-slot OS routing', () => {
     await harness.fixture.whenStable();
     expect(rootRouter.url).not.toContain('os1:window/people');
     expect(rootRouter.url).not.toContain('os2:window/tasks');
-    expect(destroyed).toContain(replacementPeople?.id);
-    expect(destroyed).toContain(replacementTasks?.id);
+    expect(destroyed).toContain(replacementPeople?.instanceId);
+    expect(destroyed).toContain(replacementTasks?.instanceId);
   });
 
   it('Back restores the prior slot set and active window from the URL', async () => {
@@ -392,29 +570,43 @@ describe('fixed-slot OS routing', () => {
     expect(rootRouter.url).not.toContain('os2:window/people');
     expect(shell.navigation.activeSlot()).toBe('os1');
   });
+
+  it('mounts four independent windows and refuses a fifth without evicting dirty views', async () => {
+    const routeIds = ['tasks', 'people', 'calendar', 'recruiting'] as const;
+    for (let index = 0; index < routeIds.length; index++) {
+      await shell.navigation.open(`os${index + 1}` as 'os1' | 'os2' | 'os3' | 'os4', routeIds[index]);
+    }
+    expect(Object.values(shell.navigation.windows()).every((window) => window.open)).toBe(true);
+    expect(shell.navigation.slotFor('reports')).toBeNull();
+    expect(await shell.navigation.openAvailable('reports')).toBe(false);
+    expect(rootRouter.url).toContain('os1:window/tasks');
+    expect(rootRouter.url).toContain('os2:window/people');
+    expect(rootRouter.url).toContain('os3:window/calendar');
+    expect(rootRouter.url).toContain('os4:window/recruiting');
+  });
 });
 
 describe('window query codec and route registration', () => {
   it('bounds names and values to the documented table query namespace', () => {
-    const params = convertToParamMap({ wq_name: 'Alex', wq_id: '77', wq_sort: 'x'.repeat(300) });
+    const params = convertToParamMap({ wq_name: 'Alex', wq_id: '77', wq_sort: 'x'.repeat(1200) });
     const decoded = decodeWindowQuery(params);
     expect(decoded.get('name')).toBe('Alex');
     expect(decoded.get('id')).toBeNull();
     expect(decoded.get('sort')).toBeNull();
     expect(encodeWindowQuery(convertToParamMap({}), { id: '77' })).toBeNull();
-    expect(encodeWindowQuery(convertToParamMap({}), { name: 'x'.repeat(300) })).toBeNull();
+    expect(encodeWindowQuery(convertToParamMap({}), { name: 'x'.repeat(1200) })).toBeNull();
   });
 
-  it('uses only the two audited real route definitions in each named outlet', async () => {
+  it('reuses every authenticated route definition in each named outlet and excludes primary-only pages', async () => {
     const { routes } = await import('../../app.routes');
     const shellRoute = routes.find((route) => route.path === '' && route.children);
-    const primaryTasks = shellRoute?.children?.find((route) => route.path === 'tasks');
-    const primaryPeople = shellRoute?.children?.find((route) => route.path === 'people');
-    const os1 = shellRoute?.children?.find((route) => route.outlet === 'os1');
-    const os2 = shellRoute?.children?.find((route) => route.outlet === 'os2');
-    expect(os1?.children).toEqual([primaryTasks, primaryPeople]);
-    expect(os2?.children).toEqual([primaryTasks, primaryPeople]);
-    expect(os1?.children?.map((route) => route.path)).toEqual(['tasks', 'people']);
-    expect(WINDOW_ROUTE_REGISTRY.map((route) => route.path)).toEqual(['tasks', 'people']);
+    const workspace = windowRouteDefinitions(shellRoute?.children ?? []).map((definition) => definition.route);
+    for (const slot of ['os1', 'os2', 'os3', 'os4']) {
+      expect(shellRoute?.children?.find((route) => route.outlet === slot)?.children).toEqual(workspace);
+    }
+    expect(workspace.length).toBeGreaterThan(49);
+    expect(workspace.some((route) => route.path === 'admin/integrations')).toBe(true);
+    expect(workspace.some((route) => route.path === 'module-off')).toBe(false);
+    expect(workspace.some((route) => route.path === '')).toBe(false);
   });
 });

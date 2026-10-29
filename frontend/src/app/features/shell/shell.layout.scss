@@ -347,15 +347,6 @@ $rail-motion: var(--os-rail-motion); // shared OS token keeps fast and reduced-m
   box-sizing: border-box;
 }
 
-.workspace-launchbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: var(--app-gap);
-}
-
-.workspace-launchbar button { min-height: 2.75rem; }
-.workspace-launchbar mat-icon { margin-right: 0.4rem; }
 .primary-view.mobile-inactive { display: none; }
 
 /* Touch screens: every row and the rail toggle are at least 44px. */

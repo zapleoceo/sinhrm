@@ -66,7 +66,7 @@
           }
           <span class="spacer"></span>
           @if (canWrite() && app.status === 'hired') {
-            <button mat-flat-button type="button" (click)="hire.run(app.id)">
+            <button mat-flat-button type="button" (click)="hire.run(app.id, router, destroyRef)">
               <mat-icon>badge</mat-icon>{{ 'people.hire.action' | transloco }}
             </button>
           }

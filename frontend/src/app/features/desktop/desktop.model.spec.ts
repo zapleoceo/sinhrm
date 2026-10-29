@@ -4,6 +4,10 @@ import { CurrentUser } from '../../core/auth/auth.model';
 const user = (roles: CurrentUser['roles'], modules?: string[]): Pick<CurrentUser, 'roles' | 'modules'> => ({ roles, modules });
 
 describe('desktop registry permissions', () => {
+  it('keeps Overview at its canonical route after Desktop takes the root path', () => {
+    expect(DESKTOP_APPS.find((app) => app.id === 'overview')?.route).toBe('/overview');
+  });
+
   it('matches the effective role and module visibility used by the signed-in navigation', () => {
     const recruiter = user(['recruiter'], ['recruiting', 'hiring-requests']);
     expect(DESKTOP_APPS.filter((app) => appAllowed(app, recruiter)).map((app) => app.id)).toContain('vacancies');

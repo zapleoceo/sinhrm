@@ -137,6 +137,137 @@ test.describe('desktop flows', () => {
     return mock;
   }
 
+  test('routed windows drag and resize inside the workspace without navigating or reloading pages', async ({ page, context }) => {
+    const requests: string[] = [];
+    page.on('request', (request) => {
+      const url = new URL(request.url());
+      if (url.pathname === '/api/tasks' || url.pathname === '/api/people') requests.push(url.pathname);
+    });
+    await open(page, context, '/');
+    const dock = page.getByRole('navigation', { name: 'Вікна робочого простору' });
+    await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    await expect(page.getByTestId('os-window-os1').getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await dock.getByRole('button', { name: 'Співробітники', exact: true }).click();
+    const article = page.getByTestId('os-window-os2');
+    await expect(article.getByRole('heading', { level: 1, name: 'Співробітники' })).toBeVisible();
+    await settle(page);
+
+    const urlBefore = page.url();
+    const requestsBefore = requests.length;
+    await page.evaluate(() => {
+      const target = window as Window & { __osWindowHistoryWrites?: number };
+      target.__osWindowHistoryWrites = 0;
+      const push = window.history.pushState.bind(window.history);
+      const replace = window.history.replaceState.bind(window.history);
+      window.history.pushState = (...args: Parameters<History['pushState']>) => {
+        target.__osWindowHistoryWrites = (target.__osWindowHistoryWrites ?? 0) + 1;
+        push(...args);
+      };
+      window.history.replaceState = (...args: Parameters<History['replaceState']>) => {
+        target.__osWindowHistoryWrites = (target.__osWindowHistoryWrites ?? 0) + 1;
+        replace(...args);
+      };
+    });
+    const layer = page.locator('.window-layer');
+    const layerBefore = await layer.boundingBox();
+    const before = await article.boundingBox();
+    expect(before).not.toBeNull();
+    expect(layerBefore).not.toBeNull();
+    expect(layerBefore!.y).toBeGreaterThanOrEqual(56);
+    expect(layerBefore!.y + layerBefore!.height).toBeLessThanOrEqual(page.viewportSize()!.height - 56);
+    const title = await page.getByTestId('window-titlebar-os2').locator('h2').boundingBox();
+    expect(title).not.toBeNull();
+    await page.mouse.move(title!.x + title!.width / 2, title!.y + title!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(title!.x + title!.width / 2 + 24, title!.y + title!.height / 2 + 24, { steps: 4 });
+    await page.mouse.up();
+
+    const moved = await article.boundingBox();
+    expect(moved).not.toBeNull();
+    expect(moved!.x).not.toBe(before!.x);
+    expect(moved!.y).not.toBe(before!.y);
+    expect(moved!.x).toBeGreaterThanOrEqual(layerBefore!.x);
+    expect(moved!.y).toBeGreaterThanOrEqual(layerBefore!.y);
+    expect(moved!.x + moved!.width).toBeLessThanOrEqual(layerBefore!.x + layerBefore!.width);
+    expect(moved!.y + moved!.height).toBeLessThanOrEqual(layerBefore!.y + layerBefore!.height);
+
+    const resize = await page.getByTestId('window-resize-os2').boundingBox();
+    expect(resize).not.toBeNull();
+    const resizeBefore = await article.boundingBox();
+    await page.mouse.move(resize!.x + resize!.width / 2, resize!.y + resize!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(resize!.x + resize!.width / 2 + 48, resize!.y + resize!.height / 2 + 40, { steps: 4 });
+    await page.mouse.up();
+    const resized = await article.boundingBox();
+    expect(resized).not.toBeNull();
+    expect(resized!.width).toBeGreaterThan(resizeBefore!.width);
+    expect(resized!.height).toBeGreaterThan(resizeBefore!.height);
+    expect(resized!.x + resized!.width).toBeLessThanOrEqual(layerBefore!.x + layerBefore!.width);
+    expect(resized!.y + resized!.height).toBeLessThanOrEqual(layerBefore!.y + layerBefore!.height);
+    const titleAfterResize = await page.getByTestId('window-titlebar-os2').locator('h2').boundingBox();
+    expect(titleAfterResize).not.toBeNull();
+    await page.mouse.move(titleAfterResize!.x + titleAfterResize!.width / 2, titleAfterResize!.y + titleAfterResize!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(titleAfterResize!.x + titleAfterResize!.width / 2 + 4000, titleAfterResize!.y + titleAfterResize!.height / 2 + 4000, { steps: 5 });
+    await page.mouse.up();
+    const clamped = await article.boundingBox();
+    expect(clamped).not.toBeNull();
+    expect(clamped!.x + clamped!.width).toBeLessThanOrEqual(layerBefore!.x + layerBefore!.width);
+    expect(clamped!.y + clamped!.height).toBeLessThanOrEqual(layerBefore!.y + layerBefore!.height);
+    await page.setViewportSize({ width: 800, height: 640 });
+    await expect.poll(async () => {
+      const currentLayer = await layer.boundingBox();
+      const currentWindow = await article.boundingBox();
+      return !!currentLayer && !!currentWindow
+        && currentWindow.x >= currentLayer.x
+        && currentWindow.y >= currentLayer.y
+        && currentWindow.x + currentWindow.width <= currentLayer.x + currentLayer.width
+        && currentWindow.y + currentWindow.height <= currentLayer.y + currentLayer.height;
+    }).toBe(true);
+    expect(page.url()).toBe(urlBefore);
+    expect(await page.evaluate(() => (window as Window & { __osWindowHistoryWrites?: number }).__osWindowHistoryWrites)).toBe(0);
+    expect(requests).toHaveLength(requestsBefore);
+    await expect(article.getByRole('heading', { level: 1, name: 'Співробітники' })).toBeVisible();
+    const firstWindow = page.getByTestId('os-window-os1');
+    await expect(firstWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await firstWindow.getByRole('button', { name: 'Згорнути вікно' }).click();
+    await expect(firstWindow).toBeHidden();
+    const restore = page.getByTestId('dock-window-os1');
+    await expect(restore).toBeVisible();
+    await restore.click();
+    await expect(firstWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await expect.poll(() => page.url()).toContain('os1:window/tasks');
+    expect(requests).toHaveLength(requestsBefore);
+  });
+
+  test('routed windows stay within the visible safe band while tall reports content scrolls and viewport changes', async ({ page, context }) => {
+    await open(page, context, '/reports');
+    await page.getByRole('navigation', { name: 'Вікна робочого простору' }).getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    const article = page.getByTestId('os-window-os1');
+    await expect(article.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+    const assertSafeBand = async (): Promise<void> => {
+      const viewport = page.viewportSize()!;
+      const layer = await page.locator('.window-layer').boundingBox();
+      const windowBox = await article.boundingBox();
+      expect(layer).not.toBeNull();
+      expect(windowBox).not.toBeNull();
+      expect(layer!.y).toBeGreaterThanOrEqual(56);
+      expect(layer!.y + layer!.height).toBeLessThanOrEqual(viewport.height - 56);
+      expect(windowBox!.y).toBeGreaterThanOrEqual(layer!.y);
+      expect(windowBox!.y + windowBox!.height).toBeLessThanOrEqual(layer!.y + layer!.height);
+    };
+    await assertSafeBand();
+    await page.setViewportSize({ width: 900, height: 640 });
+    await expect.poll(async () => {
+      const layer = await page.locator('.window-layer').boundingBox();
+      return !!layer && layer.height <= 640 - 112;
+    }).toBe(true);
+    await assertSafeBand();
+  });
+
   test('candidates board: drag to a stage column → exactly one POST /move with stage_id', async ({ page, context }) => {
     const mock = await personalBoard(page, context);
     // Second stage lane («Первинний контакт»): no reject reason needed, so the drop moves at once.
@@ -916,8 +1047,27 @@ test.describe('mobile flows', () => {
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
     await burger.click();
     await nav.getByRole('link', { name: 'Мої задачі' }).click();
-    await expect(page).toHaveURL(/\/tasks$/);
+    await expect(page).toHaveURL(/os1:window\/tasks/);
+    await expect(page.getByTestId('os-window-os1').getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('workspace window occupies the mobile safe area without drag or resize controls', async ({ page, context }) => {
+    await open(page, context, '/');
+    await page.getByRole('navigation', { name: 'Вікна робочого простору' }).getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    const article = page.getByTestId('os-window-os1');
+    await expect(article.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await expect(page.getByTestId('window-resize-os1')).toHaveCount(0);
+    const windowBox = await article.boundingBox();
+    const layerBox = await page.locator('.window-layer').boundingBox();
+    expect(windowBox).not.toBeNull();
+    expect(layerBox).not.toBeNull();
+    expect(windowBox!.x).toBeCloseTo(layerBox!.x, 0);
+    expect(windowBox!.y).toBeCloseTo(layerBox!.y, 0);
+    expect(windowBox!.width).toBeCloseTo(layerBox!.width, 0);
+    expect(windowBox!.height).toBeCloseTo(layerBox!.height, 0);
+    expect(layerBox!.y).toBeGreaterThanOrEqual(56);
+    expect(layerBox!.y + layerBox!.height).toBeLessThanOrEqual(page.viewportSize()!.height - 56);
   });
 });
 
