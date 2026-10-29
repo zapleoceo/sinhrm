@@ -151,11 +151,12 @@ describe('ShellLayout user menu in sidebar footer', () => {
     expect(el.querySelector('.topbar')).toBeNull();
   });
 
-  it('opens the menu with language, theme, profile, extension and logout items', async () => {
+  it('opens the menu with language, theme, appearance, profile, extension and logout items', async () => {
     const { el, detect } = await setup();
     const panel = await openMenu(el, detect);
     expect(panel.querySelector('app-language-switcher')).toBeTruthy();
     expect(panel.querySelector('.theme-toggle')).toBeTruthy();
+    expect(panel.querySelector('a[href="/settings/appearance"]')?.textContent).toContain('appearance.title');
     expect(panel.querySelector('a[href="/me"]')).toBeTruthy();
     expect(panel.querySelector('a[href="/settings/extension"]')).toBeTruthy();
     expect(panel.querySelector('button.logout')).toBeTruthy();

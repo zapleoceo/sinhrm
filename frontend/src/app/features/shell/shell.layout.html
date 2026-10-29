@@ -437,6 +437,10 @@
           <mat-icon>{{ themeIcon() }}</mat-icon>
           <span>{{ themeLabel() | transloco }}</span>
         </button>
+        <a mat-menu-item routerLink="/settings/appearance">
+          <mat-icon>palette</mat-icon>
+          <span>{{ 'appearance.title' | transloco }}</span>
+        </a>
         @if (can('people')) {
         <a mat-menu-item routerLink="/me">
           <mat-icon>badge</mat-icon>

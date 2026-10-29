@@ -49,6 +49,7 @@ export const PAGES = [
     ],
   },
   { id: 'tasks', path: '/tasks' },
+  { id: 'appearance', path: '/settings/appearance' },
   { id: 'candidates', path: '/candidates', states: [{ id: 'board', steps: boardSteps }] },
   { id: 'candidate', path: '/candidates/1' },
   { id: 'vacancies', path: '/vacancies' },
