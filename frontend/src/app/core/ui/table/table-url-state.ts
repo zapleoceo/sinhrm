@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationStart, ParamMap, Params, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { FilterValue, TableSort, filterToParam, sortToParams } from './table-state';
+import { TABLE_QUERY_ADAPTER } from './table-query-adapter';
 
 /** Pause after the last keystroke of a live filter before the URL (and so a server request) follows it. */
 export const LIVE_FILTER_DEBOUNCE_MS = 250;
@@ -39,6 +40,7 @@ export class TableUrlState {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly queryAdapter = inject(TABLE_QUERY_ADAPTER, { optional: true });
 
   private liveEdit: LiveEditOptions | null = null;
   /** Queued edit (waits for the pause or for the running navigation). */
@@ -69,7 +71,7 @@ export class TableUrlState {
     // Our own writes clear the queue before they navigate, so they never drop anything.
     this.router.events
       .pipe(
-        filter((e) => e instanceof NavigationStart),
+        filter((e) => e instanceof NavigationStart && (!this.queryAdapter || this.queryAdapter.shouldDropPendingEdit(e))),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => this.drop());
@@ -77,6 +79,10 @@ export class TableUrlState {
 
   /** Calls `apply` with the parsed query now and after every URL change, until the page is destroyed. */
   watch<Q>(parse: (params: ParamMap) => Q, apply: (query: Q) => void): void {
+    if (this.queryAdapter) {
+      this.queryAdapter.watch(parse, apply);
+      return;
+    }
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => apply(parse(params)));
   }
 
@@ -147,8 +153,9 @@ export class TableUrlState {
     this.pending.set(null);
     this.inFlight.set(p);
     const queryParams = p.paging ? p.params : { ...p.params, page: null };
-    this.router
-      .navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge', replaceUrl: p.replace })
+    (this.queryAdapter
+      ? this.queryAdapter.write(queryParams, p.replace)
+      : this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge', replaceUrl: p.replace }))
       .then(
         (done) => this.settled(p, done !== false),
         () => this.settled(p, false),

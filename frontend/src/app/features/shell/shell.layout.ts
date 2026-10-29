@@ -21,6 +21,8 @@ import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
 import { NavRail, RailTip } from './nav-rail';
 import { NotifyService } from '../../core/ui/notify.service';
+import { WindowNavigation } from '../../core/windows/window-navigation';
+import { WindowRouteId, WindowSlot, WINDOW_SLOTS } from '../../core/windows/window-context';
 
 /** One radio item of "Працювати як": a role, or null = all roles. */
 interface RoleChoice {
@@ -47,7 +49,7 @@ interface RoleChoice {
     AssistantMascot,
     RailTip,
   ],
-  providers: [NavRail],
+  providers: [NavRail, WindowNavigation],
   host: { '(document:keydown.escape)': 'onEscape()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.layout.html',
@@ -59,6 +61,7 @@ export class ShellLayout {
   private readonly navBadges = inject(NavBadgesService);
   private readonly assistant = inject(AssistantSettings);
   protected readonly theme = inject(ThemeService);
+  protected readonly windowNavigation = inject(WindowNavigation);
   private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
 
@@ -77,6 +80,9 @@ export class ShellLayout {
   protected readonly initial = computed(() => (this.user()?.name ?? '?').charAt(0).toUpperCase());
   protected readonly themeLabel = computed(() => (this.theme.theme() === 'dark' ? 'shell.theme.toLight' : 'shell.theme.toDark'));
   protected readonly themeIcon = computed(() => (this.theme.theme() === 'dark' ? 'light_mode' : 'dark_mode'));
+  protected readonly canOpenTasksWindow = computed(() => this.windowNavigation.slotFor('tasks') !== null);
+  protected readonly canOpenPeopleWindow = computed(() => this.windowNavigation.slotFor('people') !== null);
+  protected readonly windowSlots = WINDOW_SLOTS;
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -198,6 +204,15 @@ export class ShellLayout {
 
   protected toggleAutoHide(): void {
     this.rail.toggleAutoHide();
+  }
+
+  protected openWindow(routeId: WindowRouteId): void {
+    const slot = this.windowNavigation.slotFor(routeId);
+    if (slot) void this.windowNavigation.open(slot, routeId);
+  }
+
+  protected focusWindow(slot: WindowSlot): void {
+    void this.windowNavigation.focus(slot);
   }
 
   protected pointerEnter(): void {
