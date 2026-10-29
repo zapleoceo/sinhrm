@@ -466,7 +466,27 @@
 
   <div class="main">
     <main class="content">
-      <router-outlet />
+      <div class="workspace-launchbar" [attr.aria-label]="'osWindow.launcher' | transloco">
+        <button mat-stroked-button type="button" [disabled]="!canOpenTasksWindow()" (click)="openWindow('tasks')">
+          <mat-icon>task_alt</mat-icon>{{ 'osWindow.openTasks' | transloco }}
+        </button>
+        @if (can('people')) {
+          <button mat-stroked-button type="button" [disabled]="!canOpenPeopleWindow()" (click)="openWindow('people')">
+            <mat-icon>group</mat-icon>{{ 'osWindow.openPeople' | transloco }}
+          </button>
+        }
+        @if (narrow() && windowNavigation.activeSlot()) {
+          <button mat-button type="button" class="show-primary" (click)="windowNavigation.focusPrimary()">
+            <mat-icon>web_asset</mat-icon>{{ 'osWindow.showPrimary' | transloco }}
+          </button>
+        }
+      </div>
+      <section class="primary-view" [class.mobile-inactive]="narrow() && windowNavigation.activeSlot() !== null"
+               [attr.inert]="narrow() && windowNavigation.activeSlot() !== null ? '' : null"
+               [attr.aria-hidden]="narrow() && windowNavigation.activeSlot() !== null ? 'true' : null">
+        <router-outlet />
+      </section>
+      <app-os-window-workspace [narrow]="narrow()" />
     </main>
   </div>
   @if (can('assistant')) {

@@ -4,7 +4,7 @@ import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { MatTooltip } from '@angular/material/tooltip';
-import { Router, provideRouter } from '@angular/router';
+import { Router, Routes, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { of } from 'rxjs';
@@ -13,9 +13,18 @@ import { LanguageService } from '../../core/i18n/language.service';
 import { HOVER_QUERY } from './nav-rail';
 import { AssistantSettings } from '../assistant/assistant-settings';
 import { ShellLayout } from './shell.layout';
+import { windowOutletRoute } from '../../core/windows/window-route';
+import { WindowNavigation } from '../../core/windows/window-navigation';
 
 @Component({ template: '' })
 class Blank {}
+
+const WINDOW_TEST_ROUTES: Routes = [
+  { path: '', pathMatch: 'full', component: Blank },
+  windowOutletRoute('os1', [{ path: 'tasks', component: Blank, data: { windowRoute: 'tasks', module: null } }]),
+  windowOutletRoute('os2', [{ path: 'people', component: Blank, data: { windowRoute: 'people', module: 'people' } }]),
+  { path: '**', component: Blank },
+];
 
 const USER = { id: 7, name: 'U', email: 'u@example.com', avatar_url: null, locale: 'uk', roles: ['employee'], status: 'active' };
 
@@ -23,14 +32,14 @@ const logout = vi.fn().mockResolvedValue(undefined);
 const setActiveRole = vi.fn().mockResolvedValue(undefined);
 const langUse = vi.fn().mockResolvedValue(undefined);
 
-async function setup(modules?: string[], narrow = false, user: object = USER): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void>; fixture: ComponentFixture<ShellLayout> }> {
+async function setup(modules?: string[], narrow = false, user: object = USER, windows = false): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void>; fixture: ComponentFixture<ShellLayout> }> {
   logout.mockClear();
   setActiveRole.mockClear();
   langUse.mockClear();
   TestBed.configureTestingModule({
     imports: [ShellLayout, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     providers: [
-      provideRouter([{ path: '**', component: Blank }]),
+      provideRouter(windows ? WINDOW_TEST_ROUTES : [{ path: '**', component: Blank }]),
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: AuthService, useValue: { user: signal(user), logout, setActiveRole, hasModule: (k: string) => modules === undefined || modules.includes(k) } },
@@ -93,6 +102,33 @@ describe('ShellLayout collapsible nav', () => {
     localStorage.setItem('sinhrm.nav.expanded.7', '["services"]');
     const { el } = await setup();
     expect(header(el, 'services').getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('ShellLayout mobile window focus', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('marks an inactive expanded window hidden and inert while keeping the other slot active', async () => {
+    const { el, router, detect, fixture } = await setup(undefined, true, USER, true);
+    await router.navigateByUrl('/');
+    await detect();
+    const windows = fixture.debugElement.injector.get(WindowNavigation);
+    await windows.open('os1', 'tasks');
+    await detect();
+    await windows.open('os2', 'people');
+    await detect();
+
+    const inactive = el.querySelector('article.os-window.window-os1') as HTMLElement;
+    expect(inactive.getAttribute('aria-hidden')).toBe('true');
+    expect(inactive.hasAttribute('inert')).toBe(true);
+    expect(el.querySelector('article.os-window.window-os2')?.getAttribute('aria-hidden')).toBeNull();
+    expect(windows.activeSlot()).toBe('os2');
+
+    await windows.focusPrimary();
+    await detect();
+    expect(el.querySelector('section.primary-view')?.hasAttribute('inert')).toBe(false);
+    expect(inactive.getAttribute('aria-hidden')).toBe('true');
+    expect(windows.activeSlot()).toBeNull();
   });
 });
 
