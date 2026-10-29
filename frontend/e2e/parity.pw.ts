@@ -89,11 +89,28 @@ for (const p of PAGES) {
       // (a) inventory — identical across themes, so only the light run writes it.
       const inventory = await inventoryOf(page, p.volatile);
       const file = join(SNAPSHOTS, `${key}.json`);
+      const snapshotExists = existsSync(file);
+      let snapshotMatches = false;
+      if (snapshotExists) {
+        const saved = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+        delete saved['path'];
+        delete saved['state'];
+        snapshotMatches = JSON.stringify(inventory) === JSON.stringify(saved);
+      }
+      if (!snapshotExists || !snapshotMatches) {
+        await info.attach('actual-ui-inventory', {
+          body: JSON.stringify({ path: p.path, state: state.id || null, key, viewport, theme, inventory }, null, 2),
+          contentType: 'application/json',
+        });
+      }
+      if (SCREENSHOTS || !snapshotExists) {
+        await page.screenshot({ path: join(__dirname, '.out', 'screens', info.project.name, `${name}.png`), fullPage: true });
+      }
       if (UPDATE && theme === 'light') {
         mkdirSync(SNAPSHOTS, { recursive: true });
         writeFileSync(file, JSON.stringify({ path: p.path, state: state.id || null, ...inventory }, null, 1) + '\n');
       } else {
-        expect(existsSync(file), `no snapshot ${key}.json — run npm run e2e:update and review the diff`).toBe(true);
+        expect(snapshotExists, `no snapshot ${key}.json — run npm run e2e:update and review the diff`).toBe(true);
         const saved = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
         delete saved['path'];
         delete saved['state'];
@@ -164,8 +181,7 @@ for (const p of PAGES) {
         expect.soft(worse, `new axe violations on ${axeKey}`).toEqual([]);
       }
 
-      // (f) screenshots for reviewers (CI artifact), never compared here.
-      if (SCREENSHOTS) await page.screenshot({ path: join(__dirname, '.out', 'screens', info.project.name, `${name}.png`), fullPage: true });
+      // (f) screenshots were captured before assertions so missing-baseline failures retain rendered evidence.
     });
   }
 }

@@ -48,6 +48,7 @@ export const PAGES = [
       { id: 'drawer', only: 'mobile', steps: [drawer, ...navGroups] },
     ],
   },
+  { id: 'desktop', path: '/desktop' },
   { id: 'tasks', path: '/tasks' },
   { id: 'candidates', path: '/candidates', states: [{ id: 'board', steps: boardSteps }] },
   { id: 'candidate', path: '/candidates/1' },

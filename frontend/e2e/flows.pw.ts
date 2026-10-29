@@ -758,6 +758,25 @@ test.describe('mobile flows', () => {
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'mobile-light', 'mobile-light only'));
 
+  test('widget sizes preserve distinct card heights on mobile', async ({ page, context }) => {
+    await open(page, context, '/desktop');
+    const summary = page.locator('[data-widget="summary"]');
+    const tasks = page.locator('[data-widget="tasks"]');
+    const today = page.locator('[data-widget="today"]');
+    await summary.locator('.size-control button').nth(0).click();
+    await tasks.locator('.size-control button').nth(1).click();
+    await today.locator('.size-control button').nth(2).click();
+    await expect(summary).toHaveClass(/size-s/);
+    await expect(tasks).toHaveClass(/size-m/);
+    await expect(today).toHaveClass(/size-l/);
+
+    const heights = await page.evaluate(() => Object.fromEntries(
+      ['summary', 'tasks', 'today'].map((id) => [id, document.querySelector(`[data-widget="${id}"]`)?.getBoundingClientRect().height ?? 0]),
+    ));
+    expect(heights['summary']).toBeLessThan(heights['tasks']);
+    expect(heights['tasks']).toBeLessThan(heights['today']);
+  });
+
   test('drawer opens, closes, and closes on navigation', async ({ page, context }) => {
     await open(page, context, '/');
     const burger = page.getByRole('button', { name: 'Головне меню' });
@@ -808,4 +827,91 @@ test('mobile assistant: in-flow launcher opens chat without covering candidate c
   await expect(launcher).toBeVisible();
   expect(writes(mock)).toEqual([]);
   expect(mock.missing).toEqual([]);
+});
+
+test('desktop: real launcher routes and per-user widgets support add, size, keyboard reorder, drag, and persistence', async ({ page, context }) => {
+  const mock = await open(page, context, '/desktop');
+  await expect(page.getByRole('heading', { name: 'Робочий стіл' })).toBeVisible();
+  await expect(page.locator('.widget')).toHaveCount(3);
+  await expect(page.locator('[data-widget="summary"]')).toContainText('Активні кандидати');
+
+  await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
+  const approvals = page.locator('[data-widget="approvals"]');
+  await expect(approvals).toBeVisible();
+  await approvals.getByRole('button', { name: 'Великий розмір для віджета «Мої погодження»' }).click();
+  await expect(approvals).toHaveClass(/size-l/);
+  await page.getByRole('button', { name: 'Перемістити «Мої погодження» вище' }).click();
+  await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
+
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string; size: string }[] });
+  expect(saved.widgets).toEqual([
+    { id: 'summary', size: 'm' }, { id: 'tasks', size: 's' }, { id: 'approvals', size: 'l' }, { id: 'today', size: 'm' },
+  ]);
+  await page.reload();
+  await settle(page);
+  await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
+  await page.getByRole('button', { name: 'Прибрати віджет «Мої погодження»' }).click();
+  await expect(page.locator('[data-widget="approvals"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Мої погодження', exact: true })).toBeFocused();
+
+  await drag(page, page.locator('[data-widget="tasks"] .drag-handle'), page.locator('[data-widget="summary"] .widget-header'));
+  await expect(page.locator('.widget').first()).toHaveAttribute('data-widget', 'tasks');
+  const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
+  expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
+
+  await page.getByRole('button', { name: 'Кандидати', exact: true }).click();
+  await expect(page).toHaveURL(/\/candidates$/);
+  expect(mock.missing).toEqual([]);
+});
+
+test('desktop mobile: widget titles and size actions remain readable at 390px', async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, context, '/desktop');
+  await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
+
+  const widget = page.locator('[data-widget="approvals"]');
+  const title = widget.locator('.widget-header h3');
+  const actions = widget.locator('.widget-actions');
+  const sizeGroup = widget.getByRole('group', { name: 'Розмір віджета «Мої погодження»' });
+  const expectReadableHeader = async (): Promise<void> => {
+    const widgetBounds = await widget.boundingBox();
+    const titleBounds = await title.boundingBox();
+    const actionBounds = await actions.boundingBox();
+    expect(widgetBounds).not.toBeNull();
+    expect(titleBounds).not.toBeNull();
+    expect(actionBounds).not.toBeNull();
+    expect(titleBounds!.width).toBeGreaterThan(100);
+    expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(actionBounds!.y);
+    expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(widgetBounds!.x + widgetBounds!.width + 1);
+  };
+  await expect(title).toHaveText('Мої погодження');
+  await expect(sizeGroup).toBeVisible();
+  await expect(sizeGroup.locator('button')).toHaveText(['s', 'm', 'l']);
+  await expect(actions.getByRole('button', { name: 'Малий розмір для віджета «Мої погодження»' })).toBeVisible();
+  await expectReadableHeader();
+
+  for (const [size, label] of [['s', 'Малий'], ['m', 'Середній'], ['l', 'Великий']] as const) {
+    await sizeGroup.getByRole('button', { name: `${label} розмір для віджета «Мої погодження»` }).click();
+    await expect(widget).toHaveClass(new RegExp(`size-${size}`));
+    await expectReadableHeader();
+  }
+});
+
+test('desktop S widget: title stays readable beside its wrapped controls at a wide viewport', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await open(page, context, '/desktop');
+
+  const widget = page.locator('[data-widget="tasks"]');
+  const title = widget.locator('.widget-header h3');
+  const actions = widget.locator('.widget-actions');
+  await expect(title).toHaveText('Мої задачі');
+  const widgetBounds = await widget.boundingBox();
+  const titleBounds = await title.boundingBox();
+  const actionBounds = await actions.boundingBox();
+  expect(widgetBounds).not.toBeNull();
+  expect(titleBounds).not.toBeNull();
+  expect(actionBounds).not.toBeNull();
+  expect(titleBounds!.width).toBeGreaterThan(70);
+  expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(actionBounds!.y);
+  expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(widgetBounds!.x + widgetBounds!.width + 1);
 });

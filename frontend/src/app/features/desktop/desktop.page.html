@@ -1,0 +1,125 @@
+<main class="desktop-page">
+  <header class="desktop-heading">
+    <div>
+      <p class="eyebrow">{{ 'desktop.eyebrow' | transloco }}</p>
+      <h1>{{ 'desktop.title' | transloco }}</h1>
+      <p class="today-date"><mat-icon aria-hidden="true">today</mat-icon>{{ todayLabel() }}</p>
+    </div>
+    <button mat-stroked-button type="button" (click)="refresh()" [disabled]="data.loading()">
+      <mat-icon>refresh</mat-icon>{{ 'desktop.refresh' | transloco }}
+    </button>
+  </header>
+
+  <section class="launcher panel" [attr.aria-label]="'desktop.launcher' | transloco">
+    <div class="section-heading">
+      <div>
+        <h2>{{ 'desktop.launcher' | transloco }}</h2>
+        <p>{{ 'desktop.launcherHint' | transloco }}</p>
+      </div>
+    </div>
+    @for (group of appsByGroup(); track group.id) {
+      <div class="app-group">
+        <h3>{{ group.label | transloco }}</h3>
+        <div class="app-grid">
+          @for (app of group.apps; track app.id) {
+            <button class="app-shortcut" type="button" (click)="launch(app)" [attr.aria-label]="app.label | transloco">
+              <span class="app-icon"><mat-icon aria-hidden="true">{{ app.icon }}</mat-icon></span>
+              <span class="app-label">{{ app.label | transloco }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </section>
+
+  <section class="widgets-section" [attr.aria-label]="'desktop.widgets.heading' | transloco">
+    <div class="section-heading widgets-heading">
+      <div>
+        <h2>{{ 'desktop.widgets.heading' | transloco }}</h2>
+        <p>{{ 'desktop.widgets.hint' | transloco }}</p>
+      </div>
+      <span class="widget-count">{{ 'desktop.widgets.count' | transloco: { count: layout.layout().widgets.length } }}</span>
+    </div>
+
+    @if (addableWidgets().length) {
+      <div class="add-widgets" [attr.aria-label]="'desktop.widgets.add' | transloco">
+        @for (widget of addableWidgets(); track widget.id) {
+          <button mat-stroked-button type="button" [id]="'desktop-widget-add-' + widget.id" (click)="addWidget(widget.id)">
+            <mat-icon>{{ widget.icon }}</mat-icon>{{ widget.title | transloco }}
+          </button>
+        }
+      </div>
+    }
+
+    @if (widgets().length === 0) {
+      <div class="empty-widgets panel" role="status">
+        <mat-icon aria-hidden="true">widgets</mat-icon>
+        <p>{{ 'desktop.widgets.empty' | transloco }}</p>
+      </div>
+    } @else {
+      <div class="widget-grid" cdkDropList cdkDropListOrientation="mixed" [cdkDropListData]="widgets()" (cdkDropListDropped)="reorderWidgets($event)" [attr.aria-label]="'desktop.widgets.heading' | transloco">
+        @for (widget of widgets(); track widget.id; let index = $index) {
+          <article class="widget panel" cdkDrag [cdkDragData]="widget" [cdkDragStartDelay]="touchDragDelay" [attr.data-widget]="widget.id" [class.size-s]="widget.size === 's'" [class.size-m]="widget.size === 'm'" [class.size-l]="widget.size === 'l'">
+            <header class="widget-header">
+              <button class="drag-handle" type="button" cdkDragHandle [attr.aria-label]="'desktop.widgets.drag' | transloco: { title: widgetTitle(widget.id) }">
+                <mat-icon aria-hidden="true">drag_indicator</mat-icon>
+              </button>
+              <mat-icon class="widget-icon" aria-hidden="true">{{ widgetIcon(widget.id) }}</mat-icon>
+              <h3>{{ widgetTitle(widget.id) }}</h3>
+              <div class="widget-actions">
+                <button mat-icon-button type="button" [id]="'desktop-widget-move-' + widget.id + '-up'" [attr.aria-label]="'desktop.widgets.moveUp' | transloco: { title: widgetTitle(widget.id) }" [disabled]="index === 0" (click)="moveWidget(widget.id, -1)"><mat-icon>arrow_upward</mat-icon></button>
+                <button mat-icon-button type="button" [id]="'desktop-widget-move-' + widget.id + '-down'" [attr.aria-label]="'desktop.widgets.moveDown' | transloco: { title: widgetTitle(widget.id) }" [disabled]="index === widgets().length - 1" (click)="moveWidget(widget.id, 1)"><mat-icon>arrow_downward</mat-icon></button>
+                <div class="size-control" role="group" [attr.aria-label]="'desktop.widgets.size' | transloco: { title: widgetTitle(widget.id) }">
+                  @for (size of widgetSizes; track size) {
+                    @let sizeName = ('desktop.widgets.sizes.' + size) | transloco;
+                    <button type="button" [attr.aria-pressed]="widget.size === size" [attr.aria-label]="'desktop.widgets.sizeOption' | transloco: { size: sizeName, title: widgetTitle(widget.id) }" (click)="resizeWidget(widget.id, size)">{{ size }}</button>
+                  }
+                </div>
+                <button mat-icon-button type="button" [id]="'desktop-widget-remove-' + widget.id" [attr.aria-label]="'desktop.widgets.remove' | transloco: { title: widgetTitle(widget.id) }" (click)="removeWidget(widget.id)"><mat-icon>close</mat-icon></button>
+              </div>
+            </header>
+            <div class="widget-content">
+              @if (data.loading()) {
+                <p class="state" role="status">{{ 'desktop.widgets.loading' | transloco }}</p>
+              } @else if (data.failed()) {
+                <div class="state error-state" role="alert"><p>{{ 'desktop.widgets.loadError' | transloco }}</p><button mat-button type="button" (click)="refresh()">{{ 'desktop.refresh' | transloco }}</button></div>
+              } @else if (!data.data()) {
+                <p class="state" role="status">{{ 'desktop.widgets.noData' | transloco }}</p>
+              } @else {
+                @switch (widget.id) {
+                  @case ('summary') {
+                    @if (data.data()?.counts; as counts) {
+                      <div class="metric-main"><strong>{{ displayCount(counts.active) }}</strong><span>{{ 'desktop.widgets.summary.active' | transloco }}</span></div>
+                      <a class="metric-secondary" routerLink="/candidates"><mat-icon>schedule</mat-icon><span>{{ 'desktop.widgets.summary.stale' | transloco }}</span><strong>{{ displayCount(counts.stale) }}</strong></a>
+                    } @else { <p class="state">{{ 'desktop.widgets.noData' | transloco }}</p> }
+                  }
+                  @case ('tasks') {
+                    @if (data.data()?.my_tasks; as tasks) {
+                      <div class="metric-main"><strong>{{ displayCount(tasks.total) }}</strong><span>{{ 'desktop.widgets.tasks.open' | transloco }}</span></div>
+                      <a class="metric-secondary" routerLink="/tasks"><mat-icon>task_alt</mat-icon><span>{{ 'desktop.widgets.tasks.overdue' | transloco }}</span><strong>{{ displayCount(tasks.overdue) }}</strong></a>
+                    } @else { <p class="state">{{ 'desktop.widgets.noData' | transloco }}</p> }
+                  }
+                  @case ('today') {
+                    @if (data.data()?.day_route; as day) {
+                      <p class="today-widget-date">{{ todayLabel() }}</p>
+                      <div class="metric-pair"><div><strong>{{ displayCount(day.interviews) }}</strong><span>{{ 'desktop.widgets.today.interviews' | transloco }}</span></div><div><strong>{{ displayCount(day.tasks) }}</strong><span>{{ 'desktop.widgets.today.tasks' | transloco }}</span></div></div>
+                    } @else { <p class="state">{{ 'desktop.widgets.noData' | transloco }}</p> }
+                  }
+                  @case ('approvals') {
+                    @if (approvalRows().length) {
+                      <div class="approval-list">
+                        @for (row of approvalRows(); track row.id) {
+                          <a class="metric-secondary" [routerLink]="row.route"><span>{{ row.label | transloco }}</span><strong>{{ displayCount(row.count) }}</strong></a>
+                        }
+                      </div>
+                    } @else { <p class="state">{{ 'desktop.widgets.noData' | transloco }}</p> }
+                  }
+                }
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</main>
