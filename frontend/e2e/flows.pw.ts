@@ -83,6 +83,8 @@ test.describe('desktop flows', () => {
     test.skip(info.project.name !== 'desktop-light', 'desktop-light only');
     await open(page, context, '/settings/appearance');
     await expect(page.getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
+    await expect(page.getByTestId('appearance-scheme').locator('.mat-mdc-select-value-text')).toHaveText('Власна');
+    await expect(page.getByTestId('appearance-wallpaper').locator('.mat-mdc-select-value-text')).toHaveText('Туман');
 
     // Exercise actual Material controls and verify the shared root contract consumed by the app styles.
     await page.getByRole('radio', { name: 'Темна', exact: true }).click();
@@ -835,7 +837,9 @@ test.describe('mobile flows', () => {
               const filter = style.filter;
               const backdropFilter = style.backdropFilter;
               const webkitBackdropFilter = style.getPropertyValue('-webkit-backdrop-filter');
-              if (filter !== 'none' || backdropFilter !== 'none' || webkitBackdropFilter !== 'none') {
+              // Chromium may leave the unsupported prefixed property empty; only a non-empty
+              // non-none value represents an active WebKit backdrop filter.
+              if (filter !== 'none' || backdropFilter !== 'none' || (webkitBackdropFilter !== '' && webkitBackdropFilter !== 'none')) {
                 effects.push({ selector: describe(element), pseudo, filter, backdropFilter, webkitBackdropFilter });
               }
             }

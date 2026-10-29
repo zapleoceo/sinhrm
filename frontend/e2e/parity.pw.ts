@@ -86,6 +86,12 @@ for (const p of PAGES) {
       await settle(page);
       await runSteps(page, state.steps);
 
+      // Establish that default CVA selections are painted before inventory and screenshots are captured.
+      if (p.id === 'appearance' && state.id === '') {
+        await expect(page.getByTestId('appearance-scheme').locator('.mat-mdc-select-value-text')).toHaveText('Власна');
+        await expect(page.getByTestId('appearance-wallpaper').locator('.mat-mdc-select-value-text')).toHaveText('Туман');
+      }
+
       // (a) inventory — identical across themes, so only the light run writes it.
       const inventory = await inventoryOf(page, p.volatile);
       const file = join(SNAPSHOTS, `${key}.json`);
