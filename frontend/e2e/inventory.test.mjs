@@ -1,6 +1,24 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { parseInventory } from './inventory.ts';
+
+const peopleFixtures = JSON.parse(readFileSync(new URL('./fixtures/people.json', import.meta.url), 'utf8'));
+
+test('synthetic employee detail 70 retains the identity of its recorded directory row', () => {
+  const directory = peopleFixtures['GET /api/people?page=1&perPage=50']?.body?.data;
+  const person = directory?.find((row) => row.id === 70);
+  const detailFixture = peopleFixtures['GET /api/people/70'];
+  const detail = detailFixture?.body?.data;
+
+  assert.ok(person, 'directory fixture includes synthetic employee 70');
+  assert.equal(detailFixture?.status, 200);
+  assert.ok(detail, 'employee 70 has a detail fixture');
+  assert.equal(detail.id, person.id);
+  assert.equal(detail.full_name, person.full_name);
+  assert.equal(detail.work_email, person.work_email);
+  assert.match(detail.full_name, /\[ТЕСТ\]/, 'the fixture is visibly synthetic');
+});
 
 test('retains quoted options and their quoted links, URLs and state flags', () => {
   const inventory = parseInventory(`- listbox "Candidates":

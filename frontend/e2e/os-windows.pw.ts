@@ -7,7 +7,7 @@ test.describe('OS routed windows', () => {
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'desktop-light', 'desktop-light only'));
 
   test('opens real Tasks and People pages, preserves minimized routes, and follows browser history', async ({ page, context }) => {
-    await installMock(context);
+    const mock = await installMock(context);
     await page.clock.setSystemTime(RECORDED_AT);
     watchNetwork(page);
     await page.goto('/tasks');
@@ -63,6 +63,8 @@ test.describe('OS routed windows', () => {
     await person.click();
     await expect(page).toHaveURL(/os2:window\/people\/70/);
     await expect(peopleWindow).toContainText('Бондаренко Євген');
+    await expect.poll(() => mock.requests).toContain('GET /api/people/70');
+    expect(mock.missing).toEqual([]);
   });
 
   test('repeated window controls do not reload APIs or remount routed views', async ({ page, context }, testInfo) => {
