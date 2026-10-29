@@ -22,7 +22,8 @@ import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded 
 import { NavRail, RailTip } from './nav-rail';
 import { NotifyService } from '../../core/ui/notify.service';
 import { WindowNavigation } from '../../core/windows/window-navigation';
-import { WindowRouteId, WindowSlot, WINDOW_SLOTS } from '../../core/windows/window-context';
+import { WindowRouteId } from '../../core/windows/window-context';
+import { OsWindowWorkspace } from './os-window-workspace';
 
 /** One radio item of "Працювати як": a role, or null = all roles. */
 interface RoleChoice {
@@ -48,6 +49,7 @@ interface RoleChoice {
     A11yModule,
     AssistantMascot,
     RailTip,
+    OsWindowWorkspace,
   ],
   providers: [NavRail, WindowNavigation],
   host: { '(document:keydown.escape)': 'onEscape()' },
@@ -82,7 +84,6 @@ export class ShellLayout {
   protected readonly themeIcon = computed(() => (this.theme.theme() === 'dark' ? 'light_mode' : 'dark_mode'));
   protected readonly canOpenTasksWindow = computed(() => this.windowNavigation.slotFor('tasks') !== null);
   protected readonly canOpenPeopleWindow = computed(() => this.windowNavigation.slotFor('people') !== null);
-  protected readonly windowSlots = WINDOW_SLOTS;
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -209,10 +210,6 @@ export class ShellLayout {
   protected openWindow(routeId: WindowRouteId): void {
     const slot = this.windowNavigation.slotFor(routeId);
     if (slot) void this.windowNavigation.open(slot, routeId);
-  }
-
-  protected focusWindow(slot: WindowSlot): void {
-    void this.windowNavigation.focus(slot);
   }
 
   protected pointerEnter(): void {
