@@ -24,7 +24,8 @@ export const boardSteps = [
   { click: { role: 'combobox', name: 'Вакансія' } },
   { click: { role: 'option', name: 'Менеджер з продажу [ТЕСТ]' } },
 ];
-const drawer = { click: { role: 'button', name: 'Модулі' } };
+// The OS launcher and the topbar Modules toggle share an accessible label; target the real panel toggle.
+const modulesPanel = { click: { css: '.modules-toggle' } };
 const userMenu = { click: { role: 'button', name: 'Меню користувача' } };
 const navGroups = ['Рекрутинг', 'Люди', 'Продуктивність', 'Сервіси', 'Адміністрування'].map((name) => ({ click: { role: 'button', name } }));
 /** @param {string} name @returns {State} */
@@ -44,8 +45,9 @@ export const PAGES = [
     states: [
       { id: 'user-menu', only: 'desktop', steps: [userMenu] },
       { id: 'user-menu', only: 'mobile', steps: [userMenu] },
-      { id: 'nav-expanded', only: 'desktop', steps: [drawer, ...navGroups] },
-      { id: 'drawer', only: 'mobile', steps: [drawer, ...navGroups] },
+      // These states exercise the OS Modules panel and its persisted group sections.
+      { id: 'nav-expanded', only: 'desktop', steps: [modulesPanel, ...navGroups] },
+      { id: 'drawer', only: 'mobile', steps: [modulesPanel, ...navGroups] },
     ],
   },
   { id: 'desktop', path: '/' },

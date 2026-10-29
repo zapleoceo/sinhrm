@@ -29,7 +29,7 @@ test.describe('OS routed windows', () => {
     await expect(peopleWindow.getByRole('heading', { level: 1, name: /Співробітники/ })).toBeVisible();
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
 
-    await tasksWindow.getByRole('button', { name: 'Згорнути вікно' }).click();
+    await tasksWindow.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
     await expect(tasksWindow).toHaveClass(/minimized/);
     await expect(tasksWindow).toBeHidden();
     await expect(tasksWindow.locator('app-os-window-host router-outlet + *')).toHaveCount(1);
@@ -86,9 +86,9 @@ test.describe('OS routed windows', () => {
     const apiRequestOffset = apiRequests.length;
     const startedAt = await page.evaluate(() => performance.now());
     for (let round = 0; round < 3; round++) {
-      await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
+      await page.getByTestId('dock-window-os1').click();
       await expect(tasks).toHaveClass(/active/);
-      await tasks.getByRole('button', { name: 'Згорнути вікно' }).click();
+      await tasks.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
       await expect(tasks).toHaveClass(/minimized/);
       await expect(tasks).toBeHidden();
       await page.getByTestId('dock-window-os1').click();
@@ -161,10 +161,10 @@ test.describe('OS routed windows on mobile', () => {
       await page.getByRole('button', { name: 'Показати основну сторінку' }).click();
       await expect(page.locator('.primary-view')).toBeVisible();
       await expect(page.locator('article.os-window.open.mobile-inactive')).toHaveCount(2);
-      await dock.getByRole('button', { name: 'Співробітники', exact: true }).click();
+      await page.getByTestId('dock-window-os2').click();
       await expect(page.locator('article.os-window.window-os2.open')).not.toHaveClass(/mobile-inactive/);
 
-      await page.locator('article.os-window.window-os2.open').getByRole('button', { name: 'Згорнути вікно' }).click();
+      await page.locator('article.os-window.window-os2.open .window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
       const minimized = page.locator('article.os-window.window-os2.minimized');
       await expect(minimized).toBeHidden();
       const restore = page.getByTestId('dock-window-os2');

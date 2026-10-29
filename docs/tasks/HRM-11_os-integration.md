@@ -14,7 +14,7 @@ Prepare a reviewable combined implementation under `D:/Projects/HRM/worktrees/br
 
 ## State
 
-2026-10-30 01:00 Asia/Saigon. Base `19bcc45e` includes dependency remediation from main899d4dab. Foundation d8e1d298 changes applied as an uncommitted candidate; `npm ci` succeeded with locked packages and no force options. Foundation latest UI CI40924284532:370 expected,1 failed,113 skipped; the failure is an empty first-render scheme selection and remains a product investigation. Desktop/windows were not applied at initial candidate setup.
+2026-10-30 — Current candidate is based on published `6a41a507`; main `899d4dab` is unchanged. The combined worktree has frozen, uncommitted layout/source corrections plus separate CI-sharding, keyboard and E2E updates. Latest CI: all six non-UI checks passed and frontend reports 1,261 passing tests; the UI job was canceled after 15 minutes. Its latest actual render still shows the narrow ~240px content column, so visual acceptance is blocked pending correction and a fresh render. Exact combined source review by SOL is pending. Next: publish the reviewed source, run four-shard CI, then verify actual rendered screenshots/inventories and accessibility checks. No merge or deploy authorization.
 
 ### Current integration state (2026-10-30 01:26 Asia/Saigon)
 
@@ -82,3 +82,11 @@ Prepare a reviewable combined implementation under `D:/Projects/HRM/worktrees/br
 - Added a RouterHarness test that clicks the actual Appearance menu link with four live routed windows and confirms all four component instances remain mounted, all route IDs persist, and the primary focus state is set.
 - Shell and WindowNavigation targeted tests: 57 passed. Angular lint and E2E lint/TypeScript pass; docs links 229/0, docs-check and diff-check pass. No full build or browser E2E.
 - **Next:** exact combined SOL review and CI.
+
+### Full-width OS shell visual correction (2026-10-30)
+
+- Replaced the legacy shell grid/rail cascade with one component-owned structural layout: the shell now spans the viewport, the topbar stays compact and fixed, Modules is a fixed out-of-flow panel, and the main view has no sidebar column. Removed the obsolete global `_os-home.scss` layout and rail provider; old collapse/autohide localStorage values are ignored.
+- The Dock now contains Home, Appearance and four pinned module shortcuts (Tasks, People, Desk, Reports), plus one distinct control for each running window. A pinned shortcut is omitted while that route is already open, leaving its window control as the single restore/focus entry.
+- Updated shell docs and focused Router/DOM tests for Modules open/backdrop/Escape, retained module inventory, short Dock, pinned-route de-duplication, and running window controls. `shell.layout.spec.ts` passes (32/32); `ng lint` passes; docs tests pass (6/6); compressed shell Sass is 6,883 bytes (<7,900 decimal-byte budget).
+- CI screenshot evidence identified the prior 240px content width, oversized user label, blank vertical space and 51-entry Dock. Source structure is corrected, but no local browser render was run; verify actual desktop/mobile screenshots, horizontal overflow, and accessibility/inventory in CI before claiming visual acceptance. E2E ownership is separate and its files were not edited in this batch.
+- **Next:** SOL review and CI rendered verification. No commit, push, merge or deploy authorization.

@@ -146,6 +146,51 @@ describe('OsWindowWorkspace geometry', () => {
     expect(destroyed).toEqual([]);
   });
 
+  it('focuses an inactive retained window through DOM focusin and ignores hidden windows', async () => {
+    await shell.navigation.open('os1', 'tasks');
+    await shell.navigation.open('os2', 'people');
+    harness.fixture.detectChanges();
+    const tasksPage = created.find((page) => page.route.snapshot.data['windowRoute'] === 'tasks');
+    const peoplePage = created.find((page) => page.route.snapshot.data['windowRoute'] === 'people');
+    expect(tasksPage).toBeDefined();
+    expect(peoplePage).toBeDefined();
+    expect(shell.navigation.activeSlot()).toBe('os2');
+
+    const workspace = harness.fixture.nativeElement.querySelector('.window-layer') as HTMLElement;
+    const tasksArticle = workspace.querySelector('[data-testid="os-window-os1"]') as HTMLElement;
+    const tasksTitlebar = tasksArticle.querySelector('[data-testid="window-titlebar-os1"]') as HTMLElement;
+    const tasksQueryBefore = shell.navigation.queryForWindow('os1').keys.map((key) => [key, shell.navigation.queryForWindow('os1').getAll(key)]);
+    const focus = vi.spyOn(shell.navigation, 'focus');
+
+    tasksTitlebar.focus();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    expect(shell.navigation.activeSlot()).toBe('os1');
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledWith('os1');
+    expect(router.parseUrl(router.url).root.children['os1']).toBeDefined();
+    expect(router.parseUrl(router.url).root.children['os2']).toBeDefined();
+    const tasksQueryAfter = shell.navigation.queryForWindow('os1').keys.map((key) => [key, shell.navigation.queryForWindow('os1').getAll(key)]);
+    expect(tasksQueryAfter).toEqual(tasksQueryBefore);
+    expect(created).toContain(tasksPage);
+    expect(created).toContain(peoplePage);
+    expect(destroyed).toEqual([]);
+
+    tasksTitlebar.blur();
+    tasksTitlebar.focus();
+    await harness.fixture.whenStable();
+    expect(focus).toHaveBeenCalledTimes(1); // The active slot does not trigger another navigation.
+
+    await shell.navigation.minimize('os2');
+    harness.fixture.detectChanges();
+    const peopleArticle = workspace.querySelector('[data-testid="os-window-os2"]') as HTMLElement;
+    peopleArticle.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    await harness.fixture.whenStable();
+    expect(focus).toHaveBeenCalledTimes(1); // Hidden/inert content cannot steal focus.
+    expect(created).toContain(peoplePage);
+    expect(destroyed).toEqual([]);
+  });
+
   it('moves from the keyboard and resets a slot geometry without touching the routed page', async () => {
     await shell.navigation.open('os1', 'tasks');
     harness.fixture.detectChanges();

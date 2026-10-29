@@ -91,15 +91,15 @@ test('four routed Dock windows keep their pages through controls and report brow
   for (let round = 1; round <= 2; round++) {
     for (const module of MODULES) {
       const window = page.getByTestId(`os-window-${module.slot}`);
-      const appButton = dock.getByRole('button', { name: module.label, exact: true });
+      const runningControl = page.getByTestId(`dock-window-${module.slot}`);
 
       let startedAt = await page.evaluate(() => performance.now());
-      await appButton.click();
+      await runningControl.click();
       await expect(window).toHaveClass(/active/);
       timings.push({ round, slot: module.slot, operation: 'focus', elapsedMs: await page.evaluate((started) => performance.now() - started, startedAt) });
 
       startedAt = await page.evaluate(() => performance.now());
-      await window.getByRole('button', { name: 'Згорнути вікно' }).click();
+      await window.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
       await expect(window).toHaveClass(/minimized/);
       timings.push({ round, slot: module.slot, operation: 'minimize', elapsedMs: await page.evaluate((started) => performance.now() - started, startedAt) });
 
@@ -173,7 +173,7 @@ test('four routed Dock windows keep their pages through controls and report brow
 
   await page.locator('.topbar-brand').click();
   await expect(page.locator('.desktop-page')).toBeVisible();
-  await dock.getByRole('button', { name: MODULES[0].label, exact: true }).click();
+  await page.getByTestId('dock-window-os1').click();
   await page.locator('.modules-toggle').click();
   await expect(page.locator('#app-sidebar.open')).toBeVisible();
   for (const surface of [page.locator('.topbar'), page.locator('#app-sidebar'), page.locator('.os-dock'), page.locator('.os-window.active .window-titlebar'), page.locator('.desktop-page .widget-header').first()]) {
@@ -203,7 +203,8 @@ test('four routed Dock windows keep their pages through controls and report brow
     expect(surface.transitionDuration.split(',').every((value) => Number.parseFloat(value) === 0)).toBe(true);
   }
 
-  await page.locator('.modules-toggle').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#app-sidebar')).toBeHidden();
   await page.locator('.topbar .os-user-launcher').click();
   await page.getByRole('menuitem', { name: 'Зовнішній вигляд' }).click();
   await page.getByRole('switch', { name: 'Швидкий режим' }).click();
@@ -212,7 +213,7 @@ test('four routed Dock windows keep their pages through controls and report brow
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
   await page.locator('.topbar-brand').click();
   await expect(page.locator('.desktop-page')).toBeVisible();
-  await dock.getByRole('button', { name: MODULES[0].label, exact: true }).click();
+  await page.getByTestId('dock-window-os1').click();
   await page.locator('.modules-toggle').click();
   for (const surface of [page.locator('.topbar'), page.locator('#app-sidebar'), page.locator('.os-dock'), page.locator('.os-window.active .window-titlebar'), page.locator('.desktop-page .widget-header').first()]) {
     await expect(surface).toBeVisible();

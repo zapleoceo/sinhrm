@@ -29,7 +29,7 @@ interface ActiveGesture {
   template: `
     <section #layer class="window-layer" [attr.aria-label]="'osWindow.windows' | transloco"
              [style.left.px]="originX()" [style.width.px]="bounds().width"
-             (pointermove)="moveGesture($event)" (pointerup)="endGesture($event)" (pointercancel)="cancelGesture($event)">
+             (focusin)="focusFromKeyboard($event)" (pointermove)="moveGesture($event)" (pointerup)="endGesture($event)" (pointercancel)="cancelGesture($event)">
       @let views = navigation.windows();
       @for (slot of slots; track slot) {
         @let view = views[slot];
@@ -140,6 +140,20 @@ export class OsWindowWorkspace {
 
   protected geometryFor(slot: WindowSlot): WindowGeometry {
     return this.geometries()[slot] ?? defaultWindowGeometry(slot, this.bounds());
+  }
+
+  protected focusFromKeyboard(event: FocusEvent): void {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const article = target.closest<HTMLElement>('article.os-window');
+    if (!article || !this.layer().nativeElement.contains(article)
+      || !article.classList.contains('open')
+      || article.classList.contains('minimized')
+      || article.inert
+      || article.getAttribute('aria-hidden') === 'true') return;
+    const testId = article.dataset['testid'];
+    const slot = this.slots.find((candidate) => testId === `os-window-${candidate}`);
+    if (slot) this.focusWindow(slot);
   }
 
   protected focusWindow(slot: WindowSlot): void {

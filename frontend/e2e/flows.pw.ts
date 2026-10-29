@@ -75,8 +75,9 @@ test.describe('desktop flows', () => {
     await open(page, context, '/');
     await page.getByRole('button', { name: 'Меню користувача' }).click();
     await page.getByRole('menuitem', { name: 'Зовнішній вигляд', exact: true }).click();
-    await expect(page).toHaveURL(/\/settings\/appearance$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/settings/appearance');
+    await expect.poll(() => new URL(page.url()).searchParams.get('osPrimary')).toBe('1');
+    await expect(page.locator('.primary-view').getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
   });
 
   test('appearance preferences apply immediately and persist across reload', async ({ page, context }, info) => {
@@ -230,7 +231,7 @@ test.describe('desktop flows', () => {
     await expect(article.getByRole('heading', { level: 1, name: 'Співробітники' })).toBeVisible();
     const firstWindow = page.getByTestId('os-window-os1');
     await expect(firstWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
-    await firstWindow.getByRole('button', { name: 'Згорнути вікно' }).click();
+    await firstWindow.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
     await expect(firstWindow).toBeHidden();
     const restore = page.getByTestId('dock-window-os1');
     await expect(restore).toBeVisible();
@@ -724,114 +725,56 @@ test.describe('desktop flows', () => {
     expect(sent[0]).toEqual(expect.objectContaining({ method: 'PUT', body: { role: expect.any(String) } }));
   });
 
-  test('sidebar collapses to an icon rail and expands; the state survives a reload', async ({ page, context }) => {
+  test('Modules remembers expanded groups and supports keyboard navigation to a routed page', async ({ page, context }) => {
     await open(page, context, '/');
-    const sidebar = page.locator('#app-sidebar');
+    const modules = page.locator('.modules-toggle');
     const nav = page.getByRole('navigation', { name: 'Головне меню' });
-    const collapse = page.getByRole('button', { name: 'Згорнути меню' });
-    const expand = page.getByRole('button', { name: 'Розгорнути меню' });
-    const width = async (): Promise<number> => (await sidebar.boundingBox())!.width;
-    const pageOverflow = (): Promise<number> => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    const wide = await width();
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
+    await modules.click();
+    await expect(modules).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav).toBeVisible();
 
-    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
-    await collapse.click();
-    await expect(expand).toHaveAttribute('aria-expanded', 'false');
-    await expect.poll(width).toBeLessThanOrEqual(64);
-    expect(await pageOverflow(), 'horizontal page scroll on the rail').toBeLessThanOrEqual(0);
-    // Items keep their names (labels are visually hidden), a tooltip shows the name next to the icon.
-    const tasks = nav.getByRole('link', { name: 'Мої задачі' });
-    await tasks.hover();
-    await expect(page.locator('.mat-mdc-tooltip').filter({ hasText: 'Мої задачі' })).toBeVisible();
-    // The user menu stays reachable from the avatar.
-    await expect(page.getByRole('button', { name: 'Меню користувача' })).toBeVisible();
-
-    await page.reload();
-    await settle(page);
-    await expect(expand).toHaveAttribute('aria-expanded', 'false');
-    expect(await width()).toBeLessThanOrEqual(64);
-
-    // Keyboard: the toggle is a button (Enter), the sidebar comes back to its full width.
-    await expand.focus();
+    const recruiting = nav.getByRole('button', { name: /^Рекрутинг/ });
+    await expect(recruiting).toHaveAttribute('aria-expanded', 'false');
+    await recruiting.focus();
     await page.keyboard.press('Enter');
-    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
-    await expect.poll(width).toBe(wide);
+    await expect(recruiting).toHaveAttribute('aria-expanded', 'true');
+
     await page.reload();
     await settle(page);
-    await expect(collapse).toBeVisible();
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
+    await modules.click();
+    await expect(nav.getByRole('button', { name: /^Рекрутинг/ })).toHaveAttribute('aria-expanded', 'true');
+
+    const tasks = nav.getByRole('link', { name: 'Мої задачі' });
+    await tasks.focus();
+    await page.keyboard.press('Enter');
+    const tasksWindow = page.getByTestId('os-window-os1');
+    await expect(tasksWindow).toHaveClass(/open/);
+    await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('auto-hide: the rail opens over the content under the pointer and keyboard focus, folds back after a short delay', async ({ page, context }) => {
+  test('Modules closes on Escape, outside click, and navigation', async ({ page, context }) => {
     await open(page, context, '/');
-    const sidebar = page.locator('#app-sidebar');
-    const main = page.locator('main.content');
-    const autoHide = page.getByRole('button', { name: 'Автоприховування меню' });
-    const width = async (): Promise<number> => (await sidebar.boundingBox())!.width;
-    const mainX = async (): Promise<number> => (await main.boundingBox())!.x;
-    const away = (): Promise<void> => page.mouse.move(900, 400);
-
-    // Pinned 240px sidebar: logo + both toggles fit in the head (no overflow, buttons inside the sidebar).
-    const head = page.locator('.nav-head');
-    expect(await head.evaluate((e) => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(0);
-    const box = (await sidebar.boundingBox())!;
-    const btn = (await autoHide.boundingBox())!;
-    expect(btn.x + btn.width).toBeLessThanOrEqual(box.x + box.width);
-
-    await expect(autoHide).toHaveAttribute('aria-pressed', 'false');
-    await autoHide.click();
-    await expect(autoHide).toHaveAttribute('aria-pressed', 'true');
-    // Switched on under the pointer: open until the pointer leaves, then a rail; the content keeps its place.
-    await expect(page.getByRole('button', { name: 'Згорнути меню' })).toHaveCount(0);
-    await away();
-    await expect.poll(width).toBeLessThanOrEqual(64);
-    const x = await mainX();
-
-    await sidebar.hover({ position: { x: 32, y: 300 } });
-    await expect.poll(width).toBeGreaterThan(200);
-    expect(await mainX(), 'the content does not move when the sidebar opens').toBe(x);
-    // A short overshoot is forgiven: back within the delay, still open.
-    await page.mouse.move(400, 300);
-    await page.mouse.move(100, 300);
-    await page.waitForTimeout(400);
-    expect(await width()).toBeGreaterThan(200);
-    await away();
-    await expect.poll(width).toBeLessThanOrEqual(64);
-
-    // The open user menu keeps the sidebar open while the pointer is over the menu.
-    await sidebar.hover({ position: { x: 32, y: 300 } });
-    await expect.poll(width).toBeGreaterThan(200);
-    await page.getByRole('button', { name: 'Меню користувача' }).click();
-    await expect(page.getByRole('menu')).toBeVisible();
-    await page.getByRole('menu').hover();
-    await away();
-    await page.waitForTimeout(400);
-    expect(await width()).toBeGreaterThan(200);
-    await page.mouse.click(900, 400); // closes the menu
-    await expect(page.getByRole('menu')).toHaveCount(0);
-    await expect.poll(width).toBeLessThanOrEqual(64);
-
-    // Keyboard: focus inside keeps it open, Esc folds it, focus leaving folds it.
-    await autoHide.focus();
-    await page.keyboard.press('Tab');
-    await expect.poll(width).toBeGreaterThan(200);
-    await page.waitForTimeout(400);
-    expect(await width()).toBeGreaterThan(200);
+    const modules = page.locator('.modules-toggle');
+    const nav = page.getByRole('navigation', { name: 'Головне меню' });
+    await modules.click();
+    await expect(modules).toHaveAttribute('aria-expanded', 'true');
+    await expect(nav).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect.poll(width).toBeLessThanOrEqual(64);
-    await page.keyboard.press('Tab');
-    await expect.poll(width).toBeGreaterThan(200);
-    await page.getByRole('button', { name: 'Оновити' }).focus();
-    await expect.poll(width).toBeLessThanOrEqual(64);
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
 
-    // Remembered; switching it off brings back the pinned sidebar.
-    await page.reload();
-    await settle(page);
-    await expect(autoHide).toHaveAttribute('aria-pressed', 'true');
-    expect(await width()).toBeLessThanOrEqual(64);
-    await autoHide.focus();
-    await page.keyboard.press('Enter');
-    await expect(autoHide).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.getByRole('button', { name: 'Згорнути меню' })).toBeVisible();
+    await modules.click();
+    await expect(modules).toHaveAttribute('aria-expanded', 'true');
+    await page.mouse.click(900, 400);
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
+
+    await modules.click();
+    await nav.getByRole('link', { name: 'Мої задачі' }).click();
+    const tasksWindow = page.getByTestId('os-window-os1');
+    await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await expect(modules).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('time off: a new request → exactly one POST /api/timeoff/requests with the type and the dates, the row appears', async ({ page, context }) => {
@@ -1035,15 +978,29 @@ test.describe('mobile flows', () => {
     expect(heights['tasks']).toBeLessThan(heights['today']);
   });
 
-  test('drawer opens, closes, and closes on navigation', async ({ page, context }) => {
+  test('Modules drawer closes on Escape, outside tap, and navigation', async ({ page, context }) => {
     await open(page, context, '/');
-    const burger = page.getByRole('button', { name: 'Модулі' });
+    const burger = page.locator('.modules-toggle');
     const nav = page.getByRole('navigation', { name: 'Головне меню' });
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
     await burger.click();
     await expect(burger).toHaveAttribute('aria-expanded', 'true');
     await expect(nav).toBeVisible();
     await page.keyboard.press('Escape');
+    await expect(burger).toHaveAttribute('aria-expanded', 'false');
+    await burger.click();
+    await expect(nav).toBeVisible();
+    const panelBox = await nav.boundingBox();
+    const viewport = page.viewportSize();
+    expect(panelBox, 'the open Modules panel has rendered bounds').not.toBeNull();
+    expect(viewport, 'mobile viewport dimensions are available').not.toBeNull();
+    const box = panelBox!;
+    const size = viewport!;
+    const rightX = box.x + box.width + 8;
+    const outsideX = rightX < size.width ? rightX : Math.max(0, box.x - 8);
+    const outsideY = Math.min(size.height - 1, Math.max(0, box.y + box.height / 2));
+    expect(outsideX < box.x || outsideX > box.x + box.width, 'outside click point is beyond the panel bounds').toBe(true);
+    await page.mouse.click(outsideX, outsideY);
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
     await burger.click();
     await nav.getByRole('link', { name: 'Мої задачі' }).click();
@@ -1137,7 +1094,9 @@ test('desktop: real launcher routes and per-user widgets support add, size, keyb
   expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
 
   await page.getByRole('button', { name: 'Кандидати', exact: true }).click();
-  await expect(page).toHaveURL(/\/candidates$/);
+  const candidatesWindow = page.getByTestId('os-window-os1');
+  await expect(candidatesWindow).toHaveClass(/open/);
+  await expect(candidatesWindow.getByRole('heading', { level: 1, name: 'Кандидати' })).toBeVisible();
   expect(mock.missing).toEqual([]);
 });
 

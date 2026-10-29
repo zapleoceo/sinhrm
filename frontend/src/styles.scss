@@ -2,7 +2,6 @@
 // through every route and CDK overlay. Custom accent is separate from semantic stage/status colors.
 @use 'sass:map';
 @use '@angular/material' as mat;
-@use './os-home';
 
 @font-face {
   font-family: 'Material Symbols Outlined';

@@ -1,10 +1,11 @@
 import { Logo } from '../../core/ui/logo';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { ActivatedRouteSnapshot, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { SUPERADMIN_ROLE, UserRole, isAdmin, isHrStaff } from '../../core/auth/auth.model';
-import { A11yModule, FocusMonitor } from '@angular/cdk/a11y';
+import { A11yModule } from '@angular/cdk/a11y';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { DOCUMENT } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -19,7 +20,7 @@ import { AssistantMascot } from '../assistant/mascot/assistant-mascot';
 import { LanguageSwitcher } from './language-switcher';
 import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
-import { NavRail, RailTip } from './nav-rail';
+import { NARROW_QUERY } from './shell-breakpoints';
 import { NotifyService } from '../../core/ui/notify.service';
 import { isWindowControlOnlyNavigation, WindowNavigation } from '../../core/windows/window-navigation';
 import { WindowSlot, WINDOW_SLOTS, windowRouteByPath } from '../../core/windows/window-context';
@@ -48,11 +49,9 @@ interface RoleChoice {
     NavBadge,
     A11yModule,
     AssistantMascot,
-    RailTip,
     OsWindowWorkspace,
   ],
   providers: [
-    NavRail,
     WindowNavigation,
     {
       provide: DESKTOP_LAUNCHER,
@@ -84,6 +83,7 @@ interface RoleChoice {
 export class ShellLayout {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly breakpoints = inject(BreakpointObserver);
   private readonly navBadges = inject(NavBadgesService);
   private readonly assistant = inject(AssistantSettings);
   protected readonly theme = inject(ThemeService);
@@ -108,8 +108,14 @@ export class ShellLayout {
   protected readonly themeLabel = computed(() => (this.theme.theme() === 'dark' ? 'shell.theme.toLight' : 'shell.theme.toDark'));
   protected readonly themeIcon = computed(() => (this.theme.theme() === 'dark' ? 'light_mode' : 'dark_mode'));
   protected readonly windowSlots = WINDOW_SLOTS;
-  protected readonly dockApps = computed(() => DESKTOP_APPS.filter((app) =>
-    appAllowed(app, this.user()) && windowRouteByPath(this.router.config, app.route) !== undefined));
+  protected readonly dockApps = computed(() => {
+    const pinned = new Set(['tasks', 'people', 'desk', 'recruiting-reports']);
+    const running = new Set(Object.values(this.windowNavigation.windows()).map((view) => view.routeId).filter((id): id is string => id !== null));
+    return DESKTOP_APPS.filter((app) => {
+      const route = windowRouteByPath(this.router.config, app.route);
+      return pinned.has(app.id) && appAllowed(app, this.user()) && route !== undefined && !running.has(route.id);
+    });
+  });
 
   protected moduleLinkActive(path: string, exact = false): boolean {
     this.url();
@@ -137,7 +143,7 @@ export class ShellLayout {
   protected navigateDesktop(event: MouseEvent): void {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
     event.preventDefault();
-    void this.windowNavigation.focusPrimary();
+    void this.windowNavigation.navigatePrimary('/');
   }
 
   /** Core destinations use the primary outlet while preserving live named windows and browser link semantics. */
@@ -163,17 +169,8 @@ export class ShellLayout {
   /** Group of the current page — always shown open. */
   protected readonly activeGroup = computed(() => groupForUrl(this.url()));
 
-  private readonly rail = inject(NavRail);
   /** Below 768px the sidebar is an off-canvas drawer behind a compact top bar. */
-  protected readonly narrow = this.rail.narrow;
-  /** Desktop sidebar folded to an icon-only rail (remembered in this browser). */
-  protected readonly collapsed = this.rail.collapsed;
-  /** «Auto-hide»: a rail that opens over the content under the pointer / keyboard focus (wide screens with a mouse). */
-  protected readonly autoHide = this.rail.autoHide;
-  protected readonly autoHideAvailable = this.rail.autoHideAvailable;
-  protected readonly peek = this.rail.peek;
-  private readonly sidebar = viewChild.required<ElementRef<HTMLElement>>('sidebar');
-  protected readonly railToggleLabel = computed(() => (this.collapsed() ? 'shell.nav.expandMenu' : 'shell.nav.collapseMenu'));
+  protected readonly narrow = toSignal(this.breakpoints.observe(NARROW_QUERY).pipe(map((state) => state.matches)), { initialValue: false });
   protected readonly drawerOpen = signal(false);
   /** Sum of all counters, shown on the burger button. */
   protected readonly totalBadge = computed(() => Object.values(this.badges()).reduce<number>((a, n) => a + (n ?? 0), 0));
@@ -215,17 +212,6 @@ export class ShellLayout {
       const id = this.user()?.id;
       this.expanded.set(id === undefined ? new Set() : loadExpanded(id));
     });
-    // Auto-hide: keyboard focus inside the sidebar keeps it open, focus leaving it folds it (a click does not hold it).
-    const focus = inject(FocusMonitor);
-    const destroyRef = inject(DestroyRef);
-    afterNextRender(() => {
-      const el = this.sidebar().nativeElement;
-      const sub = focus.monitor(el, true).subscribe((origin) => (origin === null ? this.rail.focusOut() : this.rail.focusIn(origin === 'keyboard')));
-      destroyRef.onDestroy(() => {
-        sub.unsubscribe();
-        focus.stopMonitoring(el);
-      });
-    });
     // Navigating into a group opens it (and keeps it open afterwards).
     effect(() => {
       const group = this.activeGroup();
@@ -258,17 +244,9 @@ export class ShellLayout {
     return this.isOpen(group) ? 0 : groupBadgeSum(this.badges(), group);
   }
 
-  /** Header click: folds/unfolds the group; on the rail it widens the sidebar with that group open. */
+  /** Header click: folds/unfolds a group inside the Modules panel. */
   protected toggle(group: NavGroupId): void {
     this.setExpanded(group, !this.expanded().has(group));
-  }
-
-  protected toggleRail(): void {
-    this.rail.toggle();
-  }
-
-  protected toggleAutoHide(): void {
-    this.rail.toggleAutoHide();
   }
 
   protected focusWindow(slot: WindowSlot): void {
@@ -279,17 +257,8 @@ export class ShellLayout {
     void this.desktopLauncher.launch(app.route);
   }
 
-  protected pointerEnter(): void {
-    this.rail.pointerEnter();
-  }
-
-  protected pointerLeave(): void {
-    this.rail.pointerLeave();
-  }
-
   protected onEscape(): void {
     this.closeDrawer();
-    this.rail.escape();
   }
 
   private setExpanded(group: NavGroupId, open: boolean): void {
