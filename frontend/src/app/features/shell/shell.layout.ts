@@ -21,6 +21,11 @@ import { NavBadge, NavBadgesService, groupBadgeSum } from './nav-badges';
 import { NAV_GROUP_MODULES, NavGroupId, groupForUrl, loadExpanded, saveExpanded } from './nav-groups';
 import { NavRail, RailTip } from './nav-rail';
 import { NotifyService } from '../../core/ui/notify.service';
+import { isWindowControlOnlyNavigation, WindowNavigation } from '../../core/windows/window-navigation';
+import { WindowSlot, WINDOW_SLOTS, windowRouteByPath } from '../../core/windows/window-context';
+import { OsWindowWorkspace } from './os-window-workspace';
+import { DESKTOP_APPS, DesktopAppEntry, appAllowed } from '../desktop/desktop.model';
+import { DESKTOP_LAUNCHER } from '../desktop/desktop-launcher';
 
 /** One radio item of "Працювати як": a role, or null = all roles. */
 interface RoleChoice {
@@ -46,8 +51,26 @@ interface RoleChoice {
     A11yModule,
     AssistantMascot,
     RailTip,
+    OsWindowWorkspace,
   ],
-  providers: [NavRail],
+  providers: [
+    NavRail,
+    WindowNavigation,
+    {
+      provide: DESKTOP_LAUNCHER,
+      useFactory: () => {
+        const router = inject(Router);
+        const windows = inject(WindowNavigation);
+        return {
+          launch: (route: string) => {
+            const definition = windowRouteByPath(route);
+            const slot = definition ? windows.slotFor(definition.id) : null;
+            return definition && slot ? windows.open(slot, definition.id) : router.navigateByUrl(route);
+          },
+        };
+      },
+    },
+  ],
   host: { '(document:keydown.escape)': 'onEscape()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.layout.html',
@@ -59,8 +82,10 @@ export class ShellLayout {
   private readonly navBadges = inject(NavBadgesService);
   private readonly assistant = inject(AssistantSettings);
   protected readonly theme = inject(ThemeService);
+  protected readonly windowNavigation = inject(WindowNavigation);
   private readonly notify = inject(NotifyService);
   private readonly i18n = inject(TranslocoService);
+  private readonly desktopLauncher = inject(DESKTOP_LAUNCHER);
 
   protected readonly user = this.auth.user;
   protected readonly isSuperadmin = computed(() => this.user()?.roles.includes(SUPERADMIN_ROLE) ?? false);
@@ -77,6 +102,9 @@ export class ShellLayout {
   protected readonly initial = computed(() => (this.user()?.name ?? '?').charAt(0).toUpperCase());
   protected readonly themeLabel = computed(() => (this.theme.theme() === 'dark' ? 'shell.theme.toLight' : 'shell.theme.toDark'));
   protected readonly themeIcon = computed(() => (this.theme.theme() === 'dark' ? 'light_mode' : 'dark_mode'));
+  protected readonly windowSlots = WINDOW_SLOTS;
+  protected readonly dockApps = computed(() => DESKTOP_APPS.filter((app) =>
+    ['tasks', 'people'].includes(app.id) && appAllowed(app, this.user())));
 
   private readonly url = toSignal(
     this.router.events.pipe(
@@ -121,7 +149,7 @@ export class ShellLayout {
   constructor() {
     const body = inject(DOCUMENT).body;
     // Lock page scroll while the drawer is open.
-    effect(() => body.classList.toggle('app-scroll-locked', this.narrow() && this.drawerOpen()));
+    effect(() => body.classList.toggle('app-scroll-locked', this.drawerOpen()));
     // Any navigation (and leaving the narrow layout) closes the drawer.
     effect(() => {
       if (!this.narrow()) untracked(() => this.drawerOpen.set(false));
@@ -129,7 +157,16 @@ export class ShellLayout {
     this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd), takeUntilDestroyed())
       .subscribe(() => this.drawerOpen.set(false));
-    const watching = this.navBadges.watch(this.router.events.pipe(filter((e) => e instanceof NavigationEnd)));
+    let previousUrl = this.router.url;
+    const contentNavigations = this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      filter((event) => {
+        const controlOnly = isWindowControlOnlyNavigation(this.router, previousUrl, event.urlAfterRedirects);
+        previousUrl = event.urlAfterRedirects;
+        return !controlOnly;
+      }),
+    );
+    const watching = this.navBadges.watch(contentNavigations);
     inject(DestroyRef).onDestroy(() => watching.unsubscribe());
     effect(() => {
       const id = this.user()?.id;
@@ -164,19 +201,15 @@ export class ShellLayout {
     return NAV_GROUP_MODULES[group].some((m) => this.auth.hasModule(m));
   }
 
-  /** Items of a group are shown: opened by the user, and the sidebar is not a rail (a rail shows group icons only). */
+  /** Groups stay fully navigable inside the Modules panel regardless of the legacy sidebar preference. */
   protected isOpen(group: NavGroupId): boolean {
-    return !this.collapsed() && this.expanded().has(group);
+    return this.expanded().has(group);
   }
 
   /**
    * On the rail the items of a group are hidden, so the group header of the current page says so to screen readers
    * (aria-current="true"; the expanded sidebar marks the item itself with aria-current="page").
    */
-  protected groupCurrent(group: NavGroupId): 'true' | null {
-    return this.collapsed() && this.activeGroup() === group ? 'true' : null;
-  }
-
   /** A group header whose items are hidden shows the sum of their counters. */
   protected groupBadge(group: NavGroupId): number {
     return this.isOpen(group) ? 0 : groupBadgeSum(this.badges(), group);
@@ -184,11 +217,6 @@ export class ShellLayout {
 
   /** Header click: folds/unfolds the group; on the rail it widens the sidebar with that group open. */
   protected toggle(group: NavGroupId): void {
-    if (this.collapsed()) {
-      this.rail.expand();
-      this.setExpanded(group, true);
-      return;
-    }
     this.setExpanded(group, !this.expanded().has(group));
   }
 
@@ -200,17 +228,20 @@ export class ShellLayout {
     this.rail.toggleAutoHide();
   }
 
+  protected focusWindow(slot: WindowSlot): void {
+    void this.windowNavigation.focus(slot);
+  }
+
+  protected launchDesktopApp(app: DesktopAppEntry): void {
+    void this.desktopLauncher.launch(app.route);
+  }
+
   protected pointerEnter(): void {
     this.rail.pointerEnter();
   }
 
   protected pointerLeave(): void {
     this.rail.pointerLeave();
-  }
-
-  /** The user menu (an overlay outside the sidebar) keeps the auto-hide sidebar open while it is open. */
-  protected holdSidebar(on: boolean): void {
-    this.rail.hold(on);
   }
 
   protected onEscape(): void {
@@ -225,6 +256,10 @@ export class ShellLayout {
     this.expanded.set(next);
     const id = this.user()?.id;
     if (id !== undefined) saveExpanded(id, next);
+  }
+
+  protected toggleDrawer(): void {
+    this.drawerOpen.update((open) => !open);
   }
 
   protected openDrawer(): void {

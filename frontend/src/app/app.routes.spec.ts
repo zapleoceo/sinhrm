@@ -71,6 +71,17 @@ const EXPECTED: Record<string, string[]> = {
 };
 
 describe('app routes — access table', () => {
+  it('routes authenticated Home to the lazy desktop and retains the dashboard at /overview', () => {
+    const route = children.find((r) => r.path === '');
+    expect(route?.title).toBe('titles.desktop');
+    expect(route?.canActivate).toBeUndefined();
+    expect(route?.loadComponent).toBeTypeOf('function');
+    expect(children.find((r) => r.path === 'overview')?.title).toBe('titles.overview');
+    expect(children.find((r) => r.path === 'desktop')?.redirectTo).toBe('');
+    expect(shell.canActivate).toEqual([authGuard]);
+    expect(shell.canActivateChild).toEqual([moduleGuard]);
+  });
+
   it('the login page is for guests; the career pages are public; everything else sits behind authGuard + moduleGuard', () => {
     expect(routes.find((r) => r.path === 'login')?.canActivate).toEqual([guestGuard]);
     for (const path of ['jobs', 'jobs/:slug']) {
@@ -80,6 +91,11 @@ describe('app routes — access table', () => {
     }
     expect(shell.canActivate).toEqual([authGuard]);
     expect(shell.canActivateChild).toEqual([moduleGuard]);
+    const appearance = children.find((r) => r.path === 'settings/appearance');
+    expect(appearance?.title).toBe('appearance.title');
+    expect(appearance?.loadComponent).toBeDefined();
+    expect(appearance?.canActivate ?? []).toEqual([]);
+    expect(appearance?.canDeactivate).toBeUndefined();
     // No other top-level route: a page added next to the shell would skip both guards.
     expect(routes.map((r) => r.path)).toEqual(['login', 'jobs', 'jobs/:slug', '', '**']);
   });

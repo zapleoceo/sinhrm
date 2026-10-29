@@ -1,23 +1,92 @@
-<div class="shell" [class.narrow]="narrow()" [class.rail]="collapsed()" [class.autohide]="autoHide()" [class.peek]="autoHide() && peek()">
-  @if (narrow()) {
+<div class="shell os-home" [class.narrow]="narrow()" [class.rail]="collapsed()" [class.autohide]="autoHide()" [class.peek]="autoHide() && peek()">
     <header class="topbar">
-      <button mat-icon-button type="button" class="burger" [attr.aria-label]="'shell.nav.label' | transloco" aria-controls="app-sidebar" [attr.aria-expanded]="drawerOpen()" (click)="openDrawer()">
+      <a class="topbar-brand" routerLink="/" [attr.aria-label]="'titles.desktop' | transloco"><app-logo /></a>
+      <button mat-button type="button" class="modules-toggle" [attr.aria-label]="'shell.nav.modules' | transloco" aria-controls="app-sidebar" [attr.aria-expanded]="drawerOpen()" (click)="toggleDrawer()">
         <mat-icon>menu</mat-icon>
+        <span>{{ 'shell.nav.modules' | transloco }}</span>
         <app-nav-badge class="burger-badge" [count]="totalBadge()" />
       </button>
-      <a class="topbar-brand" routerLink="/" [attr.aria-label]="'shell.nav.overview' | transloco"><app-logo /></a>
       <span class="topbar-title">{{ pageTitleKey() ? (pageTitleKey()! | transloco) : 'SinHRM' }}</span>
       @if (can('assistant')) {
         <button mat-icon-button type="button" class="assistant-launcher" [attr.aria-label]="'shell.menu.assistant' | transloco" (click)="openAssistant()">
           <mat-icon>sentiment_satisfied</mat-icon>
         </button>
       }
-    </header>
-    @if (drawerOpen()) {
-      <div class="backdrop" aria-hidden="true" (click)="closeDrawer()"></div>
+    @if (user(); as u) {
+      <button type="button" class="user os-user-launcher" [matMenuTriggerFor]="menu" [attr.aria-label]="'shell.menu.open' | transloco" [appRailTip]="u.name">
+        @if (u.avatar_url) {
+          <img class="avatar" [src]="u.avatar_url" alt="" referrerpolicy="no-referrer" width="32" height="32" />
+        } @else {
+          <span class="avatar fallback" aria-hidden="true">{{ initial() }}</span>
+        }
+        <span class="user-text">
+          <span class="name">{{ u.name }}</span>
+          <span class="email">{{ u.email }}</span>
+          @if (u.active_role) {
+            <span class="role-chip">{{ 'roles.' + u.active_role | transloco }}</span>
+          }
+        </span>
+        <mat-icon class="user-chevron" aria-hidden="true">unfold_more</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu" yPosition="above">
+        <div class="menu-head" role="presentation">
+          <strong>{{ u.name }}</strong>
+          <span class="muted">{{ u.email }}</span>
+        </div>
+        <mat-divider />
+        <div class="menu-lang" role="presentation" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
+          <span class="muted">{{ 'shell.menu.language' | transloco }}</span>
+          <app-language-switcher />
+        </div>
+        @if (roleChoices().length) {
+          <mat-divider />
+          <div class="menu-lang work-as" role="presentation">
+            <span class="muted">{{ 'shell.menu.workAs' | transloco }}</span>
+          </div>
+          @for (c of roleChoices(); track c.label) {
+            <button mat-menu-item type="button" role="menuitemradio" class="work-as-item"
+              [attr.aria-checked]="c.role === activeRole()" (click)="workAs(c.role)">
+              <mat-icon>{{ c.role === activeRole() ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+              <span>{{ c.label | transloco }}</span>
+            </button>
+          }
+        }
+        <mat-divider />
+        <button mat-menu-item type="button" class="theme-toggle" (click)="theme.toggle()">
+          <mat-icon>{{ themeIcon() }}</mat-icon>
+          <span>{{ themeLabel() | transloco }}</span>
+        </button>
+        <a mat-menu-item routerLink="/settings/appearance">
+          <mat-icon>palette</mat-icon>
+          <span>{{ 'appearance.title' | transloco }}</span>
+        </a>
+        @if (can('people')) {
+        <a mat-menu-item routerLink="/me">
+          <mat-icon>badge</mat-icon>
+          <span>{{ 'shell.menu.myProfile' | transloco }}</span>
+        </a>
+        }
+        @if (can('recruiting')) {
+        <a mat-menu-item routerLink="/settings/extension">
+          <mat-icon>extension</mat-icon>
+          <span>{{ 'shell.menu.extension' | transloco }}</span>
+        </a>
+        }
+        @if (can('assistant')) {
+        <button mat-menu-item type="button" class="assistant-open" (click)="openAssistant()">
+          <mat-icon>sentiment_satisfied</mat-icon>
+          <span>{{ 'shell.menu.assistant' | transloco }}</span>
+        </button>
+        }
+        <button mat-menu-item type="button" class="logout" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>{{ 'shell.menu.logout' | transloco }}</span>
+        </button>
+      </mat-menu>
     }
-  }
-  <aside #sidebar class="sidebar" id="app-sidebar" [class.open]="drawerOpen()" (mouseenter)="pointerEnter()" (mouseleave)="pointerLeave()" [attr.inert]="narrow() && !drawerOpen() ? '' : null" [cdkTrapFocus]="narrow() && drawerOpen()" [cdkTrapFocusAutoCapture]="narrow() && drawerOpen()">
+  </header>
+  @if (drawerOpen()) { <div class="backdrop" aria-hidden="true" (click)="closeDrawer()"></div> }
+  <aside #sidebar class="sidebar" id="app-sidebar" [class.open]="drawerOpen()" role="dialog" [attr.aria-label]="'shell.nav.label' | transloco" [attr.aria-modal]="drawerOpen() ? 'true' : null" (mouseenter)="pointerEnter()" (mouseleave)="pointerLeave()" [attr.inert]="!drawerOpen() ? '' : null" [cdkTrapFocus]="drawerOpen()" [cdkTrapFocusAutoCapture]="drawerOpen()">
   <nav class="sidebar-nav" [attr.aria-label]="'shell.nav.label' | transloco">
     <div class="nav-head">
       <a class="brand" routerLink="/"><app-logo [variant]="collapsed() ? 'mark' : 'full'" /></a>
@@ -32,7 +101,7 @@
         </button>
       }
     </div>
-    <a class="nav-link" routerLink="/" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }" [appRailTip]="'shell.nav.overview' | transloco">
+    <a class="nav-link" routerLink="/overview" routerLinkActive="active" ariaCurrentWhenActive="page" [routerLinkActiveOptions]="{ exact: true }" [appRailTip]="'shell.nav.overview' | transloco">
       <mat-icon>dashboard</mat-icon>
       <span class="label">{{ 'shell.nav.overview' | transloco }}</span>
     </a>
@@ -42,7 +111,7 @@
       <app-nav-badge [count]="badges()['tasks'] ?? 0" />
     </a>
     @if (groupVisible('recruiting')) {
-    <button type="button" class="nav-section" [class.current]="activeGroup() === 'recruiting'" [attr.aria-current]="groupCurrent('recruiting')" [attr.aria-expanded]="isOpen('recruiting')" aria-controls="nav-group-recruiting" [appRailTip]="'shell.nav.recruiting' | transloco" (click)="toggle('recruiting')">
+    <button type="button" class="nav-section" [class.current]="activeGroup() === 'recruiting'" [attr.aria-expanded]="isOpen('recruiting')" aria-controls="nav-group-recruiting" [appRailTip]="'shell.nav.recruiting' | transloco" (click)="toggle('recruiting')">
       <mat-icon class="section-icon" aria-hidden="true">person_add</mat-icon>
       <span class="label">{{ 'shell.nav.recruiting' | transloco }}</span>
       <app-nav-badge [count]="groupBadge('recruiting')" />
@@ -84,7 +153,7 @@
     </div></div>
     }
     @if (groupVisible('people')) {
-    <button type="button" class="nav-section" [class.current]="activeGroup() === 'people'" [attr.aria-current]="groupCurrent('people')" [attr.aria-expanded]="isOpen('people')" aria-controls="nav-group-people" [appRailTip]="'shell.nav.people' | transloco" (click)="toggle('people')">
+    <button type="button" class="nav-section" [class.current]="activeGroup() === 'people'" [attr.aria-expanded]="isOpen('people')" aria-controls="nav-group-people" [appRailTip]="'shell.nav.people' | transloco" (click)="toggle('people')">
       <mat-icon class="section-icon" aria-hidden="true">groups</mat-icon>
       <span class="label">{{ 'shell.nav.people' | transloco }}</span>
       <app-nav-badge [count]="groupBadge('people')" />
@@ -157,7 +226,7 @@
     </div></div>
     }
     @if (groupVisible('perform')) {
-    <button type="button" class="nav-section" [class.current]="activeGroup() === 'perform'" [attr.aria-current]="groupCurrent('perform')" [attr.aria-expanded]="isOpen('perform')" aria-controls="nav-group-perform" [appRailTip]="'shell.nav.perform' | transloco" (click)="toggle('perform')">
+    <button type="button" class="nav-section" [class.current]="activeGroup() === 'perform'" [attr.aria-expanded]="isOpen('perform')" aria-controls="nav-group-perform" [appRailTip]="'shell.nav.perform' | transloco" (click)="toggle('perform')">
       <mat-icon class="section-icon" aria-hidden="true">trending_up</mat-icon>
       <span class="label">{{ 'shell.nav.perform' | transloco }}</span>
       <app-nav-badge [count]="groupBadge('perform')" />
@@ -204,7 +273,7 @@
     </div></div>
     }
     @if (groupVisible('services')) {
-    <button type="button" class="nav-section" [class.current]="activeGroup() === 'services'" [attr.aria-current]="groupCurrent('services')" [attr.aria-expanded]="isOpen('services')" aria-controls="nav-group-services" [appRailTip]="'shell.nav.services' | transloco" (click)="toggle('services')">
+    <button type="button" class="nav-section" [class.current]="activeGroup() === 'services'" [attr.aria-expanded]="isOpen('services')" aria-controls="nav-group-services" [appRailTip]="'shell.nav.services' | transloco" (click)="toggle('services')">
       <mat-icon class="section-icon" aria-hidden="true">apps</mat-icon>
       <span class="label">{{ 'shell.nav.services' | transloco }}</span>
       <app-nav-badge [count]="groupBadge('services')" />
@@ -245,7 +314,7 @@
 </div></div>
     }
     @if (isHr()) {
-      <button type="button" class="nav-section" [class.current]="activeGroup() === 'admin'" [attr.aria-current]="groupCurrent('admin')" [attr.aria-expanded]="isOpen('admin')" aria-controls="nav-group-admin" [appRailTip]="'shell.nav.admin' | transloco" (click)="toggle('admin')">
+      <button type="button" class="nav-section" [class.current]="activeGroup() === 'admin'" [attr.aria-expanded]="isOpen('admin')" aria-controls="nav-group-admin" [appRailTip]="'shell.nav.admin' | transloco" (click)="toggle('admin')">
         <mat-icon class="section-icon" aria-hidden="true">admin_panel_settings</mat-icon>
         <span class="label">{{ 'shell.nav.admin' | transloco }}</span>
         <app-nav-badge [count]="groupBadge('admin')" />
@@ -393,80 +462,31 @@
       <mat-icon>help_outline</mat-icon>
       <span class="label">{{ 'shell.nav.docs' | transloco }}</span>
     </a>
-    @if (user(); as u) {
-      <button type="button" class="user" [matMenuTriggerFor]="menu" (menuOpened)="holdSidebar(true)" (menuClosed)="holdSidebar(false)" [attr.aria-label]="'shell.menu.open' | transloco" [appRailTip]="u.name">
-        @if (u.avatar_url) {
-          <img class="avatar" [src]="u.avatar_url" alt="" referrerpolicy="no-referrer" width="32" height="32" />
-        } @else {
-          <span class="avatar fallback" aria-hidden="true">{{ initial() }}</span>
-        }
-        <span class="user-text">
-          <span class="name">{{ u.name }}</span>
-          <span class="email">{{ u.email }}</span>
-          @if (u.active_role) {
-            <span class="role-chip">{{ 'roles.' + u.active_role | transloco }}</span>
-          }
-        </span>
-        <mat-icon class="user-chevron" aria-hidden="true">unfold_more</mat-icon>
-      </button>
-      <mat-menu #menu="matMenu" yPosition="above">
-        <div class="menu-head" role="presentation">
-          <strong>{{ u.name }}</strong>
-          <span class="muted">{{ u.email }}</span>
-        </div>
-        <mat-divider />
-        <div class="menu-lang" role="presentation" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
-          <span class="muted">{{ 'shell.menu.language' | transloco }}</span>
-          <app-language-switcher />
-        </div>
-        @if (roleChoices().length) {
-          <mat-divider />
-          <div class="menu-lang work-as" role="presentation">
-            <span class="muted">{{ 'shell.menu.workAs' | transloco }}</span>
-          </div>
-          @for (c of roleChoices(); track c.label) {
-            <button mat-menu-item type="button" role="menuitemradio" class="work-as-item"
-              [attr.aria-checked]="c.role === activeRole()" (click)="workAs(c.role)">
-              <mat-icon>{{ c.role === activeRole() ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
-              <span>{{ c.label | transloco }}</span>
-            </button>
-          }
-        }
-        <mat-divider />
-        <button mat-menu-item type="button" class="theme-toggle" (click)="theme.toggle()">
-          <mat-icon>{{ themeIcon() }}</mat-icon>
-          <span>{{ themeLabel() | transloco }}</span>
-        </button>
-        @if (can('people')) {
-        <a mat-menu-item routerLink="/me">
-          <mat-icon>badge</mat-icon>
-          <span>{{ 'shell.menu.myProfile' | transloco }}</span>
-        </a>
-        }
-        @if (can('recruiting')) {
-        <a mat-menu-item routerLink="/settings/extension">
-          <mat-icon>extension</mat-icon>
-          <span>{{ 'shell.menu.extension' | transloco }}</span>
-        </a>
-        }
-        @if (can('assistant')) {
-        <button mat-menu-item type="button" class="assistant-open" (click)="openAssistant()">
-          <mat-icon>sentiment_satisfied</mat-icon>
-          <span>{{ 'shell.menu.assistant' | transloco }}</span>
-        </button>
-        }
-        <button mat-menu-item type="button" class="logout" (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          <span>{{ 'shell.menu.logout' | transloco }}</span>
-        </button>
-      </mat-menu>
-    }
+
   </div>
   </aside>
 
-  <div class="main">
+  <div class="main" [attr.inert]="drawerOpen() ? '' : null" [attr.aria-hidden]="drawerOpen() ? 'true' : null">
     <main class="content">
-      <router-outlet />
+      <div class="primary-view" [class.mobile-inactive]="narrow() && windowNavigation.activeSlot() !== null"
+               [attr.inert]="narrow() && windowNavigation.activeSlot() !== null ? '' : null"
+               [attr.aria-hidden]="narrow() && windowNavigation.activeSlot() !== null ? 'true' : null">
+        <router-outlet />
+      </div>
+      <nav class="os-dock" [attr.aria-label]="'osWindow.launcher' | transloco">
+        @for (app of dockApps(); track app.id) {
+          <button mat-icon-button type="button" [attr.aria-label]="app.label | transloco" (click)="launchDesktopApp(app)"><mat-icon>{{ app.icon }}</mat-icon></button>
+        }
+        @for (slot of windowSlots; track slot) {
+          @let view = windowNavigation.windows()[slot];
+          @if (view.open) {
+            <button mat-button type="button" class="dock-window" [class.active]="view.active" [attr.aria-label]="(view.minimized ? 'osWindow.restore' : 'osWindow.focus') | transloco: { title: view.titleKey | transloco }" (click)="view.minimized ? windowNavigation.restore(slot) : focusWindow(slot)">
+              <mat-icon>{{ view.minimized ? 'open_in_full' : 'web_asset' }}</mat-icon><span>{{ view.titleKey | transloco }}</span>
+            </button>
+          }
+        }
+      </nav>
+      <app-os-window-workspace [narrow]="narrow()" />
     </main>
   </div>
   @if (can('assistant')) {

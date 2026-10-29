@@ -4,7 +4,7 @@ import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { MatTooltip } from '@angular/material/tooltip';
-import { Router, provideRouter } from '@angular/router';
+import { Router, Routes, provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { of } from 'rxjs';
@@ -13,9 +13,18 @@ import { LanguageService } from '../../core/i18n/language.service';
 import { HOVER_QUERY } from './nav-rail';
 import { AssistantSettings } from '../assistant/assistant-settings';
 import { ShellLayout } from './shell.layout';
+import { windowOutletRoute } from '../../core/windows/window-route';
+import { WindowNavigation } from '../../core/windows/window-navigation';
 
 @Component({ template: '' })
 class Blank {}
+
+const WINDOW_TEST_ROUTES: Routes = [
+  { path: '', pathMatch: 'full', component: Blank },
+  windowOutletRoute('os1', [{ path: 'tasks', component: Blank, data: { windowRoute: 'tasks', module: null } }]),
+  windowOutletRoute('os2', [{ path: 'people', component: Blank, data: { windowRoute: 'people', module: 'people' } }]),
+  { path: '**', component: Blank },
+];
 
 const USER = { id: 7, name: 'U', email: 'u@example.com', avatar_url: null, locale: 'uk', roles: ['employee'], status: 'active' };
 
@@ -23,14 +32,14 @@ const logout = vi.fn().mockResolvedValue(undefined);
 const setActiveRole = vi.fn().mockResolvedValue(undefined);
 const langUse = vi.fn().mockResolvedValue(undefined);
 
-async function setup(modules?: string[], narrow = false, user: object = USER): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void>; fixture: ComponentFixture<ShellLayout> }> {
+async function setup(modules?: string[], narrow = false, user: object = USER, windows = false): Promise<{ el: HTMLElement; router: Router; http: HttpTestingController; detect: () => Promise<void>; fixture: ComponentFixture<ShellLayout> }> {
   logout.mockClear();
   setActiveRole.mockClear();
   langUse.mockClear();
   TestBed.configureTestingModule({
     imports: [ShellLayout, TranslocoTestingModule.forRoot({ langs: {}, translocoConfig: { availableLangs: ['uk'], defaultLang: 'uk' } })],
     providers: [
-      provideRouter([{ path: '**', component: Blank }]),
+      provideRouter(windows ? WINDOW_TEST_ROUTES : [{ path: '**', component: Blank }]),
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: AuthService, useValue: { user: signal(user), logout, setActiveRole, hasModule: (k: string) => modules === undefined || modules.includes(k) } },
@@ -96,6 +105,50 @@ describe('ShellLayout collapsible nav', () => {
   });
 });
 
+describe('ShellLayout mobile window focus', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('marks an inactive expanded window hidden and inert while keeping the other slot active', async () => {
+    const { el, router, detect, fixture } = await setup(undefined, true, USER, true);
+    await router.navigateByUrl('/');
+    await detect();
+    const windows = fixture.debugElement.injector.get(WindowNavigation);
+    await windows.open('os1', 'tasks');
+    await detect();
+    await windows.open('os2', 'people');
+    await detect();
+
+    const inactive = el.querySelector('article.os-window.window-os1') as HTMLElement;
+    expect(inactive.getAttribute('aria-hidden')).toBe('true');
+    expect(inactive.hasAttribute('inert')).toBe(true);
+    expect(el.querySelector('article.os-window.window-os2')?.getAttribute('aria-hidden')).toBeNull();
+    expect(windows.activeSlot()).toBe('os2');
+
+    await windows.focusPrimary();
+    await detect();
+    expect(el.querySelector('.primary-view')?.hasAttribute('inert')).toBe(false);
+    expect(inactive.getAttribute('aria-hidden')).toBe('true');
+    expect(windows.activeSlot()).toBeNull();
+  });
+});
+
+describe('ShellLayout desktop Dock', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('uses the audited window launcher for Tasks and restores routed content through the Dock', async () => {
+    const { el, router, detect, fixture } = await setup(undefined, false, USER, true);
+    await router.navigateByUrl('/');
+    await detect();
+    const launcher = el.querySelector('.os-dock button[aria-label="shell.nav.tasks"]') as HTMLButtonElement;
+    expect(launcher).not.toBeNull();
+    launcher.click();
+    await detect();
+    expect(fixture.debugElement.injector.get(WindowNavigation).windows().os1.routeId).toBe('tasks');
+    expect(router.url).toContain('os1:window/tasks');
+    expect(el.querySelector('.os-dock button.dock-window')).not.toBeNull();
+  });
+});
+
 describe('ShellLayout badges', () => {
   beforeEach(() => localStorage.clear());
 
@@ -130,32 +183,58 @@ describe('ShellLayout badges', () => {
     await detect();
     expect(badgeOf(el, 'a[href="/tasks"]')).toBe('99+');
   });
+
+  it('does not refetch counters or remount a window for focus, minimize, and restore controls', async () => {
+    const { el, router, http, detect, fixture } = await setup(undefined, false, USER, true);
+    await flushBadges(http, { tasks: 1 });
+    const windows = fixture.debugElement.injector.get(WindowNavigation);
+    await windows.open('os1', 'tasks');
+    await flushBadges(http, { tasks: 1 });
+    const mountedWindowViews = el.querySelectorAll('app-os-window-host router-outlet + *').length;
+    expect(mountedWindowViews).toBe(1);
+
+    for (let index = 0; index < 3; index++) {
+      await windows.focusPrimary();
+      await detect();
+      await windows.focus('os1');
+      await detect();
+      await windows.minimize('os1');
+      await detect();
+      await windows.restore('os1');
+      await detect();
+    }
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(http.match('/api/nav/badges')).toHaveLength(0);
+    expect(el.querySelectorAll('app-os-window-host router-outlet + *').length).toBe(mountedWindowViews);
+    expect(router.url).toContain('os1:window/tasks');
+  });
 });
 
-describe('ShellLayout user menu in sidebar footer', () => {
+describe('ShellLayout user menu in system bar', () => {
   beforeEach(() => localStorage.clear());
 
   const openMenu = async (el: HTMLElement, detect: () => Promise<void>): Promise<HTMLElement> => {
-    (el.querySelector('.sidebar-footer button.user') as HTMLButtonElement).click();
+    (el.querySelector('.topbar .os-user-launcher') as HTMLButtonElement).click();
     await detect();
     return document.querySelector('.mat-mdc-menu-panel') as HTMLElement;
   };
 
-  it('renders the user button in the sidebar footer, next to the help link, and no top bar', async () => {
+  it('shows the user menu trigger in the OS bar and keeps help in Modules', async () => {
     const { el } = await setup();
     const footer = el.querySelector('.sidebar .sidebar-footer') as HTMLElement;
     expect(footer).toBeTruthy();
     expect(footer.querySelector('a[href="/docs"]')).toBeTruthy();
-    expect(footer.querySelector('button.user .name')?.textContent).toContain('U');
-    expect(footer.querySelector('button.user .email')?.textContent).toContain('u@example.com');
-    expect(el.querySelector('.topbar')).toBeNull();
+    expect(footer.querySelector('button.user')).toBeNull();
+    expect(el.querySelector('.topbar .modules-toggle')).not.toBeNull();
+    expect(el.querySelector('.topbar .os-user-launcher')?.getAttribute('aria-label')).toBe('shell.menu.open');
   });
 
-  it('opens the menu with language, theme, profile, extension and logout items', async () => {
+  it('opens the menu with language, theme, appearance, profile, extension and logout items', async () => {
     const { el, detect } = await setup();
     const panel = await openMenu(el, detect);
     expect(panel.querySelector('app-language-switcher')).toBeTruthy();
     expect(panel.querySelector('.theme-toggle')).toBeTruthy();
+    expect(panel.querySelector('a[href="/settings/appearance"]')?.textContent).toContain('appearance.title');
     expect(panel.querySelector('a[href="/me"]')).toBeTruthy();
     expect(panel.querySelector('a[href="/settings/extension"]')).toBeTruthy();
     expect(panel.querySelector('button.logout')).toBeTruthy();
@@ -192,7 +271,7 @@ describe('ShellLayout user menu in sidebar footer', () => {
   it('lists "all roles" + each assigned role, checks the active one and shows it as a chip', async () => {
     const multi = { ...USER, roles: ['recruiter'], assigned_roles: ['superadmin', 'recruiter'], active_role: 'recruiter' };
     const { el, detect } = await setup(undefined, false, multi);
-    expect(el.querySelector('.sidebar-footer .role-chip')?.textContent).toContain('roles.recruiter');
+    expect(el.querySelector('.topbar .role-chip')?.textContent).toContain('roles.recruiter');
     const panel = await openMenu(el, detect);
     const items = Array.from(panel.querySelectorAll('.work-as-item'));
     expect(items.map((b) => b.textContent?.trim())).toEqual([
@@ -230,9 +309,9 @@ describe('ShellLayout current page', () => {
     expect(current).toEqual(['/perform/objectives']);
     expect(el.querySelector('a[href="/perform/objectives"]')?.classList.contains('active')).toBe(true);
 
-    await router.navigateByUrl('/');
+    await router.navigateByUrl('/overview');
     await detect();
-    expect([...el.querySelectorAll('a.nav-link[aria-current="page"]')].map((a) => a.getAttribute('href'))).toEqual(['/']);
+    expect([...el.querySelectorAll('a.nav-link[aria-current="page"]')].map((a) => a.getAttribute('href'))).toEqual(['/overview']);
   });
 
   it('keeps every menu icon out of the accessible name', async () => {
@@ -268,10 +347,11 @@ describe('ShellLayout module access', () => {
 describe('ShellLayout mobile drawer', () => {
   beforeEach(() => localStorage.clear());
 
-  it('desktop has no top bar', async () => {
+  it('desktop keeps the top bar and Modules panel inert until opened', async () => {
     const { el } = await setup(undefined, false);
-    expect(el.querySelector('.topbar')).toBeNull();
-    expect(el.querySelector('.sidebar')?.hasAttribute('inert')).toBe(false);
+    expect(el.querySelector('.topbar')).not.toBeNull();
+    expect(el.querySelector('.topbar-brand')?.getAttribute('aria-label')).toBe('titles.desktop');
+    expect(el.querySelector('.sidebar')?.hasAttribute('inert')).toBe(true);
   });
 
   it('desktop does not move focus into the sidebar on load', async () => {
@@ -279,14 +359,14 @@ describe('ShellLayout mobile drawer', () => {
     expect(el.contains(document.activeElement)).toBe(false);
   });
 
-  it('opens from the burger, locks scroll, closes on backdrop and Esc', async () => {
+  it('opens from Modules, locks scroll, closes on backdrop and Esc', async () => {
     const { el, detect } = await setup(undefined, true);
     const sidebar = el.querySelector('.sidebar') as HTMLElement;
     expect(el.querySelector('.topbar')).not.toBeNull();
     expect(sidebar.classList.contains('open')).toBe(false);
     expect(sidebar.hasAttribute('inert')).toBe(true);
 
-    (el.querySelector('.burger') as HTMLButtonElement).click();
+    (el.querySelector('.modules-toggle') as HTMLButtonElement).click();
     await detect();
     expect(sidebar.classList.contains('open')).toBe(true);
     expect(document.body.classList.contains('app-scroll-locked')).toBe(true);
@@ -297,7 +377,7 @@ describe('ShellLayout mobile drawer', () => {
     expect(sidebar.classList.contains('open')).toBe(false);
     expect(document.body.classList.contains('app-scroll-locked')).toBe(false);
 
-    (el.querySelector('.burger') as HTMLButtonElement).click();
+    (el.querySelector('.modules-toggle') as HTMLButtonElement).click();
     await detect();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     await detect();
@@ -306,7 +386,7 @@ describe('ShellLayout mobile drawer', () => {
 
   it('closes on navigation', async () => {
     const { el, router, detect } = await setup(undefined, true);
-    (el.querySelector('.burger') as HTMLButtonElement).click();
+    (el.querySelector('.modules-toggle') as HTMLButtonElement).click();
     await detect();
     await router.navigateByUrl('/tasks');
     await detect();
@@ -350,10 +430,10 @@ describe('ShellLayout collapsible sidebar (icon rail)', () => {
     localStorage.setItem('sinhrm.nav.collapsed', '1');
     const { el } = await setup();
     expect(el.querySelector('a[href="/tasks"] .label')?.textContent).toContain('shell.nav.tasks');
-    expect(el.querySelector('.sidebar-footer button.user')?.getAttribute('aria-label')).toBe('shell.menu.open');
+    expect(el.querySelector('.topbar button.user')?.getAttribute('aria-label')).toBe('shell.menu.open');
   });
 
-  it('shows group icons with the sum of counters; a group click widens the sidebar with that group open', async () => {
+  it('keeps all permission-aware links visible in Modules regardless of the saved rail preference', async () => {
     localStorage.setItem('sinhrm.nav.collapsed', '1');
     localStorage.setItem('sinhrm.nav.expanded.7', '["people"]');
     const { el, http, detect } = await setup();
@@ -361,32 +441,29 @@ describe('ShellLayout collapsible sidebar (icon rail)', () => {
     for (const req of http.match('/api/nav/badges')) req.flush({ data: { timeoff_approvals: 2, my_documents: 3 } });
     await detect();
 
-    // On the rail the items are hidden even for a group opened before, so its header carries the counter.
-    expect(header(el, 'people').getAttribute('aria-expanded')).toBe('false');
+    expect(header(el, 'people').getAttribute('aria-expanded')).toBe('true');
     expect(header(el, 'people').querySelector('.section-icon')).not.toBeNull();
-    expect(el.querySelector('button[aria-controls="nav-group-people"] .nav-badge')?.textContent?.trim()).toBe('5');
+    expect(el.querySelector('a[href="/people"]')).not.toBeNull();
+    expect(el.querySelector('a[href="/timeoff/approvals"] .nav-badge')?.textContent?.trim()).toBe('2');
 
     header(el, 'perform').click();
     await detect();
-    expect(isRail(el)).toBe(false);
     expect(header(el, 'perform').getAttribute('aria-expanded')).toBe('true');
-    expect(localStorage.getItem('sinhrm.nav.collapsed')).toBe('0');
+    expect(el.querySelector('a[href="/perform/objectives"]')).not.toBeNull();
   });
 
-  it('marks the group of the current page on the rail', async () => {
+  it('marks the actual current route link even when a collapsed preference is stored', async () => {
     localStorage.setItem('sinhrm.nav.collapsed', '1');
     const { el, router, detect } = await setup();
     await router.navigateByUrl('/perform/objectives');
     await detect();
     expect(header(el, 'perform').classList.contains('current')).toBe(true);
     expect(header(el, 'people').classList.contains('current')).toBe(false);
-    // Screen readers: the items are hidden on the rail, so the group header says it holds the current page.
-    expect(header(el, 'perform').getAttribute('aria-current')).toBe('true');
-    expect(header(el, 'people').hasAttribute('aria-current')).toBe(false);
+    expect(el.querySelector('a[href="/perform/objectives"]')?.getAttribute('aria-current')).toBe('page');
 
     toggle(el).click();
     await detect();
-    // Expanded: the item itself is aria-current="page", the header is not marked.
+    // Group toggles only change disclosure; route state stays on the destination link.
     expect(header(el, 'perform').hasAttribute('aria-current')).toBe(false);
   });
 
@@ -398,7 +475,7 @@ describe('ShellLayout collapsible sidebar (icon rail)', () => {
     const tasks = el.querySelector('a[href="/tasks"]') as HTMLElement;
     expect(tasks.hasAttribute('aria-describedby')).toBe(false);
     expect(header(el, 'people').hasAttribute('aria-describedby')).toBe(false);
-    const user = el.querySelector('.sidebar-footer button.user') as HTMLElement;
+    const user = el.querySelector('.topbar button.user') as HTMLElement;
     const ids = user.getAttribute('aria-describedby') ?? '';
     expect(ids).not.toBe('');
     expect(document.getElementById(ids)?.textContent).toBe('U');

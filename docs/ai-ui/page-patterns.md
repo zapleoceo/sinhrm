@@ -1,0 +1,32 @@
+# Page and route coverage map
+
+Source inventory: `frontend/src/app/app.routes.ts` (76 `loadComponent` declarations, 69 distinct imports). This table groups the actual route-loaded components by feature directory, with source paths as a coverage map. Shared components may implement multiple route URLs; tests/E2E coverage is a separate column of evidence and must not be inferred from route inventory.
+
+| Area / route family | Route page sources (`frontend/src/app/features/...`) | Main UI states/contracts to retain |
+|---|---|---|
+| Authentication | `auth/login.page.ts` | Guest-only form, language selection, validation/error feedback. Outside shell; no signed-in state. |
+| Public recruiting | `recruiting/careers/careers.ts` | Public job list and job detail (`/jobs`, `/jobs/:slug`); outside shell; route can report disabled module/not found. |
+| Overview | `overview/dashboard.page.ts` | Landing/dashboard cards, shortcuts and summary widgets. |
+| Recruiting | `recruiting/vacancies/vacancies.page.ts`, `vacancy-form.page.ts`; `recruiting/board/board.page.ts`; `recruiting/candidates/candidates.page.ts`; `recruiting/inbox/inbox.page.ts`; `recruiting/reports/reports.page.ts`; `recruiting/channels/acquisition-channels.page.ts` | List/board modes, filters, candidate detail routed through candidates page, DnD actions, vacancy create/edit autosaved draft and unsaved guard, dialogs/menus and scoped access. Careers is separately public. |
+| Hiring requests | `hiring-requests/hiring-list.page.ts`, `hiring-wizard.page.ts`, `hiring-detail.page.ts`, `hiring-settings.page.ts` | Inbox/list, create/edit wizard, detail, settings; saves/submits/approval rights and asynchronous states. |
+| People and self-service | `people/directory/people.page.ts`, `people/org-chart/org-chart.page.ts`, `people/profile/profile.page.ts` | Directory/cards, org chart, employee profile and tabs, personal profile `/me`; privacy tiers and dialogs/actions. |
+| Time and time off | `time/my-week.page.ts`, `time/time-approvals.page.ts`, `time/time-team.page.ts`, `time/time-schedules.page.ts`; `timeoff/my/my-timeoff.page.ts`, `calendar/calendar.page.ts`, `approvals/approvals.page.ts`, `settings/timeoff-settings.page.ts` | Calendar/table modes, time entry and approval actions, day/week boundaries, filters, dialogs, permission-scoped team views. |
+| Performance and Pulse | `perform/one-on-ones/one-on-ones.page.ts`, `objectives/objectives.page.ts`, `feedback/feedback.page.ts`, `reviews/my-reviews.page.ts`, `reviews/review-admin.page.ts`; `pulse/my/my-surveys.page.ts`, `mood/mood.page.ts`, `respond/respond.page.ts`, `results/wave-results.page.ts`, `surveys/surveys.page.ts` | Forms and response states, private/anonymous UX, result charts, admin setup; preserve sensitive status and review/survey workflow. |
+| Employee records | `documents/my/my-documents.page.ts`, `documents/templates/document-templates.page.ts`, plus `documents/profile/*.tab.ts` and `documents/*.dialog.ts` | User-owned docs, templates, tab content and viewer/create dialogs; download/upload actions. |
+| Desk and Safe Speak | `desk/my-cases.page.ts`, `desk/case.page.ts`, `desk/queue.page.ts`; `safe-speak/report.page.ts`, `safe-speak/inbox.page.ts` | Personal/support/admin queues, case details, public report vs privileged handling. Public report is a distinct data/privacy boundary. |
+| Knowledge and help | `knowledge/knowledge.page.ts`, `article.page.ts`, `editor.page.ts`; `shell/docs/docs.page.ts` | Search/list/article/edit and built-in docs pages; route changes, markdown content and editing actions. |
+| Reports | `reports/catalog.page.ts`, `report-view.page.ts`, `builder.page.ts` | Catalog/filter/run/export/save and builder forms; charts/tables and generated downloads. |
+| Workflows and scripts | `workflows/runs/workflow-runs.page.ts`, `templates/workflow-templates.page.ts`, `editor/workflow-editor.page.ts`; `scripts/list/scripts.page.ts`, `scripts/editor/script-editor.page.ts` | Run history, template/script editor, reorder/save/publish and dirty-state workflows. |
+| Admin/platform | `core/status.page.ts`, `modules.page.ts`, `module-off.page.ts`; `users/users.page.ts`, `audit/audit.page.ts`, `privacy/privacy-settings.page.ts`, `assets/assets.page.ts`, `directory/directory.page.ts`, `mail-agent/mail.page.ts`, `google-workspace/sheets-import.page.ts`, `integrations/integrations.page.ts`, `observability/errors.page.ts`, `extension/extension.page.ts` | Role/module guards, privileged data, integrations, sync/import, admin editors and error/status pages. Do not relax guards or expose hidden admin windows through a global launcher. |
+
+## E2E baseline vs all routes
+
+`frontend/e2e/pages.mjs` lists 49 top-level `PAGES` declarations at the time of the survey (several have additional states), rendered at 1440/390 and light/dark. It covers core list/form/admin surfaces and key interactions such as vacancy drag/drop, employee dialogs, role switch, forms/approvals, and Safe Speak. It is not a one-to-one copy of 76 route declarations, nor does the visual harness exercise a real backend. Confirm additional page/window coverage while implementing; don't describe every listed route as exercised just because its component appears in `app.routes.ts`.
+
+## Cross-cutting test-sensitive behavior
+
+- Route titles are translation keys handled by `TranslatedTitleStrategy`; language can change at runtime. Any task/window title must remain localized and route-correct.
+- Auth state is loaded before routing; `authGuard`, `guestGuard`, `moduleGuard`, `roleGuard` are in `core/auth/auth.guards.ts`. The module map + backend still governs access. Shell menus are role-aware, but UI hiding is not authorization.
+- Vacancy create/edit has explicit CanDeactivate unsaved confirmation and autosaved draft restore. Do not swap routes or discard its component state on minimize/restore. Workflows/scripts include dirty/save/publish state and should be checked before any similar lifecycle changes.
+- Modal interactions use Material/CDK focus management and shared defaults; overlays are tested for accessibility/viewport width. Floating windows must not steal focus from existing dialog controls.
+- Existing UI parity protects controls/fields/columns, layout overflow, axe counts, and action requests. OS chrome may move controls only if accessible names, availability, and actions remain; changed snapshots need an explained intentional diff.

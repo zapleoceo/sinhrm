@@ -70,6 +70,63 @@ async function cardNextTo(page: Page, target: Locator): Promise<Locator> {
 }
 
 test.describe('desktop flows', () => {
+  test('user menu opens appearance settings', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop-light', 'desktop-light only');
+    await open(page, context, '/');
+    await page.getByRole('button', { name: 'Меню користувача' }).click();
+    await page.getByRole('menuitem', { name: 'Зовнішній вигляд', exact: true }).click();
+    await expect(page).toHaveURL(/\/settings\/appearance$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
+  });
+
+  test('appearance preferences apply immediately and persist across reload', async ({ page, context }, info) => {
+    test.skip(info.project.name !== 'desktop-light', 'desktop-light only');
+    await open(page, context, '/settings/appearance');
+    await expect(page.getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
+    const scheme = page.getByTestId('appearance-scheme');
+    const wallpaper = page.getByTestId('appearance-wallpaper');
+    await expect(scheme).toHaveValue('custom');
+    await expect(scheme.locator('option:checked')).toHaveText('Власна');
+    await expect(wallpaper).toHaveValue('mist');
+    await expect(wallpaper.locator('option:checked')).toHaveText('Туман');
+
+    // Exercise actual Material controls and verify the shared root contract consumed by the app styles.
+    await page.getByRole('radio', { name: 'Темна', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await scheme.selectOption('sintegrum');
+    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'sintegrum');
+
+    await page.getByRole('radio', { name: 'Фіолетовий', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'custom');
+    await expect(page.locator('html')).toHaveAttribute('data-accent', 'violet');
+    await page.getByRole('radio', { name: 'Суцільний', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-interface-style', 'solid');
+    await wallpaper.selectOption('dusk');
+    await expect(page.locator('html')).toHaveAttribute('data-wallpaper', 'dusk');
+
+    const transparency = page.locator('input[type="range"]');
+    await transparency.focus();
+    await page.keyboard.press('Home');
+    for (let step = 0; step < 30; step++) await page.keyboard.press('ArrowRight');
+    await expect(transparency).toHaveValue('30');
+    await expect(page.locator('html')).toHaveCSS('--os-glass-opacity', '70%');
+    const fastMode = page.getByRole('switch', { name: 'Швидкий режим' });
+    await fastMode.click();
+    await expect(page.locator('html')).toHaveAttribute('data-performance', 'fast');
+
+    await page.reload();
+    await settle(page);
+    const root = page.locator('html');
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    await expect(root).toHaveAttribute('data-color-scheme', 'custom');
+    await expect(root).toHaveAttribute('data-accent', 'violet');
+    await expect(root).toHaveAttribute('data-interface-style', 'solid');
+    await expect(root).toHaveAttribute('data-wallpaper', 'dusk');
+    await expect(root).toHaveAttribute('data-performance', 'fast');
+    await expect(root).toHaveCSS('--os-glass-opacity', '70%');
+    await expect(page.locator('input[type="range"]')).toHaveValue('30');
+  });
+
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'desktop-light', 'desktop-light only'));
 
@@ -758,9 +815,98 @@ test.describe('mobile flows', () => {
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'mobile-light', 'mobile-light only'));
 
+  test('fast mode removes shell blur, filters, transparency, and transitions, including after reload', async ({ page, context }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await open(page, context, '/settings/appearance');
+    await page.getByRole('radio', { name: 'Скло', exact: true }).click();
+    await page.getByRole('switch', { name: 'Швидкий режим' }).click();
+
+    const root = page.locator('html');
+    const assertFastShell = async (): Promise<void> => {
+      await expect(root).toHaveAttribute('data-performance', 'fast');
+      const surfaceState = await page.evaluate(() => {
+        const effects: { selector: string; pseudo: string; filter: string; backdropFilter: string; webkitBackdropFilter: string }[] = [];
+        const describe = (element: Element): string => {
+          const id = element.id ? `#${element.id}` : '';
+          const classes = Array.from(element.classList).slice(0, 2).map((name) => `.${name}`).join('');
+          return `${element.tagName.toLowerCase()}${id}${classes}`;
+        };
+        for (const element of document.querySelectorAll('*')) {
+          const base = getComputedStyle(element);
+          if (base.display !== 'none' && base.visibility !== 'hidden' && element.getClientRects().length > 0) {
+            for (const [pseudo, style] of [['', base], ['::before', getComputedStyle(element, '::before')], ['::after', getComputedStyle(element, '::after')]] as const) {
+              if (pseudo && (style.display === 'none' || style.content === 'none' || style.content === 'normal')) continue;
+              const filter = style.filter;
+              const backdropFilter = style.backdropFilter;
+              const webkitBackdropFilter = style.getPropertyValue('-webkit-backdrop-filter');
+              // Chromium may leave the unsupported prefixed property empty; only a non-empty
+              // non-none value represents an active WebKit backdrop filter.
+              if (filter !== 'none' || backdropFilter !== 'none' || (webkitBackdropFilter !== '' && webkitBackdropFilter !== 'none')) {
+                effects.push({ selector: describe(element), pseudo, filter, backdropFilter, webkitBackdropFilter });
+              }
+            }
+          }
+        }
+        const alpha = (color: string): number => {
+          const slash = color.match(/\/\s*([\d.]+)\s*\)$/);
+          if (slash) return Number(slash[1]);
+          const rgba = color.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
+          return rgba ? Number(rgba[1]) : color === 'transparent' ? 0 : 1;
+        };
+        const shell = ['#app-sidebar', '.topbar'].map((selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return { selector, missing: true };
+          const style = getComputedStyle(element);
+          return {
+            selector,
+            missing: false,
+            transitionDuration: style.transitionDuration,
+            backgroundColor: style.backgroundColor,
+            backgroundAlpha: alpha(style.backgroundColor),
+          };
+        });
+        return { effects, shell };
+      });
+
+      expect(surfaceState.effects, 'no rendered element or pseudo-element may retain filter/backdrop-filter in fast mode').toEqual([]);
+      for (const surface of surfaceState.shell) {
+        expect(surface.missing, `${surface.selector} exists in the authenticated shell`).toBe(false);
+        expect(surface.backgroundAlpha, `${surface.selector} background is opaque`).toBe(1);
+        expect(surface.transitionDuration, `${surface.selector} transitions are disabled`).toMatch(/^(0s)(,\s*0s)*$/);
+      }
+    };
+
+    const theme = await root.getAttribute('data-theme');
+    await assertFastShell();
+    await page.reload();
+    await settle(page);
+    await expect(root).toHaveAttribute('data-theme', theme ?? 'light');
+    await expect(root).toHaveAttribute('data-interface-style', 'glass');
+    await assertFastShell();
+  });
+
+  test('widget sizes preserve distinct card heights on mobile', async ({ page, context }) => {
+    await open(page, context, '/desktop');
+    const summary = page.locator('[data-widget="summary"]');
+    const tasks = page.locator('[data-widget="tasks"]');
+    const today = page.locator('[data-widget="today"]');
+    await summary.locator('.size-control button').nth(0).click();
+    await tasks.locator('.size-control button').nth(1).click();
+    await today.locator('.size-control button').nth(2).click();
+    await expect(summary).toHaveClass(/size-s/);
+    await expect(tasks).toHaveClass(/size-m/);
+    await expect(today).toHaveClass(/size-l/);
+
+    const heights = await page.evaluate(() => Object.fromEntries(
+      ['summary', 'tasks', 'today'].map((id) => [id, document.querySelector(`[data-widget="${id}"]`)?.getBoundingClientRect().height ?? 0]),
+    ));
+    expect(heights['summary']).toBeLessThan(heights['tasks']);
+    expect(heights['tasks']).toBeLessThan(heights['today']);
+  });
+
   test('drawer opens, closes, and closes on navigation', async ({ page, context }) => {
     await open(page, context, '/');
-    const burger = page.getByRole('button', { name: 'Головне меню' });
+    const burger = page.getByRole('button', { name: 'Модулі' });
     const nav = page.getByRole('navigation', { name: 'Головне меню' });
     await expect(burger).toHaveAttribute('aria-expanded', 'false');
     await burger.click();
@@ -808,4 +954,91 @@ test('mobile assistant: in-flow launcher opens chat without covering candidate c
   await expect(launcher).toBeVisible();
   expect(writes(mock)).toEqual([]);
   expect(mock.missing).toEqual([]);
+});
+
+test('desktop: real launcher routes and per-user widgets support add, size, keyboard reorder, drag, and persistence', async ({ page, context }) => {
+  const mock = await open(page, context, '/desktop');
+  await expect(page.getByRole('heading', { name: 'Робочий стіл' })).toBeVisible();
+  await expect(page.locator('.widget')).toHaveCount(3);
+  await expect(page.locator('[data-widget="summary"]')).toContainText('Активні кандидати');
+
+  await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
+  const approvals = page.locator('[data-widget="approvals"]');
+  await expect(approvals).toBeVisible();
+  await approvals.getByRole('button', { name: 'Великий розмір для віджета «Мої погодження»' }).click();
+  await expect(approvals).toHaveClass(/size-l/);
+  await page.getByRole('button', { name: 'Перемістити «Мої погодження» вище' }).click();
+  await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
+
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string; size: string }[] });
+  expect(saved.widgets).toEqual([
+    { id: 'summary', size: 'm' }, { id: 'tasks', size: 's' }, { id: 'approvals', size: 'l' }, { id: 'today', size: 'm' },
+  ]);
+  await page.reload();
+  await settle(page);
+  await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
+  await page.getByRole('button', { name: 'Прибрати віджет «Мої погодження»' }).click();
+  await expect(page.locator('[data-widget="approvals"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Мої погодження', exact: true })).toBeFocused();
+
+  await drag(page, page.locator('[data-widget="tasks"] .drag-handle'), page.locator('[data-widget="summary"] .widget-header'));
+  await expect(page.locator('.widget').first()).toHaveAttribute('data-widget', 'tasks');
+  const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
+  expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
+
+  await page.getByRole('button', { name: 'Кандидати', exact: true }).click();
+  await expect(page).toHaveURL(/\/candidates$/);
+  expect(mock.missing).toEqual([]);
+});
+
+test('desktop mobile: widget titles and size actions remain readable at 390px', async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, context, '/desktop');
+  await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
+
+  const widget = page.locator('[data-widget="approvals"]');
+  const title = widget.locator('.widget-header h3');
+  const actions = widget.locator('.widget-actions');
+  const sizeGroup = widget.getByRole('group', { name: 'Розмір віджета «Мої погодження»' });
+  const expectReadableHeader = async (): Promise<void> => {
+    const widgetBounds = await widget.boundingBox();
+    const titleBounds = await title.boundingBox();
+    const actionBounds = await actions.boundingBox();
+    expect(widgetBounds).not.toBeNull();
+    expect(titleBounds).not.toBeNull();
+    expect(actionBounds).not.toBeNull();
+    expect(titleBounds!.width).toBeGreaterThan(100);
+    expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(actionBounds!.y);
+    expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(widgetBounds!.x + widgetBounds!.width + 1);
+  };
+  await expect(title).toHaveText('Мої погодження');
+  await expect(sizeGroup).toBeVisible();
+  await expect(sizeGroup.locator('button')).toHaveText(['s', 'm', 'l']);
+  await expect(actions.getByRole('button', { name: 'Малий розмір для віджета «Мої погодження»' })).toBeVisible();
+  await expectReadableHeader();
+
+  for (const [size, label] of [['s', 'Малий'], ['m', 'Середній'], ['l', 'Великий']] as const) {
+    await sizeGroup.getByRole('button', { name: `${label} розмір для віджета «Мої погодження»` }).click();
+    await expect(widget).toHaveClass(new RegExp(`size-${size}`));
+    await expectReadableHeader();
+  }
+});
+
+test('desktop S widget: title stays readable beside its wrapped controls at a wide viewport', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await open(page, context, '/desktop');
+
+  const widget = page.locator('[data-widget="tasks"]');
+  const title = widget.locator('.widget-header h3');
+  const actions = widget.locator('.widget-actions');
+  await expect(title).toHaveText('Мої задачі');
+  const widgetBounds = await widget.boundingBox();
+  const titleBounds = await title.boundingBox();
+  const actionBounds = await actions.boundingBox();
+  expect(widgetBounds).not.toBeNull();
+  expect(titleBounds).not.toBeNull();
+  expect(actionBounds).not.toBeNull();
+  expect(titleBounds!.width).toBeGreaterThan(70);
+  expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(actionBounds!.y);
+  expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(widgetBounds!.x + widgetBounds!.width + 1);
 });

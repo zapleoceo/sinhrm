@@ -24,7 +24,7 @@ export const boardSteps = [
   { click: { role: 'combobox', name: 'Вакансія' } },
   { click: { role: 'option', name: 'Менеджер з продажу [ТЕСТ]' } },
 ];
-const drawer = { click: { role: 'button', name: 'Головне меню' } };
+const drawer = { click: { role: 'button', name: 'Модулі' } };
 const userMenu = { click: { role: 'button', name: 'Меню користувача' } };
 const navGroups = ['Рекрутинг', 'Люди', 'Продуктивність', 'Сервіси', 'Адміністрування'].map((name) => ({ click: { role: 'button', name } }));
 /** @param {string} name @returns {State} */
@@ -40,15 +40,17 @@ export const PAGES = [
   },
   {
     id: 'overview',
-    path: '/',
+    path: '/overview',
     states: [
       { id: 'user-menu', only: 'desktop', steps: [userMenu] },
-      { id: 'user-menu', only: 'mobile', steps: [drawer, userMenu] },
-      { id: 'nav-expanded', only: 'desktop', steps: navGroups },
+      { id: 'user-menu', only: 'mobile', steps: [userMenu] },
+      { id: 'nav-expanded', only: 'desktop', steps: [drawer, ...navGroups] },
       { id: 'drawer', only: 'mobile', steps: [drawer, ...navGroups] },
     ],
   },
+  { id: 'desktop', path: '/' },
   { id: 'tasks', path: '/tasks' },
+  { id: 'appearance', path: '/settings/appearance' },
   { id: 'candidates', path: '/candidates', states: [{ id: 'board', steps: boardSteps }] },
   { id: 'candidate', path: '/candidates/1' },
   { id: 'vacancies', path: '/vacancies' },

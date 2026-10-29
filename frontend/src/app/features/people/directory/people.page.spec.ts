@@ -65,6 +65,7 @@ describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
 
   it('loads the query from the URL once and shows its sort on the header', () => {
     expect(queries).toHaveLength(1);
+    expect(url().searchParams.has('wq_sort')).toBe(false);
     expect(queries[0]).toEqual(expect.objectContaining({ position_id: 3, page: 4, sort: 'name', dir: 'desc' }));
     expect(th('people.fields.fullName').getAttribute('aria-sort')).toBe('descending');
     expect(th('people.fields.position').querySelector('.dot')).not.toBeNull();
@@ -78,6 +79,7 @@ describe('PeoplePage: sortable / filterable headers bound to the URL', () => {
     expect(url().searchParams.get('dir')).toBe('asc');
     expect(url().searchParams.has('page')).toBe(false);
     expect(url().searchParams.get('position_id')).toBe('3');
+    expect(url().searchParams.has('wq_sort')).toBe(false);
     expect(queries.at(-1)).toEqual(expect.objectContaining({ sort: 'position', dir: 'asc', page: 1, position_id: 3 }));
     expect(th('people.fields.position').getAttribute('aria-sort')).toBe('ascending');
 

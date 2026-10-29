@@ -1,6 +1,22 @@
-import { Routes } from '@angular/router';
+import { Route, Routes } from '@angular/router';
 import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/auth.guards';
 import { ADMIN_ROLES, HR_STAFF_ROLES, SUPERADMIN_ROLE } from './core/auth/auth.model';
+import { windowOutletRoute } from './core/windows/window-route';
+
+/** Shared immutable route records: primary and named outlets mount the same real pages and guards. */
+const TASKS_ROUTE: Route = {
+  path: 'tasks',
+  title: 'titles.tasks',
+  data: { windowRoute: 'tasks', module: null },
+  loadComponent: () => import('./features/tasks/my-tasks.page').then((m) => m.MyTasksPage),
+};
+
+const PEOPLE_ROUTE: Route = {
+  path: 'people',
+  title: 'titles.people',
+  data: { windowRoute: 'people', module: 'people' },
+  loadComponent: () => import('./features/people/directory/people.page').then((m) => m.PeoplePage),
+};
 
 // `title` is an i18n key (TranslatedTitleStrategy → "SinHRM · <page>").
 export const routes: Routes = [
@@ -20,7 +36,9 @@ export const routes: Routes = [
     canActivateChild: [moduleGuard],
     loadComponent: () => import('./features/shell/shell.layout').then((m) => m.ShellLayout),
     children: [
-      { path: '', title: 'titles.overview', loadComponent: () => import('./features/overview/dashboard.page').then((m) => m.DashboardPage) },
+      { path: '', pathMatch: 'full', title: 'titles.desktop', loadComponent: () => import('./features/desktop/desktop.page').then((m) => m.DesktopPage) },
+      { path: 'overview', title: 'titles.overview', loadComponent: () => import('./features/overview/dashboard.page').then((m) => m.DashboardPage) },
+      { path: 'desktop', pathMatch: 'full', redirectTo: '' },
       // Recruiting: every active role; the API scopes data by branch and blocks viewers from writing.
       { path: 'vacancies', title: 'titles.vacancies', loadComponent: () => import('./features/recruiting/vacancies/vacancies.page').then((m) => m.VacanciesPage) },
       // Full vacancy form (create/edit); the unsaved-changes guard asks before leaving with edits.
@@ -41,6 +59,7 @@ export const routes: Routes = [
       { path: 'candidates/:id', title: 'titles.candidates', loadComponent: () => import('./features/recruiting/candidates/candidates.page').then((m) => m.CandidatesPage) },
       { path: 'inbox', title: 'titles.inbox', loadComponent: () => import('./features/recruiting/inbox/inbox.page').then((m) => m.InboxPage) },
       { path: 'settings/extension', title: 'titles.extension', loadComponent: () => import('./features/extension/extension.page').then((m) => m.ExtensionPage) },
+      { path: 'settings/appearance', title: 'appearance.title', loadComponent: () => import('./features/appearance/appearance.page').then((m) => m.AppearancePage) },
       // Hiring requests (tz2): every active role; the API decides who creates, sees and approves.
       { path: 'hiring-requests', title: 'titles.hiringRequests', loadComponent: () => import('./features/hiring-requests/hiring-list.page').then((m) => m.HiringListPage) },
       {
@@ -58,14 +77,14 @@ export const routes: Routes = [
       { path: 'time/team', title: 'titles.timeTeam', loadComponent: () => import('./features/time/time-team.page').then((m) => m.TimeTeamPage) },
       { path: 'reports', title: 'titles.reports', loadComponent: () => import('./features/recruiting/reports/reports.page').then((m) => m.ReportsPage) },
       // People and time off: every active role; the API decides what each user sees (directory / job / PII tiers).
-      { path: 'people', title: 'titles.people', loadComponent: () => import('./features/people/directory/people.page').then((m) => m.PeoplePage) },
+      PEOPLE_ROUTE,
       { path: 'people/org-chart', title: 'titles.orgChart', loadComponent: () => import('./features/people/org-chart/org-chart.page').then((m) => m.OrgChartPage) },
       { path: 'people/:id', title: 'titles.profile', loadComponent: () => import('./features/people/profile/profile.page').then((m) => m.ProfilePage) },
       { path: 'me', title: 'titles.myProfile', loadComponent: () => import('./features/people/profile/profile.page').then((m) => m.ProfilePage) },
       { path: 'timeoff', title: 'titles.timeoff', loadComponent: () => import('./features/timeoff/my/my-timeoff.page').then((m) => m.MyTimeOffPage) },
       { path: 'timeoff/calendar', title: 'titles.teamCalendar', loadComponent: () => import('./features/timeoff/calendar/calendar.page').then((m) => m.CalendarPage) },
       // Unified tasks, own documents and the workflow board: every active role; the API scopes the data.
-      { path: 'tasks', title: 'titles.tasks', loadComponent: () => import('./features/tasks/my-tasks.page').then((m) => m.MyTasksPage) },
+      TASKS_ROUTE,
       { path: 'me/documents', title: 'titles.myDocuments', loadComponent: () => import('./features/documents/my/my-documents.page').then((m) => m.MyDocumentsPage) },
       { path: 'workflows/runs', title: 'titles.workflowRuns', loadComponent: () => import('./features/workflows/runs/workflow-runs.page').then((m) => m.WorkflowRunsPage) },
       // Perform and Pulse: every active role; the API scopes the data (admin all, managers their people, own items).
@@ -241,6 +260,8 @@ export const routes: Routes = [
         canActivate: [roleGuard(SUPERADMIN_ROLE)],
         loadComponent: () => import('./features/integrations/integrations.page').then((m) => m.IntegrationsPage),
       },
+      windowOutletRoute('os1', [TASKS_ROUTE, PEOPLE_ROUTE]),
+      windowOutletRoute('os2', [TASKS_ROUTE, PEOPLE_ROUTE]),
     ],
   },
   { path: '**', redirectTo: '' },

@@ -1,14 +1,16 @@
 # Модуль Shell (фронтенд)
 
 ## Что это и зачем
-«Рамка» приложения после входа: меню слева, внизу меню — «Довідка» и меню пользователя. Верхней панели нет.
-Все рабочие экраны открываются внутри неё. Стиль — спокойный и без лишнего: Angular Material 3, один акцентный цвет,
-просторные отступы ([design-direction.md](../architecture/design-direction.md)).
+Оболочка после входа показывает тонкую системную панель, разрешённое меню «Модулі» как доступную диалоговую панель и
+плавающий Dock. Домашняя страница `/` — рабочий стол с реальными сводками; прежний обзор доступен по `/overview`.
+Все рабочие экраны остаются в оболочке с исходными router-guards и разрешениями модулей. Панель пользователя вверху
+сохраняет язык, роль, тему, оформление, профиль и выход. Стиль следует спокойной системной теме из
+([design-direction.md](../architecture/design-direction.md)).
 
 ## Как пользоваться
-- На экране уже 768 px верхняя панель содержит кнопку «Поговорити зі Стіком», если модуль assistant доступен. Она открывает чат без открытия меню и занимает место в потоке (минимум 44 px), поэтому не перекрывает строки и карточки. Shell передаёт узкий режим маскоту; фигура, круг и анимационный цикл на мобильном экране отключены без изменения сохранённой настройки пользователя.
-- Вверху меню слева — логотип SinHRM (`<app-logo>`, [core.md](core.md)), ссылка на «Огляд».
-- Меню слева: «Огляд» (дашборд, [overview.md](overview.md)); раздел «Рекрутинг» (всем ролям): «Кандидати», «Вакансії», «Вхідні», «Звіти» ([recruiting.md](recruiting.md)); раздел «Люди» (всем ролям): «Співробітники», «Оргструктура» ([people.md](people.md)), «Мої відсутності», «Календар команди», «Погодження» ([timeoff.md](timeoff.md)); раздел «Продуктивність» (всем ролям): «Цілі (OKR)», «Зустрічі 1:1», «Фідбек», «Мої оцінювання» ([perform.md](perform.md)), «Опитування», «Настрій» ([pulse.md](pulse.md)); раздел «Адміністрування»: «Користувачі», «Інтеграції», «Пошта» ([mail-agent.md](mail-agent.md)) и «Імпорт з Google Sheets» ([google-workspace.md](google-workspace.md)), «Помилки» ([observability.md](observability.md)), «Модулі» — только суперадмину; «Налаштування відсутностей» ([timeoff.md](timeoff.md)), «Цикли оцінювання», «Опитування» (конструктор), воркфлоу и шаблони документів — HR (суперадмин, админ, HR-менеджер); «Скрипти» ([scripts.md](scripts.md)), «Довідники» и «Стан системи» — суперадмину и админу.
+- На любой ширине системная панель содержит кнопку чата, если assistant доступен; она не перекрывает содержимое. На телефоне анимированная фигура отключена, при этом чат остаётся доступен из панели.
+- Системная панель содержит логотип SinHRM, кнопку «Модулі», заголовок текущей страницы, чат и меню пользователя. Dock предоставляет проверенные быстрые команды и управление открытыми окнами.
+- В «Модулі» сохранены все прежние ссылки и действия с существующей фильтрацией по ролям и включённым модулям: обзор теперь по `/overview`; задачи и группы «Рекрутинг», «Люди», «Продуктивність», «Сервіси» и «Адміністрування» ведут на те же реальные экраны ([overview.md](overview.md), [recruiting.md](recruiting.md), [people.md](people.md), [timeoff.md](timeoff.md)). Административные пункты сохраняют guards и условия видимости.
 - «Адміністрування → Журнал дій» (только суперадмину): кто, что и когда поменял — [audit.md](audit.md).
 - Вкладка браузера: «SinHRM · <раздел>» на языке интерфейса ([core.md](core.md), `TranslatedTitleStrategy`).
 - Глобального поиска и горячих клавиш нет: кнопка «Пошук», палитра быстрого перехода и Ctrl/⌘+K убраны по решению владельца
@@ -98,6 +100,7 @@
 - `features/shell/language-switcher.ts` — переключатель языка (также на странице входа).
 - Маршруты (`app.routes.ts`): `/login` (гости, `guestGuard`), `/` → оболочка (`authGuard`) с детьми
   `''` — дашборд (Overview), `vacancies`, `vacancies/:id`, `candidates`, `candidates/:id`, `inbox`, `reports` (модуль Recruiting, все роли), `people`, `people/org-chart`, `people/:id`, `me`, `timeoff`, `timeoff/calendar`, `timeoff/approvals` (People/TimeOff, все роли), `tasks` («Мої задачі», все роли), `me/documents` («Мої документи»), `workflows/runs` (доска воркфлоу; данные режет API), `perform/one-on-ones`, `perform/objectives`, `perform/feedback`, `perform/reviews`, `pulse`, `pulse/mood`, `pulse/waves/:id`, `pulse/waves/:id/results` (Perform/Pulse, все роли; данные режет API), `admin/perform/reviews`, `admin/pulse`, `admin/workflows`, `admin/workflows/:id`, `admin/documents/templates` — `roleGuard(...HR_STAFF_ROLES)` (superadmin, admin, hr_manager), `settings/extension` (токен расширения, все роли), `desk`, `desk/cases/:id`, `safe-speak`, `knowledge`, `knowledge/:id`, `reports/catalog`, `reports/catalog/:key`, `reports/builder` (Desk/Safe Speak/Knowledge/Reports, все роли; данные режет API), `desk/queue`, `safe-speak/inbox`, `admin/knowledge/:id`, `admin/assets` — `roleGuard(...HR_STAFF_ROLES)` (для входящих Safe Speak API ещё требует флаг обработчика), `hiring-requests`, `hiring-requests/inbox`, `hiring-requests/new`, `hiring-requests/:id`, `hiring-requests/:id/edit` (заявки на подбор, все роли; права — API), `time`, `time/approvals`, `time/team` (табели, все роли; данные режет API), `admin/hiring-requests`, `admin/time` — `roleGuard(...HR_STAFF_ROLES)`, `admin/timeoff` — тоже HR_STAFF, `admin/acquisition-channels`, `admin/privacy`, `admin/directory`, `admin/scripts`, `admin/scripts/:id`, `status` — `roleGuard(...ADMIN_ROLES)` (superadmin, admin), `admin/users`, `admin/integrations`, `admin/audit`, `admin/mail`, `admin/sheets-import`, `admin/modules`, `admin/errors` — `roleGuard('superadmin')`; `module-off` — без роли. Экраны загружаются лениво. У каждого маршрута `title` — ключ `titles.*`.
+- Оконный пилот HRM-11: отдельный standalone-компонент `OsWindowWorkspace` владеет chrome и двумя настоящими named outlet (`os1`, `os2`) для исходных страниц списков Tasks и People; shell сохраняет обычный primary outlet. Кнопки панели открывают/возвращают существующую страницу в своём слоте; сворачивание сохраняет компонент и URL-фильтры, а focus/minimize/maximize меняют URL-состояние заменой текущей history записи. Закрытие использует Router и обычный `canDeactivate`. Главная страница может оставаться выбранной даже при открытом окне. При смене пользователя, effective roles или active role окна очищаются; модульный доступ повторно проверяется для смонтированных окон. На узких экранах неактивные развёрнутые окна скрыты и inert, а кнопки панели позволяют переключать их, показывать главную страницу и возвращать свёрнутое окно. Неаудированные маршруты, включая карточки People, остаются в обычной primary-навигации; это пилот двух списков, не поддержка всех страниц.
 - Тема: `core/theme/theme.service.ts` ставит `<html data-theme="light|dark">`; `styles.scss` задаёт `color-scheme`,
   тема Material собрана с `theme-type: color-scheme`, поэтому все токены `--mat-sys-*` переключаются сами.
   Токены приложения (`--app-gap`, `--app-radius`, `--app-border`, `--app-success`, `--app-danger`) — там же.
@@ -165,3 +168,13 @@ Esc, телефон/сенсор; `shell.layout.spec.ts` — переключа�
 
 «Мій профіль» (/me): перемикач «Листи про погодження на пошту» → `PATCH /api/auth/me/notifications {approval_emails}`.
 - Ловушка фокуса мобильного меню захватывает фокус только при открытом меню (`cdkTrapFocusAutoCapture` = узкий экран и меню открыто); иначе после загрузки логотип оставался в фокусе с обводкой.
+
+## Дополнение Browser OS foundation — 30.10.2026
+
+ShellLayout содержит навигацию вошедших пользователей, основной route outlet, меню пользователя, язык, переключение активной роли, theme toggle и помощника. Публичные login/jobs маршруты остаются снаружи. Проверки auth, module и role guard продолжают выполняться Router и API; визуальный launcher не заменяет авторизацию.
+
+В foundation Browser OS добавлена ссылка меню `/settings/appearance` с переводами UK/RU/EN. Существующие действия пользователя и ссылки разделов сохранены. Общая тема использует semantic Material/app tokens, а боковая панель и мобильная верхняя строка могут иметь ограниченное матовое стекло. Предпочтение solid, fast mode и отсутствие поддержки backdrop-filter дают непрозрачные подложки. Fast mode применяется после mobile glass правил, чтобы каскад не включал blur повторно; переходы оболочки также выключаются.
+
+Collapse/autohide, раскрытые группы, мобильное меню, badges, помощь, роль и выход сохраняют прежнее поведение. Изменения проверяются shell.layout.spec.ts и app.routes.spec.ts, CI inventory и mobile fast-mode flow. Контекст и ограничения профилирования — [Theme](theme.md).
+
+Пока используется прежний primary routing. Настоящие независимые окна и сохранение нескольких живых страниц разрабатываются отдельным guarded route bridge; этот этап не утверждает, что одна рамка над outlet завершает многоконность. [План и состояние](../tasks/HRM-11_system-os-redesign.md).
