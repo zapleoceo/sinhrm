@@ -809,3 +809,38 @@ test('mobile assistant: in-flow launcher opens chat without covering candidate c
   expect(writes(mock)).toEqual([]);
   expect(mock.missing).toEqual([]);
 });
+
+test('desktop: real launcher routes and per-user widgets support add, size, keyboard reorder, drag, and persistence', async ({ page, context }) => {
+  const mock = await open(page, context, '/desktop');
+  await expect(page.getByRole('heading', { name: 'Робочий стіл' })).toBeVisible();
+  await expect(page.locator('.widget')).toHaveCount(3);
+  await expect(page.locator('[data-widget="summary"]')).toContainText('Активні кандидати');
+
+  await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
+  const approvals = page.locator('[data-widget="approvals"]');
+  await expect(approvals).toBeVisible();
+  await approvals.getByRole('button', { name: 'Великий розмір для віджета «Мої погодження»' }).click();
+  await expect(approvals).toHaveClass(/size-l/);
+  await page.getByRole('button', { name: 'Перемістити «Мої погодження» вище' }).click();
+  await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
+
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string; size: string }[] });
+  expect(saved.widgets).toEqual([
+    { id: 'summary', size: 'm' }, { id: 'tasks', size: 's' }, { id: 'approvals', size: 'l' }, { id: 'today', size: 'm' },
+  ]);
+  await page.reload();
+  await settle(page);
+  await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
+  await page.getByRole('button', { name: 'Прибрати віджет «Мої погодження»' }).click();
+  await expect(page.locator('[data-widget="approvals"]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Мої погодження', exact: true })).toBeFocused();
+
+  await drag(page, page.locator('[data-widget="tasks"] .drag-handle'), page.locator('[data-widget="summary"] .widget-header'));
+  await expect(page.locator('.widget').first()).toHaveAttribute('data-widget', 'tasks');
+  const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
+  expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
+
+  await page.getByRole('button', { name: 'Кандидати', exact: true }).click();
+  await expect(page).toHaveURL(/\/candidates$/);
+  expect(mock.missing).toEqual([]);
+});

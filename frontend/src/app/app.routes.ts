@@ -21,6 +21,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/shell/shell.layout').then((m) => m.ShellLayout),
     children: [
       { path: '', title: 'titles.overview', loadComponent: () => import('./features/overview/dashboard.page').then((m) => m.DashboardPage) },
+      { path: 'desktop', title: 'titles.desktop', loadComponent: () => import('./features/desktop/desktop.page').then((m) => m.DesktopPage) },
       // Recruiting: every active role; the API scopes data by branch and blocks viewers from writing.
       { path: 'vacancies', title: 'titles.vacancies', loadComponent: () => import('./features/recruiting/vacancies/vacancies.page').then((m) => m.VacanciesPage) },
       // Full vacancy form (create/edit); the unsaved-changes guard asks before leaving with edits.

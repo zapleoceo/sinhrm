@@ -71,6 +71,15 @@ const EXPECTED: Record<string, string[]> = {
 };
 
 describe('app routes — access table', () => {
+  it('adds the lazy desktop under the existing authenticated shell without a role override', () => {
+    const route = children.find((r) => r.path === 'desktop');
+    expect(route?.title).toBe('titles.desktop');
+    expect(route?.canActivate).toBeUndefined();
+    expect(route?.loadComponent).toBeTypeOf('function');
+    expect(shell.canActivate).toEqual([authGuard]);
+    expect(shell.canActivateChild).toEqual([moduleGuard]);
+  });
+
   it('the login page is for guests; the career pages are public; everything else sits behind authGuard + moduleGuard', () => {
     expect(routes.find((r) => r.path === 'login')?.canActivate).toEqual([guestGuard]);
     for (const path of ['jobs', 'jobs/:slug']) {
