@@ -21,4 +21,20 @@
 - Verified: focused Angular tests passed (5 files, 20 tests); targeted Angular lint passed; E2E files passed ESLint and `tsc -p e2e/tsconfig.json`; UK/RU/EN locale JSON parsed. No app server, DB, full suite, full build, visual snapshot review, E2E run, Git operation, PR, or merge.
 - Next: root draft CI/SOL review and actual rendered review/capture for the new `/desktop` parity baseline; snapshots were not auto-generated or blessed.
 
+### CI repair handoff (2026-10-30 00:56 Asia/Saigon)
+
+- Run `40924129598` failed because the worklog link was resolved from `docs/` and incorrectly began `../modules/desktop.md`; corrected it to `modules/desktop.md`. The Angular build also rejected the desktop component stylesheet at 8.97 kB against its 8.00 kB error budget; consolidated local chrome tokens and removed redundant motion transitions while keeping wallpaper/glass/fast behavior.
+- SOL review additionally found equal mobile S/M/L widget heights and untranslated widget names in accessible labels. Mobile now preserves distinct content minimum heights (7.5/9.5/11.5rem), title lookup returns translated text once, and focused unit/E2E regressions cover both behaviors.
+- Verified after fixes: docs-link unit tests 20/20 and repository link scan 0 dead links; desktop Angular tests 13/13; targeted Angular lint, E2E ESLint, E2E TypeScript check, and `git diff --check` pass.
+- Not verified yet: CI stylesheet budget/build, Playwright mobile-size flow, desktop rendered screenshots/inventory and their review. No baseline was written or accepted.
+- Next: root reruns draft CI; inspect actual desktop/mobile renders and inventories after the build succeeds, then continue the separate v5 desktop composition integration round.
+
 CI support: reused the exact Luna-authored inventory attachment/screenshot instrumentation from foundation fe226e00 in parity.pw.ts; missing/mismatched baselines still fail, no axe thresholds or fixtures changed. Actual desktop baseline will be reviewed from CI.
+
+### CI correction — 2026-10-30 Asia/Saigon
+
+- CI `40926308707` exposed a focus race after removing a widget: the add control is recreated by Angular after the `queueMicrotask` callback has already looked for it. Root added the two actual CI inventory baselines `frontend/e2e/__snapshots__/desktop.desktop.json` and `desktop.mobile.json`; keep them intact. The screenshots also show widget titles squeezed by the controls on mobile and on narrow desktop cards.
+- `DesktopPage` now schedules focus restoration through `afterNextRender` for add, remove and keyboard move operations. Mobile-size widget headers and any card up to 28rem wide place the translated title above a separate action row; visible S/M/L markers keep their full localized accessible names.
+- Added a DOM focus regression for add/move/remove and rendered E2E bounds/title checks for all three widget sizes on mobile plus the S-sized Tasks card on desktop. Module and worklog docs were updated.
+- Verified: focused `desktop.page.spec.ts` 8/8; targeted Angular ESLint, E2E ESLint, E2E TypeScript check passed; Sass compressed output is 7,979 bytes. No app server, Playwright run, full build, or full suite was run.
+- Next: root reruns CI and reviews actual rendered mobile and narrow desktop cards; browser-level focus/bounds and compiled style budget remain pending.

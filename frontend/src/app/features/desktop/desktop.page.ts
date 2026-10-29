@@ -1,6 +1,6 @@
 import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, InjectionToken, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, InjectionToken, Injector, afterNextRender, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -54,6 +54,7 @@ export class DesktopPage {
   private readonly auth = inject(AuthService);
   private readonly launcher = inject(DESKTOP_LAUNCHER);
   private readonly document = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
   private readonly i18n = inject(TranslocoService);
   protected readonly layout = inject(DesktopLayoutStore);
   protected readonly data = inject(DesktopDataStore);
@@ -83,12 +84,12 @@ export class DesktopPage {
   }
 
   protected addWidget(id: DesktopWidgetId): void {
-    if (this.layout.add(id)) queueMicrotask(() => this.document.getElementById(`desktop-widget-remove-${id}`)?.focus());
+    if (this.layout.add(id)) this.focusControlAfterRender(`desktop-widget-remove-${id}`);
   }
 
   protected removeWidget(id: DesktopWidgetId): void {
     this.layout.remove(id);
-    queueMicrotask(() => this.document.getElementById(`desktop-widget-add-${id}`)?.focus());
+    this.focusControlAfterRender(`desktop-widget-add-${id}`);
   }
 
   protected resizeWidget(id: DesktopWidgetId, size: DesktopWidgetSize): void {
@@ -106,7 +107,7 @@ export class DesktopPage {
     const target = index + delta;
     if (target < 0 || target >= ids.length) return;
     this.layout.moveVisible(ids, index, target);
-    queueMicrotask(() => this.document.getElementById(`desktop-widget-move-${id}-${delta < 0 ? 'up' : 'down'}`)?.focus());
+    this.focusControlAfterRender(`desktop-widget-move-${id}-${delta < 0 ? 'up' : 'down'}`);
   }
 
   protected refresh(): void {
@@ -116,6 +117,10 @@ export class DesktopPage {
   protected widgetTitle(id: DesktopWidgetId): string {
     const key = this.widgetDefinitions.find((widget) => widget.id === id)?.title ?? 'desktop.widgets.title';
     return this.i18n.translate(key);
+  }
+
+  private focusControlAfterRender(id: string): void {
+    afterNextRender(() => this.document.getElementById(id)?.focus(), { injector: this.injector });
   }
 
   protected widgetIcon(id: DesktopWidgetId): string {

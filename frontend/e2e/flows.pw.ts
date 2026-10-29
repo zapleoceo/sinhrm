@@ -863,3 +863,55 @@ test('desktop: real launcher routes and per-user widgets support add, size, keyb
   await expect(page).toHaveURL(/\/candidates$/);
   expect(mock.missing).toEqual([]);
 });
+
+test('desktop mobile: widget titles and size actions remain readable at 390px', async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, context, '/desktop');
+  await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
+
+  const widget = page.locator('[data-widget="approvals"]');
+  const title = widget.locator('.widget-header h3');
+  const actions = widget.locator('.widget-actions');
+  const sizeGroup = widget.getByRole('group', { name: 'Розмір віджета «Мої погодження»' });
+  const expectReadableHeader = async (): Promise<void> => {
+    const widgetBounds = await widget.boundingBox();
+    const titleBounds = await title.boundingBox();
+    const actionBounds = await actions.boundingBox();
+    expect(widgetBounds).not.toBeNull();
+    expect(titleBounds).not.toBeNull();
+    expect(actionBounds).not.toBeNull();
+    expect(titleBounds!.width).toBeGreaterThan(100);
+    expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(actionBounds!.y);
+    expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(widgetBounds!.x + widgetBounds!.width + 1);
+  };
+  await expect(title).toHaveText('Мої погодження');
+  await expect(sizeGroup).toBeVisible();
+  await expect(sizeGroup.locator('button')).toHaveText(['s', 'm', 'l']);
+  await expect(actions.getByRole('button', { name: 'Малий розмір для віджета «Мої погодження»' })).toBeVisible();
+  await expectReadableHeader();
+
+  for (const [size, label] of [['s', 'Малий'], ['m', 'Середній'], ['l', 'Великий']] as const) {
+    await sizeGroup.getByRole('button', { name: `${label} розмір для віджета «Мої погодження»` }).click();
+    await expect(widget).toHaveClass(new RegExp(`size-${size}`));
+    await expectReadableHeader();
+  }
+});
+
+test('desktop S widget: title stays readable beside its wrapped controls at a wide viewport', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await open(page, context, '/desktop');
+
+  const widget = page.locator('[data-widget="tasks"]');
+  const title = widget.locator('.widget-header h3');
+  const actions = widget.locator('.widget-actions');
+  await expect(title).toHaveText('Мої задачі');
+  const widgetBounds = await widget.boundingBox();
+  const titleBounds = await title.boundingBox();
+  const actionBounds = await actions.boundingBox();
+  expect(widgetBounds).not.toBeNull();
+  expect(titleBounds).not.toBeNull();
+  expect(actionBounds).not.toBeNull();
+  expect(titleBounds!.width).toBeGreaterThan(70);
+  expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(actionBounds!.y);
+  expect(actionBounds!.x + actionBounds!.width).toBeLessThanOrEqual(widgetBounds!.x + widgetBounds!.width + 1);
+});

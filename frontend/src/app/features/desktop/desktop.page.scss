@@ -126,7 +126,7 @@
   min-height: 4rem;
 }
 
-.widget { min-width: 0; overflow: hidden; grid-column: span 3; }
+.widget { min-width: 0; overflow: hidden; grid-column: span 3; container-type: inline-size; }
 .widget.size-s { grid-column: span 2; }
 .widget.size-l { grid-column: span 6; }
 .widget-header {
@@ -149,6 +149,32 @@
 .size-control button { width: 1.9rem; height: 2rem; padding: 0; border: 0; border-inline-end: 1px solid var(--app-border); background: var(--app-card); color: var(--app-muted); cursor: pointer; font: var(--mat-sys-label-small); text-transform: uppercase; }
 .size-control button:last-child { border-inline-end: 0; }
 .size-control button[aria-pressed='true'] { background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container); }
+
+@container (max-width: 28rem) {
+  .widget-header {
+    display: grid;
+    grid-template-columns: 2.75rem 1.5rem minmax(0, 1fr);
+    gap: 0.35rem;
+  }
+  .widget-header h3 {
+    grid-column: 3;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .drag-handle { grid-column: 1; }
+  .widget-icon { grid-column: 2; }
+  .widget-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+    flex-wrap: wrap;
+    gap: 0;
+    max-width: 100%;
+  }
+  .widget-actions button { width: 2.75rem; height: 2.75rem; }
+  .size-control button { width: auto; min-width: 2.75rem; height: 2.75rem; padding-inline: 0.35rem; }
+}
 
 .widget-content { min-height: 7rem; padding: 1rem; background: var(--app-card); }
 .metric-main { display: flex; align-items: baseline; gap: 0.65rem; min-height: 3rem; }
@@ -204,10 +230,6 @@
   .widget.size-s .widget-content { min-height: 7.5rem; }
   .widget.size-m .widget-content { min-height: 9.5rem; }
   .widget.size-l .widget-content { min-height: 11.5rem; }
-  .widget-header { flex-wrap: wrap; }
-  .widget-actions { gap: 0; }
-  .widget-actions button { width: 2.75rem; height: 2.75rem; }
-  .size-control button { width: 2rem; height: 2.25rem; }
   :host-context(html[data-interface-style='glass']) .desktop-page { --desktop-chrome-filter: blur(10px) saturate(1.05); }
 }
 

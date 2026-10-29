@@ -72,7 +72,7 @@
                 <div class="size-control" role="group" [attr.aria-label]="'desktop.widgets.size' | transloco: { title: widgetTitle(widget.id) }">
                   @for (size of widgetSizes; track size) {
                     @let sizeName = ('desktop.widgets.sizes.' + size) | transloco;
-                    <button type="button" [attr.aria-pressed]="widget.size === size" [attr.aria-label]="'desktop.widgets.sizeOption' | transloco: { size: sizeName, title: widgetTitle(widget.id) }" (click)="resizeWidget(widget.id, size)">{{ sizeName }}</button>
+                    <button type="button" [attr.aria-pressed]="widget.size === size" [attr.aria-label]="'desktop.widgets.sizeOption' | transloco: { size: sizeName, title: widgetTitle(widget.id) }" (click)="resizeWidget(widget.id, size)">{{ size }}</button>
                   }
                 </div>
                 <button mat-icon-button type="button" [id]="'desktop-widget-remove-' + widget.id" [attr.aria-label]="'desktop.widgets.remove' | transloco: { title: widgetTitle(widget.id) }" (click)="removeWidget(widget.id)"><mat-icon>close</mat-icon></button>

@@ -18,7 +18,7 @@ S/M/L changes the widget grid span on desktop. On phones the widgets use one col
 
 `DesktopLayoutStore` stores only `{version: 1, widgets: [{id, size}]}` at `sinhrm.desktop.layout.v1.<userId>`. Layout validation requires exact object keys, version 1, recognized unique widget IDs, `s | m | l` sizes, and at most 12 entries. Empty layouts are saved. Missing, malformed, unavailable, or blocked browser storage falls back to the in-memory default layout without blocking use of the page. Current widget IDs are unique, so the active registry offers four kinds; the twelve-entry ceiling is a bounded schema limit for future unique widget types.
 
-Cards use CDK drag sorting with a touch delay and explicit keyboard move-up/move-down buttons. S/M/L controls change responsive grid spans; normal CSS grid flow keeps placement collision-free, retains the page's scrollable extent, and collapses every size to one column on mobile. Focus remains on controls after resizing/reordering and moves to the matching add button after removal.
+Cards use CDK drag sorting with a touch delay and explicit keyboard move-up/move-down buttons. S/M/L controls change responsive grid spans; normal CSS grid flow keeps placement collision-free, retains the page's scrollable extent, and collapses every size to one column on mobile. Cards up to 28rem wide put the translated title above a separate action row regardless of viewport; visible size markers are compact S/M/L while their accessible names remain localized. Focus is restored after Angular renders added, moved, or removed widget controls, including the matching add button after removal.
 
 ## Appearance and verification
 

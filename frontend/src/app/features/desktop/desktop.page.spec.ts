@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture } from '@angular/core/testing';
+import { DOCUMENT } from '@angular/common';
 import { provideRouter } from '@angular/router';
 import { TranslocoTestingModule } from '@jsverse/transloco';
 import { of, throwError } from 'rxjs';
@@ -105,6 +106,50 @@ describe('DesktopPage', () => {
     element.querySelector<HTMLButtonElement>('#desktop-widget-remove-approvals')?.click();
     fixture.detectChanges();
     expect(layout.layout().widgets.map((widget) => widget.id)).not.toContain('approvals');
+  });
+
+  it('restores focus to the rendered add, move, and remove controls after layout updates', async () => {
+    const fixture = render();
+    const document = TestBed.inject(DOCUMENT);
+    const element = fixture.nativeElement as HTMLElement;
+
+    element.querySelector<HTMLButtonElement>('#desktop-widget-add-approvals')!.click();
+    await fixture.whenStable();
+    const remove = element.querySelector<HTMLButtonElement>('#desktop-widget-remove-approvals');
+    expect(remove).not.toBeNull();
+    expect(document.activeElement).toBe(remove);
+
+    element.querySelector<HTMLButtonElement>('#desktop-widget-move-approvals-up')!.click();
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(element.querySelector('#desktop-widget-move-approvals-up'));
+
+    element.querySelector<HTMLButtonElement>('#desktop-widget-remove-approvals')!.click();
+    await fixture.whenStable();
+    const add = element.querySelector<HTMLButtonElement>('#desktop-widget-add-approvals');
+    expect(add).not.toBeNull();
+    expect(document.activeElement).toBe(add);
+  });
+
+  it('restores focus after adding, reordering, and removing a widget once its controls render', async () => {
+    const fixture = render();
+    const document = TestBed.inject(DOCUMENT);
+    const element = fixture.nativeElement as HTMLElement;
+
+    element.querySelector<HTMLButtonElement>('#desktop-widget-add-approvals')!.click();
+    await fixture.whenStable();
+    const remove = element.querySelector<HTMLButtonElement>('#desktop-widget-remove-approvals');
+    expect(remove).not.toBeNull();
+    expect(document.activeElement).toBe(remove);
+
+    element.querySelector<HTMLButtonElement>('#desktop-widget-move-approvals-up')!.click();
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(element.querySelector('#desktop-widget-move-approvals-up'));
+
+    element.querySelector<HTMLButtonElement>('#desktop-widget-remove-approvals')!.click();
+    await fixture.whenStable();
+    const add = element.querySelector<HTMLButtonElement>('#desktop-widget-add-approvals');
+    expect(add).not.toBeNull();
+    expect(document.activeElement).toBe(add);
   });
 
   it('hides entries and widgets outside enabled modules and distinguishes load errors from empty data', () => {
