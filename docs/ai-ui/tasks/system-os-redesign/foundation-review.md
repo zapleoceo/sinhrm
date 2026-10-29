@@ -37,3 +37,19 @@ Pending: freeze and correct findings; final targeted tests/lint/contrast with re
 
 Verdict: **CHANGES REQUIRED for local preflight; final CI/GitHub/render approval pending.** No app source edits, commit, push, merge or deploy by reviewer.
 
+
+## Exact draft PR correction review — b92a4bc (2026-10-30)
+
+Verified local HEAD and GitHub PR247 head are both `b92a4bc048961303c6c907401f9526856fc48384`, base `899d4dab4e4ebd9735d785142a0b0fa47b0ac76a`; PR is draft. Local tracked source was clean before this report update. Reviewed committed base→HEAD correction and fetched the actual GitHub diff using gh pr diff247 (read-only); saved full diff `D:/Projects/HRM/tmp/foundation-pr247-review.diff`. No GitHub write/formal approval.
+
+Initial findings1–3 are **closed in source**: final fast surface overrides follow mobile glass; scoped fast transitions now cover shell/nav/group/chevron/rail/sidebar; inverse-primary uses its own opposite-surface token. Reference primary is exactly #9b85ff, with reference inverse #62509f. Numerical inverse-primary/inverse-surface >=4.5 check is retained. Independently executed final numerical checker: exit0,261 PASS/0 FAIL across9 configurations. Log `D:/Projects/HRM/tmp/foundation-contrast-review.log`. No mirrored style regex test is treated as runtime evidence. The CI addition is one numerical checker invocation before frontend lint. Shell module guide retains all baseline content and only appends the foundation section; historical architecture document is preserved with an explicit current-direction addendum.
+
+**New P2 — mobile fast regression is skipped in every project.** `frontend/e2e/flows.pw.ts:126`: the mobile-only fast test was inserted in describe('desktop flows') at72. That describe's existing beforeEach at196 unconditionally skips every project except desktop-light; Playwright hooks apply to all tests in their describe regardless of declaration order. Thus mobile-light is skipped by the hook, while desktop-light is skipped by the new test's own mobile-only condition. Move the test to the existing mobile describe or a standalone mobile describe; preserve the original desktop-only hook and every prior assertion. Verify the CI report shows this mobile test executed, not skipped. This is a regression-proof gap rather than a claim that corrected CSS still fails.
+
+Final correction hashes reviewed:
+
+- styles.scss: `867bbd2489c60953f150b5825e08e3ffb1d6ddbfa12e3706fe20926eec45c837`
+- shell.layout.scss: `ff82b183ee5080ddc757b6e282c505818c6d3264557576442d1676f7d4fa91ce`
+- contrast-check.mjs: `19316d0cb9ddd04891ea691ec702a5ced35fdcdd19469153d26b29cbb182b609`
+
+**Verdict: source corrections accepted; CHANGES REQUIRED for the skipped mobile test.** CI40919766554 and actual compiled render/artifact inspection remain pending. No visual PASS, merge readiness, deployed behavior or whole-OS completion is claimed. Recheck the bounded test relocation on its final PR SHA, then inspect actual CI execution and PNGs.

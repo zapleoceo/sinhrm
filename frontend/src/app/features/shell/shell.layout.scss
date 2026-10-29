@@ -1,7 +1,7 @@
 /* Restyle C «Маршрут»: sidebar 240px with plain menu items (icon + label) and collapsible groups; on a wide screen
    it folds to an icon-only rail (`.rail`, 4rem) with tooltips. Colours are tokens from styles.scss only (no hex here). */
 $rail-width: 4rem; // icon-only rail: 24px icon + padding, 44px+ targets
-$rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-reduced-motion)
+$rail-motion: var(--os-rail-motion); // shared OS token keeps fast and reduced-motion behavior consistent
 
 .shell {
   display: grid;
@@ -21,40 +21,6 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   min-width: 0;
   height: 100vh;
   border-right: var(--app-border-w) solid var(--app-border);
-  background: var(--app-sidebar-bg);
-}
-
-/* V5 glass is limited to shell chrome; page panels, controls and overlays retain dense token surfaces. */
-:host-context(html[data-interface-style='glass']) .sidebar,
-:host-context(html[data-interface-style='glass']) .topbar {
-  background: color-mix(in srgb, var(--app-sidebar-bg) var(--os-glass-opacity), transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(1.12);
-  backdrop-filter: blur(20px) saturate(1.12);
-}
-
-:host-context(html[data-interface-style='solid']) .sidebar,
-:host-context(html[data-interface-style='solid']) .topbar {
-  background: var(--app-sidebar-bg);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-@supports not (backdrop-filter: blur(1px)) {
-  :host-context(html[data-interface-style='glass']) .sidebar,
-  :host-context(html[data-interface-style='glass']) .topbar {
-    background: var(--app-sidebar-bg);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
-:host-context(html[data-performance='fast']) .sidebar,
-:host-context(html[data-performance='fast']) .topbar,
-:host-context(html[data-performance='fast']) .shell.autohide.peek .sidebar {
-  background: var(--app-sidebar-bg);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
 }
 
 .sidebar-nav {
@@ -110,7 +76,7 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   background: none;
   color: var(--app-muted);
   cursor: pointer;
-  transition: background-color var(--app-fast) ease, color var(--app-fast) ease;
+  transition: background-color var(--os-control-motion) ease, color var(--os-control-motion) ease;
 
   &[aria-pressed='true'] { color: var(--mat-sys-primary); }
 
@@ -131,7 +97,7 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   color: inherit;
   font: var(--mat-sys-body-medium);
   text-decoration: none;
-  transition: background-color var(--app-fast) ease;
+  transition: background-color var(--os-control-motion) ease;
 
   > .label { min-width: 0; overflow-wrap: break-word; } // long uk/ru labels wrap, never clip
 
@@ -198,7 +164,7 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
     height: 18px;
     font-size: 18px;
     transform: rotate(-90deg);
-    transition: transform 150ms ease;
+    transition: transform var(--os-disclosure-motion) ease;
   }
   &[aria-expanded='true'] .chevron { transform: none; }
 }
@@ -209,7 +175,7 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   display: grid;
   grid-template-rows: 0fr;
   visibility: hidden;
-  transition: grid-template-rows 150ms ease, visibility 150ms;
+  transition: grid-template-rows var(--os-disclosure-motion) ease, visibility var(--os-disclosure-motion);
 
   &.open {
     grid-template-rows: 1fr;
@@ -280,14 +246,6 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   &.peek .sidebar { width: var(--app-sidebar-width); box-shadow: var(--app-overlay-shadow); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .shell, .nav-group, .nav-section .chevron, .nav-link, .rail-toggle, .shell.autohide .sidebar { transition: none; }
-}
-
-:host-context(html[data-motion='reduced']) {
-  .shell, .nav-group, .nav-section .chevron, .nav-link, .rail-toggle, .shell.autohide .sidebar, .sidebar { transition: none; }
-}
-
 /* ---------- footer: help + user ---------- */
 
 .user {
@@ -305,7 +263,7 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--app-fast) ease;
+  transition: background-color var(--os-control-motion) ease;
 
   &:hover { background: var(--app-nav-hover); }
   &:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
@@ -406,7 +364,7 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
     height: 100dvh;
     transform: translateX(-100%);
     visibility: hidden;
-    transition: transform 200ms ease, visibility 200ms;
+    transition: transform var(--os-drawer-motion) ease, visibility var(--os-drawer-motion);
     box-shadow: var(--app-overlay-shadow);
 
     &.open { transform: none; visibility: visible; }
@@ -425,35 +383,14 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   min-width: 0;
   padding: 0.25rem 0.25rem 0.25rem 0.75rem;
   border-bottom: var(--app-border-w) solid var(--app-border);
-  background: var(--app-sidebar-bg);
 }
 
-@media (max-width: 767.98px) {
-  :host-context(html[data-interface-style='glass']) .sidebar,
-  :host-context(html[data-interface-style='glass']) .topbar {
-    -webkit-backdrop-filter: blur(10px) saturate(1.08);
-    backdrop-filter: blur(10px) saturate(1.08);
-  }
+/* OS chrome surfaces consume the shared global theme contract, also used by future desktop windows. */
+.sidebar, .topbar {
+  background: var(--os-chrome-background, var(--app-sidebar-bg));
+  -webkit-backdrop-filter: var(--os-chrome-filter, none);
+  backdrop-filter: var(--os-chrome-filter, none);
 }
-
-/* Fast mode wins after responsive glass rules and removes shell motion/effects. */
-:host-context(html[data-performance='fast']) .sidebar,
-:host-context(html[data-performance='fast']) .topbar,
-:host-context(html[data-performance='fast']) .shell.autohide .sidebar,
-:host-context(html[data-performance='fast']) .shell.autohide.peek .sidebar {
-  background: var(--app-sidebar-bg);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-}
-
-:host-context(html[data-performance='fast']) .shell,
-:host-context(html[data-performance='fast']) .nav-link,
-:host-context(html[data-performance='fast']) .nav-group,
-:host-context(html[data-performance='fast']) .nav-section .chevron,
-:host-context(html[data-performance='fast']) .rail-toggle,
-:host-context(html[data-performance='fast']) .sidebar,
-:host-context(html[data-performance='fast']) .shell.autohide .sidebar { transition: none; }
 
 .topbar-brand { display: flex; text-decoration: none; --app-logo-size: 24px; border-radius: var(--app-radius-sm); }
 
@@ -473,10 +410,6 @@ $rail-motion: 180ms; // width change of the rail (200ms max, off with prefers-re
   inset: 0;
   z-index: 1000;
   background: rgb(0 0 0 / 0.4);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar { transition: none; }
 }
 
 /* In-flow mobile assistant access: never covers candidate rows or page actions. */

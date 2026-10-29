@@ -336,6 +336,13 @@ html {
   --app-overlay-shadow: 0 12px 32px -12px light-dark(rgb(18 23 34 / 0.22), rgb(0 0 0 / 0.6));
   --app-drag-shadow: 0 18px 36px -16px rgb(18 23 34 / 0.45), 0 4px 10px -4px rgb(18 23 34 / 0.25);
   --app-sidebar-bg: var(--app-card);
+  // Shared OS chrome contract: shell surfaces and future desktop windows consume the same inherited values.
+  --os-chrome-background: var(--app-sidebar-bg);
+  --os-chrome-filter: none;
+  --os-rail-motion: 180ms;
+  --os-control-motion: 120ms;
+  --os-disclosure-motion: 150ms;
+  --os-drawer-motion: 200ms;
   --app-nav-heading: var(--app-muted);
   --app-nav-hover: var(--app-card-2);
   --app-nav-active-bg: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
@@ -360,6 +367,31 @@ html[data-theme='light'] {
 
 html[data-theme='dark'] {
   color-scheme: dark;
+}
+
+html[data-interface-style='glass'] {
+  --os-chrome-background: color-mix(in srgb, var(--app-sidebar-bg) var(--os-glass-opacity), transparent);
+  --os-chrome-filter: blur(20px) saturate(1.12);
+}
+
+@media (max-width: 767.98px) {
+  html[data-interface-style='glass'] { --os-chrome-filter: blur(10px) saturate(1.08); }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  html[data-interface-style='glass'] {
+    --os-chrome-background: var(--app-sidebar-bg);
+    --os-chrome-filter: none;
+  }
+}
+
+html[data-performance='fast'] {
+  --os-chrome-background: var(--app-sidebar-bg);
+  --os-chrome-filter: none;
+  --os-rail-motion: 0ms;
+  --os-control-motion: 0ms;
+  --os-disclosure-motion: 0ms;
+  --os-drawer-motion: 0ms;
 }
 
 // Accent changes the interactive/brand channel; stage, success, warning and error colors remain semantic.
@@ -426,6 +458,20 @@ html[data-wallpaper='dusk'] {
 html[data-motion='reduced'] {
   scroll-behavior: auto;
   --app-fast: 0ms;
+  --os-rail-motion: 0ms;
+  --os-control-motion: 0ms;
+  --os-disclosure-motion: 0ms;
+  --os-drawer-motion: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    --app-fast: 0ms;
+    --os-rail-motion: 0ms;
+    --os-control-motion: 0ms;
+    --os-disclosure-motion: 0ms;
+    --os-drawer-motion: 0ms;
+  }
 }
 
 html[data-performance='fast'] {

@@ -123,75 +123,6 @@ test.describe('desktop flows', () => {
     await expect(page.locator('input[type="range"]')).toHaveValue('30');
   });
 
-  test('mobile fast mode removes shell blur, filters, transparency, and transitions, including after reload', async ({ page, context }, info) => {
-    test.skip(info.project.name !== 'mobile-light', 'mobile-light only');
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await open(page, context, '/settings/appearance');
-    await page.getByRole('radio', { name: 'Скло', exact: true }).click();
-    await page.getByRole('switch', { name: 'Швидкий режим' }).click();
-
-    const root = page.locator('html');
-    const assertFastShell = async (): Promise<void> => {
-      await expect(root).toHaveAttribute('data-performance', 'fast');
-      const surfaceState = await page.evaluate(() => {
-        const effects: { selector: string; pseudo: string; filter: string; backdropFilter: string; webkitBackdropFilter: string }[] = [];
-        const describe = (element: Element): string => {
-          const id = element.id ? `#${element.id}` : '';
-          const classes = Array.from(element.classList).slice(0, 2).map((name) => `.${name}`).join('');
-          return `${element.tagName.toLowerCase()}${id}${classes}`;
-        };
-        for (const element of document.querySelectorAll('*')) {
-          const base = getComputedStyle(element);
-          if (base.display !== 'none' && base.visibility !== 'hidden' && element.getClientRects().length > 0) {
-            for (const [pseudo, style] of [['', base], ['::before', getComputedStyle(element, '::before')], ['::after', getComputedStyle(element, '::after')]] as const) {
-              if (pseudo && (style.display === 'none' || style.content === 'none' || style.content === 'normal')) continue;
-              const filter = style.filter;
-              const backdropFilter = style.backdropFilter;
-              const webkitBackdropFilter = style.getPropertyValue('-webkit-backdrop-filter');
-              if (filter !== 'none' || backdropFilter !== 'none' || webkitBackdropFilter !== 'none') {
-                effects.push({ selector: describe(element), pseudo, filter, backdropFilter, webkitBackdropFilter });
-              }
-            }
-          }
-        }
-        const alpha = (color: string): number => {
-          const slash = color.match(/\/\s*([\d.]+)\s*\)$/);
-          if (slash) return Number(slash[1]);
-          const rgba = color.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
-          return rgba ? Number(rgba[1]) : color === 'transparent' ? 0 : 1;
-        };
-        const shell = ['#app-sidebar', '.topbar'].map((selector) => {
-          const element = document.querySelector(selector);
-          if (!element) return { selector, missing: true };
-          const style = getComputedStyle(element);
-          return {
-            selector,
-            missing: false,
-            transitionDuration: style.transitionDuration,
-            backgroundColor: style.backgroundColor,
-            backgroundAlpha: alpha(style.backgroundColor),
-          };
-        });
-        return { effects, shell };
-      });
-
-      expect(surfaceState.effects, 'no rendered element or pseudo-element may retain filter/backdrop-filter in fast mode').toEqual([]);
-      for (const surface of surfaceState.shell) {
-        expect(surface.missing, `${surface.selector} exists in the authenticated shell`).toBe(false);
-        expect(surface.backgroundAlpha, `${surface.selector} background is opaque`).toBe(1);
-        expect(surface.transitionDuration, `${surface.selector} transitions are disabled`).toMatch(/^(0s)(,\s*0s)*$/);
-      }
-    };
-
-    const theme = await root.getAttribute('data-theme');
-    await assertFastShell();
-    await page.reload();
-    await settle(page);
-    await expect(root).toHaveAttribute('data-theme', theme ?? 'light');
-    await expect(root).toHaveAttribute('data-interface-style', 'glass');
-    await assertFastShell();
-  });
-
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'desktop-light', 'desktop-light only'));
 
@@ -879,6 +810,74 @@ test.describe('desktop flows', () => {
 test.describe('mobile flows', () => {
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'mobile-light', 'mobile-light only'));
+
+  test('fast mode removes shell blur, filters, transparency, and transitions, including after reload', async ({ page, context }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await open(page, context, '/settings/appearance');
+    await page.getByRole('radio', { name: 'Скло', exact: true }).click();
+    await page.getByRole('switch', { name: 'Швидкий режим' }).click();
+
+    const root = page.locator('html');
+    const assertFastShell = async (): Promise<void> => {
+      await expect(root).toHaveAttribute('data-performance', 'fast');
+      const surfaceState = await page.evaluate(() => {
+        const effects: { selector: string; pseudo: string; filter: string; backdropFilter: string; webkitBackdropFilter: string }[] = [];
+        const describe = (element: Element): string => {
+          const id = element.id ? `#${element.id}` : '';
+          const classes = Array.from(element.classList).slice(0, 2).map((name) => `.${name}`).join('');
+          return `${element.tagName.toLowerCase()}${id}${classes}`;
+        };
+        for (const element of document.querySelectorAll('*')) {
+          const base = getComputedStyle(element);
+          if (base.display !== 'none' && base.visibility !== 'hidden' && element.getClientRects().length > 0) {
+            for (const [pseudo, style] of [['', base], ['::before', getComputedStyle(element, '::before')], ['::after', getComputedStyle(element, '::after')]] as const) {
+              if (pseudo && (style.display === 'none' || style.content === 'none' || style.content === 'normal')) continue;
+              const filter = style.filter;
+              const backdropFilter = style.backdropFilter;
+              const webkitBackdropFilter = style.getPropertyValue('-webkit-backdrop-filter');
+              if (filter !== 'none' || backdropFilter !== 'none' || webkitBackdropFilter !== 'none') {
+                effects.push({ selector: describe(element), pseudo, filter, backdropFilter, webkitBackdropFilter });
+              }
+            }
+          }
+        }
+        const alpha = (color: string): number => {
+          const slash = color.match(/\/\s*([\d.]+)\s*\)$/);
+          if (slash) return Number(slash[1]);
+          const rgba = color.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
+          return rgba ? Number(rgba[1]) : color === 'transparent' ? 0 : 1;
+        };
+        const shell = ['#app-sidebar', '.topbar'].map((selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return { selector, missing: true };
+          const style = getComputedStyle(element);
+          return {
+            selector,
+            missing: false,
+            transitionDuration: style.transitionDuration,
+            backgroundColor: style.backgroundColor,
+            backgroundAlpha: alpha(style.backgroundColor),
+          };
+        });
+        return { effects, shell };
+      });
+
+      expect(surfaceState.effects, 'no rendered element or pseudo-element may retain filter/backdrop-filter in fast mode').toEqual([]);
+      for (const surface of surfaceState.shell) {
+        expect(surface.missing, `${surface.selector} exists in the authenticated shell`).toBe(false);
+        expect(surface.backgroundAlpha, `${surface.selector} background is opaque`).toBe(1);
+        expect(surface.transitionDuration, `${surface.selector} transitions are disabled`).toMatch(/^(0s)(,\s*0s)*$/);
+      }
+    };
+
+    const theme = await root.getAttribute('data-theme');
+    await assertFastShell();
+    await page.reload();
+    await settle(page);
+    await expect(root).toHaveAttribute('data-theme', theme ?? 'light');
+    await expect(root).toHaveAttribute('data-interface-style', 'glass');
+    await assertFastShell();
+  });
 
   test('drawer opens, closes, and closes on navigation', async ({ page, context }) => {
     await open(page, context, '/');
