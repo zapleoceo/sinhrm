@@ -142,12 +142,10 @@ jobs:
       - run: npm run test:docs
       - run: npm run build
 
-  # UI parity harness (docs/guides/ui-parity.md): production build + mock API from committed fixtures; inventory,
-  # errors, layout, axe and flow checks. NOT a required check yet — the owner adds it to "Protect main" once stable.
-  # Builds on its own (in parallel with `frontend`) instead of waiting for that job's artifact.
-  ui-parity:
+  # UI parity uses one production build and four isolated Playwright project jobs.
+  # The stable `ui-parity` check below aggregates every shard, including failure/cancellation.
+  ui-parity-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -156,6 +154,25 @@ jobs:
       - run: npm ci
       - run: npm run e2e:lint
       - run: npm run build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with: { name: ui-parity-production-build, path: frontend/dist, retention-days: 1 }
+
+  ui-parity-project:
+    needs: ui-parity-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [desktop-light, desktop-dark, mobile-light, mobile-dark]
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with: { name: ui-parity-production-build, path: frontend/dist }
       - id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -163,14 +180,45 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
       - run: npx playwright install --with-deps --only-shell chromium
-      - run: npm run e2e
-        env: { E2E_SCREENSHOTS: "1" }
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
-        with: { name: ui-parity-report, path: frontend/e2e/.out/report, retention-days: 14 }
+      - run: npm run e2e -- --project=${{ matrix.project }} --workers=2
+        env:
+          E2E_SCREENSHOTS: "1"
+          E2E_REPORT_DIR: .out/report-${{ matrix.project }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
-        with: { name: ui-parity-screens, path: frontend/e2e/.out/screens, retention-days: 7, if-no-files-found: ignore }
+        with:
+          name: ui-parity-report-${{ matrix.project }}
+          path: frontend/e2e/.out/report-${{ matrix.project }}
+          retention-days: 14
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: ui-parity-screens-${{ matrix.project }}
+          path: frontend/e2e/.out/screens/${{ matrix.project }}
+          retention-days: 7
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: ui-parity-inventories-${{ matrix.project }}
+          path: frontend/e2e/.out/inventories/${{ matrix.project }}
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Keep this stable check name. Any unsuccessful, cancelled or skipped matrix result fails this gate.
+  ui-parity:
+    if: always()
+    needs: [ui-parity-build, ui-parity-project]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a successful build and every project shard
+        env:
+          BUILD: ${{ needs['ui-parity-build'].result }}
+          PROJECTS: ${{ needs['ui-parity-project'].result }}
+        run: |
+          echo "build=$BUILD project-shards=$PROJECTS"
+          [ "$BUILD" = success ] && [ "$PROJECTS" = success ]
 
   extension:
     runs-on: ubuntu-latest

@@ -7,6 +7,7 @@ const VISUAL = !!process.env['E2E_VISUAL'];
 const desktop = { width: 1440, height: 900 };
 const mobile = { width: 390, height: 844 };
 const common = { locale: 'uk-UA', timezoneId: 'Europe/Kyiv', reducedMotion: 'reduce' as const, baseURL: E2E_ORIGIN };
+const reportFolder = process.env['E2E_REPORT_DIR'] ?? '.out/report';
 
 export default defineConfig({
   testDir: '.',
@@ -19,7 +20,7 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 7_000, toHaveScreenshot: { maxDiffPixelRatio: 0.002, animations: 'disabled' } },
   forbidOnly: CI,
-  reporter: CI ? [['list'], ['html', { open: 'never', outputFolder: '.out/report' }]] : [['list'], ['html', { open: 'never', outputFolder: '.out/report' }]],
+  reporter: [['list'], ['html', { open: 'never', outputFolder: reportFolder }]],
   globalTeardown: './axe-teardown.ts',
   use: { ...common, actionTimeout: 10_000, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   webServer: { command: `node e2e/serve.mjs --port=${E2E_PORT}`, cwd: '..', url: `${E2E_ORIGIN}/login`, reuseExistingServer: !CI, timeout: 30_000 },
