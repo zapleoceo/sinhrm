@@ -29,6 +29,8 @@ test.describe('OS routed windows', () => {
     await expect(peopleWindow.getByRole('heading', { level: 1, name: /Співробітники/ })).toBeVisible();
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
 
+    await page.getByTestId('dock-window-os1').click();
+    await expect(tasksWindow).toHaveClass(/active/);
     await tasksWindow.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
     await expect(tasksWindow).toHaveClass(/minimized/);
     await expect(tasksWindow).toBeHidden();
@@ -158,7 +160,7 @@ test.describe('OS routed windows on mobile', () => {
         expect(await inactive.evaluate((element) => element.contains(document.activeElement))).toBe(false);
       }
 
-      await page.getByRole('button', { name: 'Показати основну сторінку' }).click();
+      await page.locator('.dock-home').click();
       await expect(page.locator('.primary-view')).toBeVisible();
       await expect(page.locator('article.os-window.open.mobile-inactive')).toHaveCount(2);
       await page.getByTestId('dock-window-os2').click();

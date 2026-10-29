@@ -12,7 +12,7 @@ The typed registry in `frontend/src/app/features/desktop/desktop.model.ts` retai
 
 The current widgets show only the authenticated dashboard's aggregate candidate counts, current user's task counts, day-route interview/task counts, and available approval counts. They do not render names, task titles, candidate records, or approval rows. Dashboard results remain in memory and are never persisted by the desktop.
 
-S/M/L changes the widget grid span on desktop. On phones the widgets use one column and retain the selected size through minimum content heights of 7.5rem, 9.5rem, and 11.5rem, respectively, so size remains perceptible without forcing a fixed height or clipping longer localized content.
+S/M/L changes the widget grid span on desktop's 12-column layout (S=3, M=4, L=8), so the default three widgets fit on one row at wide widths. At tablet widths the grid uses two columns; phones use one column and retain the selected size through compact minimum content heights of 5.25rem, 6.25rem, and 7.5rem, respectively. Cards remain content-sized so localized text is not clipped.
 
 ## Per-user layout
 
@@ -22,6 +22,6 @@ Cards use CDK drag sorting with a touch delay and explicit keyboard move-up/move
 
 ## Appearance and verification
 
-The feature stylesheet uses existing `--app-*` and Material semantic tokens and reads the root appearance attributes (`data-theme`, `data-color-scheme`, `data-accent`, `data-wallpaper`, `data-interface-style`, `data-performance`, `data-motion`, `--os-glass-opacity`) when present. Root Material tokens supply theme/accent colors; wallpaper variants add a restrained semantic-accent wash. Glass is limited to launcher/widget chrome, with opaque content interiors, a 20px desktop and 10px mobile blur ceiling, opaque fallback, and fast/reduced-motion overrides after responsive rules. It does not edit global theme tokens or the theme service.
+The feature stylesheet uses existing `--app-*`, Material semantic tokens and shared `--os-chrome-*` tokens, reading the root appearance attributes (`data-theme`, `data-color-scheme`, `data-accent`, `data-wallpaper`, `data-interface-style`, `data-performance`, `data-motion`, `--os-glass-opacity`). Root Material tokens supply theme/accent colors; wallpaper variants add a restrained semantic-accent wash. Glass is limited to widget headers; each header has one translucent layer, while widget content remains opaque. Shared chrome caps blur at 20px on desktop and 10px on mobile; unsupported blur and fast mode remain opaque. The desktop heading places the localized date alongside the title at wide widths and below it on narrow screens.
 
 Focused tests cover registry access, strict storage parsing, account switching, blocked storage, widget data privacy/states, operations, route placement, focus restoration and launcher-link modifiers. The UI parity inventory targets Desktop at `/`; its rendered changes require human review before snapshot acceptance. An E2E flow covers widget persistence/interactions using existing mocked dashboard fixtures. No live API or production performance claim is made here.

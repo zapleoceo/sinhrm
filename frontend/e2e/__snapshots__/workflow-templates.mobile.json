@@ -6,16 +6,23 @@
  ],
  "landmarks": [
   "banner \"\"",
-  "main \"\""
+  "main \"\"",
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Головне меню\"",
   "button \"Запуск\"",
   "button \"Запусків\"",
+  "button \"Звіти\"",
   "button \"Змінено\"",
   "button \"Кроків\"",
+  "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
   "button \"Назва\"",
   "button \"Поговорити зі Стіком\"",
+  "button \"Співробітники\"",
   "button \"Створити\" [disabled]",
   "button \"Тип\"",
   "button \"Фільтр стовпця «Запуск»\"",
@@ -27,7 +34,9 @@
   "combobox \"Запуск\"",
   "combobox \"Тип\"",
   "link \"Воркфлоу\" -> /workflows/runs",
-  "link \"Огляд\" -> /",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
   "textbox \"Назва\""
  ],
  "columns": [

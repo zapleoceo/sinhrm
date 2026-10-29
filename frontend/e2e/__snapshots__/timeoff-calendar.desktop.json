@@ -5,37 +5,26 @@
   "Календар команди"
  ],
  "landmarks": [
-  "complementary \"\"",
+  "banner \"\"",
   "main \"\"",
-  "navigation \"Головне меню\""
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Автоприховування меню\"",
-  "button \"Адміністрування 9 нових\"",
-  "button \"Згорнути меню\" [expanded]",
-  "button \"Люди\" [expanded]",
+  "button \"Звіти\"",
   "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
   "button \"Наступний\"",
+  "button \"Поговорити зі Стіком\"",
   "button \"Попередній\"",
-  "button \"Продуктивність\"",
-  "button \"Рекрутинг 2 нових\"",
-  "button \"Сервіси\"",
+  "button \"Співробітники\"",
   "combobox \"Філія\"",
-  "link \"SinHRM\" -> /",
-  "link \"Воркфлоу\" -> /workflows/runs",
-  "link \"Довідка\" -> /docs",
-  "link \"Календар команди\" -> /timeoff/calendar",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
   "link \"Мої відсутності\" -> /timeoff",
-  "link \"Мої відсутності\" -> /timeoff",
-  "link \"Мої документи\" -> /me/documents",
-  "link \"Мої задачі\" -> /tasks",
-  "link \"Мій табель\" -> /time",
-  "link \"Огляд\" -> /",
-  "link \"Оргструктура\" -> /people/org-chart",
-  "link \"Погодження 30 нових\" -> /timeoff/approvals",
-  "link \"Погодження табелів 40 нових\" -> /time/approvals",
-  "link \"Співробітники\" -> /people",
-  "link \"Табелі команди\" -> /time/team"
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /"
  ],
  "columns": [
   "",
@@ -73,6 +62,6 @@
  ],
  "counts": {
   "cell": 868,
-  "img": 5
+  "img": 2
  }
 }

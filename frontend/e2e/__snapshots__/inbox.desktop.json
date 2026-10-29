@@ -5,31 +5,25 @@
   "Вхідні"
  ],
  "landmarks": [
-  "complementary \"\"",
+  "banner \"\"",
   "main \"\"",
-  "navigation \"Головне меню\""
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Автоприховування меню\"",
-  "button \"Адміністрування 9 нових\"",
-  "button \"Згорнути меню\" [expanded]",
-  "button \"Люди 70 нових\"",
+  "button \"Звіти\"",
   "button \"Меню користувача\"",
-  "button \"Продуктивність\"",
-  "button \"Рекрутинг\" [expanded]",
-  "button \"Сервіси\"",
-  "link \"SinHRM\" -> /",
-  "link \"Вакансії\" -> /vacancies",
-  "link \"Вхідні\" -> /inbox",
-  "link \"Довідка\" -> /docs",
-  "link \"Заявки на підбір 2 нових\" -> /hiring-requests",
-  "link \"Звіти\" -> /reports",
-  "link \"Кандидати\" -> /candidates",
-  "link \"Мої задачі\" -> /tasks",
-  "link \"Огляд\" -> /"
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
+  "button \"Поговорити зі Стіком\"",
+  "button \"Співробітники\"",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /"
  ],
  "columns": [],
  "counts": {
-  "img": 4
+  "img": 2
  }
 }

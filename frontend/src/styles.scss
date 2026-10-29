@@ -339,6 +339,10 @@ html {
   // Shared OS chrome contract: shell surfaces and future desktop windows consume the same inherited values.
   --os-chrome-background: var(--app-sidebar-bg);
   --os-chrome-filter: none;
+  --os-window-frame-background: var(--app-sidebar-bg);
+  --os-chrome-edge: var(--app-border);
+  --os-chrome-reflection: none;
+  --os-chrome-shadow: none;
   --os-rail-motion: 180ms;
   --os-control-motion: 120ms;
   --os-disclosure-motion: 150ms;
@@ -372,6 +376,10 @@ html[data-theme='dark'] {
 html[data-interface-style='glass'] {
   --os-chrome-background: color-mix(in srgb, var(--app-sidebar-bg) var(--os-glass-opacity), transparent);
   --os-chrome-filter: blur(20px) saturate(1.12);
+  --os-window-frame-background: transparent;
+  --os-chrome-edge: light-dark(rgb(255 255 255 / 0.72), rgb(255 255 255 / 0.2));
+  --os-chrome-reflection: linear-gradient(180deg, light-dark(rgb(255 255 255 / 0.36), rgb(255 255 255 / 0.1)), transparent 58%);
+  --os-chrome-shadow: 0 16px 40px -24px light-dark(rgb(28 38 56 / 0.52), rgb(0 0 0 / 0.72));
 }
 
 @media (max-width: 767.98px) {
@@ -382,12 +390,20 @@ html[data-interface-style='glass'] {
   html[data-interface-style='glass'] {
     --os-chrome-background: var(--app-sidebar-bg);
     --os-chrome-filter: none;
+    --os-window-frame-background: var(--app-sidebar-bg);
+    --os-chrome-edge: var(--app-border);
+    --os-chrome-reflection: none;
+    --os-chrome-shadow: none;
   }
 }
 
 html[data-performance='fast'] {
   --os-chrome-background: var(--app-sidebar-bg);
   --os-chrome-filter: none;
+  --os-window-frame-background: var(--app-sidebar-bg);
+  --os-chrome-edge: var(--app-border);
+  --os-chrome-reflection: none;
+  --os-chrome-shadow: none;
   --os-rail-motion: 0ms;
   --os-control-motion: 0ms;
   --os-disclosure-motion: 0ms;

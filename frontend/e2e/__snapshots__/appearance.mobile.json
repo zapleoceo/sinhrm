@@ -11,15 +11,29 @@
  "landmarks": [
   "banner \"\"",
   "main \"\"",
-  "main \"\""
+  "main \"\"",
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Головне меню\"",
+  "button \"Звіти\"",
+  "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
   "button \"Поговорити зі Стіком\"",
   "button \"Скинути налаштування\"",
+  "button \"Співробітники\"",
   "combobox \"Колірна схема\"",
   "combobox \"Тло робочого столу\"",
-  "link \"Огляд\" -> /",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
+  "option \"Sintegrum\"",
+  "option \"Власна\" [selected]",
+  "option \"Пісок\"",
+  "option \"Сутінки\"",
+  "option \"Туман\" [selected]",
   "radio \"Графітовий\"",
   "radio \"Зелений\"",
   "radio \"Світла\"",
@@ -35,6 +49,7 @@
  ],
  "columns": [],
  "counts": {
-  "img": 2
+  "img": 2,
+  "option": 5
  }
 }

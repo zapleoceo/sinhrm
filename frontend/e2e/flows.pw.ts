@@ -231,6 +231,8 @@ test.describe('desktop flows', () => {
     await expect(article.getByRole('heading', { level: 1, name: 'Співробітники' })).toBeVisible();
     const firstWindow = page.getByTestId('os-window-os1');
     await expect(firstWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await page.getByTestId('dock-window-os1').click();
+    await expect(firstWindow).toHaveClass(/active/);
     await firstWindow.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
     await expect(firstWindow).toBeHidden();
     const restore = page.getByTestId('dock-window-os1');
@@ -1093,7 +1095,11 @@ test('desktop: real launcher routes and per-user widgets support add, size, keyb
   const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
   expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
 
-  await page.getByRole('button', { name: 'Кандидати', exact: true }).click();
+  await page.locator('.modules-toggle').click();
+  const modules = page.getByRole('navigation', { name: 'Головне меню' });
+  const recruiting = modules.getByRole('button', { name: /^Рекрутинг/ });
+  if (await recruiting.getAttribute('aria-expanded') !== 'true') await recruiting.click();
+  await modules.getByRole('link', { name: 'Кандидати', exact: true }).click();
   const candidatesWindow = page.getByTestId('os-window-os1');
   await expect(candidatesWindow).toHaveClass(/open/);
   await expect(candidatesWindow.getByRole('heading', { level: 1, name: 'Кандидати' })).toBeVisible();

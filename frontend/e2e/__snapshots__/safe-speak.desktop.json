@@ -5,30 +5,24 @@
   "Safe Speak"
  ],
  "landmarks": [
-  "complementary \"\"",
+  "banner \"\"",
   "main \"\"",
-  "navigation \"Головне меню\""
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Автоприховування меню\"",
-  "button \"Адміністрування 9 нових\"",
-  "button \"Згорнути меню\" [expanded]",
-  "button \"Люди 70 нових\"",
+  "button \"Звіти\"",
   "button \"Меню користувача\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
   "button \"Надіслати\" [disabled]",
-  "button \"Продуктивність\"",
-  "button \"Рекрутинг 2 нових\"",
-  "button \"Сервіси\" [expanded]",
+  "button \"Поговорити зі Стіком\"",
+  "button \"Співробітники\"",
   "combobox \"Категорія\"",
-  "link \"Safe Speak\" -> /safe-speak",
-  "link \"SinHRM\" -> /",
-  "link \"База знань\" -> /knowledge",
-  "link \"Довідка\" -> /docs",
-  "link \"Каталог звітів\" -> /reports/catalog",
-  "link \"Конструктор звітів\" -> /reports/builder",
-  "link \"Мої задачі\" -> /tasks",
-  "link \"Мої звернення\" -> /desk",
-  "link \"Огляд\" -> /",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
   "radio \"Нове повідомлення\" [checked]",
   "radio \"У мене є код\"",
   "textbox \"Тема\"",
@@ -36,6 +30,6 @@
  ],
  "columns": [],
  "counts": {
-  "img": 4
+  "img": 2
  }
 }

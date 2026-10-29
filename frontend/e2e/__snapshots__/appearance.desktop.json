@@ -9,27 +9,31 @@
   "Швидкий режим"
  ],
  "landmarks": [
-  "complementary \"\"",
+  "banner \"\"",
   "main \"\"",
   "main \"\"",
-  "navigation \"Головне меню\""
+  "navigation \"Вікна робочого простору\"",
+  "region \"Відкриті вікна\""
  ],
  "interactive": [
-  "button \"Автоприховування меню\"",
-  "button \"Адміністрування 9 нових\"",
-  "button \"Згорнути меню\" [expanded]",
-  "button \"Люди 70 нових\"",
+  "button \"Звіти\"",
   "button \"Меню користувача\"",
-  "button \"Продуктивність\"",
-  "button \"Рекрутинг 2 нових\"",
-  "button \"Сервіси\"",
+  "button \"Модулі\"",
+  "button \"Мої задачі\"",
+  "button \"Мої звернення\"",
+  "button \"Поговорити зі Стіком\"",
   "button \"Скинути налаштування\"",
+  "button \"Співробітники\"",
   "combobox \"Колірна схема\"",
   "combobox \"Тло робочого столу\"",
-  "link \"SinHRM\" -> /",
-  "link \"Довідка\" -> /docs",
-  "link \"Мої задачі\" -> /tasks",
-  "link \"Огляд\" -> /",
+  "link \"Зовнішній вигляд\" -> /settings/appearance",
+  "link \"Робочий стіл\" -> /",
+  "link \"Робочий стіл\" -> /",
+  "option \"Sintegrum\"",
+  "option \"Власна\" [selected]",
+  "option \"Пісок\"",
+  "option \"Сутінки\"",
+  "option \"Туман\" [selected]",
   "radio \"Графітовий\"",
   "radio \"Зелений\"",
   "radio \"Світла\"",
@@ -45,6 +49,7 @@
  ],
  "columns": [],
  "counts": {
-  "img": 4
+  "img": 2,
+  "option": 5
  }
 }

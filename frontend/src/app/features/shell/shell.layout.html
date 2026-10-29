@@ -3,7 +3,7 @@
       <a class="topbar-brand" href="/" (click)="navigateDesktop($event)" [attr.aria-label]="'titles.desktop' | transloco"><app-logo /></a>
       <button mat-button type="button" class="modules-toggle" [attr.aria-label]="'shell.nav.modules' | transloco" aria-controls="app-sidebar" [attr.aria-expanded]="drawerOpen()" (click)="toggleDrawer()">
         <mat-icon>menu</mat-icon>
-        <span>{{ 'shell.nav.modules' | transloco }}</span>
+        <span class="modules-label">{{ 'shell.nav.modules' | transloco }}</span>
         <app-nav-badge class="burger-badge" [count]="totalBadge()" />
       </button>
       <span class="topbar-title">{{ pageTitleKey() ? (pageTitleKey()! | transloco) : 'SinHRM' }}</span>

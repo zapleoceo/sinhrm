@@ -231,3 +231,170 @@ test('four routed Dock windows keep their pages through controls and report brow
     expect(surface.transitionDuration.split(',').every((value) => Number.parseFloat(value) === 0)).toBe(true);
   }
 });
+
+test('rendered desktop materials follow glass transparency, palette, solid, and fast preferences', async ({ page, context }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-light', 'desktop-light only; captures the appearance matrix once');
+
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const mock = await installMock(context);
+  await page.clock.setSystemTime(RECORDED_AT);
+  watchNetwork(page);
+  await page.goto('/');
+  await settle(page);
+  await page.getByRole('navigation', { name: 'Вікна робочого простору' })
+    .getByRole('button', { name: 'Мої задачі', exact: true }).click();
+
+  const root = page.locator('html');
+  const window = page.getByTestId('os-window-os1');
+  await expect(window).toHaveClass(/open/);
+  await expect(window.locator('.window-titlebar')).toBeVisible();
+  await expect(page.locator('.desktop-page .widget-header').first()).toBeVisible();
+  const slider = page.getByTestId('appearance-transparency');
+  const openAppearance = async (): Promise<void> => {
+    await page.locator('.topbar .os-user-launcher').click();
+    await page.getByRole('menuitem', { name: 'Зовнішній вигляд', exact: true }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
+  };
+  const returnToDesktop = async (): Promise<void> => {
+    await page.locator('.topbar-brand').click();
+    await expect(page.locator('.desktop-page')).toBeVisible();
+    await page.getByTestId('dock-window-os1').click();
+    await expect(window).toHaveClass(/active/);
+  };
+  const setTransparency = async (value: number): Promise<void> => {
+    await slider.focus();
+    await page.keyboard.press('Home');
+    for (let step = 0; step < value; step++) await page.keyboard.press('ArrowRight');
+    await expect(slider).toHaveValue(String(value));
+  };
+
+  type Surface = {
+    readonly id: string;
+    readonly missing: boolean;
+    readonly backgroundAlpha: number;
+    readonly backgroundColor: string;
+    readonly backdropFilter: string;
+    readonly boxShadow: string;
+    readonly backgroundImage: string;
+  };
+  const captureMaterials = async (label: string, expectedAlpha: number): Promise<void> => {
+    const state = await page.evaluate(() => {
+      const alpha = (color: string): number => {
+        const modern = color.match(/\/\s*([\d.]+)\s*\)$/);
+        if (modern) return Number(modern[1]);
+        const legacy = color.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
+        return legacy ? Number(legacy[1]) : color === 'transparent' ? 0 : 1;
+      };
+      const selectors = [
+        ['window-frame', '.os-window.window-os1.open'],
+        ['window-titlebar', '.os-window.window-os1.open .window-titlebar'],
+        ['window-body', '.os-window.window-os1.open .window-body'],
+        ['widget-frame', '.desktop-page .widget'],
+        ['widget-header', '.desktop-page .widget .widget-header'],
+        ['widget-content', '.desktop-page .widget .widget-content'],
+      ] as const;
+      const surfaces: Surface[] = selectors.map(([id, selector]) => {
+        const element = document.querySelector(selector);
+        if (!element) return { id, missing: true, backgroundAlpha: Number.NaN, backgroundColor: '', backdropFilter: '', boxShadow: '', backgroundImage: '' };
+        const style = getComputedStyle(element);
+        return {
+          id,
+          missing: false,
+          backgroundAlpha: alpha(style.backgroundColor),
+          backgroundColor: style.backgroundColor,
+          backdropFilter: style.backdropFilter,
+          boxShadow: style.boxShadow,
+          backgroundImage: style.backgroundImage,
+        };
+      });
+      return {
+        appearance: {
+          theme: document.documentElement.dataset['theme'],
+          colorScheme: document.documentElement.dataset['colorScheme'],
+          interfaceStyle: document.documentElement.dataset['interfaceStyle'],
+          performance: document.documentElement.dataset['performance'],
+          glassOpacity: getComputedStyle(document.documentElement).getPropertyValue('--os-glass-opacity').trim(),
+        },
+        surfaces,
+      };
+    });
+
+    expect(state.surfaces.filter((surface) => surface.missing), `${label}: rendered surfaces`).toEqual([]);
+    const surfaces = state.surfaces as Surface[];
+    const glassStandard = state.appearance.interfaceStyle === 'glass' && state.appearance.performance === 'standard';
+    for (const id of ['window-titlebar', 'widget-header']) {
+      const surface = surfaces.find((candidate) => candidate.id === id)!;
+      expect(surface.backgroundAlpha, `${label}: ${id} background alpha`).toBeCloseTo(expectedAlpha, 2);
+    }
+    for (const id of ['window-frame', 'widget-frame']) {
+      const surface = surfaces.find((candidate) => candidate.id === id)!;
+      expect(surface.backgroundAlpha, `${label}: ${id} background alpha`).toBe(glassStandard ? 0 : 1);
+    }
+    for (const id of ['window-body', 'widget-content']) {
+      const surface = surfaces.find((candidate) => candidate.id === id)!;
+      expect(surface.backgroundAlpha, `${label}: ${id} remains opaque`).toBe(1);
+    }
+
+    if (glassStandard) {
+      expect(surfaces.find((surface) => surface.id === 'window-titlebar')!.backdropFilter).toContain('blur');
+      expect(surfaces.find((surface) => surface.id === 'widget-header')!.backdropFilter).toContain('blur');
+      expect(surfaces.find((surface) => surface.id === 'window-frame')!.boxShadow).not.toBe('none');
+      expect(surfaces.find((surface) => surface.id === 'window-titlebar')!.backgroundImage).not.toBe('none');
+    } else {
+      for (const id of ['window-titlebar', 'widget-header']) {
+        expect(surfaces.find((surface) => surface.id === id)!.backdropFilter, `${label}: ${id} blur`).toBe('none');
+      }
+      expect(surfaces.find((surface) => surface.id === 'window-frame')!.boxShadow, `${label}: frame shadow`).toBe('none');
+      expect(surfaces.find((surface) => surface.id === 'window-titlebar')!.backgroundImage, `${label}: reflection`).toBe('none');
+    }
+
+    await testInfo.attach(`${label}.json`, { body: JSON.stringify(state, null, 2), contentType: 'application/json' });
+    await testInfo.attach(`${label}.png`, { body: await page.screenshot({ fullPage: false }), contentType: 'image/png' });
+  };
+
+  await expect(root).toHaveAttribute('data-theme', 'light');
+  await expect(root).toHaveAttribute('data-interface-style', 'glass');
+  await expect(root).toHaveAttribute('data-performance', 'standard');
+  await captureMaterials('os-material-glass-default-light', 0.82);
+
+  await openAppearance();
+  await expect(slider).toHaveValue('18');
+  await setTransparency(0);
+  await expect(root).toHaveCSS('--os-glass-opacity', '100%');
+  await returnToDesktop();
+  await captureMaterials('os-material-glass-transparency-0', 1);
+
+  await openAppearance();
+  await setTransparency(40);
+  await expect(root).toHaveCSS('--os-glass-opacity', '60%');
+  await returnToDesktop();
+  await captureMaterials('os-material-glass-transparency-40', 0.6);
+
+  await openAppearance();
+  await setTransparency(18);
+  await page.getByRole('radio', { name: 'Темна', exact: true }).click();
+  await expect(root).toHaveAttribute('data-theme', 'dark');
+  await returnToDesktop();
+  await captureMaterials('os-material-glass-default-dark', 0.82);
+
+  await openAppearance();
+  await page.getByTestId('appearance-scheme').selectOption('sintegrum');
+  await expect(root).toHaveAttribute('data-color-scheme', 'sintegrum');
+  await expect(root).toHaveAttribute('data-theme', 'dark');
+  await returnToDesktop();
+  await captureMaterials('os-material-glass-reference-palette', 0.82);
+
+  await openAppearance();
+  await page.getByRole('radio', { name: 'Суцільний', exact: true }).click();
+  await expect(root).toHaveAttribute('data-interface-style', 'solid');
+  await returnToDesktop();
+  await captureMaterials('os-material-solid-reference-palette', 1);
+
+  await openAppearance();
+  await page.getByRole('radio', { name: 'Скло', exact: true }).click();
+  await page.getByRole('switch', { name: 'Швидкий режим' }).click();
+  await expect(root).toHaveAttribute('data-performance', 'fast');
+  await returnToDesktop();
+  await captureMaterials('os-material-fast-reference-palette', 1);
+  expect(mock.missing).toEqual([]);
+});

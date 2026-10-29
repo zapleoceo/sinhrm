@@ -15,9 +15,9 @@
   min-width: 0;
   width: min(22rem, calc(100vw - 1.5rem));
   height: min(46rem, calc(100dvh - 4.25rem));
-  border: var(--app-border-w) solid var(--app-border);
+  border: var(--app-border-w) solid var(--os-chrome-edge, var(--app-border));
   border-radius: var(--app-radius);
-  box-shadow: var(--app-overlay-shadow);
+  box-shadow: var(--os-chrome-shadow, var(--app-overlay-shadow));
   transform: translateY(-0.35rem);
   visibility: hidden;
   opacity: 0;
@@ -305,8 +305,17 @@
 /* OS chrome surfaces consume the shared global theme contract, also used by future desktop windows. */
 .sidebar, .topbar {
   background: var(--os-chrome-background, var(--app-sidebar-bg));
+  background-image: var(--os-chrome-reflection, none);
   -webkit-backdrop-filter: var(--os-chrome-filter, none);
   backdrop-filter: var(--os-chrome-filter, none);
+}
+
+.topbar { border-bottom-color: var(--os-chrome-edge, var(--app-border)); }
+
+.modules-toggle {
+  position: relative;
+  flex: none;
+  padding-inline-end: 2.75rem;
 }
 
 .topbar-brand { display: flex; text-decoration: none; --app-logo-size: 24px; border-radius: var(--app-radius-sm); }
@@ -351,12 +360,13 @@
   max-width: calc(100vw - 1rem);
   padding: 0.35rem;
   overflow-x: auto;
-  border: var(--app-border-w) solid var(--app-border);
+  border: var(--app-border-w) solid var(--os-chrome-edge, var(--app-border));
   border-radius: calc(var(--app-radius) + 0.25rem);
   background: var(--os-chrome-background, var(--app-card));
+  background-image: var(--os-chrome-reflection, none);
   -webkit-backdrop-filter: var(--os-chrome-filter, none);
   backdrop-filter: var(--os-chrome-filter, none);
-  box-shadow: var(--app-overlay-shadow);
+  box-shadow: var(--os-chrome-shadow, var(--app-overlay-shadow));
   transform: translateX(-50%);
 }
 .os-dock > button, .os-dock > a { flex: none; }
@@ -365,4 +375,12 @@
 
 @media (max-width: 767.98px) {
   .os-dock { bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+  .modules-toggle {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    justify-content: center;
+    padding: 0;
+  }
+  .modules-toggle .modules-label { display: none; }
 }
