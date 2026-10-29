@@ -80,6 +80,11 @@ describe('app routes — access table', () => {
     }
     expect(shell.canActivate).toEqual([authGuard]);
     expect(shell.canActivateChild).toEqual([moduleGuard]);
+    const appearance = children.find((r) => r.path === 'settings/appearance');
+    expect(appearance?.title).toBe('appearance.title');
+    expect(appearance?.loadComponent).toBeDefined();
+    expect(appearance?.canActivate ?? []).toEqual([]);
+    expect(appearance?.canDeactivate).toBeUndefined();
     // No other top-level route: a page added next to the shell would skip both guards.
     expect(routes.map((r) => r.path)).toEqual(['login', 'jobs', 'jobs/:slug', '', '**']);
   });

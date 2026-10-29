@@ -90,6 +90,7 @@
   "link \"Ткаченко Максим [ТЕСТ]\" -> /candidates/130",
   "menuitem \"<theme toggle>\"",
   "menuitem \"Вийти\"",
+  "menuitem \"Зовнішній вигляд\"",
   "menuitem \"Мій профіль\"",
   "menuitem \"Поговорити зі Стіком\"",
   "menuitem \"Розширення браузера\"",

@@ -41,6 +41,7 @@ export const routes: Routes = [
       { path: 'candidates/:id', title: 'titles.candidates', loadComponent: () => import('./features/recruiting/candidates/candidates.page').then((m) => m.CandidatesPage) },
       { path: 'inbox', title: 'titles.inbox', loadComponent: () => import('./features/recruiting/inbox/inbox.page').then((m) => m.InboxPage) },
       { path: 'settings/extension', title: 'titles.extension', loadComponent: () => import('./features/extension/extension.page').then((m) => m.ExtensionPage) },
+      { path: 'settings/appearance', title: 'appearance.title', loadComponent: () => import('./features/appearance/appearance.page').then((m) => m.AppearancePage) },
       // Hiring requests (tz2): every active role; the API decides who creates, sees and approves.
       { path: 'hiring-requests', title: 'titles.hiringRequests', loadComponent: () => import('./features/hiring-requests/hiring-list.page').then((m) => m.HiringListPage) },
       {
