@@ -1,6 +1,6 @@
 .window-layer {
-  position: absolute;
-  inset: 3.5rem 0 0;
+  position: fixed;
+  inset: 3.5rem auto 3.5rem 0;
   z-index: 20;
   pointer-events: none;
 }
@@ -10,6 +10,7 @@
   display: none;
   flex-direction: column;
   min-width: 0;
+  box-sizing: border-box;
   border: var(--app-border-w) solid var(--app-border);
   border-radius: var(--app-radius);
   background: var(--app-card);
@@ -22,8 +23,6 @@
   &.minimized { inset: auto 1rem 0.75rem auto; width: min(17rem, 42vw); height: 3.25rem; }
 }
 
-.window-os1 { inset: 0.5rem auto auto 0.5rem; width: min(56rem, calc(100% - 1rem)); height: min(70vh, 48rem); }
-.window-os2 { inset: 2.5rem 0.5rem auto auto; width: min(44rem, calc(100% - 1rem)); height: min(68vh, 44rem); }
 .window-os1.minimized { right: 18.5rem; }
 
 .window-titlebar {
@@ -36,6 +35,7 @@
   border-bottom: var(--app-border-w) solid var(--app-border);
   background: var(--app-card-2);
   cursor: grab;
+  touch-action: none;
 
   h2 { min-width: 0; margin: 0; overflow: hidden; font: var(--mat-sys-title-small); text-overflow: ellipsis; white-space: nowrap; }
 }
@@ -44,12 +44,32 @@
 .window-body { min-height: 0; flex: 1; overflow: auto; background: var(--app-card); }
 .window-body[hidden] { display: none !important; }
 
+.window-resize {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: var(--app-border-w) solid var(--app-border);
+  border-radius: var(--app-radius-sm);
+  background: var(--app-card-2);
+  color: var(--app-muted);
+  cursor: nwse-resize;
+  touch-action: none;
+
+  mat-icon { transform: rotate(-45deg); }
+}
+
 @media (max-width: 767.98px) {
-  .window-layer { inset: 3.5rem 0 0; }
   .os-window.mobile-inactive { display: none !important; }
-  .os-window.open { inset: 0; width: auto; height: calc(100dvh - 9rem); border-radius: var(--app-radius); }
+  .os-window.open { inset: 0; width: auto; height: auto; border-radius: var(--app-radius); }
   .os-window.minimized { inset: auto 0.25rem 0.25rem auto; width: min(17rem, 75vw); height: 3.25rem; }
   .window-os1.minimized { right: auto; left: 0.25rem; }
-  .window-titlebar { min-height: 2.75rem; padding-left: 0.5rem; }
+  .window-titlebar { min-height: 2.75rem; padding-left: 0.5rem; cursor: default; touch-action: auto; }
   .window-controls button { width: 2.75rem; height: 2.75rem; }
+  .window-resize { display: none; }
 }
