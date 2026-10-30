@@ -1208,9 +1208,38 @@ test('desktop: real launcher routes and per-user widgets support add, size, keyb
   const dropTarget = page.locator('[data-widget="summary"] .widget-header');
   await dropTarget.scrollIntoViewIfNeeded();
   await dragHandle.scrollIntoViewIfNeeded();
-  await expect(dragHandle).toBeInViewport();
-  await expect(dropTarget).toBeInViewport();
+  await expect(dragHandle).toBeInViewport({ ratio: 1 });
+  await expect(dropTarget).toBeInViewport({ ratio: 1 });
+  const dragPreparation = await page.evaluate(() => {
+    const pointFor = (selector: string): { x: number; y: number; hit: string | null } => {
+      const element = document.querySelector(selector);
+      if (!element) return { x: 0, y: 0, hit: null };
+      const bounds = element.getBoundingClientRect();
+      const x = bounds.left + bounds.width / 2;
+      const y = bounds.top + 12;
+      const hit = document.elementFromPoint(x, y);
+      const expected = selector.includes('drag-handle') ? '.drag-handle' : '.widget-header';
+      return { x, y, hit: hit?.closest(expected)?.className ?? hit?.className ?? null };
+    };
+    return {
+      scrollY: window.scrollY,
+      source: pointFor('[data-widget="tasks"] .drag-handle'),
+      target: pointFor('[data-widget="summary"] .widget-header'),
+      firstWidget: document.querySelector('.widget')?.getAttribute('data-widget') ?? null,
+    };
+  });
+  expect(dragPreparation.source.hit).toContain('drag-handle');
+  expect(dragPreparation.target.hit).toContain('widget-header');
   await drag(page, dragHandle, dropTarget);
+  const dragResult = await page.evaluate(() => ({
+    scrollY: window.scrollY,
+    firstWidget: document.querySelector('.widget')?.getAttribute('data-widget') ?? null,
+  }));
+  await testInfo.attach('widget-drag-geometry.json', {
+    body: Buffer.from(JSON.stringify({ before: dragPreparation, after: dragResult }, null, 2)),
+    contentType: 'application/json',
+  });
+  expect(dragResult.scrollY).toBe(dragPreparation.scrollY);
   await expect(page.locator('.widget').first()).toHaveAttribute('data-widget', 'tasks');
   const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
   expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
