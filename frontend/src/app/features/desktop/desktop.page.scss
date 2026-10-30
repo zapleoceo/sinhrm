@@ -112,7 +112,6 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 0.65rem;
-  overflow-anchor: none;
 }
 
 .widget { min-width: 0; overflow: hidden; container-type: inline-size; }

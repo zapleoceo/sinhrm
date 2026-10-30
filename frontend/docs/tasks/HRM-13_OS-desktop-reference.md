@@ -47,3 +47,14 @@
 - Выполнено: стратегия drop-list выровнена с одноколоночным rail (`vertical`), реальный pointer drag и persisted-order assertion оставлены. Launcher cards уменьшены до border-box 5.5rem, cell minimum увеличен до 5.25rem, в широком masonry добавлены breaks для баланса групп, мобильный каталог стал одноколоночным. H1 использует title-medium; остаётся видимым вместе с eyebrow. E2E layout test дополнен viewport 390px.
 - Выполнено по visual QA: custom wallpaper opaque backing теперь покрывает также refresh и add-widget buttons; E2E проверяет непрозрачность всех этих controls.
 - Ограничение: source этих правок ещё не запускался в CI, поэтому CSS и vertical drag fix не имеют браузерного подтверждения. Следующий шаг — targeted lint/spec и SOL review; затем CI source, проверить 390/768/1000/1440 и drag reorder.
+
+### Follow-up — pointer drag geometry in mobile CI
+
+- Время: 2026-10-30 15:14 Asia/Saigon.
+- Worktree: `D:/Projects/HRM/worktrees/gitlab-browser-os`, branch `release/os-desktop-appearance`, verified base/source `ac3959631aba426931841896876fc735f3aaf604`.
+- Trace: CI run `41023166521`, mobile-dark artifact `D:/Projects/HRM/tmp/gitlab-browser-os/os-desktop-appearance/ci-round4/trace-mobile-dark/1-trace.trace`; geometry attachment `.../attachments/9daeec9b464e79eb23ad10e178f9dae730ee8b8b`.
+- Причина: mouseDown сохранял `scrollTop=2562`; первое threshold-перемещение запускало CDK placeholder и sibling transform (+219px/-231px) и после него браузер менял `scrollTop` на 2343. Общий E2E helper затем повторно читал bounding box цели из этой transient-геометрии и отправлял pointer к y=571.09 вместо исходной точки цели y=96.80; CDK возвращал placeholder в исходное место, поэтому после drop первым оставался `summary`. При mouseUp scroll оставался 2343, DOM-порядок не менялся.
+- Выполнено: helper теперь фиксирует bounding box назначения до mouseDown/threshold и использует его для всех прежних реальных mouse-перемещений. Диагностическое JSON сохраняет до/после scroll и порядка, endpoint и hit target. Удалены неэффективное `overflow-anchor:none` и только добавленное в follow-up сравнение scrollY; прежние проверки первого виджета и сохранённого localStorage-порядка оставлены.
+- Поведение продукта не менялось: фиксируется только геометрия цели в тестовом helper; pointer drag и контракт реального/сохранённого порядка остаются прежними. Поэтому пользовательское описание `docs/modules/desktop.md` не требует изменения.
+- Проверка: `npm run e2e:lint` и `git diff --check` после изменения; полный browser E2E остаётся для CI.
+- Следующий шаг: SOL review exact diff, затем CI проверить pointer drag на всех четырёх проектах.
