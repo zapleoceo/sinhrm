@@ -19,3 +19,13 @@
 - E2E: добавлена проверка реального запуска приложения из рабочего стола, desktop rail и контролов при 768/1000/1440px с прикреплёнными скриншотами, а также mobile Dock internal scrolling. Accessibility snapshots `desktop.desktop.json` и `desktop.mobile.json` намеренно не угадывались: сверить и обновить после фактического CI inventory.
 - Изменённые paths: desktop page/model consumer/styles/spec, shell Dock template/styles, `e2e/flows.pw.ts`, desktop/shell module help, worklog, HRM-12 closeout evidence и папка task `os-desktop-reference`.
 - Следующий шаг: SOL review exact source, GitLab CI выполнить browser/production screenshot checks; обновить inventory snapshots только по CI actual inventory и повторить затронутые проверки.
+
+### Follow-up — CSS component budgets
+
+- Время: 2026-10-30 14:08 Asia/Saigon.
+- Worktree: `D:/Projects/HRM/worktrees/gitlab-glass-range`, branch `feat/os-desktop-reference`, verified source `9519c145e3d6c4ab3dae0710dfc2fa74ce575b74`.
+- Задача: устранить превышение component-style бюджета, обнаруженное CI после source review: `desktop.page.scss` 10.91 KB (нужно уменьшить минимум на 2.91 KB), `shell.layout.scss` 8.81 KB (минимум на 0.81 KB). Разрешённые файлы — только эти два стиля и данный state.
+- Выполнено: удалена устаревшая 12-column widget-grid каскадная сетка; S/M/L ширина, плотность и метрики, 44px controls, mobile width и container-query layout сохранены. Каталог ярлыков выделен в standalone `DesktopAppLauncherComponent` с типизированными `groups` и `launch` output; авторизация и запуск маршрутов остались у родителя. Dock цвета используют общий фон и 6 group color variables. Из shell cascade удалены дублирующие Chrome declarations и правила для неиспользуемого `.burger`.
+- Проверки/оценка CSS: final Sass compressed bytes: `desktop.page.scss` 7,183 / 8,000; `desktop-app-launcher.component.scss` 2,616 / 8,000; `shell.layout.scss` 7,795 / 8,000. Targeted `desktop.page.spec.ts` — 10/10; `ng lint` — pass; `npm run e2e:lint` — 7/7 pass (существующее предупреждение Node о `e2e/inventory.ts`); `git diff --check` — pass. Angular production build не запускался локально.
+- Ограничение: скриншоты/production CSS budget и визуальное сравнение требуют CI/preview; Sass compressed estimate оставляет 205 bytes запаса у shell stylesheet.
+- Следующий шаг: передать exact diff на SOL review и CI; не коммитить до review.

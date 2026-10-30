@@ -15,3 +15,12 @@ Writer reports 42 focused specs, Angular lint, 9 documentation tests, e2e lint a
 Release gates remain: exact source/mirror identity; full CI; deliberate actual-inventory snapshot update after launcher additions (no blind snapshot blessing); inspect screenshots at 768/1000/1440 plus mobile rail/Dock, theme/solid/fast states; staging build/deploy and real-domain verification. SOURCE PASS is not visual or release completion.
 
 DOX pass: module docs/worklog/task state updated; review adds evidence without new durable ownership or child index. Root/app/docs contracts unchanged.
+
+
+## CSS budget extraction follow-up
+
+SOURCE publication gate PASS for frozen follow-up against 9519c145e3d6c4ab3dae0710dfc2fa74ce575b74 in gitlab-glass-range. New standalone DesktopAppLauncherComponent owns catalog template/styles with readonly typed groups input and native MouseEvent/route output. Parent retains authorization grouping and launcher behavior; DOM selectors, translated names, href and modified-click behavior preserved.
+
+Moved launcher styles retain four/three/two category breakpoints, shared appearance background, fast shadow suppression and focus treatment. Removed obsolete 12-column widget cascade because rail is always one column. S/M widths/density, L stretch, mobile height differences and narrow-card container wrapping remain. Removed local panel duplicate matches unchanged global panel tokens. Shell dedup retains chrome layer order, Modules layout, Dock containment, coarse44px targets and category color semantics. No global CSS or budget configuration altered.
+
+Writer reports Sass compressed estimates desktop7183, child2616, shell7795 bytes; focused desktop10, lint and e2e lint7 pass. Reviewer independently ran diff check. Production Angular scoped-CSS byte sizes and visual parity still require CI; estimates alone do not prove the8KB build gate. Combined wallpaper/range integration must retain wallpaper first background layer and receive exact combined review.

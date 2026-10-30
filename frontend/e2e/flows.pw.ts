@@ -156,6 +156,51 @@ test.describe('desktop flows', () => {
     await expect(page.locator('input[type="range"]')).toHaveValue('30');
   });
 
+  test('custom desktop wallpaper uploads, persists, restores the preset and rejects unsupported files', async ({ page, context }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-light', 'desktop-light only');
+    await open(page, context, '/settings/appearance');
+    const wallpaperFile = page.getByTestId('appearance-wallpaper-file');
+    const pngBase64 = await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2;
+      canvas.height = 2;
+      const context = canvas.getContext('2d')!;
+      context.fillStyle = '#626be8';
+      context.fillRect(0, 0, 2, 2);
+      return canvas.toDataURL('image/png').split(',')[1];
+    });
+    const png = Buffer.from(pngBase64, 'base64');
+    await wallpaperFile.setInputFiles({ name: 'pixel.png', mimeType: 'image/png', buffer: png });
+    const preview = page.getByTestId('appearance-wallpaper-preview');
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveJSProperty('naturalWidth', 2);
+    await page.getByRole('switch', { name: 'Швидкий режим' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-performance', 'fast');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sinhrm.desktop-wallpaper'))).toMatch(/^data:image\/(?:webp|png|jpeg);base64,/);
+    await testInfo.attach('custom-wallpaper-appearance.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+
+    await page.goto('/');
+    await settle(page);
+    const wallpaperCss = () => page.locator('[data-testid="desktop-wallpaper-surface"]').evaluate((element) => getComputedStyle(element).backgroundImage);
+    await expect.poll(wallpaperCss).toContain('data:image/');
+    await expect(page.locator('html')).toHaveAttribute('data-performance', 'fast');
+    await testInfo.attach('custom-wallpaper-desktop.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+    await page.reload();
+    await settle(page);
+    await expect.poll(wallpaperCss).toContain('data:image/');
+
+    await page.goto('/settings/appearance');
+    await expect(page.getByTestId('appearance-wallpaper-preview')).toBeVisible();
+    await page.getByTestId('appearance-wallpaper-remove').click();
+    await expect(page.getByTestId('appearance-wallpaper-preview')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sinhrm.desktop-wallpaper'))).toBeNull();
+
+    await wallpaperFile.setInputFiles({ name: 'not-an-image.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });
+    await expect(page.getByRole('alert')).toContainText('Поддерживаются только изображения JPEG, PNG и WebP');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sinhrm.desktop-wallpaper'))).toBeNull();
+    await testInfo.attach('custom-wallpaper-appearance-error.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  });
+
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'desktop-light', 'desktop-light only'));
 

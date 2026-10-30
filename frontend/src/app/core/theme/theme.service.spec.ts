@@ -54,10 +54,10 @@ describe('ThemeService', () => {
     expect(document.documentElement.dataset['accent']).toBe('green');
   });
 
-  it('clamps transparency and applies the shared root attribute contract', () => {
+  it('applies glass transparency across the full range and clamps invalid values', () => {
     const theme = TestBed.inject(ThemeService);
     theme.updatePreferences({
-      themePreference: 'dark', colorScheme: 'custom', accent: 'violet', interfaceStyle: 'solid',
+      themePreference: 'dark', colorScheme: 'custom', accent: 'violet', interfaceStyle: 'glass',
       wallpaper: 'dusk', transparency: 100, fastMode: true, reducedMotion: true,
     });
     theme.init();
@@ -65,12 +65,34 @@ describe('ThemeService', () => {
     expect(root.dataset['theme']).toBe('dark');
     expect(root.dataset['colorScheme']).toBe('custom');
     expect(root.dataset['accent']).toBe('violet');
-    expect(root.dataset['interfaceStyle']).toBe('solid');
+    expect(root.dataset['interfaceStyle']).toBe('glass');
     expect(root.dataset['wallpaper']).toBe('dusk');
     expect(root.dataset['performance']).toBe('fast');
     expect(root.dataset['motion']).toBe('reduced');
-    expect(root.style.getPropertyValue('--os-glass-opacity')).toBe('60%');
+    expect(root.style.getPropertyValue('--os-glass-opacity')).toBe('0%');
+    expect(theme.preferences().transparency).toBe(100);
+    expect(JSON.parse(localStorage.getItem(APPEARANCE_STORAGE_KEY) ?? '{}')).toMatchObject({ transparency: 100 });
+
+    for (const [transparency, opacity] of [[0, '100%'], [40, '60%']] as const) {
+      theme.updatePreferences({ transparency });
+      expect(theme.preferences().transparency).toBe(transparency);
+      expect(root.style.getPropertyValue('--os-glass-opacity')).toBe(opacity);
+    }
+
+    for (const [transparency, expected] of [[-1, 0], [101, 100]] as const) {
+      theme.updatePreferences({ transparency });
+      expect(theme.preferences().transparency).toBe(expected);
+    }
+    theme.updatePreferences({ transparency: Number.NaN });
+    expect(theme.preferences().transparency).toBe(DEFAULT_APPEARANCE.transparency);
+  });
+
+  it('keeps legacy persisted transparency values intact', () => {
+    localStorage.setItem(APPEARANCE_STORAGE_KEY, JSON.stringify({ ...DEFAULT_APPEARANCE, transparency: 40 }));
+    const theme = TestBed.inject(ThemeService);
+    theme.init();
     expect(theme.preferences().transparency).toBe(40);
+    expect(document.documentElement.style.getPropertyValue('--os-glass-opacity')).toBe('60%');
   });
 
   it('uses the reference scheme as dark and leaves it when theme, accent, or wallpaper changes', () => {

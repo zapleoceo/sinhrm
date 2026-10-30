@@ -1,4 +1,4 @@
-<main class="desktop-page">
+<main class="desktop-page" data-testid="desktop-wallpaper-surface">
   <header class="desktop-heading">
     <div>
       <p class="eyebrow">{{ 'desktop.eyebrow' | transloco }}</p>
@@ -11,24 +11,7 @@
   </header>
 
   <div class="desktop-workspace">
-  <section class="launcher" [attr.aria-label]="'desktop.launcher' | transloco">
-    <div class="app-groups">
-      @for (group of appGroups(); track group.id) {
-        <section class="app-group" [attr.data-group]="group.id" [attr.aria-label]="group.label | transloco">
-          <h3>{{ group.label | transloco }}</h3>
-          <div class="app-grid">
-            @for (app of group.apps; track app.id) {
-              <a class="app-shortcut" [attr.data-testid]="'desktop-app-' + app.id" [attr.aria-label]="app.label | transloco"
-                 [attr.data-group]="group.id" [href]="app.route" (click)="launchLink($event, app.route)">
-                <span class="app-icon"><mat-icon aria-hidden="true">{{ app.icon }}</mat-icon></span>
-                <span class="app-label">{{ app.label | transloco }}</span>
-              </a>
-            }
-          </div>
-        </section>
-      }
-    </div>
-  </section>
+  <app-desktop-app-launcher [groups]="appGroups()" (launch)="launchLink($event.event, $event.route)" />
 
   <section class="widgets-section" [attr.aria-label]="'desktop.widgets.heading' | transloco">
     <div class="section-heading widgets-heading">
