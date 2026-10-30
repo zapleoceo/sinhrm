@@ -1098,17 +1098,44 @@ test('mobile assistant: in-flow launcher opens chat without covering candidate c
   expect(mock.missing).toEqual([]);
 });
 
-test('desktop: real launcher routes and per-user widgets support add, size, keyboard reorder, drag, and persistence', async ({ page, context }) => {
+test('desktop: real launcher routes and per-user widgets support add, size, keyboard reorder, drag, and persistence', async ({ page, context }, testInfo) => {
   const mock = await open(page, context, '/desktop');
   await expect(page.getByRole('heading', { name: 'Робочий стіл' })).toBeVisible();
+  await expect(page.locator('.app-group[data-group="recruiting"]')).toBeVisible();
+  const candidatesShortcut = page.getByTestId('desktop-app-candidates');
+  await expect(candidatesShortcut).toBeVisible();
+  if (testInfo.project.name === 'desktop-light') {
+    await testInfo.attach('os-desktop-reference-desktop-light.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  }
+  await candidatesShortcut.click();
+  const launchedCandidateWindow = page.getByTestId('os-window-os1');
+  await expect(launchedCandidateWindow).toHaveClass(/open/);
+  await expect(launchedCandidateWindow.getByRole('heading', { level: 1, name: 'Кандидати' })).toBeVisible();
+  await launchedCandidateWindow.locator('.window-control-close').click();
+  await expect(launchedCandidateWindow).not.toHaveClass(/open/);
+  if (testInfo.project.name.startsWith('desktop-')) {
+    const pageWidth = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
+    expect(pageWidth.content).toBeLessThanOrEqual(pageWidth.viewport);
+  }
   await expect(page.locator('.widget')).toHaveCount(3);
   await expect(page.locator('[data-widget="summary"]')).toContainText('Активні кандидати');
+  if (testInfo.project.name.startsWith('desktop-')) {
+    const smallWidth = (await page.locator('[data-widget="tasks"]').boundingBox())?.width ?? 0;
+    const mediumWidth = (await page.locator('[data-widget="summary"]').boundingBox())?.width ?? 0;
+    expect(smallWidth).toBeGreaterThan(0);
+    expect(smallWidth).toBeLessThan(mediumWidth);
+  }
 
   await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
   const approvals = page.locator('[data-widget="approvals"]');
   await expect(approvals).toBeVisible();
   await approvals.getByRole('button', { name: 'Великий розмір для віджета «Мої погодження»' }).click();
   await expect(approvals).toHaveClass(/size-l/);
+  if (testInfo.project.name.startsWith('desktop-')) {
+    const largeWidth = (await approvals.boundingBox())?.width ?? 0;
+    const mediumWidth = (await page.locator('[data-widget="summary"]').boundingBox())?.width ?? 0;
+    expect(largeWidth).toBeGreaterThan(mediumWidth);
+  }
   await page.getByRole('button', { name: 'Перемістити «Мої погодження» вище' }).click();
   await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
 
@@ -1170,6 +1197,75 @@ test('desktop mobile: widget titles and size actions remain readable at 390px', 
     await expect(widget).toHaveClass(new RegExp(`size-${size}`));
     await expectReadableHeader();
   }
+});
+
+test('desktop: launcher groups and widget rail stay aligned at 768, 1000, and 1440px', async ({ page, context }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-light', 'desktop-light visual evidence only');
+  const mock = await open(page, context, '/desktop');
+  for (const width of [768, 1000, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+    const layout = await page.evaluate(() => {
+      const rect = (selector: string): { x: number; y: number; width: number; height: number } | null => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        return { x: box.x, y: box.y, width: box.width, height: box.height };
+      };
+      const widget = document.querySelector('.widget[data-widget="tasks"]');
+      const header = widget?.querySelector('.widget-header');
+      const actions = widget?.querySelector('.widget-actions');
+      const headerBox = header?.getBoundingClientRect();
+      const actionsBox = actions?.getBoundingClientRect();
+      return {
+        viewport: document.documentElement.clientWidth,
+        page: document.documentElement.scrollWidth,
+        workspace: rect('.desktop-workspace'),
+        launcher: rect('.launcher'),
+        rail: rect('.widgets-section'),
+        groups: getComputedStyle(document.querySelector('.app-groups')!).gridTemplateColumns.split(' ').length,
+        headerClientWidth: header?.clientWidth ?? 0,
+        headerScrollWidth: header?.scrollWidth ?? 0,
+        actionsX: actionsBox?.x ?? -1,
+        actionsRight: actionsBox?.right ?? Number.POSITIVE_INFINITY,
+        widgetBounds: headerBox ? rect('.widget[data-widget="tasks"]') : null,
+      };
+    });
+    expect(layout.workspace, `${width}px workspace`).not.toBeNull();
+    expect(layout.launcher, `${width}px app area`).not.toBeNull();
+    expect(layout.rail, `${width}px widget rail`).not.toBeNull();
+    expect(layout.rail!.x, `${width}px widget rail remains to the right`).toBeGreaterThan(layout.launcher!.x);
+    expect(layout.groups, `${width}px category grid`).toBe(width > 1000 ? 4 : 3);
+    expect(layout.page, `${width}px no document horizontal overflow`).toBeLessThanOrEqual(layout.viewport);
+    expect(layout.headerScrollWidth, `${width}px widget controls fit the wrapped header`).toBeLessThanOrEqual(layout.headerClientWidth + 1);
+    expect(layout.actionsX, `${width}px widget controls stay inside card`).toBeGreaterThanOrEqual(layout.widgetBounds!.x);
+    expect(layout.actionsRight, `${width}px widget controls stay inside card`).toBeLessThanOrEqual(layout.widgetBounds!.x + layout.widgetBounds!.width + 1);
+    await testInfo.attach(`os-desktop-reference-${width}.png`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  }
+  expect(mock.missing).toEqual([]);
+});
+
+test('desktop mobile: Dock scroll stays inside its own viewport', async ({ page, context }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-light', 'mobile-light interaction check only');
+  const mock = await open(page, context, '/');
+  await expect(page.getByRole('heading', { name: 'Робочий стіл' })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const dock = page.locator('.os-dock');
+  let expectedWindows = 0;
+  for (const group of ['personal', 'people', 'services', 'recruiting']) {
+    await dock.locator(`.dock-app[data-group="${group}"]`).click();
+    expectedWindows++;
+    await expect(dock.locator('.dock-window')).toHaveCount(expectedWindows);
+  }
+  const dimensions = await dock.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return { x: box.x, right: box.right, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth };
+  });
+  expect(dimensions.x).toBeGreaterThanOrEqual(0);
+  expect(dimensions.right).toBeLessThanOrEqual(390);
+  expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth);
+  await testInfo.attach('os-desktop-reference-mobile-dock.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  expect(mock.missing).toEqual([]);
 });
 
 test('desktop S widget: title stays readable beside its wrapped controls at a wide viewport', async ({ page, context }) => {

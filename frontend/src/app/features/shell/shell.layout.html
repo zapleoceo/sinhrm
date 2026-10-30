@@ -467,7 +467,7 @@
         <a mat-icon-button class="dock-home" href="/" [attr.aria-label]="'titles.desktop' | transloco" (click)="navigateDesktop($event)"><mat-icon>home</mat-icon></a>
         <a mat-icon-button class="dock-settings" href="/settings/appearance" [attr.aria-label]="'appearance.title' | transloco" (click)="navigatePrimary($event, '/settings/appearance')"><mat-icon>settings</mat-icon></a>
         @for (app of dockApps(); track app.id) {
-          <button mat-icon-button type="button" [attr.aria-label]="app.label | transloco" (click)="launchDesktopApp(app)"><mat-icon>{{ app.icon }}</mat-icon></button>
+          <button mat-icon-button type="button" class="dock-app" [attr.data-group]="app.group" [attr.aria-label]="app.label | transloco" (click)="launchDesktopApp(app)"><mat-icon>{{ app.icon }}</mat-icon></button>
         }
         @for (slot of windowSlots; track slot) {
           @let view = windowNavigation.windows()[slot];

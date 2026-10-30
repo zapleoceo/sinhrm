@@ -4,18 +4,20 @@
 }
 
 .desktop-page {
-  --desktop-glow-position: 4% 0%;
   display: grid;
   gap: clamp(0.75rem, 1.4vw, 1.25rem);
   min-width: 0;
   padding: clamp(0.75rem, 1.5vw, 1.25rem);
   color: var(--mat-sys-on-surface);
-  background-image: radial-gradient(ellipse at var(--desktop-glow-position), color-mix(in srgb, var(--mat-sys-primary) 5%, transparent), transparent 34rem);
+  background-image:
+    radial-gradient(ellipse at 2% 4%, color-mix(in srgb, var(--os-primary) 26%, transparent), transparent 42rem),
+    radial-gradient(ellipse at 96% 8%, color-mix(in srgb, var(--app-accent) 20%, transparent), transparent 37rem),
+    radial-gradient(ellipse at 70% 96%, color-mix(in srgb, var(--app-chart-2) 20%, transparent), transparent 44rem),
+    radial-gradient(ellipse at 26% 96%, var(--os-wallpaper-a), transparent 40rem),
+    radial-gradient(ellipse at 14% 88%, color-mix(in srgb, var(--app-warning) 12%, transparent), transparent 40rem);
 }
 
-:host-context(html[data-wallpaper='sand']) .desktop-page { --desktop-glow-position: 96% 4%; }
-:host-context(html[data-wallpaper='dusk']) .desktop-page { --desktop-glow-position: 78% 100%; }
-.app-icon { background: var(--app-card-2); }
+:host-context(html[data-performance='fast']) .desktop-page { background-image: none; }
 
 .desktop-heading,
 .section-heading {
@@ -61,8 +63,33 @@
 
 .today-date mat-icon { width: 1.1rem; height: 1.1rem; font-size: 1.1rem; }
 
-.launcher,
 .empty-widgets { padding: var(--app-card-pad); }
+
+.desktop-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(19rem, 1fr);
+  align-items: start;
+  gap: clamp(0.75rem, 1.4vw, 1.25rem);
+  min-width: 0;
+}
+
+.launcher { min-width: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+
+.widget-grid.widget-rail { grid-template-columns: minmax(0, 1fr); }
+.widget-grid.widget-rail .widget,
+.widget-grid.widget-rail .widget.size-s,
+.widget-grid.widget-rail .widget.size-m,
+.widget-grid.widget-rail .widget.size-l { grid-column: 1; }
+.widget-grid.widget-rail .widget.size-s .widget-content { padding: 0.45rem; }
+.widget-grid.widget-rail .widget.size-m .widget-content { padding: 0.7rem; }
+.widget-grid.widget-rail .widget.size-l .widget-content { padding: 1rem; }
+.widget-grid.widget-rail .widget.size-s { width: min(100%, 14rem); justify-self: start; }
+.widget-grid.widget-rail .widget.size-m { width: min(100%, 18rem); justify-self: start; }
+.widget-grid.widget-rail .widget.size-l { width: 100%; justify-self: start; }
+.widget-grid.widget-rail .widget.size-s .metric-main strong,
+.widget-grid.widget-rail .widget.size-s .metric-pair strong { font: var(--mat-sys-headline-small); }
+.widget-grid.widget-rail .widget.size-l .metric-main strong,
+.widget-grid.widget-rail .widget.size-l .metric-pair strong { font: var(--mat-sys-headline-large); }
 
 .panel {
   border: var(--app-border-w) solid var(--app-border);
@@ -74,22 +101,38 @@
 .section-heading { margin-bottom: 1rem; }
 .section-heading h2 { font: var(--mat-sys-title-large); }
 .section-heading p { margin-top: 0.2rem; color: var(--app-muted); font: var(--mat-sys-body-small); }
-.app-group + .app-group { margin-top: 1.15rem; }
-.app-group h3 { margin-bottom: 0.55rem; color: var(--app-muted); font: var(--mat-sys-label-large); }
+
+.app-groups { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: min-content; align-items: start; gap: 0.65rem; }
+.app-group {
+  --desktop-app-accent: var(--mat-sys-primary);
+  align-self: start;
+  min-width: 0;
+  padding: 0.7rem;
+  border: var(--app-border-w) solid var(--os-chrome-edge, var(--app-border));
+  border-radius: var(--app-radius);
+  background: var(--os-chrome-background, var(--app-card));
+}
+.app-group[data-group='recruiting'] { --desktop-app-accent: var(--app-danger); }
+.app-group[data-group='people'] { --desktop-app-accent: var(--app-success); }
+.app-group[data-group='performance'] { --desktop-app-accent: var(--app-warning); }
+.app-group[data-group='services'] { --desktop-app-accent: var(--app-chart-2); }
+.app-group[data-group='admin'] { --desktop-app-accent: var(--app-info); }
+.app-group h3 { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.55rem; color: var(--app-muted); font: var(--mat-sys-label-large); }
+.app-group h3::before { width: 0.45rem; height: 0.45rem; flex: none; border-radius: 50%; background: var(--desktop-app-accent); content: ''; }
 
 .app-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
+  gap: 0.15rem;
 }
 
 .app-shortcut {
   display: grid;
   justify-items: center;
   align-content: start;
-  gap: 0.45rem;
-  min-height: 6.25rem;
-  padding: 0.7rem 0.45rem;
+  gap: 0.35rem;
+  min-height: 5.5rem;
+  padding: 0.4rem 0.2rem;
   border: 1px solid transparent;
   border-radius: var(--app-radius);
   background: transparent;
@@ -100,13 +143,14 @@
 }
 
 .app-shortcut:hover,
-.app-shortcut:focus-visible { border-color: var(--app-border); background: var(--app-card-2); }
+.app-shortcut:focus-visible { border-color: var(--app-border); background: color-mix(in srgb, var(--desktop-app-accent) 8%, var(--app-card)); }
 .app-shortcut:focus-visible,
 .widget button:focus-visible,
 .widget a:focus-visible { outline: 2px solid var(--app-focus-ring, var(--mat-sys-primary)); outline-offset: 2px; }
-.app-icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 0.9rem; background: var(--app-card-2); color: var(--app-brand); }
-.app-icon mat-icon { width: 1.4rem; height: 1.4rem; font-size: 1.4rem; }
+.app-icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 0.85rem; background: linear-gradient(145deg, color-mix(in srgb, var(--desktop-app-accent) 78%, var(--app-card-2)), var(--desktop-app-accent)); color: var(--mat-sys-on-primary); box-shadow: 0 0.35rem 0.8rem -0.45rem color-mix(in srgb, var(--desktop-app-accent) 90%, transparent); }
+.app-icon mat-icon { width: 1.3rem; height: 1.3rem; font-size: 1.3rem; }
 .app-label { max-width: 100%; overflow-wrap: anywhere; }
+:host-context(html[data-performance='fast']) .app-icon { box-shadow: none; }
 
 .widgets-heading { margin-bottom: 0.6rem; }
 .widget-count { color: var(--app-muted); font: var(--mat-sys-label-medium); }
@@ -207,6 +251,8 @@
 .widget { background: var(--os-window-frame-background, var(--app-card)); }
 
 @media (max-width: 1000px) {
+  .desktop-workspace { grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 1fr); }
+  .app-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .widget-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .widget,
   .widget.size-s { grid-column: span 3; }
@@ -215,20 +261,26 @@
 
 @media (max-width: 767.98px) {
   .desktop-page { padding: 0.5rem; gap: 0.75rem; }
+  .desktop-workspace { grid-template-columns: minmax(0, 1fr); }
+  .app-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+  .app-group { padding: 0.55rem; }
   .desktop-heading { align-items: flex-start; flex-wrap: wrap; }
   .desktop-heading > div { flex: 1 1 100%; min-width: 0; }
   .desktop-heading h1 { font: var(--mat-sys-headline-small); }
   .desktop-heading > div { grid-template-columns: minmax(0, 1fr); }
   .desktop-heading .today-date { grid-column: 1; margin-top: 0.2rem !important; white-space: normal; }
   .desktop-heading > button { min-height: 2.75rem; }
-  .launcher { padding: 0.85rem; }
-  .app-grid { grid-template-columns: repeat(auto-fill, minmax(5.75rem, 1fr)); gap: 0.25rem; }
-  .app-shortcut { min-height: 5.75rem; }
+  .launcher { padding: 0; }
+  .app-grid { grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr)); gap: 0.15rem; }
+  .app-shortcut { min-height: 5.5rem; }
   .widget-grid { grid-template-columns: minmax(0, 1fr); gap: 0.65rem; }
   .widget,
   .widget.size-s,
   .widget.size-m,
   .widget.size-l { grid-column: 1; }
+  .widget-grid.widget-rail .widget.size-s,
+  .widget-grid.widget-rail .widget.size-m,
+  .widget-grid.widget-rail .widget.size-l { width: 100%; }
   .widget.size-s .widget-content { min-height: 5.25rem; }
   .widget.size-m .widget-content { min-height: 6.25rem; }
   .widget.size-l .widget-content { min-height: 7.5rem; }

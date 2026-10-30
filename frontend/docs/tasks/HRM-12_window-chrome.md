@@ -13,11 +13,9 @@
 ## Стан
 
 - Время: 2026-10-30 Asia/Saigon.
-- Worktree: `D:/Projects/HRM/worktrees/gitlab-browser-os`, branch `feat/minimal-window-chrome`, база `be46503a3ab69e2265d8b54b4f7a73a70b3bcc83`.
-- Объём: только окно shell, его тест, документация и task artifacts; геометрия и маршрутизация не меняются.
-- Выполнено: шапка высотой 44px на desktop и около 52px на mobile; 32px transparent hit targets с цветными 12px индикаторами, SVG-глифами, порядок close/minimize/maximize слева, симметричные боковые колонки для центрирования заголовка, тихий SVG reset справа и тонкая угловая насечка. Переводы aria-label/title и действия сохранены. Добавлена проверка всех действий.
-- DOX pass: `src/app/AGENTS.md` и `docs/AGENTS.md` прочитаны; корневые и дочерние правила не изменяются, поскольку их назначение и контракты не менялись.
-- Проверки: `npx ng test --watch=false --include src/app/features/shell/os-window-workspace.spec.ts` — 7/7; `npm run e2e:lint` — pass (есть существующее предупреждение Node о typeless `e2e/inventory.ts`); `npx ng lint` — pass; `npm run test:docs` — 9/9; `git diff --check` ожидает финального запуска.
-- Визуальный ориентир: просмотрен предыдущий staging screenshot `D:/Projects/HRM/tmp/gitlab-browser-os/live/windows.png`; он показывает текущую проблему (крупные иконки справа и квадратная ручка). Новая версия требует свежего rendered screenshot для подтверждения.
-- Блокеры: локальный сервер/e2e не запускались по адаптеру; скриншоты нового состояния, CI и live deploy остаются у координатора.
-- Следующий шаг: финально проверить diff/state и передать замороженные изменения координатору для SOL review и GitLab CI.
+- Источник: ветка `feat/minimal-window-chrome` от `be46503a3ab69e2265d8b54b4f7a73a70b3bcc83`; source commit `d8e7813731b79e09fea71febe50316ac1e43ecde`, tree `adadf6b0f7fce34c6983896da20c0fc8641af7d9`.
+- Выполнено: шапка 44px на desktop и около 52px на mobile; 32px transparent hit targets с 12px цветными индикаторами и inline SVG, close/minimize/maximize слева, симметричное центрирование заголовка и reset справа. Все translated labels, действия и geometry interactions сохранены.
+- Ревью и публикация: SOL source review PASS. MR [!4](https://gitlabs.itsrv.xyz/front/sinhrm.web/-/merge_requests/4) влит в `staging` (`75db9708287283ac1efd09aa51e3c59ec740ef92`); pipeline 276278 и независимая CI-проверка 41013607022 успешны.
+- Проверки реализации: focused workspace spec 7/7; `npm run e2e:lint`, `npx ng lint`, `npm run test:docs` 9/9 и `git diff --check` успешны.
+- Live staging: `/health` ответил 200; в новом окне проверены maximize/minimize/restore/close, 44px mobile targets, Dock и keyboard resize. Скриншоты: `D:/Projects/HRM/tmp/gitlab-browser-os/minimal-chrome/live/windows.png`, `focus.png`, `mobile.png`. На mobile отмечена горизонтальная прокрутка и у содержимого, и у Dock; отдельная задача исправляет Dock так, чтобы прокручивался только он.
+- Закрытие: задача реализована, проверена, влита в staging и подтверждена на live staging. История evidence в `D:/Projects/HRM/tmp/gitlab-browser-os/minimal-chrome/release-proof.json` сохранена без изменений.

@@ -8,10 +8,13 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { Dashboard } from '../overview/overview.model';
 import {
+  DESKTOP_APPS,
+  DESKTOP_GROUPS,
   DESKTOP_WIDGETS,
   DesktopWidget,
   DesktopWidgetId,
   DesktopWidgetSize,
+  appAllowed,
   widgetAllowed,
 } from './desktop.model';
 import { DesktopDataStore } from './desktop-data.store';
@@ -43,6 +46,12 @@ export class DesktopPage {
   protected readonly layout = inject(DesktopLayoutStore);
   protected readonly data = inject(DesktopDataStore);
   protected readonly widgetDefinitions = DESKTOP_WIDGETS;
+  protected readonly appGroups = computed(() => {
+    const allowedApps = DESKTOP_APPS.filter((app) => appAllowed(app, this.auth.user()));
+    return DESKTOP_GROUPS
+      .map((group) => ({ ...group, apps: allowedApps.filter((app) => app.group === group.id) }))
+      .filter((group) => group.apps.length > 0);
+  });
   protected readonly widgetSizes: readonly DesktopWidgetSize[] = ['s', 'm', 'l'];
   protected readonly touchDragDelay = { touch: 250, mouse: 0 };
   protected readonly todayLabel = computed(() => {

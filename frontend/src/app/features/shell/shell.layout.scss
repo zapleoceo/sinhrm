@@ -355,10 +355,16 @@
   inset: auto auto 0.75rem 50%;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  box-sizing: border-box;
+  width: max-content;
+  gap: 0.2rem;
   max-width: calc(100vw - 1rem);
-  padding: 0.35rem;
+  min-width: 0;
+  padding: 0.25rem;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  touch-action: pan-x;
   border: var(--app-border-w) solid var(--os-chrome-edge, var(--app-border));
   border-radius: calc(var(--app-radius) + 0.25rem);
   background: var(--os-chrome-background, var(--app-card));
@@ -368,8 +374,19 @@
   box-shadow: var(--os-chrome-shadow, var(--app-overlay-shadow));
   transform: translateX(-50%);
 }
+.os-dock::-webkit-scrollbar { display: none; }
 .os-dock > button, .os-dock > a { flex: none; }
-.os-dock .dock-window { flex: none; }
+.os-dock > .mat-mdc-icon-button.mat-mdc-button-base { width: 2.5rem; height: 2.5rem; padding: 0.5rem; }
+.os-dock > .mat-mdc-icon-button mat-icon { width: 1.25rem; height: 1.25rem; font-size: 1.25rem; }
+.os-dock .dock-app { border-radius: 0.8rem; }
+.os-dock .dock-app[data-group='personal'] { color: var(--mat-sys-primary); background: color-mix(in srgb, var(--mat-sys-primary) 14%, transparent); }
+.os-dock .dock-app[data-group='recruiting'] { color: var(--app-danger); background: color-mix(in srgb, var(--app-danger) 14%, transparent); }
+.os-dock .dock-app[data-group='people'] { color: var(--app-success); background: color-mix(in srgb, var(--app-success) 14%, transparent); }
+.os-dock .dock-app[data-group='performance'] { color: var(--app-warning); background: color-mix(in srgb, var(--app-warning) 14%, transparent); }
+.os-dock .dock-app[data-group='services'] { color: var(--app-chart-2); background: color-mix(in srgb, var(--app-chart-2) 14%, transparent); }
+.os-dock .dock-app[data-group='admin'] { color: var(--app-info); background: color-mix(in srgb, var(--app-info) 14%, transparent); }
+.os-dock .dock-window { flex: none; max-width: 9rem; min-width: 2.5rem; height: 2.5rem; padding-inline: 0.5rem; }
+.os-dock .dock-window span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .os-dock .dock-window.active { color: var(--mat-sys-primary); }
 
 @media (max-width: 767.98px) {
@@ -381,4 +398,9 @@
     padding: 0 0.5rem;
   }
   .modules-toggle .modules-label { display: none; }
+}
+
+@media (pointer: coarse) {
+  .os-dock > .mat-mdc-icon-button.mat-mdc-button-base { width: 2.75rem; height: 2.75rem; }
+  .os-dock .dock-window { height: 2.75rem; }
 }
