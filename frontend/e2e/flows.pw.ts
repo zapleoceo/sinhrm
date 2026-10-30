@@ -58,24 +58,23 @@ async function expectModulesBadgeOutsideLabel(page: Page, mobile: boolean): Prom
 }
 
 /** Drags with real mouse moves (CDK drag-drop needs several pointer moves to start and to pick the target). */
-async function drag(page: Page, from: Locator, to: Locator): Promise<{ x: number; y: number; hit: string | null }> {
+async function drag(page: Page, from: Locator, to: Locator): Promise<{ x: number; y: number; widgetId: string | null }> {
   const a = (await from.boundingBox())!;
   // CDK moves the placeholder and transforms siblings as soon as the drag threshold is crossed.
   // Capture the destination first so the gesture does not chase its transient post-start geometry.
   const b = (await to.boundingBox())!;
+  const endpoint = { x: b.x + b.width / 2, y: b.y + Math.min(b.height / 2, 60) };
+  const widgetId = await page.evaluate(({ x, y }) => (
+    document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-widget]')?.dataset['widget'] ?? null
+  ), endpoint);
   await page.mouse.move(a.x + a.width / 2, a.y + 12);
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2 + 10, a.y + 22, { steps: 5 });
-  const endpoint = { x: b.x + b.width / 2, y: b.y + Math.min(b.height / 2, 60) };
-  const hit = await page.evaluate(({ x, y }) => {
-    const element = document.elementFromPoint(x, y);
-    return element?.closest('.widget-header')?.className ?? element?.className ?? null;
-  }, endpoint);
   await page.mouse.move(endpoint.x, endpoint.y, { steps: 15 });
   await page.mouse.move(endpoint.x, endpoint.y + 4, { steps: 3 });
   await page.mouse.up();
   await settle(page);
-  return { ...endpoint, hit };
+  return { ...endpoint, widgetId };
 }
 
 /** Writes after a drop: CDK reports the drop after its settle animation, so wait for the first one, then a bit more. */
@@ -1246,7 +1245,7 @@ test('desktop: real launcher routes and per-user widgets support add, size, keyb
     body: Buffer.from(JSON.stringify({ before: dragPreparation, endpoint: dragEndpoint, after: dragResult }, null, 2)),
     contentType: 'application/json',
   });
-  expect(dragEndpoint.hit).toContain('widget-header');
+  expect(dragEndpoint.widgetId).toBe('summary');
   await expect(page.locator('.widget').first()).toHaveAttribute('data-widget', 'tasks');
   const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
   expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
