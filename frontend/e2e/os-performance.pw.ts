@@ -413,6 +413,14 @@ test('rendered desktop materials follow glass transparency, palette, solid, and 
   await expect(root).toHaveAttribute('data-theme', 'dark');
   await returnToDesktop();
   await captureMaterials('os-material-glass-reference-palette', 0.82);
+  await window.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
+  await expect(window).toHaveClass(/minimized/);
+  await testInfo.attach('os-desktop-reference-sintegrum.png', {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: 'image/png',
+  });
+  await page.getByTestId('dock-window-os1').click();
+  await expect(window).toHaveClass(/active/);
 
   await openAppearance();
   await page.getByRole('radio', { name: 'Суцільний', exact: true }).click();

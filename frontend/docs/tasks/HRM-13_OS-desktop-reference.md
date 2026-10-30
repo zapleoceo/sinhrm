@@ -29,3 +29,13 @@
 - Проверки/оценка CSS: final Sass compressed bytes: `desktop.page.scss` 7,183 / 8,000; `desktop-app-launcher.component.scss` 2,616 / 8,000; `shell.layout.scss` 7,795 / 8,000. Targeted `desktop.page.spec.ts` — 10/10; `ng lint` — pass; `npm run e2e:lint` — 7/7 pass (существующее предупреждение Node о `e2e/inventory.ts`); `git diff --check` — pass. Angular production build не запускался локально.
 - Ограничение: скриншоты/production CSS budget и визуальное сравнение требуют CI/preview; Sass compressed estimate оставляет 205 bytes запаса у shell stylesheet.
 - Следующий шаг: передать exact diff на SOL review и CI; не коммитить до review.
+
+### Follow-up — плотность каталога и responsive rail
+
+- Время: 2026-10-30 14:24 Asia/Saigon.
+- Worktree: `D:/Projects/HRM/worktrees/gitlab-browser-os`, branch `release/os-desktop-appearance`, исходный HEAD `4cc2e4da76578f00e062d88915dc5d6750bfde0c`.
+- Выполнено: каталог переведён на три masonry-колонки с группой администрирования во всю ширину; при ширине до 1100 px виджеты идут под каталогом. E2E проверяет desktop geometry на 768/1000/1440 px, минимальную ширину групп и отсутствие горизонтального overflow.
+- Дополнительно: заголовки страницы и виджетов получили непрозрачную surface-подложку для читаемости поверх пользовательских обоев; E2E готовит unobscured screenshot Sintegrum palette.
+- Проверки после правок: `npm run e2e:lint` — 7/7; `npx ng lint` — pass; `npx ng test --watch=false --include=src/app/features/desktop/desktop.page.spec.ts` — 10/10; `npm run test:docs` — 9/9; `git diff --check` — pass. Browser screenshot новой компоновки локально не получен; проверить CI attachment после следующего combined run.
+- Inventory baseline: из artifacts CI `41018253841`, source SHA `012e13913653a32831b48ce2bf869a80c47666ee`, обновлены четыре общих snapshot-файла desktop/appearance для desktop/mobile. Все восемь фактических project inventories совпали попарно для light/dark; desktop: +66, appearance: +3, удалений нет, счётчики и бизнес-контролы не потеряны. Добавления desktop — 6 групповых заголовков, 7 регионов каталога и 53 launcher links; appearance — заголовок `Власне тло` и две кнопки `Вибрати зображення`. После CI source менялись только стили и несемантический class binding; доступные заголовки, permissions и controls не менялись. DOM следующего source всё равно подтвердить новым CI.
+- Следующий шаг: выполнить разрешённые быстрые проверки, получить SOL review и передать diff; без коммита до PASS.

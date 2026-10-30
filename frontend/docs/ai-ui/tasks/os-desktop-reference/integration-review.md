@@ -11,3 +11,10 @@ CSS extraction retains rail sizing/container rules and child responsive catalog 
 Release gates pending exact GitLab/GitHub tree identity, complete combined CI (including actual Angular8KB budgets), deliberate actual-inventory updates for newly added UI, observed desktop/mobile/appearance boundary/upload screenshots, staging deployment and live-domain checks. Clean-URL feature is outside this reviewed HEAD and requires separate combined review if added.
 
 DOX pass: integration evidence adds no ownership or durable contract/index change; existing app/docs policies unchanged.
+
+
+## Visual QA correction source gate
+
+PASS for frozen working-tree follow-up against4cc2e4da76578f00e062d88915dc5d6750bfde0c. Independently observed prior CI images and confirmed sparse/admin-tower and narrow-column defects; these were not accepted as visual completion. Corrected source now uses three-column masonry, full-width admin catalog, rail stacked at1100px, and token-backed opaque heading surfaces only with custom wallpaper. Card border-box explicitly prevents width100% plus padding overflow. New unobscured reference-palette capture uses real titlebar minimize then Dock restore; prior erroneous focus-click assumption fixed. Mobile drag prepares both visible endpoints and retains original persisted-order assertions. Unsupported-image matcher matches actual Ukrainian locale. No runtime assertions weakened.
+
+Reviewer diff check passes. Writer reports focused10/lint/docs9/e2e lint7 passing. SOURCE publication PASS; new CI inventories and rendered desktop/tablet/mobile/custom-image proof remain mandatory. No clean-URL feature included in this gate.

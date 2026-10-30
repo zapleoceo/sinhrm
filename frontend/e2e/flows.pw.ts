@@ -183,6 +183,15 @@ test.describe('desktop flows', () => {
     await settle(page);
     const wallpaperCss = () => page.locator('[data-testid="desktop-wallpaper-surface"]').evaluate((element) => getComputedStyle(element).backgroundImage);
     await expect.poll(wallpaperCss).toContain('data:image/');
+    await expect(page.locator('.desktop-page')).toHaveClass(/has-user-wallpaper/);
+    for (const selector of ['.desktop-heading > div', '.widgets-heading']) {
+      const alpha = await page.locator(selector).evaluate((element) => {
+        const color = getComputedStyle(element).backgroundColor;
+        const rgba = color.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
+        return rgba ? Number(rgba[1]) : 1;
+      });
+      expect(alpha, `${selector} stays opaque over the uploaded wallpaper`).toBe(1);
+    }
     await expect(page.locator('html')).toHaveAttribute('data-performance', 'fast');
     await testInfo.attach('custom-wallpaper-desktop.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
     await page.reload();
@@ -196,7 +205,7 @@ test.describe('desktop flows', () => {
     await expect.poll(() => page.evaluate(() => localStorage.getItem('sinhrm.desktop-wallpaper'))).toBeNull();
 
     await wallpaperFile.setInputFiles({ name: 'not-an-image.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });
-    await expect(page.getByRole('alert')).toContainText('Поддерживаются только изображения JPEG, PNG и WebP');
+    await expect(page.getByRole('alert')).toContainText('Підтримуються лише зображення JPEG, PNG і WebP.');
     await expect.poll(() => page.evaluate(() => localStorage.getItem('sinhrm.desktop-wallpaper'))).toBeNull();
     await testInfo.attach('custom-wallpaper-appearance-error.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
   });
@@ -1195,7 +1204,13 @@ test('desktop: real launcher routes and per-user widgets support add, size, keyb
   await expect(page.locator('[data-widget="approvals"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Мої погодження', exact: true })).toBeFocused();
 
-  await drag(page, page.locator('[data-widget="tasks"] .drag-handle'), page.locator('[data-widget="summary"] .widget-header'));
+  const dragHandle = page.locator('[data-widget="tasks"] .drag-handle');
+  const dropTarget = page.locator('[data-widget="summary"] .widget-header');
+  await dropTarget.scrollIntoViewIfNeeded();
+  await dragHandle.scrollIntoViewIfNeeded();
+  await expect(dragHandle).toBeInViewport();
+  await expect(dropTarget).toBeInViewport();
+  await drag(page, dragHandle, dropTarget);
   await expect(page.locator('.widget').first()).toHaveAttribute('data-widget', 'tasks');
   const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
   expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
@@ -1268,7 +1283,8 @@ test('desktop: launcher groups and widget rail stay aligned at 768, 1000, and 14
         workspace: rect('.desktop-workspace'),
         launcher: rect('.launcher'),
         rail: rect('.widgets-section'),
-        groups: getComputedStyle(document.querySelector('.app-groups')!).gridTemplateColumns.split(' ').length,
+        groupColumns: Number.parseInt(getComputedStyle(document.querySelector('.app-groups')!).columnCount, 10),
+        groupWidths: Array.from(document.querySelectorAll('.app-group'), (element) => element.getBoundingClientRect().width),
         headerClientWidth: header?.clientWidth ?? 0,
         headerScrollWidth: header?.scrollWidth ?? 0,
         actionsX: actionsBox?.x ?? -1,
@@ -1279,8 +1295,15 @@ test('desktop: launcher groups and widget rail stay aligned at 768, 1000, and 14
     expect(layout.workspace, `${width}px workspace`).not.toBeNull();
     expect(layout.launcher, `${width}px app area`).not.toBeNull();
     expect(layout.rail, `${width}px widget rail`).not.toBeNull();
-    expect(layout.rail!.x, `${width}px widget rail remains to the right`).toBeGreaterThan(layout.launcher!.x);
-    expect(layout.groups, `${width}px category grid`).toBe(width > 1000 ? 4 : 3);
+    if (width > 1100) {
+      expect(layout.rail!.x, `${width}px widget rail follows the launcher`).toBeGreaterThanOrEqual(layout.launcher!.x + layout.launcher!.width - 1);
+      expect(layout.rail!.y, `${width}px widget rail aligns with launcher`).toBeLessThan(layout.launcher!.y + 1);
+    } else {
+      expect(layout.rail!.y, `${width}px widget rail follows launcher`).toBeGreaterThan(layout.launcher!.y + layout.launcher!.height - 1);
+      expect(layout.launcher!.width, `${width}px launcher uses workspace width`).toBeGreaterThan(width * 0.8);
+    }
+    expect(layout.groupColumns, `${width}px category columns`).toBe(width < 768 ? 2 : 3);
+    expect(Math.min(...layout.groupWidths), `${width}px category cards stay readable`).toBeGreaterThanOrEqual(width > 1100 ? 200 : 180);
     expect(layout.page, `${width}px no document horizontal overflow`).toBeLessThanOrEqual(layout.viewport);
     expect(layout.headerScrollWidth, `${width}px widget controls fit the wrapped header`).toBeLessThanOrEqual(layout.headerClientWidth + 1);
     expect(layout.actionsX, `${width}px widget controls stay inside card`).toBeGreaterThanOrEqual(layout.widgetBounds!.x);

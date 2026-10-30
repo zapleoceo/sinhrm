@@ -46,7 +46,7 @@ export class DesktopPage {
   private readonly launcher = inject(DESKTOP_LAUNCHER);
   private readonly i18n = inject(TranslocoService);
   // Restore the saved CSS wallpaper when the desktop is opened directly or reloaded.
-  private readonly wallpaper = inject(DesktopWallpaperStore);
+  protected readonly wallpaper = inject(DesktopWallpaperStore);
   protected readonly layout = inject(DesktopLayoutStore);
   protected readonly data = inject(DesktopDataStore);
   protected readonly widgetDefinitions = DESKTOP_WIDGETS;

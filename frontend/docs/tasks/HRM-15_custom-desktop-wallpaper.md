@@ -17,3 +17,11 @@
 - Проверки объединённого source: targeted theme/store/appearance/desktop specs — 29/29; `npx ng lint` — pass; `npm run test:docs` — 9/9; `npm run e2e:lint` — pass; `git diff --cached --check` перед merge commit — pass. Browser E2E/production build/full suite не запускались локально. Playwright сценарии прикрепляют wallpaper, appearance и transparency screenshots при CI запуске.
 - SOL review custom wallpaper: PASS без остающихся P1/P2. Combined rendered review/screenshots ещё не получены.
 - Следующий шаг: внешняя CI на combined merge commit, проверка прикреплённых скриншотов и обновление state по фактическим результатам.
+
+### Follow-up — читаемость поверх обоев и E2E locale
+
+- Время: 2026-10-30 14:24 Asia/Saigon.
+- Worktree: `D:/Projects/HRM/worktrees/gitlab-browser-os`, branch `release/os-desktop-appearance`, исходный HEAD `4cc2e4da76578f00e062d88915dc5d6750bfde0c`.
+- Выполнено: заголовок рабочего стола и заголовок виджетов используют непрозрачные theme-card surfaces поверх пользовательских изображений, независимо от glass opacity; E2E проверяет background и `has-user-wallpaper`. Неверный русский текст в украинском отказе загрузки заменён точным локализованным сообщением.
+- Проверки после правок: `npm run e2e:lint` — 7/7; `npx ng lint` — pass; `npx ng test --watch=false --include=src/app/features/desktop/desktop.page.spec.ts` — 10/10; `npm run test:docs` — 9/9; `git diff --check` — pass. Browser E2E ожидает CI.
+- Следующий шаг: выполнить быстрые проверки, получить SOL review и передать diff до коммита.
