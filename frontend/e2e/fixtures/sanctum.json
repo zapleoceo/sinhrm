@@ -1,5 +1,5 @@
 {
- "GET /sanctum/csrf-cookie": {
+ "GET /api/sanctum/csrf-cookie": {
   "status": 204,
   "body": null
  }

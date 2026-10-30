@@ -109,7 +109,7 @@ for (const scenario of scenarios) {
       const regressions = axe.violations.filter((violation) => violation.nodes.length > (known[violation.id] ?? 0));
       expect.soft(regressions.map((violation) => `${violation.id}: ${violation.nodes.length}`), 'no new axe violations').toEqual([]);
       expect.soft(mock.missing).toEqual([]);
-      const writes = mock.mutations.filter((request) => request.path !== '/sanctum/csrf-cookie');
+      const writes = mock.mutations.filter((request) => request.path !== '/api/sanctum/csrf-cookie');
       // The intentional 500 is reported once by serverErrorInterceptor; no business/OAuth writes are allowed.
       expect.soft(writes).toEqual(scenario.id === 'logs-error' ? [{
         method: 'POST', path: '/api/errors/client',

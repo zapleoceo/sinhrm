@@ -1,0 +1,25 @@
+# HRM-11 — браузерная рабочая среда
+
+## Контекст из KB
+
+По передаче от координатора: проверены GitLab metadata/CI и backend route документация; приняты как контекст для split-репозитория. В этом репозитории backend остаётся отдельным Laravel сервисом. API обращения идут через same-origin `/api`; CSRF cookie — `/api/sanctum/csrf-cookie`.
+
+Дополнительно выполнен ограниченный поиск Vera по `sinhrm.itsrv.xyz GitLab staging frontend` (3 результата); устаревшие записи не использованы как доказательство текущего деплоя. Текущий маршрут публикации подтверждён напрямую GitLab project807/pipeline53 и действующим staging environment. Владелец явно разрешил публикацию на `sinhrm.itsrv.xyz`; целевой MR — `staging`, без запуска production `sinhrm.itstep.org`.
+
+## План
+
+1. Перенести только reviewed frontend delta из source `3301c3e96d7e2c9bcc1d807461b9df72808d35b9` относительно `899d4dab`, со снятием префикса `frontend/` согласно `D:/Projects/HRM/tmp/gitlab-browser-os/port-manifest.json`.
+2. Сохранить целевые on-site server/start, Node engine и Vite override; адаптировать конфликт e2e flows к `/api/sanctum/csrf-cookie`.
+3. Обновить модульную справку, worklog и этот state; выполнить быстрые целевые проверки без полного локального CI.
+
+## Стан
+
+- Время: 2026-10-30 Asia/Saigon.
+- Worktree: `D:/Projects/HRM/worktrees/gitlab-browser-os`, branch `feat/browser-os-redesign`, base `66d440f5c82b0f719736a66491162290f444a9fb`.
+- Source: `D:/Projects/HRM/worktrees/browser-os-integration`, reviewed SHA `3301c3e96d7e2c9bcc1d807461b9df72808d35b9`; reviewed source delta starts at `899d4dab`.
+- Manifest scope: frontend-only. Target retains `server.mjs`, unix socket/`APP_SOCKET`, `run.sh`, Angular `dist/frontend` build path, Node >=24, and patched Vite override. No Vercel files added.
+- Completed: copied manifest frontend blobs except the three semantic conflicts (`package.json`, `package-lock.json`, `e2e/flows.pw.ts`); merged project coverage lint command, applied the reviewed `@angular/build` → Vite 8.3.5 override and source lock graph (retaining target package name and Node >=24 metadata), and rewrote CSRF path in browser flows to `/api/sanctum/csrf-cookie`. Target-only files were preserved.
+- Reviewed source evidence (from coordinator): independent SOL exact-tree review; full CI 400 browser / 1241 unit pass; actual visual review pass. This is source evidence, not target verification.
+- Checks: `npm run e2e:lint` passed (inventory + project coverage, ESLint, TypeScript); `npm run test:docs` passed (9); `npx ng lint` passed; filtered Angular unit tests passed (27 across window navigation, desktop layout and theme); `npm run docs` passed (35 pages, no warnings); `git diff --check` passed after line-ending normalization. `npm ci` completed after the reviewed lock graph update; `npm audit --package-lock-only --audit-level=high` passed with zero high-severity findings and one remaining moderate `fast-uri` advisory. Confirmed installed Vite 8.3.5, Angular CLI/devkit 22.2.5, undici 8.12.3 and zod 4.6.6.
+- Full CI, GitLab publication, deployment and live site verification are owned by coordinator. UI flows in this worktree use recorded mocks.
+- Next: coordinator mirrors the frozen tracked delta into validation worktree and runs full unit/docs/lint/build/browser CI, then performs review and GitLab release steps.

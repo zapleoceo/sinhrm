@@ -1,0 +1,202 @@
+# Модуль Perform (1:1, цели OKR, KPI, фидбек, оценка 360, планы развития)
+
+## Что это и зачем
+Всё, что помогает человеку расти и понимать, как у него дела, — в одном месте:
+
+- **Встречи 1:1** — регулярный разговор руководителя с сотрудником: повестка (из шаблона или своя), общие заметки,
+  **личные заметки руководителя** и договорённости с датами.
+- **Цели (OKR)** — цель и 1–10 измеримых ключевых результатов («клиентов подключено: 0 → 10»). Прогресс цели
+  считается сам из ключевых результатов; цели связываются в дерево (личная цель → цель команды → цель компании).
+  Каждое обновление прогресса («check-in») сохраняется в истории.
+- **KPI** — показатель сотрудника за месяц или квартал: план и факт, процент выполнения.
+- **Фидбек** — благодарность или конструктив коллеге в любой момент, а также «попросить фидбек».
+- **Оценка (performance review / 360)** — цикл оценки по компетенциям и рейтинговой шкале: самооценка, оценка
+  руководителя, коллег и подчинённых («снизу вверх»).
+- **Планы развития** — цели развития и шаги с датами; сотрудник отмечает выполненные шаги.
+
+**Кто что видит — простыми словами.**
+- Админ (он же HR) видит всё.
+- Руководитель видит 1:1, цели, KPI, планы и результаты оценки **людей ниже себя** в оргструктуре (как в People).
+- Сотрудник видит своё: свои встречи, цели, KPI, планы, фидбек о себе и от себя.
+- **Личные заметки 1:1 видит только руководитель, который ведёт встречу.** Их не видит ни сотрудник, ни его
+  руководитель выше, ни админ — сервер просто не отдаёт это поле никому другому.
+- **Оценки коллег и подчинённых анонимны.** Их среднее появляется **только после закрытия цикла** и только если
+  оценок в группе **не меньше трёх**; пока цикл идёт, даже админ и руководитель видят лишь примерно, сколько
+  оценок уже отправлено («0–2», «3–4», «5+»), — иначе, сравнивая результаты до и после очередной оценки, можно было
+  бы узнать, кто что поставил. Если коллег оценило двое — группа скрыта и после закрытия: ни цифр, ни комментариев.
+  Имена коллег и подчинённых в результатах анонимного цикла не показываются никогда. Самооценка и оценка
+  руководителя видны админу и руководителям выше сразу (их авторы и так известны).
+- Сотрудник видит свои результаты оценки только после **закрытия** цикла.
+
+## Как пользоваться
+Меню → раздел **«Продуктивність»**:
+- **Цілі (OKR)** (`/perform/objectives`) — выбор квартала, дерево целей с полосками прогресса, «Нова ціль»
+  (название, видимость «усім / команді / лише мені й керівникам», родительская цель, ключевые результаты),
+  «Оновити прогрес» — новые текущие значения и комментарий.
+- **Зустрічі 1:1** (`/perform/one-on-ones`) — слева ближайшие и прошедшие встречи, справа выбранная: повестка
+  (галочки), общие заметки, личные заметки (только руководителю встречи), договорённости. Запланировать встречу
+  может руководитель со своим подчинённым (админ — любую пару). Сотрудника выбирают по имени: начните печатать —
+  список покажет только ваших подчинённых (админу — всех); [people.md](people.md#выбор-человека-person-picker-2026-09-29).
+- **Фідбек** (`/perform/feedback`) — форма «дать / попросить фидбек» (кому — выбор по имени среди всех из справочника), вкладки «Отримані», «Надіслані»,
+  «Запити до мене» (кнопка «Відповісти»), «Моя команда» (руководителю), «Публічні».
+- **Мої оцінювання** (`/perform/reviews`) — формы, которые нужно заполнить как оценщик; по каждой компетенции уровень
+  шкалы и комментарий.
+- **Профиль сотрудника → вкладка «Продуктивність»** — цели, KPI (руководитель добавляет), планы развития
+  (руководитель создаёт, сотрудник отмечает шаги), 1:1 и результаты оценки (полоски по типам оценщиков).
+- **Адміністрування → Цикли оцінювання** (`/admin/perform/reviews`, админ) — шкалы, компетенции, мастер цикла
+  (основное → участники и типы → компетенции → создать), «Запустити» (создаются формы), «Завершити». Список циклов — таблица со строкой заголовков: сортировка и фильтры (название, период — по дате начала, статус; прогресс — сортировка по доле сданных), состояние в адресе. Открытый фильтр колонки объявляет число показанных строк — «Знайдено: N» (`appTableSortCount` = `rows().length`, с 2026-10-03). Так же — у блока KPI во вкладке «Продуктивність».
+
+## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/PerformException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): списки страниц «Мої оцінювання», 1:1, OKR и «Відгуки» держит `PagedList` (`core/ui/table/paged-list.ts`) вместо четырёх одинаковых `load()`: ошибка — уведомление `performErrorKey`, смена периода или ящика отменяет запрос в пути.
+Бэкенд — `backend/app/Modules/Perform`, маршруты `/api/perform/*` (`routes.php`), все за `auth:sanctum` +
+`EnsureUserIsActive`. Доступ строится на People: `Services/PerformAccess::viewer()` → `DTO/PerformViewer`
+(обёртка над `PeopleContext`: `admin()`, `isSelf()`, `isAbove()` — руководитель выше по `manager_id`,
+`manages()` = админ или руководитель выше, `sees()` = `manages()` или сам). Gate `perform-manage`
+(`Providers/PerformServiceProvider::MANAGE`) = `PeopleScope::isAdmin` — настройка оценки и шаблоны 1:1.
+Нет доступа к записи → **404** (запись «не существует» для чужих), нет права на действие → **403**.
+
+### Таблицы (миграция `Database/Migrations/2026_10_04_100001_create_perform_tables.php`)
+| Таблица | Колонки | Заметки |
+|---|---|---|
+| `one_on_one_templates` | `name, agenda json (list<string>)` | запись — админ |
+| `one_on_ones` | `manager_employee_id, employee_id, scheduled_at, template_id?, agenda json [{id,text,done}], notes_private_manager?, notes_shared?, action_items json [{id,text,done,due_on?}], status (scheduled\|completed\|cancelled)` | `notes_private_manager` отдаётся только руководителю встречи |
+| `objectives` | `scope (personal\|team\|branch\|company), owner_employee_id?, department_id?, branch_id?, period ("2026-Q4"), title, description?, key_results json [{id,title,start,target,current,unit,weight}], progress (0..100), status (active\|achieved\|missed\|cancelled), parent_objective_id?, visibility (public\|team\|private)` | `progress` пересчитывается сервером при каждой записи |
+| `objective_checkins` | `objective_id, author_id, progress_before, progress_after, key_results json [{id,current}], comment?` | история прогресса |
+| `kpis` | `employee_id, metric, unit?, period ("2026-10" \| "2026-Q4"), target, actual?` | `unique(employee_id, metric, period)` → 409 `duplicate` |
+| `feedback` | `from_employee_id, to_employee_id, type (praise\|constructive\|request), text, visibility (private_to_recipient\|manager\|public), request_id?, answered_at?` | запрос всегда `private_to_recipient`; ответ ссылается на запрос |
+| `rating_scales` | `name, levels json [{value,label}]` (по возрастанию) | удалить шкалу компетенции — 409 `in_use` |
+| `competencies` | `name, description?, scale_id, active` | |
+| `review_cycles` | `name, period_start, period_end, participants json {branch_ids, department_ids}, types json [self\|manager\|peer\|upward], competency_ids json, anonymous, deadlines json {type: date}, status (draft\|active\|closed), activated_at?, closed_at?` | правка/удаление — только черновик (409 `cycle_not_draft`) |
+| `review_assignments` | `cycle_id, subject_employee_id, reviewer_employee_id, type, status (pending\|submitted), submitted_at?` | `unique(cycle, subject, reviewer, type)` |
+| `review_answers` | `assignment_id, competency_id, rating, comment?` | `unique(assignment_id, competency_id)` |
+| `development_plans` | `employee_id, title, goals json [{id,text}], actions json [{id,text,due_on?,done}], due_on?, status (active\|completed\|cancelled)` | |
+
+Элементы JSON-списков получают стабильный `id` (`Support/ListItems`: id клиента, если это короткий токен, иначе
+сгенерированный) — по нему check-in и отметка шага находят нужный элемент.
+
+### Правила доступа (матрица)
+| Сущность | Читать | Создавать / менять |
+|---|---|---|
+| 1:1 | сотрудник встречи, руководитель встречи, руководители выше сотрудника, админ | создать — руководитель выше сотрудника (`manager_employee_id` = он сам) или админ (любая пара); дата/статус/удаление — руководитель встречи, руководители выше, админ; повестка, общие заметки, договорённости — оба участника; **личные заметки — только руководитель встречи** |
+| Цель | `public` — все; `team` — отдел владельца, владелец, руководители выше; `private` — владелец и руководители выше; админ — всё | владелец, руководители выше владельца, админ; цель без владельца и уровня `company` — только админ |
+| KPI | сотрудник, руководители выше, админ | руководители выше и админ (сам себе — нет) |
+| Фидбек | автор, получатель; `manager` — ещё руководители выше получателя; `public` — все; админ — всё | любой сотрудник (кроме себе, 422 `self_target`); ответ на запрос — только адресат запроса, один раз (409 `request_not_open`) |
+| План развития | сотрудник, руководители выше, админ | руководители выше и админ; отметить шаг — и сам сотрудник |
+| Форма оценки | только сам оценщик (чужая → 404) | отправить один раз (409 `already_submitted`), каждую компетенцию цикла ровно раз значением её шкалы (422 `invalid_answers`) |
+| Результаты оценки | админ и руководители выше — всегда; сам сотрудник — после закрытия цикла | — |
+
+### Прогресс цели (`Support/ObjectiveProgress`)
+Ключевой результат: `(current − start) / (target − start)`, ограничено 0..1 (работает и для «уменьшить»,
+когда `target < start`); `start = target` → 1, если достигнуто, иначе 0. Цель: взвешенное среднее по `weight`
+× 100, округлено. Выравнивание: родитель должен быть видим и не может быть самой целью или её потомком
+(422 `alignment_cycle`).
+
+### Оценка 360 (`Services/ReviewSetupService`, `Services/ReviewService`, `Support/ReviewResults`)
+**Запуск цикла** создаёт формы по фильтру участников (филиалы/отделы; пусто = все не уволенные) и типам:
+`self` — сам; `manager` — его руководитель (если работает); `peer` — до 5 коллег с тем же руководителем;
+`upward` — его прямые подчинённые. Админ может добавить оценщика вручную (`POST …/assignments`).
+**Результаты** (`ReviewResults::aggregate`): среднее по компетенции для каждого типа оценщиков; `average` —
+среднее без самооценки. Группы `peer` и `upward` защищены: пока цикл не закрыт (`final = false`) — всегда
+`suppressed` с грубым `submitted` («0–2» / «3–4» / «5+»); после закрытия меньше `MIN_REVIEWERS = 3` оценщиков →
+`suppressed`,
+без числа, без количества, без комментариев; в анонимном цикле у их комментариев нет автора, и комментарии
+отсортированы по тексту (порядок отправки мог бы выдать человека). Список «кто кого оценивает» админ видит
+(статусы), ответы — нет: эндпоинта с ответами одного оценщика не существует.
+**Защита от вычитания между циклами.** Если группа коллег (или подчинённых — `upward`) одного сотрудника в новом
+цикле отличается от группы в прошлом показанном цикле на 1–2 человека (например, было 3 оценщика, стало 4), в новом
+цикле эта группа скрыта: «приховано для захисту анонімності» — иначе «4 × новое среднее − 3 × старое» дало бы оценку
+добавленного коллеги. Когда различие дойдёт до 3 человек (минимум группы), группа снова видна.
+Технически (`ReviewService::guarded/hiddenTypes`, `Core/Support/MembershipDifferencing`): для закрытого цикла берутся
+все более ранние закрытые циклы, где сотрудник был субъектом (по `closed_at`, затем id), и множества **отправивших**
+оценку по типу (id оценщиков и так хранятся в `review_assignments`, новых данных не пишем). Группа видна, если для
+каждого более раннего цикла, где она была показана (≥ 3 оценщиков и не скрыта этим же правилом), симметрическая
+разность составов `d` = 0 или ≥ `MIN_REVIEWERS`. Скрытая группа: `{reviewers: null, suppressed: true,
+hidden_reason: "anonymity"}`, без баллов и комментариев. Остаточный риск: пересекающиеся группы разных типов
+(`peer` и `upward` с одним человеком) между собой не сравниваются; активный цикл по-прежнему показывает только
+диапазон заполнения.
+
+### Эндпоинты (`/api/perform/...`)
+| Метод и путь | Кто | Что |
+|---|---|---|
+| `GET one-on-ones?employee_id&status`, `GET/PATCH/DELETE one-on-ones/{id}`, `POST one-on-ones` | см. матрицу | 1:1; ответ: `can_manage`, `can_private_notes`, ключ `notes_private_manager` только руководителю встречи |
+| `GET one-on-one-templates`; `POST/PUT/DELETE one-on-one-templates[/{id}]` | все; запись — админ | шаблоны повестки |
+| `GET objectives?period&owner_employee_id`, `GET objectives/{id}` (с `checkins`), `POST`, `PUT objectives/{id}`, `DELETE`, `POST objectives/{id}/check-ins {key_results:[{id,current}], comment?}` | см. матрицу | цели |
+| `GET kpis?employee_id&period`, `POST kpis`, `PUT/DELETE kpis/{id}` | см. матрицу | `attainment` = факт / план, % |
+| `GET feedback?box=received\|given\|requests\|team\|public`, `POST feedback {to_employee_id \| request_id, type, text, visibility?}` | все | `team`: руководителю — `manager`+`public` о людях ниже, админу — всё; `box` проверяет `ListFeedbackRequest` (`Rule::in`, пусто → `received`), любое другое значение и нескалярное `box[]=x` — 422, а не 500 (аудит безопасности 2026-10-08) |
+| `GET development-plans?employee_id`, `POST`, `PUT/DELETE development-plans/{id}`, `PATCH development-plans/{id}/actions/{actionId} {done}` | см. матрицу | `progress {done,total}` |
+| `GET review/assignments`, `GET review/assignments/{id}`, `POST review/assignments/{id}/submit {answers}` | оценщик | свои формы |
+| `GET review/cycles/{cycle}/results/{employee}`, `GET review/employees/{employee}/results` | см. матрицу | агрегаты `ReviewResults` |
+| `GET/POST/PUT/DELETE review/scales`, `review/competencies`, `review/cycles`, `POST review/cycles/{id}/activate\|close`, `POST review/cycles/{id}/assignments` | админ (`perform-manage`) | настройка |
+
+Ошибки бизнес-правил — `Exceptions/PerformException` → `{message, code}`: `no_employee`, `self_target`,
+`alignment_cycle`, `request_not_open`, `cycle_not_draft`, `cycle_not_active`, `already_submitted`,
+`invalid_answers`, `in_use`, `duplicate`.
+
+### Слои
+Контроллеры (`Http/Controllers`, база `PerformController` — пользователь и `PerformViewer`) → FormRequest
+(`Http/Requests`, метод `payload()`) → сервисы (`OneOnOneService`, `ObjectiveService`, `KpiService`,
+`FeedbackService`, `DevelopmentPlanService`, `ReviewSetupService`, `ReviewService`) → репозитории-интерфейсы
+(`Contracts/*Repository`, реализации `Repositories/Eloquent*`, привязка в провайдере). Чистые калькуляторы без БД —
+`Support/ObjectiveProgress`, `Support/ReviewResults`, `Support/ListItems`.
+
+### Фронтенд (`src/app/features/perform`)
+| Файл | Что |
+|---|---|
+| `perform.model.ts` | типы API и чистые функции: `quarterOf`, `keyResultRatio` (как на сервере), `objectiveTree` (дерево по `parent_objective_id`, невидимый родитель → корень, защита от циклов), `splitMeetings`, `itemsBody`, `parseIds` |
+| `perform.service.ts` | HTTP-клиент `/api/perform/*`, `performErrorKey` |
+| `one-on-ones/`, `objectives/`, `feedback/`, `reviews/my-reviews.page.ts` | страницы раздела «Продуктивність» |
+| `reviews/review-admin.page.ts` | `/admin/perform/reviews`: шкалы, компетенции, мастер цикла (`mat-stepper`), запуск/закрытие |
+| `reviews/review-results.ts` | результаты: полоски CSS по типам оценщиков, «приховано: менше N оцінювачів» |
+| `profile/performance.tab.ts` | вкладка профиля «Продуктивність» |
+
+В рядах «Зустрічі 1:1» и «Фідбек» пикер той же высоты, что и соседние поля (класс `grow`), — вид описан в [people.md](people.md#выбор-человека-person-picker-2026-09-29).
+Сотрудник в 1:1 и получатель фидбека выбираются общим `<app-person-picker>` (`features/people/picker`), в API уходит
+тот же `employee_id` / `to_employee_id`. Назначение 360 (`POST review/cycles/{id}/assignments`) в интерфейсе пока нет.
+
+**Интерфейс (2026-09-26):** Даты вводятся только выпадающим календарём Angular Material (формат дд.мм.рррр, неделя с понедельника; [core.md](core.md)), в API уходит прежний `YYYY-MM-DD` (`core/date/iso-date.ts`, без сдвига часового пояса): 1:1 — день (календарь) + время (`mat-timepicker`), в API `scheduled_at` = `YYYY-MM-DDTHH:mm` как раньше; срок пункта «Домовленості»; начало/конец периода цикла оценки. Период KPI остаётся текстом (`2026-10` или `2026-Q4`), периоды OKR — выбор квартала.
+
+**Вид (рестайл C «Маршрут», 2026-10-02).** Цели — линия прогресса (трек + заливка цвета тона), прорисовывается один раз («трасса»), дочерние цели «свисают» с родителя веткой; процент и значения КР — моно, поле check-in — как поле ввода (44px на телефоне). 1:1 — встречи как станции: кольцо — предстоящие, пунктир — прошедшие, залито — открытая. Тип отзыва — пилюля (`FEEDBACK_TONE`: похвала ● good, конструктив ◆ warn, запрос ○ info); статус оценки — пилюля (отправлено ● / ожидает ◆); статус цикла — пилюля. Результаты 360°: тип оценщика — цвет **и** форма маркера (самооценка ●, руководитель ■, коллега ◆, подчинённый ○) в легенде и у каждой полосы. Пустые списки — `.app-empty`. Тест вида — `features/perform/perform.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
+### Общие хелперы Core (2026-10-02)
+- gate `perform-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- Комментарий `PerformServiceProvider::MANAGE` исправлен на фактический набор: HR staff (superadmin, admin, hr_manager), 2026-10-08. Аудит дат: в Perform только моменты (`activated_at`, `closed_at`, `submitted_at`) и даты `due_on`, введённые человеком — UTC-«сегодня» не используется.
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()` (в базовом `PerformController` он `protected` — через алиас трейта).
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
+### Сортировка и фильтры KPI в профиле (2026-10-02)
+Клик по названию колонки сортирует (повторный — в обратную сторону), воронка рядом — фильтр колонки; общий компонент `core/ui/table` (клиентская таблица `ClientTable`: все строки уже пришли, сравнение строк по языку интерфейса, пустые — в конце). Состояние — в адресе страницы с префиксом таблицы, ссылкой можно поделиться. Подключение — [guides/tables.md](../guides/tables.md).
+- Вкладка «Продуктивність» профиля, блок KPI: появилась строка заголовков — «Показник», «Період» (текст), «Факт / ціль» (сортировка и диапазон по факту), «Виконання» (диапазон %). Адрес — `kpi_*`. Тест — `profile/performance.tab.spec.ts`.
+
+### Общие примитивы фронта
+Общий код фронта лежит в `src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `performErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `PerformAccess` строит `PerformViewer` из контракта People `PeopleAccess` (`for`, `employeeOf`, `isAdmin`). Тест — `tests/Unit/Perform/PerformPeopleAccessTest.php`.
+
+## Как проверить
+- `php artisan test --filter=Perform` — Feature: `OneOnOnesTest` (личные заметки не уходят никому, кроме
+  руководителя встречи; права по полям), `ObjectivesTest` (прогресс, check-in, циклы выравнивания, видимость),
+  `KpisAndPlansTest`, `FeedbackTest` (видимость, запрос → ответ один раз), `ReviewsTest` (генерация форм, валидация,
+  **пока цикл активен, коллеги — только диапазон отправленных; после закрытия группа из 2 скрыта, из 3 — показана без имён**, сотрудник видит результаты после закрытия);
+  Unit: `tests/Unit/Perform/CalculatorsTest`.
+- Фронт: `npx ng test` — `perform.spec.ts`.
+- Вручную на preview: руководитель → 1:1 с подчинённым, личная заметка → войти подчинённым: заметки нет.
+
+## Вопросы и следующие шаги
+- Номинация коллег для 360 самим сотрудником (сейчас — автоматически коллеги одного руководителя + вручную админом).
+- 9-box (потенциал × результат) и калибровка — не сделаны.
+- Синхронизация 1:1 с Google Calendar — после подключения Google (модуль GoogleWorkspace умеет создавать события).
+
+
+> Роли: «админ (HR)» здесь — это `UserRole::hrStaff()`: `superadmin`, `admin` и `hr_manager` (с 2026-10-09, [auth.md](auth.md)).
+
+## Доступ к модулю
+
+Ключ модуля `perform`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).

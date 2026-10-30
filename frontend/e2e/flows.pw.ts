@@ -9,7 +9,7 @@ import { E2E_ORIGIN } from './port.mjs';
 import type { AssistantStatus } from '../src/app/features/assistant/assistant.model';
 import type { LeaveRequest, NewLeaveRequest } from '../src/app/features/timeoff/timeoff.model';
 
-const writes = (mock: Mock) => mock.mutations.filter((m) => m.path !== '/sanctum/csrf-cookie');
+const writes = (mock: Mock) => mock.mutations.filter((m) => m.path !== '/api/sanctum/csrf-cookie');
 
 /** Recorded first page of /api/people: the live-filter flow answers name= queries from it. */
 interface PeopleList {

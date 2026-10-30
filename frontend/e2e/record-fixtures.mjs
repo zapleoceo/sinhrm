@@ -1,6 +1,6 @@
 // Records the API fixtures of the UI parity harness (e2e/fixtures/*.json) from a LOCAL backend. Not run in CI.
 //
-// What it does: serves the production build (e2e/serve.mjs) with /api and /sanctum proxied to the local backend,
+// What it does: serves the production build (e2e/serve.mjs) with /api proxied to the local backend (e2e harness only; production routing is nginx),
 // opens every page and state of e2e/pages.mjs at 1440 and 390 px, stores every GET answer, trims lists to 30 rows,
 // replaces anything that is not synthetic (see sanitize()), and writes e2e/fixtures/<area>.json + meta.json.
 //
@@ -48,7 +48,7 @@ async function open(scope, viewport) {
   ctx.on('response', async (res) => {
     const req = res.request();
     const url = new URL(req.url());
-    if (req.method() !== 'GET' || !/^\/(api|sanctum)\//.test(url.pathname)) return;
+    if (req.method() !== 'GET' || !/^\/api\//.test(url.pathname)) return;
     let body;
     try {
       body = await res.json();
@@ -66,7 +66,7 @@ async function ensurePersonalColumn(ctx) {
   watchNetwork(page);
   await page.goto(`${base}/`);
   await page.evaluate(async () => {
-    await fetch('/sanctum/csrf-cookie', { credentials: 'include' });
+    await fetch('/api/sanctum/csrf-cookie', { credentials: 'include' });
     const xsrf = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '');
     const headers = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-XSRF-TOKEN': xsrf };
     const board = await (await fetch('/api/vacancies/1/personal-board', { headers })).json();

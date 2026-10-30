@@ -1,0 +1,128 @@
+# Модуль Directory (справочники)
+
+## Что это и зачем
+Справочники компании: **филиалы, города, отделы и должности**. На них опираются все остальные разделы:
+у вакансии будет филиал и должность, у рекрутера — филиалы, в которых он работает. Справочники
+ведутся **только вручную** — внешнего импорта нет (решение владельца: интеграции с внешними HR-системами не будет).
+
+Главные правила:
+- **Ничего не удаляется.** Ненужную запись выключают (статус «Вимкнено»), история не ломается.
+- **Реальные справочники в код не попадают** (репозиторий публичный): они живут только в базе.
+  Заполняются вручную. В тестах — только синтетика из фабрик.
+- **Сами справочники открыты для чтения любому активному пользователю** (это справочные данные: ими заполняются
+  фильтры и формы, рекрутеру нужно видеть все филиалы, чтобы выбрать нужный). Филиалы на чтение справочников не влияют.
+- **Филиалы ограничат рабочие данные.** Контракт `AccessibleBranches` — то, через что будущий модуль Recruiting
+  будет отбирать кандидатов и вакансии: рекрутер и наблюдатель — только своих филиалов, суперадмин и админ — все.
+
+## Как пользоваться
+Меню слева → «Адміністрування → Довідники» (видно суперадмину и админу).
+- Вкладки: Філії, Міста, Відділи, Посади, Категорії вакансій. Поиск по названию, фильтр по статусу, постраничный вывод.
+- **Додати** — новая запись по названию. **✎** — переименовать прямо в строке (Enter — сохранить, Esc — отмена).
+  **Вимкнути / Увімкнути** — кнопка в строке. Изменения видны сразу; если сервер отказал — строка возвращается как была.
+- Филиалы пользователя — в «Адміністрування → Користувачі», колонка «Філії» (см. [users.md](users.md)).
+
+## Как устроено
+- Фронт (2026-10-08): `DirectoryStore` держит строки, итог, загрузку и ошибку в `PagedList` (`core/ui/table/paged-list.ts`) — общий помощник списков вместо своих сигналов и `LatestRequest`.
+### Таблицы (миграции `Database/Migrations/2026_09_26_120001_create_directory_tables.php`, `2026_10_07_100001_drop_directory_external_ids.php`)
+| Таблица | Колонки | Заметки |
+|---|---|---|
+| `cities`, `departments`, `positions` | `id, name, status (active\|disabled), timestamps` | индекс `(status, name)` |
+| `branches` | те же + `city_id` (fk `cities`, null on delete) | |
+| `branch_user` | `id, user_id (fk users, cascade), branch_id (fk branches, cascade), timestamps`, `unique(user_id, branch_id)` | филиалы пользователя |
+
+Колонка `external_id` (ключ внешнего импорта) удалена миграцией `2026_10_07_100001_drop_directory_external_ids`.
+Модели: `Models/DictionaryItem` (общая база) → `Branch` (+ `city()`), `City`, `Department`, `Position`.
+Enum `Enums/DirectoryStatus` (`active`, `disabled`), `Enums/DictionaryType` (`branches|cities|departments|positions|vacancy_categories` →
+модель). У `App\Models\User` связь `branches()` (через `branch_user`).
+
+### Доступ
+| Действие | Кто | Как проверяется |
+|---|---|---|
+| Чтение `GET /api/directory/{type}` | любой **активный** пользователь | `auth:sanctum` + `EnsureUserIsActive` |
+| Создание / правка / выключение | активный `superadmin` или `admin` | Gate `manage-directory` (`Providers\DirectoryServiceProvider::MANAGE_DIRECTORY`) |
+
+Гость → 401, заблокированный или без права → 403, неизвестный справочник → 404.
+
+### Эндпоинты (`/api/directory`)
+| Метод и путь | Тело / параметры | Ответ |
+|---|---|---|
+| `GET /{type}` | `q` (по названию, без учёта регистра), `status` (`active\|disabled`), `city_id` (только `branches`), `sort` = `name\|status`, у `branches` ещё `city` (по умолчанию `name`), `dir` = `asc\|desc`, `perPage` 1..200 (строка `"50"` тоже принимается, по умолчанию 50), `page`; `city`/`city_id` у другого справочника, чужая колонка или направление → 422 | `{data: [item], links, meta}`; город — подзапросом, филиалы без города в конце (`nulls last`), равные — по названию и `id` |
+| `POST /{type}` | `{name, status?, city_id?}` | 201 `{data: item}`; 422 при ошибке полей |
+| `PATCH /{type}/{id}` | `{name?, status?, city_id?}` | `{data: item}`; нет записи в этом справочнике → 404 |
+
+`item` (`Http/Resources/DictionaryItemResource`): `id, name, status, created_at, updated_at`;
+у филиала ещё `city_id` и `city: {id, name} | null`. `city_id` принимается только для `branches` (иначе 422) и только id существующего **активного** города. `DELETE` нет (405).
+
+### Как работает ограничение по филиалам
+Контракт `Contracts/AccessibleBranches` (реализация `Services/BranchAccess`), метод `for(User): ?list<int>`:
+- активный `superadmin` / `admin` / `hr_manager` (`UserRole::hrStaff()`) → `null` — без ограничений;
+- `recruiter` / `viewer` → id **активных** филиалов из `branch_user` (выключенный филиал доступ не даёт);
+- заблокированный пользователь или пользователь без филиалов → `[]` — не видит ничего.
+
+Как использовать в будущих запросах (модуль Recruiting):
+```php
+$ids = $accessibleBranches->for($user);
+if ($ids !== null) {
+    $query->whereIn('branch_id', $ids);   // [] → пустой результат
+}
+```
+Назначение филиалов — `PATCH /api/users/{id}` с `branch_ids` (модуль Users).
+
+### Слои
+`Http/Controllers/DirectoryController` → `Http/Requests` (`ListDictionaryRequest`, `SaveDictionaryItemRequest`) →
+`Services/DirectoryService` → `Contracts/DictionaryRepository` (`Repositories/EloquentDictionaryRepository`).
+Демо- и тестовые данные — фабрики `Database/Factories/*Factory` (синтетические названия).
+
+### Фронтенд (`features/directory`)
+`directory.page.ts` — вкладки, таблица с переименованием в строке, «Додати». Заголовки колонок — общий
+`th[app-column-header]` ([core.md](core.md#заголовок-таблицы-сортировка-и-фильтр)): «Назва» (сортировка, фильтр-текст `q` —
+бывший поиск сверху), «Місто» у филиалов (сортировка, выбор города), «Статус» (сортировка, выбор — бывший фильтр сверху).
+Вкладка и состояние — в адресе (`directory.query.ts`: `?tab=branches&city_id=2&sort=city&dir=desc`); смена вкладки
+начинает с чистых фильтров. `directory.store.ts` — состояние страницы на signals (`apply(view)` из адреса; новый Открытый фильтр колонки объявляет итог API — «Знайдено: N» (`appTableSortCount` = `meta.total`, пока список грузится — молчит; с 2026-10-03).
+запрос отменяет незавершённый — `LatestRequest`; переименование и выключение — оптимистично с откатом). При пустом
+результате заголовки остаются. `directory.service.ts` — HTTP, `active(type)` для выпадающих списков (используется на странице
+пользователей), перевод кодов ошибок в ключи i18n `directory.errors.*`. Маршрут `/admin/directory` —
+`roleGuard('superadmin', 'admin')`.
+
+**Вид (рестайл C «Маршрут», 2026-10-02).** Статус записи справочника — пилюля `.app-pill` (активна ● good, отключена — пунктирный ○ neutral) вместо чипа с перекрашенным текстом; рамка таблицы — от общего `.panel`; уведомление об ошибке импорта — линия 1.5px и красная «рельса» 4px. Тест вида — `features/directory/directory.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
+### Общие хелперы Core (2026-10-02)
+- `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..200`, по умолчанию 50, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListDictionaryRequest`);
+- поиск `LIKE` экранирует `%`, `_` и сам символ экранирования через `Core\Support\Database\Like` (обратный слеш, `Like::contains`) (поиск по названию);
+- gate `manage-directory` задаётся `ModuleServiceProvider::defineRoleGate(…, [UserRole::Superadmin, UserRole::Admin])`: активный superadmin или admin;
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
+
+Поведение API не менялось; подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
+### Общие примитивы фронта
+Общий код фронта лежит в `src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `directoryErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+## Как проверить
+Тесты: `tests/Feature/Directory/DirectoryApiTest.php` (401/403/404, чтение любым активным, сортировка, фильтры,
+`perPage` строкой и границы, создание/правка/выключение админом, `city_id` только у филиалов, запрет записи
+рекрутеру/наблюдателю, нет DELETE, `POST /api/directory/import` → 404), `tests/Unit/Directory/*` (`BranchAccess`, `DirectoryService`).
+`tests/Feature/Directory/DirectorySortFilterApiTest.php` (сортировка, город только у филиалов, `nulls last`, `"0"`,
+строковые `perPage`/`page`, 422). Фронт: `directory.service.spec.ts`, `directory.store.spec.ts`, `directory.page.spec.ts`.
+
+Вручную (нужна сессия в браузере):
+```bash
+curl -i "https://sinhrm.vercel.app/api/directory/branches?perPage=20"   # без сессии → 401
+```
+
+## Доступ к модулю
+
+Ключ модуля `directory`. Это **базовый** модуль: его нельзя выключить или ограничить по ролям на странице «Адміністрування → Модулі». Подробнее — [modules-access.md](modules-access.md).
+
+## Категории вакансий (`vacancy_categories`, 2026-10-25)
+Новый справочник для формы вакансии — вкладка «Категорії вакансій». Работает как остальные: чтение — любой активный
+пользователь, создание и правка — `manage-directory`, строки не удаляются, а отключаются.
+Таблица создаётся **пустой**: список категорий заполняет компания в админке, в коде и миграциях его нет
+(правило владельца: справочники компании живут в базе).
+
+### Совместимость с MySQL
+
+Сортировка филиалов по городу сохраняет филиалы без города в конце в обоих направлениях. Порядок строится через `Sql::orderByNullsLast` (в MySQL нет `NULLS LAST`: пара «`expr is null`, затем `expr dir`»); `DirectorySortFilterApiTest` проверяет выборку, фильтры и страницы в CI на MySQL 8.4.
+
+**Переносимый SQL (2026-10-08).** Сортировка справочников (город филиала) строится через `Core\Support\Database\Sql::orderByNullsLast` — пустые значения в конце в обоих направлениях, без драйверных веток в модуле ([ADR 0011](https://gitlabs.itsrv.xyz/dev/sinhrm.api/-/blob/master/docs/adr/0011-mysql-only.md)).

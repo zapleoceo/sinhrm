@@ -123,7 +123,7 @@ for (const language of languages) {
     expect(mcpReads).toBe(1);
     expect(turns).toBe(1);
     expect(polls).toBe(1);
-    expect(mock.mutations.filter((mutation) => mutation.path !== '/sanctum/csrf-cookie')).toEqual([]);
+    expect(mock.mutations.filter((mutation) => mutation.path !== '/api/sanctum/csrf-cookie')).toEqual([]);
     expect(mock.missing).toEqual([]);
     expect(errors).toEqual([]);
   });
@@ -303,7 +303,7 @@ for (const language of languages) {
     await captureInteraction(page, ui.panel, info, language.locale, 'declined');
     expect(ui.requests).toHaveLength(9);
     expect(fixtures).toHaveLength(0);
-    expect(ui.mock.mutations.filter((mutation) => mutation.path !== '/sanctum/csrf-cookie')).toEqual([]);
+    expect(ui.mock.mutations.filter((mutation) => mutation.path !== '/api/sanctum/csrf-cookie')).toEqual([]);
     expect(ui.mock.missing).toEqual([]);
     expect(ui.errors).toEqual([]);
   });
@@ -347,7 +347,7 @@ for (const language of languages) {
     expect(forbiddenRequests).toBe(0);
     expect(ui.requests).toHaveLength(7);
     expect(fixtures).toHaveLength(0);
-    expect(ui.mock.mutations.filter((mutation) => mutation.path !== '/sanctum/csrf-cookie')).toEqual([]);
+    expect(ui.mock.mutations.filter((mutation) => mutation.path !== '/api/sanctum/csrf-cookie')).toEqual([]);
     expect(ui.mock.missing).toEqual([]);
     expect(ui.errors).toEqual([]);
   });

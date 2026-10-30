@@ -1,5 +1,5 @@
 // Static server for the production build (dist/frontend/browser) with the SPA fallback to index.html.
-// Tests answer /api/** and /sanctum/** themselves (page.route), so by default the server answers them 503.
+// Tests answer /api/** themselves (page.route), so by default the server answers them 503.
 // The fixture recorder passes --proxy=http://127.0.0.1:8017 to forward them to a local backend instead.
 // Usage: node e2e/serve.mjs [--port=<E2E_PORT, default 4317>] [--proxy=http://127.0.0.1:8017]
 import { createServer, request as httpRequest } from 'node:http';
@@ -80,7 +80,7 @@ async function file(path) {
 
 createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
-  if (/^\/(api|sanctum)\//.test(url.pathname)) {
+  if (/^\/api\//.test(url.pathname)) {
     if (!proxy) {
       res.writeHead(503).end('mock only');
       return;

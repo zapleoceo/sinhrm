@@ -1,0 +1,213 @@
+# Модуль TimeOff (отпуска и отсутствия)
+
+## Что это и зачем
+Учёт отсутствий: отпуск, больничный, день за свой счёт и любые свои типы. Сотрудник видит, сколько дней отпуска у него
+осталось, подаёт запрос (система сама считает рабочие дни без выходных и праздников), руководитель согласует в один клик,
+а вся команда видит в календаре, кто когда отсутствует. На главной — «Відсутні сьогодні» и «Чекають мого погодження».
+
+Главные правила простыми словами:
+- **Баланс = сумма движений** в журнале: начисление (+), согласованный отпуск (−), отмена согласованного (+), ручная
+  корректировка админом, сгорание остатка сверх лимита переноса 1 января.
+- **Считаются только рабочие дни**: пн–пт минус праздники (общие и праздники филиала сотрудника). Можно взять полдня
+  в первый или последний день.
+- Нельзя подать запрос, пересекающийся с другим ожидающим или согласованным запросом того же человека.
+- Нельзя уйти в минус по отпуску (ожидающие запросы тоже резервируют дни). Админ может разрешить минус флажком.
+- Больничный и день за свой счёт по умолчанию **без лимита**: баланс не ведётся, показывается «использовано в этом году».
+- Согласует руководитель (любой выше по оргструктуре) или админ. Свой запрос сам себе согласовать нельзя (кроме админа).
+- Настройки: количество дней отпуска **на филиал** (`vacation_annual_days`, `sick_leave_annual_days`)
+  = политика типа с `branch_id`; без политики филиала действует общая (по умолчанию отпуск 24 дня в год).
+
+## Как пользоваться
+Меню → раздел «Люди»:
+- **Мої відсутності** (`/timeoff`) — баланс по типам, форма нового запроса (тип, «з»/«по», пів дня, коментар; количество
+  рабочих дней и остаток считает сервер ещё до отправки; необязательное «На кого передати справи» — выбор коллеги из
+  справочника), список своих запросов с кнопкой «Скасувати запит» (пока отпуск
+  не начался).
+- **Календар команди** (`/timeoff/calendar`) — месяц, строка на человека, цвет — тип отсутствия, штриховка — ждёт
+  согласования, серым — выходные, жёлтым — праздники. Фильтр по филиалу. Видны: вы, ваши коллеги с тем же руководителем
+  и все ниже вас; админ — все. Комментарии к запросам в календаре не показываются.
+- **Погодження** (`/timeoff/approvals`) — запросы на отсутствие и на изменение данных ваших людей: «Погодити» / «Відхилити».
+- **Профиль сотрудника → вкладка «Відсутності»** — баланс и запросы человека (себе, руководителю, админу); руководитель и
+  админ могут подать запрос за сотрудника.
+- **Адміністрування → Налаштування відсутностей** (`/admin/timeoff`, суперадмин, админ и HR-менеджер — `roleGuard(...HR_STAFF_ROLES)`) — типы (оплачиваемый, с балансом,
+  нужно ли согласование, цвет), политики (дней в год, начисление «щороку наперед» или «щомісяця», максимум переноса,
+  филиал) и праздники по годам (общие или для филиала).
+
+## Как устроено
+
+**Ошибки бизнес-правил** (DRY, 2026-10-08): `Exceptions/TimeOffException` наследует `Core\Exceptions\BusinessRuleException` — общий конструктор (код, HTTP-статус, `extra`) и `render()` в JSON `{message, code, ...extra}`; модуль объявляет только именованные коды, ответ API прежний.
+
+- Фронт (2026-10-08): «Погодження» (`approvals.page.ts`) держит заявки на отпуск в `PagedList` вместо своего `load()`.
+- Фронт (2026-10-08): `timeoff.dates.ts` больше не держит свои `toIso/parseIso/addDays` — месяц, выходные и оценка дней считаются через `core/date/iso-day.ts` (UTC-полночь, без сдвига на переходе времени).
+- Фронт (2026-10-08): `LeaveRequestsStore` держит заявки в `PagedList` (`core/ui/table/paged-list.ts`), `CalendarStore` отменяет загрузку прошлого месяца через `LatestRequest` — вместо ручных счётчиков `seq`.
+- Счётчик в меню ([shell.md](shell.md), `GET /api/nav/badges`, [core.md](core.md)): `Services/TimeOffNavBadges` — ключ `timeoff_approvals`: заявки, которые я могу решить (как «Погодження»; своя не считается ни у кого, включая админа). `LeaveRequestService::approvalsCount()` — тот же запрос, что `approvals()`, но `count(*)`. Не руководителю — 0 (значка нет).
+Бэкенд — `backend/app/Modules/TimeOff`, маршруты `/api/timeoff/*` (`auth:sanctum` + `EnsureUserIsActive`). Права берутся из
+модуля People (`PeopleScope`, [people.md](people.md)); запись настроек — gate `timeoff-manage` (superadmin, admin, hr_manager — `PeopleScope::isAdmin`, т. е. `UserRole::hrStaff()`).
+
+### Таблицы (миграции `Database/Migrations/2026_10_02_2000*`)
+| Таблица | Колонки | Заметки |
+|---|---|---|
+| `leave_types` | `name, code (unique), paid, unit (days\|hours), color, requires_approval, tracks_balance, active` | data-миграция `…200002`: `vacation` (с балансом), `sick` и `day_off` (без лимита; `day_off` — неоплачиваемый) |
+| `leave_policies` | `leave_type_id, branch_id? (null = общая), accrual_mode (yearly_upfront\|monthly), annual_days, carry_over_max? (null = переносится всё), active` | общая политика отпуска: 24 дня, `yearly_upfront` |
+| `holidays` | `date, name, branch_id? (null = все филиалы)` | |
+| `leave_balance_ledger` | `employee_id, leave_type_id, delta, reason (accrual\|request\|adjustment\|carry_over\|expiry), reference_id?, period?, comment?, created_by?, created_at` | только добавление; `unique(employee_id, leave_type_id, reason, period)` — идемпотентность начислений (`period` = `2026` или `2026-10`; у строк запросов `NULL`, они не конфликтуют) |
+| `leave_requests` | `employee_id, leave_type_id, starts_on, ends_on, half_day (none\|start\|end), days, comment?, status (pending\|approved\|rejected\|cancelled), balance_override, approver_id?, decided_at?, decision_comment?, created_by?, calendar_event_id?, handover_to_employee_id?` | `days` считает сервер; `handover_to_employee_id` — FK `employees` (`nullOnDelete`, индекс; миграция `…2026_10_26_100001`) |
+
+Единица `hours` у типа сейчас только справочная: запросы считаются в рабочих днях.
+
+### Расчёты (чистые классы, без БД)
+- `Services/HolidayWorkingCalendar` — реализация общего контракта `Core\Contracts\WorkingCalendar` (привязка в
+  `TimeOffServiceProvider`): `addWorkingDays(from, days, branchId)` и `isWorkingDay(day, branchId)` на тех же правилах
+  (пн–пт минус праздники: общие + филиала). Им пользуются сроки согласований других модулей (сейчас — HiringRequests),
+  чтобы не было второго способа считать рабочие дни. `WorkingCalendar::DEFAULT_SLA_DAYS = 2`.
+- `Support/WorkingDayCalculator::addWorkingDays(from, days, holidays)` — дата + N рабочих дней, время суток сохраняется.
+- `Support/WorkingDayCalculator::days(from, to, halfDay, holidays)` — пн–пт минус праздники; `start`/`end` снимают 0.5 с
+  первого/последнего дня, если он рабочий; однодневный полудневный запрос = 0.5; период длиннее 366 дней — исключение
+  (`InvalidArgumentException`), а не молча обрезанный подсчёт.
+- `Support/AccrualCalculator` — `yearly_upfront`: вся годовая норма в период `YYYY`, в год приёма — пропорционально
+  месяцам (месяц приёма считается): приняли в октябре при 24 днях → 6; `monthly`: в месяц (`YYYY-MM`) начисляется накопленная цель года
+  `round(annual × отработанные_месяцы / 12, 2)` минус уже начисленное в этом году — 12 начислений дают ровно годовую норму
+  (20 дней → 20.00, без дрейфа 20.04), а первый запуск в году догоняет прошедшие месяцы этого года; `expiring(balance, carryMax)` — сколько сгорает.
+
+### Правила запросов (`Services/LeaveRequestService`)
+Письма потока (руководителю — «Погодити відпустку: …» по новой заявке на согласование, сотруднику — решение с
+комментарием) вынесены из сервиса в `Services/LeaveNotifications` (SRP, 2026-10-08): те же получатели, тексты и ссылки,
+автор заявки-руководитель письма о своей заявке не получает (`tests/Unit/TimeOff/LeaveNotificationsTest`).
+**Гонки.** Создание, согласование и отмена берут блокировку строки сотрудника
+(`EmployeeRepository::lockForUpdate` → `SELECT … FOR UPDATE` в транзакции): проверки пересечения и баланса — «прочитал,
+потом записал», и два параллельных запроса одного сотрудника выполняются по очереди (на MySQL; в SQLite-тестах путь
+блокировки проверяется через контракт репозитория). Исключающее ограничение БД не добавлялось — блокировки достаточно и
+она переносима.
+Создание: тип активен (`inactive_type`), период ≤ 366 дней (`range_too_long`), рабочих дней > 0 (`no_working_days`),
+нет пересечения с `pending/approved` того же сотрудника (`overlap`), для типа с балансом `баланс − другие ожидающие ≥ дней`
+(`insufficient_balance {available, requested}`; флаг `override_balance` учитывается только у админа и сохраняется в
+запросе). Тип без согласования (`requires_approval = false`) сразу `approved`. Всё в транзакции.
+Согласование: `admin` или руководитель выше; повторная проверка баланса; смена статуса — compare-and-set
+(`pending → approved`, иначе 409 `invalid_status`), в журнал `−days` (`reason=request`, `reference_id`).
+Отклонение — только из `pending`. Отмена: сотрудник — ожидающий или ещё не начавшийся согласованный; руководитель/админ —
+любой ожидающий/согласованный; отмена согласованного возвращает `+days` в журнал.
+
+**Своё не решаем (2026-10-08).** Разделение обязанностей из People (`PeopleContext::canDecideOrBreakGlass`, см.
+[people.md](people.md)) действует и здесь: согласовать или отклонить собственную заявку
+нельзя (403 `forbidden`), своя заявка не попадает ни в `GET approvals`, ни в счётчик бейджа `timeoff_approvals`
+(раньше её там видел админ), свой баланс не корректируется (`POST balances/adjust` → 403). Исключение — break-glass
+единственного суперадмина (нет другого активного superadmin/admin; решение по умолчанию, владелец может изменить):
+он видит свою заявку в очереди, решает её и корректирует свой баланс, каждое действие — в журнале с `self_decision`. Отмена собственной заявки
+правилами не ограничена: она ничего себе не присуждает, а возвращает дни в журнал — проверка идёт через
+`PeopleContext::hasAuthorityOver`.
+
+**Передача дел (PROD-13, 2026-10-06).** Необязательное `handover_to_employee_id` у заявки любого типа (форма показывает
+его для всех типов — отпуск, больничный и прочие одинаково). Проверка (`EmployeeResolver::handover`, вызывает контроллер
+до создания): правила person-picker — справочник вызывающего (`EmployeeService::list`, scope `employees`, только
+`active`/`on_leave`, уволенные не выбираются даже HR) и не сам отсутствующий сотрудник; иначе 422 `invalid_handover`
+(не число — 422 валидации). Задаётся при создании; отдельного редактирования заявки нет — как и остальные поля, после
+решения не меняется. В ответах — `handover_to: {id, full_name} | null` (список, карточка, «Погодження», календарь).
+Задача (`Services/LeaveHandoverTasks` → контракт `Scripts\Contracts\TaskScheduler::schedule` (границы модулей), тип `leave_handover`, источник `timeoff`,
+[scripts.md](scripts.md)): при согласовании (и при сразу `approved` типе без согласования) коллеге —
+«Заміщення: <имя> відсутній з дд.мм.рррр по дд.мм.рррр», срок — первый день; только имя и даты, без типа и комментария.
+Ключ `timeoff:handover:<id заявки>` с `employee_id` отсутствующего — повтор не создаёт вторую задачу (повторное
+согласование и так 409). Отклонение/отмена закрывают задачу (`closeByRule`). Нет учётной записи у коллеги или он уволен к
+моменту согласования — задача не создаётся. Пересечения с отсутствиями коллеги не проверяются (ничего нового не вводилось).
+
+### Начисление (`Services/AccrualService`, фоновая задача `timeoff.accrue`)
+`Services/AccrualJob` зарегистрирован как `Core\Contracts\ScheduledJob` — cron каждые 30 минут через
+`POST /api/ops/jobs/run` ([core.md](core.md)). Для каждого неуволенного сотрудника и каждого активного типа с балансом:
+политика филиала или общая → начисление текущего периода, если его ещё нет; в первый проход года остаток прошлых лет сверх
+`carry_over_max` списывается строкой `expiry`. Повторный/параллельный запуск ничего не дублирует (проверка + уникальный
+индекс; вставка внутри savepoint: дубликат откатывается сам, внешняя транзакция продолжается). Пропущенные месяцы текущего года догоняются следующим
+запуском (накопленная цель); прошлые годы — нет. Ответ: `{employees, accrued, expired}`. При создании сотрудника (`People\Events\EmployeeHired`) слушатель
+`Listeners/GrantAccrualOnHire` сразу начисляет текущий период (пропорционально).
+
+### Эндпоинты `/api/timeoff`
+«admin» в колонке «Кто» — gate `timeoff-manage`: superadmin, admin и hr_manager (`UserRole::hrStaff()`).
+
+| Метод и путь | Кто | Параметры / тело | Ответ |
+|---|---|---|---|
+| `GET types` | любой активный | `all=1` (с выключенными — только админ) | список |
+| `POST types`, `PATCH types/{id}` | admin | `{name, code (a-z0-9_), paid, unit, color (#rrggbb), requires_approval, tracks_balance, active}` | 201 / 200 |
+| `GET policies`, `POST policies`, `PATCH policies/{id}` | admin | `{leave_type_id, branch_id?, accrual_mode, annual_days 0..366, carry_over_max?, active}` | список / 201 / 200 |
+| `GET holidays` | любой активный | `year?, branch_id?` (строки ок) | по дате |
+| `POST holidays`, `PATCH holidays/{id}`, `DELETE holidays/{id}` | admin | `{date Y-m-d, name, branch_id?}` | 201 / 200 / 204 |
+| `GET balances` | сам; `employee_id` — admin или руководитель выше (иначе 403) | `employee_id?` | `[{leave_type, tracked, balance, pending, available, used_this_year, policy}]`, `meta.employee`; нет записи сотрудника → 404 `no_employee` |
+| `GET balances/history` | как выше | `employee_id?, leave_type_id?` | последние 100 строк журнала |
+| `POST balances/adjust` | admin, **кроме своей записи** | `{employee_id, leave_type_id (с балансом), delta ≠ 0, comment?}` | 201, новые балансы; свой `employee_id` → 403 `forbidden` |
+| `GET requests` | любой активный | `employee_id?, status?, leave_type_id?, perPage` | admin — все; остальные — свои и людей ниже; `can_decide`, `can_cancel` в строке |
+| `GET requests/preview` | как создание | те же поля, что у создания | `{days, holidays[], tracked, available, sufficient, overlap}` |
+| `POST requests` | сам; за другого — admin или руководитель выше | `{leave_type_id, starts_on, ends_on, half_day?, comment?, employee_id?, override_balance?, handover_to_employee_id?}` | 201; ошибки — см. «Правила», 422 `invalid_handover` |
+| `GET requests/{id}` | кто видит «работу» сотрудника | — | запрос |
+| `POST requests/{id}/approve\|reject\|cancel` | см. «Правила» | `{comment?}` | 200 / 403 `forbidden` / 409 `invalid_status` / 422 `insufficient_balance` |
+| `GET approvals` | руководитель, admin | — | ожидающие, которые вы можете решить (свои исключены у всех, в том числе у админа), старые сверху |
+| `GET calendar` | любой активный | `from, to` (по умолч. текущий месяц, ≤ 62 дня), `branch_id?` | `{absences[{employee, leave_type, starts_on, ends_on, half_day, status, handover_to}], holidays[]}` — только `approved` и `pending` |
+
+Главная страница: `TimeOffDashboardSection` (контракт `Overview\Contracts\DashboardSection`, [overview.md](overview.md)) →
+`data.timeoff = {out_today[], my_approvals: {count, items[≤5]}}`.
+
+### Слои
+`Http/Controllers` (`SettingsController`, `BalanceController`, `LeaveRequestController`) → `Http/Requests` → `Services`
+(`LeaveSettingsService`, `BalanceService`, `LeaveRequestService`, `CalendarService`, `AccrualService`, `EmployeeResolver`)
+→ `Contracts` (`LeaveSettingsRepository`, `LedgerRepository`, `LeaveRequestRepository`) → `Repositories/Eloquent*`.
+Ошибки — `Exceptions/TimeOffException`. Даты в запросах сравниваются через `whereDate` (SQLite хранит `date` как
+`Y-m-d H:i:s`, MySQL — как дату).
+
+### Фронтенд (`src/app/features/timeoff`)
+| Файл | Что |
+|---|---|
+| `timeoff.model.ts`, `timeoff.service.ts` | типы, HTTP, `timeoffErrorKey` |
+| `timeoff.dates.ts` | даты `YYYY-MM-DD` на UTC-полночах: месяц, сдвиг, выходные, раскладка отсутствий по дням, оценка дней до ответа сервера |
+| `leave-requests.store.ts` | список запросов + действия, `version` для перезагрузки балансов |
+| `widgets/` | `BalancesPanel`, `RequestsList` (строка «На кого передати справи: <имя>»), `LeaveRequestForm` (период — `mat-date-range-picker`, превью с сервера с задержкой 300 мс; необязательный `app-person-picker` «На кого передати справи», scope `employees`) |
+| `my/`, `calendar/`, `approvals/`, `settings/` | страницы `/timeoff`, `/timeoff/calendar` (CSS grid, без библиотек; в подсказке ячейки — кто заміщує), `/timeoff/approvals`, `/admin/timeoff` |
+
+Строки — `timeoff.*` в `public/i18n/{uk,ru,en}.json`.
+
+**Интерфейс (2026-09-26):** Даты вводятся только выпадающим календарём Angular Material (формат дд.мм.рррр, неделя с понедельника; [core.md](core.md)), в API уходит прежний `YYYY-MM-DD` (`core/date/iso-date.ts`, без сдвига часового пояса): период заявки — `mat-date-range-picker` (с–по одним полем), праздник в настройках. «Сегодня» в календаре команды считается по локальному календарю, а не по UTC.
+
+**Вид (рестайл C «Маршрут», 2026-10-02).** Статус заявки — пилюля `.app-pill` (`LEAVE_STATUS_TONE`: ждёт ◆ warn, одобрена ● good, отклонена ■ bad, отменена — пунктирный ○); отклонённые/отменённые — приглушённый текст без opacity. Балансы — KPI-плитки со «шпалой» 4px сверху цвета типа отпуска. Календарь — номера дней моно, сегодня — линия бренда снизу. Пустые списки — `.app-empty`. Тест вида — `features/timeoff/timeoff.restyle.spec.ts` (контракт стилей: только токены темы, без hex, линии 1.5px, без «бледности» через opacity).
+
+### Общие хелперы Core (2026-10-02)
+- «сегодня» по умолчанию (отмена заявки, календарь без `from`, признак «можно отменить свою» в ответе) — `Core\Support\UserTime::today()`: дата пользователя (Europe/Kyiv), а не UTC; отличие от прежнего `Carbon::today()` только с 00:00 до 02:00/03:00 по Киеву, когда в UTC ещё вчера;
+- (2026-10-08, MySQL e2e раунд 2) так же считаются «Сьогодні відсутні» на главной (`TimeOffDashboardSection`, тест `LeaveRequestApiTest::test_dashboard_out_today_after_kyiv_midnight`) и год «использовано в этом году» в балансах (`BalanceController` → `UserTime::now()`);
+- По Киеву, не по UTC (2026-10-08, ночное окно 21:00/22:00–24:00 UTC): начисления (`AccrualService`) берут год/месяц периода, 1 января для сгорания и год «использовано в этом году» (`BalanceService`) по Киеву — 31.12 в 22:30 UTC уже начисляется «2027» и сгорает остаток 2026 (тест `AccrualJobTest::test_the_year_turns_at_kyiv_midnight_not_utc`, `…_month_turns_at_kyiv_midnight`); `created_at` записи — момент UTC. `HolidayWorkingCalendar::addWorkingDays` (сроки согласования заявок на найм) считает выходные/праздники и время суток по Киеву: пятница 21:30 UTC — это суббота, +2 рабочих дня → вторник 00:30 по Киеву (`tests/Unit/TimeOff/HolidayWorkingCalendarTest.php`).
+- Новая заявка `POST /api/timeoff/requests` — именованный лимитер `timeoff-requests` (`TimeOffServiceProvider::REQUEST_THROTTLE`), 30 в минуту на пользователя, своя корзина; 31-я — 429 (`LeaveRequestApiTest::test_new_requests_are_throttled_per_user`).
+- `perPage` списков — общий трейт `Core\Http\Requests\Concerns\Paginates`: правило `1..200`, по умолчанию 50, строка из query (`?perPage=20`) приводится к числу, вне диапазона или не число → 422 (`ListLeaveRequestsRequest`);
+- gate `timeoff-manage` задаётся `ModuleServiceProvider::defineRoleGate(…, UserRole::hrStaff())`: активный superadmin, admin или hr_manager — тот же набор, что `PeopleScope::isAdmin` (модуль больше не импортирует `PeopleScope` ради gate);
+- текущий пользователь в контроллерах — общий трейт `Core\Http\Concerns\ResolvesActor` вместо приватной копии `actor()`.
+
+Поведение API не менялось, кроме ночной границы «сегодня» (пункт выше); подробности — [core.md](core.md), раздел «Общие хелперы модулей».
+
+### Общие примитивы фронта
+Общий код фронта лежит в `src/app/core` ([core.md](core.md)); фича его только вызывает.
+- Ошибки API → i18n-ключ: `timeoffErrorKey` — обёртка над общим `apiErrorKey` (`core/api/api-error.ts`) со своими кодами, списком статусов и запасным ключом; набор ключей и тексты прежние.
+- Короткие уведомления (toast) — `NotifyService.show(key, { params?, duration? })` из `core/ui/notify.service.ts` вместо своего `toast()` с `MatSnackBar`; тексты, длительности и доступность (вежливая live-область snack bar) прежние.
+- HTTP-сервис фичи снимает обёртку ответа `{ data }` общим оператором `unwrapData()` (`core/api/unwrap-data.ts`, тип `DataEnvelope<T>` из `core/api/api.model.ts`) вместо своего `map((r) => r.data)`; параметры запроса без пустых значений — `toParams` из `core/api/http-params.ts`, страница списка — `Paged<T>` оттуда же. Контракт API не менялся.
+
+### Зависимости через контракты (2026-10-08)
+- `BalanceController`, `LeaveRequestController`, `TimeOffDashboardSection`, `TimeOffNavBadges` и `EmployeeResolver` зависят от контрактов People `PeopleAccess` и `EmployeeLookup`, а не от `PeopleScope`/`EmployeeService`. Тест — `tests/Unit/TimeOff/EmployeeResolverTest.php`.
+- `LeaveCalendarSync` проверяет подключение Календаря через контракт GoogleWorkspace `GoogleConnections`. Тест — `tests/Unit/TimeOff/LeaveCalendarSyncTest.php`.
+
+## Как проверить
+Бэкенд: `tests/Feature/TimeOff/LeaveRequestApiTest` (401, выходные/праздники/полдня в превью и при создании, праздник
+чужого филиала не учитывается, баланс и резерв ожидающими, override только у админа, тип без лимита без журнала,
+пересечения, согласование → журнал −дни, отмена → +дни, кто может согласовать/отменить, начавшийся отпуск отменяет только
+решающий, тип без согласования, подача за другого, области списков/входящих/балансов/календаря, блок на главной),
+`SettingsApiTest` (данные по умолчанию, типы/политики/праздники, политика филиала поверх общей, корректировки),
+`ConcurrencyGuardsTest` (блокировка строки сотрудника в транзакции при создании/согласовании/отмене, повторный
+одинаковый запрос → один, второе согласование видит баланс после первого),
+`AccrualJobTest` (через `POST /api/ops/jobs/run`: год наперёд идемпотентно и пропорционально, помесячно, 12 помесячных
+запусков = ровно годовая норма, сгорание 1 января,
+без политики — ничего). Feature: `WorkingCalendarTest` (праздники общие/филиала). Unit: `WorkingDayCalculatorTest` (в т.ч. пятница → вторник, выходной старт, новый год), `AccrualCalculatorTest`, `LeaveServicesTest`.
+Фронт: `timeoff.spec.ts`.
+
+## Ограничения и следующие шаги
+- Статус сотрудника `on_leave` не ставится автоматически по согласованному отпуску (меняет админ).
+- Балансы ведутся только здесь (внешнего импорта нет). Нет уведомлений (почта/Telegram) о новых запросах; нет «задонатить отпуск».
+- Праздники вводятся вручную (государственный календарь не подгружается).
+
+## Доступ к модулю
+
+Ключ модуля `time-off`. Суперадмин может выключить модуль для всей компании или скрыть его от части ролей на странице «Адміністрування → Модулі». По умолчанию: включён, роли — все роли (как и до появления выключателя). Выключенный модуль отвечает 403 `module_disabled`, его фоновые задачи пропускаются, данные не удаляются. Подробнее — [modules-access.md](modules-access.md).
+
+## Листи й Google Calendar
+
+- Нова заявка (з погодженням) → лист керівнику співробітника; рішення (погоджено/відхилено) → лист співробітнику. Через `Core\Contracts\UserNotifier` (реалізація — GoogleWorkspace, корпоративна скринька Gmail). Той самий сервіс шле листи про табелі (Time) і заявки на підбір (HiringRequests).
+- Погоджена заявка → подія на весь день «Відпустка: <ім'я>» у підключеному Google Calendar (`leave_requests.calendar_event_id`); скасування погодженої — подію видалено. Calendar не підключено — пропускається; помилки Google лише логуються (`timeoff.calendar_failed`).

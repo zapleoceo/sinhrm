@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpXsrf
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, shareReplay, switchMap, throwError } from 'rxjs';
 
-export const CSRF_COOKIE_URL = '/sanctum/csrf-cookie';
+export const CSRF_COOKIE_URL = '/api/sanctum/csrf-cookie';
 export const XSRF_HEADER = 'X-XSRF-TOKEN';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 /** Laravel: CSRF token mismatch / expired session. */

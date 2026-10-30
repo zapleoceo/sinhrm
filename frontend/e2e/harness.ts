@@ -48,7 +48,7 @@ function lookup(scope: Map<string, Fixture>, key: string): Fixture | undefined {
 }
 
 function mutationAnswer(method: string, path: string, body: unknown): { status: number; body?: unknown } {
-  if (path === '/sanctum/csrf-cookie') return { status: 204 };
+  if (path === '/api/sanctum/csrf-cookie') return { status: 204 };
   if (method === 'DELETE') return { status: 204 };
   if (path === '/api/auth/active-role') {
     const me = (fixtures.user.get('GET /api/auth/me')?.body ?? {}) as Record<string, unknown>;
@@ -60,12 +60,12 @@ function mutationAnswer(method: string, path: string, body: unknown): { status: 
   return { status: method === 'POST' ? 201 : 200, body: { data: { id, ...data } } };
 }
 
-/** Answers /api/** and /sanctum/** from fixtures and logs mutations; every other host is cut off. */
+/** Answers /api/** from fixtures and logs mutations; every other host is cut off. */
 export async function installMock(context: BrowserContext, opts: { guest?: boolean } = {}): Promise<Mock> {
   const mock: Mock = { mutations: [], missing: [], requests: [] };
   // Fonts are local (e2e/serve.mjs rewrites the inlined Google Fonts); any other host = network dependence.
   await context.route((url) => /^https?:$/.test(url.protocol) && url.host !== E2E_HOST, (route) => route.abort('blockedbyclient'));
-  await context.route((url) => url.protocol === 'http:' && url.host === E2E_HOST && /^\/(api|sanctum)\//.test(url.pathname), async (route) => {
+  await context.route((url) => url.protocol === 'http:' && url.host === E2E_HOST && /^\/api\//.test(url.pathname), async (route) => {
     const req: Request = route.request();
     const url = new URL(req.url());
     const method = req.method();
@@ -89,7 +89,7 @@ export async function installMock(context: BrowserContext, opts: { guest?: boole
     }
     mock.mutations.push({ method, path: url.pathname, body });
     const answer = mutationAnswer(method, url.pathname, body);
-    const headers: Record<string, string> = url.pathname === '/sanctum/csrf-cookie' ? { 'set-cookie': 'XSRF-TOKEN=ui-parity; Path=/' } : {};
+    const headers: Record<string, string> = url.pathname === '/api/sanctum/csrf-cookie' ? { 'set-cookie': 'XSRF-TOKEN=ui-parity; Path=/' } : {};
     await route.fulfill(answer.body === undefined ? { status: answer.status, headers } : { status: answer.status, headers, json: answer.body });
   });
   return mock;
