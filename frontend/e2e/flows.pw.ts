@@ -184,7 +184,7 @@ test.describe('desktop flows', () => {
     const wallpaperCss = () => page.locator('[data-testid="desktop-wallpaper-surface"]').evaluate((element) => getComputedStyle(element).backgroundImage);
     await expect.poll(wallpaperCss).toContain('data:image/');
     await expect(page.locator('.desktop-page')).toHaveClass(/has-user-wallpaper/);
-    for (const selector of ['.desktop-heading > div', '.widgets-heading']) {
+    for (const selector of ['.desktop-heading > div', '.desktop-heading > button', '.widgets-heading', '.add-widgets button']) {
       const alpha = await page.locator(selector).evaluate((element) => {
         const color = getComputedStyle(element).backgroundColor;
         const rgba = color.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
@@ -1259,10 +1259,10 @@ test('desktop mobile: widget titles and size actions remain readable at 390px', 
   }
 });
 
-test('desktop: launcher groups and widget rail stay aligned at 768, 1000, and 1440px', async ({ page, context }, testInfo) => {
+test('desktop: launcher groups and widget rail stay aligned at 390, 768, 1000, and 1440px', async ({ page, context }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-light', 'desktop-light visual evidence only');
   const mock = await open(page, context, '/desktop');
-  for (const width of [768, 1000, 1440]) {
+  for (const width of [390, 768, 1000, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
     const layout = await page.evaluate(() => {
@@ -1302,7 +1302,7 @@ test('desktop: launcher groups and widget rail stay aligned at 768, 1000, and 14
       expect(layout.rail!.y, `${width}px widget rail follows launcher`).toBeGreaterThan(layout.launcher!.y + layout.launcher!.height - 1);
       expect(layout.launcher!.width, `${width}px launcher uses workspace width`).toBeGreaterThan(width * 0.8);
     }
-    expect(layout.groupColumns, `${width}px category columns`).toBe(width < 768 ? 2 : 3);
+    expect(layout.groupColumns, `${width}px category columns`).toBe(width < 768 ? 1 : 3);
     expect(Math.min(...layout.groupWidths), `${width}px category cards stay readable`).toBeGreaterThanOrEqual(width > 1100 ? 200 : 180);
     expect(layout.page, `${width}px no document horizontal overflow`).toBeLessThanOrEqual(layout.viewport);
     expect(layout.headerScrollWidth, `${width}px widget controls fit the wrapped header`).toBeLessThanOrEqual(layout.headerClientWidth + 1);

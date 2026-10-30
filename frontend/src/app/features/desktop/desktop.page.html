@@ -38,7 +38,7 @@
         <p>{{ 'desktop.widgets.empty' | transloco }}</p>
       </div>
     } @else {
-      <div class="widget-grid widget-rail" cdkDropList cdkDropListOrientation="mixed" [cdkDropListData]="widgets()" (cdkDropListDropped)="reorderWidgets($event)" [attr.aria-label]="'desktop.widgets.heading' | transloco">
+      <div class="widget-grid widget-rail" cdkDropList cdkDropListOrientation="vertical" [cdkDropListData]="widgets()" (cdkDropListDropped)="reorderWidgets($event)" [attr.aria-label]="'desktop.widgets.heading' | transloco">
         @for (widget of widgets(); track widget.id; let index = $index) {
           <article class="widget panel" cdkDrag [cdkDragData]="widget" [cdkDragStartDelay]="touchDragDelay" [attr.data-widget]="widget.id" [class.size-s]="widget.size === 's'" [class.size-m]="widget.size === 'm'" [class.size-l]="widget.size === 'l'">
             <header class="widget-header">

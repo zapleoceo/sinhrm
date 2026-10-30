@@ -19,10 +19,13 @@
 .app-group[data-group='performance'] { --desktop-app-accent: var(--app-warning); }
 .app-group[data-group='services'] { --desktop-app-accent: var(--app-chart-2); }
 .app-group[data-group='admin'] { display: block; column-span: all; --desktop-app-accent: var(--app-info); }
+@media (min-width: 768px) {
+  .app-group:is([data-group='people'], [data-group='performance']) { break-before: column; }
+}
 .app-group h3 { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.55rem; color: var(--app-muted); font: var(--mat-sys-label-large); }
 .app-group h3::before { width: 0.45rem; height: 0.45rem; flex: none; border-radius: 50%; background: var(--desktop-app-accent); content: ''; }
-.app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr)); gap: 0.15rem; }
-.app-shortcut { display: grid; justify-items: center; align-content: start; gap: 0.35rem; min-height: 5.5rem; padding: 0.4rem 0.2rem; border: 1px solid transparent; border-radius: var(--app-radius); background: transparent; color: var(--app-text); cursor: pointer; font: var(--mat-sys-body-small); text-align: center; text-decoration: none; }
+.app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.25rem, 1fr)); gap: 0.15rem; }
+.app-shortcut { display: grid; box-sizing: border-box; justify-items: center; align-content: start; gap: 0.35rem; min-height: 5.5rem; padding: 0.4rem 0.2rem; border: 1px solid transparent; border-radius: var(--app-radius); background: transparent; color: var(--app-text); cursor: pointer; font: var(--mat-sys-body-small); text-align: center; text-decoration: none; }
 .app-shortcut:is(:hover, :focus-visible) { border-color: var(--app-border); background: color-mix(in srgb, var(--desktop-app-accent) 8%, var(--app-card)); }
 .app-shortcut:focus-visible { outline: 2px solid var(--app-focus-ring, var(--mat-sys-primary)); outline-offset: 2px; }
 .app-icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 0.85rem; background: linear-gradient(145deg, color-mix(in srgb, var(--desktop-app-accent) 78%, var(--app-card-2)), var(--desktop-app-accent)); color: var(--mat-sys-on-primary); box-shadow: 0 0.35rem 0.8rem -0.45rem color-mix(in srgb, var(--desktop-app-accent) 90%, transparent); }
@@ -32,7 +35,6 @@
 :host-context(html[data-performance='fast']) .app-icon { box-shadow: none; }
 
 @media (max-width: 767.98px) {
-  .app-groups { columns: 2; column-gap: 0.5rem; }
+  .app-groups { columns: 1; }
   .app-group { padding: 0.55rem; }
-  .app-grid { grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr)); gap: 0.15rem; }
 }

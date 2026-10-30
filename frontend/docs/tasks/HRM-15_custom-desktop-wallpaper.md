@@ -25,3 +25,10 @@
 - Выполнено: заголовок рабочего стола и заголовок виджетов используют непрозрачные theme-card surfaces поверх пользовательских изображений, независимо от glass opacity; E2E проверяет background и `has-user-wallpaper`. Неверный русский текст в украинском отказе загрузки заменён точным локализованным сообщением.
 - Проверки после правок: `npm run e2e:lint` — 7/7; `npx ng lint` — pass; `npx ng test --watch=false --include=src/app/features/desktop/desktop.page.spec.ts` — 10/10; `npm run test:docs` — 9/9; `git diff --check` — pass. Browser E2E ожидает CI.
 - Следующий шаг: выполнить быстрые проверки, получить SOL review и передать diff до коммита.
+
+### Follow-up — readability поверх произвольного изображения
+
+- Время: 2026-10-30 14:42 Asia/Saigon.
+- Выполнено: opaque theme-card backing применён к заголовку и обоим типам кнопок рабочего стола поверх custom wallpaper; E2E проверяет их computed alpha независимо от пользовательского изображения.
+- Проверки: code-level проверки и новая CI на этот source ещё не запускались; следующая CI должна подтвердить browser output.
+- Следующий шаг: SOL review + CI verify; без изменения wallpaper storage или источника изображения.

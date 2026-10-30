@@ -42,14 +42,17 @@
   background: var(--app-card);
 }
 
+.desktop-page.has-user-wallpaper :is(.desktop-heading > button, .add-widgets button) {
+  background: var(--app-card);
+}
+
 .desktop-heading :is(h1, p),
 .section-heading :is(h2, p),
 .widget-header h3 { margin: 0; }
 
 .desktop-heading h1 {
   margin-top: 0.15rem;
-  font: var(--mat-sys-headline-medium);
-  letter-spacing: -0.035em;
+  font: var(--mat-sys-title-medium);
 }
 
 .desktop-heading > div { display: grid; grid-template-columns: auto max-content; align-items: baseline; column-gap: 0.75rem; }
@@ -199,7 +202,6 @@
   .desktop-workspace { grid-template-columns: minmax(0, 1fr); }
   .desktop-heading { align-items: flex-start; flex-wrap: wrap; }
   .desktop-heading > div { flex: 1 1 100%; min-width: 0; }
-  .desktop-heading h1 { font: var(--mat-sys-headline-small); }
   .desktop-heading > div { grid-template-columns: minmax(0, 1fr); }
   .desktop-heading .today-date { grid-column: 1; margin-top: 0.2rem !important; white-space: normal; }
   .desktop-heading > button { min-height: 2.75rem; }
