@@ -39,7 +39,7 @@ DB/key/storage требования и незакрытые решения вл�
 | `auth/auth.guards.ts` | `authGuard` (гость → `/login`), `roleGuard(...roles)` (нет ни одной из ролей → `/`; например `roleGuard('superadmin', 'admin')`), `guestGuard` (для `/login`) |
 | `auth/auth.model.ts` | типы и списки ролей/статусов/языков — зеркало enum бэкенда |
 | `http/csrf.interceptor.ts` | перед первым POST/PATCH/DELETE берёт `GET /api/sanctum/csrf-cookie`, ставит `X-XSRF-TOKEN`; на 419 — повтор один раз |
-| `i18n/*` | Transloco: `public/i18n/{uk,ru,en}.json`, язык пользователя (сервер) или гостя (localStorage) |
+| `i18n/*` | Transloco: `public/i18n/{uk,ru,en}.json`, язык пользователя (сервер) или гостя (localStorage); HTTP-запрос locale-файла просит кэш проверить свежесть ответа, а уже загруженный перевод остаётся в памяти приложения |
 | `i18n/translated-title.strategy.ts` | `TitleStrategy`: `title` маршрута — ключ i18n (`titles.*`), во вкладке «SinHRM · Кандидати»; при смене языка заголовок переводится заново (`selectTranslate`). Без `title` — просто «SinHRM» (он же в `index.html`) |
 | `theme/theme.service.ts` | светлая/тёмная тема: по умолчанию как в ОС, выбор хранится в localStorage (`<html data-theme>`) |
 | `storage/safe-storage.ts` | localStorage без исключений (приватный режим, запрет cookies) |
