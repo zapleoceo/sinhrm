@@ -34,3 +34,10 @@ Rechecked frozen package remediation: candidate dependencies, devDependencies an
 All remaining application manifest files retain earlier exact approved-source comparison; correct on-site CSRF adaptation remains the sole flows difference. Validation workflow is approved as inspected, including strict audit and successful all-four-project aggregate. No existing CI workflow or external GitLab deployment recipe is changed by this review.
 
 Before merge coordinator must verify exact GitLab-to-GitHub frontend tree identity and whole validation workflow success (frontend job plus parity build/shards/aggregate). Then staging BUILD/DEPLOY and actual target HTTP/browser evidence remain necessary. No full local suite, Git operation, deployment, server startup, or secret access performed by reviewer.
+
+
+## Unicode manifest correction gate
+
+PASS after eight source-approved Unicode snapshot paths were restored. Earlier manifest-based scope was incomplete: Git quoted non-ASCII names by default and the port script omitted eight profile-tab inventories. This caused desktop parity failures; it was a port defect, not evidence permitting new baseline generation.
+
+Reviewer independently enumerated the complete frontend delta with `git diff --name-only -z 899d4dab 3301c3e9 -- frontend/` and decoded paths as UTF-8. Actual count is 219 paths. Compared every source blob (including expected deletions) directly with frozen candidate files after LF normalization, without using the previous manifest. Only the three already approved semantic adaptations differ: flows CSRF path, package manifest, lock metadata. Thus all eight Unicode snapshots exactly match approved source and no additional omissions remain. Application code/runtime unchanged by this correction. Require the corrected exact-target CI rerun before merge.
