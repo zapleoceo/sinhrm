@@ -58,17 +58,23 @@ async function expectModulesBadgeOutsideLabel(page: Page, mobile: boolean): Prom
 }
 
 /** Drags with real mouse moves (CDK drag-drop needs several pointer moves to start and to pick the target). */
-async function drag(page: Page, from: Locator, to: Locator): Promise<void> {
+async function drag(page: Page, from: Locator, to: Locator): Promise<{ x: number; y: number; widgetId: string | null }> {
   const a = (await from.boundingBox())!;
+  // CDK moves the placeholder and transforms siblings as soon as the drag threshold is crossed.
+  // Capture the destination first so the gesture does not chase its transient post-start geometry.
+  const b = (await to.boundingBox())!;
+  const endpoint = { x: b.x + b.width / 2, y: b.y + Math.min(b.height / 2, 60) };
+  const widgetId = await page.evaluate(({ x, y }) => (
+    document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-widget]')?.dataset['widget'] ?? null
+  ), endpoint);
   await page.mouse.move(a.x + a.width / 2, a.y + 12);
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2 + 10, a.y + 22, { steps: 5 });
-  const b = (await to.boundingBox())!;
-  const y = b.y + Math.min(b.height / 2, 60);
-  await page.mouse.move(b.x + b.width / 2, y, { steps: 15 });
-  await page.mouse.move(b.x + b.width / 2, y + 4, { steps: 3 });
+  await page.mouse.move(endpoint.x, endpoint.y, { steps: 15 });
+  await page.mouse.move(endpoint.x, endpoint.y + 4, { steps: 3 });
   await page.mouse.up();
   await settle(page);
+  return { ...endpoint, widgetId };
 }
 
 /** Writes after a drop: CDK reports the drop after its settle animation, so wait for the first one, then a bit more. */
@@ -159,6 +165,60 @@ test.describe('desktop flows', () => {
     await expect(root).toHaveAttribute('data-performance', 'fast');
     await expect(root).toHaveCSS('--os-glass-opacity', '70%');
     await expect(page.locator('input[type="range"]')).toHaveValue('30');
+  });
+
+  test('custom desktop wallpaper uploads, persists, restores the preset and rejects unsupported files', async ({ page, context }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-light', 'desktop-light only');
+    await open(page, context, '/settings/appearance');
+    const wallpaperFile = page.getByTestId('appearance-wallpaper-file');
+    const pngBase64 = await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2;
+      canvas.height = 2;
+      const context = canvas.getContext('2d')!;
+      context.fillStyle = '#626be8';
+      context.fillRect(0, 0, 2, 2);
+      return canvas.toDataURL('image/png').split(',')[1];
+    });
+    const png = Buffer.from(pngBase64, 'base64');
+    await wallpaperFile.setInputFiles({ name: 'pixel.png', mimeType: 'image/png', buffer: png });
+    const preview = page.getByTestId('appearance-wallpaper-preview');
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveJSProperty('naturalWidth', 2);
+    await page.getByRole('switch', { name: 'Швидкий режим' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-performance', 'fast');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sinhrm.desktop-wallpaper'))).toMatch(/^data:image\/(?:webp|png|jpeg);base64,/);
+    await testInfo.attach('custom-wallpaper-appearance.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+
+    await page.goto('/');
+    await settle(page);
+    const wallpaperCss = () => page.locator('[data-testid="desktop-wallpaper-surface"]').evaluate((element) => getComputedStyle(element).backgroundImage);
+    await expect.poll(wallpaperCss).toContain('data:image/');
+    await expect(page.locator('.desktop-page')).toHaveClass(/has-user-wallpaper/);
+    for (const selector of ['.desktop-heading > div', '.desktop-heading > button', '.widgets-heading', '.add-widgets button']) {
+      const alpha = await page.locator(selector).evaluate((element) => {
+        const color = getComputedStyle(element).backgroundColor;
+        const rgba = color.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
+        return rgba ? Number(rgba[1]) : 1;
+      });
+      expect(alpha, `${selector} stays opaque over the uploaded wallpaper`).toBe(1);
+    }
+    await expect(page.locator('html')).toHaveAttribute('data-performance', 'fast');
+    await testInfo.attach('custom-wallpaper-desktop.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+    await page.reload();
+    await settle(page);
+    await expect.poll(wallpaperCss).toContain('data:image/');
+
+    await page.goto('/settings/appearance');
+    await expect(page.getByTestId('appearance-wallpaper-preview')).toBeVisible();
+    await page.getByTestId('appearance-wallpaper-remove').click();
+    await expect(page.getByTestId('appearance-wallpaper-preview')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sinhrm.desktop-wallpaper'))).toBeNull();
+
+    await wallpaperFile.setInputFiles({ name: 'not-an-image.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg/>') });
+    await expect(page.getByRole('alert')).toContainText('Підтримуються лише зображення JPEG, PNG і WebP.');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('sinhrm.desktop-wallpaper'))).toBeNull();
+    await testInfo.attach('custom-wallpaper-appearance-error.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
   });
 
   // eslint-disable-next-line no-empty-pattern -- Playwright fixtures need an object pattern
@@ -1104,17 +1164,44 @@ test('mobile assistant: in-flow launcher opens chat without covering candidate c
   expect(mock.missing).toEqual([]);
 });
 
-test('desktop: real launcher routes and per-user widgets support add, size, keyboard reorder, drag, and persistence', async ({ page, context }) => {
+test('desktop: real launcher routes and per-user widgets support add, size, keyboard reorder, drag, and persistence', async ({ page, context }, testInfo) => {
   const mock = await open(page, context, '/desktop');
   await expect(page.getByRole('heading', { name: 'Робочий стіл' })).toBeVisible();
+  await expect(page.locator('.app-group[data-group="recruiting"]')).toBeVisible();
+  const candidatesShortcut = page.getByTestId('desktop-app-candidates');
+  await expect(candidatesShortcut).toBeVisible();
+  if (testInfo.project.name === 'desktop-light') {
+    await testInfo.attach('os-desktop-reference-desktop-light.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  }
+  await candidatesShortcut.click();
+  const launchedCandidateWindow = page.getByTestId('os-window-os1');
+  await expect(launchedCandidateWindow).toHaveClass(/open/);
+  await expect(launchedCandidateWindow.getByRole('heading', { level: 1, name: 'Кандидати' })).toBeVisible();
+  await launchedCandidateWindow.locator('.window-control-close').click();
+  await expect(launchedCandidateWindow).not.toHaveClass(/open/);
+  if (testInfo.project.name.startsWith('desktop-')) {
+    const pageWidth = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
+    expect(pageWidth.content).toBeLessThanOrEqual(pageWidth.viewport);
+  }
   await expect(page.locator('.widget')).toHaveCount(3);
   await expect(page.locator('[data-widget="summary"]')).toContainText('Активні кандидати');
+  if (testInfo.project.name.startsWith('desktop-')) {
+    const smallWidth = (await page.locator('[data-widget="tasks"]').boundingBox())?.width ?? 0;
+    const mediumWidth = (await page.locator('[data-widget="summary"]').boundingBox())?.width ?? 0;
+    expect(smallWidth).toBeGreaterThan(0);
+    expect(smallWidth).toBeLessThan(mediumWidth);
+  }
 
   await page.getByRole('button', { name: 'Мої погодження', exact: true }).click();
   const approvals = page.locator('[data-widget="approvals"]');
   await expect(approvals).toBeVisible();
   await approvals.getByRole('button', { name: 'Великий розмір для віджета «Мої погодження»' }).click();
   await expect(approvals).toHaveClass(/size-l/);
+  if (testInfo.project.name.startsWith('desktop-')) {
+    const largeWidth = (await approvals.boundingBox())?.width ?? 0;
+    const mediumWidth = (await page.locator('[data-widget="summary"]').boundingBox())?.width ?? 0;
+    expect(largeWidth).toBeGreaterThan(mediumWidth);
+  }
   await page.getByRole('button', { name: 'Перемістити «Мої погодження» вище' }).click();
   await expect(page.locator('.widget').nth(2)).toHaveAttribute('data-widget', 'approvals');
 
@@ -1129,7 +1216,42 @@ test('desktop: real launcher routes and per-user widgets support add, size, keyb
   await expect(page.locator('[data-widget="approvals"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Мої погодження', exact: true })).toBeFocused();
 
-  await drag(page, page.locator('[data-widget="tasks"] .drag-handle'), page.locator('[data-widget="summary"] .widget-header'));
+  const dragHandle = page.locator('[data-widget="tasks"] .drag-handle');
+  const dropTarget = page.locator('[data-widget="summary"] .widget-header');
+  await dropTarget.scrollIntoViewIfNeeded();
+  await dragHandle.scrollIntoViewIfNeeded();
+  await expect(dragHandle).toBeInViewport({ ratio: 1 });
+  await expect(dropTarget).toBeInViewport({ ratio: 1 });
+  const dragPreparation = await page.evaluate(() => {
+    const pointFor = (selector: string): { x: number; y: number; hit: string | null } => {
+      const element = document.querySelector(selector);
+      if (!element) return { x: 0, y: 0, hit: null };
+      const bounds = element.getBoundingClientRect();
+      const x = bounds.left + bounds.width / 2;
+      const y = bounds.top + 12;
+      const hit = document.elementFromPoint(x, y);
+      const expected = selector.includes('drag-handle') ? '.drag-handle' : '.widget-header';
+      return { x, y, hit: hit?.closest(expected)?.className ?? hit?.className ?? null };
+    };
+    return {
+      scrollY: window.scrollY,
+      source: pointFor('[data-widget="tasks"] .drag-handle'),
+      target: pointFor('[data-widget="summary"] .widget-header'),
+      firstWidget: document.querySelector('.widget')?.getAttribute('data-widget') ?? null,
+    };
+  });
+  expect(dragPreparation.source.hit).toContain('drag-handle');
+  expect(dragPreparation.target.hit).toContain('widget-header');
+  const dragEndpoint = await drag(page, dragHandle, dropTarget);
+  const dragResult = await page.evaluate(() => ({
+    scrollY: window.scrollY,
+    firstWidget: document.querySelector('.widget')?.getAttribute('data-widget') ?? null,
+  }));
+  await testInfo.attach('widget-drag-geometry.json', {
+    body: Buffer.from(JSON.stringify({ before: dragPreparation, endpoint: dragEndpoint, after: dragResult }, null, 2)),
+    contentType: 'application/json',
+  });
+  expect(dragEndpoint.widgetId).toBe('summary');
   await expect(page.locator('.widget').first()).toHaveAttribute('data-widget', 'tasks');
   const reordered = await page.evaluate(() => JSON.parse(localStorage.getItem('sinhrm.desktop.layout.v1.3') ?? 'null') as { widgets: { id: string }[] });
   expect(reordered.widgets.map((widget) => widget.id)).toEqual(['tasks', 'summary', 'today']);
@@ -1176,6 +1298,83 @@ test('desktop mobile: widget titles and size actions remain readable at 390px', 
     await expect(widget).toHaveClass(new RegExp(`size-${size}`));
     await expectReadableHeader();
   }
+});
+
+test('desktop: launcher groups and widget rail stay aligned at 390, 768, 1000, and 1440px', async ({ page, context }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-light', 'desktop-light visual evidence only');
+  const mock = await open(page, context, '/desktop');
+  for (const width of [390, 768, 1000, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+    const layout = await page.evaluate(() => {
+      const rect = (selector: string): { x: number; y: number; width: number; height: number } | null => {
+        const element = document.querySelector(selector);
+        if (!element) return null;
+        const box = element.getBoundingClientRect();
+        return { x: box.x, y: box.y, width: box.width, height: box.height };
+      };
+      const widget = document.querySelector('.widget[data-widget="tasks"]');
+      const header = widget?.querySelector('.widget-header');
+      const actions = widget?.querySelector('.widget-actions');
+      const headerBox = header?.getBoundingClientRect();
+      const actionsBox = actions?.getBoundingClientRect();
+      return {
+        viewport: document.documentElement.clientWidth,
+        page: document.documentElement.scrollWidth,
+        workspace: rect('.desktop-workspace'),
+        launcher: rect('.launcher'),
+        rail: rect('.widgets-section'),
+        groupColumns: Number.parseInt(getComputedStyle(document.querySelector('.app-groups')!).columnCount, 10),
+        groupWidths: Array.from(document.querySelectorAll('.app-group'), (element) => element.getBoundingClientRect().width),
+        headerClientWidth: header?.clientWidth ?? 0,
+        headerScrollWidth: header?.scrollWidth ?? 0,
+        actionsX: actionsBox?.x ?? -1,
+        actionsRight: actionsBox?.right ?? Number.POSITIVE_INFINITY,
+        widgetBounds: headerBox ? rect('.widget[data-widget="tasks"]') : null,
+      };
+    });
+    expect(layout.workspace, `${width}px workspace`).not.toBeNull();
+    expect(layout.launcher, `${width}px app area`).not.toBeNull();
+    expect(layout.rail, `${width}px widget rail`).not.toBeNull();
+    if (width > 1100) {
+      expect(layout.rail!.x, `${width}px widget rail follows the launcher`).toBeGreaterThanOrEqual(layout.launcher!.x + layout.launcher!.width - 1);
+      expect(layout.rail!.y, `${width}px widget rail aligns with launcher`).toBeLessThan(layout.launcher!.y + 1);
+    } else {
+      expect(layout.rail!.y, `${width}px widget rail follows launcher`).toBeGreaterThan(layout.launcher!.y + layout.launcher!.height - 1);
+      expect(layout.launcher!.width, `${width}px launcher uses workspace width`).toBeGreaterThan(width * 0.8);
+    }
+    expect(layout.groupColumns, `${width}px category columns`).toBe(width < 768 ? 1 : 3);
+    expect(Math.min(...layout.groupWidths), `${width}px category cards stay readable`).toBeGreaterThanOrEqual(width > 1100 ? 200 : 180);
+    expect(layout.page, `${width}px no document horizontal overflow`).toBeLessThanOrEqual(layout.viewport);
+    expect(layout.headerScrollWidth, `${width}px widget controls fit the wrapped header`).toBeLessThanOrEqual(layout.headerClientWidth + 1);
+    expect(layout.actionsX, `${width}px widget controls stay inside card`).toBeGreaterThanOrEqual(layout.widgetBounds!.x);
+    expect(layout.actionsRight, `${width}px widget controls stay inside card`).toBeLessThanOrEqual(layout.widgetBounds!.x + layout.widgetBounds!.width + 1);
+    await testInfo.attach(`os-desktop-reference-${width}.png`, { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  }
+  expect(mock.missing).toEqual([]);
+});
+
+test('desktop mobile: Dock scroll stays inside its own viewport', async ({ page, context }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-light', 'mobile-light interaction check only');
+  const mock = await open(page, context, '/');
+  await expect(page.getByRole('heading', { name: 'Робочий стіл' })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const dock = page.locator('.os-dock');
+  let expectedWindows = 0;
+  for (const group of ['personal', 'people', 'services', 'recruiting']) {
+    await dock.locator(`.dock-app[data-group="${group}"]`).click();
+    expectedWindows++;
+    await expect(dock.locator('.dock-window')).toHaveCount(expectedWindows);
+  }
+  const dimensions = await dock.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return { x: box.x, right: box.right, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth };
+  });
+  expect(dimensions.x).toBeGreaterThanOrEqual(0);
+  expect(dimensions.right).toBeLessThanOrEqual(390);
+  expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth);
+  await testInfo.attach('os-desktop-reference-mobile-dock.png', { body: await page.screenshot({ fullPage: true }), contentType: 'image/png' });
+  expect(mock.missing).toEqual([]);
 });
 
 test('desktop S widget: title stays readable beside its wrapped controls at a wide viewport', async ({ page, context }) => {

@@ -1,4 +1,4 @@
-<main class="desktop-page">
+<main class="desktop-page" data-testid="desktop-wallpaper-surface" [class.has-user-wallpaper]="wallpaper.dataUrl() !== null">
   <header class="desktop-heading">
     <div>
       <p class="eyebrow">{{ 'desktop.eyebrow' | transloco }}</p>
@@ -9,6 +9,9 @@
       <mat-icon>refresh</mat-icon>{{ 'desktop.refresh' | transloco }}
     </button>
   </header>
+
+  <div class="desktop-workspace">
+  <app-desktop-app-launcher [groups]="appGroups()" (launch)="launchLink($event.event, $event.route)" />
 
   <section class="widgets-section" [attr.aria-label]="'desktop.widgets.heading' | transloco">
     <div class="section-heading widgets-heading">
@@ -35,7 +38,7 @@
         <p>{{ 'desktop.widgets.empty' | transloco }}</p>
       </div>
     } @else {
-      <div class="widget-grid" cdkDropList cdkDropListOrientation="mixed" [cdkDropListData]="widgets()" (cdkDropListDropped)="reorderWidgets($event)" [attr.aria-label]="'desktop.widgets.heading' | transloco">
+      <div class="widget-grid widget-rail" cdkDropList cdkDropListOrientation="vertical" [cdkDropListData]="widgets()" (cdkDropListDropped)="reorderWidgets($event)" [attr.aria-label]="'desktop.widgets.heading' | transloco">
         @for (widget of widgets(); track widget.id; let index = $index) {
           <article class="widget panel" cdkDrag [cdkDragData]="widget" [cdkDragStartDelay]="touchDragDelay" [attr.data-widget]="widget.id" [class.size-s]="widget.size === 's'" [class.size-m]="widget.size === 'm'" [class.size-l]="widget.size === 'l'">
             <header class="widget-header">
@@ -100,4 +103,5 @@
       </div>
     }
   </section>
+  </div>
 </main>
