@@ -47,6 +47,21 @@ test('four routed Dock windows keep their pages through controls and report brow
   expect(glassFilters).toHaveLength(3);
   for (const filter of glassFilters) expect(filter).toContain('blur');
 
+  const layerOrder = await page.evaluate(() => {
+    const zIndex = (selector: string): number => {
+      const element = document.querySelector(selector);
+      if (!element) throw new Error(`Missing layer ${selector}`);
+      return Number.parseInt(getComputedStyle(element).zIndex, 10);
+    };
+    return {
+      dock: zIndex('.os-dock'),
+      mascot: zIndex('app-assistant-mascot .mascot-stage'),
+      topbar: zIndex('.topbar'),
+    };
+  });
+  expect(layerOrder.dock, 'dock controls stay above the animated mascot hit target').toBeGreaterThan(layerOrder.mascot);
+  expect(layerOrder.dock, 'the topbar keeps priority over dock controls').toBeLessThan(layerOrder.topbar);
+
   const dock = page.getByRole('navigation', { name: 'Вікна робочого простору' });
   const timings: TimedOperation[] = [];
   for (const module of MODULES) {
