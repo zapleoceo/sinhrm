@@ -215,6 +215,34 @@ describe('OsWindowWorkspace geometry', () => {
     expect(destroyed).toEqual([]);
   });
 
+  it('keeps the window actions available through the compact chrome', async () => {
+    await shell.navigation.open('os1', 'tasks');
+    harness.fixture.detectChanges();
+    const article = harness.fixture.nativeElement.querySelector('[data-testid="os-window-os1"]') as HTMLElement;
+    const action = (selector: string): HTMLButtonElement => {
+      const button = article.querySelector(selector) as HTMLButtonElement | null;
+      expect(button).toBeDefined();
+      expect(button?.getAttribute('aria-label')).toBeTruthy();
+      return button as HTMLButtonElement;
+    };
+    action('.window-control-maximize').click();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    expect(article.classList.contains('maximized')).toBe(true);
+    action('.window-control-minimize').click();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    expect(article.classList.contains('minimized')).toBe(true);
+    action('.window-control-restore').click();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    expect(article.classList.contains('minimized')).toBe(false);
+    action('.window-control-close').click();
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+    expect(article.classList.contains('open')).toBe(false);
+  });
+
   it('clears pointer cancel and capture loss without applying stale later pointer movement', async () => {
     await shell.navigation.open('os1', 'tasks');
     harness.fixture.detectChanges();

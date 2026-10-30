@@ -1,8 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, signal, viewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { WindowSlot, WINDOW_SLOTS } from '../../core/windows/window-context';
 import { WindowNavigation } from '../../core/windows/window-navigation';
@@ -24,7 +22,7 @@ interface ActiveGesture {
 /** Window chrome owns the named outlets while the shell continues to own the primary route. */
 @Component({
   selector: 'app-os-window-workspace',
-  imports: [MatButtonModule, MatIconModule, RouterOutlet, TranslocoPipe],
+  imports: [RouterOutlet, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section #layer class="window-layer" [attr.aria-label]="'osWindow.windows' | transloco"
@@ -51,19 +49,21 @@ interface ActiveGesture {
                     (pointerdown)="startMove($event, slot)" (click)="focusWindow(slot)"
                     (keydown.enter)="focusWindow(slot)" (keydown.space)="focusWindow(slot)"
                     (keydown)="moveByKeyboard($event, slot)">
-              <h2>{{ view.titleKey | transloco }}</h2>
               <div class="window-controls">
-                @if (!view.minimized && !view.maximized && !narrow()) {
-                  <button mat-icon-button type="button" class="window-reset" [attr.aria-label]="'osWindow.resetGeometry' | transloco"
-                          (click)="$event.stopPropagation(); resetGeometry(slot)"><mat-icon>filter_center_focus</mat-icon></button>
-                }
+                <button type="button" class="window-control window-control-close" [attr.aria-label]="'osWindow.close' | transloco" [attr.title]="'osWindow.close' | transloco" (click)="$event.stopPropagation(); navigation.close(slot)"><svg aria-hidden="true" viewBox="0 0 10 10"><path d="m2 2 6 6M8 2 2 8" /></svg></button>
                 @if (view.minimized) {
-                  <button mat-icon-button type="button" [attr.aria-label]="'osWindow.restore' | transloco" (click)="$event.stopPropagation(); navigation.restore(slot)"><mat-icon>open_in_full</mat-icon></button>
+                  <button type="button" class="window-control window-control-restore" [attr.aria-label]="'osWindow.restore' | transloco" [attr.title]="'osWindow.restore' | transloco" (click)="$event.stopPropagation(); navigation.restore(slot)"><svg aria-hidden="true" viewBox="0 0 10 10"><path d="M3 6V3h4v4H4m-1-1v2h4V6" /></svg></button>
                 } @else {
-                  <button mat-icon-button type="button" [attr.aria-label]="'osWindow.minimize' | transloco" (click)="$event.stopPropagation(); navigation.minimize(slot)"><mat-icon>minimize</mat-icon></button>
-                  <button mat-icon-button type="button" [attr.aria-label]="'osWindow.maximize' | transloco" (click)="$event.stopPropagation(); navigation.toggleMaximize(slot)"><mat-icon>{{ view.maximized ? 'close_fullscreen' : 'open_in_full' }}</mat-icon></button>
+                  <button type="button" class="window-control window-control-minimize" [attr.aria-label]="'osWindow.minimize' | transloco" [attr.title]="'osWindow.minimize' | transloco" (click)="$event.stopPropagation(); navigation.minimize(slot)"><svg aria-hidden="true" viewBox="0 0 10 10"><path d="M2 7h6" /></svg></button>
+                  <button type="button" class="window-control window-control-maximize" [attr.aria-label]="'osWindow.maximize' | transloco" [attr.title]="'osWindow.maximize' | transloco" (click)="$event.stopPropagation(); navigation.toggleMaximize(slot)"><svg aria-hidden="true" viewBox="0 0 10 10"><path d="M2.5 2.5h5v5h-5z" /></svg></button>
                 }
-                <button mat-icon-button type="button" [attr.aria-label]="'osWindow.close' | transloco" (click)="$event.stopPropagation(); navigation.close(slot)"><mat-icon>close</mat-icon></button>
+              </div>
+              <h2>{{ view.titleKey | transloco }}</h2>
+              <div class="window-utilities">
+                @if (!view.minimized && !view.maximized && !narrow()) {
+                  <button type="button" class="window-reset" [attr.aria-label]="'osWindow.resetGeometry' | transloco" [attr.title]="'osWindow.resetGeometry' | transloco"
+                          (click)="$event.stopPropagation(); resetGeometry(slot)"><svg aria-hidden="true" viewBox="0 0 16 16"><path d="M3 7V3h4M3 3l4 4m6 2v4H9m4 0L9 9" /></svg></button>
+                }
               </div>
             </header>
           }
@@ -72,7 +72,7 @@ interface ActiveGesture {
                     [attr.aria-label]="'osWindow.resize' | transloco"
                     (pointerdown)="startResize($event, slot)"
                     (keydown)="resizeByKeyboard($event, slot)">
-              <mat-icon aria-hidden="true">drag_handle</mat-icon>
+              <span aria-hidden="true"></span>
             </button>
           }
           <div class="window-body" [hidden]="!view.open || view.minimized || (narrow() && !view.active)"

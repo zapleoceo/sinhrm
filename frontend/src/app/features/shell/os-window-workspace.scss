@@ -26,12 +26,13 @@
 
 
 .window-titlebar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) 6.5rem;
+  box-sizing: border-box;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
-  min-height: 3rem;
-  padding: 0.25rem 0.5rem 0.25rem 1rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.625rem;
   border-bottom: var(--app-border-w) solid var(--os-chrome-edge);
   background-color: var(--os-chrome-background);
   background-image: var(--os-chrome-reflection);
@@ -40,10 +41,38 @@
   cursor: grab;
   touch-action: none;
 
-  h2 { min-width: 0; margin: 0; overflow: hidden; font: var(--mat-sys-title-small); text-overflow: ellipsis; white-space: nowrap; }
+  h2 { min-width: 0; margin: 0; overflow: hidden; font-size: 0.8125rem; font-weight: 550; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 }
 
-.window-controls { display: flex; align-items: center; flex: none; }
+.window-controls, .window-utilities { display: flex; align-items: center; width: 6.5rem; flex: none; }
+.window-controls { gap: 0.25rem; }
+.window-control, .window-reset {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--app-muted);
+  font: inherit;
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.window-control { position: relative; }
+.window-control { color: var(--mat-sys-surface); }
+.window-control::before { position: absolute; width: 0.75rem; height: 0.75rem; border-radius: 50%; content: ''; }
+.window-control svg { position: relative; z-index: 1; width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.3; opacity: 0; pointer-events: none; transition: opacity var(--os-control-motion) ease; }
+.window-titlebar:hover .window-control svg, .window-titlebar:focus-within .window-control svg { opacity: 1; }
+.window-control-close::before { background: var(--app-danger); }
+.window-control-minimize::before { background: var(--app-warning); }
+.window-control-maximize::before, .window-control-restore::before { background: var(--app-success); }
+.window-reset { margin-left: auto; border-radius: var(--app-radius-sm); flex: none; }
+.window-reset svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.3; pointer-events: none; }
+.window-control:focus-visible, .window-reset:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
 .window-body {
   min-width: 0;
   min-height: 0;
@@ -57,29 +86,35 @@
 
 .window-resize {
   position: absolute;
-  right: 0.25rem;
-  bottom: 0.25rem;
+  right: 0;
+  bottom: 0;
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   padding: 0;
-  border: var(--app-border-w) solid var(--app-border);
-  border-radius: var(--app-radius-sm);
-  background: var(--app-card-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--app-muted);
   cursor: nwse-resize;
   touch-action: none;
 
-  mat-icon { transform: rotate(-45deg); }
+  span { width: 0.7rem; height: 0.7rem; background: linear-gradient(135deg, transparent 38%, currentColor 42% 47%, transparent 51%), linear-gradient(135deg, transparent 59%, currentColor 63% 68%, transparent 72%); opacity: 0.65; }
+  &:hover span, &:focus-visible span { opacity: 1; }
+  &:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: -3px; }
 }
 
 @media (max-width: 767.98px) {
   .os-window.mobile-inactive { display: none !important; }
   .os-window.open { inset: 0; width: auto; height: auto; border-radius: var(--app-radius); }
-  .window-titlebar { min-height: 2.75rem; padding-left: 0.5rem; cursor: default; touch-action: auto; }
+  .window-titlebar { display: flex; min-height: 3.25rem; padding: 0.25rem 0.5rem; cursor: default; touch-action: auto; }
   .window-body { padding: 0.75rem; }
-  .window-controls button { width: 2.75rem; height: 2.75rem; }
+  .window-controls, .window-utilities { width: auto; min-width: 0; flex: none; }
+  .window-control, .window-reset { width: 2.75rem; height: 2.75rem; }
+  .window-controls { gap: 0; }
+  .window-titlebar h2 { flex: 1; }
+  .window-control svg { opacity: 1; }
   .window-resize { display: none; }
 }
