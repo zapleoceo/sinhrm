@@ -1,11 +1,12 @@
 import { provideLocationMocks } from '@angular/common/testing';
+import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, InjectionToken, input, OnDestroy, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, CanActivateFn, CanDeactivateFn, NavigationStart, Router, RouterLink, RouterOutlet, Routes, convertToParamMap, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '../auth/auth.service';
-import { moduleGuard } from '../auth/auth.guards';
+import { moduleGuard, roleGuard } from '../auth/auth.guards';
 import { TableUrlState } from '../ui/table/table-url-state';
 import { TABLE_QUERY_ADAPTER, TableQueryAdapter } from '../ui/table/table-query-adapter';
 import { isWindowControlOnlyNavigation, WindowNavigation } from './window-navigation';
@@ -14,6 +15,10 @@ import { isWindowSlot, windowRouteDefinitions } from './window-context';
 import { WindowQueryState } from './window-query-state';
 import { decodeWindowQuery, encodeWindowQuery } from './window-query-codec';
 import { windowAwareQueryParamMap } from './window-aware-query';
+import { workspaceRestoreGuard } from './workspace-restore.guard';
+import { WorkspaceSnapshotStore } from './workspace-snapshot.store';
+import { WorkspaceHistoryRestorer } from './workspace-history-restorer';
+import { validateWorkspaceSnapshot } from './workspace-url';
 
 const peopleEnabled = signal(true);
 const authUser = signal<{ id: number; modules: string[]; roles: string[]; active_role: string | null } | null>({
@@ -114,43 +119,53 @@ class WindowProbe implements OnDestroy {
 
 const windowPageRoutes: Routes = [
   {
-    path: 'tasks', title: 'titles.tasks', component: WindowProbe,
+    path: 'tasks', title: 'titles.tasks', component: WindowProbe, canMatch: [workspaceRestoreGuard],
     data: { windowRoute: 'tasks', module: null }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
     providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
   },
   {
-    path: 'people', title: 'titles.people', component: WindowProbe,
+    path: 'people', title: 'titles.people', component: WindowProbe, canMatch: [workspaceRestoreGuard],
     data: { windowRoute: 'people', module: 'people' }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
     providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
   },
   {
-    path: 'people/:id', title: 'titles.profile', component: WindowProbe,
+    path: 'people/:id', title: 'titles.profile', component: WindowProbe, canMatch: [workspaceRestoreGuard],
     data: { windowRoute: 'people/:id', module: 'people' }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
     providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
   },
   {
-    path: 'time', title: 'titles.time', component: WindowProbe,
+    path: 'time', title: 'titles.time', component: WindowProbe, canMatch: [workspaceRestoreGuard],
     data: { windowRoute: 'time', module: null }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
     providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
   },
   {
-    path: 'time/:id', title: 'titles.time-detail', component: WindowProbe,
+    path: 'time/:id', title: 'titles.time-detail', component: WindowProbe, canMatch: [workspaceRestoreGuard],
     data: { windowRoute: 'time/:id', module: null }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
     providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
   },
   ...['calendar', 'recruiting', 'reports'].map((path) => ({
     path, title: `titles.${path}`, component: WindowProbe,
+    canMatch: [workspaceRestoreGuard],
     data: { windowRoute: path, module: null }, canActivate: [rootRouterGuard], canDeactivate: [canLeave],
     providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
   })),
+  {
+    path: 'restricted', title: 'titles.tasks', component: WindowProbe,
+    data: { windowRoute: 'restricted', module: null }, canMatch: [workspaceRestoreGuard], canActivate: [roleGuard('admin')], canDeactivate: [canLeave],
+    providers: [{ provide: ROUTE_ENV_ROUTER, useFactory: () => inject(Router) }],
+  },
 ];
 
 const testRoutes: Routes = [
   {
-    path: '', component: WindowProbeShell, canActivateChild: [moduleGuard],
+    path: '', component: WindowProbeShell, canMatch: [workspaceRestoreGuard], canActivateChild: [moduleGuard],
     children: [
-      { path: '', pathMatch: 'full', component: WindowProbeHome },
-      { path: 'people', component: WindowProbeHome },
+      { path: '', pathMatch: 'full', component: WindowProbeHome, canMatch: [workspaceRestoreGuard] },
+      { path: 'tasks', component: WindowProbeHome, canMatch: [workspaceRestoreGuard] },
+      { path: 'people', component: WindowProbeHome, canMatch: [workspaceRestoreGuard] },
+      { path: 'settings/appearance', component: WindowProbeHome },
+      { path: 'restricted', component: WindowProbeHome, canMatch: [workspaceRestoreGuard] },
+      { path: 'module-off', component: WindowProbeHome },
       windowOutletRoute('os1', windowPageRoutes),
       windowOutletRoute('os2', windowPageRoutes),
       windowOutletRoute('os3', windowPageRoutes),
@@ -166,6 +181,7 @@ describe('fixed-slot OS routing', () => {
 
   beforeEach(async () => {
     peopleEnabled.set(true);
+    sessionStorage.clear();
     authUser.set({ id: 1, modules: ['people'], roles: ['admin'], active_role: 'admin' });
     allowLeave = true;
     nextId = 0;
@@ -182,6 +198,8 @@ describe('fixed-slot OS routing', () => {
           useValue: {
             load: vi.fn(async () => undefined),
             user: authUser.asReadonly(),
+            isLoggedIn: () => authUser() !== null,
+            hasRole: (role: string) => authUser()?.roles.includes(role) ?? false,
             hasModule: (module: string) => module !== 'people' || (peopleEnabled() && authUser()?.modules.includes(module) === true),
           },
         },
@@ -207,10 +225,10 @@ describe('fixed-slot OS routing', () => {
     expect(guardRouters.every((router) => router === rootRouter)).toBe(true);
 
     const anchor = harness.fixture.nativeElement.querySelector('#registered-link') as HTMLAnchorElement;
-    expect(anchor.href).toContain('os1:window/people');
-    expect(anchor.href.match(/os1:/g)).toHaveLength(1);
+    expect(new URL(anchor.href).pathname).toBe('/people');
+    expect(anchor.href).not.toContain('os1:window');
     const orgChart = harness.fixture.nativeElement.querySelector('#unsupported-link') as HTMLAnchorElement;
-    expect(orgChart.href).toContain('os1:window/people/org-chart');
+    expect(new URL(orgChart.href).pathname).toBe('/people/org-chart');
 
     const prepared = tasks?.router.createUrlTree(['/people']);
     expect(prepared).toBeDefined();
@@ -226,12 +244,13 @@ describe('fixed-slot OS routing', () => {
     expect(rootRouter.url).toContain('os2:window/tasks');
     expect(created.filter((page) => page.route.outlet === 'primary')).toHaveLength(3);
     const relative = harness.fixture.nativeElement.querySelector('#relative-link') as HTMLAnchorElement;
-    expect(relative.href).toContain('os1:window/people/70');
+    expect(new URL(relative.href).pathname).toBe('/people/70');
     expect(relative.href).toContain('#relative');
 
     const dynamic = harness.fixture.nativeElement.querySelector('#dynamic-link') as HTMLAnchorElement;
-    expect(dynamic.href).toContain('os1:window/people/70');
-    expect(dynamic.href).toContain('wq_root=70');
+    expect(new URL(dynamic.href).pathname).toBe('/people/70');
+    expect(dynamic.href).toContain('root=70');
+    expect(dynamic.href).not.toContain('wq_root');
     expect(dynamic.href).toContain('#member');
     await dynamic.click();
     await harness.fixture.whenStable();
@@ -243,6 +262,113 @@ describe('fixed-slot OS routing', () => {
     expect(detail?.root()).toBe('70');
     expect(detail?.saved()).toBe('91');
     expect(rootRouter.parseUrl(rootRouter.url).queryParams['tenant']).toBe('keep');
+  });
+
+  it('uses a clean canonical URL for an opened window and restores its internal route on browser Back', async () => {
+    const location = TestBed.inject(Location);
+    await shell.navigation.open('os1', 'tasks');
+    const taskUrl = rootRouter.url;
+    expect(taskUrl).toContain('os1:window/tasks');
+    expect(location.path()).toBe('/tasks');
+    expect(location.getState()).toMatchObject({
+      sinhrmWorkspace: { version: 1, userId: 1, internalUrl: taskUrl, visibleUrl: '/tasks' },
+    });
+
+    await shell.navigation.open('os2', 'people');
+    expect(location.path()).toBe('/people');
+    location.back();
+    TestBed.inject(WorkspaceHistoryRestorer).restoreHistoryEntry(
+      new NavigationStart(100, location.path(), 'popstate', location.getState() as NavigationStart['restoredState']),
+    );
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+
+    expect(rootRouter.url).toContain('os1:window/tasks');
+    expect(rootRouter.url).not.toContain('os2:window/people');
+    expect(shell.navigation.activeSlot()).toBe('os1');
+  });
+
+  it('restores the bounded window filter on Back when the canonical pathname stays the same', async () => {
+    const location = TestBed.inject(Location);
+    await shell.navigation.open('os1', 'people');
+    await shell.navigation.updateWindowQuery('os1', { name: 'A' }, false);
+    expect(location.path()).toBe('/people?name=A');
+    await shell.navigation.updateWindowQuery('os1', { name: 'B' }, false);
+    expect(location.path()).toBe('/people?name=B');
+
+    location.back();
+    TestBed.inject(WorkspaceHistoryRestorer).restoreHistoryEntry(
+      new NavigationStart(100, location.path(), 'popstate', location.getState() as NavigationStart['restoredState']),
+    );
+    await harness.fixture.whenStable();
+    harness.fixture.detectChanges();
+
+    expect(rootRouter.url).toContain('wq_name=A');
+    expect(shell.navigation.queryForWindow('os1').get('name')).toBe('A');
+    expect(location.path()).toBe('/people?name=A');
+  });
+
+  it('restores a primary route filter with its open window roster and rejects credential-like query keys', async () => {
+    const location = TestBed.inject(Location);
+    await shell.navigation.open('os1', 'tasks');
+    await shell.navigation.navigatePrimary('/people');
+    await rootRouter.navigate([], { queryParams: { name: 'Primary' }, queryParamsHandling: 'merge' });
+    expect(location.path()).toBe('/people?name=Primary');
+    expect(shell.navigation.primaryFocused()).toBe(true);
+    expect(shell.navigation.windows().os1.open).toBe(true);
+
+    const snapshot = TestBed.inject(WorkspaceSnapshotStore).readHistory(location.getState(), 1)!;
+    const hasModule = (module: string) => module !== 'people' || peopleEnabled();
+    expect(snapshot).toBeDefined();
+    expect(snapshot.visibleUrl).toBe('/people?name=Primary');
+    expect(validateWorkspaceSnapshot(rootRouter, snapshot, 1, hasModule)).toBe(true);
+
+    await shell.navigation.close('os1');
+    await rootRouter.navigateByUrl(snapshot.internalUrl);
+    harness.fixture.detectChanges();
+    expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+    expect(shell.navigation.windows().os1.open).toBe(true);
+    expect(shell.navigation.windows().os1.open).toBe(true);
+    expect(shell.navigation.primaryFocused()).toBe(true);
+
+    const credentialSnapshot = {
+      ...snapshot,
+      internalUrl: snapshot.internalUrl.replace('name=Primary', 'authToken=secret'),
+      visibleUrl: '/people?authToken=secret',
+    };
+    expect(credentialSnapshot.internalUrl).toContain('authToken=secret');
+    expect(validateWorkspaceSnapshot(rootRouter, credentialSnapshot, 1, hasModule)).toBe(false);
+  });
+
+  it('does not queue a workspace restore after the authenticated user changes', async () => {
+    const location = TestBed.inject(Location);
+    await shell.navigation.open('os1', 'tasks');
+    const state = location.getState() as NavigationStart['restoredState'];
+    const restorer = TestBed.inject(WorkspaceHistoryRestorer);
+    const navigate = vi.spyOn(rootRouter, 'navigateByUrl');
+    restorer.restoreHistoryEntry(new NavigationStart(101, '/tasks', 'popstate', state));
+    authUser.set({ id: 2, modules: ['people'], roles: ['admin'], active_role: 'admin' });
+    await Promise.resolve();
+
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('does not persist workspace history or a session snapshot for credential or oversized route queries', async () => {
+    const location = TestBed.inject(Location);
+    await rootRouter.navigateByUrl('/?authToken=secret');
+    await shell.navigation.open('os1', 'tasks');
+
+    expect(rootRouter.url).toContain('authToken=secret');
+    expect(TestBed.inject(WorkspaceSnapshotStore).readHistory(location.getState(), 1)).toBeNull();
+    expect(sessionStorage.getItem('sinhrm.workspace.v1.1')).toBeNull();
+
+    await shell.navigation.close('os1');
+    await rootRouter.navigateByUrl(`/?filter=${'x'.repeat(1025)}`);
+    await shell.navigation.open('os1', 'tasks');
+
+    expect(rootRouter.url).toContain(`filter=${'x'.repeat(1025)}`);
+    expect(TestBed.inject(WorkspaceSnapshotStore).readHistory(location.getState(), 1)).toBeNull();
+    expect(sessionStorage.getItem('sinhrm.workspace.v1.1')).toBeNull();
   });
 
   it('classifies focus-state query changes without hiding content route or query changes', async () => {
@@ -292,6 +418,10 @@ describe('fixed-slot OS routing', () => {
     expect(rootRouter.url).not.toContain('wq_name=');
     expect(rootRouter.url).toContain('wq_sort=id');
     expect(rootRouter.parseUrl(rootRouter.url).queryParams['name']).toBe('Primary');
+    const snapshot = TestBed.inject(WorkspaceSnapshotStore).readHistory(TestBed.inject(Location).getState(), 1);
+    expect(snapshot?.internalUrl).toContain('name=Primary');
+    expect(snapshot?.internalUrl).toContain('wq_sort=id');
+    expect(snapshot?.visibleUrl).toBe('/people?sort=id');
   });
 
   it('keeps query-only and relative commands in the current window when primary is a catalog route', async () => {
@@ -308,7 +438,9 @@ describe('fixed-slot OS routing', () => {
 
     harness.fixture.detectChanges();
     const relative = harness.fixture.nativeElement.querySelector('#relative-link') as HTMLAnchorElement;
-    expect(relative.href).toContain('os1:window/time;wq_week=2026-10-26/70');
+    expect(new URL(relative.href).pathname).toBe('/time/70');
+    expect(relative.href).toContain('week=2026-10-26');
+    expect(relative.href).not.toContain('os1:window');
     await relative.click();
     await harness.fixture.whenStable();
     expect(rootRouter.url).toContain('/people');
@@ -417,6 +549,45 @@ describe('fixed-slot OS routing', () => {
     expect(created).toHaveLength(0);
     expect(await shell.navigation.open('os1', 'people')).toBe(false);
     expect(rootRouter.url).toBe('/');
+  });
+
+  it('does not restore a disabled module snapshot and lets moduleGuard redirect the canonical URL', async () => {
+    const location = TestBed.inject(Location);
+    await shell.navigation.open('os1', 'people');
+    const savedState = location.getState() as NavigationStart['restoredState'];
+    await shell.navigation.close('os1');
+    peopleEnabled.set(false);
+    location.go('/people', '', savedState);
+    TestBed.inject(WorkspaceHistoryRestorer).restoreHistoryEntry(
+      new NavigationStart(100, location.path(), 'popstate', savedState),
+    );
+    await rootRouter.navigateByUrl('/people');
+
+    expect(rootRouter.url).toBe('/module-off?module=people');
+    expect(rootRouter.url).not.toContain('os1:window');
+  });
+
+  it('replays page role guards before mounting a restored workspace window', async () => {
+    const location = TestBed.inject(Location);
+    await shell.navigation.open('os1', 'restricted');
+    await shell.navigation.open('os2', 'tasks');
+    authUser.set({ id: 1, modules: ['people'], roles: ['employee'], active_role: 'employee' });
+    location.back();
+    TestBed.inject(WorkspaceHistoryRestorer).restoreHistoryEntry(
+      new NavigationStart(100, location.path(), 'popstate', location.getState() as NavigationStart['restoredState']),
+    );
+    await harness.fixture.whenStable();
+
+    expect(rootRouter.url).toBe('/');
+    expect(rootRouter.url).not.toContain('os1:window');
+  });
+
+  it('accepts legacy named-outlet URLs and replaces the address bar with their canonical route', async () => {
+    const location = TestBed.inject(Location);
+    await rootRouter.navigateByUrl('/(os1:window/tasks)');
+    expect(rootRouter.url).toContain('os1:window/tasks');
+    expect(location.path()).toBe('/tasks');
+    expect(location.getState()).toMatchObject({ sinhrmWorkspace: { userId: 1, visibleUrl: '/tasks' } });
   });
 
   it('keeps auxiliary table state in matrix params and ignores primary query changes', async () => {

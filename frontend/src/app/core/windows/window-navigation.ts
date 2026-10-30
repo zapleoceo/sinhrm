@@ -4,6 +4,7 @@ import {
   ActivatedRoute,
   ActivatedRouteSnapshot,
   NavigationEnd,
+  NavigationBehaviorOptions,
   ParamMap,
   Params,
   Router,
@@ -16,6 +17,9 @@ import { filter, map, startWith, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { decodeWindowQuery, encodeWindowQuery } from './window-query-codec';
 import { WindowRouteId, WindowRouteDefinition, WindowSlot, WINDOW_SLOTS, windowRouteById, windowRouteByPath, windowRouteDefinitions } from './window-context';
+import { WorkspaceSnapshotStore } from './workspace-snapshot.store';
+import { createWorkspaceSnapshot } from './workspace-url';
+import { WorkspaceHistoryRestorer } from './workspace-history-restorer';
 
 export interface WindowViewState {
   readonly slot: WindowSlot;
@@ -54,6 +58,7 @@ export class WindowNavigation {
   private readonly router = inject(Router);
   private readonly shellRoute = inject(ActivatedRoute);
   private readonly auth = inject(AuthService);
+  private readonly snapshots = inject(WorkspaceSnapshotStore);
   private observedSecurityScope: string | null | undefined;
   private readonly invalidating = new Set<WindowSlot>();
   private invalidationQueue: Promise<void> = Promise.resolve();
@@ -99,6 +104,7 @@ export class WindowNavigation {
   });
 
   constructor() {
+    inject(WorkspaceHistoryRestorer);
     effect(() => {
       const user = this.auth.user();
       const identity = user?.id ?? null;
@@ -129,7 +135,7 @@ export class WindowNavigation {
     const minimized = this.slotList(this.currentQuery()[MINIMIZED_PARAM]).filter((candidate) => candidate !== slot);
     const controls = this.controls({ [ACTIVE_PARAM]: slot, [MINIMIZED_PARAM]: this.encodeSlots(minimized), [MAXIMIZED_PARAM]: null });
     const tree = this.treeFor(slot, definition, {}, controls);
-    return this.router.navigateByUrl(tree);
+    return this.navigateWorkspaceTree(tree);
   }
 
   /** Query values attached to the active workspace route as bounded matrix params. */
@@ -189,7 +195,7 @@ export class WindowNavigation {
       queryParams: controls,
       queryParamsHandling: 'merge',
     });
-    return this.router.navigateByUrl(tree);
+    return this.navigateWorkspaceTree(tree, { replaceUrl: true });
   }
 
   focus(slot: WindowSlot): Promise<boolean> {
@@ -203,7 +209,7 @@ export class WindowNavigation {
       queryParams: { [ACTIVE_PARAM]: null, [PRIMARY_FOCUS_PARAM]: '1' },
       queryParamsHandling: 'merge',
     });
-    return this.router.navigateByUrl(tree, { replaceUrl: true });
+    return this.navigateWorkspaceTree(tree, { replaceUrl: true });
   }
 
   /** Navigates a core shell page in the primary outlet without discarding live named windows or their controls. */
@@ -220,7 +226,7 @@ export class WindowNavigation {
         [PRIMARY_FOCUS_PARAM]: '1',
       },
     });
-    return this.router.navigateByUrl(tree);
+    return this.navigateWorkspaceTree(tree);
   }
 
   minimize(slot: WindowSlot): Promise<boolean> {
@@ -332,7 +338,7 @@ export class WindowNavigation {
     const tree = this.treeFor(slot, definition, matrix as Params, {});
     const targetUrl = this.router.serializeUrl(tree);
     this.ownTableNavigations.add(targetUrl);
-    return this.router.navigateByUrl(tree, { replaceUrl }).finally(() => this.ownTableNavigations.delete(targetUrl));
+    return this.navigateWorkspaceTree(tree, { replaceUrl }).finally(() => this.ownTableNavigations.delete(targetUrl));
   }
 
   shouldDropWindowTableEdit(slot: WindowSlot, targetUrl: string): boolean {
@@ -342,6 +348,21 @@ export class WindowNavigation {
     if (!current || !target) return true;
     if (this.urlBranchPath(current) !== this.urlBranchPath(target)) return true;
     return JSON.stringify(this.windowParams(current)) !== JSON.stringify(this.windowParams(target));
+  }
+
+  /** Keeps the full guarded UrlTree internal while presenting a short canonical route in browser history. */
+  navigateWorkspaceTree(tree: UrlTree, options: NavigationBehaviorOptions = {}): Promise<boolean> {
+    const user = this.auth.user();
+    if (!user) return this.router.navigateByUrl(tree, options);
+    const snapshot = createWorkspaceSnapshot(this.router, tree, user.id, (module) => this.auth.hasModule(module));
+    if (!snapshot) {
+      return this.router.navigateByUrl(tree, {
+        ...options,
+        state: this.snapshots.withoutHistoryState(options.state),
+      });
+    }
+    const state = { ...(options.state ?? {}), ...this.snapshots.historyState(snapshot) };
+    return this.router.navigateByUrl(tree, { ...options, browserUrl: snapshot.visibleUrl, state });
   }
 
   isWorkspaceTree(tree: UrlTree, slot: WindowSlot): boolean {
@@ -433,7 +454,7 @@ export class WindowNavigation {
 
   private navigateControls(patch: Params): Promise<boolean> {
     const tree = this.router.createUrlTree([], { relativeTo: this.shellRoute, queryParams: patch, queryParamsHandling: 'merge' });
-    return this.router.navigateByUrl(tree, { replaceUrl: true });
+    return this.navigateWorkspaceTree(tree, { replaceUrl: true });
   }
 
   private makeView(slot: WindowSlot, open: readonly WindowSlot[], minimized: readonly WindowSlot[], maximized: WindowSlot | null, active: WindowSlot | null): WindowViewState {

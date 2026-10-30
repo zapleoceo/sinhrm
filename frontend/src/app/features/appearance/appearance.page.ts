@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,7 +8,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { DesktopWallpaperStore, WallpaperImageError } from '../../core/theme/desktop-wallpaper.store';
 import {
   AccentColor,
   AppearancePreferences,
@@ -90,33 +89,8 @@ type AppearanceForm = {
         </mat-form-field>
         <label class="range-field">
           <span>{{ 'appearance.transparency' | transloco }} <output>{{ form.controls.transparency.value }}%</output></span>
-          <input type="range" min="0" max="100" step="1" formControlName="transparency" data-testid="appearance-transparency" />
+          <input type="range" min="0" max="40" step="1" formControlName="transparency" data-testid="appearance-transparency" />
         </label>
-      </section>
-
-      <section class="settings-card custom-wallpaper" data-testid="appearance-custom-wallpaper">
-        <div>
-          <h2>{{ 'appearance.customWallpaper' | transloco }}</h2>
-          <p class="muted">{{ 'appearance.customWallpaperHint' | transloco }}</p>
-        </div>
-        <div class="wallpaper-image-controls">
-          <input #wallpaperFile type="file" tabindex="-1" accept="image/jpeg,image/png,image/webp" data-testid="appearance-wallpaper-file"
-                 [attr.aria-label]="'appearance.chooseWallpaper' | transloco" (change)="selectWallpaper($event)" />
-          <button mat-stroked-button type="button" data-testid="appearance-wallpaper-choose" (click)="wallpaperFile.click()">
-            <mat-icon>image</mat-icon>{{ 'appearance.chooseWallpaper' | transloco }}
-          </button>
-          @if (wallpaperStore.dataUrl(); as preview) {
-            <figure class="wallpaper-preview">
-              <img data-testid="appearance-wallpaper-preview" [src]="preview" [alt]="'appearance.wallpaperPreview' | transloco" />
-              <button mat-button type="button" data-testid="appearance-wallpaper-remove" (click)="removeWallpaper()">
-                <mat-icon>delete_outline</mat-icon>{{ 'appearance.removeWallpaper' | transloco }}
-              </button>
-            </figure>
-          }
-          @if (wallpaperError(); as error) {
-            <p class="wallpaper-error" role="alert" data-testid="appearance-wallpaper-error">{{ ('appearance.wallpaperErrors.' + error) | transloco }}</p>
-          }
-        </div>
       </section>
 
       <section class="settings-card performance">
@@ -140,15 +114,6 @@ type AppearanceForm = {
     .performance { grid-template-columns: 1fr 2fr; }
     .performance p { grid-column: 2; margin: 0; }
     .performance mat-slide-toggle { grid-column: 2; }
-    .custom-wallpaper { align-items: start; }
-    .custom-wallpaper h2 { margin: 0; }
-    .custom-wallpaper p { margin: 0.4rem 0 0; }
-    .wallpaper-image-controls { display: grid; justify-items: start; gap: 0.75rem; min-width: 0; }
-    .wallpaper-image-controls input[type='file'] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    .wallpaper-image-controls input[type='file']:focus-visible + button { outline: 2px solid var(--app-focus-ring, var(--mat-sys-primary)); outline-offset: 2px; }
-    .wallpaper-preview { display: grid; justify-items: start; gap: 0.5rem; margin: 0; }
-    .wallpaper-preview img { display: block; width: min(100%, 20rem); max-height: 10rem; object-fit: cover; border: 1px solid var(--app-border); border-radius: var(--app-radius-sm); }
-    .wallpaper-error { color: var(--app-danger); }
     @media (max-width: 48rem) {
       .page-head { align-items: stretch; flex-direction: column; }
       .settings-card, .performance { grid-template-columns: 1fr; }
@@ -160,8 +125,6 @@ type AppearanceForm = {
 export class AppearancePage {
   private readonly theme = inject(ThemeService);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly wallpaperStore = inject(DesktopWallpaperStore);
-  protected readonly wallpaperError = signal<WallpaperImageError | null>(null);
 
   protected readonly form = this.createForm(this.theme.preferences());
 
@@ -179,38 +142,6 @@ export class AppearancePage {
   protected reset(): void {
     this.theme.reset();
     this.form.reset(this.theme.preferences());
-    try {
-      this.wallpaperStore.remove();
-      this.wallpaperError.set(null);
-    } catch {
-      this.wallpaperError.set('storage');
-    }
-  }
-
-  protected async selectWallpaper(event: Event): Promise<void> {
-    const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) return;
-    this.wallpaperError.set(null);
-    try {
-      await this.wallpaperStore.save(file);
-    } catch (error) {
-      const code = error instanceof Error ? error.message : '';
-      this.wallpaperError.set(['unsupported', 'tooLarge', 'invalid', 'compression', 'storage'].includes(code)
-        ? code as WallpaperImageError
-        : 'compression');
-    }
-  }
-
-  protected removeWallpaper(): void {
-    try {
-      this.wallpaperStore.remove();
-      this.wallpaperError.set(null);
-    } catch {
-      this.wallpaperError.set('storage');
-    }
   }
 
   private createForm(preferences: AppearancePreferences): FormGroup<AppearanceForm> {

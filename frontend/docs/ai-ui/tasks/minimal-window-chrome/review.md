@@ -11,7 +11,3 @@ Earlier draft issues (text glyphs, mobile flex shrink) corrected before freeze. 
 Writer reports focused specs 7/7, Angular lint and diff check passing. Reviewer ran diff check and inspected existing behavior assertions; no full local suite/server/build. CI and actual desktop/mobile screenshots are required before release, including focus/hover icon readability and smallest viewport title/control containment. This artifact does not claim visual approval of an unrendered candidate.
 
 DOX pass: evidence-only review adds no new durable ownership/index contract; AGENTS files intentionally unchanged.
-
-## Release follow-up
-
-MR !4 was merged to `staging` at `75db9708287283ac1efd09aa51e3c59ec740ef92`; GitLab pipeline 276278 and independent validation 41013607022 passed. The live staging health endpoint returned 200. Live checks confirmed the window actions, mobile hit targets, Dock operation and keyboard resize. Captured evidence is under `D:/Projects/HRM/tmp/gitlab-browser-os/minimal-chrome/live/` (`windows.png`, `focus.png`, `mobile.png`). The live mobile screenshot exposed horizontal overflow in the content and Dock; the current desktop-reference task checks the Dock's internal scroll containment, while unrelated content overflow remains outside its scope.

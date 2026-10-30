@@ -4,7 +4,9 @@ import { RouterOutlet } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { WindowSlot, WINDOW_SLOTS } from '../../core/windows/window-context';
 import { WindowNavigation } from '../../core/windows/window-navigation';
+import { AuthService } from '../../core/auth/auth.service';
 import { WindowBounds, WindowGeometry, clampWindowGeometry, defaultWindowGeometry, moveWindowGeometry, resizeWindowGeometry } from './window-geometry';
+import { WindowGeometryStore } from './window-geometry.store';
 
 type GestureMode = 'move' | 'resize';
 
@@ -92,10 +94,13 @@ export class OsWindowWorkspace {
   private readonly destroyRef = inject(DestroyRef);
   private readonly layer = viewChild.required<ElementRef<HTMLElement>>('layer');
   protected readonly navigation = inject(WindowNavigation);
+  private readonly auth = inject(AuthService);
+  private readonly geometryStore = inject(WindowGeometryStore);
   protected readonly slots = WINDOW_SLOTS;
   readonly narrow = input.required<boolean>();
   protected readonly bounds = signal<WindowBounds>({ width: 1280, height: 720 });
   private readonly geometries = signal<Partial<Record<WindowSlot, WindowGeometry>>>({});
+  private restoredGeometryUser: number | null | undefined;
   protected readonly originX = signal(0);
   private readonly focusing = new Set<WindowSlot>();
   private gesture: ActiveGesture | null = null;
@@ -115,10 +120,13 @@ export class OsWindowWorkspace {
         };
         this.originX.set(contentRect?.left ?? layerRect.left);
         this.bounds.set(nextBounds);
+        const userId = this.auth.user()?.id ?? null;
+        const stored = userId !== this.restoredGeometryUser && userId !== null ? this.geometryStore.read(userId) : {};
+        if (userId !== this.restoredGeometryUser) this.restoredGeometryUser = userId;
         this.geometries.update((current) => {
           const next: Partial<Record<WindowSlot, WindowGeometry>> = {};
           for (const slot of this.slots) {
-            next[slot] = clampWindowGeometry(current[slot] ?? defaultWindowGeometry(slot, nextBounds), nextBounds);
+            next[slot] = clampWindowGeometry(stored[slot] ?? current[slot] ?? defaultWindowGeometry(slot, nextBounds), nextBounds);
           }
           return next;
         });
@@ -193,6 +201,7 @@ export class OsWindowWorkspace {
     if (!gesture || gesture.pointerId !== event.pointerId) return;
     if (this.canEditGeometry(gesture.slot)) this.applyGesturePosition(gesture, event.clientX, event.clientY);
     this.clearGesture(gesture, true);
+    if (this.canEditGeometry(gesture.slot)) this.persistGeometry(gesture.slot);
   }
 
   protected cancelGesture(event: PointerEvent): void {
@@ -208,6 +217,7 @@ export class OsWindowWorkspace {
     event.preventDefault();
     const current = this.geometryFor(slot);
     this.geometries.update((state) => ({ ...state, [slot]: moveWindowGeometry(current, this.bounds(), delta.x, delta.y) }));
+    this.persistGeometry(slot);
   }
 
   protected resizeByKeyboard(event: KeyboardEvent, slot: WindowSlot): void {
@@ -218,11 +228,13 @@ export class OsWindowWorkspace {
     event.stopPropagation();
     const current = this.geometryFor(slot);
     this.geometries.update((state) => ({ ...state, [slot]: resizeWindowGeometry(current, this.bounds(), delta.x, delta.y) }));
+    this.persistGeometry(slot);
   }
 
   protected resetGeometry(slot: WindowSlot): void {
     if (!this.canEditGeometry(slot)) return;
     this.geometries.update((state) => ({ ...state, [slot]: defaultWindowGeometry(slot, this.bounds()) }));
+    this.persistGeometry(slot);
   }
 
   private applyGesturePosition(gesture: ActiveGesture, clientX: number, clientY: number): void {
@@ -272,6 +284,11 @@ export class OsWindowWorkspace {
   private canEditGeometry(slot: WindowSlot): boolean {
     const view = this.navigation.windows()[slot];
     return view.open && !view.minimized && !view.maximized;
+  }
+
+  private persistGeometry(slot: WindowSlot): void {
+    const userId = this.auth.user()?.id;
+    if (userId !== undefined) this.geometryStore.save(userId, slot, this.geometryFor(slot));
   }
 
   private arrowDelta(event: KeyboardEvent): { x: number; y: number } | null {

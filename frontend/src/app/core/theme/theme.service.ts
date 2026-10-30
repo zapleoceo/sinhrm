@@ -140,7 +140,7 @@ export class ThemeService {
       interfaceStyle: this.member(source['interfaceStyle'], interfaceStyles, DEFAULT_APPEARANCE.interfaceStyle),
       wallpaper: this.member(source['wallpaper'], wallpapers, DEFAULT_APPEARANCE.wallpaper),
       transparency: typeof transparency === 'number' && Number.isFinite(transparency)
-        ? Math.max(0, Math.min(100, Math.round(transparency)))
+        ? Math.max(0, Math.min(40, Math.round(transparency)))
         : DEFAULT_APPEARANCE.transparency,
       fastMode: typeof source['fastMode'] === 'boolean' ? source['fastMode'] : DEFAULT_APPEARANCE.fastMode,
       reducedMotion: typeof source['reducedMotion'] === 'boolean' ? source['reducedMotion'] : DEFAULT_APPEARANCE.reducedMotion,

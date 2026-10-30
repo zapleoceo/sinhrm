@@ -6,22 +6,17 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
-import { DesktopWallpaperStore } from '../../core/theme/desktop-wallpaper.store';
 import { Dashboard } from '../overview/overview.model';
 import {
-  DESKTOP_APPS,
-  DESKTOP_GROUPS,
   DESKTOP_WIDGETS,
   DesktopWidget,
   DesktopWidgetId,
   DesktopWidgetSize,
-  appAllowed,
   widgetAllowed,
 } from './desktop.model';
 import { DesktopDataStore } from './desktop-data.store';
 import { DesktopLayoutStore } from './desktop-layout.store';
 import { DESKTOP_LAUNCHER } from './desktop-launcher';
-import { DesktopAppLauncherComponent } from './desktop-app-launcher.component';
 
 interface ApprovalRow {
   id: string;
@@ -33,7 +28,7 @@ interface ApprovalRow {
 @Component({
   selector: 'app-desktop-page',
   standalone: true,
-  imports: [CdkDropList, CdkDrag, CdkDragHandle, MatButtonModule, MatIconModule, RouterLink, TranslocoPipe, DesktopAppLauncherComponent],
+  imports: [CdkDropList, CdkDrag, CdkDragHandle, MatButtonModule, MatIconModule, RouterLink, TranslocoPipe],
   providers: [DesktopLayoutStore, DesktopDataStore],
   templateUrl: './desktop.page.html',
   styleUrl: './desktop.page.scss',
@@ -45,17 +40,9 @@ export class DesktopPage {
   private readonly injector = inject(Injector);
   private readonly launcher = inject(DESKTOP_LAUNCHER);
   private readonly i18n = inject(TranslocoService);
-  // Restore the saved CSS wallpaper when the desktop is opened directly or reloaded.
-  protected readonly wallpaper = inject(DesktopWallpaperStore);
   protected readonly layout = inject(DesktopLayoutStore);
   protected readonly data = inject(DesktopDataStore);
   protected readonly widgetDefinitions = DESKTOP_WIDGETS;
-  protected readonly appGroups = computed(() => {
-    const allowedApps = DESKTOP_APPS.filter((app) => appAllowed(app, this.auth.user()));
-    return DESKTOP_GROUPS
-      .map((group) => ({ ...group, apps: allowedApps.filter((app) => app.group === group.id) }))
-      .filter((group) => group.apps.length > 0);
-  });
   protected readonly widgetSizes: readonly DesktopWidgetSize[] = ['s', 'm', 'l'];
   protected readonly touchDragDelay = { touch: 250, mouse: 0 };
   protected readonly todayLabel = computed(() => {

@@ -16,16 +16,19 @@ test.describe('OS routed windows', () => {
     const tasksUrl = page.url();
     const dock = page.getByRole('navigation', { name: 'Вікна робочого простору' });
     await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
-    await expect(page).toHaveURL(/os1:window\/tasks/);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/tasks');
+    await expect(new URL(page.url()).searchParams.has('osActive')).toBe(false);
     const tasksWindow = page.getByTestId('os-window-os1');
     await expect(tasksWindow).toBeVisible();
+    await expect(tasksWindow).toHaveClass(/active/);
     await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
 
     const oneWindowUrl = page.url();
     await dock.getByRole('button', { name: 'Співробітники', exact: true }).click();
-    await expect(page).toHaveURL(/os2:window\/people/);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/people');
     const peopleWindow = page.getByTestId('os-window-os2');
     await expect(peopleWindow).toBeVisible();
+    await expect(peopleWindow).toHaveClass(/active/);
     await expect(peopleWindow.getByRole('heading', { level: 1, name: /Співробітники/ })).toBeVisible();
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
 
@@ -53,18 +56,88 @@ test.describe('OS routed windows', () => {
     await expect(page.locator('article.os-window.window-os1.open')).toBeVisible();
 
     await page.goForward();
-    await expect(page).toHaveURL(/os2:window\/people/);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/people');
+    await expect(page.locator('article.os-window.open')).toHaveCount(2);
+
+    const search = peopleWindow.getByRole('searchbox', { name: 'Імʼя, e-mail або телефон' });
+    await search.fill('Бондаренко');
+    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Бондаренко');
+    await search.fill('Євген');
+    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Євген');
+    await tasksWindow.locator('.window-titlebar').getByRole('button', { name: 'Закрити вікно', exact: true }).click();
+    await expect(page.locator('article.os-window.open')).toHaveCount(1);
+    await page.goBack();
+    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Євген');
+    await expect(page.locator('article.os-window.open')).toHaveCount(2);
+    await page.goBack();
+    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Бондаренко');
+    await expect(page.locator('article.os-window.open')).toHaveCount(2);
+    await page.goForward();
+    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Євген');
+    await expect(page.locator('article.os-window.open')).toHaveCount(2);
+    await page.goForward();
+    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Євген');
+    await expect(page.locator('article.os-window.open')).toHaveCount(1);
+    await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
 
     // Relative links inside the real People outlet keep the dynamic route in that same slot.
-    const person = peopleWindow.getByRole('link', { name: /Бондаренко Євген/ }).first();
     await page.getByTestId('dock-window-os2').click();
     await expect(peopleWindow).toHaveClass(/active/);
+    const person = peopleWindow.getByRole('link', { name: /Бондаренко Євген/ }).first();
     await person.click();
-    await expect(page).toHaveURL(/os2:window\/people\/70/);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/people/70');
     await expect(peopleWindow).toContainText('Бондаренко Євген');
     await expect.poll(() => mock.requests).toContain('GET /api/people/70');
     expect(mock.missing).toEqual([]);
+
+    await peopleWindow.locator('.window-titlebar').focus();
+    await page.keyboard.press('ArrowRight');
+    await page.getByTestId('window-resize-os2').focus();
+    await page.keyboard.press('ArrowRight');
+    const savedGeometry = await peopleWindow.evaluate((element) => ({ left: element.style.left, width: element.style.width }));
+    const savedTasksGeometry = await tasksWindow.evaluate((element) => ({ left: element.style.left, width: element.style.width }));
+
+    await tasksWindow.locator('.window-titlebar').getByRole('button', { name: 'Згорнути вікно', exact: true }).click();
+    await expect(tasksWindow).toHaveClass(/minimized/);
+    await peopleWindow.locator('.window-titlebar').getByRole('button', { name: 'Розгорнути вікно', exact: true }).click();
+    await expect(peopleWindow).toHaveClass(/maximized/);
+
+    await page.reload();
+    await settle(page);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/people/70');
+    await expect(page.locator('article.os-window.open')).toHaveCount(2);
+    await expect(tasksWindow).toHaveClass(/minimized/);
+    await expect(peopleWindow).toHaveClass(/maximized/);
+    await expect(page.getByTestId('os-window-os2')).toHaveClass(/active/);
+    await page.getByTestId('dock-window-os1').click();
+    await expect(tasksWindow).not.toHaveClass(/minimized/);
+    await peopleWindow.locator('.window-titlebar').getByRole('button', { name: 'Розгорнути вікно', exact: true }).click();
+    await expect(peopleWindow).not.toHaveClass(/maximized/);
+    await expect(peopleWindow).toHaveCSS('left', savedGeometry.left);
+    await expect(peopleWindow).toHaveCSS('width', savedGeometry.width);
+    await expect(tasksWindow).toHaveCSS('left', savedTasksGeometry.left);
+    await expect(tasksWindow).toHaveCSS('width', savedTasksGeometry.width);
+  });
+
+  test('a clean link opened in a separate tab does not inherit the source tab workspace', async ({ page, context }) => {
+    await installMock(context);
+    await page.clock.setSystemTime(RECORDED_AT);
+    await page.goto('/tasks');
+    await settle(page);
+    await page.getByRole('navigation', { name: 'Вікна робочого простору' })
+      .getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    await expect(page.locator('article.os-window.open')).toHaveCount(1);
+    const cleanUrl = page.url();
+
+    const sharedTab = await context.newPage();
+    await sharedTab.goto(cleanUrl);
+    await settle(sharedTab);
+
+    await expect.poll(() => new URL(sharedTab.url()).pathname).toBe('/tasks');
+    await expect(sharedTab.locator('article.os-window.open')).toHaveCount(0);
+    await expect(sharedTab.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    await sharedTab.close();
   });
 
   test('repeated window controls do not reload APIs or remount routed views', async ({ page, context }, testInfo) => {

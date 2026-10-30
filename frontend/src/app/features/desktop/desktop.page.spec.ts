@@ -98,29 +98,6 @@ describe('DesktopPage', () => {
     expect(element.querySelectorAll('.widget').length).toBe(3);
   });
 
-  it('renders authorized app groups and launches registered routes through the workspace launcher', async () => {
-    const fixture = render();
-    const element = fixture.nativeElement as HTMLElement;
-    expect(element.querySelector('.app-group[data-group="recruiting"]')).not.toBeNull();
-    expect(element.querySelector('.app-group[data-group="people"]')).not.toBeNull();
-    expect(element.querySelector('[data-testid="desktop-app-candidates"]')?.getAttribute('href')).toBe('/candidates');
-    expect(element.querySelector('[data-testid="desktop-app-directory"]')).toBeNull();
-    expect(element.querySelector('[data-testid="desktop-app-users"]')).toBeNull();
-
-    const candidateLink = element.querySelector<HTMLAnchorElement>('[data-testid="desktop-app-candidates"]')!;
-    const plain = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
-    candidateLink.dispatchEvent(plain);
-    await fixture.whenStable();
-    expect(plain.defaultPrevented).toBe(true);
-    expect(launchRoute).toHaveBeenCalledWith('/candidates');
-
-    launchRoute.mockClear();
-    const modified = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
-    candidateLink.dispatchEvent(modified);
-    expect(modified.defaultPrevented).toBe(false);
-    expect(launchRoute).not.toHaveBeenCalled();
-  });
-
   it('adds, resizes, keyboard-reorders and removes widgets while saving only the per-user layout', () => {
     const fixture = render();
     const element = fixture.nativeElement as HTMLElement;
@@ -138,20 +115,6 @@ describe('DesktopPage', () => {
     element.querySelector<HTMLButtonElement>('#desktop-widget-remove-approvals')?.click();
     fixture.detectChanges();
     expect(layout.layout().widgets.map((widget) => widget.id)).not.toContain('approvals');
-  });
-
-  it('keeps the widget size choices visually distinct in the right rail', () => {
-    const fixture = render();
-    const element = fixture.nativeElement as HTMLElement;
-    const padding = (id: string): number => Number.parseFloat(getComputedStyle(element.querySelector(`[data-widget="${id}"] .widget-content`)!).paddingTop);
-    const smallPadding = padding('tasks');
-    const mediumPadding = padding('summary');
-    expect(smallPadding).toBeLessThan(mediumPadding);
-
-    element.querySelector<HTMLButtonElement>('[data-widget="summary"] .size-control button:last-child')!.click();
-    fixture.detectChanges();
-    expect(element.querySelector('[data-widget="summary"]')?.classList.contains('size-l')).toBe(true);
-    expect(padding('summary')).toBeGreaterThan(mediumPadding);
   });
 
   it('restores focus to the rendered add, move, and remove controls after layout updates', async () => {

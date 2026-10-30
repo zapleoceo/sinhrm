@@ -11,7 +11,7 @@
   inset: 3.5rem auto auto 0.75rem;
   z-index: 1002;
   display: flex;
-  flex-flow: column;
+  flex-direction: column;
   min-width: 0;
   width: min(22rem, calc(100vw - 1.5rem));
   height: min(46rem, calc(100dvh - 4.25rem));
@@ -27,7 +27,7 @@
 
 .sidebar-nav {
   display: flex;
-  flex-flow: column;
+  flex-direction: column;
   gap: 2px;
   flex: 1;
   min-height: 0;
@@ -50,23 +50,22 @@
 .nav-head {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.25rem;
   padding: 0 0 0.75rem;
 }
 
-.brand, .topbar-brand {
+.brand {
   display: flex;
   text-decoration: none;
-  border-radius: var(--app-radius-sm);
-}
-
-.brand {
   --app-logo-size: 28px;
   margin-right: auto;
+  border-radius: var(--app-radius-sm);
 }
 
 /* ---------- menu items: icon + label ---------- */
 .nav-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.625rem;
@@ -108,6 +107,7 @@
 
 /* ---------- group headers ---------- */
 .nav-section {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -163,7 +163,7 @@
 
 .nav-group-inner {
   display: flex;
-  flex-flow: column;
+  flex-direction: column;
   gap: 2px;
   min-height: 0;
   overflow: hidden;
@@ -194,12 +194,12 @@
 
 .user-text {
   display: flex;
-  flex-flow: column;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
 }
 
-.name, .email, .topbar-title, .dock-window span {
+.name, .email {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -259,7 +259,7 @@
   padding: 0.75rem 1rem;
 }
 
-.main { display: flex; flex-flow: column; min-width: 0; }
+.main { display: flex; flex-direction: column; min-width: 0; }
 
 .content {
   position: relative;
@@ -272,11 +272,12 @@
 
 .primary-view.mobile-inactive { display: none; }
 
-/* Narrow screens keep the same compact system bar and out-of-flow Modules panel. */
-@media (pointer: coarse), (max-width: 767.98px) {
+/* Touch targets stay comfortably operable in the Modules panel. */
+@media (pointer: coarse) {
   .nav-link, .nav-section { min-height: 2.75rem; }
 }
 
+/* Narrow screens keep the same compact system bar and out-of-flow Modules panel. */
 @media (max-width: 767.98px) {
   .sidebar {
     inset: 3.5rem 0.5rem auto;
@@ -284,9 +285,7 @@
     height: calc(100dvh - 4rem);
   }
   .content { padding: 0.75rem 0.75rem 5rem; }
-  .os-dock { bottom: max(0.5rem, env(safe-area-inset-bottom)); }
-  .modules-toggle { min-width: 2.75rem; height: 2.75rem; justify-content: center; padding: 0 0.5rem; }
-  .modules-toggle .modules-label { display: none; }
+  .nav-link, .nav-section, .user { min-height: 2.75rem; } /* 44px touch targets */
 }
 
 .topbar {
@@ -304,7 +303,7 @@
 }
 
 /* OS chrome surfaces consume the shared global theme contract, also used by future desktop windows. */
-.sidebar, .topbar, .os-dock {
+.sidebar, .topbar {
   background: var(--os-chrome-background, var(--app-sidebar-bg));
   background-image: var(--os-chrome-reflection, none);
   -webkit-backdrop-filter: var(--os-chrome-filter, none);
@@ -313,20 +312,28 @@
 
 .topbar { border-bottom-color: var(--os-chrome-edge, var(--app-border)); }
 
-.modules-toggle { flex: none; }
+.modules-toggle {
+  position: relative;
+  flex: none;
+}
 
-.topbar-brand { --app-logo-size: 24px; }
+.topbar-brand { display: flex; text-decoration: none; --app-logo-size: 24px; border-radius: var(--app-radius-sm); }
 
-.os-user-launcher { flex: none; width: auto; min-width: 2.75rem; justify-content: center; padding: 0.375rem; }
+.os-user-launcher { flex: none; width: auto; min-width: 2.75rem; min-height: 2.75rem; justify-content: center; padding: 0.375rem; }
 .os-user-launcher .user-text, .os-user-launcher .user-chevron { display: none; }
-.os-user-launcher .avatar { display: block; width: 2rem; height: 2rem; object-fit: cover; }
-.os-user-launcher .avatar.fallback { background: var(--app-card-2); color: var(--mat-sys-on-surface); font-weight: 600; }
+.os-user-launcher .avatar { display: block; width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover; }
+.os-user-launcher .avatar.fallback { display: grid; place-items: center; background: var(--app-card-2); color: var(--mat-sys-on-surface); font-weight: 600; }
 
 .topbar-title {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font: var(--mat-sys-title-medium);
 }
+
+.burger { position: relative; }
 
 .backdrop {
   position: fixed;
@@ -348,40 +355,30 @@
   inset: auto auto 0.75rem 50%;
   display: flex;
   align-items: center;
-  box-sizing: border-box;
-  width: max-content;
-  gap: 0.2rem;
+  gap: 0.35rem;
   max-width: calc(100vw - 1rem);
-  min-width: 0;
-  padding: 0.25rem;
+  padding: 0.35rem;
   overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
-  touch-action: pan-x;
   border: var(--app-border-w) solid var(--os-chrome-edge, var(--app-border));
   border-radius: calc(var(--app-radius) + 0.25rem);
+  background: var(--os-chrome-background, var(--app-card));
+  background-image: var(--os-chrome-reflection, none);
+  -webkit-backdrop-filter: var(--os-chrome-filter, none);
+  backdrop-filter: var(--os-chrome-filter, none);
   box-shadow: var(--os-chrome-shadow, var(--app-overlay-shadow));
   transform: translateX(-50%);
 }
-.os-dock::-webkit-scrollbar { display: none; }
-.os-dock > * { flex: none; }
-.os-dock .mat-mdc-icon-button { width: 2.5rem; height: 2.5rem; padding: 0.5rem; }
-.os-dock mat-icon { width: 1.25rem; height: 1.25rem; font-size: 1.25rem; }
-.dock-app {
-  border-radius: 0.8rem;
-  color: var(--dock-app-color);
-  background: color-mix(in srgb, var(--dock-app-color) 14%, transparent);
-}
-.dock-app[data-group='personal'] { --dock-app-color: var(--mat-sys-primary); }
-.dock-app[data-group='recruiting'] { --dock-app-color: var(--app-danger); }
-.dock-app[data-group='people'] { --dock-app-color: var(--app-success); }
-.dock-app[data-group='performance'] { --dock-app-color: var(--app-warning); }
-.dock-app[data-group='services'] { --dock-app-color: var(--app-chart-2); }
-.dock-app[data-group='admin'] { --dock-app-color: var(--app-info); }
-.dock-window { max-width: 9rem; min-width: 2.5rem; height: 2.5rem; padding-inline: 0.5rem; }
-.dock-window.active { color: var(--mat-sys-primary); }
+.os-dock > button, .os-dock > a { flex: none; }
+.os-dock .dock-window { flex: none; }
+.os-dock .dock-window.active { color: var(--mat-sys-primary); }
 
-@media (pointer: coarse) {
-  .os-dock .mat-mdc-icon-button { width: 2.75rem; height: 2.75rem; }
-  .dock-window { height: 2.75rem; }
+@media (max-width: 767.98px) {
+  .os-dock { bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+  .modules-toggle {
+    min-width: 2.75rem;
+    height: 2.75rem;
+    justify-content: center;
+    padding: 0 0.5rem;
+  }
+  .modules-toggle .modules-label { display: none; }
 }

@@ -66,6 +66,7 @@ describe('OsWindowWorkspace geometry', () => {
   let shell: GeometryShell;
 
   beforeEach(async () => {
+    localStorage.clear();
     created.length = 0;
     destroyed.length = 0;
     nextId = 0;
@@ -201,6 +202,7 @@ describe('OsWindowWorkspace geometry', () => {
     titlebar.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowRight' }));
     harness.fixture.detectChanges();
     expect(Number.parseFloat(article.style.left)).toBe(originalLeft + 16);
+    expect(JSON.parse(localStorage.getItem('sinhrm.window-geometry.v1.1') ?? '{}').os1.x).toBe(originalLeft + 16);
 
     const originalWidth = Number.parseFloat(article.style.width);
     (article.querySelector('.window-resize') as HTMLButtonElement).dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowRight' }));

@@ -2,6 +2,7 @@ import { Provider, SkipSelf, inject } from '@angular/core';
 import { ActivatedRoute, IsActiveMatchOptions, NavigationBehaviorOptions, Router, UrlTree } from '@angular/router';
 import { WindowContext, WINDOW_CONTEXT, isWindowSlot } from './window-context';
 import { WindowNavigation } from './window-navigation';
+import { workspaceVisibleUrl } from './workspace-url';
 
 type CreateUrlTreeArgs = Parameters<Router['createUrlTree']>;
 type NavigateArgs = Parameters<Router['navigate']>;
@@ -17,11 +18,16 @@ export function createWindowRouter(root: Router, windows: WindowNavigation, cont
           return scoped ?? target.createUrlTree(...args);
         };
       }
+      if (property === 'serializeUrl') {
+        return (tree: UrlTree): string => windows.isWorkspaceTree(tree, context.slot)
+          ? workspaceVisibleUrl(target, tree, context.slot)
+          : target.serializeUrl(tree);
+      }
       if (property === 'navigate') {
         return (...args: NavigateArgs): Promise<boolean> => {
           try {
             const scoped = windows.createUrlTreeFromCommands(context.slot, args[0], args[1]);
-            return scoped ? target.navigateByUrl(scoped, args[1]) : target.navigate(...args);
+            return scoped ? windows.navigateWorkspaceTree(scoped, args[1]) : target.navigate(...args);
           } catch {
             return Promise.resolve(false);
           }
@@ -30,10 +36,10 @@ export function createWindowRouter(root: Router, windows: WindowNavigation, cont
       if (property === 'navigateByUrl') {
         return (...args: NavigateByUrlArgs): Promise<boolean> => {
           const source = typeof args[0] === 'string' ? target.parseUrl(args[0]) : args[0];
-          if (windows.isWorkspaceTree(source, context.slot)) return target.navigateByUrl(...args);
+          if (windows.isWorkspaceTree(source, context.slot)) return windows.navigateWorkspaceTree(source, args[1] as NavigationBehaviorOptions | undefined);
           const scoped = windows.routeTreeForUrl(context.slot, source);
           if (!scoped && windows.isWindowTarget(source) && !windows.isPrimaryOnlyTarget(source)) return Promise.resolve(false);
-          return scoped ? target.navigateByUrl(scoped, args[1] as NavigationBehaviorOptions | undefined) : target.navigateByUrl(...args);
+          return scoped ? windows.navigateWorkspaceTree(scoped, args[1] as NavigationBehaviorOptions | undefined) : target.navigateByUrl(...args);
         };
       }
       if (property === 'isActive') {

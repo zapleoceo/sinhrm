@@ -4,6 +4,7 @@ import { ADMIN_ROLES, HR_STAFF_ROLES, SUPERADMIN_ROLE } from './core/auth/auth.m
 import { windowOutletRoute } from './core/windows/window-route';
 import { WINDOW_MODULE_DATA, WINDOW_PRIMARY_ONLY_QUERY_DATA, WINDOW_ROUTE_DATA, WINDOW_SLOTS } from './core/windows/window-context';
 import { moduleForUrl } from './core/auth/module-map';
+import { workspaceRestoreGuard } from './core/windows/workspace-restore.guard';
 
 /** Shared immutable route records: primary and named outlets mount the same real pages and guards. */
 const TASKS_ROUTE: Route = {
@@ -250,6 +251,7 @@ const workspaceRoutes: Routes = [
 
 // The same route objects serve primary and auxiliary outlets, so the original guards and page inputs stay intact.
 for (const route of workspaceRoutes) {
+  route.canMatch = [...(route.canMatch ?? []), workspaceRestoreGuard];
   const path = route.path;
   if (!path || path === 'module-off') continue;
   const module = moduleForUrl(`/${path}`);
@@ -276,7 +278,7 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
-    // Pages of a switched-off module → "Розділ вимкнено" (docs/modules/modules-access.md).
+    // Restoring a clean address uses Router navigation; auth, module and page guards still run afterward.
     canActivateChild: [moduleGuard],
     loadComponent: () => import('./features/shell/shell.layout').then((m) => m.ShellLayout),
     children: [
