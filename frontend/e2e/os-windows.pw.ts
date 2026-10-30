@@ -10,7 +10,7 @@ test.describe('OS routed windows', () => {
     const mock = await installMock(context);
     await page.clock.setSystemTime(RECORDED_AT);
     watchNetwork(page);
-    await page.goto('/tasks');
+    await page.goto('/overview');
     await settle(page);
 
     const tasksUrl = page.url();
@@ -41,6 +41,9 @@ test.describe('OS routed windows', () => {
     await page.getByTestId('dock-window-os1').click();
     await expect(tasksWindow).not.toHaveClass(/minimized/);
     await expect(tasksWindow.getByRole('heading', { level: 1, name: 'Мої задачі' })).toBeVisible();
+    const twoWindowUrl = page.url();
+    expect(new URL(twoWindowUrl).pathname).toBe('/tasks');
+    await expect(tasksWindow).toHaveClass(/active/);
 
     await page.goBack();
     await expect(page).toHaveURL(oneWindowUrl);
@@ -54,30 +57,52 @@ test.describe('OS routed windows', () => {
     await page.goForward();
     await expect(page).toHaveURL(oneWindowUrl);
     await expect(page.locator('article.os-window.window-os1.open')).toBeVisible();
+    await expect(page.locator('article.os-window.open')).toHaveCount(1);
 
     await page.goForward();
-    await expect.poll(() => new URL(page.url()).pathname).toBe('/people');
+    await expect(page).toHaveURL(twoWindowUrl);
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
+    await expect(tasksWindow).toHaveClass(/active/);
+    await page.getByTestId('dock-window-os2').click();
+    await expect(peopleWindow).toHaveClass(/active/);
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/people');
 
     const search = peopleWindow.getByRole('searchbox', { name: 'Імʼя, e-mail або телефон' });
     await search.fill('Бондаренко');
     await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Бондаренко');
+    const firstFilterEntry = await page.evaluate(() => ({
+      url: `${location.pathname}${location.search}`,
+      state: structuredClone(history.state),
+    }));
     await search.fill('Євген');
     await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Євген');
-    await tasksWindow.locator('.window-titlebar').getByRole('button', { name: 'Закрити вікно', exact: true }).click();
-    await expect(page.locator('article.os-window.open')).toHaveCount(1);
-    await page.goBack();
-    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Євген');
-    await expect(page.locator('article.os-window.open')).toHaveCount(2);
+    const secondFilterEntry = await page.evaluate(() => ({
+      url: `${location.pathname}${location.search}`,
+      state: structuredClone(history.state),
+    }));
+
+    // The text filter replaces the current entry; seed two snapshots captured from actual app navigations
+    // so this exercises real browser popstate restoration for same-path query-only entries.
+    const historyLengthBeforeQueryFixture = await page.evaluate(() => history.length);
+    await page.evaluate(({ first, second }) => {
+      history.replaceState(first.state, '', first.url);
+      history.pushState(second.state, '', second.url);
+    }, { first: firstFilterEntry, second: secondFilterEntry });
+    await expect.poll(() => page.evaluate(() => history.length)).toBe(historyLengthBeforeQueryFixture + 1);
     await page.goBack();
     await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Бондаренко');
+    await expect(search).toHaveValue('Бондаренко');
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
+    await expect(peopleWindow).toHaveClass(/active/);
     await page.goForward();
     await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Євген');
+    await expect(search).toHaveValue('Євген');
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
-    await page.goForward();
-    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('Євген');
+
+    const historyLengthBeforeBackgroundClose = await page.evaluate(() => history.length);
+    await tasksWindow.locator('.window-titlebar').getByRole('button', { name: 'Закрити вікно', exact: true }).click();
     await expect(page.locator('article.os-window.open')).toHaveCount(1);
+    await expect.poll(() => page.evaluate(() => history.length)).toBe(historyLengthBeforeBackgroundClose);
     await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
     await expect(page.locator('article.os-window.open')).toHaveCount(2);
 

@@ -12,14 +12,26 @@ import { WINDOW_MODULE_DATA, windowRouteDefinitions } from '../windows/window-co
 @Component({ template: '' })
 class Blank {}
 
-function fakeAuth(roles: UserRole[] | null): Partial<AuthService> {
+function fakeAuth(roles: UserRole[] | null, modules: string[] = []): Partial<AuthService> {
   const user = signal<CurrentUser | null>(
-    roles ? { id: 1, name: 'U', email: 'u@example.com', avatar_url: null, locale: 'uk', roles, status: 'active' } : null,
+    roles ? {
+      id: 1,
+      name: 'U',
+      email: 'u@example.com',
+      avatar_url: null,
+      locale: 'uk',
+      roles,
+      modules,
+      active_role: roles[0] ?? null,
+      status: 'active',
+    } : null,
   );
   return {
     load: () => Promise.resolve(),
+    user: user.asReadonly(),
     isLoggedIn: () => user() !== null,
     hasRole: (role: UserRole) => user()?.roles.includes(role) ?? false,
+    hasModule: (key: string) => user()?.modules?.includes(key) ?? false,
   } as Partial<AuthService>;
 }
 
@@ -91,12 +103,7 @@ describe('moduleGuard', () => {
         provideRouter(routeConfig),
         {
           provide: AuthService,
-          useValue: {
-            load: () => Promise.resolve(),
-            isLoggedIn: () => true,
-            hasRole: (role: UserRole) => roles.includes(role),
-            hasModule: (k: string) => modules.includes(k),
-          },
+          useValue: fakeAuth(roles, modules),
         },
       ],
     });
@@ -142,6 +149,7 @@ describe('moduleGuard', () => {
     const catalogRoutes: Routes = [{ path: '', component: Blank, canActivateChild: [moduleGuard], children: [windowOutletRoute('os1', [docs.route, people.route, users.route])] }];
     expect(await visit('/(os1:window/docs)', [], catalogRoutes, ['viewer'])).toEqual({ navigated: true, url: '/(os1:window/docs)' });
     expect(await visit('/(os1:window/people)', [], catalogRoutes, ['viewer'])).toEqual({ navigated: false, url: '/' });
-    expect(await visit('/(os1:window/admin/users)', [], catalogRoutes, ['viewer'])).toEqual({ navigated: false, url: '/' });
+    // The role guard redirects the denied auxiliary route to the primary root; Router resolves the redirect as a successful navigation.
+    expect(await visit('/(os1:window/admin/users)', [], catalogRoutes, ['viewer'])).toEqual({ navigated: true, url: '/' });
   });
 });

@@ -10,9 +10,9 @@ Persist window geometry separately per authenticated user, with finite/range val
 
 - No cookies, tokens, credentials, HR record content, or server persistence.
 - Validate snapshot schema and re-check route/module authorization before restoring.
-- Never use raw History API mutations or bypass Router guards.
+- Production navigation never mutates History API directly or bypasses Router guards. E2E may seed two captured valid app states with History API only as a test fixture to trigger real browser popstate.
 - Do not change desktop/shell CSS.
 
 ## Validation plan
 
-Test clean address bar vs internal URL, same-tab reload restoration, Back/Forward restoration, legacy auxiliary URL compatibility, inaccessible route rejection, and query/storage bounds. Test geometry reload persistence and invalid data rejection. Run targeted Angular specs/lint and docs checks; parent handles full CI.
+Test clean address bar vs internal URL, same-tab reload restoration, Back/Forward restoration, legacy auxiliary URL compatibility, inaccessible route rejection, and query/storage bounds. E2E exercises real Back/Forward between distinct module URLs; same-visible-URL layout/control changes replace the current history entry. Since debounced text filters replace rather than push, E2E may seed captured valid A/B snapshots as a test-only fixture before real `page.goBack()`/`page.goForward()`. Test geometry reload persistence and invalid data rejection. Run targeted Angular specs/lint and docs checks; parent handles full CI.

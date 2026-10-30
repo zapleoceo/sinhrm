@@ -101,11 +101,16 @@ test.describe('desktop flows', () => {
   test('user menu opens appearance settings', async ({ page, context }, info) => {
     test.skip(info.project.name !== 'desktop-light', 'desktop-light only');
     await open(page, context, '/');
+    const dock = page.getByRole('navigation', { name: 'Вікна робочого простору' });
+    const tasksWindow = page.getByTestId('os-window-os1');
+    await dock.getByRole('button', { name: 'Мої задачі', exact: true }).click();
+    await expect(tasksWindow).toBeVisible();
     await page.getByRole('button', { name: 'Меню користувача' }).click();
     await page.getByRole('menuitem', { name: 'Зовнішній вигляд', exact: true }).click();
     await expect.poll(() => new URL(page.url()).pathname).toBe('/settings/appearance');
-    await expect.poll(() => new URL(page.url()).searchParams.get('osPrimary')).toBe('1');
     await expect(page.locator('.primary-view').getByRole('heading', { level: 1, name: 'Зовнішній вигляд' })).toBeVisible();
+    await expect(page.locator('article.os-window.open')).toHaveCount(1);
+    await expect(tasksWindow).not.toHaveClass(/active/);
   });
 
   test('appearance preferences apply immediately and persist across reload', async ({ page, context }, info) => {
